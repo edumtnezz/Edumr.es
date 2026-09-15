@@ -164,10 +164,12 @@ async function getJornada(env, matchday, demo) {
     return raw.data;
   }
   let data = null;
-  try {
-    data = await fetchFootballData(env, matchday);
-  } catch (e) {
-    data = null;
+  if (!demo) {
+    try {
+      data = await fetchFootballData(env, matchday);
+    } catch (e) {
+      data = null;
+    }
   }
   if (!data) data = mockJornada(matchday || 1, !!demo);
   await kv.put(cacheKey, JSON.stringify({ fetchedAt: Date.now(), data }), {
