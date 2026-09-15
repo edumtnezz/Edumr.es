@@ -1,0 +1,7 @@
+name = "edumr"
+pages_build_output_dir = "dist"
+compatibility_date = "2025-09-01"
+
+[[kv_namespaces]]
+binding = "PORRA"
+id = "4f99553a34954704b9786bbb14ca74c5"
