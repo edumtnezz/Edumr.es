@@ -71,11 +71,37 @@ function mockJornada(matchday, finished) {
   return { matchday, source: finished ? "mock-demo" : "mock", matches };
 }
 
+async function fetchMatchday(headers, md) {
+  const res = await fetch(
+    `https://api.football-data.org/v4/competitions/${COMPETITION}/matches?matchday=${md}`,
+    { headers }
+  );
+  if (!res.ok) throw new Error("matches " + res.status);
+  const data = await res.json();
+  return (data.matches || []).map((m) => ({
+    id: m.id,
+    utcDate: m.utcDate,
+    status: m.status,
+    homeTeam: { name: m.homeTeam && m.homeTeam.name },
+    awayTeam: { name: m.awayTeam && m.awayTeam.name },
+    score: m.score || { fullTime: { home: null, away: null } },
+  }));
+}
+
+function firstKickoff(matches) {
+  let min = null;
+  for (const m of matches) {
+    const t = new Date(m.utcDate).getTime();
+    if (min === null || t < min) min = t;
+  }
+  return min;
+}
+
 async function fetchFootballData(env, matchday) {
   const token = env.FOOTBALL_API_KEY;
   if (!token) return null;
   const headers = { "X-Auth-Token": token };
-  let md = matchday;
+  let md = matchday ? Number(matchday) : null;
   if (!md) {
     const compRes = await fetch(
       `https://api.football-data.org/v4/competitions/${COMPETITION}`,
@@ -86,20 +112,25 @@ async function fetchFootballData(env, matchday) {
     md = comp.currentSeason && comp.currentSeason.currentMatchday;
   }
   if (!md) return null;
-  const res = await fetch(
-    `https://api.football-data.org/v4/competitions/${COMPETITION}/matches?matchday=${md}`,
-    { headers }
-  );
-  if (!res.ok) throw new Error("matches " + res.status);
-  const data = await res.json();
-  const matches = (data.matches || []).map((m) => ({
-    id: m.id,
-    utcDate: m.utcDate,
-    status: m.status,
-    homeTeam: { name: m.homeTeam && m.homeTeam.name },
-    awayTeam: { name: m.awayTeam && m.awayTeam.name },
-    score: m.score || { fullTime: { home: null, away: null } },
-  }));
+
+  let matches = await fetchMatchday(headers, md);
+  if (!matchday && matches.length) {
+    const allFinished = matches.every((m) => m.status === "FINISHED");
+    if (allFinished) {
+      for (let next = md + 1; next <= md + 3; next++) {
+        try {
+          const nm = await fetchMatchday(headers, next);
+          if (nm.length) {
+            md = next;
+            matches = nm;
+            break;
+          }
+        } catch (e) {
+          break;
+        }
+      }
+    }
+  }
   return { matchday: md, source: "football-data", matches };
 }
 
@@ -156,8 +187,15 @@ async function getPredictions(env, matchday, demo) {
 function lockTimeOf(matches) {
   let min = null;
   for (const m of matches) {
+    if (m.status === "FINISHED") continue;
     const t = new Date(m.utcDate).getTime();
     if (min === null || t < min) min = t;
+  }
+  if (min === null) {
+    for (const m of matches) {
+      const t = new Date(m.utcDate).getTime();
+      if (min === null || t > min) min = t;
+    }
   }
   return min;
 }
