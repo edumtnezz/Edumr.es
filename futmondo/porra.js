@@ -44,15 +44,38 @@ function initials(name) {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 }
 
-function crestHtml(crest, fallback) {
-  if (crest) {
-    return `<img class="crest" src="${escapeHtml(crest)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'crest-fallback',textContent:'${escapeHtml(fallback || '?').slice(0, 3)}'}))">`;
-  }
-  return `<div class="crest-fallback">${escapeHtml((fallback || "?").slice(0, 3))}</div>`;
+function crestEl(crest, fallback) {
+  const fb = document.createElement("div");
+  fb.className = "crest-fallback";
+  fb.textContent = String(fallback || "?").slice(0, 3).toUpperCase();
+  if (!crest) return fb;
+  const img = document.createElement("img");
+  img.className = "crest";
+  img.src = crest;
+  img.alt = "";
+  img.loading = "lazy";
+  img.addEventListener("error", () => {
+    if (img.parentNode) img.parentNode.replaceChild(fb, img);
+  });
+  return img;
 }
 
-function teamHtml(side, name, crest, tla) {
-  return `<span class="team ${side}">${crestHtml(crest, tla || name)}<span class="tname">${escapeHtml(name)}</span></span>`;
+function teamEl(side, name, crest, tla) {
+  const span = document.createElement("span");
+  span.className = "team " + side;
+  span.appendChild(crestEl(crest, tla || name));
+  const t = document.createElement("span");
+  t.className = "tname";
+  t.textContent = name;
+  span.appendChild(t);
+  return span;
+}
+
+function vsEl() {
+  const v = document.createElement("span");
+  v.className = "vs";
+  v.textContent = "VS";
+  return v;
 }
 
 async function loadState() {
@@ -105,10 +128,9 @@ function renderMatches() {
 
     const teams = document.createElement("div");
     teams.className = "match-teams";
-    teams.innerHTML =
-      teamHtml("home", m.home, m.homeCrest, m.homeTla) +
-      `<span class="vs">VS</span>` +
-      teamHtml("away", m.away, m.awayCrest, m.awayTla);
+    teams.appendChild(teamEl("home", m.home, m.homeCrest, m.homeTla));
+    teams.appendChild(vsEl());
+    teams.appendChild(teamEl("away", m.away, m.awayCrest, m.awayTla));
 
     const meta = document.createElement("div");
     meta.className = "match-meta";
@@ -252,10 +274,19 @@ function renderResults() {
     if (p.correct) hits++;
     const line = document.createElement("div");
     line.className = "result-line";
-    const tag = p.correct
-      ? `<span class="rl-tag ok">Acertaste (${p.pick})</span>`
-      : `<span class="rl-tag ko">Fallaste (${p.pick} · salió ${m.result})</span>`;
-    line.innerHTML = `<span class="rl-teams">${teamHtml("home", m.home, m.homeCrest, m.homeTla)} <span class="vs">VS</span> ${teamHtml("away", m.away, m.awayCrest, m.awayTla)}</span>${tag}`;
+
+    const teamsSpan = document.createElement("span");
+    teamsSpan.className = "rl-teams";
+    teamsSpan.appendChild(teamEl("home", m.home, m.homeCrest, m.homeTla));
+    teamsSpan.appendChild(vsEl());
+    teamsSpan.appendChild(teamEl("away", m.away, m.awayCrest, m.awayTla));
+
+    const tag = document.createElement("span");
+    tag.className = "rl-tag " + (p.correct ? "ok" : "ko");
+    tag.textContent = p.correct ? `Acertaste (${p.pick})` : `Fallaste (pusiste ${p.pick}, ganó ${m.result})`;
+
+    line.appendChild(teamsSpan);
+    line.appendChild(tag);
     grid.appendChild(line);
   });
 
