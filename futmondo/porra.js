@@ -113,12 +113,8 @@ function renderMatches() {
     const meta = document.createElement("div");
     meta.className = "match-meta";
     let metaHtml = `<span>${fmtDate(m.utcDate)}</span><span>${statusLabel(m.status)}</span>`;
-    if (m.result) {
-      const scoreTxt =
-        m.score && m.score.home !== null && m.score.home !== undefined
-          ? ` ${m.score.home}-${m.score.away}`
-          : "";
-      metaHtml += `<span class="result-chip">Resultado: ${m.result}${scoreTxt}</span>`;
+    if (m.score && m.score.home !== null && m.score.home !== undefined) {
+      metaHtml += `<span class="score-chip">${m.score.home} - ${m.score.away}</span>`;
     }
     meta.innerHTML = metaHtml;
 
@@ -133,13 +129,15 @@ function renderMatches() {
       b.textContent = opt;
       b.dataset.match = m.id;
       b.dataset.pick = opt;
-      if (picks[m.id] === opt) b.classList.add("selected");
-      if (state.locked) {
-        b.disabled = true;
-        if (m.result) {
-          if (picks[m.id] === opt) b.classList.add(picks[m.id] === m.result ? "correct" : "wrong");
-        }
+      const myPick = picks[m.id] === opt;
+      if (myPick) b.classList.add("selected");
+      if (m.result) {
+        if (myPick) b.classList.remove("selected");
+        if (opt === m.result) b.classList.add("correct");
+        else if (myPick) b.classList.add("wrong");
+        else b.classList.add("dim");
       }
+      if (state.locked) b.disabled = true;
       b.addEventListener("click", () => selectPick(m.id, opt));
       btns.appendChild(b);
     });
