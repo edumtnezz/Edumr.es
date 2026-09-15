@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Personal Edu</title>
+  <link rel="icon" type="image/svg+xml" href="img/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="img/favicon-64.png">
+  <link rel="shortcut icon" href="favicon.ico">
+  <meta name="description" content="Espacio personal de Edu MR. Proyectos, automatización, IA y desarrollo. Web oficial de Edu MR.">
+  <meta name="keywords" content="Edu MR, edumr.es, Web Personal Edu, desarrollo, inteligencia artificial, automatización, JassTrack, Vinted, Wallapop">
+  <meta name="author" content="Edu MR">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#07090e">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Web Personal Edu">
+  <meta property="og:description" content="Espacio personal de Edu MR. Proyectos, automatización, IA y desarrollo.">
+  <meta property="og:url" content="https://edumr.es">
+  <meta property="og:site_name" content="Web Personal Edu">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Web Personal Edu">
+  <meta name="twitter:description" content="Espacio personal de Edu MR. Proyectos, automatización, IA y desarrollo.">
+  <link rel="canonical" href="https://edumr.es">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Edu MR",
+    "url": "https://edumr.es",
+    "sameAs": [],
+    "jobTitle": "Creador y Desarrollador Digital",
+    "knowsAbout": ["Desarrollo Android", "Inteligencia Artificial", "Automatización", "Bots de Telegram", "Infraestructura VPS"]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Web Personal Edu",
+    "url": "https://edumr.es",
+    "description": "Espacio personal de Edu MR. Proyectos, automatización, IA y desarrollo.",
+    "inLanguage": "es"
+  }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Fondo interactivo con partículas -->
+  <canvas id="bgCanvas"></canvas>
+
+  <!-- Barra de navegación -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="#inicio" class="logo">
+        <div class="logo-emblem">
+          <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+            <rect width="32" height="32" rx="9" fill="url(#logoG)"/>
+            <path d="M10 8.5H22M10 16H18.5M10 23.5H22" stroke="#ffffff" stroke-width="3.2" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="logoG" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#00f2fe"/>
+                <stop offset="1" stop-color="#8b5cf6"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <span class="logo-text">EduMR<span class="accent">.es</span></span>
+      </a>
+
+      <nav class="nav-links" id="navLinks">
+        <a href="#inicio" class="nav-link active">Inicio</a>
+        <a href="#sobre-mi" class="nav-link">Sobre Mí</a>
+        <a href="#lo-que-hago" class="nav-link">Intereses</a>
+        <a href="#proyectos" class="nav-link">Proyectos</a>
+      </nav>
+
+      <div class="nav-controls">
+        <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Abrir menú">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema">
+          <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <div class="nav-badge">
+          <span class="status-indicator"></span>
+          <span>Online</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero" id="inicio">
+      <div class="hero-content">
+        <div class="status-pill">
+          <span class="status-indicator"></span>
+          <span>Desarrollo &bull; Automatización &bull; Proyectos</span>
+        </div>
+
+        <h1 class="hero-title">
+          Hola, soy <span class="gradient-text">Edu MR</span>
+        </h1>
+
+        <div class="typewriter-container">
+          <span class="typewriter-prefix">&gt; </span>
+          <span class="typewriter-text" id="typewriter"></span>
+          <span class="cursor">|</span>
+        </div>
+
+        <p class="hero-description">
+          Construyo aplicaciones, automatizaciones y proyectos digitales de principio a fin, apoyándome en los modelos de IA más avanzados del momento. Todo con infraestructura propia, máxima velocidad y un diseño cuidado hasta el último detalle.
+        </p>
+
+        <div class="hero-buttons">
+          <a href="#proyectos" class="btn btn-primary">
+            <span>Ver Mis Proyectos</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <a href="#sobre-mi" class="btn btn-secondary">Conocer Más</a>
+        </div>
+
+        <!-- Tech Quick Bar -->
+        <div class="tech-bar">
+          <span class="tech-pill">Claude Sonnet 4.6</span>
+          <span class="tech-dot">&bull;</span>
+          <span class="tech-pill">Gemini 3.8</span>
+          <span class="tech-dot">&bull;</span>
+          <span class="tech-pill">DeepSeek V4</span>
+          <span class="tech-dot">&bull;</span>
+          <span class="tech-pill">VPS & edumr.es</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Sobre Mí -->
+    <section class="section" id="sobre-mi">
+      <div class="container">
+        <div class="about-grid">
+          <div class="profile-card">
+            <div class="avatar-glow">
+              <div class="avatar">
+                <span>EM</span>
+              </div>
+            </div>
+            <h3>Edu MR</h3>
+            <p class="role">Creator & Builder</p>
+            <div class="tags">
+              <span class="tag">España</span>
+              <span class="tag">edumr.es</span>
+              <span class="tag">Autodidacta</span>
+            </div>
+          </div>
+
+          <div class="about-content">
+            <span class="badge-sub">Sobre mí</span>
+            <h2 class="section-title">Creando proyectos útiles con tecnología real</h2>
+            <p class="text-lead">
+              Transformo ideas en productos digitales reales: aplicaciones móviles, sistemas de automatización e inteligencia artificial aplicada a problemas del día a día.
+            </p>
+            <p class="text-body">
+              No me quedo en la teoría: configuro mis propios servidores VPS, desarrollo mis herramientas de principio a fin y elijo siempre la tecnología que ofrece el máximo control, velocidad y rendimiento.
+            </p>
+
+            <div class="values-grid">
+              <div class="value-item">
+                <span class="value-icon">⚡</span>
+                <div>
+                  <strong>Autonomía</strong>
+                  <p>Infraestructura propia con VPS y control total.</p>
+                </div>
+              </div>
+              <div class="value-item">
+                <span class="value-icon">🤖</span>
+                <div>
+                  <strong>IA de Vanguardia</strong>
+                  <p>Desarrollo ágil potenciado por Claude Sonnet 4.6.</p>
+                </div>
+              </div>
+              <div class="value-item">
+                <span class="value-icon">🎯</span>
+                <div>
+                  <strong>Automatización</strong>
+                  <p>Bots y scripts que trabajan solos 24/7.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Lo Que Me Mola / Enfoque -->
+    <section class="section section-alt" id="lo-que-hago">
+      <div class="container">
+        <div class="section-heading">
+          <span class="badge-sub">Enfoque</span>
+          <h2 class="section-title">Áreas de trabajo</h2>
+          <p class="section-sub">Las disciplinas en las que centro mis desarrollos e investigaciones.</p>
+        </div>
+
+        <div class="cards-grid">
+          <div class="glass-card">
+            <div class="card-glow"></div>
+            <div class="card-icon-box">📱</div>
+            <h3>Desarrollo Mobile & IA</h3>
+            <p>Creación de aplicaciones nativas en Android combinando interfaces fluidas con inteligencia artificial para asistencia personalizada y automatizaciones complejas.</p>
+            <div class="card-footer">
+              <span>Android &bull; Asistentes IA &bull; Notificaciones</span>
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <div class="card-glow"></div>
+            <div class="card-icon-box">⚡</div>
+            <h3>Bots & Automatización</h3>
+            <p>Monitores de mercado en tiempo real, rastreo continuo de anuncios en plataformas de segunda mano, análisis de precios y alertas instantáneas a Telegram.</p>
+            <div class="card-footer">
+              <span>Telegram Bot API &bull; Scraping &bull; Traducción</span>
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <div class="card-glow"></div>
+            <div class="card-icon-box">🖥️</div>
+            <h3>Servidores VPS & Cloud</h3>
+            <p>Despliegue de sistemas en servidores privados virtuales propios, configuración de DNS, certificados SSL de alta seguridad y gestión de dominios sin intermediarios.</p>
+            <div class="card-footer">
+              <span>VPS &bull; Linux &bull; Seguridad SSL &bull; DNS</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Proyectos -->
+    <section class="section" id="proyectos">
+      <div class="container">
+        <div class="section-heading">
+          <span class="badge-sub">Proyectos Destacados</span>
+          <h2 class="section-title">Desarrollos Propios</h2>
+          <p class="section-sub">Soluciones creadas y puestas en producción.</p>
+        </div>
+
+        <div class="projects-grid">
+          <!-- Proyecto 1: JassTrack -->
+          <div class="project-card featured-project">
+            <div class="project-top">
+              <div class="project-logo-wrap">
+                <img src="img/jasstrack.png" alt="Logo JassTrack" class="project-logo">
+              </div>
+              <div class="project-main-info">
+                <div class="project-header">
+                  <div class="badge-group">
+                    <span class="project-badge highlight-badge">App Android</span>
+                    <span class="model-badge">Claude Sonnet 4.6</span>
+                  </div>
+                  <span class="project-year">2026</span>
+                </div>
+                <h3>JassTrack</h3>
+                <p class="project-tagline">Control inteligente de medicación y pastillas con aviso al cuidador</p>
+              </div>
+            </div>
+            <p class="project-desc">
+              Aplicación Android desarrollada conjuntamente con <strong>Claude Sonnet 4.6</strong> pensada para el seguimiento riguroso de tomas médicas. Envía una <strong>alerta inmediata a la persona cuidadora</strong> en el momento exacto en que se realiza la toma. Cuenta con control automático de stock de pastillas, asistente con <strong>IA personal</strong>, calendario de dosis y una <strong>notificación semanal de seguimiento</strong> con el balance de cumplimiento.
+            </p>
+            <div class="project-tech">
+              <span>Android</span>
+              <span>Claude Sonnet 4.6</span>
+              <span>Alerta Cuidador</span>
+              <span>Stock Pastillas</span>
+              <span>IA Personal</span>
+              <span>Calendario</span>
+              <span>Reporte Semanal</span>
+            </div>
+          </div>
+
+          <!-- Proyecto 2: TrackerEdu (Bot Alertas Telegram) -->
+          <div class="project-card featured-project">
+            <div class="project-top">
+              <div class="project-logo-wrap round-wrap">
+                <img src="img/tracker-edu.png" alt="Logo TrackerEdu" class="project-logo">
+              </div>
+              <div class="project-main-info">
+                <div class="project-header">
+                  <div class="badge-group">
+                    <span class="project-badge">Bot & Scraping</span>
+                    <span class="model-badge deepseek-badge">DeepSeek V4</span>
+                  </div>
+                  <span class="project-year">2026</span>
+                </div>
+                <h3>TrackerEdu</h3>
+                <p class="project-tagline">Bot de alertas Telegram para Vinted y Wallapop</p>
+              </div>
+            </div>
+            <p class="project-desc">
+              Desarrollado con <strong>DeepSeek V4</strong>. Bot de Telegram para la detección y notificación inmediata de oportunidades en plataformas de compraventa. Incorpora monitorización constante de artículos, <strong>control y evolución de precios</strong> para detectar gangas, e integración de <strong>traducción en directo</strong> para artículos internacionales sin fricción.
+            </p>
+            <div class="project-tech">
+              <span>DeepSeek V4</span>
+              <span>Telegram API</span>
+              <span>Vinted & Wallapop</span>
+              <span>Control de Precios</span>
+              <span>Traducción Live</span>
+              <span>Alertas 24/7</span>
+            </div>
+          </div>
+
+          <!-- Proyecto 3: Web Oficial con VPS -->
+          <div class="project-card featured-project">
+            <div class="project-top">
+              <div class="project-logo-wrap">
+                <img src="img/edumr-web.svg" alt="Logo Web Oficial" class="project-logo">
+              </div>
+              <div class="project-main-info">
+                <div class="project-header">
+                  <div class="badge-group">
+                    <span class="project-badge">Infraestructura</span>
+                    <span class="model-badge gemini-badge">Gemini 3.8</span>
+                  </div>
+                  <span class="project-year">2026</span>
+                </div>
+                <h3>Web Oficial Edu MR</h3>
+                <p class="project-tagline">VPS propio y dominio configurado a medida</p>
+              </div>
+            </div>
+            <p class="project-desc">
+              Desarrollada y estructurada con <strong>Gemini 3.8</strong> y desplegada sobre un <strong>servidor privado virtual (VPS)</strong> con gestión directa del dominio <strong>edumr.es</strong>. Configuración avanzada de zonas DNS, capa de seguridad SSL/TLS para navegación cifrada y diseño con máxima optimización de velocidad de carga.
+            </p>
+            <div class="project-tech">
+              <span>Gemini 3.8</span>
+              <span>VPS</span>
+              <span>edumr.es</span>
+              <span>SysAdmin</span>
+              <span>Seguridad SSL</span>
+              <span>DNS</span>
+              <span>Modern Web</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-content">
+      <div class="footer-logo">
+        <span class="logo-text">EduMR<span class="accent">.es</span></span>
+        <p>Espacio personal &bull; Desarrollos, IA y automatización.</p>
+      </div>
+      <div class="footer-copy">
+        <p>&copy; 2026 Edu MR. Todos los derechos reservados.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>

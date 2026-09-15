@@ -1,0 +1,6 @@
+.wrangler/
+Backup Web EduMR 2026-09-08/
+node_modules/
+*.log
+.DS_Store
+Thumbs.db

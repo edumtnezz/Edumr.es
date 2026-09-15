@@ -1,0 +1,41 @@
+# CONTEXTO DEL SISTEMA BOT TELEGRAM (TrackerEdu) - REFERENCIA
+
+## Sistema completo: Bot de Telegram que vigila ofertas Vinted y Wallapop
+3 partes que conviven:
+1. **El bot** (Python, Telegram): busca productos, filtra y envía alertas. Corre 24/7 en el servidor.
+2. **La Mini App** (web app de Telegram): panel donde los usuarios gestionan alertas. Publicada en `https://mini.edumr.es` (dominio real, por Cloudflare).
+3. **La web propia** (la que construimos, edumr.es): es independiente.
+
+## Estructura del código del bot (vive en /root/bot-alertas del servidor)
+- `main.py` → bucle principal del bot (búsquedas + Telegram).
+- `app.py` → la Mini App (Flask). CONTROLA LA SEGURIDAD.
+- `src/notifier.py` → envío de alertas a Telegram.
+- `src/auth.py` → permisos y acceso de usuarios.
+- `src/scrapers/vinted.py` y `src/scrapers/wallapop.py` → búsquedas.
+- `src/price_check.py` → etiqueta de precio (Ganga/Buen precio/Medio/Alto).
+- `src/stats.py` → estadísticas diarias por alerta.
+- `config.json` y `searches_<userid>.json` → búsquedas de cada usuario.
+- `healthcheck.py` → watchdog de auto-reparación.
+- `.env` → credenciales. NO tocar ni exponer.
+
+## Seguridad (CRÍTICO - no romper)
+- La Mini App valida identidad con firma HMAC del initData de Telegram: función `_verificar_telegram_init()` en `app.py`.
+- El frontend envía initData firmado en el header `X-Tg-Init`.
+- Si se quita esta verificación, CUALQUIER persona podría entrar y ver/modificar datos de otros usuarios.
+- No eliminar `X-Tg-Init` ni `_verificar_telegram_init`.
+- No quitar controles de autorización (`is_authorized`, `is_owner`, `_usuario_verificado`).
+- No loguear ni imprimir `.env` ni tokens.
+- No exponer datos de un usuario a otro.
+
+## Reglas de trabajo (IMPORTANTES)
+1. NUNCA subir cambios al servidor ni reiniciar servicios. El despliegue lo hace el responsable.
+2. NUNCA modificar directamente archivos de /root/bot-alertas. Están protegidos con Git: watchdog los revierte en minutos si se tocan.
+3. Si hay que cambiar algo del bot/Mini App, entregar código nuevo como texto/archivo explicando QUÉ y POR QUÉ.
+4. No borrar archivos del bot. Usar .gitignore para datos dinámicos (seen_ids.json, stats.json, autorizados.json, searches_*.json, .env).
+5. Mantener variables y nombres existentes.
+6. Antes de proponer un cambio: ¿rompe la verificación de Telegram? ¿rompe búsquedas? ¿rompe envío de alertas? Si sí, no proponer sin avisar.
+
+## Consejo práctico
+- La web de edumr.es es totalmente independiente, en su propia carpeta (ej. /var/www/web), NO dentro de /root/bot-alertas.
+- Para integrar datos del bot en la web: usar endpoints de la Mini App como API (requieren firma de Telegram). No acceder por otra vía sin consultar.
+- Ante la duda: preguntar antes de cambiar, no después.
