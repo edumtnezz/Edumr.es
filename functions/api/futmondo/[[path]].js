@@ -32,16 +32,16 @@ function resultFromScore(score) {
 
 function mockJornada(matchday, finished) {
   const teams = [
-    ["Real Madrid", "Barcelona"],
-    ["Atlético de Madrid", "Sevilla"],
-    ["Real Sociedad", "Athletic Club"],
-    ["Villarreal", "Valencia"],
-    ["Real Betis", "Girona"],
-    ["Celta de Vigo", "Osasuna"],
-    ["Rayo Vallecano", "Getafe"],
-    ["Mallorca", "Alavés"],
-    ["Las Palmas", "Espanyol"],
-    ["Leganés", "Valladolid"],
+    [["Real Madrid", 86], ["Barcelona", 81]],
+    [["Atlético de Madrid", 78], ["Sevilla", 559]],
+    [["Real Sociedad", 92], ["Athletic Club", 77]],
+    [["Villarreal", 94], ["Valencia", 95]],
+    [["Real Betis", 90], ["Girona", 298]],
+    [["Celta de Vigo", 558], ["Osasuna", 79]],
+    [["Rayo Vallecano", 87], ["Getafe", 82]],
+    [["Mallorca", 89], ["Alavés", 263]],
+    [["Las Palmas", 275], ["Espanyol", 80]],
+    [["Leganés", 745], ["Valladolid", 250]],
   ];
   const now = Date.now();
   const day = 24 * 60 * 60 * 1000;
@@ -59,12 +59,24 @@ function mockJornada(matchday, finished) {
       else if (r === "2") score = { fullTime: { home: 1, away: 2 } };
       else score = { fullTime: { home: 1, away: 1 } };
     }
+    const home = t[0];
+    const away = t[1];
     return {
       id: 9000 + matchday * 10 + i,
       utcDate: utcDate.toISOString(),
       status: isFinished ? "FINISHED" : started ? "IN_PLAY" : "SCHEDULED",
-      homeTeam: { name: t[0] },
-      awayTeam: { name: t[1] },
+      homeTeam: {
+        name: home[0],
+        shortName: home[0],
+        tla: home[0].split(" ")[0].slice(0, 3).toUpperCase(),
+        crest: `https://crests.football-data.org/${home[1]}.png`,
+      },
+      awayTeam: {
+        name: away[0],
+        shortName: away[0],
+        tla: away[0].split(" ")[0].slice(0, 3).toUpperCase(),
+        crest: `https://crests.football-data.org/${away[1]}.png`,
+      },
       score,
     };
   });
@@ -82,8 +94,18 @@ async function fetchMatchday(headers, md) {
     id: m.id,
     utcDate: m.utcDate,
     status: m.status,
-    homeTeam: { name: m.homeTeam && m.homeTeam.name },
-    awayTeam: { name: m.awayTeam && m.awayTeam.name },
+    homeTeam: {
+      name: m.homeTeam && m.homeTeam.name,
+      shortName: m.homeTeam && m.homeTeam.shortName,
+      tla: m.homeTeam && m.homeTeam.tla,
+      crest: m.homeTeam && m.homeTeam.crest,
+    },
+    awayTeam: {
+      name: m.awayTeam && m.awayTeam.name,
+      shortName: m.awayTeam && m.awayTeam.shortName,
+      tla: m.awayTeam && m.awayTeam.tla,
+      crest: m.awayTeam && m.awayTeam.crest,
+    },
     score: m.score || { fullTime: { home: null, away: null } },
   }));
 }
@@ -218,9 +240,11 @@ async function buildState(env, matchday, apodo, demo) {
       let points = 0;
       let hits = 0;
       let played = 0;
+      let total = 0;
       for (const m of matches) {
         const pick = picks[m.id];
         if (!pick) continue;
+        total++;
         const r = results[m.id];
         if (!r) continue;
         played++;
@@ -229,9 +253,17 @@ async function buildState(env, matchday, apodo, demo) {
           hits++;
         }
       }
-      return { key, name: picks.__name || key, points, hits, played };
+      return {
+        key,
+        name: picks.__name || key,
+        points,
+        hits,
+        played,
+        total,
+        missed: played - hits,
+      };
     })
-    .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name));
+    .sort((a, b) => b.points - a.points || b.hits - a.hits || a.name.localeCompare(b.name));
 
   const me = apodo ? preds[apodoKey(apodo)] || null : null;
 
@@ -239,8 +271,14 @@ async function buildState(env, matchday, apodo, demo) {
     id: m.id,
     utcDate: m.utcDate,
     status: m.status,
-    home: m.homeTeam && m.homeTeam.name,
-    away: m.awayTeam && m.awayTeam.name,
+    home: m.homeTeam && (m.homeTeam.shortName || m.homeTeam.name),
+    away: m.awayTeam && (m.awayTeam.shortName || m.awayTeam.name),
+    homeFull: m.homeTeam && m.homeTeam.name,
+    awayFull: m.awayTeam && m.awayTeam.name,
+    homeCrest: m.homeTeam && m.homeTeam.crest,
+    awayCrest: m.awayTeam && m.awayTeam.crest,
+    homeTla: m.homeTeam && m.homeTeam.tla,
+    awayTla: m.awayTeam && m.awayTeam.tla,
     result: results[m.id] || null,
     score:
       m.score && m.score.fullTime
@@ -254,11 +292,17 @@ async function buildState(env, matchday, apodo, demo) {
         .map((m) => {
           const pick = me[m.id];
           const r = results[m.id] || null;
+          const home = m.homeTeam && (m.homeTeam.shortName || m.homeTeam.name);
+          const away = m.awayTeam && (m.awayTeam.shortName || m.awayTeam.name);
           return {
             matchId: m.id,
             pick,
             result: r,
             correct: r ? pick === r : null,
+            home,
+            away,
+            homeCrest: m.homeTeam && m.homeTeam.crest,
+            awayCrest: m.awayTeam && m.awayTeam.crest,
           };
         })
     : [];

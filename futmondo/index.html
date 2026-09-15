@@ -27,7 +27,7 @@
       </div>
     </div>
     <div class="porra-status" id="lockStatus">
-      <span class="dot"></span><span id="lockText">Cargando…</span>
+      <span class="dot"></span><span id="lockText">Cargando...</span>
     </div>
   </header>
 
@@ -63,18 +63,17 @@
 
     <!-- Clasificación -->
     <section class="panel" id="rankingPanel">
-      <h2>Clasificación</h2>
-      <p class="muted" id="rankingHint">Ordenada por aciertos de la jornada.</p>
-      <div class="table-wrap">
-        <table class="ranking-table">
-          <thead>
-            <tr><th>#</th><th>Jugador</th><th class="num">Aciertos</th><th class="num">Puntos</th></tr>
-          </thead>
-          <tbody id="rankingBody">
-            <tr><td colspan="4" class="empty">Aún no hay pronósticos.</td></tr>
-          </tbody>
-        </table>
+      <div class="panel-head">
+        <div>
+          <h2>Clasificación</h2>
+          <p class="muted" id="rankingHint">Ordenada por aciertos de la jornada.</p>
+        </div>
+        <span class="pulse-chip" id="playersChip">0 jugadores</span>
       </div>
+
+      <div class="podium" id="podium"></div>
+      <div class="rank-cards" id="rankCards"></div>
+      <p class="empty" id="rankEmpty">Aún no hay pronósticos. ¡Sé el primero!</p>
     </section>
 
     <!-- Mis resultados -->

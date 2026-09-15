@@ -28,6 +28,33 @@ function statusLabel(status) {
   return map[status] || status || "";
 }
 
+function escapeHtml(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function initials(name) {
+  const parts = String(name || "?").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+function crestHtml(crest, fallback) {
+  if (crest) {
+    return `<img class="crest" src="${escapeHtml(crest)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'crest-fallback',textContent:'${escapeHtml(fallback || '?').slice(0, 3)}'}))">`;
+  }
+  return `<div class="crest-fallback">${escapeHtml((fallback || "?").slice(0, 3))}</div>`;
+}
+
+function teamHtml(side, name, crest, tla) {
+  return `<span class="team ${side}">${crestHtml(crest, tla || name)}<span class="tname">${escapeHtml(name)}</span></span>`;
+}
+
 async function loadState() {
   const url = new URL(API + "/state", location.origin);
   url.searchParams.set("jornada", new URLSearchParams(location.search).get("jornada") || "");
@@ -78,7 +105,10 @@ function renderMatches() {
 
     const teams = document.createElement("div");
     teams.className = "match-teams";
-    teams.innerHTML = `<span>${m.home}</span><span class="vs">VS</span><span>${m.away}</span>`;
+    teams.innerHTML =
+      teamHtml("home", m.home, m.homeCrest, m.homeTla) +
+      `<span class="vs">VS</span>` +
+      teamHtml("away", m.away, m.awayCrest, m.awayTla);
 
     const meta = document.createElement("div");
     meta.className = "match-meta";
@@ -135,26 +165,74 @@ function selectPick(matchId, opt) {
 }
 
 function renderRanking() {
-  const body = $("rankingBody");
-  body.innerHTML = "";
-  if (!state.standings || !state.standings.length) {
-    body.innerHTML = `<tr><td colspan="4" class="empty">Aún no hay pronósticos.</td></tr>`;
+  const podium = $("podium");
+  const cards = $("rankCards");
+  const empty = $("rankEmpty");
+  podium.innerHTML = "";
+  cards.innerHTML = "";
+
+  const list = state.standings || [];
+  $("playersChip").textContent = `${list.length} jugador${list.length === 1 ? "" : "es"}`;
+
+  if (!list.length) {
+    empty.classList.remove("hidden");
+    $("rankingHint").textContent = "Ordenada por aciertos de la jornada.";
     return;
   }
+  empty.classList.add("hidden");
+
+  const myKey = apodo ? apodo.toLowerCase() : null;
   const medals = ["🥇", "🥈", "🥉"];
-  state.standings.forEach((s, i) => {
-    const tr = document.createElement("tr");
-    tr.className = i < 3 ? `rank-${i + 1}` : "";
-    if (apodo && s.key === apodo.toLowerCase()) tr.classList.add("me-row");
-    const pos = i < 3 ? `<span class="medal">${medals[i]}</span>` : "";
-    tr.innerHTML = `
-      <td class="rank-pos">${pos}${i + 1}</td>
-      <td>${s.name}</td>
-      <td class="num">${s.hits}</td>
-      <td class="num points-badge">${s.points}</td>`;
-    body.appendChild(tr);
+  const top = list.slice(0, 3);
+  const maxPoints = Math.max(1, list[0].points);
+
+  const order = [1, 0, 2];
+  order.forEach((idx) => {
+    const s = top[idx];
+    if (!s) return;
+    const place = idx + 1;
+    const slot = document.createElement("div");
+    slot.className = `podium-slot podium-${place}`;
+    slot.style.animationDelay = `${idx * 0.08}s`;
+    slot.innerHTML = `
+      <span class="podium-medal">${medals[idx]}</span>
+      <span class="podium-avatar">${escapeHtml(initials(s.name))}</span>
+      <span class="podium-name">${escapeHtml(s.name)}</span>
+      <span class="podium-points">${s.points}<small> pts</small></span>
+      <span class="podium-sub">${s.hits} acierto${s.hits === 1 ? "" : "s"}</span>`;
+    podium.appendChild(slot);
   });
-  $("rankingHint").textContent = `${state.standings.length} jugador(es) · ordenada por aciertos de la jornada.`;
+
+  list.forEach((s, i) => {
+    const card = document.createElement("div");
+    const place = i + 1;
+    card.className = "rank-card";
+    if (place <= 3) card.classList.add(`player-${place}`);
+    if (myKey && s.key === myKey) card.classList.add("me");
+    card.style.animationDelay = `${Math.min(i, 8) * 0.04}s`;
+
+    const detail =
+      s.played > 0
+        ? `${s.hits} acertados · ${s.missed} fallados`
+        : `Aún sin resultados (${s.total} pronósticos)`;
+    const badge = myKey && s.key === myKey ? '<span class="me-badge">TÚ</span>' : "";
+    const pct = Math.round((s.points / maxPoints) * 100);
+
+    card.innerHTML = `
+      <span class="rank-num">${medals[i] || place}</span>
+      <span class="rank-avatar">${escapeHtml(initials(s.name))}</span>
+      <span class="rank-info">
+        <span class="rank-name">${escapeHtml(s.name)}${badge}</span>
+        <span class="rank-detail">${detail}</span>
+      </span>
+      <span class="rank-score">
+        <span class="rank-points">${s.points}<small>puntos</small></span>
+        <span class="rank-bar"><i style="width:${pct}%"></i></span>
+      </span>`;
+    cards.appendChild(card);
+  });
+
+  $("rankingHint").textContent = "Ordenada por aciertos de la jornada.";
 }
 
 function renderResults() {
@@ -179,7 +257,7 @@ function renderResults() {
     const tag = p.correct
       ? `<span class="rl-tag ok">Acertaste (${p.pick})</span>`
       : `<span class="rl-tag ko">Fallaste (${p.pick} · salió ${m.result})</span>`;
-    line.innerHTML = `<span class="rl-teams">${m.home} vs ${m.away}</span>${tag}`;
+    line.innerHTML = `<span class="rl-teams">${teamHtml("home", m.home, m.homeCrest, m.homeTla)} <span class="vs">VS</span> ${teamHtml("away", m.away, m.awayCrest, m.awayTla)}</span>${tag}`;
     grid.appendChild(line);
   });
 

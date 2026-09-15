@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="fg" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00f2fe"/>
+      <stop offset="0.5" stop-color="#3b82f6"/>
+      <stop offset="1" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <linearGradient id="ballg" x1="0" y1="0" x2="0" y2="128" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#dbeafe"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#0d121d"/>
+  <rect x="1.5" y="1.5" width="125" height="125" rx="26.5" fill="none" stroke="url(#fg)" stroke-width="3" opacity="0.55"/>
+  <circle cx="64" cy="60" r="30" fill="url(#ballg)"/>
+  <path d="M64 42l9 6.6-3.4 10.6H58.4L55 48.6z" fill="#0d121d"/>
+  <path d="M64 30l6 4.4-2.3 7.1h-7.4L58 34.4z" fill="none" stroke="#0d121d" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M38.5 52l7.6 1.3 2.7 7.3-5 5.6-7.4-2.4-1.9-7.6z" fill="none" stroke="#0d121d" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M89.5 52l-7.6 1.3-2.7 7.3 5 5.6 7.4-2.4 1.9-7.6z" fill="none" stroke="#0d121d" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M64 90l8-1 4.6 7.2-5 4.8h-15.2l-5-4.8L56 89z" fill="none" stroke="#0d121d" stroke-width="2.4" stroke-linejoin="round"/>
+  <circle cx="64" cy="60" r="30" fill="none" stroke="#0d121d" stroke-width="2.6"/>
+  <text x="64" y="117" text-anchor="middle" font-family="'Space Grotesk', Arial, sans-serif" font-size="17" font-weight="700" fill="url(#fg)">1X2</text>
+</svg>

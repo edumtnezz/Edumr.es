@@ -850,6 +850,27 @@ body {
   color: var(--text);
 }
 
+.project-actions {
+  margin-top: 24px;
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.porra-project {
+  border-color: rgba(0, 242, 254, 0.35);
+  background: linear-gradient(135deg, rgba(18, 24, 38, 0.9), rgba(8, 47, 73, 0.45));
+}
+
+.porra-project:hover {
+  border-color: rgba(0, 242, 254, 0.7);
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.3), 0 0 40px rgba(0, 242, 254, 0.22);
+}
+
+[data-theme="light"] .porra-project {
+  background: linear-gradient(135deg, #e0f2fe, #ede9fe);
+}
+
 /* Footer */
 .footer {
   border-top: 1px solid var(--border);
