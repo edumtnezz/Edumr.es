@@ -434,6 +434,8 @@ function renderRanking() {
         <span class="rank-prize">${money(s.prize)}<small>prima</small></span>
       </span>`;
     cards.appendChild(card);
+    card.title = "Ver sus aciertos y fallos";
+    card.addEventListener("click", () => openParticipant(s.key));
   });
 }
 
@@ -505,6 +507,8 @@ function renderGlobalRanking(data) {
       </span>
       <span class="rank-score"><span class="rank-prize">${s.total}<small>total</small></span></span>`;
     cards.appendChild(card);
+    card.title = "Ver sus aciertos y fallos";
+    card.addEventListener("click", () => openParticipant(s.key));
   });
 }
 
@@ -546,6 +550,7 @@ function renderParticipants() {
   list.forEach((p) => {
     const card = document.createElement("div");
     card.className = "participant";
+    card.dataset.pkey = p.key;
 
     let hits = 0;
     let played = 0;
@@ -843,6 +848,24 @@ function switchTab(name) {
     window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
   }
   updateSaveFab();
+}
+
+function openParticipant(key) {
+  switchTab("participantes");
+  setTimeout(() => {
+    const card = document.querySelector('.participant[data-pkey="' + key + '"]');
+    if (!card) return;
+    const head = card.querySelector(".participant-head");
+    const body = card.querySelector(".participant-body");
+    if (body) {
+      body.classList.remove("hidden");
+      if (head) head.classList.add("open");
+    }
+    const bar = document.querySelector(".appbar");
+    const off = (bar ? bar.offsetHeight : 0) + 12;
+    const y = card.getBoundingClientRect().top + window.scrollY - off;
+    window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+  }, 160);
 }
 
 /* ---------- Eventos ---------- */
