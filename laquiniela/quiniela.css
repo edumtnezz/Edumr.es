@@ -933,8 +933,15 @@ body {
   gap: 12px;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+.appbar-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
   margin-left: auto;
 }
+.swipe-hint { font-size: 0.66rem; color: var(--muted); text-align: right; }
 
 .appbar {
   position: fixed;

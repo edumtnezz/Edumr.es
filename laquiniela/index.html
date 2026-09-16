@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="quiniela.css?v=41">
+  <link rel="stylesheet" href="quiniela.css?v=42">
 </head>
 <body>
   <canvas id="bgCanvas"></canvas>
@@ -28,21 +28,24 @@
           </a>
           <div class="user-box" id="userBox"></div>
         </div>
-        <div class="top-right-tools">
-          <span class="flag-wrap">
-            <img class="flag-corner" src="/img/espana.svg" alt="Bandera de España" title="España">
-          </span>
-          <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema" title="Modo claro / oscuro">
-            <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-            <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          </button>
+        <div class="appbar-right">
+          <div class="top-right-tools">
+            <span class="flag-wrap">
+              <img class="flag-corner" src="/img/espana.svg" alt="Bandera de España" title="España">
+            </span>
+            <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema" title="Modo claro / oscuro">
+              <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
+          </div>
+          <span class="swipe-hint">↔ También puedes deslizar lateralmente para cambiar de pestaña</span>
         </div>
       </div>
       <nav class="tabs" id="tabsNav">
-        <button class="tab" data-tab="miQuiniela">Mi quiniela</button>
+        <button class="tab active" data-tab="miQuiniela">Mi quiniela</button>
         <button class="tab" data-tab="clasificacion">Clasificación</button>
         <button class="tab" data-tab="participantes">Participantes</button>
-        <button class="tab active" data-tab="instrucciones">Instrucciones</button>
+        <button class="tab" data-tab="instrucciones">Instrucciones</button>
       </nav>
     </div>
   </header>
@@ -85,7 +88,7 @@
     </section>
 
     <!-- Mi quiniela -->
-    <section class="tab-panel hidden" id="tab-miQuiniela">
+    <section class="tab-panel" id="tab-miQuiniela">
       <!-- Acceso / registro (solo para crear o editar tu quiniela) -->
       <div class="panel hidden" id="authPanel">
         <div class="auth-tabs">
@@ -167,7 +170,7 @@
     </section>
 
     <!-- Instrucciones -->
-    <section class="tab-panel" id="tab-instrucciones">
+    <section class="tab-panel hidden" id="tab-instrucciones">
       <div class="panel">
         <h2>Cómo funciona</h2>
 
@@ -220,7 +223,7 @@
 
   <footer class="quiniela-footer"></footer>
 
-  <script src="fondo.js?v=41"></script>
-  <script src="quiniela.js?v=41"></script>
+  <script src="fondo.js?v=42"></script>
+  <script src="quiniela.js?v=42"></script>
 </body>
 </html>

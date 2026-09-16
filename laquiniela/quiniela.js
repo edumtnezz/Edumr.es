@@ -703,7 +703,7 @@ function renderAll() {
   updateCtas();
   if (!tabInitialized) {
     tabInitialized = true;
-    switchTab(logged ? "miQuiniela" : "instrucciones", false);
+    switchTab("miQuiniela", false);
   }
   if (logged) renderMatches();
   if (rankMode === "global") loadGlobal();
