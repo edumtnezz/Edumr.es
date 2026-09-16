@@ -13,22 +13,34 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="porra.css?v=26">
+  <link rel="stylesheet" href="porra.css?v=27">
 </head>
 <body>
   <canvas id="bgCanvas"></canvas>
   <div class="grass-band"></div>
-  <a class="top-btn" href="/" title="Ir a la web principal de EduMR">🏠 Web principal</a>
 
-  <div class="top-right-tools">
-    <span class="flag-wrap">
-      <img class="flag-corner" src="/img/espana.svg" alt="Bandera de España" title="España">
-    </span>
-    <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema" title="Modo claro / oscuro">
-      <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-      <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-    </button>
-  </div>
+  <header class="appbar">
+    <div class="appbar-inner">
+      <div class="appbar-top">
+        <a class="top-btn" href="/" title="Ir a la web principal de EduMR">🏠 Web principal</a>
+        <div class="top-right-tools">
+          <span class="flag-wrap">
+            <img class="flag-corner" src="/img/espana.svg" alt="Bandera de España" title="España">
+          </span>
+          <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema" title="Modo claro / oscuro">
+            <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+        </div>
+      </div>
+      <nav class="tabs" id="tabsNav">
+        <button class="tab" data-tab="miPorra">🎯 Mi porra</button>
+        <button class="tab" data-tab="clasificacion">🏆 Clasificación</button>
+        <button class="tab" data-tab="participantes">👥 Participantes</button>
+        <button class="tab active" data-tab="instrucciones">📖 Instrucciones</button>
+      </nav>
+    </div>
+  </header>
 
   <header class="porra-header">
     <div class="top-deco">
@@ -83,14 +95,6 @@
       <button class="jbtn" id="jNext" title="Jornada siguiente">▶</button>
       <span class="jnote hidden" id="jNote">Estás viendo una jornada pasada</span>
     </div>
-
-    <!-- Pestañas -->
-    <nav class="tabs" id="tabsNav">
-      <button class="tab" data-tab="miPorra">🎯 Mi porra</button>
-      <button class="tab" data-tab="clasificacion">🏆 Clasificación</button>
-      <button class="tab" data-tab="participantes">👥 Participantes</button>
-      <button class="tab active" data-tab="instrucciones">📖 Instrucciones</button>
-    </nav>
 
     <!-- Mi porra -->
     <section class="tab-panel hidden" id="tab-miPorra">
@@ -231,7 +235,7 @@
     <p>La Porra · <a href="/">EduMR.es</a></p>
   </footer>
 
-  <script src="fondo.js?v=26"></script>
-  <script src="porra.js?v=26"></script>
+  <script src="fondo.js?v=27"></script>
+  <script src="porra.js?v=27"></script>
 </body>
 </html>
