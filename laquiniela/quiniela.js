@@ -10,6 +10,7 @@ let viewJornada = null;
 let currentJornada = null;
 let rankMode = "jornada";
 let globalData = null;
+let tabInitialized = false;
 
 const $ = (id) => document.getElementById(id);
 
@@ -700,6 +701,10 @@ function renderAll() {
   $("authPanel").classList.toggle("hidden", logged);
   $("picksPanel").classList.toggle("hidden", !logged);
   updateCtas();
+  if (!tabInitialized) {
+    tabInitialized = true;
+    switchTab(logged ? "miQuiniela" : "instrucciones", false);
+  }
   if (logged) renderMatches();
   if (rankMode === "global") loadGlobal();
   else {
@@ -830,16 +835,19 @@ async function save() {
 
 /* ---------- Tabs ---------- */
 
-function switchTab(name) {
+function switchTab(name, scroll) {
+  if (scroll === undefined) scroll = true;
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
   document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
   const panel = $("tab-" + name);
   if (panel) {
     panel.classList.remove("hidden");
-    const bar = document.querySelector(".appbar");
-    const off = (bar ? bar.offsetHeight : 0) + 12;
-    const y = panel.getBoundingClientRect().top + window.scrollY - off;
-    window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+    if (scroll) {
+      const bar = document.querySelector(".appbar");
+      const off = (bar ? bar.offsetHeight : 0) + 12;
+      const y = panel.getBoundingClientRect().top + window.scrollY - off;
+      window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+    }
   }
 }
 
