@@ -3,9 +3,11 @@ const THEME_KEY = "theme";
 let state = null;
 let picks = {};
 let apodo = "";
-let authMode = "login";
+let authMode = "registro";
 let sortMode = "hora";
 let editing = false;
+let viewJornada = null;
+let currentJornada = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -440,17 +442,51 @@ function renderParticipants() {
   list.forEach((p) => {
     const card = document.createElement("div");
     card.className = "participant";
+
+    let hits = 0;
+    let played = 0;
+    if (p.picks) {
+      state.matches.forEach((m) => {
+        const pick = p.picks[m.id];
+        if (pick && m.result) {
+          played++;
+          if (pick === m.result) hits++;
+        }
+      });
+    }
+    const count = p.picks ? Object.keys(p.picks).length : 0;
+
     const head = document.createElement("div");
     head.className = "participant-head";
-    head.innerHTML = `<span class="participant-avatar">${escapeHtml(initials(p.name))}</span><span class="participant-name">${escapeHtml(
-      p.name
-    )}</span>`;
+    const av = document.createElement("span");
+    av.className = "participant-avatar";
+    av.textContent = initials(p.name);
+    const info = document.createElement("span");
+    info.className = "participant-info";
+    const nm = document.createElement("span");
+    nm.className = "participant-name";
+    nm.textContent = p.name;
+    const meta = document.createElement("span");
+    meta.className = "participant-meta";
+    meta.textContent = p.picks
+      ? `${count} pronóstico${count === 1 ? "" : "s"}${played ? ` · ${hits} acierto${hits === 1 ? "" : "s"}` : ""}`
+      : "Sin pronóstico";
+    info.appendChild(nm);
+    info.appendChild(meta);
+    head.appendChild(av);
+    head.appendChild(info);
+    if (played) {
+      const badge = document.createElement("span");
+      badge.className = "participant-badge";
+      badge.textContent = `${hits} pts`;
+      head.appendChild(badge);
+    }
     card.appendChild(head);
 
     if (!p.picks) {
       const note = document.createElement("div");
       note.className = "hidden-note";
-      note.textContent = "Pronóstico oculto hasta que empiece la jornada.";
+      note.textContent = "Sin pronóstico en esta jornada.";
       card.appendChild(note);
     } else {
       const grid = document.createElement("div");
@@ -465,6 +501,7 @@ function renderParticipants() {
         const c2 = crestEl(m.awayCrest, m.awayTla);
         c2.classList.add("pc");
         const txt = document.createElement("span");
+        txt.className = "pt";
         txt.textContent = `${m.homeTla || ""} - ${m.awayTla || ""}`;
         const val = document.createElement("span");
         val.className = "pv";
@@ -491,9 +528,20 @@ function renderPrizes() {
   });
 }
 
+function renderJornadaBar() {
+  const bar = $("jornadaBar");
+  if (!bar) return;
+  $("jView").textContent = state.matchday;
+  const isPast = currentJornada !== null && state.matchday < currentJornada;
+  $("jPrev").disabled = state.matchday <= 1;
+  $("jNext").disabled = currentJornada === null || state.matchday >= currentJornada;
+  $("jNote").classList.toggle("hidden", !isPast);
+}
+
 function renderAll() {
   updateWelcome();
   renderHeader();
+  renderJornadaBar();
   const logged = !!state.myName;
   $("authPanel").classList.toggle("hidden", logged);
   $("picksPanel").classList.toggle("hidden", !logged);
@@ -507,7 +555,9 @@ function renderAll() {
 /* ---------- Red ---------- */
 
 async function loadState() {
-  const res = await fetch(API + "/estado", { headers: { accept: "application/json" } });
+  const url = new URL(API + "/estado", location.origin);
+  if (viewJornada) url.searchParams.set("jornada", viewJornada);
+  const res = await fetch(url, { headers: { accept: "application/json" } });
   if (!res.ok) throw new Error("No se pudo cargar");
   return res.json();
 }
@@ -515,6 +565,7 @@ async function loadState() {
 async function refresh() {
   try {
     state = await loadState();
+    if (currentJornada === null && !viewJornada) currentJornada = state.matchday;
     if (state.myName) apodo = state.myName;
     picks = {};
     Object.entries(state.myPicks || {}).forEach(([k, v]) => (picks[k] = v));
@@ -681,6 +732,29 @@ $("goPlayBtn").addEventListener("click", () => {
   }
 });
 
+$("goPlayBtn2").addEventListener("click", () => {
+  if (state && !state.myName) setAuthMode("registro");
+  switchTab("miPorra");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (state && !state.myName) {
+    const n = $("authName");
+    if (n) setTimeout(() => n.focus(), 350);
+  }
+});
+
+$("jPrev").addEventListener("click", () => {
+  if (!state) return;
+  viewJornada = Math.max(1, state.matchday - 1);
+  refresh();
+});
+$("jNext").addEventListener("click", () => {
+  if (!state || !currentJornada) return;
+  if (state.matchday < currentJornada) {
+    viewJornada = state.matchday + 1;
+    refresh();
+  }
+});
+
 $("copyBtn").addEventListener("click", async () => {
   const lines = [`La Porra - Jornada ${state.matchday}`, ""];
   state.standings.forEach((s) => {
@@ -699,6 +773,7 @@ $("copyBtn").addEventListener("click", async () => {
 /* ---------- Arranque ---------- */
 
 updateWelcome();
+setAuthMode("registro");
 refresh();
 setInterval(updateCountdown, 1000);
 setInterval(refresh, 60000);

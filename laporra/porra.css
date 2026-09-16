@@ -619,38 +619,91 @@ body {
 .summary-amount { font-family: 'Space Grotesk', monospace; font-weight: 700; color: #fbbf24; font-size: 0.95rem; }
 
 /* Participantes */
-.participants { display: grid; gap: 12px; margin-top: 18px; }
+.participants { display: grid; gap: 14px; margin-top: 18px; }
 .participant {
+  position: relative;
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.025);
+  border-radius: 16px;
+  padding: 18px 18px 18px 22px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012));
+  overflow: hidden;
+  transition: border-color 0.2s ease, transform 0.2s ease;
 }
-.participant-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.participant::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 5px;
+  background: linear-gradient(180deg, #00f2fe, #8b5cf6);
+}
+.participant:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+.participant-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
 .participant-avatar {
-  width: 34px; height: 34px; border-radius: 50%;
+  width: 46px; height: 46px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem; font-weight: 700; color: #050b14;
+  font-family: 'Space Grotesk', sans-serif; font-size: 1rem; font-weight: 700; color: #050b14;
   background: linear-gradient(135deg, #00f2fe, #8b5cf6);
+  flex-shrink: 0;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
-.participant-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; }
-.participant-picks { display: flex; flex-wrap: wrap; gap: 8px; }
+.participant-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.participant-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.1rem; }
+.participant-meta { font-size: 0.78rem; color: var(--muted); }
+.participant-badge {
+  font-family: 'Space Grotesk', monospace; font-weight: 700; font-size: 0.85rem;
+  color: #050b14; background: linear-gradient(135deg, #34d399, #10b981);
+  padding: 6px 12px; border-radius: 99px;
+  flex-shrink: 0;
+}
+.participant-picks { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 8px; }
 .ppick {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 5px 10px; border-radius: 9px;
+  padding: 7px 10px; border-radius: 10px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border);
-  font-size: 0.78rem;
+  font-size: 0.76rem;
+  min-width: 0;
 }
-.ppick .pc { width: 18px; height: 18px; object-fit: contain; }
+.ppick .pc { width: 16px; height: 16px; object-fit: contain; flex-shrink: 0; }
+.ppick .pt { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
 .ppick .pv {
   font-family: 'Space Grotesk', monospace; font-weight: 700;
-  padding: 0 6px; border-radius: 5px; background: rgba(0, 242, 254, 0.15); color: var(--accent);
+  padding: 1px 8px; border-radius: 6px; background: rgba(0, 242, 254, 0.15); color: var(--accent);
+  flex-shrink: 0;
 }
 .ppick.ok { border-color: rgba(16, 185, 129, 0.5); }
 .ppick.ok .pv { background: rgba(16, 185, 129, 0.2); color: #34d399; }
 .ppick.ko { border-color: rgba(239, 68, 68, 0.45); }
 .ppick.ko .pv { background: rgba(239, 68, 68, 0.18); color: #f87171; }
+
+/* Selector de jornada */
+.jornada-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+}
+.jbtn {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+.jbtn:hover:not(:disabled) { border-color: var(--accent); transform: scale(1.08); }
+.jbtn:disabled { opacity: 0.3; cursor: not-allowed; }
+.jlabel { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.95rem; }
+.jlabel strong { color: var(--accent); }
+.jnote { font-size: 0.76rem; color: var(--amber); font-weight: 600; }
+
+.welcome-cta { margin-top: 16px; position: relative; z-index: 1; }
 .hidden-note {
   padding: 14px 16px; border-radius: 12px;
   background: rgba(148, 163, 184, 0.1);

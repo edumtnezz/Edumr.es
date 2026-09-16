@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="porra.css?v=18">
+  <link rel="stylesheet" href="porra.css?v=19">
 </head>
 <body>
   <canvas id="bgCanvas"></canvas>
@@ -54,6 +54,9 @@
       <div class="step"><span class="step-num">3</span><p>Rellena <b>todos</b> y guarda antes de que empiece el <b>primer partido</b>.</p></div>
       <div class="step"><span class="step-num">4</span><p>Gana tu <b>prima</b> según el puesto de la jornada.</p></div>
     </div>
+    <div class="welcome-cta">
+      <button class="btn-primary" id="goPlayBtn2">⚽ Crear cuenta y hacer la porra</button>
+    </div>
   </section>
 
   <main class="porra-main">
@@ -65,6 +68,14 @@
       </div>
       <div class="cd-info" id="cdInfo">Cargando la jornada…</div>
     </section>
+
+    <!-- Selector de jornada -->
+    <div class="jornada-bar" id="jornadaBar">
+      <button class="jbtn" id="jPrev" title="Jornada anterior">◀</button>
+      <span class="jlabel">Jornada <strong id="jView">–</strong></span>
+      <button class="jbtn" id="jNext" title="Jornada siguiente">▶</button>
+      <span class="jnote hidden" id="jNote">Estás viendo una jornada pasada</span>
+    </div>
 
     <!-- Pestañas -->
     <nav class="tabs" id="tabsNav">
@@ -79,15 +90,15 @@
       <!-- Acceso / registro (solo para crear o editar tu porra) -->
       <div class="panel hidden" id="authPanel">
         <div class="auth-tabs">
-          <button class="auth-tab active" data-auth="login" id="tabLogin">Entrar</button>
-          <button class="auth-tab" data-auth="registro" id="tabRegistro">Crear cuenta</button>
+          <button class="auth-tab active" data-auth="registro" id="tabRegistro">Crear cuenta</button>
+          <button class="auth-tab" data-auth="login" id="tabLogin">Ya tengo cuenta</button>
         </div>
-        <h2 id="authTitle">Entra en tu cuenta</h2>
-        <p class="muted" id="authHint">Pon tu nombre y tu código secreto de 4 o 6 números.</p>
+        <h2 id="authTitle">Crea tu cuenta</h2>
+        <p class="muted" id="authHint">Elige un nombre y un código secreto de 4 o 6 números. El código queda cifrado y nadie puede verlo.</p>
         <div class="auth-form">
           <input id="authName" type="text" maxlength="24" placeholder="Tu nombre o apodo" autocomplete="username">
-          <input id="authPin" type="password" inputmode="numeric" maxlength="6" placeholder="Código (4 o 6 números)" autocomplete="current-password">
-          <button class="btn-primary big" id="authBtn">Entrar</button>
+          <input id="authPin" type="password" inputmode="numeric" maxlength="6" placeholder="Código (4 o 6 números)" autocomplete="new-password">
+          <button class="btn-primary big" id="authBtn">Crear cuenta</button>
         </div>
         <p class="error" id="authError"></p>
       </div>
@@ -209,7 +220,7 @@
     <p>La Porra · <a href="/">EduMR.es</a></p>
   </footer>
 
-  <script src="fondo.js?v=18"></script>
-  <script src="porra.js?v=18"></script>
+  <script src="fondo.js?v=19"></script>
+  <script src="porra.js?v=19"></script>
 </body>
 </html>
