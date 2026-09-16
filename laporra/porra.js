@@ -657,6 +657,8 @@ function renderAll() {
   $("authPanel").classList.toggle("hidden", logged);
   $("picksPanel").classList.toggle("hidden", !logged);
   updateCtas();
+  const infoC = $("infoCuenta");
+  if (infoC) infoC.classList.toggle("hidden", logged);
   if (logged) renderMatches();
   if (rankMode === "global") loadGlobal();
   else {

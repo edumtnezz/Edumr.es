@@ -916,6 +916,7 @@ body {
 [data-theme="light"] .appbar { background: rgba(255, 255, 255, 0.94); }
 .appbar-inner { display: flex; flex-direction: column; gap: 10px; }
 .appbar-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.appbar-left { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
 .appbar-brand { text-decoration: none; color: var(--text); flex-shrink: 0; }
 .appbar-brand h1 {
   font-family: 'Space Grotesk', sans-serif;

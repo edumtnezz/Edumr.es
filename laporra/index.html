@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="porra.css?v=28">
+  <link rel="stylesheet" href="porra.css?v=29">
 </head>
 <body>
   <canvas id="bgCanvas"></canvas>
@@ -22,12 +22,13 @@
   <header class="appbar">
     <div class="appbar-inner">
       <div class="appbar-top">
-        <a class="appbar-brand" href="/laporra/">
-          <h1>La <span class="grad">Porra</span> LaLiga</h1>
-        </a>
-        <div class="top-right-tools">
-          <a class="top-btn" href="/" title="Ir a la web principal de EduMR">🏠 Web principal</a>
+        <div class="appbar-left">
+          <a class="appbar-brand" href="/laporra/">
+            <h1>La <span class="grad">Porra</span></h1>
+          </a>
           <div class="user-box" id="userBox"></div>
+        </div>
+        <div class="top-right-tools">
           <span class="flag-wrap">
             <img class="flag-corner" src="/img/espana.svg" alt="Bandera de España" title="España">
           </span>
@@ -173,7 +174,7 @@
       <div class="panel">
         <h2>📖 Cómo funciona La Porra</h2>
 
-        <div class="info-block">
+        <div class="info-block" id="infoCuenta">
           <h3>1. Crea tu cuenta</h3>
           <p>Escribe tu <strong>nombre o apodo</strong> y elige un <strong>código secreto de 4 o 6 números</strong>. Con ese nombre y código entras siempre. No hay correos ni contraseñas.</p>
           <p class="muted">La cuenta es <strong>solo</strong> para crear o editar tu porra. Ver la clasificación, los participantes o estas instrucciones <strong>no necesita cuenta</strong>.</p>
@@ -224,7 +225,7 @@
     <p>La Porra · <a href="/">EduMR.es</a></p>
   </footer>
 
-  <script src="fondo.js?v=28"></script>
-  <script src="porra.js?v=28"></script>
+  <script src="fondo.js?v=29"></script>
+  <script src="porra.js?v=29"></script>
 </body>
 </html>
