@@ -1,4 +1,4 @@
-const API = "/api/laporra";
+const API = "/api/laquiniela";
 const THEME_KEY = "theme";
 let state = null;
 let picks = {};
@@ -55,14 +55,14 @@ function updateWelcome() {
   g.textContent = `Con permiso, ¡${saludo}${name ? ", " + name : ""}!`;
   if (s) {
     s.textContent = name
-      ? "Aquí tienes tu porra: elige 1, X o 2 en cada partido y guárdala antes de que empiece el primer partido."
-      : "Juega la porra de LaLiga con tus compañeros. Es rápido y gratis.";
+      ? "Aquí tienes tu quiniela: elige 1, X o 2 en cada partido y guárdala antes de que empiece el primer partido."
+      : "Juega la quiniela de LaLiga con tus compañeros. Es rápido y gratis.";
   }
   const steps = $("welcomeSteps");
   if (steps) {
     let seen = false;
     try {
-      seen = localStorage.getItem("porra_seen") === "1";
+      seen = localStorage.getItem("quiniela_seen") === "1";
     } catch (e) {}
     steps.classList.toggle("hidden", seen);
   }
@@ -70,7 +70,7 @@ function updateWelcome() {
 
 function markSeen() {
   try {
-    localStorage.setItem("porra_seen", "1");
+    localStorage.setItem("quiniela_seen", "1");
   } catch (e) {}
   const steps = $("welcomeSteps");
   if (steps) steps.classList.add("hidden");
@@ -687,17 +687,17 @@ function updateSaveFab() {
   const fab = $("saveFab");
   if (!fab) return;
   const active = document.querySelector(".tab.active");
-  const onMiPorra = active && active.dataset.tab === "miPorra";
-  const show = !!(state && state.myName && state.openCount > 0 && editing && onMiPorra);
+  const onMiQuiniela = active && active.dataset.tab === "miQuiniela";
+  const show = !!(state && state.myName && state.openCount > 0 && editing && onMiQuiniela);
   fab.classList.toggle("hidden", !show);
 }
 
 function updateCtas() {
   const logged = !!(state && state.myName);
   const cta = $("goPlayBtn2");
-  if (cta) cta.textContent = logged ? "Ir a mi porra" : "Crear cuenta y hacer la porra";
+  if (cta) cta.textContent = logged ? "Ir a mi quiniela" : "Crear cuenta y hacer la quiniela";
   const cta1 = $("goPlayBtn");
-  if (cta1) cta1.textContent = logged ? "Ir a mi porra" : "Crear cuenta y hacer la porra";
+  if (cta1) cta1.textContent = logged ? "Ir a mi quiniela" : "Crear cuenta y hacer la quiniela";
 }
 
 function renderAll() {
@@ -772,7 +772,7 @@ async function submitAuth() {
     if (!res.ok) throw new Error(data.error || "No se pudo completar");
     $("authPin").value = "";
     await refresh();
-    switchTab("miPorra");
+    switchTab("miQuiniela");
   } catch (e) {
     err.textContent = e.message;
   } finally {
@@ -887,7 +887,7 @@ function goToCreateAccount() {
   markSeen();
   const logged = !!(state && state.myName);
   if (!logged) setAuthMode("registro");
-  switchTab("miPorra");
+  switchTab("miQuiniela");
   setTimeout(() => {
     const target = logged ? $("picksPanel") : $("authPanel");
     if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -934,7 +934,7 @@ $("jNext").addEventListener("click", () => {
 });
 
 $("copyBtn").addEventListener("click", async () => {
-  const lines = [`La Porra - Jornada ${state.matchday}`, ""];
+  const lines = [`La Quiniela - Jornada ${state.matchday}`, ""];
   state.standings.forEach((s) => {
     lines.push(`${s.rank}. ${s.name} — ${s.hits} aciertos — prima ${money(s.prize)}`);
   });

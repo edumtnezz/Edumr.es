@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>La Porra LaLiga · EduMR</title>
-  <meta name="description" content="La Porra de LaLiga (1X2) entre compañeros. Pronostica, acierta y gana tu prima.">
+  <title>La Quiniela LaLiga · EduMR</title>
+  <meta name="description" content="La Quiniela de LaLiga (1X2) entre compañeros. Pronostica, acierta y gana tu prima.">
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#07090e">
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="porra.css?v=33">
+  <link rel="stylesheet" href="quiniela.css?v=34">
 </head>
 <body>
   <canvas id="bgCanvas"></canvas>
@@ -23,8 +23,8 @@
     <div class="appbar-inner">
       <div class="appbar-top">
         <div class="appbar-left">
-          <a class="appbar-brand" href="/laporra/">
-            <h1>La <span class="grad">Porra</span></h1>
+          <a class="appbar-brand" href="/laquiniela/">
+            <h1>La <span class="grad">Quiniela</span></h1>
           </a>
           <div class="user-box" id="userBox"></div>
         </div>
@@ -39,7 +39,7 @@
         </div>
       </div>
       <nav class="tabs" id="tabsNav">
-        <button class="tab" data-tab="miPorra">Mi porra</button>
+        <button class="tab" data-tab="miQuiniela">Mi quiniela</button>
         <button class="tab" data-tab="clasificacion">Clasificación</button>
         <button class="tab" data-tab="participantes">Participantes</button>
         <button class="tab active" data-tab="instrucciones">Instrucciones</button>
@@ -63,13 +63,13 @@
       <div class="step"><span class="step-num">4</span><p>Gana tu <b>prima</b> según el puesto de la jornada.</p></div>
     </div>
     <div class="welcome-actions">
-      <button class="btn-primary" id="goPlayBtn2">Crear cuenta y hacer la porra</button>
+      <button class="btn-primary" id="goPlayBtn2">Crear cuenta y hacer la quiniela</button>
       <button class="btn-ghost" id="howToBtn">¿Cómo se juega?</button>
     </div>
     <p class="tip">Arriba a la derecha puedes cambiar entre <b>modo oscuro y claro</b> cuando quieras.</p>
   </section>
 
-  <main class="porra-main">
+  <main class="quiniela-main">
     <!-- Jornada + contador -->
     <section class="jornada-card" id="countdownPanel">
       <button class="jbtn" id="jPrev" title="Jornada anterior">◀</button>
@@ -84,9 +84,9 @@
       <button class="jbtn" id="jNext" title="Jornada siguiente">▶</button>
     </section>
 
-    <!-- Mi porra -->
-    <section class="tab-panel hidden" id="tab-miPorra">
-      <!-- Acceso / registro (solo para crear o editar tu porra) -->
+    <!-- Mi quiniela -->
+    <section class="tab-panel hidden" id="tab-miQuiniela">
+      <!-- Acceso / registro (solo para crear o editar tu quiniela) -->
       <div class="panel hidden" id="authPanel">
         <div class="auth-tabs">
           <button class="auth-tab active" data-auth="registro" id="tabRegistro">Crear cuenta</button>
@@ -173,7 +173,7 @@
         <div class="info-block" id="infoCuenta">
           <h3>1. Crea tu cuenta</h3>
           <p>Escribe tu <strong>nombre o apodo</strong> y elige un <strong>código secreto de 4 o 6 números</strong>. Con ese nombre y código entras siempre. No hay correos ni contraseñas.</p>
-          <p class="muted">La cuenta es <strong>solo</strong> para crear o editar tu porra. Ver la clasificación, los participantes o estas instrucciones <strong>no necesita cuenta</strong>.</p>
+          <p class="muted">La cuenta es <strong>solo</strong> para crear o editar tu quiniela. Ver la clasificación, los participantes o estas instrucciones <strong>no necesita cuenta</strong>.</p>
         </div>
 
         <div class="info-block">
@@ -182,7 +182,7 @@
         </div>
 
         <div class="info-block">
-          <h3>3. Haz tu porra</h3>
+          <h3>3. Haz tu quiniela</h3>
           <p>En cada partido elige <strong>1</strong> (gana el local), <strong>X</strong> (empate) o <strong>2</strong> (gana el visitante). Debes rellenar <strong>todos</strong> los partidos: si te falta alguno, no te dejará guardar y te llevará al que falta.</p>
           <p>Debajo de cada escudo verás la forma del equipo (sus <strong>5 últimos partidos</strong>): <b>V</b> victoria, <b>E</b> empate, <b>D</b> derrota, y <b>C</b> si jugó en casa o <b>F</b> si jugó fuera. Se leen de <strong>izquierda (más antiguo) a derecha (más reciente)</strong>, y la flecha <b>→</b> marca el lado del partido más reciente.</p>
         </div>
@@ -211,7 +211,7 @@
 
         <div class="cta-block">
           <p class="cta-title">¿Listo para jugar?</p>
-          <button class="btn-primary big" id="goPlayBtn">Crear mi cuenta y hacer la porra</button>
+          <button class="btn-primary big" id="goPlayBtn">Crear mi cuenta y hacer la quiniela</button>
         </div>
       </div>
     </section>
@@ -219,11 +219,11 @@
 
   <button class="save-fab hidden" id="saveFab">Guardar pronósticos</button>
 
-  <footer class="porra-footer">
-    <p>La Porra · <a href="/">EduMR.es</a></p>
+  <footer class="quiniela-footer">
+    <p>La Quiniela · <a href="/">EduMR.es</a></p>
   </footer>
 
-  <script src="fondo.js?v=33"></script>
-  <script src="porra.js?v=33"></script>
+  <script src="fondo.js?v=34"></script>
+  <script src="quiniela.js?v=34"></script>
 </body>
 </html>
