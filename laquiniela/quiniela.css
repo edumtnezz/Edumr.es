@@ -412,21 +412,23 @@ body {
 .match-info { min-width: 0; width: 100%; }
 .match-teams {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   justify-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 .team {
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   min-width: 0;
   flex-wrap: wrap;
+  max-width: 100%;
 }
 .team-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.team.away .team-main { flex-direction: row-reverse; }
+.team.away { flex-direction: row-reverse; }
 .tname {
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 600;
