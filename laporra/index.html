@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="porra.css?v=10">
+  <link rel="stylesheet" href="porra.css?v=11">
 </head>
 <body>
   <a class="back-link" href="/">← Volver a EduMR.es</a>
@@ -23,11 +23,35 @@
       <span class="ball">⚽</span>
       <div>
         <h1>La <span class="grad">Porra</span> LaLiga</h1>
-        <p class="porra-sub">Jornada <strong id="jornadaNum">–</strong> · 1 acierto = 1 punto</p>
+        <p class="porra-sub">🏆 Jornada <strong id="jornadaNum">–</strong> · 1 acierto = 1 punto</p>
       </div>
     </div>
-    <div class="user-box" id="userBox"></div>
+    <div class="header-tools">
+      <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema" title="Modo claro / oscuro">
+        <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <div class="user-box" id="userBox"></div>
+    </div>
   </header>
+
+  <!-- Bienvenida -->
+  <section class="welcome" id="welcomePanel">
+    <div class="welcome-top">
+      <span class="welcome-ball">⚽</span>
+      <div>
+        <h2 id="welcomeGreeting">Con permiso…</h2>
+        <p class="welcome-sub" id="welcomeSub"></p>
+      </div>
+      <span class="welcome-trophy">🏆</span>
+    </div>
+    <div class="welcome-steps">
+      <div class="step"><span class="step-num">1</span><p>Crea tu cuenta con tu <b>nombre</b> y un <b>código de 4 o 6 números</b>.</p></div>
+      <div class="step"><span class="step-num">2</span><p>En cada partido elige <b>1</b>, <b>X</b> o <b>2</b>.</p></div>
+      <div class="step"><span class="step-num">3</span><p>Rellena <b>todos</b> y guarda antes de que empiece el <b>primer partido</b>.</p></div>
+      <div class="step"><span class="step-num">4</span><p>Gana tu <b>prima</b> según el puesto de la jornada.</p></div>
+    </div>
+  </section>
 
   <main class="porra-main">
     <!-- Contador -->
@@ -58,10 +82,10 @@
 
     <!-- Pestañas -->
     <nav class="tabs hidden" id="tabsNav">
-      <button class="tab active" data-tab="miPorra">Mi porra</button>
-      <button class="tab" data-tab="clasificacion">Clasificación</button>
-      <button class="tab" data-tab="participantes">Participantes</button>
-      <button class="tab" data-tab="instrucciones">Instrucciones</button>
+      <button class="tab active" data-tab="miPorra">🎯 Mi porra</button>
+      <button class="tab" data-tab="clasificacion">🏆 Clasificación</button>
+      <button class="tab" data-tab="participantes">👥 Participantes</button>
+      <button class="tab" data-tab="instrucciones">📖 Instrucciones</button>
     </nav>
 
     <!-- Mi porra -->
@@ -69,7 +93,7 @@
       <div class="panel">
         <div class="picks-head">
           <div>
-            <h2>Tus pronósticos</h2>
+            <h2>🎯 Tus pronósticos</h2>
             <p class="muted" id="picksHint">Elige 1, X o 2 en cada partido.</p>
           </div>
           <div class="picks-tools">
@@ -95,7 +119,7 @@
       <div class="panel">
         <div class="panel-head">
           <div>
-            <h2>Clasificación</h2>
+            <h2>🏆 Clasificación</h2>
             <p class="muted" id="rankingHint">Prima según el puesto final de la jornada.</p>
           </div>
           <span class="pulse-chip" id="playersChip">0 jugadores</span>
@@ -119,7 +143,7 @@
     <!-- Participantes -->
     <section class="tab-panel hidden" id="tab-participantes">
       <div class="panel">
-        <h2>Participantes y sus pronósticos</h2>
+        <h2>👥 Participantes y sus pronósticos</h2>
         <p class="muted" id="participantsHint"></p>
         <div class="participants" id="participantsList"></div>
       </div>
@@ -128,7 +152,7 @@
     <!-- Instrucciones -->
     <section class="tab-panel hidden" id="tab-instrucciones">
       <div class="panel">
-        <h2>Cómo funciona La Porra</h2>
+        <h2>📖 Cómo funciona La Porra</h2>
 
         <div class="info-block">
           <h3>1. Crea tu cuenta</h3>
@@ -174,6 +198,6 @@
     <p>La Porra · <a href="/">EduMR.es</a></p>
   </footer>
 
-  <script src="porra.js?v=10"></script>
+  <script src="porra.js?v=11"></script>
 </body>
 </html>

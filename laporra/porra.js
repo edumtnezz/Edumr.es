@@ -1,4 +1,5 @@
 const API = "/api/laporra";
+const THEME_KEY = "porra_theme";
 let state = null;
 let picks = {};
 let apodo = "";
@@ -7,6 +8,45 @@ let sortMode = "hora";
 let editing = false;
 
 const $ = (id) => document.getElementById(id);
+
+/* ---------- Tema claro / oscuro ---------- */
+
+function applyTheme(t) {
+  document.documentElement.setAttribute("data-theme", t);
+  try {
+    localStorage.setItem(THEME_KEY, t);
+  } catch (e) {}
+}
+
+(function initTheme() {
+  let saved = null;
+  try {
+    saved = localStorage.getItem(THEME_KEY);
+  } catch (e) {}
+  const prefersLight =
+    window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+  applyTheme(saved || (prefersLight ? "light" : "dark"));
+})();
+
+/* ---------- Saludo ---------- */
+
+function updateWelcome() {
+  const h = new Date().getHours();
+  let saludo;
+  if (h >= 6 && h < 12) saludo = "buenos días";
+  else if (h >= 12 && h < 21) saludo = "buenas tardes";
+  else saludo = "buenas noches";
+  const name = state && state.myName ? state.myName : null;
+  const g = $("welcomeGreeting");
+  const s = $("welcomeSub");
+  if (!g) return;
+  g.textContent = `Con permiso, ¡${saludo}${name ? ", " + name : ""}!`;
+  if (s) {
+    s.textContent = name
+      ? "Aquí tienes tu porra: elige 1, X o 2 en cada partido y guárdala antes de que empiece el primer partido. 🥅"
+      : "Bienvenido a La Porra de LaLiga. Crea tu cuenta y juega con tus compañeros. Aquí abajo tienes cómo se juega. 🥅";
+  }
+}
 
 function escapeHtml(s) {
   return String(s == null ? "" : s)
@@ -429,6 +469,7 @@ function renderPrizes() {
 }
 
 function renderAll() {
+  updateWelcome();
   renderHeader();
   const logged = !!state.myName;
   $("authPanel").classList.toggle("hidden", logged);
@@ -607,6 +648,11 @@ $("cancelBtn").addEventListener("click", () => {
 
 $("saveBtn").addEventListener("click", save);
 
+$("themeToggle").addEventListener("click", () => {
+  const cur = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+  applyTheme(cur === "light" ? "dark" : "light");
+});
+
 $("copyBtn").addEventListener("click", async () => {
   const lines = [`La Porra - Jornada ${state.matchday}`, ""];
   state.standings.forEach((s) => {
@@ -624,6 +670,7 @@ $("copyBtn").addEventListener("click", async () => {
 
 /* ---------- Arranque ---------- */
 
+updateWelcome();
 refresh();
 setInterval(updateCountdown, 1000);
 setInterval(refresh, 60000);

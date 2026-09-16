@@ -4,7 +4,7 @@ const FORM_TTL_MS = 10 * 60 * 1000;
 const SESSION_TTL = 60 * 60 * 24 * 60;
 const COOKIE_NAME = "porra_session";
 const PBKDF2_ITER = 100000;
-const MAX_LOGIN_FAILS = 10;
+const MAX_LOGIN_FAILS = 3;
 const PREMIOS = [1200000, 1000000, 800000, 600000, 400000, 200000];
 
 function json(data, status = 200, extraHeaders = {}) {
@@ -57,8 +57,12 @@ function normName(v) {
   return String(v || "").trim().replace(/\s+/g, " ").slice(0, 24);
 }
 
+function stripAccents(s) {
+  return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
 function nameKey(v) {
-  return normName(v).toLowerCase();
+  return stripAccents(normName(v)).toLowerCase();
 }
 
 function validName(v) {
