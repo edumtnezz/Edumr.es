@@ -616,24 +616,22 @@ function switchTab(name) {
 
 /* ---------- Eventos ---------- */
 
-$("tabLogin").addEventListener("click", () => {
-  authMode = "login";
-  $("tabLogin").classList.add("active");
-  $("tabRegistro").classList.remove("active");
-  $("authTitle").textContent = "Entra en tu cuenta";
-  $("authHint").textContent = "Pon tu nombre y tu código secreto de 4 o 6 números.";
-  $("authBtn").textContent = "Entrar";
+function setAuthMode(mode) {
+  authMode = mode;
+  const isLogin = mode === "login";
+  $("tabLogin").classList.toggle("active", isLogin);
+  $("tabRegistro").classList.toggle("active", !isLogin);
+  $("authTitle").textContent = isLogin ? "Entra en tu cuenta" : "Crea tu cuenta";
+  $("authHint").textContent = isLogin
+    ? "Pon tu nombre y tu código secreto de 4 o 6 números."
+    : "Elige un nombre y un código secreto de 4 o 6 números. El código queda cifrado y nadie puede verlo.";
+  $("authBtn").textContent = isLogin ? "Entrar" : "Crear cuenta";
+  $("authPin").setAttribute("autocomplete", isLogin ? "current-password" : "new-password");
   $("authError").textContent = "";
-});
-$("tabRegistro").addEventListener("click", () => {
-  authMode = "registro";
-  $("tabRegistro").classList.add("active");
-  $("tabLogin").classList.remove("active");
-  $("authTitle").textContent = "Crea tu cuenta";
-  $("authHint").textContent = "Elige un nombre y un código secreto de 4 o 6 números. El código queda cifrado y nadie puede verlo.";
-  $("authBtn").textContent = "Crear cuenta";
-  $("authError").textContent = "";
-});
+}
+
+$("tabLogin").addEventListener("click", () => setAuthMode("login"));
+$("tabRegistro").addEventListener("click", () => setAuthMode("registro"));
 $("authBtn").addEventListener("click", submitAuth);
 $("authPin").addEventListener("keydown", (e) => {
   if (e.key === "Enter") submitAuth();
@@ -674,6 +672,7 @@ $("themeToggle").addEventListener("click", () => {
 });
 
 $("goPlayBtn").addEventListener("click", () => {
+  if (state && !state.myName) setAuthMode("registro");
   switchTab("miPorra");
   window.scrollTo({ top: 0, behavior: "smooth" });
   if (state && !state.myName) {
