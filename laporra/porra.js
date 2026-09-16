@@ -117,16 +117,27 @@ function formEl(list) {
     wrap.appendChild(e);
     return wrap;
   }
-  list.forEach((f) => {
-    const el = document.createElement("span");
-    el.className = "f " + (f.r === "V" ? "v" : f.r === "E" ? "e" : "d");
-    el.textContent = f.r;
-    const i = document.createElement("i");
-    i.textContent = f.home ? "C" : "F";
-    i.title = f.home ? "en casa" : "fuera";
-    el.appendChild(i);
-    wrap.appendChild(el);
-  });
+  list
+    .slice()
+    .reverse()
+    .forEach((f) => {
+      const el = document.createElement("span");
+      el.className = "f " + (f.r === "V" ? "v" : f.r === "E" ? "e" : "d");
+      el.textContent = f.r;
+      const i = document.createElement("i");
+      i.textContent = f.home ? "C" : "F";
+      i.title = f.home ? "jugó en casa" : "jugó fuera";
+      el.appendChild(i);
+      el.title = `${f.r === "V" ? "Victoria" : f.r === "E" ? "Empate" : "Derrota"}${
+        f.home ? " en casa" : " fuera"
+      }`;
+      wrap.appendChild(el);
+    });
+  const arrow = document.createElement("span");
+  arrow.className = "form-arrow";
+  arrow.textContent = "→";
+  arrow.title = "la flecha señala el partido más reciente";
+  wrap.appendChild(arrow);
   return wrap;
 }
 
@@ -231,6 +242,10 @@ function renderMatches() {
   const matches = state.matches.slice();
   if (sortMode === "local") matches.sort((a, b) => a.home.localeCompare(b.home));
   else if (sortMode === "visitante") matches.sort((a, b) => a.away.localeCompare(b.away));
+  else if (sortMode === "porjugar")
+    matches.sort(
+      (a, b) => (a.result ? 1 : 0) - (b.result ? 1 : 0) || new Date(a.utcDate) - new Date(b.utcDate)
+    );
   else matches.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
 
   matches.forEach((m) => {
@@ -473,13 +488,8 @@ function renderAll() {
   renderHeader();
   const logged = !!state.myName;
   $("authPanel").classList.toggle("hidden", logged);
-  $("tabsNav").classList.toggle("hidden", !logged);
-  if (!logged) {
-    $("countdownPanel").classList.remove("hidden");
-    renderPrizes();
-    return;
-  }
-  renderMatches();
+  $("picksPanel").classList.toggle("hidden", !logged);
+  if (logged) renderMatches();
   renderRanking();
   renderSummary();
   renderParticipants();

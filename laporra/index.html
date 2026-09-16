@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="porra.css?v=12">
+  <link rel="stylesheet" href="porra.css?v=13">
 </head>
 <body>
   <canvas id="bgCanvas"></canvas>
@@ -64,25 +64,8 @@
       <div class="cd-info" id="cdInfo">Cargando la jornada…</div>
     </section>
 
-    <!-- Acceso / registro -->
-    <section class="panel hidden" id="authPanel">
-      <div class="auth-tabs">
-        <button class="auth-tab active" data-auth="login" id="tabLogin">Entrar</button>
-        <button class="auth-tab" data-auth="registro" id="tabRegistro">Crear cuenta</button>
-      </div>
-      <h2 id="authTitle">Entra en tu cuenta</h2>
-      <p class="muted" id="authHint">Pon tu nombre y tu código secreto de 4 o 6 números.</p>
-      <div class="auth-form">
-        <input id="authName" type="text" maxlength="24" placeholder="Tu nombre o apodo" autocomplete="username">
-        <input id="authPin" type="password" inputmode="numeric" maxlength="6" placeholder="Código (4 o 6 números)" autocomplete="current-password">
-        <button class="btn-primary big" id="authBtn">Entrar</button>
-      </div>
-      <p class="error" id="authError"></p>
-      <p class="muted small" id="authNote"></p>
-    </section>
-
     <!-- Pestañas -->
-    <nav class="tabs hidden" id="tabsNav">
+    <nav class="tabs" id="tabsNav">
       <button class="tab active" data-tab="miPorra">🎯 Mi porra</button>
       <button class="tab" data-tab="clasificacion">🏆 Clasificación</button>
       <button class="tab" data-tab="participantes">👥 Participantes</button>
@@ -91,7 +74,23 @@
 
     <!-- Mi porra -->
     <section class="tab-panel" id="tab-miPorra">
-      <div class="panel">
+      <!-- Acceso / registro (solo para crear o editar tu porra) -->
+      <div class="panel hidden" id="authPanel">
+        <div class="auth-tabs">
+          <button class="auth-tab active" data-auth="login" id="tabLogin">Entrar</button>
+          <button class="auth-tab" data-auth="registro" id="tabRegistro">Crear cuenta</button>
+        </div>
+        <h2 id="authTitle">Entra en tu cuenta</h2>
+        <p class="muted" id="authHint">Pon tu nombre y tu código secreto de 4 o 6 números.</p>
+        <div class="auth-form">
+          <input id="authName" type="text" maxlength="24" placeholder="Tu nombre o apodo" autocomplete="username">
+          <input id="authPin" type="password" inputmode="numeric" maxlength="6" placeholder="Código (4 o 6 números)" autocomplete="current-password">
+          <button class="btn-primary big" id="authBtn">Entrar</button>
+        </div>
+        <p class="error" id="authError"></p>
+      </div>
+
+      <div class="panel" id="picksPanel">
         <div class="picks-head">
           <div>
             <h2>🎯 Tus pronósticos</h2>
@@ -100,12 +99,14 @@
           <div class="picks-tools">
             <select id="sortSelect" class="select">
               <option value="hora">Orden: por hora</option>
+              <option value="porjugar">Orden: por jugar primero</option>
               <option value="local">Orden: equipo local (A-Z)</option>
               <option value="visitante">Orden: equipo visitante (A-Z)</option>
             </select>
             <button class="btn-ghost" id="editBtn">Editar</button>
           </div>
         </div>
+        <p class="legend">Forma de cada equipo (5 últimos): <b>V</b> victoria · <b>E</b> empate · <b>D</b> derrota · <b>C</b> en casa · <b>F</b> fuera. Se leen de <b>izquierda (más antiguo)</b> a <b>derecha (más reciente)</b>.</p>
         <div class="match-list" id="matchList"></div>
         <div class="save-row">
           <button class="btn-primary big" id="saveBtn">Guardar pronósticos</button>
@@ -158,6 +159,7 @@
         <div class="info-block">
           <h3>1. Crea tu cuenta</h3>
           <p>Escribe tu <strong>nombre o apodo</strong> y elige un <strong>código secreto de 4 o 6 números</strong>. Con ese nombre y código entras siempre. No hay correos ni contraseñas.</p>
+          <p class="muted">La cuenta es <strong>solo</strong> para crear o editar tu porra. Ver la clasificación, los participantes o estas instrucciones <strong>no necesita cuenta</strong>.</p>
         </div>
 
         <div class="info-block">
@@ -167,7 +169,8 @@
 
         <div class="info-block">
           <h3>3. Haz tu porra</h3>
-          <p>En cada partido elige <strong>1</strong> (gana el local), <strong>X</strong> (empate) o <strong>2</strong> (gana el visitante). Debes rellenar <strong>todos</strong> los partidos: si te falta alguno, no te dejará guardar y te llevará al que falta. Debajo de cada escudo verás los <strong>últimos 5 partidos</strong> del equipo (V = victoria, E = empate, D = derrota) y si jugó en casa o fuera.</p>
+          <p>En cada partido elige <strong>1</strong> (gana el local), <strong>X</strong> (empate) o <strong>2</strong> (gana el visitante). Debes rellenar <strong>todos</strong> los partidos: si te falta alguno, no te dejará guardar y te llevará al que falta.</p>
+          <p>Debajo de cada escudo verás la forma del equipo (sus <strong>5 últimos partidos</strong>): <b>V</b> victoria, <b>E</b> empate, <b>D</b> derrota, y <b>C</b> si jugó en casa o <b>F</b> si jugó fuera. Se leen de <strong>izquierda (más antiguo) a derecha (más reciente)</strong>, y la flecha <b>→</b> marca el lado del partido más reciente.</p>
         </div>
 
         <div class="info-block">
@@ -199,7 +202,7 @@
     <p>La Porra · <a href="/">EduMR.es</a></p>
   </footer>
 
-  <script src="fondo.js?v=12"></script>
-  <script src="porra.js?v=12"></script>
+  <script src="fondo.js?v=13"></script>
+  <script src="porra.js?v=13"></script>
 </body>
 </html>

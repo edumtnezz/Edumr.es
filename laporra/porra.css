@@ -340,6 +340,19 @@ body {
   border: 1px solid var(--border);
 }
 .form-empty { font-size: 0.68rem; color: var(--muted); }
+.form-arrow { color: var(--muted); font-weight: 700; font-size: 0.8rem; align-self: center; margin-left: 3px; }
+
+.legend {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  line-height: 1.5;
+}
+.legend b { color: var(--text); }
 
 .match-meta {
   font-size: 0.78rem; color: var(--muted);
