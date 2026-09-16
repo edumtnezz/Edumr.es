@@ -30,7 +30,7 @@ function resultFromScore(score) {
   return "X";
 }
 
-function mockJornada(matchday, finished) {
+function mockJornada(matchday) {
   const teams = [
     [["Real Madrid", 86], ["Barcelona", 81]],
     [["Atlético de Madrid", 78], ["Sevilla", 559]],
@@ -45,26 +45,15 @@ function mockJornada(matchday, finished) {
   ];
   const now = Date.now();
   const day = 24 * 60 * 60 * 1000;
-  const hour = 60 * 60 * 1000;
-  const base = finished ? now - 6 * day : now + day;
-  const official = ["1", "X", "2", "1", "2", "X", "1", "1", "X", "2"];
+  const base = now + day;
   const matches = teams.map((t, i) => {
     const utcDate = new Date(base + i * (day * 0.7));
-    const started = utcDate.getTime() <= now;
-    const isFinished = finished && started && utcDate.getTime() < now - 2 * hour;
-    let score = { fullTime: { home: null, away: null } };
-    if (isFinished) {
-      const r = official[i];
-      if (r === "1") score = { fullTime: { home: 2, away: 0 } };
-      else if (r === "2") score = { fullTime: { home: 1, away: 2 } };
-      else score = { fullTime: { home: 1, away: 1 } };
-    }
     const home = t[0];
     const away = t[1];
     return {
       id: 9000 + matchday * 10 + i,
       utcDate: utcDate.toISOString(),
-      status: isFinished ? "FINISHED" : started ? "IN_PLAY" : "SCHEDULED",
+      status: "SCHEDULED",
       homeTeam: {
         name: home[0],
         shortName: home[0],
@@ -77,10 +66,10 @@ function mockJornada(matchday, finished) {
         tla: away[0].split(" ")[0].slice(0, 3).toUpperCase(),
         crest: `https://crests.football-data.org/${away[1]}.png`,
       },
-      score,
+      score: { fullTime: { home: null, away: null } },
     };
   });
-  return { matchday, source: finished ? "mock-demo" : "mock", matches };
+  return { matchday, source: "mock", matches };
 }
 
 async function fetchMatchday(headers, md) {
@@ -156,22 +145,20 @@ async function fetchFootballData(env, matchday) {
   return { matchday: md, source: "football-data", matches };
 }
 
-async function getJornada(env, matchday, demo) {
+async function getJornada(env, matchday) {
   const kv = env.PORRA;
-  const cacheKey = `jornada:${matchday || "current"}:${demo ? "demo" : "live"}`;
+  const cacheKey = `jornada:${matchday || "current"}`;
   const raw = await kv.get(cacheKey, "json");
   if (raw && raw.fetchedAt && Date.now() - raw.fetchedAt < CACHE_TTL_MS) {
     return raw.data;
   }
   let data = null;
-  if (!demo) {
-    try {
-      data = await fetchFootballData(env, matchday);
-    } catch (e) {
-      data = null;
-    }
+  try {
+    data = await fetchFootballData(env, matchday);
+  } catch (e) {
+    data = null;
   }
-  if (!data) data = mockJornada(matchday || 1, !!demo);
+  if (!data) data = mockJornada(matchday || 1);
   await kv.put(cacheKey, JSON.stringify({ fetchedAt: Date.now(), data }), {
     expirationTtl: 600,
   });
@@ -183,27 +170,7 @@ async function getConfig(env) {
   return raw || {};
 }
 
-async function getPredictions(env, matchday, demo) {
-  if (demo) {
-    const seed = {
-      edu: {
-        __name: "Edu",
-        9010: "1", 9011: "X", 9012: "2", 9013: "1", 9014: "2",
-        9015: "X", 9016: "1", 9017: "1", 9018: "X", 9019: "2",
-      },
-      jasmin: {
-        __name: "Jasmin",
-        9010: "1", 9011: "1", 9012: "2", 9013: "2", 9014: "2",
-        9015: "1", 9016: "X", 9017: "1", 9018: "X", 9019: "1",
-      },
-      "j m": {
-        __name: "J M",
-        9010: "2", 9011: "X", 9012: "1", 9013: "1", 9014: "X",
-        9015: "X", 9016: "1", 9017: "2", 9018: "1", 9019: "2",
-      },
-    };
-    return seed;
-  }
+async function getPredictions(env, matchday) {
   const raw = await env.PORRA.get(`pred:${matchday}`, "json");
   return raw || {};
 }
@@ -224,12 +191,12 @@ function lockTimeOf(matches) {
   return min;
 }
 
-async function buildState(env, matchday, apodo, demo) {
-  const jornada = await getJornada(env, matchday, demo);
+async function buildState(env, matchday, apodo) {
+  const jornada = await getJornada(env, matchday);
   const matches = jornada.matches || [];
   const lock = lockTimeOf(matches);
   const locked = lock !== null && Date.now() >= lock;
-  const preds = await getPredictions(env, jornada.matchday, demo);
+  const preds = await getPredictions(env, jornada.matchday);
 
   const results = {};
   for (const m of matches) {
@@ -327,10 +294,9 @@ export async function onRequestGet({ request, env, params }) {
   const path = (params.path || []).join("/");
   const matchday = url.searchParams.get("jornada");
   const apodo = url.searchParams.get("apodo");
-  const demo = url.searchParams.get("demo") === "1";
 
   if (path === "state" || path === "") {
-    const state = await buildState(env, matchday, apodo, demo);
+    const state = await buildState(env, matchday, apodo);
     return json(state);
   }
   return json({ error: "not found" }, 404);

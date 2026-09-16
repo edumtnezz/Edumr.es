@@ -1,6 +1,10 @@
 const API = "/api/futmondo";
 const STORAGE_KEY = "porra_apodo";
 
+if (new URLSearchParams(location.search).has("demo")) {
+  history.replaceState(null, "", location.pathname);
+}
+
 let state = null;
 let apodo = localStorage.getItem(STORAGE_KEY) || "";
 let picks = {};
