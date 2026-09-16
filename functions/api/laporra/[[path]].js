@@ -501,8 +501,52 @@ async function buildState(env, matchday, user) {
   };
 }
 
-/* ---------- Handlers ---------- */
+async function buildGlobal(env) {
+  const cur = (await getJornada(env, null)).matchday || 1;
+  const maxJ = Math.min(cur, 38);
+  const players = {};
+  const jornadas = [];
+  for (let j = 1; j <= maxJ; j++) {
+    const preds = await getPredictions(env, j);
+    const keys = Object.keys(preds);
+    if (!keys.length) continue;
+    const jornada = await getJornada(env, j);
+    const results = {};
+    for (const m of jornada.matches || []) {
+      const r = resultFromScore(m.score);
+      if (r) results[m.id] = r;
+    }
+    jornadas.push(j);
+    for (const key of keys) {
+      const entry = preds[key];
+      const picks = entry.picks || {};
+      let hits = 0;
+      let played = 0;
+      for (const m of jornada.matches || []) {
+        const p = picks[m.id];
+        if (!p || !results[m.id]) continue;
+        played++;
+        if (p === results[m.id]) hits++;
+      }
+      if (!players[key]) {
+        players[key] = { key, name: entry.name || key, total: 0, played: 0, byJornada: {}, jornadas: 0 };
+      }
+      players[key].total += hits;
+      players[key].played += played;
+      players[key].byJornada[j] = hits;
+      players[key].jornadas++;
+    }
+  }
+  const standings = Object.values(players).sort(
+    (a, b) => b.total - a.total || a.name.localeCompare(b.name)
+  );
+  standings.forEach((s, i) => {
+    s.rank = i + 1;
+  });
+  return { current: cur, jornadas, standings };
+}
 
+/* ---------- Handlers ---------- */
 async function handleRegistro(request, env) {
   let body;
   try {
@@ -632,6 +676,10 @@ export async function onRequestGet({ request, env, params }) {
     const reqJornada = url.searchParams.get("jornada");
     const state = await buildState(env, reqJornada, user);
     return json(state);
+  }
+  if (path === "global") {
+    const g = await buildGlobal(env);
+    return json(g);
   }
   return json({ error: "not found" }, 404);
 }

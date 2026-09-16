@@ -8,6 +8,8 @@ let sortMode = "hora";
 let editing = false;
 let viewJornada = null;
 let currentJornada = null;
+let rankMode = "jornada";
+let globalData = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -404,6 +406,77 @@ function renderRanking() {
   });
 }
 
+async function loadGlobal() {
+  try {
+    globalData = await (await fetch(API + "/global")).json();
+    renderGlobalRanking(globalData);
+    $("summaryPanel").classList.add("hidden");
+  } catch (e) {
+    const h = $("rankingHint");
+    if (h) h.textContent = "No se pudo cargar la clasificación general.";
+  }
+}
+
+function renderGlobalRanking(data) {
+  const podium = $("podium");
+  const cards = $("rankCards");
+  const empty = $("rankEmpty");
+  podium.innerHTML = "";
+  cards.innerHTML = "";
+  const list = data.standings || [];
+  const hist = $("rankingHint");
+  if (hist) hist.textContent = `Clasificación general: suma de aciertos de ${data.jornadas.length} jornada(s).`;
+  $("playersChip").textContent = `${list.length} jugador${list.length === 1 ? "" : "es"}`;
+  if (!list.length) {
+    empty.classList.remove("hidden");
+    return;
+  }
+  empty.classList.add("hidden");
+
+  const myKey = apodo ? apodo.toLowerCase() : null;
+  const medals = ["🥇", "🥈", "🥉"];
+  const top = list.slice(0, 3);
+  [1, 0, 2].forEach((idx) => {
+    const s = top[idx];
+    if (!s) return;
+    const place = idx + 1;
+    const slot = document.createElement("div");
+    slot.className = `podium-slot podium-${place}`;
+    slot.innerHTML = `
+      <span class="podium-medal">${medals[idx]}</span>
+      <span class="podium-avatar">${escapeHtml(initials(s.name))}</span>
+      <span class="podium-name">${escapeHtml(s.name)}</span>
+      <span class="podium-prize">${s.total} pts</span>
+      <span class="podium-sub">${s.jornadas} jornada${s.jornadas === 1 ? "" : "s"}</span>`;
+    podium.appendChild(slot);
+  });
+
+  list.forEach((s, i) => {
+    const place = i + 1;
+    const card = document.createElement("div");
+    card.className = "rank-card";
+    if (place <= 3) card.classList.add(`player-${place}`);
+    if (myKey && s.key === myKey) card.classList.add("me");
+    const badge = myKey && s.key === myKey ? '<span class="me-badge">TÚ</span>' : "";
+    const chips = (data.jornadas || [])
+      .map((j) => {
+        const h = s.byJornada[j];
+        if (h === undefined) return "";
+        return `<span class="jchip">J${j} <b>${h}</b></span>`;
+      })
+      .join("");
+    card.innerHTML = `
+      <span class="rank-num">${medals[i] || place}</span>
+      <span class="rank-avatar">${escapeHtml(initials(s.name))}</span>
+      <span class="rank-info">
+        <span class="rank-name">${escapeHtml(s.name)}${badge}</span>
+        <span class="jchips">${chips}</span>
+      </span>
+      <span class="rank-score"><span class="rank-prize">${s.total}<small>total</small></span></span>`;
+    cards.appendChild(card);
+  });
+}
+
 function renderSummary() {
   const panel = $("summaryPanel");
   const allFinished = state.matches.length && state.matches.every((m) => m.result);
@@ -555,6 +628,8 @@ function renderJornadaBar() {
   const bar = $("jornadaBar");
   if (!bar) return;
   $("jView").textContent = state.matchday;
+  const seg = $("segJNum");
+  if (seg) seg.textContent = state.matchday;
   const isPast = currentJornada !== null && state.matchday < currentJornada;
   $("jPrev").disabled = state.matchday <= 1;
   $("jNext").disabled = currentJornada === null || state.matchday >= currentJornada;
@@ -569,8 +644,11 @@ function renderAll() {
   $("authPanel").classList.toggle("hidden", logged);
   $("picksPanel").classList.toggle("hidden", !logged);
   if (logged) renderMatches();
-  renderRanking();
-  renderSummary();
+  if (rankMode === "global") loadGlobal();
+  else {
+    renderRanking();
+    renderSummary();
+  }
   renderParticipants();
   renderPrizes();
 }
@@ -745,24 +823,34 @@ $("themeToggle").addEventListener("click", () => {
   saveTheme(next);
 });
 
-$("goPlayBtn").addEventListener("click", () => {
-  if (state && !state.myName) setAuthMode("registro");
+function goToCreateAccount() {
+  const logged = !!(state && state.myName);
+  if (!logged) setAuthMode("registro");
   switchTab("miPorra");
-  window.scrollTo({ top: 0, behavior: "smooth" });
-  if (state && !state.myName) {
-    const n = $("authName");
-    if (n) setTimeout(() => n.focus(), 350);
-  }
-});
+  setTimeout(() => {
+    const target = logged ? $("picksPanel") : $("authPanel");
+    if (target) target.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (!logged) {
+      const n = $("authName");
+      if (n) setTimeout(() => n.focus(), 320);
+    }
+  }, 80);
+}
+$("goPlayBtn").addEventListener("click", goToCreateAccount);
+$("goPlayBtn2").addEventListener("click", goToCreateAccount);
 
-$("goPlayBtn2").addEventListener("click", () => {
-  if (state && !state.myName) setAuthMode("registro");
-  switchTab("miPorra");
-  window.scrollTo({ top: 0, behavior: "smooth" });
-  if (state && !state.myName) {
-    const n = $("authName");
-    if (n) setTimeout(() => n.focus(), 350);
-  }
+$("segJornada").addEventListener("click", () => {
+  rankMode = "jornada";
+  $("segJornada").classList.add("active");
+  $("segGlobal").classList.remove("active");
+  renderRanking();
+  renderSummary();
+});
+$("segGlobal").addEventListener("click", () => {
+  rankMode = "global";
+  $("segGlobal").classList.add("active");
+  $("segJornada").classList.remove("active");
+  loadGlobal();
 });
 
 $("jPrev").addEventListener("click", () => {
