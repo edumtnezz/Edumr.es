@@ -624,11 +624,35 @@ body {
 [data-theme="light"] .welcome::before { border-color: rgba(15, 23, 42, 0.08); }
 [data-theme="light"] .welcome::after { background: rgba(15, 23, 42, 0.08); }
 [data-theme="light"] .user-chip { background: rgba(2, 132, 199, 0.1); border-color: rgba(2, 132, 199, 0.3); }
-[data-theme="light"] .pick-btn { background: rgba(15, 23, 42, 0.04); }
 [data-theme="light"] .tab.active {
   background: linear-gradient(135deg, rgba(2, 132, 199, 0.16), rgba(124, 58, 237, 0.16));
   box-shadow: inset 0 0 0 1px rgba(2, 132, 199, 0.35);
 }
+[data-theme="light"] .pick-btn {
+  background: #ffffff;
+  border-color: rgba(15, 23, 42, 0.2);
+  color: #64748b;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+[data-theme="light"] .pick-btn:hover:not(:disabled) {
+  border-color: #2563eb;
+  color: #1e293b;
+}
+[data-theme="light"] .pick-btn.selected {
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.45);
+}
+[data-theme="light"] .pick-btn.correct {
+  background: linear-gradient(135deg, #34d399, #10b981);
+  color: #04120c;
+}
+[data-theme="light"] .pick-btn.wrong {
+  background: #ef4444;
+  color: #fff;
+}
+[data-theme="light"] .pick-btn.dim { opacity: 0.35; }
 
 /* ---------- Cabecera / tema ---------- */
 

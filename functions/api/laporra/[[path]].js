@@ -140,10 +140,11 @@ async function migrateLegacy(env, userKey, name) {
         for (const [mid, p] of Object.entries(val)) {
           if (mid !== "__name" && ["1", "X", "2"].includes(p)) picks[mid] = p;
         }
-        await env.PORRA.put(
-          `pred:${jornada}:${userKey}`,
-          JSON.stringify({ name: normName(nm), picks, updatedAt: new Date().toISOString() })
-        );
+        await savePrediction(env, jornada, userKey, {
+          name: normName(nm),
+          picks,
+          updatedAt: new Date().toISOString(),
+        });
         delete all[ak];
         changed = true;
       }
@@ -353,14 +354,31 @@ function lockTimeOf(matches) {
 
 async function getPredictions(env, jornada) {
   const prefix = `pred:${jornada}:`;
-  const list = await env.PORRA.list({ prefix });
+  const aggKey = `all:${jornada}`;
+  const agg = (await env.PORRA.get(aggKey, "json")) || {};
   const out = {};
-  const reads = list.keys.map(async (k) => {
-    const v = await env.PORRA.get(k.name, "json");
-    if (v) out[k.name.slice(prefix.length)] = v;
-  });
-  await Promise.all(reads);
+  for (const [k, v] of Object.entries(agg)) out[k] = v;
+
+  const list = await env.PORRA.list({ prefix });
+  const missing = list.keys.filter((k) => !out[k.name.slice(prefix.length)]);
+  if (missing.length) {
+    await Promise.all(
+      missing.map(async (k) => {
+        const v = await env.PORRA.get(k.name, "json");
+        if (v) out[k.name.slice(prefix.length)] = v;
+      })
+    );
+    await env.PORRA.put(aggKey, JSON.stringify(out));
+  }
   return out;
+}
+
+async function savePrediction(env, jornada, key, entry) {
+  await env.PORRA.put(`pred:${jornada}:${key}`, JSON.stringify(entry));
+  const aggKey = `all:${jornada}`;
+  const agg = (await env.PORRA.get(aggKey, "json")) || {};
+  agg[key] = entry;
+  await env.PORRA.put(aggKey, JSON.stringify(agg));
 }
 
 async function buildState(env, matchday, user) {
@@ -407,7 +425,7 @@ async function buildState(env, matchday, user) {
     s.prize = PREMIOS[i] || 0;
   });
 
-  const revealAll = locked;
+  const revealAll = true;
   const participants = Object.entries(preds)
     .map(([key, entry]) => ({
       key,
@@ -445,9 +463,19 @@ async function buildState(env, matchday, user) {
 
   const myPicks = myEntry && myEntry.picks ? myEntry.picks : {};
 
-  const first = matches.length
-    ? matches.reduce((a, b) => (new Date(a.utcDate) < new Date(b.utcDate) ? a : b))
-    : null;
+  let first = null;
+  for (const m of matches) {
+    if (!first) {
+      first = m;
+      continue;
+    }
+    const curT = new Date(first.utcDate).getTime();
+    const mT = new Date(m.utcDate).getTime();
+    const curFin = first.status === "FINISHED";
+    const mFin = m.status === "FINISHED";
+    if (curFin && !mFin) first = m;
+    else if (curFin === mFin && mT < curT) first = m;
+  }
 
   return {
     matchday: jornada.matchday,
@@ -585,10 +613,11 @@ async function handlePrediccion(request, env, user) {
     );
   }
 
-  await env.PORRA.put(
-    `pred:${jornada.matchday}:${user.key}`,
-    JSON.stringify({ name: user.name, picks: clean, updatedAt: new Date().toISOString() })
-  );
+  await savePrediction(env, jornada.matchday, user.key, {
+    name: user.name,
+    picks: clean,
+    updatedAt: new Date().toISOString(),
+  });
 
   const state = await buildState(env, String(jornada.matchday), user);
   return json({ ok: true, state });

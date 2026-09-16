@@ -1,5 +1,5 @@
 const API = "/api/laporra";
-const THEME_KEY = "porra_theme";
+const THEME_KEY = "theme";
 let state = null;
 let picks = {};
 let apodo = "";
@@ -9,10 +9,14 @@ let editing = false;
 
 const $ = (id) => document.getElementById(id);
 
-/* ---------- Tema claro / oscuro ---------- */
+/* ---------- Tema claro / oscuro (compartido con toda la web) ---------- */
 
-function applyTheme(t) {
-  document.documentElement.setAttribute("data-theme", t);
+function setThemeAttr(t) {
+  if (t === "light") document.documentElement.setAttribute("data-theme", "light");
+  else document.documentElement.removeAttribute("data-theme");
+}
+
+function saveTheme(t) {
   try {
     localStorage.setItem(THEME_KEY, t);
   } catch (e) {}
@@ -23,9 +27,13 @@ function applyTheme(t) {
   try {
     saved = localStorage.getItem(THEME_KEY);
   } catch (e) {}
+  if (saved === "light" || saved === "dark") {
+    setThemeAttr(saved);
+    return;
+  }
   const prefersLight =
     window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
-  applyTheme(saved || (prefersLight ? "light" : "dark"));
+  setThemeAttr(prefersLight ? "light" : "dark");
 })();
 
 /* ---------- Saludo ---------- */
@@ -420,9 +428,9 @@ function renderParticipants() {
   const wrap = $("participantsList");
   wrap.innerHTML = "";
   const list = state.participants || [];
-  $("participantsHint").textContent = state.revealAll
-    ? "La jornada ya empezó: aquí están los pronósticos de todos."
-    : `Hay ${list.length} participante(s). Los pronósticos se revelan al empezar la jornada.`;
+  $("participantsHint").textContent = `Aquí están los pronósticos de todos (${list.length} participante${
+    list.length === 1 ? "" : "s"
+  }). Se pueden ver desde el principio; solo se bloquean al empezar el primer partido.`;
 
   if (!list.length) {
     wrap.innerHTML = `<p class="empty">Todavía no hay participantes.</p>`;
@@ -659,8 +667,10 @@ $("cancelBtn").addEventListener("click", () => {
 $("saveBtn").addEventListener("click", save);
 
 $("themeToggle").addEventListener("click", () => {
-  const cur = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
-  applyTheme(cur === "light" ? "dark" : "light");
+  const isLight = document.documentElement.getAttribute("data-theme") === "light";
+  const next = isLight ? "dark" : "light";
+  setThemeAttr(next);
+  saveTheme(next);
 });
 
 $("copyBtn").addEventListener("click", async () => {
