@@ -667,6 +667,13 @@ function renderAll() {
   }
   renderParticipants();
   renderPrizes();
+  adjustAppbar();
+}
+
+function adjustAppbar() {
+  const bar = document.querySelector(".appbar");
+  if (!bar) return;
+  document.body.style.paddingTop = bar.offsetHeight + 14 + "px";
 }
 
 /* ---------- Red ---------- */
@@ -901,6 +908,8 @@ $("copyBtn").addEventListener("click", async () => {
 
 updateWelcome();
 setAuthMode("registro");
+adjustAppbar();
+window.addEventListener("resize", adjustAppbar);
 refresh();
 setInterval(updateCountdown, 1000);
 setInterval(refresh, 60000);
