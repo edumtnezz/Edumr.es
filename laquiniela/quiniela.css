@@ -970,7 +970,7 @@ body {
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
-.appbar .tabs { margin: 0; width: 100%; }
+.appbar .tabs { margin: 10px 0 0; width: 100%; }
 .theme-toggle {
   width: 44px;
   height: 44px;
