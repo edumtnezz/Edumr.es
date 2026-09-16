@@ -22,6 +22,7 @@ body {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--bg);
   background-image:
+    radial-gradient(1000px 340px at 50% -90px, rgba(16, 185, 129, 0.16), transparent 70%),
     radial-gradient(900px 500px at 15% -10%, rgba(0, 242, 254, 0.10), transparent 60%),
     radial-gradient(800px 500px at 100% 0%, rgba(139, 92, 246, 0.12), transparent 60%);
   color: var(--text);
@@ -66,25 +67,54 @@ body {
 }
 .top-btn:hover { border-color: var(--accent); transform: translateY(-1px); }
 
-.home-fab {
+/* ---------- Ambiente de futbol ---------- */
+
+.grass-band {
   position: fixed;
-  right: 16px;
-  bottom: 18px;
-  z-index: 40;
-  padding: 12px 18px;
-  border-radius: 99px;
-  border: none;
-  background: linear-gradient(135deg, #00f2fe, #3b82f6);
-  color: #050b14;
-  font-family: inherit;
-  font-weight: 800;
-  font-size: 0.85rem;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0, 242, 254, 0.35);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  z-index: 45;
+  background: repeating-linear-gradient(90deg, #16a34a 0 18px, #15803d 18px 36px);
+  box-shadow: 0 2px 12px rgba(22, 163, 74, 0.4);
 }
-.home-fab:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0, 242, 254, 0.5); }
-[data-theme="light"] .home-fab { color: #ffffff; }
+
+.porra-header { position: relative; overflow: hidden; }
+.porra-header::after {
+  content: '⚽';
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 4.6rem;
+  opacity: 0.07;
+  pointer-events: none;
+}
+
+.panel { position: relative; overflow: hidden; }
+.panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(16, 185, 129, 0.55) 0 16px,
+    rgba(22, 163, 74, 0.12) 16px 32px
+  );
+}
+
+.welcome::after,
+.welcome::before { pointer-events: none; }
+
+.ball { animation: ballroll 5s ease-in-out infinite; }
+@keyframes ballroll {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  50% { transform: rotate(180deg) translateY(-4px); }
+}
 
 .back-link {
   display: inline-block;
@@ -614,6 +644,14 @@ body {
   max-width: 980px; margin: 40px auto 0; text-align: center;
   color: var(--muted); font-size: 0.82rem;
 }
+.porra-footer::before {
+  content: '';
+  display: block;
+  height: 3px;
+  margin-bottom: 18px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(90deg, rgba(16, 185, 129, 0.45) 0 16px, rgba(22, 163, 74, 0.08) 16px 32px);
+}
 .porra-footer a { color: var(--accent); text-decoration: none; }
 
 /* ---------- Tema claro ---------- */
@@ -634,6 +672,7 @@ body {
 [data-theme="light"] body {
   background-color: var(--bg);
   background-image:
+    radial-gradient(1000px 340px at 50% -90px, rgba(16, 185, 129, 0.16), transparent 70%),
     radial-gradient(900px 500px at 15% -10%, rgba(2, 132, 199, 0.12), transparent 60%),
     radial-gradient(800px 500px at 100% 0%, rgba(124, 58, 237, 0.12), transparent 60%);
 }
