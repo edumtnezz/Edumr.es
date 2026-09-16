@@ -1052,6 +1052,25 @@ body {
 .prize-list { margin: 16px 0; }
 .porra-footer { margin-top: 50px; }
 
+/* ---------- Compacto (partidos) ---------- */
+
+.match-list { gap: 10px; }
+.match-row { padding: 12px 14px; gap: 14px; }
+.match-teams { gap: 10px; }
+.team { gap: 6px; }
+.crest { width: 24px; height: 24px; }
+.crest-fallback { width: 24px; height: 24px; font-size: 0.55rem; }
+.tname { font-size: 0.88rem; max-width: 128px; }
+.f { width: 16px; height: 16px; font-size: 0.55rem; border-radius: 4px; }
+.f i { width: 9px; height: 9px; font-size: 0.42rem; }
+.match-teams .vs { font-size: 0.66rem; padding: 2px 8px; }
+.pick-buttons { gap: 6px; }
+.pick-btn { width: 44px; height: 40px; font-size: 1rem; }
+.match-meta { margin-top: 6px; font-size: 0.72rem; gap: 8px; }
+.score-chip { font-size: 0.72rem; padding: 1px 8px; }
+.day-head { margin: 12px 2px 0; font-size: 0.68rem; }
+.legend { font-size: 0.72rem; padding: 9px 12px; margin-bottom: 14px; }
+
 @media (max-width: 1140px) {
   .top-right-tools { gap: 10px; }
 }

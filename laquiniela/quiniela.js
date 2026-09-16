@@ -835,7 +835,13 @@ function switchTab(name) {
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
   document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
   const panel = $("tab-" + name);
-  if (panel) panel.classList.remove("hidden");
+  if (panel) {
+    panel.classList.remove("hidden");
+    const bar = document.querySelector(".appbar");
+    const off = (bar ? bar.offsetHeight : 0) + 12;
+    const y = panel.getBoundingClientRect().top + window.scrollY - off;
+    window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+  }
   updateSaveFab();
 }
 
