@@ -359,7 +359,6 @@ function renderMatches() {
       ? "Puedes cambiar los partidos que aún no han empezado y volver a guardar."
       : "Elige 1, X o 2 en los partidos que aún no han empezado. Pulsa Guardar al terminar.";
   }
-  updateSaveFab();
 }
 
 function selectPick(matchId, opt) {
@@ -685,15 +684,6 @@ function renderJornadaBar() {
   if (note) note.classList.toggle("hidden", !isPast);
 }
 
-function updateSaveFab() {
-  const fab = $("saveFab");
-  if (!fab) return;
-  const active = document.querySelector(".tab.active");
-  const onMiQuiniela = active && active.dataset.tab === "miQuiniela";
-  const show = !!(state && state.myName && state.openCount > 0 && editing && onMiQuiniela);
-  fab.classList.toggle("hidden", !show);
-}
-
 function updateCtas() {
   const logged = !!(state && state.myName);
   const cta = $("goPlayBtn2");
@@ -851,7 +841,6 @@ function switchTab(name) {
     const y = panel.getBoundingClientRect().top + window.scrollY - off;
     window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
   }
-  updateSaveFab();
 }
 
 function openParticipant(key) {
@@ -977,7 +966,6 @@ $("howToBtn").addEventListener("click", () => {
   switchTab("instrucciones");
   window.scrollTo({ top: 0, behavior: "smooth" });
 });
-$("saveFab").addEventListener("click", save);
 
 $("segJornada").addEventListener("click", () => {
   rankMode = "jornada";
