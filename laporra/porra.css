@@ -97,23 +97,33 @@ body {
 }
 .deco-ball { width: 76px; height: 76px; filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.4)); animation: bob 4s ease-in-out infinite; }
 
+.flag-wrap { position: relative; display: inline-flex; }
+.flag-wrap::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #e2e8f0, #94a3b8);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+}
 .flag-corner {
-  position: fixed;
-  top: 15px;
-  right: 16px;
+  display: block;
   width: 40px;
   height: 27px;
-  z-index: 40;
-  border-radius: 6px;
+  border-radius: 0 6px 6px 0;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
   transform-origin: left center;
-  animation: wave 3.2s ease-in-out infinite;
+  animation: wind 2.2s ease-in-out infinite;
 }
-@keyframes wave {
-  0%, 100% { transform: perspective(220px) rotateY(0deg) skewY(0deg); }
-  25% { transform: perspective(220px) rotateY(12deg) skewY(-1.2deg); }
-  50% { transform: perspective(220px) rotateY(0deg) skewY(0deg); }
-  75% { transform: perspective(220px) rotateY(-12deg) skewY(1.2deg); }
+@keyframes wind {
+  0%, 100% { transform: skewY(0deg) scaleX(1); }
+  20% { transform: skewY(-3deg) scaleX(0.98); }
+  45% { transform: skewY(2.5deg) scaleX(1.015); }
+  70% { transform: skewY(-2deg) scaleX(0.99); }
+  85% { transform: skewY(1.5deg) scaleX(1.01); }
 }
 
 .panel { position: relative; overflow: hidden; }
@@ -882,11 +892,16 @@ body {
 /* ---------- Cabecera / tema ---------- */
 
 .header-tools { display: flex; align-items: center; gap: 12px; }
-.theme-toggle {
+.top-right-tools {
   position: fixed;
-  top: 16px;
-  right: 68px;
+  top: 21px;
+  right: 16px;
   z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.theme-toggle {
   width: 44px;
   height: 44px;
   border-radius: 50%;
@@ -903,7 +918,7 @@ body {
 .theme-toggle:hover { border-color: var(--accent); transform: scale(1.08); box-shadow: 0 0 16px rgba(0, 242, 254, 0.3); }
 
 @media (max-width: 1140px) {
-  .porra-header { padding: 0 52px; }
+  .top-right-tools { gap: 10px; }
 }
 .icon-moon { display: none; }
 [data-theme="light"] .icon-sun { display: none; }
