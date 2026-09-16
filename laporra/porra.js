@@ -43,9 +43,9 @@ function saveTheme(t) {
 function updateWelcome() {
   const h = new Date().getHours();
   let saludo;
-  if (h >= 6 && h < 12) saludo = "buenos días";
-  else if (h >= 12 && h < 21) saludo = "buenas tardes";
-  else saludo = "buenas noches";
+  if (h >= 6 && h < 12) saludo = "Buenos Días";
+  else if (h >= 12 && h < 21) saludo = "Buenas Tardes";
+  else saludo = "Buenas Noches";
   const name = state && state.myName ? state.myName : null;
   const g = $("welcomeGreeting");
   const s = $("welcomeSub");
@@ -482,6 +482,29 @@ function renderParticipants() {
       head.appendChild(badge);
     }
     card.appendChild(head);
+
+    if (played) {
+      const okList = [];
+      const koList = [];
+      state.matches.forEach((m) => {
+        const pick = p.picks && p.picks[m.id];
+        if (!pick || !m.result) return;
+        const label = `${m.home} - ${m.away}`;
+        if (pick === m.result) okList.push(label);
+        else koList.push(label);
+      });
+      const sum = document.createElement("div");
+      sum.className = "participant-summary";
+      const okSpan = document.createElement("span");
+      okSpan.className = "ps-ok";
+      okSpan.innerHTML = `<b>✓ Acertó</b> ${okList.length ? escapeHtml(okList.join(" · ")) : "—"}`;
+      const koSpan = document.createElement("span");
+      koSpan.className = "ps-ko";
+      koSpan.innerHTML = `<b>✗ Falló</b> ${koList.length ? escapeHtml(koList.join(" · ")) : "—"}`;
+      sum.appendChild(okSpan);
+      sum.appendChild(koSpan);
+      card.appendChild(sum);
+    }
 
     if (!p.picks) {
       const note = document.createElement("div");
