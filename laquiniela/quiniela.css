@@ -346,6 +346,21 @@ body {
 
 .error { color: #f87171; font-size: 0.86rem; margin-top: 12px; min-height: 1.2em; }
 
+.auth-warn {
+  margin: 16px 0 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #fde68a;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(239, 68, 68, 0.12));
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.08) inset;
+}
+.auth-warn b { color: #fbbf24; }
+[data-theme="light"] .auth-warn { color: #92400e; }
+[data-theme="light"] .auth-warn b { color: #b45309; }
+
 /* Tabs */
 .tabs {
   display: flex;

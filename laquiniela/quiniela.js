@@ -778,6 +778,13 @@ async function submitAuth() {
     $("authPin").value = "";
     await refresh();
     switchTab("miQuiniela");
+    if (authMode === "registro") {
+      const m = $("saveMsg");
+      if (m) {
+        m.className = "save-msg ok";
+        m.textContent = "Cuenta creada ✔ Guarda tu código: no se puede restablecer.";
+      }
+    }
   } catch (e) {
     err.textContent = e.message;
   } finally {
@@ -881,6 +888,8 @@ function setAuthMode(mode) {
     : "Elige un nombre y un código secreto de 4 o 6 números. El código queda cifrado y nadie puede verlo.";
   $("authBtn").textContent = isLogin ? "Entrar" : "Crear cuenta";
   $("authPin").setAttribute("autocomplete", isLogin ? "current-password" : "new-password");
+  const warn = $("authWarn");
+  if (warn) warn.classList.toggle("hidden", isLogin);
   $("authError").textContent = "";
 }
 
