@@ -70,18 +70,38 @@ body {
 
 /* ---------- Ambiente ---------- */
 
-.porra-header { position: relative; overflow: hidden; }
-.porra-header::after {
-  content: '';
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 80px;
-  height: 80px;
-  background: url(/img/laporra-icon.png) center/contain no-repeat;
-  opacity: 0.09;
-  pointer-events: none;
+.grass-band {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  z-index: 45;
+  background: repeating-linear-gradient(90deg, #16a34a 0 20px, #15803d 20px 40px);
+  box-shadow: 0 2px 14px rgba(22, 163, 74, 0.45);
+  animation: grassmove 2.6s linear infinite;
+}
+@keyframes grassmove {
+  from { background-position: 0 0; }
+  to { background-position: 40px 0; }
+}
+
+.porra-header { position: relative; }
+
+.top-deco {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+.deco-ball { width: 58px; height: 58px; filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.35)); animation: bob 4s ease-in-out infinite; }
+.deco-flag {
+  width: 64px; height: 43px;
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  animation: bob 4s ease-in-out infinite;
+  animation-delay: -2s;
 }
 
 .panel { position: relative; overflow: hidden; }
@@ -140,12 +160,12 @@ body {
   max-width: 980px;
   margin: 0 auto 22px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  flex-wrap: wrap;
+  text-align: center;
+  gap: 10px;
 }
-.porra-brand { display: flex; align-items: center; gap: 16px; }
+.porra-brand { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
 .ball {
   width: 56px; height: 56px;
   display: flex; align-items: center; justify-content: center;
@@ -764,10 +784,12 @@ body {
 .porra-footer::before {
   content: '';
   display: block;
-  height: 2px;
+  height: 8px;
   margin-bottom: 18px;
-  border-radius: 2px;
-  background: linear-gradient(90deg, transparent, rgba(0, 242, 254, 0.5), rgba(139, 92, 246, 0.5), transparent);
+  border-radius: 4px;
+  background: repeating-linear-gradient(90deg, #16a34a 0 20px, #15803d 20px 40px);
+  box-shadow: 0 -2px 14px rgba(22, 163, 74, 0.4);
+  animation: grassmove 2.6s linear infinite;
 }
 .porra-footer a { color: var(--accent); text-decoration: none; }
 
@@ -869,7 +891,7 @@ body {
 .theme-toggle:hover { border-color: var(--accent); transform: scale(1.08); box-shadow: 0 0 16px rgba(0, 242, 254, 0.3); }
 
 @media (max-width: 1140px) {
-  .porra-header { padding-right: 62px; }
+  .porra-header { padding: 0 52px; }
 }
 .icon-moon { display: none; }
 [data-theme="light"] .icon-sun { display: none; }
@@ -947,7 +969,7 @@ body {
   .match-row { grid-template-columns: 1fr; }
   .pick-buttons { justify-content: stretch; }
   .pick-btn { flex: 1; width: auto; }
-  .porra-header { flex-direction: column; align-items: flex-start; }
+  .porra-header { flex-direction: column; align-items: center; }
   .countdown { padding: 18px; }
   .podium { grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .podium-slot { padding: 14px 6px 12px; }
