@@ -496,9 +496,11 @@ body {
 }
 .pick-btn:hover:not(:disabled) { border-color: var(--border-hover); color: var(--text); transform: translateY(-1px); }
 .pick-btn.selected {
-  background: linear-gradient(135deg, rgba(0, 242, 254, 0.9), rgba(59, 130, 246, 0.9));
-  border-color: transparent; color: #050b14;
-  box-shadow: 0 0 18px rgba(0, 242, 254, 0.45);
+  background: linear-gradient(135deg, #00f2fe, #3b82f6);
+  border-color: transparent; color: #04121a;
+  font-weight: 800;
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 0 0 3px rgba(0, 242, 254, 0.45), 0 10px 22px rgba(0, 242, 254, 0.5);
 }
 .pick-btn:disabled { cursor: not-allowed; }
 .pick-btn.dim { opacity: 0.4; }
@@ -891,7 +893,8 @@ body {
   background: linear-gradient(135deg, #0ea5e9, #2563eb);
   color: #ffffff;
   border-color: transparent;
-  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.45);
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35), 0 8px 20px rgba(37, 99, 235, 0.45);
 }
 [data-theme="light"] .pick-btn.correct {
   background: linear-gradient(135deg, #34d399, #10b981);

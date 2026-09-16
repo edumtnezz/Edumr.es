@@ -350,21 +350,17 @@ function renderMatches() {
   const hasPred = state.hasPrediction;
   const openCount = state.openCount || 0;
   const canEdit = openCount > 0;
-  $("editBtn").classList.toggle("hidden", !(hasPred && canEdit && !editing));
-  $("saveBtn").classList.toggle("hidden", !(editing && canEdit));
-  $("cancelBtn").classList.toggle("hidden", !(editing && hasPred));
-  $("saveBtn").disabled = !editing;
+  $("saveBtn").classList.toggle("hidden", !canEdit);
+  $("saveBtn").disabled = false;
 
   if (!canEdit) {
     $("picksHint").textContent = hasPred
       ? "La jornada ya ha empezado: tus pronósticos quedan cerrados."
       : "La jornada ya ha empezado y no registraste pronóstico.";
-  } else if (editing) {
-    $("picksHint").textContent = hasPred
-      ? "Puedes cambiar los partidos que aún no han empezado. Los ya jugados quedan bloqueados."
-      : "Elige 1, X o 2 en los partidos que aún no han empezado. Debes completarlos todos.";
   } else {
-    $("picksHint").textContent = "Tu porra está guardada. Pulsa Editar para cambiar los partidos que aún no han empezado.";
+    $("picksHint").textContent = hasPred
+      ? "Puedes cambiar los partidos que aún no han empezado y volver a guardar."
+      : "Elige 1, X o 2 en los partidos que aún no han empezado. Pulsa Guardar al terminar.";
   }
   updateSaveFab();
 }
@@ -746,7 +742,7 @@ async function refresh() {
     if (state.myName) apodo = state.myName;
     picks = {};
     Object.entries(state.myPicks || {}).forEach(([k, v]) => (picks[k] = v));
-    if (!state.hasPrediction && state.openCount > 0) editing = true;
+    if (state.openCount > 0) editing = true;
     renderAll();
     updateCountdown();
   } catch (e) {
@@ -822,10 +818,10 @@ async function save() {
     if (!res.ok) throw new Error(data.error || "Error al guardar");
     state = data.state;
     state.myName = apodo;
-    editing = false;
     renderAll();
     msg.textContent = "¡Guardado! Tu prima está en juego.";
     msg.classList.add("ok");
+    $("saveBtn").disabled = false;
   } catch (e) {
     msg.textContent = e.message;
     msg.classList.add("err");
@@ -876,19 +872,6 @@ document.querySelectorAll(".tab").forEach((t) => {
 $("sortSelect").addEventListener("change", (e) => {
   sortMode = e.target.value;
   if (state && state.myName) renderMatches();
-});
-
-$("editBtn").addEventListener("click", () => {
-  editing = true;
-  $("saveMsg").textContent = "";
-  renderMatches();
-});
-
-$("cancelBtn").addEventListener("click", () => {
-  editing = false;
-  picks = {};
-  Object.entries(state.myPicks || {}).forEach(([k, v]) => (picks[k] = v));
-  renderMatches();
 });
 
 $("saveBtn").addEventListener("click", save);
