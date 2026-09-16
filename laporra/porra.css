@@ -78,6 +78,12 @@ body {
   z-index: 45;
   background: repeating-linear-gradient(90deg, #16a34a 0 18px, #15803d 18px 36px);
   box-shadow: 0 2px 12px rgba(22, 163, 74, 0.4);
+  animation: grassmove 2.6s linear infinite;
+}
+
+@keyframes grassmove {
+  from { background-position: 0 0; }
+  to { background-position: 36px 0; }
 }
 
 .porra-header { position: relative; overflow: hidden; }
@@ -110,11 +116,37 @@ body {
 .welcome::after,
 .welcome::before { pointer-events: none; }
 
-.ball { animation: ballroll 5s ease-in-out infinite; }
+.ball { animation: ballroll 6s linear infinite; }
 @keyframes ballroll {
-  0%, 100% { transform: rotate(0deg) translateY(0); }
-  50% { transform: rotate(180deg) translateY(-4px); }
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
+
+.countdown { animation: glowpulse 3.2s ease-in-out infinite; }
+@keyframes glowpulse {
+  0%, 100% { box-shadow: 0 0 34px rgba(0, 242, 254, 0.10); }
+  50% { box-shadow: 0 0 52px rgba(0, 242, 254, 0.22); }
+}
+
+.tab.active { position: relative; overflow: hidden; }
+.tab.active::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 3px;
+  background: repeating-linear-gradient(90deg, rgba(16, 185, 129, 0.7) 0 10px, transparent 10px 20px);
+  animation: grassmove 1.8s linear infinite;
+}
+
+.cta-block {
+  margin-top: 26px;
+  padding: 22px;
+  border-radius: 14px;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.14), rgba(59, 130, 246, 0.12));
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+.cta-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.1rem; margin-bottom: 14px; }
 
 .back-link {
   display: inline-block;
@@ -139,7 +171,7 @@ body {
 .porra-brand { display: flex; align-items: center; gap: 16px; }
 .ball {
   width: 58px; height: 58px;
-  border-radius: 16px;
+  border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 1.9rem;
   background: linear-gradient(135deg, rgba(0, 242, 254, 0.18), rgba(139, 92, 246, 0.22));
@@ -706,14 +738,15 @@ body {
   box-shadow: inset 0 0 0 1px rgba(2, 132, 199, 0.35);
 }
 [data-theme="light"] .pick-btn {
-  background: #ffffff;
-  border-color: rgba(15, 23, 42, 0.2);
-  color: #64748b;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  background: #eef2f7;
+  border-color: rgba(15, 23, 42, 0.3);
+  color: #0f172a;
+  box-shadow: none;
 }
 [data-theme="light"] .pick-btn:hover:not(:disabled) {
+  background: #e2e8f0;
   border-color: #2563eb;
-  color: #1e293b;
+  color: #0f172a;
 }
 [data-theme="light"] .pick-btn.selected {
   background: linear-gradient(135deg, #0ea5e9, #2563eb);
@@ -796,7 +829,11 @@ body {
 }
 .welcome-top { display: flex; align-items: center; gap: 16px; position: relative; z-index: 1; }
 .welcome-ball { font-size: 2.6rem; animation: spin 8s linear infinite; }
-.welcome-trophy { font-size: 2rem; margin-left: auto; filter: drop-shadow(0 4px 10px rgba(251, 191, 36, 0.5)); }
+.welcome-trophy { font-size: 2rem; margin-left: auto; filter: drop-shadow(0 4px 10px rgba(251, 191, 36, 0.5)); animation: bob 3s ease-in-out infinite; }
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
 .welcome h2 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(1.2rem, 3.5vw, 1.6rem); }
 .welcome-sub { color: var(--muted); font-size: 0.95rem; }
 .welcome-steps {

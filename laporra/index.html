@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="porra.css?v=16">
+  <link rel="stylesheet" href="porra.css?v=17">
 </head>
 <body>
   <canvas id="bgCanvas"></canvas>
@@ -68,14 +68,14 @@
 
     <!-- Pestañas -->
     <nav class="tabs" id="tabsNav">
-      <button class="tab active" data-tab="miPorra">🎯 Mi porra</button>
+      <button class="tab" data-tab="miPorra">🎯 Mi porra</button>
       <button class="tab" data-tab="clasificacion">🏆 Clasificación</button>
       <button class="tab" data-tab="participantes">👥 Participantes</button>
-      <button class="tab" data-tab="instrucciones">📖 Instrucciones</button>
+      <button class="tab active" data-tab="instrucciones">📖 Instrucciones</button>
     </nav>
 
     <!-- Mi porra -->
-    <section class="tab-panel" id="tab-miPorra">
+    <section class="tab-panel hidden" id="tab-miPorra">
       <!-- Acceso / registro (solo para crear o editar tu porra) -->
       <div class="panel hidden" id="authPanel">
         <div class="auth-tabs">
@@ -154,7 +154,7 @@
     </section>
 
     <!-- Instrucciones -->
-    <section class="tab-panel hidden" id="tab-instrucciones">
+    <section class="tab-panel" id="tab-instrucciones">
       <div class="panel">
         <h2>📖 Cómo funciona La Porra</h2>
 
@@ -196,6 +196,11 @@
           <h3>7. Pronósticos de todos</h3>
           <p>Puedes ver los pronósticos de <strong>todos</strong> en la pestaña <strong>Participantes</strong> desde el primer momento, para picarte con los compañeros. Eso sí: <strong>nadie puede cambiarlos</strong> después de que empiece el primer partido.</p>
         </div>
+
+        <div class="cta-block">
+          <p class="cta-title">¿Listo para jugar? ⚽</p>
+          <button class="btn-primary big" id="goPlayBtn">Crear mi cuenta y hacer la porra</button>
+        </div>
       </div>
     </section>
   </main>
@@ -204,7 +209,7 @@
     <p>La Porra · <a href="/">EduMR.es</a></p>
   </footer>
 
-  <script src="fondo.js?v=16"></script>
-  <script src="porra.js?v=16"></script>
+  <script src="fondo.js?v=17"></script>
+  <script src="porra.js?v=17"></script>
 </body>
 </html>

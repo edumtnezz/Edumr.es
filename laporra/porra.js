@@ -673,6 +673,15 @@ $("themeToggle").addEventListener("click", () => {
   saveTheme(next);
 });
 
+$("goPlayBtn").addEventListener("click", () => {
+  switchTab("miPorra");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (state && !state.myName) {
+    const n = $("authName");
+    if (n) setTimeout(() => n.focus(), 350);
+  }
+});
+
 $("copyBtn").addEventListener("click", async () => {
   const lines = [`La Porra - Jornada ${state.matchday}`, ""];
   state.standings.forEach((s) => {
