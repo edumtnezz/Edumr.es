@@ -4,28 +4,27 @@
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
 
-  let width = 0;
-  let height = 0;
-  let dpr = 1;
-  let items = [];
+  const isMobile =
+    window.matchMedia("(max-width: 820px)").matches ||
+    ("ontouchstart" in window && window.innerWidth < 1024);
   const reduceMotion =
     window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let width = 0;
+  let height = 0;
+  let stars = [];
+  let lastFrame = 0;
+  const targetFps = isMobile ? 30 : 60;
+  const frameGap = 1000 / targetFps;
 
   function isLight() {
     return document.documentElement.getAttribute("data-theme") === "light";
   }
 
-  function dotColor(a) {
-    return isLight() ? `rgba(2, 132, 199, ${a})` : `rgba(0, 242, 254, ${a})`;
-  }
-  function lineColor(o) {
-    return isLight() ? `rgba(37, 99, 235, ${o})` : `rgba(59, 130, 246, ${o})`;
-  }
-
   function resize() {
-    dpr = Math.min(window.devicePixelRatio || 1, 2);
     width = window.innerWidth;
     height = window.innerHeight;
+    const dpr = isMobile ? 1 : Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = Math.floor(width * dpr);
     canvas.height = Math.floor(height * dpr);
     canvas.style.width = width + "px";
@@ -33,127 +32,99 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
-  function makeItem() {
-    const ball = Math.random() < 0.16;
+  function makeStar() {
     return {
       x: Math.random() * width,
       y: Math.random() * height,
-      vx: (Math.random() - 0.5) * 0.35,
-      vy: (Math.random() - 0.5) * 0.35,
-      radius: ball ? Math.random() * 5 + 7 : Math.random() * 1.6 + 0.6,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      radius: Math.random() * 1.5 + 0.6,
       alpha: Math.random() * 0.5 + 0.25,
-      ball,
-      rot: Math.random() * Math.PI * 2,
-      spin: (Math.random() - 0.5) * 0.012,
+      tw: Math.random() * Math.PI * 2,
+      twSpeed: 0.01 + Math.random() * 0.02,
     };
   }
 
   function init() {
     resize();
-    items = [];
-    let count = Math.min(Math.floor((width * height) / 17000), 70);
-    if (reduceMotion) count = Math.min(count, 34);
-    for (let i = 0; i < count; i++) items.push(makeItem());
+    stars = [];
+    const divisor = isMobile ? 30000 : 17000;
+    let count = Math.min(Math.floor((width * height) / divisor), isMobile ? 28 : 62);
+    if (reduceMotion) count = Math.min(count, 24);
+    for (let i = 0; i < count; i++) stars.push(makeStar());
   }
 
-  function drawBall(it) {
-    const r = it.radius;
-    ctx.save();
-    ctx.translate(it.x, it.y);
-    ctx.rotate(it.rot);
-    ctx.globalAlpha = Math.min(1, it.alpha + 0.45);
-
-    ctx.beginPath();
-    ctx.arc(0, 0, r, 0, Math.PI * 2);
-    ctx.fillStyle = isLight() ? "rgba(255,255,255,0.95)" : "rgba(241,245,249,0.9)";
-    ctx.fill();
-
-    ctx.strokeStyle = "rgba(15,23,42,0.35)";
-    ctx.lineWidth = Math.max(0.7, r * 0.1);
-    ctx.stroke();
-
-    const pr = r * 0.42;
-    ctx.beginPath();
-    for (let i = 0; i < 5; i++) {
-      const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
-      const px = Math.cos(a) * pr;
-      const py = Math.sin(a) * pr;
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    }
-    ctx.closePath();
-    ctx.fillStyle = "rgba(15,23,42,0.8)";
-    ctx.fill();
-
-    ctx.strokeStyle = "rgba(15,23,42,0.5)";
-    ctx.lineWidth = Math.max(0.6, r * 0.08);
-    for (let i = 0; i < 5; i++) {
-      const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
-      ctx.beginPath();
-      ctx.moveTo(Math.cos(a) * pr, Math.sin(a) * pr);
-      ctx.lineTo(Math.cos(a) * r * 0.96, Math.sin(a) * r * 0.96);
-      ctx.stroke();
-    }
-    ctx.restore();
-    ctx.globalAlpha = 1;
+  function dotColor(a, tw) {
+    const alpha = Math.max(0.08, Math.min(1, a + Math.sin(tw) * 0.18));
+    return isLight()
+      ? `rgba(2, 132, 199, ${alpha})`
+      : `rgba(0, 242, 254, ${alpha})`;
   }
 
-  function drawDot(it) {
-    ctx.beginPath();
-    ctx.arc(it.x, it.y, it.radius, 0, Math.PI * 2);
-    ctx.fillStyle = dotColor(it.alpha);
-    ctx.fill();
+  function lineColor(o) {
+    return isLight() ? `rgba(37, 99, 235, ${o})` : `rgba(59, 130, 246, ${o})`;
   }
 
-  function step() {
+  function draw() {
     ctx.clearRect(0, 0, width, height);
 
-    for (let i = 0; i < items.length; i++) {
-      const p1 = items[i];
-      p1.x += p1.vx;
-      p1.y += p1.vy;
-      p1.rot += p1.spin;
+    for (let i = 0; i < stars.length; i++) {
+      const s = stars[i];
+      s.x += s.vx;
+      s.y += s.vy;
+      s.tw += s.twSpeed;
+      if (s.x < -10) s.x = width + 10;
+      if (s.x > width + 10) s.x = -10;
+      if (s.y < -10) s.y = height + 10;
+      if (s.y > height + 10) s.y = -10;
+    }
 
-      if (p1.x < -20) p1.x = width + 20;
-      if (p1.x > width + 20) p1.x = -20;
-      if (p1.y < -20) p1.y = height + 20;
-      if (p1.y > height + 20) p1.y = -20;
-
-      for (let j = i + 1; j < items.length; j++) {
-        const p2 = items[j];
+    for (let i = 0; i < stars.length; i++) {
+      const p1 = stars[i];
+      for (let j = i + 1; j < stars.length; j++) {
+        const p2 = stars[j];
         const dx = p1.x - p2.x;
         const dy = p1.y - p2.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 120) {
+        if (dist < 115) {
           ctx.beginPath();
-          ctx.strokeStyle = lineColor(0.14 * (1 - dist / 120));
+          ctx.strokeStyle = lineColor(0.14 * (1 - dist / 115));
           ctx.lineWidth = 0.8;
           ctx.moveTo(p1.x, p1.y);
           ctx.lineTo(p2.x, p2.y);
           ctx.stroke();
         }
       }
-
-      if (p1.ball) drawBall(p1);
-      else drawDot(p1);
     }
 
-    if (!reduceMotion) requestAnimationFrame(step);
+    for (let i = 0; i < stars.length; i++) {
+      const s = stars[i];
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+      ctx.fillStyle = dotColor(s.alpha, s.tw);
+      ctx.fill();
+    }
   }
 
-  function start() {
-    init();
-    if (reduceMotion) {
-      step();
-    } else {
-      requestAnimationFrame(step);
+  function loop(t) {
+    if (!document.hidden) {
+      if (t - lastFrame >= frameGap) {
+        lastFrame = t;
+        draw();
+      }
     }
+    requestAnimationFrame(loop);
   }
 
   window.addEventListener("resize", () => {
     init();
-    if (reduceMotion) step();
+    lastFrame = 0;
   });
 
-  start();
+  init();
+  if (reduceMotion) {
+    draw();
+  } else {
+    requestAnimationFrame(loop);
+  }
 })();

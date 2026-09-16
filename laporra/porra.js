@@ -612,6 +612,15 @@ function switchTab(name) {
   document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
   const panel = $("tab-" + name);
   if (panel) panel.classList.remove("hidden");
+  updateFab();
+}
+
+function updateFab() {
+  const fab = $("homeFab");
+  if (!fab) return;
+  const active = document.querySelector(".tab.active");
+  const notHome = active && active.dataset.tab !== "miPorra";
+  fab.classList.toggle("hidden", !(window.scrollY > 260 || notHome));
 }
 
 /* ---------- Eventos ---------- */
@@ -673,6 +682,13 @@ $("themeToggle").addEventListener("click", () => {
   saveTheme(next);
 });
 
+window.addEventListener("scroll", updateFab);
+$("homeFab").addEventListener("click", () => {
+  switchTab("miPorra");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  setTimeout(updateFab, 400);
+});
+
 $("copyBtn").addEventListener("click", async () => {
   const lines = [`La Porra - Jornada ${state.matchday}`, ""];
   state.standings.forEach((s) => {
@@ -691,6 +707,7 @@ $("copyBtn").addEventListener("click", async () => {
 /* ---------- Arranque ---------- */
 
 updateWelcome();
+updateFab();
 refresh();
 setInterval(updateCountdown, 1000);
 setInterval(refresh, 60000);
