@@ -227,7 +227,8 @@ function updateCountdown() {
 /* ---------- Render ---------- */
 
 function renderHeader() {
-  $("jornadaNum").textContent = state.matchday || "–";
+  const jn = $("jornadaNum");
+  if (jn) jn.textContent = state.matchday || "–";
   const box = $("userBox");
   box.innerHTML = "";
   if (state.myName) {
@@ -636,6 +637,18 @@ function renderJornadaBar() {
   $("jNote").classList.toggle("hidden", !isPast);
 }
 
+function updateCtas() {
+  const logged = !!(state && state.myName);
+  const cta = $("goPlayBtn2");
+  if (cta) {
+    cta.innerHTML = logged
+      ? '<img class="btn-ball" src="/img/balonmundial.png" alt=""> Ir a mi porra'
+      : '<img class="btn-ball" src="/img/balonmundial.png" alt=""> Crear cuenta y hacer la porra';
+  }
+  const cta1 = $("goPlayBtn");
+  if (cta1) cta1.textContent = logged ? "Ir a mi porra" : "Crear mi cuenta y hacer la porra";
+}
+
 function renderAll() {
   updateWelcome();
   renderHeader();
@@ -643,6 +656,7 @@ function renderAll() {
   const logged = !!state.myName;
   $("authPanel").classList.toggle("hidden", logged);
   $("picksPanel").classList.toggle("hidden", !logged);
+  updateCtas();
   if (logged) renderMatches();
   if (rankMode === "global") loadGlobal();
   else {

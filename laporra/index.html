@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="porra.css?v=27">
+  <link rel="stylesheet" href="porra.css?v=28">
 </head>
 <body>
   <canvas id="bgCanvas"></canvas>
@@ -22,8 +22,12 @@
   <header class="appbar">
     <div class="appbar-inner">
       <div class="appbar-top">
-        <a class="top-btn" href="/" title="Ir a la web principal de EduMR">🏠 Web principal</a>
+        <a class="appbar-brand" href="/laporra/">
+          <h1>La <span class="grad">Porra</span> LaLiga</h1>
+        </a>
         <div class="top-right-tools">
+          <a class="top-btn" href="/" title="Ir a la web principal de EduMR">🏠 Web principal</a>
+          <div class="user-box" id="userBox"></div>
           <span class="flag-wrap">
             <img class="flag-corner" src="/img/espana.svg" alt="Bandera de España" title="España">
           </span>
@@ -39,21 +43,6 @@
         <button class="tab" data-tab="participantes">👥 Participantes</button>
         <button class="tab active" data-tab="instrucciones">📖 Instrucciones</button>
       </nav>
-    </div>
-  </header>
-
-  <header class="porra-header">
-    <div class="top-deco">
-      <img class="deco-ball" src="/img/balonmundial.png" alt="Balón">
-    </div>
-    <div class="porra-brand">
-      <div>
-        <h1>La <span class="grad">Porra</span> LaLiga</h1>
-        <p class="porra-sub">🏆 Jornada <strong id="jornadaNum">–</strong></p>
-      </div>
-    </div>
-    <div class="header-tools">
-      <div class="user-box" id="userBox"></div>
     </div>
   </header>
 
@@ -235,7 +224,7 @@
     <p>La Porra · <a href="/">EduMR.es</a></p>
   </footer>
 
-  <script src="fondo.js?v=27"></script>
-  <script src="porra.js?v=27"></script>
+  <script src="fondo.js?v=28"></script>
+  <script src="porra.js?v=28"></script>
 </body>
 </html>

@@ -895,6 +895,9 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  margin-left: auto;
 }
 
 .appbar {
@@ -912,7 +915,14 @@ body {
 }
 [data-theme="light"] .appbar { background: rgba(255, 255, 255, 0.94); }
 .appbar-inner { display: flex; flex-direction: column; gap: 10px; }
-.appbar-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.appbar-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.appbar-brand { text-decoration: none; color: var(--text); flex-shrink: 0; }
+.appbar-brand h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(1.15rem, 3.5vw, 1.5rem);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
 .appbar .tabs { margin: 0; width: 100%; }
 .theme-toggle {
   width: 44px;
