@@ -232,12 +232,9 @@ function updateCountdown() {
   timer.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
 
   const f = fmtDate(nm.utcDate);
-  const horas = h === 1 ? "1 hora" : `${h} horas`;
-  const mins = m === 1 ? "1 minuto" : `${m} minutos`;
-  const extra = state.openCount > 1 ? ` · y ${state.openCount - 1} partido(s) más por jugar` : "";
   info.innerHTML = `Próximo partido: <span class="cd-team">${escapeHtml(nm.home)} - ${escapeHtml(
     nm.away
-  )}</span> · ${f.date} a las <strong>${f.time}</strong>.<br>Quedan <strong>${horas} y ${mins}</strong>${extra}.`;
+  )}</span> · ${f.date} a las <strong>${f.time}</strong>.`;
 }
 
 /* ---------- Render ---------- */
@@ -911,6 +908,44 @@ $("sortSelect").addEventListener("change", (e) => {
   sortMode = e.target.value;
   if (state && state.myName) renderMatches();
 });
+
+/* ---------- Deslizar lateral para cambiar de pestaña ---------- */
+(function initSwipe() {
+  const order = ["miQuiniela", "clasificacion", "participantes", "instrucciones"];
+  const main = document.querySelector(".quiniela-main") || document.body;
+  let sx = 0;
+  let sy = 0;
+  let st = 0;
+  main.addEventListener(
+    "touchstart",
+    (e) => {
+      const t = e.changedTouches[0];
+      sx = t.clientX;
+      sy = t.clientY;
+      st = Date.now();
+    },
+    { passive: true }
+  );
+  main.addEventListener(
+    "touchend",
+    (e) => {
+      const t = e.changedTouches[0];
+      const dx = t.clientX - sx;
+      const dy = t.clientY - sy;
+      if (Date.now() - st > 900) return;
+      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+      const el = document.elementFromPoint(sx, sy);
+      if (el && el.closest("button, a, input, select, .pick-btn, .participant-head")) return;
+      const active = document.querySelector(".tab.active");
+      let i = order.indexOf(active ? active.dataset.tab : "miQuiniela");
+      if (i < 0) i = 0;
+      if (dx < 0) i = Math.min(order.length - 1, i + 1);
+      else i = Math.max(0, i - 1);
+      switchTab(order[i]);
+    },
+    { passive: true }
+  );
+})();
 
 $("saveBtn").addEventListener("click", save);
 

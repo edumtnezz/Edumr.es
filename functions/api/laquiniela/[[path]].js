@@ -90,7 +90,15 @@ function sessionCookie(token, maxAge) {
   return `${COOKIE_NAME}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
 }
 
-function resultFromScore(score) {
+const OPEN_STATUSES = ["SCHEDULED", "TIMED"];
+
+function isOpenMatch(m, nowMs) {
+  return OPEN_STATUSES.includes(m.status) && new Date(m.utcDate).getTime() > nowMs;
+}
+
+function resultFromScore(m) {
+  if (!m || m.status !== "FINISHED") return null;
+  const score = m.score;
   if (!score || !score.fullTime) return null;
   const h = score.fullTime.home;
   const a = score.fullTime.away;
@@ -390,7 +398,7 @@ async function buildState(env, matchday, user) {
 
   const results = {};
   for (const m of matches) {
-    const r = resultFromScore(m.score);
+    const r = resultFromScore(m);
     if (r) results[m.id] = r;
   }
 
@@ -453,7 +461,7 @@ async function buildState(env, matchday, user) {
       awayTla: m.awayTeam && m.awayTeam.tla,
       homeForm: (hid && form[hid]) || [],
       awayForm: (aid && form[aid]) || [],
-      started: Date.now() >= new Date(m.utcDate).getTime(),
+      started: !isOpenMatch(m, Date.now()),
       result: results[m.id] || null,
       score:
         m.score && m.score.fullTime
@@ -479,7 +487,7 @@ async function buildState(env, matchday, user) {
   }
 
   const nowMs = Date.now();
-  const openMatches = matches.filter((m) => new Date(m.utcDate).getTime() > nowMs);
+  const openMatches = matches.filter((m) => isOpenMatch(m, nowMs));
   const openCount = openMatches.length;
   let next = null;
   for (const m of openMatches) {
@@ -530,7 +538,7 @@ async function buildGlobal(env) {
     const jornada = await getJornada(env, j);
     const results = {};
     for (const m of jornada.matches || []) {
-      const r = resultFromScore(m.score);
+      const r = resultFromScore(m);
       if (r) results[m.id] = r;
     }
     jornadas.push(j);
@@ -651,7 +659,7 @@ async function handlePrediccion(request, env, user) {
   const jornada = await getJornada(env, body.jornada);
   const matches = jornada.matches || [];
   const nowMs = Date.now();
-  const openMatches = matches.filter((m) => new Date(m.utcDate).getTime() > nowMs);
+  const openMatches = matches.filter((m) => isOpenMatch(m, nowMs));
   if (!openMatches.length) {
     return json({ error: "La jornada ya ha comenzado. No se puede modificar." }, 403);
   }
