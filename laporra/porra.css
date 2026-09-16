@@ -95,13 +95,25 @@ body {
   gap: 14px;
   margin-bottom: 12px;
 }
-.deco-ball { width: 58px; height: 58px; filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.35)); animation: bob 4s ease-in-out infinite; }
-.deco-flag {
-  width: 64px; height: 43px;
+.deco-ball { width: 76px; height: 76px; filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.4)); animation: bob 4s ease-in-out infinite; }
+
+.flag-corner {
+  position: fixed;
+  top: 15px;
+  right: 16px;
+  width: 40px;
+  height: 27px;
+  z-index: 40;
   border-radius: 6px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
-  animation: bob 4s ease-in-out infinite;
-  animation-delay: -2s;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+  transform-origin: left center;
+  animation: wave 3.2s ease-in-out infinite;
+}
+@keyframes wave {
+  0%, 100% { transform: perspective(220px) rotateY(0deg) skewY(0deg); }
+  25% { transform: perspective(220px) rotateY(12deg) skewY(-1.2deg); }
+  50% { transform: perspective(220px) rotateY(0deg) skewY(0deg); }
+  75% { transform: perspective(220px) rotateY(-12deg) skewY(1.2deg); }
 }
 
 .panel { position: relative; overflow: hidden; }
@@ -873,7 +885,7 @@ body {
 .theme-toggle {
   position: fixed;
   top: 16px;
-  right: 16px;
+  right: 68px;
   z-index: 40;
   width: 44px;
   height: 44px;
