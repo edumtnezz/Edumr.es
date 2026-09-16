@@ -73,7 +73,7 @@ body {
   top: 0;
   left: 0;
   right: 0;
-  height: 8px;
+  height: 5px;
   z-index: 60;
   background: repeating-linear-gradient(90deg, #16a34a 0 20px, #15803d 20px 40px);
   box-shadow: 0 2px 14px rgba(22, 163, 74, 0.45);
@@ -935,12 +935,14 @@ body {
   justify-content: flex-end;
 }
 .appbar-right {
+  position: absolute;
+  top: 6px;
+  right: 14px;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 5px;
-  margin-left: auto;
-  align-self: flex-start;
+  gap: 4px;
 }
 .swipe-hint { font-size: 0.66rem; color: var(--muted); text-align: right; }
 
