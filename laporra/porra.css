@@ -79,8 +79,8 @@ body {
   transform: translateY(-50%);
   width: 80px;
   height: 80px;
-  background: url(/img/ball.png) center/contain no-repeat;
-  opacity: 0.08;
+  background: url(/img/laporra-icon.png) center/contain no-repeat;
+  opacity: 0.09;
   pointer-events: none;
 }
 
@@ -95,11 +95,7 @@ body {
   background: linear-gradient(90deg, transparent, rgba(0, 242, 254, 0.65), rgba(139, 92, 246, 0.65), transparent);
 }
 
-.ball { animation: ballroll 6s linear infinite; }
-@keyframes ballroll {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
+.ball { animation: bob 4s ease-in-out infinite; }
 
 .countdown { animation: glowpulse 3.2s ease-in-out infinite; }
 @keyframes glowpulse {
@@ -151,15 +147,13 @@ body {
 }
 .porra-brand { display: flex; align-items: center; gap: 16px; }
 .ball {
-  width: 58px; height: 58px;
-  border-radius: 50%;
+  width: 56px; height: 56px;
   display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, rgba(0, 242, 254, 0.18), rgba(139, 92, 246, 0.22));
-  border: 1px solid rgba(0, 242, 254, 0.3);
-  box-shadow: 0 0 28px rgba(0, 242, 254, 0.2);
+  border-radius: 16px;
+  filter: drop-shadow(0 6px 18px rgba(0, 242, 254, 0.4));
 }
-.ball-img { width: 42px; height: 42px; display: block; }
-.btn-ball { width: 20px; height: 20px; vertical-align: -4px; margin-right: 4px; display: inline-block; }
+.ball-img { width: 56px; height: 56px; display: block; border-radius: 16px; }
+.btn-ball { width: 20px; height: 20px; vertical-align: -4px; margin-right: 6px; display: inline-block; border-radius: 6px; }
 .porra-header h1 {
   font-family: 'Space Grotesk', sans-serif;
   font-size: clamp(1.5rem, 4vw, 2.1rem);
@@ -913,7 +907,7 @@ body {
   pointer-events: none;
 }
 .welcome-top { display: flex; align-items: center; gap: 16px; position: relative; z-index: 1; }
-.welcome-ball { width: 48px; height: 48px; animation: spin 8s linear infinite; }
+.welcome-ball { width: 48px; height: 48px; border-radius: 14px; animation: bob 3.5s ease-in-out infinite; }
 .welcome-trophy { font-size: 2rem; margin-left: auto; filter: drop-shadow(0 4px 10px rgba(251, 191, 36, 0.5)); animation: bob 3s ease-in-out infinite; }
 @keyframes bob {
   0%, 100% { transform: translateY(0); }
