@@ -1,0 +1,616 @@
+const COMPETITION = "PD";
+const CACHE_TTL_MS = 60 * 1000;
+const FORM_TTL_MS = 10 * 60 * 1000;
+const SESSION_TTL = 60 * 60 * 24 * 60;
+const COOKIE_NAME = "porra_session";
+const PBKDF2_ITER = 100000;
+const MAX_LOGIN_FAILS = 10;
+const PREMIOS = [1200000, 1000000, 800000, 600000, 400000, 200000];
+
+function json(data, status = 200, extraHeaders = {}) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+      ...extraHeaders,
+    },
+  });
+}
+
+function enc(s) {
+  return new TextEncoder().encode(s);
+}
+
+function toHex(buf) {
+  const b = new Uint8Array(buf);
+  let s = "";
+  for (const x of b) s += x.toString(16).padStart(2, "0");
+  return s;
+}
+
+function randomHex(nBytes) {
+  const a = new Uint8Array(nBytes);
+  crypto.getRandomValues(a);
+  return Array.from(a, (x) => x.toString(16).padStart(2, "0")).join("");
+}
+
+async function pbkdf2Hex(pin, saltHex, iter) {
+  const key = await crypto.subtle.importKey("raw", enc(pin), { name: "PBKDF2" }, false, ["deriveBits"]);
+  const salt = new Uint8Array(saltHex.match(/.{2}/g).map((h) => parseInt(h, 16)));
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt, iterations: iter, hash: "SHA-256" },
+    key,
+    256
+  );
+  return toHex(bits);
+}
+
+function safeEqual(a, b) {
+  if (typeof a !== "string" || typeof b !== "string" || a.length !== b.length) return false;
+  let out = 0;
+  for (let i = 0; i < a.length; i++) out |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return out === 0;
+}
+
+function normName(v) {
+  return String(v || "").trim().replace(/\s+/g, " ").slice(0, 24);
+}
+
+function nameKey(v) {
+  return normName(v).toLowerCase();
+}
+
+function validName(v) {
+  const n = normName(v);
+  return n.length >= 2 && /^[\p{L}\p{N} ._-]+$/u.test(n);
+}
+
+function validPin(v) {
+  const p = String(v || "").trim();
+  return /^\d{4}$/.test(p) || /^\d{6}$/.test(p);
+}
+
+function getCookie(request, name) {
+  const c = request.headers.get("Cookie") || "";
+  for (const part of c.split(";")) {
+    const trimmed = part.trim();
+    const idx = trimmed.indexOf("=");
+    if (idx === -1) continue;
+    if (trimmed.slice(0, idx) === name) return decodeURIComponent(trimmed.slice(idx + 1));
+  }
+  return null;
+}
+
+function sessionCookie(token, maxAge) {
+  return `${COOKIE_NAME}=${token}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`;
+}
+
+function resultFromScore(score) {
+  if (!score || !score.fullTime) return null;
+  const h = score.fullTime.home;
+  const a = score.fullTime.away;
+  if (h === null || a === null || h === undefined || a === undefined) return null;
+  if (h > a) return "1";
+  if (h < a) return "2";
+  return "X";
+}
+
+/* ---------- Cuentas y sesiones ---------- */
+
+async function getUser(env, key) {
+  return env.PORRA.get(`user:${key}`, "json");
+}
+
+async function getSessionUser(env, request) {
+  const token = getCookie(request, COOKIE_NAME);
+  if (!token) return null;
+  const sess = await env.PORRA.get(`sess:${token}`, "json");
+  if (!sess || !sess.key) return null;
+  const user = await getUser(env, sess.key);
+  if (!user) return null;
+  return { key: sess.key, name: user.name };
+}
+
+async function createSession(env, key) {
+  const token = randomHex(32);
+  await env.PORRA.put(`sess:${token}`, JSON.stringify({ key, created: Date.now() }), {
+    expirationTtl: SESSION_TTL,
+  });
+  return token;
+}
+
+async function migrateLegacy(env, userKey, name) {
+  const list = await env.PORRA.list({ prefix: "pred:" });
+  for (const k of list.keys) {
+    const parts = k.name.split(":");
+    if (parts.length !== 2) continue;
+    const jornada = parts[1];
+    const all = await env.PORRA.get(k.name, "json");
+    if (!all) continue;
+    let changed = false;
+    for (const [ak, val] of Object.entries(all)) {
+      const nm = val && val.__name ? val.__name : ak;
+      if (nameKey(nm) === userKey) {
+        const picks = {};
+        for (const [mid, p] of Object.entries(val)) {
+          if (mid !== "__name" && ["1", "X", "2"].includes(p)) picks[mid] = p;
+        }
+        await env.PORRA.put(
+          `pred:${jornada}:${userKey}`,
+          JSON.stringify({ name: normName(nm), picks, updatedAt: new Date().toISOString() })
+        );
+        delete all[ak];
+        changed = true;
+      }
+    }
+    if (changed) await env.PORRA.put(k.name, JSON.stringify(all));
+  }
+}
+
+/* ---------- Jornada / partidos ---------- */
+
+function mockJornada(matchday) {
+  const teams = [
+    [["Real Madrid", 86], ["Barcelona", 81]],
+    [["Atletico de Madrid", 78], ["Sevilla", 559]],
+    [["Real Sociedad", 92], ["Athletic Club", 77]],
+    [["Villarreal", 94], ["Valencia", 95]],
+    [["Real Betis", 90], ["Girona", 298]],
+    [["Celta de Vigo", 558], ["Osasuna", 79]],
+    [["Rayo Vallecano", 87], ["Getafe", 82]],
+    [["Mallorca", 89], ["Alaves", 263]],
+    [["Las Palmas", 275], ["Espanyol", 80]],
+    [["Leganes", 745], ["Valladolid", 250]],
+  ];
+  const now = Date.now();
+  const day = 24 * 60 * 60 * 1000;
+  const base = now + day;
+  const matches = teams.map((t, i) => {
+    const utcDate = new Date(base + i * (day * 0.7));
+    const home = t[0];
+    const away = t[1];
+    return {
+      id: 9000 + matchday * 10 + i,
+      utcDate: utcDate.toISOString(),
+      status: "SCHEDULED",
+      homeTeam: {
+        id: home[1],
+        name: home[0],
+        shortName: home[0],
+        tla: home[0].split(" ")[0].slice(0, 3).toUpperCase(),
+        crest: `https://crests.football-data.org/${home[1]}.png`,
+      },
+      awayTeam: {
+        id: away[1],
+        name: away[0],
+        shortName: away[0],
+        tla: away[0].split(" ")[0].slice(0, 3).toUpperCase(),
+        crest: `https://crests.football-data.org/${away[1]}.png`,
+      },
+      score: { fullTime: { home: null, away: null } },
+    };
+  });
+  return { matchday, source: "mock", matches };
+}
+
+async function fetchMatchday(headers, md) {
+  const res = await fetch(
+    `https://api.football-data.org/v4/competitions/${COMPETITION}/matches?matchday=${md}`,
+    { headers }
+  );
+  if (!res.ok) throw new Error("matches " + res.status);
+  const data = await res.json();
+  return (data.matches || []).map((m) => ({
+    id: m.id,
+    utcDate: m.utcDate,
+    status: m.status,
+    homeTeam: {
+      id: m.homeTeam && m.homeTeam.id,
+      name: m.homeTeam && m.homeTeam.name,
+      shortName: m.homeTeam && m.homeTeam.shortName,
+      tla: m.homeTeam && m.homeTeam.tla,
+      crest: m.homeTeam && m.homeTeam.crest,
+    },
+    awayTeam: {
+      id: m.awayTeam && m.awayTeam.id,
+      name: m.awayTeam && m.awayTeam.name,
+      shortName: m.awayTeam && m.awayTeam.shortName,
+      tla: m.awayTeam && m.awayTeam.tla,
+      crest: m.awayTeam && m.awayTeam.crest,
+    },
+    score: m.score || { fullTime: { home: null, away: null } },
+  }));
+}
+
+async function fetchFootballData(env, matchday) {
+  const token = env.FOOTBALL_API_KEY;
+  if (!token) return null;
+  const headers = { "X-Auth-Token": token };
+  let md = matchday ? Number(matchday) : null;
+  if (!md) {
+    const compRes = await fetch(
+      `https://api.football-data.org/v4/competitions/${COMPETITION}`,
+      { headers }
+    );
+    if (!compRes.ok) throw new Error("comp " + compRes.status);
+    const comp = await compRes.json();
+    md = comp.currentSeason && comp.currentSeason.currentMatchday;
+  }
+  if (!md) return null;
+  let matches = await fetchMatchday(headers, md);
+  if (!matchday && matches.length) {
+    const allFinished = matches.every((m) => m.status === "FINISHED");
+    if (allFinished) {
+      for (let next = md + 1; next <= md + 3; next++) {
+        try {
+          const nm = await fetchMatchday(headers, next);
+          if (nm.length) {
+            md = next;
+            matches = nm;
+            break;
+          }
+        } catch (e) {
+          break;
+        }
+      }
+    }
+  }
+  return { matchday: md, source: "football-data", matches };
+}
+
+async function getJornada(env, matchday) {
+  const kv = env.PORRA;
+  const cacheKey = `jornada:${matchday || "current"}`;
+  const raw = await kv.get(cacheKey, "json");
+  if (raw && raw.fetchedAt && Date.now() - raw.fetchedAt < CACHE_TTL_MS) {
+    return raw.data;
+  }
+  let data = null;
+  try {
+    data = await fetchFootballData(env, matchday);
+  } catch (e) {
+    data = null;
+  }
+  if (!data) data = mockJornada(matchday || 1);
+  await kv.put(cacheKey, JSON.stringify({ fetchedAt: Date.now(), data }), {
+    expirationTtl: 600,
+  });
+  return data;
+}
+
+async function getFormMap(env) {
+  const cacheKey = "form:PD";
+  const cached = await env.PORRA.get(cacheKey, "json");
+  if (cached && cached.fetchedAt && Date.now() - cached.fetchedAt < FORM_TTL_MS) {
+    return cached.data;
+  }
+  let data = {};
+  const token = env.FOOTBALL_API_KEY;
+  if (token) {
+    try {
+      const res = await fetch(
+        `https://api.football-data.org/v4/competitions/${COMPETITION}/matches?status=FINISHED`,
+        { headers: { "X-Auth-Token": token } }
+      );
+      if (res.ok) {
+        const j = await res.json();
+        const acc = {};
+        for (const m of j.matches || []) {
+          const d = new Date(m.utcDate).getTime();
+          const w = m.score && m.score.winner;
+          const hid = m.homeTeam && m.homeTeam.id;
+          const aid = m.awayTeam && m.awayTeam.id;
+          if (hid) {
+            (acc[hid] = acc[hid] || []).push({
+              d,
+              r: w === "HOME_TEAM" ? "V" : w === "AWAY_TEAM" ? "D" : "E",
+              home: true,
+            });
+          }
+          if (aid) {
+            (acc[aid] = acc[aid] || []).push({
+              d,
+              r: w === "AWAY_TEAM" ? "V" : w === "HOME_TEAM" ? "D" : "E",
+              home: false,
+            });
+          }
+        }
+        for (const [id, arr] of Object.entries(acc)) {
+          arr.sort((a, b) => b.d - a.d);
+          data[id] = arr.slice(0, 5).map((x) => ({ r: x.r, home: x.home }));
+        }
+      }
+    } catch (e) {
+      data = {};
+    }
+  }
+  await env.PORRA.put(cacheKey, JSON.stringify({ fetchedAt: Date.now(), data }), {
+    expirationTtl: 3600,
+  });
+  return data;
+}
+
+function lockTimeOf(matches) {
+  let min = null;
+  for (const m of matches) {
+    if (m.status === "FINISHED") continue;
+    const t = new Date(m.utcDate).getTime();
+    if (min === null || t < min) min = t;
+  }
+  if (min === null) {
+    for (const m of matches) {
+      const t = new Date(m.utcDate).getTime();
+      if (min === null || t > min) min = t;
+    }
+  }
+  return min;
+}
+
+async function getPredictions(env, jornada) {
+  const prefix = `pred:${jornada}:`;
+  const list = await env.PORRA.list({ prefix });
+  const out = {};
+  const reads = list.keys.map(async (k) => {
+    const v = await env.PORRA.get(k.name, "json");
+    if (v) out[k.name.slice(prefix.length)] = v;
+  });
+  await Promise.all(reads);
+  return out;
+}
+
+async function buildState(env, matchday, user) {
+  const jornada = await getJornada(env, matchday);
+  const matches = jornada.matches || [];
+  const lock = lockTimeOf(matches);
+  const locked = lock !== null && Date.now() >= lock;
+  const [preds, form] = await Promise.all([getPredictions(env, jornada.matchday), getFormMap(env)]);
+
+  const results = {};
+  for (const m of matches) {
+    const r = resultFromScore(m.score);
+    if (r) results[m.id] = r;
+  }
+
+  const standings = Object.entries(preds)
+    .map(([key, entry]) => {
+      const picks = entry.picks || {};
+      let hits = 0;
+      let played = 0;
+      let total = 0;
+      for (const m of matches) {
+        const pick = picks[m.id];
+        if (!pick) continue;
+        total++;
+        const r = results[m.id];
+        if (!r) continue;
+        played++;
+        if (pick === r) hits++;
+      }
+      return {
+        key,
+        name: entry.name || key,
+        hits,
+        played,
+        total,
+        missed: Math.max(0, played - hits),
+      };
+    })
+    .sort((a, b) => b.hits - a.hits || b.played - a.played || a.name.localeCompare(b.name));
+
+  standings.forEach((s, i) => {
+    s.rank = i + 1;
+    s.prize = PREMIOS[i] || 0;
+  });
+
+  const revealAll = locked;
+  const participants = Object.entries(preds)
+    .map(([key, entry]) => ({
+      key,
+      name: entry.name || key,
+      picks: revealAll ? entry.picks || {} : null,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const myEntry = user ? preds[user.key] : null;
+
+  const outMatches = matches.map((m) => {
+    const hid = m.homeTeam && m.homeTeam.id;
+    const aid = m.awayTeam && m.awayTeam.id;
+    return {
+      id: m.id,
+      utcDate: m.utcDate,
+      status: m.status,
+      home: m.homeTeam && (m.homeTeam.shortName || m.homeTeam.name),
+      away: m.awayTeam && (m.awayTeam.shortName || m.awayTeam.name),
+      homeFull: m.homeTeam && m.homeTeam.name,
+      awayFull: m.awayTeam && m.awayTeam.name,
+      homeCrest: m.homeTeam && m.homeTeam.crest,
+      awayCrest: m.awayTeam && m.awayTeam.crest,
+      homeTla: m.homeTeam && m.homeTeam.tla,
+      awayTla: m.awayTeam && m.awayTeam.tla,
+      homeForm: (hid && form[hid]) || [],
+      awayForm: (aid && form[aid]) || [],
+      result: results[m.id] || null,
+      score:
+        m.score && m.score.fullTime
+          ? { home: m.score.fullTime.home, away: m.score.fullTime.away }
+          : null,
+    };
+  });
+
+  const myPicks = myEntry && myEntry.picks ? myEntry.picks : {};
+
+  const first = matches.length
+    ? matches.reduce((a, b) => (new Date(a.utcDate) < new Date(b.utcDate) ? a : b))
+    : null;
+
+  return {
+    matchday: jornada.matchday,
+    source: jornada.source,
+    lockTime: lock,
+    locked,
+    firstMatch: first
+      ? {
+          home: first.homeTeam && (first.homeTeam.shortName || first.homeTeam.name),
+          away: first.awayTeam && (first.awayTeam.shortName || first.awayTeam.name),
+          utcDate: first.utcDate,
+        }
+      : null,
+    matches: outMatches,
+    myPicks,
+    myName: user ? user.name : null,
+    hasPrediction: !!(myEntry && myEntry.picks && Object.keys(myEntry.picks).length),
+    standings,
+    participants,
+    revealAll,
+    prizes: PREMIOS,
+    players: standings.length,
+  };
+}
+
+/* ---------- Handlers ---------- */
+
+async function handleRegistro(request, env) {
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Datos invalidos" }, 400);
+  }
+  const name = normName(body.nombre);
+  const pin = String(body.pin || "").trim();
+  if (!validName(name)) {
+    return json({ error: "El nombre debe tener 2-24 caracteres (letras, numeros, espacios)." }, 400);
+  }
+  if (!validPin(pin)) {
+    return json({ error: "El codigo debe tener 4 o 6 numeros." }, 400);
+  }
+  const key = nameKey(name);
+  const existing = await getUser(env, key);
+  if (existing) {
+    return json({ error: "Ese nombre ya esta registrado. Elige otro o entra con tu codigo." }, 409);
+  }
+  const salt = randomHex(16);
+  const hash = await pbkdf2Hex(pin, salt, PBKDF2_ITER);
+  await env.PORRA.put(
+    `user:${key}`,
+    JSON.stringify({ name, salt, hash, iter: PBKDF2_ITER, createdAt: new Date().toISOString() })
+  );
+  await migrateLegacy(env, key, name);
+  const token = await createSession(env, key);
+  const state = await buildState(env, null, { key, name });
+  return json({ ok: true, user: { name }, state }, 200, {
+    "Set-Cookie": sessionCookie(token, SESSION_TTL),
+  });
+}
+
+async function handleLogin(request, env) {
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Datos invalidos" }, 400);
+  }
+  const name = normName(body.nombre);
+  const pin = String(body.pin || "").trim();
+  if (!validName(name) || !validPin(pin)) {
+    return json({ error: "Nombre o codigo incorrectos." }, 400);
+  }
+  const key = nameKey(name);
+  const failKey = `fail:${key}`;
+  const fails = (await env.PORRA.get(failKey, "json")) || { n: 0 };
+  if (fails.n >= MAX_LOGIN_FAILS) {
+    return json({ error: "Demasiados intentos fallidos. Espera 15 minutos." }, 429);
+  }
+  const user = await getUser(env, key);
+  const hash = user ? await pbkdf2Hex(pin, user.salt, user.iter || PBKDF2_ITER) : null;
+  if (!user || !safeEqual(hash, user.hash)) {
+    await env.PORRA.put(failKey, JSON.stringify({ n: fails.n + 1 }), { expirationTtl: 900 });
+    return json({ error: "Nombre o codigo incorrectos." }, 401);
+  }
+  await env.PORRA.delete(failKey);
+  await migrateLegacy(env, key, user.name);
+  const token = await createSession(env, key);
+  const state = await buildState(env, null, { key, name: user.name });
+  return json({ ok: true, user: { name: user.name }, state }, 200, {
+    "Set-Cookie": sessionCookie(token, SESSION_TTL),
+  });
+}
+
+function handleLogout() {
+  return json({ ok: true }, 200, {
+    "Set-Cookie": `${COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`,
+  });
+}
+
+async function handlePrediccion(request, env, user) {
+  if (!user) return json({ error: "Inicia sesion para guardar." }, 401);
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Datos invalidos" }, 400);
+  }
+  const picks = body.picks;
+  if (!picks || typeof picks !== "object") return json({ error: "Pronosticos invalidos" }, 400);
+
+  const jornada = await getJornada(env, body.jornada);
+  const matches = jornada.matches || [];
+  const lock = lockTimeOf(matches);
+  if (lock !== null && Date.now() >= lock) {
+    return json({ error: "La jornada ya ha comenzado. No se puede modificar." }, 403);
+  }
+
+  const validIds = new Set(matches.map((m) => String(m.id)));
+  const clean = {};
+  for (const [id, pick] of Object.entries(picks)) {
+    if (!validIds.has(String(id))) continue;
+    if (!["1", "X", "2"].includes(pick)) continue;
+    clean[id] = pick;
+  }
+
+  const missing = matches.filter((m) => !clean[m.id]);
+  if (missing.length) {
+    return json(
+      {
+        error: `Te falta elegir ${missing.length} partido(s).`,
+        missing: missing.map((m) => m.id),
+      },
+      400
+    );
+  }
+
+  await env.PORRA.put(
+    `pred:${jornada.matchday}:${user.key}`,
+    JSON.stringify({ name: user.name, picks: clean, updatedAt: new Date().toISOString() })
+  );
+
+  const state = await buildState(env, String(jornada.matchday), user);
+  return json({ ok: true, state });
+}
+
+export async function onRequestGet({ request, env, params }) {
+  const path = (params.path || []).join("/");
+  const url = new URL(request.url);
+  const user = await getSessionUser(env, request);
+
+  if (path === "estado" || path === "") {
+    const reqJornada = url.searchParams.get("jornada");
+    const state = await buildState(env, reqJornada, user);
+    return json(state);
+  }
+  return json({ error: "not found" }, 404);
+}
+
+export async function onRequestPost({ request, env, params }) {
+  const path = (params.path || []).join("/");
+  if (path === "registro") return handleRegistro(request, env);
+  if (path === "login") return handleLogin(request, env);
+  if (path === "logout") return handleLogout();
+  if (path === "prediccion") {
+    const user = await getSessionUser(env, request);
+    return handlePrediccion(request, env, user);
+  }
+  return json({ error: "not found" }, 404);
+}

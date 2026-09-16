@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>La Porra LaLiga · EduMR</title>
+  <meta name="description" content="La Porra de LaLiga (1X2) entre compañeros. Pronostica, acierta y gana tu prima.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#07090e">
+  <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="porra.css?v=10">
+</head>
+<body>
+  <a class="back-link" href="/">← Volver a EduMR.es</a>
+
+  <header class="porra-header">
+    <div class="porra-brand">
+      <span class="ball">⚽</span>
+      <div>
+        <h1>La <span class="grad">Porra</span> LaLiga</h1>
+        <p class="porra-sub">Jornada <strong id="jornadaNum">–</strong> · 1 acierto = 1 punto</p>
+      </div>
+    </div>
+    <div class="user-box" id="userBox"></div>
+  </header>
+
+  <main class="porra-main">
+    <!-- Contador -->
+    <section class="countdown" id="countdownPanel">
+      <div class="cd-side">
+        <span class="cd-label">Cierra en</span>
+        <span class="cd-timer" id="cdTimer">--:--:--</span>
+      </div>
+      <div class="cd-info" id="cdInfo">Cargando la jornada…</div>
+    </section>
+
+    <!-- Acceso / registro -->
+    <section class="panel hidden" id="authPanel">
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-auth="login" id="tabLogin">Entrar</button>
+        <button class="auth-tab" data-auth="registro" id="tabRegistro">Crear cuenta</button>
+      </div>
+      <h2 id="authTitle">Entra en tu cuenta</h2>
+      <p class="muted" id="authHint">Pon tu nombre y tu código secreto de 4 o 6 números.</p>
+      <div class="auth-form">
+        <input id="authName" type="text" maxlength="24" placeholder="Tu nombre o apodo" autocomplete="username">
+        <input id="authPin" type="password" inputmode="numeric" maxlength="6" placeholder="Código (4 o 6 números)" autocomplete="current-password">
+        <button class="btn-primary big" id="authBtn">Entrar</button>
+      </div>
+      <p class="error" id="authError"></p>
+      <p class="muted small" id="authNote"></p>
+    </section>
+
+    <!-- Pestañas -->
+    <nav class="tabs hidden" id="tabsNav">
+      <button class="tab active" data-tab="miPorra">Mi porra</button>
+      <button class="tab" data-tab="clasificacion">Clasificación</button>
+      <button class="tab" data-tab="participantes">Participantes</button>
+      <button class="tab" data-tab="instrucciones">Instrucciones</button>
+    </nav>
+
+    <!-- Mi porra -->
+    <section class="tab-panel" id="tab-miPorra">
+      <div class="panel">
+        <div class="picks-head">
+          <div>
+            <h2>Tus pronósticos</h2>
+            <p class="muted" id="picksHint">Elige 1, X o 2 en cada partido.</p>
+          </div>
+          <div class="picks-tools">
+            <select id="sortSelect" class="select">
+              <option value="hora">Orden: por hora</option>
+              <option value="local">Orden: equipo local (A-Z)</option>
+              <option value="visitante">Orden: equipo visitante (A-Z)</option>
+            </select>
+            <button class="btn-ghost" id="editBtn">Editar</button>
+          </div>
+        </div>
+        <div class="match-list" id="matchList"></div>
+        <div class="save-row">
+          <button class="btn-primary big" id="saveBtn">Guardar pronósticos</button>
+          <button class="btn-ghost" id="cancelBtn">Cancelar</button>
+          <span class="save-msg" id="saveMsg"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Clasificación -->
+    <section class="tab-panel hidden" id="tab-clasificacion">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Clasificación</h2>
+            <p class="muted" id="rankingHint">Prima según el puesto final de la jornada.</p>
+          </div>
+          <span class="pulse-chip" id="playersChip">0 jugadores</span>
+        </div>
+        <div class="podium" id="podium"></div>
+        <div class="rank-cards" id="rankCards"></div>
+        <p class="empty" id="rankEmpty">Aún no hay pronósticos. ¡Sé el primero!</p>
+      </div>
+      <div class="panel hidden" id="summaryPanel">
+        <div class="panel-head">
+          <div>
+            <h2>Reparto de la jornada</h2>
+            <p class="muted">Copia este resumen y repártelo en Futmondo.</p>
+          </div>
+          <button class="btn-ghost" id="copyBtn">Copiar</button>
+        </div>
+        <div class="summary-chart" id="summaryChart"></div>
+      </div>
+    </section>
+
+    <!-- Participantes -->
+    <section class="tab-panel hidden" id="tab-participantes">
+      <div class="panel">
+        <h2>Participantes y sus pronósticos</h2>
+        <p class="muted" id="participantsHint"></p>
+        <div class="participants" id="participantsList"></div>
+      </div>
+    </section>
+
+    <!-- Instrucciones -->
+    <section class="tab-panel hidden" id="tab-instrucciones">
+      <div class="panel">
+        <h2>Cómo funciona La Porra</h2>
+
+        <div class="info-block">
+          <h3>1. Crea tu cuenta</h3>
+          <p>Escribe tu <strong>nombre o apodo</strong> y elige un <strong>código secreto de 4 o 6 números</strong>. Con ese nombre y código entras siempre. No hay correos ni contraseñas.</p>
+        </div>
+
+        <div class="info-block">
+          <h3>2. Es 100% privado y seguro</h3>
+          <p>Tu código <strong>se guarda cifrado</strong> (PBKDF2 SHA-256 con sal aleatoria). Nadie puede leerlo: <strong>ni los demás jugadores ni el creador de la web</strong>. Tu sesión va en una cookie privada que solo tu navegador tiene, así que <strong>nadie más puede entrar ni cambiar tu pronóstico</strong>.</p>
+        </div>
+
+        <div class="info-block">
+          <h3>3. Haz tu porra</h3>
+          <p>En cada partido elige <strong>1</strong> (gana el local), <strong>X</strong> (empate) o <strong>2</strong> (gana el visitante). Debes rellenar <strong>todos</strong> los partidos: si te falta alguno, no te dejará guardar y te llevará al que falta. Debajo de cada escudo verás los <strong>últimos 5 partidos</strong> del equipo (V = victoria, E = empate, D = derrota) y si jugó en casa o fuera.</p>
+        </div>
+
+        <div class="info-block">
+          <h3>4. Hasta cuándo puedes editar</h3>
+          <p>Puedes cambiar tu porra <strong>hasta que empieza el primer partido</strong> de la jornada. A partir de ese momento se <strong>bloquea</strong> y ya no se puede modificar (ni tú ni nadie). El contador de arriba te avisa del tiempo que queda.</p>
+        </div>
+
+        <div class="info-block">
+          <h3>5. Puntuación</h3>
+          <p>Cada acierto vale <strong>1 punto</strong>. La clasificación ordena a los jugadores por aciertos.</p>
+        </div>
+
+        <div class="info-block">
+          <h3>6. Primas de la jornada</h3>
+          <p>Al terminar los partidos, cada puesto recibe su prima:</p>
+          <ul class="prize-list" id="prizeList"></ul>
+          <p class="muted">Esto se exporta desde la pestaña <strong>Clasificación</strong> para repartir el dinero en la app de Futmondo.</p>
+        </div>
+
+        <div class="info-block">
+          <h3>7. Privacidad de los pronósticos</h3>
+          <p>Los pronósticos de los demás <strong>se revelan cuando empieza la jornada</strong>. Antes se ocultan para que nadie copie. Después los ves en la pestaña <strong>Participantes</strong>.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="porra-footer">
+    <p>La Porra · <a href="/">EduMR.es</a></p>
+  </footer>
+
+  <script src="porra.js?v=10"></script>
+</body>
+</html>
