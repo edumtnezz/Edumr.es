@@ -55,9 +55,25 @@ function updateWelcome() {
   g.textContent = `Con permiso, ¡${saludo}${name ? ", " + name : ""}!`;
   if (s) {
     s.textContent = name
-      ? "Aquí tienes tu porra: elige 1, X o 2 en cada partido y guárdala antes de que empiece el primer partido. 🥅"
-      : "Bienvenido a La Porra de LaLiga. Crea tu cuenta y juega con tus compañeros. Aquí abajo tienes cómo se juega. 🥅";
+      ? "Aquí tienes tu porra: elige 1, X o 2 en cada partido y guárdala antes de que empiece el primer partido."
+      : "Juega la porra de LaLiga con tus compañeros. Es rápido y gratis.";
   }
+  const steps = $("welcomeSteps");
+  if (steps) {
+    let seen = false;
+    try {
+      seen = localStorage.getItem("porra_seen") === "1";
+    } catch (e) {}
+    steps.classList.toggle("hidden", seen);
+  }
+}
+
+function markSeen() {
+  try {
+    localStorage.setItem("porra_seen", "1");
+  } catch (e) {}
+  const steps = $("welcomeSteps");
+  if (steps) steps.classList.add("hidden");
 }
 
 function escapeHtml(s) {
@@ -153,17 +169,26 @@ function formEl(list) {
   return wrap;
 }
 
+function dayLabel(d) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dd = new Date(d);
+  dd.setHours(0, 0, 0, 0);
+  const diff = Math.round((dd - today) / 86400000);
+  if (diff === 0) return "Hoy";
+  if (diff === 1) return "Mañana";
+  if (diff === -1) return "Ayer";
+  return d.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+}
+
 function teamEl(side, match, team) {
   const span = document.createElement("span");
   span.className = "team " + side;
-  const main = document.createElement("span");
-  main.className = "team-main";
-  main.appendChild(crestEl(team.crest, team.tla || team.name));
+  span.appendChild(crestEl(team.crest, team.tla || team.name));
   const t = document.createElement("span");
   t.className = "tname";
   t.textContent = team.name;
-  main.appendChild(t);
-  span.appendChild(main);
+  span.appendChild(t);
   span.appendChild(formEl(side === "home" ? match.homeForm : match.awayForm));
   return span;
 }
@@ -261,7 +286,20 @@ function renderMatches() {
     );
   else matches.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
 
+  let lastDay = null;
   matches.forEach((m) => {
+    if (sortMode === "hora" || sortMode === "porjugar") {
+      const d = new Date(m.utcDate);
+      const key = d.toDateString();
+      if (key !== lastDay) {
+        lastDay = key;
+        const head = document.createElement("div");
+        head.className = "day-head";
+        head.textContent = dayLabel(d);
+        list.appendChild(head);
+      }
+    }
+
     const row = document.createElement("div");
     row.className = "match-row";
     row.dataset.match = m.id;
@@ -335,6 +373,7 @@ function renderMatches() {
   } else {
     $("picksHint").textContent = "Tu porra está guardada. Pulsa Editar si quieres cambiarla (hasta el inicio del primer partido).";
   }
+  updateSaveFab();
 }
 
 function selectPick(matchId, opt) {
@@ -530,7 +569,8 @@ function renderParticipants() {
     }
     const count = p.picks ? Object.keys(p.picks).length : 0;
 
-    const head = document.createElement("div");
+    const head = document.createElement("button");
+    head.type = "button";
     head.className = "participant-head";
     const av = document.createElement("span");
     av.className = "participant-avatar";
@@ -555,6 +595,18 @@ function renderParticipants() {
       badge.textContent = `${hits} pts`;
       head.appendChild(badge);
     }
+    const chev = document.createElement("span");
+    chev.className = "participant-chevron";
+    chev.textContent = "▾";
+    head.appendChild(chev);
+
+    const bodyEl = document.createElement("div");
+    bodyEl.className = "participant-body hidden";
+    head.addEventListener("click", () => {
+      bodyEl.classList.toggle("hidden");
+      head.classList.toggle("open", !bodyEl.classList.contains("hidden"));
+    });
+
     card.appendChild(head);
 
     if (played) {
@@ -577,14 +629,14 @@ function renderParticipants() {
       koSpan.innerHTML = `<b>✗ Falló</b> ${koList.length ? escapeHtml(koList.join(" · ")) : "—"}`;
       sum.appendChild(okSpan);
       sum.appendChild(koSpan);
-      card.appendChild(sum);
+      bodyEl.appendChild(sum);
     }
 
     if (!p.picks) {
       const note = document.createElement("div");
       note.className = "hidden-note";
       note.textContent = "Sin pronóstico en esta jornada.";
-      card.appendChild(note);
+      bodyEl.appendChild(note);
     } else {
       const grid = document.createElement("div");
       grid.className = "participant-picks";
@@ -609,8 +661,9 @@ function renderParticipants() {
         chip.appendChild(val);
         grid.appendChild(chip);
       });
-      card.appendChild(grid);
+      bodyEl.appendChild(grid);
     }
+    card.appendChild(bodyEl);
     wrap.appendChild(card);
   });
 }
@@ -626,27 +679,34 @@ function renderPrizes() {
 }
 
 function renderJornadaBar() {
-  const bar = $("jornadaBar");
-  if (!bar) return;
-  $("jView").textContent = state.matchday;
-  const seg = $("segJNum");
-  if (seg) seg.textContent = state.matchday;
+  const jv = $("jView");
+  if (jv) jv.textContent = state.matchday;
+  const sg = $("segJNum");
+  if (sg) sg.textContent = state.matchday;
   const isPast = currentJornada !== null && state.matchday < currentJornada;
-  $("jPrev").disabled = state.matchday <= 1;
-  $("jNext").disabled = currentJornada === null || state.matchday >= currentJornada;
-  $("jNote").classList.toggle("hidden", !isPast);
+  const prev = $("jPrev");
+  const next = $("jNext");
+  const note = $("jNote");
+  if (prev) prev.disabled = state.matchday <= 1;
+  if (next) next.disabled = currentJornada === null || state.matchday >= currentJornada;
+  if (note) note.classList.toggle("hidden", !isPast);
+}
+
+function updateSaveFab() {
+  const fab = $("saveFab");
+  if (!fab) return;
+  const active = document.querySelector(".tab.active");
+  const onMiPorra = active && active.dataset.tab === "miPorra";
+  const show = !!(state && state.myName && !state.locked && editing && onMiPorra);
+  fab.classList.toggle("hidden", !show);
 }
 
 function updateCtas() {
   const logged = !!(state && state.myName);
   const cta = $("goPlayBtn2");
-  if (cta) {
-    cta.innerHTML = logged
-      ? '<img class="btn-ball" src="/img/balonmundial.png" alt=""> Ir a mi porra'
-      : '<img class="btn-ball" src="/img/balonmundial.png" alt=""> Crear cuenta y hacer la porra';
-  }
+  if (cta) cta.textContent = logged ? "Ir a mi porra" : "Crear cuenta y hacer la porra";
   const cta1 = $("goPlayBtn");
-  if (cta1) cta1.textContent = logged ? "Ir a mi porra" : "Crear mi cuenta y hacer la porra";
+  if (cta1) cta1.textContent = logged ? "Ir a mi porra" : "Crear cuenta y hacer la porra";
 }
 
 function renderAll() {
@@ -787,6 +847,7 @@ function switchTab(name) {
   document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
   const panel = $("tab-" + name);
   if (panel) panel.classList.remove("hidden");
+  updateSaveFab();
 }
 
 /* ---------- Eventos ---------- */
@@ -847,6 +908,7 @@ $("themeToggle").addEventListener("click", () => {
 });
 
 function goToCreateAccount() {
+  markSeen();
   const logged = !!(state && state.myName);
   if (!logged) setAuthMode("registro");
   switchTab("miPorra");
@@ -861,6 +923,12 @@ function goToCreateAccount() {
 }
 $("goPlayBtn").addEventListener("click", goToCreateAccount);
 $("goPlayBtn2").addEventListener("click", goToCreateAccount);
+$("howToBtn").addEventListener("click", () => {
+  markSeen();
+  switchTab("instrucciones");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+});
+$("saveFab").addEventListener("click", save);
 
 $("segJornada").addEventListener("click", () => {
   rankMode = "jornada";

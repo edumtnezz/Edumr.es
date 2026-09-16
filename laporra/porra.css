@@ -22,9 +22,8 @@ body {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--bg);
   background-image:
-    radial-gradient(720px 380px at 10% -8%, rgba(0, 242, 254, 0.16), transparent 60%),
-    radial-gradient(760px 420px at 100% 2%, rgba(139, 92, 246, 0.18), transparent 62%),
-    radial-gradient(760px 440px at 62% 110%, rgba(236, 72, 153, 0.10), transparent 66%);
+    radial-gradient(720px 380px at 10% -8%, rgba(0, 242, 254, 0.15), transparent 60%),
+    radial-gradient(760px 420px at 100% 2%, rgba(139, 92, 246, 0.17), transparent 62%);
   background-attachment: fixed;
   color: var(--text);
   line-height: 1.6;
@@ -266,7 +265,7 @@ body {
   max-width: 980px;
   margin: 0 auto;
   display: grid;
-  gap: 22px;
+  gap: 26px;
 }
 
 .panel {
@@ -350,19 +349,20 @@ body {
 /* Tabs */
 .tabs {
   display: flex;
-  gap: 8px;
+  gap: 4px;
   flex-wrap: wrap;
-  padding: 6px;
-  border-radius: 14px;
+  padding: 4px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid var(--border);
 }
 .tab {
   flex: 1;
-  min-width: 120px;
+  min-width: 0;
   border: none; background: transparent; color: var(--muted);
-  font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; font-weight: 700;
-  padding: 11px 14px; border-radius: 10px; cursor: pointer; transition: all 0.2s;
+  font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem; font-weight: 700;
+  padding: 8px 10px; border-radius: 9px; cursor: pointer; transition: all 0.2s;
+  white-space: nowrap;
 }
 .tab:hover { color: var(--text); }
 .tab.active {
@@ -403,10 +403,11 @@ body {
 }
 .team {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
   min-width: 0;
+  flex-wrap: wrap;
 }
 .team-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .team.away .team-main { flex-direction: row-reverse; }
@@ -695,7 +696,22 @@ body {
   background: linear-gradient(180deg, #00f2fe, #8b5cf6);
 }
 .participant:hover { border-color: var(--border-hover); transform: translateY(-2px); }
-.participant-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.participant-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.participant-chevron { margin-left: auto; color: var(--muted); font-size: 0.9rem; transition: transform 0.2s ease; }
+.participant-head.open .participant-chevron { transform: rotate(180deg); }
+.participant-body { margin-top: 14px; }
 .participant-avatar {
   width: 46px; height: 46px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
@@ -832,9 +848,8 @@ body {
 [data-theme="light"] body {
   background-color: var(--bg);
   background-image:
-    radial-gradient(720px 380px at 10% -8%, rgba(2, 132, 199, 0.14), transparent 60%),
-    radial-gradient(760px 420px at 100% 2%, rgba(124, 58, 237, 0.16), transparent 62%),
-    radial-gradient(760px 440px at 62% 110%, rgba(236, 72, 153, 0.10), transparent 66%);
+    radial-gradient(720px 380px at 10% -8%, rgba(2, 132, 199, 0.13), transparent 60%),
+    radial-gradient(760px 420px at 100% 2%, rgba(124, 58, 237, 0.15), transparent 62%);
 }
 [data-theme="light"] .countdown {
   background: linear-gradient(135deg, rgba(2, 132, 199, 0.1), rgba(124, 58, 237, 0.1));
@@ -907,7 +922,7 @@ body {
   right: 0;
   z-index: 50;
   margin: 0;
-  padding: 12px 16px;
+  padding: 8px 16px;
   background: rgba(7, 9, 14, 0.94);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(16px);
@@ -940,6 +955,76 @@ body {
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
 }
 .theme-toggle:hover { border-color: var(--accent); transform: scale(1.08); box-shadow: 0 0 16px rgba(0, 242, 254, 0.3); }
+
+/* ---------- Rediseño despejado ---------- */
+
+.jornada-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+}
+.jornada-card.closed { border-color: rgba(239, 68, 68, 0.35); }
+.jc-body { flex: 1; min-width: 0; text-align: center; }
+.jc-line { display: flex; align-items: baseline; justify-content: center; gap: 12px; flex-wrap: wrap; }
+.jc-jornada {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.jc-jornada b { color: var(--text); }
+.jc-timer {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: clamp(1.5rem, 6vw, 2.2rem);
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+.jornada-card.closed .jc-timer { color: #f87171; }
+.jc-info { font-size: 0.86rem; color: var(--muted); margin-top: 6px; }
+.jnote { display: inline-block; margin-top: 6px; font-size: 0.74rem; color: var(--amber); font-weight: 600; }
+
+.day-head {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  margin: 12px 2px 0;
+}
+.day-head:first-child { margin-top: 0; }
+
+.save-fab {
+  position: fixed;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 60;
+  padding: 14px 30px;
+  border-radius: 99px;
+  border: none;
+  background: linear-gradient(135deg, #00f2fe, #3b82f6);
+  color: #050b14;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 14px 32px rgba(0, 242, 254, 0.4);
+}
+[data-theme="light"] .save-fab { color: #fff; }
+
+.welcome-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; position: relative; z-index: 1; }
+.appbar-brand h1 { font-size: clamp(1.05rem, 3vw, 1.3rem); }
+.user-chip { padding: 6px 12px 6px 6px; font-size: 0.8rem; }
 
 @media (max-width: 1140px) {
   .top-right-tools { gap: 10px; }
@@ -1016,12 +1101,14 @@ body {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 620px) {
-  .panel { padding: 22px 18px; }
-  .match-row { grid-template-columns: 1fr; }
+  .panel { padding: 20px 16px; }
+  .match-row { grid-template-columns: 1fr; padding: 12px; }
   .pick-buttons { justify-content: stretch; }
   .pick-btn { flex: 1; width: auto; }
-  .porra-header { flex-direction: column; align-items: center; }
-  .countdown { padding: 18px; }
+  .jornada-card { padding: 14px; gap: 10px; }
+  .tabs .tab { font-size: 0.74rem; padding: 8px 4px; }
+  .appbar-brand h1 { font-size: 1rem; }
+  .user-chip { padding: 5px 10px 5px 5px; font-size: 0.74rem; }
   .podium { grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .podium-slot { padding: 14px 6px 12px; }
   .podium-avatar { width: 44px; height: 44px; font-size: 1.1rem; }
@@ -1029,7 +1116,8 @@ body {
   .podium-1 { transform: translateY(-8px); }
   .rank-card { grid-template-columns: 26px 38px 1fr auto; gap: 10px; padding: 11px 12px; }
   .rank-avatar { width: 38px; height: 38px; font-size: 0.92rem; }
-  .tname { max-width: 92px; font-size: 0.85rem; }
-  .crest { width: 28px; height: 28px; }
+  .tname { max-width: 108px; font-size: 0.85rem; }
+  .crest { width: 26px; height: 26px; }
   .summary-row { grid-template-columns: 90px 1fr auto; }
+  .match-meta { margin-top: 8px; }
 }

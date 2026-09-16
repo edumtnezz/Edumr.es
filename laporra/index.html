@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="porra.css?v=30">
+  <link rel="stylesheet" href="porra.css?v=31">
 </head>
 <body>
   <canvas id="bgCanvas"></canvas>
@@ -39,10 +39,10 @@
         </div>
       </div>
       <nav class="tabs" id="tabsNav">
-        <button class="tab" data-tab="miPorra">🎯 Mi porra</button>
-        <button class="tab" data-tab="clasificacion">🏆 Clasificación</button>
-        <button class="tab" data-tab="participantes">👥 Participantes</button>
-        <button class="tab active" data-tab="instrucciones">📖 Instrucciones</button>
+        <button class="tab" data-tab="miPorra">Mi porra</button>
+        <button class="tab" data-tab="clasificacion">Clasificación</button>
+        <button class="tab" data-tab="participantes">Participantes</button>
+        <button class="tab active" data-tab="instrucciones">Instrucciones</button>
       </nav>
     </div>
   </header>
@@ -55,36 +55,33 @@
         <h2 id="welcomeGreeting">Con permiso…</h2>
         <p class="welcome-sub" id="welcomeSub"></p>
       </div>
-      <span class="welcome-trophy">🏆</span>
     </div>
-    <div class="welcome-steps">
+    <div class="welcome-steps hidden" id="welcomeSteps">
       <div class="step"><span class="step-num">1</span><p>Crea tu cuenta con tu <b>nombre</b> y un <b>código de 4 o 6 números</b>.</p></div>
       <div class="step"><span class="step-num">2</span><p>En cada partido elige <b>1</b>, <b>X</b> o <b>2</b>.</p></div>
       <div class="step"><span class="step-num">3</span><p>Rellena <b>todos</b> y guarda antes de que empiece el <b>primer partido</b>.</p></div>
       <div class="step"><span class="step-num">4</span><p>Gana tu <b>prima</b> según el puesto de la jornada.</p></div>
     </div>
-    <div class="welcome-cta">
-      <button class="btn-primary" id="goPlayBtn2"><img class="btn-ball" src="/img/balonmundial.png" alt=""> Crear cuenta y hacer la porra</button>
+    <div class="welcome-actions">
+      <button class="btn-primary" id="goPlayBtn2">Crear cuenta y hacer la porra</button>
+      <button class="btn-ghost" id="howToBtn">¿Cómo se juega?</button>
     </div>
   </section>
 
   <main class="porra-main">
-    <!-- Contador -->
-    <section class="countdown" id="countdownPanel">
-      <div class="cd-side">
-        <span class="cd-label">Cierra en</span>
-        <span class="cd-timer" id="cdTimer">--:--:--</span>
-      </div>
-      <div class="cd-info" id="cdInfo">Cargando la jornada…</div>
-    </section>
-
-    <!-- Selector de jornada -->
-    <div class="jornada-bar" id="jornadaBar">
+    <!-- Jornada + contador -->
+    <section class="jornada-card" id="countdownPanel">
       <button class="jbtn" id="jPrev" title="Jornada anterior">◀</button>
-      <span class="jlabel">Jornada <strong id="jView">–</strong></span>
+      <div class="jc-body">
+        <div class="jc-line">
+          <span class="jc-jornada">Jornada <b id="jView">–</b></span>
+          <span class="jc-timer" id="cdTimer">--:--:--</span>
+        </div>
+        <div class="jc-info" id="cdInfo">Cargando la jornada…</div>
+        <span class="jnote hidden" id="jNote">Estás viendo una jornada pasada</span>
+      </div>
       <button class="jbtn" id="jNext" title="Jornada siguiente">▶</button>
-      <span class="jnote hidden" id="jNote">Estás viendo una jornada pasada</span>
-    </div>
+    </section>
 
     <!-- Mi porra -->
     <section class="tab-panel hidden" id="tab-miPorra">
@@ -107,7 +104,7 @@
       <div class="panel" id="picksPanel">
         <div class="picks-head">
           <div>
-            <h2>🎯 Tus pronósticos</h2>
+            <h2>Tus pronósticos</h2>
             <p class="muted" id="picksHint">Elige 1, X o 2 en cada partido.</p>
           </div>
           <div class="picks-tools">
@@ -135,14 +132,14 @@
       <div class="panel">
         <div class="panel-head">
           <div>
-            <h2>🏆 Clasificación</h2>
+            <h2>Clasificación</h2>
             <p class="muted" id="rankingHint">Ordenada por aciertos: quien más aciertos suma, primero.</p>
           </div>
           <span class="pulse-chip" id="playersChip">0 jugadores</span>
         </div>
         <div class="seg" id="rankSeg">
-          <button class="seg-btn active" id="segJornada">📅 Jornada <span id="segJNum">–</span></button>
-          <button class="seg-btn" id="segGlobal">🏅 General (todas las jornadas)</button>
+          <button class="seg-btn active" id="segJornada">Jornada <span id="segJNum">–</span></button>
+          <button class="seg-btn" id="segGlobal">General (todas)</button>
         </div>
         <div class="podium" id="podium"></div>
         <div class="rank-cards" id="rankCards"></div>
@@ -151,7 +148,7 @@
       <div class="panel hidden" id="summaryPanel">
         <div class="panel-head">
           <div>
-            <h2>💰 Reparto de la jornada</h2>
+            <h2>Reparto de la jornada</h2>
             <p class="muted">Copia este resumen y repártelo en Futmondo.</p>
           </div>
           <button class="btn-ghost" id="copyBtn">Copiar</button>
@@ -163,7 +160,7 @@
     <!-- Participantes -->
     <section class="tab-panel hidden" id="tab-participantes">
       <div class="panel">
-        <h2>👥 Participantes y sus pronósticos</h2>
+        <h2>Participantes</h2>
         <p class="muted" id="participantsHint"></p>
         <div class="participants" id="participantsList"></div>
       </div>
@@ -172,7 +169,7 @@
     <!-- Instrucciones -->
     <section class="tab-panel" id="tab-instrucciones">
       <div class="panel">
-        <h2>📖 Cómo funciona La Porra</h2>
+        <h2>Cómo funciona</h2>
 
         <div class="info-block" id="infoCuenta">
           <h3>1. Crea tu cuenta</h3>
@@ -221,11 +218,13 @@
     </section>
   </main>
 
+  <button class="save-fab hidden" id="saveFab">Guardar pronósticos</button>
+
   <footer class="porra-footer">
     <p>La Porra · <a href="/">EduMR.es</a></p>
   </footer>
 
-  <script src="fondo.js?v=30"></script>
-  <script src="porra.js?v=30"></script>
+  <script src="fondo.js?v=31"></script>
+  <script src="porra.js?v=31"></script>
 </body>
 </html>
