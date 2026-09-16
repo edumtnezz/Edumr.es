@@ -940,6 +940,7 @@ body {
   align-items: flex-end;
   gap: 5px;
   margin-left: auto;
+  align-self: flex-start;
 }
 .swipe-hint { font-size: 0.66rem; color: var(--muted); text-align: right; }
 
@@ -950,7 +951,7 @@ body {
   right: 0;
   z-index: 50;
   margin: 0;
-  padding: 15px 16px 10px;
+  padding: 11px 16px 9px;
   background: rgba(7, 9, 14, 0.94);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(16px);
