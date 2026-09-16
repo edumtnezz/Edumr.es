@@ -453,6 +453,7 @@ async function buildState(env, matchday, user) {
       awayTla: m.awayTeam && m.awayTeam.tla,
       homeForm: (hid && form[hid]) || [],
       awayForm: (aid && form[aid]) || [],
+      started: Date.now() >= new Date(m.utcDate).getTime(),
       result: results[m.id] || null,
       score:
         m.score && m.score.fullTime
@@ -477,11 +478,27 @@ async function buildState(env, matchday, user) {
     else if (curFin === mFin && mT < curT) first = m;
   }
 
+  const nowMs = Date.now();
+  const openMatches = matches.filter((m) => new Date(m.utcDate).getTime() > nowMs);
+  const openCount = openMatches.length;
+  let next = null;
+  for (const m of openMatches) {
+    if (!next || new Date(m.utcDate) < new Date(next.utcDate)) next = m;
+  }
+
   return {
     matchday: jornada.matchday,
     source: jornada.source,
     lockTime: lock,
     locked,
+    openCount,
+    nextMatch: next
+      ? {
+          home: next.homeTeam && (next.homeTeam.shortName || next.homeTeam.name),
+          away: next.awayTeam && (next.awayTeam.shortName || next.awayTeam.name),
+          utcDate: next.utcDate,
+        }
+      : null,
     firstMatch: first
       ? {
           home: first.homeTeam && (first.homeTeam.shortName || first.homeTeam.name),
@@ -633,33 +650,39 @@ async function handlePrediccion(request, env, user) {
 
   const jornada = await getJornada(env, body.jornada);
   const matches = jornada.matches || [];
-  const lock = lockTimeOf(matches);
-  if (lock !== null && Date.now() >= lock) {
+  const nowMs = Date.now();
+  const openMatches = matches.filter((m) => new Date(m.utcDate).getTime() > nowMs);
+  if (!openMatches.length) {
     return json({ error: "La jornada ya ha comenzado. No se puede modificar." }, 403);
   }
 
-  const validIds = new Set(matches.map((m) => String(m.id)));
+  const openIds = new Set(openMatches.map((m) => String(m.id)));
   const clean = {};
   for (const [id, pick] of Object.entries(picks)) {
-    if (!validIds.has(String(id))) continue;
+    if (!openIds.has(String(id))) continue;
     if (!["1", "X", "2"].includes(pick)) continue;
     clean[id] = pick;
   }
 
-  const missing = matches.filter((m) => !clean[m.id]);
+  const missing = openMatches.filter((m) => !clean[m.id]);
   if (missing.length) {
     return json(
       {
-        error: `Te falta elegir ${missing.length} partido(s).`,
+        error: `Te falta elegir ${missing.length} partido(s) por jugar.`,
         missing: missing.map((m) => m.id),
       },
       400
     );
   }
 
+  const preds = await getPredictions(env, jornada.matchday);
+  const existing = (preds[user.key] && preds[user.key].picks) || {};
+  const merged = { ...existing };
+  for (const [id, pick] of Object.entries(clean)) merged[id] = pick;
+
   await savePrediction(env, jornada.matchday, user.key, {
     name: user.name,
-    picks: clean,
+    picks: merged,
     updatedAt: new Date().toISOString(),
   });
 

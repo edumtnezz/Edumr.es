@@ -922,7 +922,7 @@ body {
   right: 0;
   z-index: 50;
   margin: 0;
-  padding: 8px 16px;
+  padding: 15px 16px 10px;
   background: rgba(7, 9, 14, 0.94);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(16px);
@@ -1023,6 +1023,8 @@ body {
 [data-theme="light"] .save-fab { color: #fff; }
 
 .welcome-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; position: relative; z-index: 1; }
+.tip { margin-top: 12px; font-size: 0.8rem; color: var(--muted); position: relative; z-index: 1; }
+.tip b { color: var(--text); }
 .appbar-brand h1 { font-size: clamp(1.05rem, 3vw, 1.3rem); }
 .user-chip { padding: 6px 12px 6px 6px; font-size: 0.8rem; }
 

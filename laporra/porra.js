@@ -208,21 +208,15 @@ function updateCountdown() {
   const timer = $("cdTimer");
   const info = $("cdInfo");
 
-  if (!state.lockTime || state.locked) {
+  if (!state.openCount || state.openCount === 0 || !state.nextMatch) {
     box.classList.add("closed");
     timer.textContent = "CERRADA";
-    if (state.firstMatch) {
-      const f = fmtDate(state.firstMatch.utcDate);
-      info.innerHTML = `La jornada <strong>${state.matchday}</strong> ya ha empezado (${escapeHtml(
-        state.firstMatch.home
-      )} - ${escapeHtml(state.firstMatch.away)}).<br>Ya no se pueden modificar los pronósticos.`;
-    } else {
-      info.textContent = "La jornada ya ha empezado. No se pueden modificar los pronósticos.";
-    }
+    info.textContent = "Todos los partidos de esta jornada ya han empezado.";
     return;
   }
 
-  const diff = state.lockTime - Date.now();
+  const nm = state.nextMatch;
+  const diff = new Date(nm.utcDate).getTime() - Date.now();
   if (diff <= 0) {
     box.classList.add("closed");
     timer.textContent = "CERRADA";
@@ -237,16 +231,13 @@ function updateCountdown() {
   const pad = (n) => String(n).padStart(2, "0");
   timer.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
 
-  const f = state.firstMatch ? fmtDate(state.firstMatch.utcDate) : null;
+  const f = fmtDate(nm.utcDate);
   const horas = h === 1 ? "1 hora" : `${h} horas`;
   const mins = m === 1 ? "1 minuto" : `${m} minutos`;
-  let txt = `Quedan <strong>${horas} y ${mins}</strong>.`;
-  if (f) {
-    txt += `<br>La jornada <strong>${state.matchday}</strong> empieza el <strong>${f.date}</strong> con <span class="cd-team">${escapeHtml(
-      state.firstMatch.home
-    )} - ${escapeHtml(state.firstMatch.away)}</span> a las <strong>${f.time}</strong>.`;
-  }
-  info.innerHTML = txt;
+  const extra = state.openCount > 1 ? ` · y ${state.openCount - 1} partido(s) más por jugar` : "";
+  info.innerHTML = `Próximo partido: <span class="cd-team">${escapeHtml(nm.home)} - ${escapeHtml(
+    nm.away
+  )}</span> · ${f.date} a las <strong>${f.time}</strong>.<br>Quedan <strong>${horas} y ${mins}</strong>${extra}.`;
 }
 
 /* ---------- Render ---------- */
@@ -345,7 +336,7 @@ function renderMatches() {
         else if (myPick) b.classList.add("wrong");
         else b.classList.add("dim");
       }
-      if (locked || !editing) b.disabled = true;
+      if (m.started || !editing) b.disabled = true;
       b.addEventListener("click", () => selectPick(m.id, opt));
       btns.appendChild(b);
     });
@@ -357,27 +348,31 @@ function renderMatches() {
 
   // Cabecera / botones
   const hasPred = state.hasPrediction;
-  $("editBtn").classList.toggle("hidden", locked || editing || !hasPred);
-  $("saveBtn").classList.toggle("hidden", locked || !editing);
-  $("cancelBtn").classList.toggle("hidden", locked || !editing || !hasPred);
-  $("saveBtn").disabled = locked || !editing;
+  const openCount = state.openCount || 0;
+  const canEdit = openCount > 0;
+  $("editBtn").classList.toggle("hidden", !(hasPred && canEdit && !editing));
+  $("saveBtn").classList.toggle("hidden", !(editing && canEdit));
+  $("cancelBtn").classList.toggle("hidden", !(editing && hasPred));
+  $("saveBtn").disabled = !editing;
 
-  if (locked) {
-    $("picksHint").textContent = state.hasPrediction
+  if (!canEdit) {
+    $("picksHint").textContent = hasPred
       ? "La jornada ya ha empezado: tus pronósticos quedan cerrados."
       : "La jornada ya ha empezado y no registraste pronóstico.";
   } else if (editing) {
     $("picksHint").textContent = hasPred
-      ? "Modifica lo que quieras y vuelve a guardar. Debes rellenar todos los partidos."
-      : "Elige 1, X o 2 en cada partido. Debes completar todos para poder guardar.";
+      ? "Puedes cambiar los partidos que aún no han empezado. Los ya jugados quedan bloqueados."
+      : "Elige 1, X o 2 en los partidos que aún no han empezado. Debes completarlos todos.";
   } else {
-    $("picksHint").textContent = "Tu porra está guardada. Pulsa Editar si quieres cambiarla (hasta el inicio del primer partido).";
+    $("picksHint").textContent = "Tu porra está guardada. Pulsa Editar para cambiar los partidos que aún no han empezado.";
   }
   updateSaveFab();
 }
 
 function selectPick(matchId, opt) {
-  if (state.locked || !editing) return;
+  if (!editing) return;
+  const mm = state.matches.find((x) => x.id === matchId);
+  if (mm && mm.started) return;
   picks[matchId] = opt;
   const row = document.querySelector(`.match-row[data-match="${matchId}"]`);
   if (row) row.classList.remove("missing");
@@ -697,7 +692,7 @@ function updateSaveFab() {
   if (!fab) return;
   const active = document.querySelector(".tab.active");
   const onMiPorra = active && active.dataset.tab === "miPorra";
-  const show = !!(state && state.myName && !state.locked && editing && onMiPorra);
+  const show = !!(state && state.myName && state.openCount > 0 && editing && onMiPorra);
   fab.classList.toggle("hidden", !show);
 }
 
@@ -717,8 +712,6 @@ function renderAll() {
   $("authPanel").classList.toggle("hidden", logged);
   $("picksPanel").classList.toggle("hidden", !logged);
   updateCtas();
-  const infoC = $("infoCuenta");
-  if (infoC) infoC.classList.toggle("hidden", logged);
   if (logged) renderMatches();
   if (rankMode === "global") loadGlobal();
   else {
@@ -753,7 +746,7 @@ async function refresh() {
     if (state.myName) apodo = state.myName;
     picks = {};
     Object.entries(state.myPicks || {}).forEach(([k, v]) => (picks[k] = v));
-    if (!state.locked && !state.hasPrediction) editing = false;
+    if (!state.hasPrediction && state.openCount > 0) editing = true;
     renderAll();
     updateCountdown();
   } catch (e) {
@@ -805,7 +798,7 @@ async function save() {
   const msg = $("saveMsg");
   msg.className = "save-msg";
 
-  const missing = state.matches.filter((m) => !picks[m.id]);
+  const missing = state.matches.filter((m) => !m.started && !picks[m.id]);
   if (missing.length) {
     document.querySelectorAll(".match-row.missing").forEach((r) => r.classList.remove("missing"));
     missing.forEach((m) => {

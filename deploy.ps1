@@ -29,7 +29,7 @@ Get-ChildItem -LiteralPath $dist -Recurse -File | ForEach-Object { $_.FullName.S
 $env:CLOUDFLARE_ACCOUNT_ID = "9d0e362ef9848559e9e7b5ff1416bc6f"
 Push-Location $root
 try {
-  npx wrangler pages deploy dist --project-name=edumr --branch=main --commit-dirty=true
+  npx --yes wrangler@4.131.1 pages deploy dist --project-name=edumr --branch=main --commit-dirty=true
 } finally {
   Pop-Location
 }
