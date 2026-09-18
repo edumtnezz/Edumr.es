@@ -741,8 +741,8 @@ function renderPartido(data) {
     const tag = document.createElement("span");
     tag.className = "pe-tag";
     if (r && r.home != null) {
-      if (e.home === r.home && e.away === r.away) tag.textContent = "✔ Exacto";
-      else if (sign(e.home, e.away) === sign(r.home, r.away)) tag.textContent = "Signo";
+      if (e.home === r.home && e.away === r.away) tag.textContent = "✔ Exacto · 1.000.000 €";
+      else if (sign(e.home, e.away) === sign(r.home, r.away)) tag.textContent = "Signo · 500.000 €";
     }
     erow.appendChild(nm);
     erow.appendChild(sc);

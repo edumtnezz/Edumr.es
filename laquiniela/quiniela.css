@@ -1090,6 +1090,7 @@ body {
 .pm-team .crest { width: 34px; height: 34px; }
 .pm-result { margin-top: 12px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.1rem; color: #34d399; }
 .pm-pending { margin-top: 12px; font-size: 0.86rem; color: var(--muted); }
+.partido-prizes { margin: 14px 0 0; }
 .partido-list { display: grid; gap: 10px; margin-top: 6px; }
 .partido-entry {
   display: flex; align-items: center; gap: 14px;
