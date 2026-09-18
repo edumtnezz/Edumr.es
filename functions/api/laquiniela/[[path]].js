@@ -575,15 +575,41 @@ async function buildGlobal(env) {
 
 async function getPartido(env) {
   const raw = await env.PORRA.get("partido", "json");
-  return (
+  const p =
     raw || {
       home: "Atletico de Madrid",
       away: "Real Madrid",
+      matchId: 564688,
       utcDate: null,
       result: null,
       entries: [],
+    };
+  const token = env.FOOTBALL_API_KEY;
+  if (token && p.matchId && !p.result) {
+    const last = p.lastChecked || 0;
+    if (Date.now() - last > 5 * 60 * 1000) {
+      try {
+        const res = await fetch(`https://api.football-data.org/v4/matches/${p.matchId}`, {
+          headers: { "X-Auth-Token": token },
+        });
+        if (res.ok) {
+          const m = await res.json();
+          if (
+            m.status === "FINISHED" &&
+            m.score &&
+            m.score.fullTime &&
+            m.score.fullTime.home != null &&
+            m.score.fullTime.away != null
+          ) {
+            p.result = { home: m.score.fullTime.home, away: m.score.fullTime.away };
+          }
+        }
+      } catch (e) {}
+      p.lastChecked = Date.now();
+      await env.PORRA.put("partido", JSON.stringify(p));
     }
-  );
+  }
+  return p;
 }
 async function handleRegistro(request, env) {
   let body;
