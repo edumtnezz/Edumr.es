@@ -1184,7 +1184,8 @@ body {
   .pick-buttons { justify-content: stretch; }
   .pick-btn { flex: 1; width: auto; }
   .jornada-card { padding: 14px; gap: 10px; }
-  .tabs .tab { font-size: 0.74rem; padding: 8px 4px; }
+  .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 8px; }
+  .tabs .tab { font-size: 0.78rem; padding: 11px 6px; }
   .appbar-brand h1 { font-size: 1rem; }
   .user-chip { padding: 5px 10px 5px 5px; font-size: 0.74rem; }
   .podium { grid-template-columns: repeat(3, 1fr); gap: 8px; }
