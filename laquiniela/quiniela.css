@@ -364,9 +364,9 @@ body {
 /* Tabs */
 .tabs {
   display: flex;
-  gap: 4px;
+  gap: 8px;
   flex-wrap: wrap;
-  padding: 4px;
+  padding: 6px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid var(--border);
@@ -375,8 +375,8 @@ body {
   flex: 1;
   min-width: 0;
   border: none; background: transparent; color: var(--muted);
-  font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem; font-weight: 700;
-  padding: 8px 10px; border-radius: 9px; cursor: pointer; transition: all 0.2s;
+  font-family: 'Space Grotesk', sans-serif; font-size: 0.84rem; font-weight: 700;
+  padding: 10px 14px; border-radius: 9px; cursor: pointer; transition: all 0.2s;
   white-space: nowrap;
 }
 .tab:hover { color: var(--text); }
