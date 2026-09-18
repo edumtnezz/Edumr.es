@@ -11,6 +11,7 @@ let currentJornada = null;
 let rankMode = "jornada";
 let globalData = null;
 let tabInitialized = false;
+let picksDirty = false;
 
 const $ = (id) => document.getElementById(id);
 
@@ -367,6 +368,7 @@ function selectPick(matchId, opt) {
   const mm = state.matches.find((x) => x.id === matchId);
   if (mm && mm.started) return;
   picks[matchId] = opt;
+  picksDirty = true;
   const row = document.querySelector(`.match-row[data-match="${matchId}"]`);
   if (row) row.classList.remove("missing");
   document.querySelectorAll(`.pick-btn[data-match="${matchId}"]`).forEach((b) => {
@@ -737,8 +739,10 @@ async function refresh() {
     state = await loadState();
     if (currentJornada === null && !viewJornada) currentJornada = state.matchday;
     if (state.myName) apodo = state.myName;
-    picks = {};
-    Object.entries(state.myPicks || {}).forEach(([k, v]) => (picks[k] = v));
+    if (!picksDirty) {
+      picks = {};
+      Object.entries(state.myPicks || {}).forEach(([k, v]) => (picks[k] = v));
+    }
     if (state.openCount > 0) editing = true;
     renderAll();
     updateCountdown();
@@ -768,6 +772,7 @@ async function submitAuth() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "No se pudo completar");
     $("authPin").value = "";
+    picksDirty = false;
     await refresh();
     switchTab("miQuiniela");
     if (authMode === "registro") {
@@ -791,6 +796,7 @@ async function logout() {
   picks = {};
   apodo = "";
   editing = false;
+  picksDirty = false;
   await refresh();
 }
 
@@ -822,6 +828,7 @@ async function save() {
     if (!res.ok) throw new Error(data.error || "Error al guardar");
     state = data.state;
     state.myName = apodo;
+    picksDirty = false;
     renderAll();
     msg.textContent = "¡Guardado! Tu prima está en juego.";
     msg.classList.add("ok");
