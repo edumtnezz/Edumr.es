@@ -1080,6 +1080,29 @@ body {
 .day-head { margin: 12px 2px 0; font-size: 0.68rem; }
 .legend { font-size: 0.72rem; padding: 9px 12px; margin-bottom: 14px; }
 
+/* Partido (resultado exacto) */
+.partido-match { text-align: center; margin: 18px 0 20px; }
+.pm-row {
+  display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap;
+  font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.05rem;
+}
+.pm-team { display: inline-flex; align-items: center; gap: 9px; }
+.pm-team .crest { width: 34px; height: 34px; }
+.pm-result { margin-top: 12px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.1rem; color: #34d399; }
+.pm-pending { margin-top: 12px; font-size: 0.86rem; color: var(--muted); }
+.partido-list { display: grid; gap: 10px; margin-top: 6px; }
+.partido-entry {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 16px; border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border);
+}
+.pe-name { font-weight: 700; flex: 1; }
+.pe-score { font-family: 'Space Grotesk', monospace; font-weight: 700; font-size: 1.1rem; color: var(--accent); }
+.pe-tag { font-size: 0.78rem; font-weight: 700; color: var(--muted); min-width: 64px; text-align: right; }
+.partido-entry.winner { border-color: rgba(16, 185, 129, 0.55); background: linear-gradient(90deg, rgba(16, 185, 129, 0.14), rgba(16, 185, 129, 0.03)); }
+.partido-entry.winner .pe-score { color: #34d399; }
+.partido-entry.winner .pe-tag { color: #34d399; }
+
 @media (max-width: 1140px) {
   .top-right-tools { gap: 10px; }
 }

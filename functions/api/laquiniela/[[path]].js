@@ -572,6 +572,19 @@ async function buildGlobal(env) {
 }
 
 /* ---------- Handlers ---------- */
+
+async function getPartido(env) {
+  const raw = await env.PORRA.get("partido", "json");
+  return (
+    raw || {
+      home: "Atletico de Madrid",
+      away: "Real Madrid",
+      utcDate: null,
+      result: null,
+      entries: [],
+    }
+  );
+}
 async function handleRegistro(request, env) {
   let body;
   try {
@@ -711,6 +724,10 @@ export async function onRequestGet({ request, env, params }) {
   if (path === "global") {
     const g = await buildGlobal(env);
     return json(g);
+  }
+  if (path === "partido") {
+    const p = await getPartido(env);
+    return json(p);
   }
   return json({ error: "not found" }, 404);
 }

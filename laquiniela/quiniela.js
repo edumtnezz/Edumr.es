@@ -663,6 +663,101 @@ function renderParticipants() {
   });
 }
 
+function renderPartido(data) {
+  const match = $("partidoMatch");
+  const list = $("partidoList");
+  if (!match || !list) return;
+  match.innerHTML = "";
+  list.innerHTML = "";
+
+  const row = document.createElement("div");
+  row.className = "pm-row";
+  const home = document.createElement("span");
+  home.className = "pm-team";
+  home.appendChild(crestEl(data.homeCrest, "ATM"));
+  const hn = document.createElement("span");
+  hn.textContent = data.home;
+  home.appendChild(hn);
+  const vs = document.createElement("span");
+  vs.className = "vs";
+  vs.textContent = "VS";
+  const away = document.createElement("span");
+  away.className = "pm-team";
+  away.appendChild(crestEl(data.awayCrest, "RMA"));
+  const an = document.createElement("span");
+  an.textContent = data.away;
+  away.appendChild(an);
+  row.appendChild(home);
+  row.appendChild(vs);
+  row.appendChild(away);
+  match.appendChild(row);
+
+  const r = data.result;
+  if (r && r.home != null && r.away != null) {
+    const res = document.createElement("div");
+    res.className = "pm-result";
+    res.textContent = `Resultado final: ${r.home} - ${r.away}`;
+    match.appendChild(res);
+  } else {
+    const pend = document.createElement("div");
+    pend.className = "pm-pending";
+    const f = data.utcDate ? fmtDate(data.utcDate) : null;
+    pend.textContent = f ? `Se juega el ${f.date} a las ${f.time}` : "Resultado por decidir";
+    match.appendChild(pend);
+  }
+
+  const sign = (h, a) => (h > a ? 1 : h < a ? 2 : 0);
+  const winners = new Set();
+  if (r && r.home != null && r.away != null) {
+    const entries = data.entries || [];
+    const exact = entries.filter((e) => e.home === r.home && e.away === r.away);
+    if (exact.length) {
+      exact.forEach((e) => winners.add(e.name));
+    } else {
+      const rs = sign(r.home, r.away);
+      const signOk = entries.filter((e) => sign(e.home, e.away) === rs);
+      const pool = signOk.length ? signOk : entries;
+      let best = Infinity;
+      pool.forEach((e) => {
+        const d = Math.abs(e.home - r.home) + Math.abs(e.away - r.away);
+        if (d < best) best = d;
+      });
+      pool
+        .filter((e) => Math.abs(e.home - r.home) + Math.abs(e.away - r.away) === best)
+        .forEach((e) => winners.add(e.name));
+    }
+  }
+
+  (data.entries || []).forEach((e) => {
+    const erow = document.createElement("div");
+    erow.className = "partido-entry";
+    if (winners.has(e.name)) erow.classList.add("winner");
+    const nm = document.createElement("span");
+    nm.className = "pe-name";
+    nm.textContent = e.name;
+    const sc = document.createElement("span");
+    sc.className = "pe-score";
+    sc.textContent = `${e.home} - ${e.away}`;
+    const tag = document.createElement("span");
+    tag.className = "pe-tag";
+    if (r && r.home != null) {
+      if (e.home === r.home && e.away === r.away) tag.textContent = "✔ Exacto";
+      else if (sign(e.home, e.away) === sign(r.home, r.away)) tag.textContent = "Signo";
+    }
+    erow.appendChild(nm);
+    erow.appendChild(sc);
+    erow.appendChild(tag);
+    list.appendChild(erow);
+  });
+}
+
+async function loadPartido() {
+  try {
+    const data = await (await fetch(API + "/partido")).json();
+    renderPartido(data);
+  } catch (e) {}
+}
+
 function renderPrizes() {
   const ul = $("prizeList");
   ul.innerHTML = "";
@@ -715,6 +810,7 @@ function renderAll() {
   }
   renderParticipants();
   renderPrizes();
+  loadPartido();
   adjustAppbar();
 }
 
@@ -915,7 +1011,7 @@ $("sortSelect").addEventListener("change", (e) => {
 
 /* ---------- Deslizar lateral para cambiar de pestaña ---------- */
 (function initSwipe() {
-  const order = ["miQuiniela", "clasificacion", "participantes", "instrucciones"];
+  const order = ["miQuiniela", "clasificacion", "participantes", "partido", "instrucciones"];
   const main = document.querySelector(".quiniela-main") || document.body;
   let sx = 0;
   let sy = 0;
