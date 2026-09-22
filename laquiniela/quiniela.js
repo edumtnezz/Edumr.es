@@ -707,31 +707,29 @@ function renderPartido(data) {
   }
 
   const sign = (h, a) => (h > a ? 1 : h < a ? 2 : 0);
-  const winners = new Set();
-  if (r && r.home != null && r.away != null) {
-    const entries = data.entries || [];
-    const exact = entries.filter((e) => e.home === r.home && e.away === r.away);
-    if (exact.length) {
-      exact.forEach((e) => winners.add(e.name));
-    } else {
-      const rs = sign(r.home, r.away);
-      const signOk = entries.filter((e) => sign(e.home, e.away) === rs);
-      const pool = signOk.length ? signOk : entries;
-      let best = Infinity;
-      pool.forEach((e) => {
-        const d = Math.abs(e.home - r.home) + Math.abs(e.away - r.away);
-        if (d < best) best = d;
-      });
-      pool
-        .filter((e) => Math.abs(e.home - r.home) + Math.abs(e.away - r.away) === best)
-        .forEach((e) => winners.add(e.name));
-    }
-  }
+  const rOk = r && r.home != null && r.away != null;
 
   (data.entries || []).forEach((e) => {
+    let prize = null;
+    let tipo = "";
+    if (typeof e.prize === "number") {
+      prize = e.prize;
+      tipo = e.tipo || "";
+    } else if (rOk) {
+      if (e.home === r.home && e.away === r.away) {
+        prize = 1000000;
+        tipo = "exacto";
+      } else if (sign(e.home, e.away) === sign(r.home, r.away)) {
+        prize = 500000;
+        tipo = "signo";
+      } else {
+        prize = 0;
+      }
+    }
+
     const erow = document.createElement("div");
     erow.className = "partido-entry";
-    if (winners.has(e.name)) erow.classList.add("winner");
+    if (prize != null && prize > 0) erow.classList.add("winner");
     const nm = document.createElement("span");
     nm.className = "pe-name";
     nm.textContent = e.name;
@@ -740,9 +738,9 @@ function renderPartido(data) {
     sc.textContent = `${e.home} - ${e.away}`;
     const tag = document.createElement("span");
     tag.className = "pe-tag";
-    if (r && r.home != null) {
-      if (e.home === r.home && e.away === r.away) tag.textContent = "✔ Exacto · 1.000.000 €";
-      else if (sign(e.home, e.away) === sign(r.home, r.away)) tag.textContent = "Signo · 500.000 €";
+    if (prize != null && prize > 0) {
+      const pref = tipo === "exacto" ? "Exacto · " : tipo === "signo" ? "Signo · " : "";
+      tag.textContent = pref + money(prize) + " €";
     }
     erow.appendChild(nm);
     erow.appendChild(sc);
