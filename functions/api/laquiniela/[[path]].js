@@ -573,6 +573,107 @@ async function buildGlobal(env) {
 
 /* ---------- Handlers ---------- */
 
+const PUJA_KEY = "puja:current";
+
+function pujaStep(base) {
+  return Number(base) >= 10000000 ? 1000000 : 100000;
+}
+
+function nextTuesday2200Utc(now) {
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/Madrid",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+  });
+  const parts = {};
+  for (const p of fmt.formatToParts(now)) parts[p.type] = p.value;
+  const wall = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second);
+  const offset = wall - now.getTime();
+  const d = new Date(wall);
+  let days = (2 - d.getUTCDay() + 7) % 7;
+  const past = d.getUTCHours() > 22 || (d.getUTCHours() === 22 && (d.getUTCMinutes() > 0 || d.getUTCSeconds() > 0));
+  if (days === 0 && past) days = 7;
+  d.setUTCDate(d.getUTCDate() + days);
+  d.setUTCHours(22, 0, 0, 0);
+  return d.getTime() - offset;
+}
+
+async function getPuja(env) {
+  let p = await env.PORRA.get(PUJA_KEY, "json");
+  if (!p) return null;
+  const now = Date.now();
+  if (p.status === "open" && now >= p.closesAt) {
+    const top = (p.bids || []).slice().sort((a, b) => b.amount - a.amount)[0] || null;
+    p.status = "closed";
+    p.winner = top ? { user: top.user, amount: top.amount } : null;
+    await env.PORRA.put(PUJA_KEY, JSON.stringify(p));
+  }
+  return p;
+}
+
+async function createPuja(request, env, user) {
+  if (!user) return json({ error: "Inicia sesion." }, 401);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: "Datos invalidos" }, 400); }
+  const player = String(body.player || "").trim().slice(0, 40);
+  const base = Math.floor(Number(body.base));
+  const stars = Math.max(0, Math.min(5, Math.floor(Number(body.stars) || 0)));
+  if (!player) return json({ error: "Escribe el nombre del jugador." }, 400);
+  if (!Number.isFinite(base) || base < 1000000) return json({ error: "El valor debe ser al menos 1.000.000." }, 400);
+  const existing = await env.PORRA.get(PUJA_KEY, "json");
+  if (existing && existing.status === "open") {
+    return json({ error: "Ya hay una puja abierta. Espera a que termine." }, 409);
+  }
+  const now = Date.now();
+  const p = {
+    id: String(now),
+    creator: user.name,
+    creatorKey: user.key,
+    player,
+    base,
+    stars,
+    createdAt: new Date(now).toISOString(),
+    closesAt: nextTuesday2200Utc(new Date(now)),
+    extended: false,
+    status: "open",
+    bids: [],
+    winner: null,
+  };
+  await env.PORRA.put(PUJA_KEY, JSON.stringify(p));
+  return json({ ok: true, puja: await getPuja(env) });
+}
+
+async function placeBid(request, env, user) {
+  if (!user) return json({ error: "Inicia sesion para pujar." }, 401);
+  let body;
+  try { body = await request.json(); } catch { return json({ error: "Datos invalidos" }, 400); }
+  const p = await getPuja(env);
+  if (!p) return json({ error: "No hay ninguna puja abierta." }, 404);
+  if (p.status !== "open") return json({ error: "La puja ya ha terminado." }, 403);
+  const now = Date.now();
+  const amount = Math.floor(Number(body.amount));
+  const step = pujaStep(p.base);
+  const highest = (p.bids || []).reduce((m, b) => Math.max(m, b.amount), 0);
+  const minFirst = Math.ceil(p.base / step) * step;
+  const min = highest ? highest + step : minFirst;
+  if (!Number.isFinite(amount)) return json({ error: "Cantidad invalida." }, 400);
+  if (amount % step !== 0) {
+    return json({ error: `La puja debe ir de ${step.toLocaleString("es-ES")} en ${step.toLocaleString("es-ES")}.` }, 400);
+  }
+  if (amount < min) {
+    return json({ error: `La puja mínima es ${min.toLocaleString("es-ES")} €.` }, 400);
+  }
+  const bids = (p.bids || []).filter((b) => b.user !== user.name);
+  bids.push({ user: user.name, userKey: user.key, amount, at: new Date(now).toISOString() });
+  p.bids = bids;
+  if (now >= p.closesAt - 5 * 60 * 1000) {
+    p.closesAt = now + 5 * 60 * 1000;
+    p.extended = true;
+  }
+  await env.PORRA.put(PUJA_KEY, JSON.stringify(p));
+  return json({ ok: true, puja: await getPuja(env) });
+}
+
 async function getPartido(env) {
   const raw = await env.PORRA.get("partido", "json");
   const p =
@@ -755,6 +856,10 @@ export async function onRequestGet({ request, env, params }) {
     const p = await getPartido(env);
     return json(p);
   }
+  if (path === "puja") {
+    const p = await getPuja(env);
+    return json({ puja: p, user: user ? { name: user.name } : null });
+  }
   return json({ error: "not found" }, 404);
 }
 
@@ -766,6 +871,14 @@ export async function onRequestPost({ request, env, params }) {
   if (path === "prediccion") {
     const user = await getSessionUser(env, request);
     return handlePrediccion(request, env, user);
+  }
+  if (path === "puja/crear") {
+    const user = await getSessionUser(env, request);
+    return createPuja(request, env, user);
+  }
+  if (path === "puja/pujar") {
+    const user = await getSessionUser(env, request);
+    return placeBid(request, env, user);
   }
   return json({ error: "not found" }, 404);
 }

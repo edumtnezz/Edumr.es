@@ -1,4 +1,5 @@
-/futmondo/* /laquiniela/:splat 301
-/futmondo /laquiniela/ 301
-/laporra/* /laquiniela/:splat 301
-/laporra /laquiniela/ 301
+/futmondo /futmondo/ 301
+/laquiniela/* /futmondo/quiniela/:splat 301
+/laquiniela /futmondo/quiniela/ 301
+/laporra/* /futmondo/porra/:splat 301
+/laporra /futmondo/porra/ 301

@@ -1009,7 +1009,7 @@ $("sortSelect").addEventListener("change", (e) => {
 
 /* ---------- Deslizar lateral para cambiar de pestaña ---------- */
 (function initSwipe() {
-  const order = ["miQuiniela", "clasificacion", "participantes", "partido", "instrucciones"];
+  const order = ["miQuiniela", "clasificacion", "participantes", "instrucciones"];
   const main = document.querySelector(".quiniela-main") || document.body;
   let sx = 0;
   let sy = 0;
