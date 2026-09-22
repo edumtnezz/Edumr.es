@@ -1,18 +1,18 @@
 const API = "/api/laquiniela";
-let data = { puja: null, user: null };
+let data = { puja: null, user: null, nextTuesday: null };
 let timerId = null;
 
 function $(id) { return document.getElementById(id); }
 function money(n) { return Number(n || 0).toLocaleString("es-ES"); }
-function stars(n) { return n > 0 ? " " + "⭐".repeat(Math.min(5, n)) : ""; }
-
-function step(base) { return Number(base) >= 10000000 ? 1000000 : 100000; }
 
 function el(tag, cls, txt) {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
   if (txt != null) e.textContent = txt;
   return e;
+}
+function escapeHtml(s) {
+  return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 function render() {
@@ -21,78 +21,71 @@ function render() {
   const user = data.user;
   const p = data.puja;
 
-  // Sin sesion -> login
+  // Contador (siempre visible)
+  const cd = el("div", "puja-countdown");
+  const timer = el("div", "puja-timer"); timer.id = "pjTimer";
+  const sub = el("div", "puja-sub"); sub.id = "pjSub";
+  cd.appendChild(timer);
+  cd.appendChild(sub);
+  panel.appendChild(cd);
+
+  if (p) {
+    const pl = el("div", "puja-player");
+    pl.innerHTML = escapeHtml(p.player) + '<span class="stars">' + "⭐".repeat(Math.min(5, p.stars || 0)) + "</span>";
+    panel.appendChild(pl);
+    const baseTxt = el("div", "puja-base");
+    baseTxt.innerHTML = "Valor de salida: <b>" + money(p.base) + " €</b> · la saca <b>" + escapeHtml(p.creator) + "</b>";
+    panel.appendChild(baseTxt);
+  } else {
+    panel.appendChild(el("div", "puja-player", "Sin subasta activa"));
+  }
+
   if (!user) {
-    panel.appendChild(el("h2", null, "Entra para pujar"));
-    panel.appendChild(el("p", "muted", "Pon tu nombre y tu código (el mismo de La Quiniela)."));
+    panel.appendChild(el("p", "muted", "Entra para crear la subasta o pujar. Usa tu mismo nombre y código de La Quiniela."));
     const f = el("div", "auth-form");
     const name = el("input"); name.id = "pjName"; name.placeholder = "Tu nombre"; name.maxLength = 24;
     const pin = el("input"); pin.id = "pjPin"; pin.type = "password"; pin.placeholder = "Código (4 o 6 números)"; pin.maxLength = 6;
     f.appendChild(name); f.appendChild(pin);
-    const b = el("button", "btn-primary big", "Entrar"); b.id = "pjGo";
-    f.appendChild(b);
+    const b = el("button", "btn-primary big", "Entrar"); f.appendChild(b);
     panel.appendChild(f);
-    const err = el("p", "error"); err.id = "pjErr";
-    panel.appendChild(err);
+    const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
     b.addEventListener("click", () => auth("login"));
-    return;
-  }
-
-  // Con sesion, sin puja -> crear
-  if (!p) {
-    panel.appendChild(el("h2", null, "Nueva subasta"));
-    panel.appendChild(el("p", "muted", "Crea la puja del martes: jugador y valor de salida."));
+  } else if (!p) {
+    panel.appendChild(el("p", "muted", "Crea la subasta del martes: jugador y valor de salida."));
     const f = el("div", "auth-form");
     const pl = el("input"); pl.id = "pjPlayer"; pl.placeholder = "Jugador (ej. Diomande)"; pl.maxLength = 40;
     const bs = el("input"); bs.id = "pjBase"; bs.type = "number"; bs.placeholder = "Valor (ej. 45500000)";
     const st = el("input"); st.id = "pjStars"; st.type = "number"; st.min = 0; st.max = 5; st.placeholder = "Estrellas (0-5)";
     f.appendChild(pl); f.appendChild(bs); f.appendChild(st);
-    const b = el("button", "btn-primary big", "Sacar a subasta");
-    f.appendChild(b);
+    const b = el("button", "btn-primary big", "Sacar a subasta"); f.appendChild(b);
     panel.appendChild(f);
-    const err = el("p", "error"); err.id = "pjErr";
-    panel.appendChild(err);
+    const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
     b.addEventListener("click", crear);
-    return;
-  }
-
-  // Puja
-  const head = el("div", "puja-head");
-  const pl = el("div", "puja-player");
-  pl.innerHTML = escapeHtml(p.player) + '<span class="stars">' + "⭐".repeat(Math.min(5, p.stars || 0)) + "</span>";
-  head.appendChild(pl);
-  const baseTxt = el("div", "puja-base");
-  baseTxt.innerHTML = "Valor de salida: <b>" + money(p.base) + " €</b> · la saca <b>" + escapeHtml(p.creator) + "</b>";
-  head.appendChild(baseTxt);
-  const timer = el("div", "puja-timer"); timer.id = "pjTimer";
-  head.appendChild(timer);
-  const sub = el("div", "puja-sub"); sub.id = "pjSub";
-  head.appendChild(sub);
-  panel.appendChild(head);
-
-  if (p.status === "closed") {
-    const w = el("div", "winner-box");
-    if (p.winner) {
-      w.appendChild(el("div", "muted", "Ganador"));
-      w.appendChild(el("div", "w-name", p.winner.user));
-      w.appendChild(el("div", "w-amount", money(p.winner.amount) + " €"));
+  } else {
+    if (p.status === "closed") {
+      const w = el("div", "winner-box");
+      if (p.winner) {
+        w.appendChild(el("div", "muted", "Ganador"));
+        w.appendChild(el("div", "w-name", p.winner.user));
+        w.appendChild(el("div", "w-amount", money(p.winner.amount) + " €"));
+      } else {
+        w.appendChild(el("div", "muted", "Nadie pujó."));
+      }
+      panel.appendChild(w);
     } else {
-      w.appendChild(el("div", "muted", "Nadie pujó."));
+      const f = el("div", "bid-form");
+      const inp = el("input"); inp.id = "pjAmount"; inp.type = "number"; inp.placeholder = "Tu puja (ej. " + money(p.base + (p.base >= 10000000 ? 1000000 : 100000)) + ")";
+      const b = el("button", "btn-primary", "Pujar");
+      f.appendChild(inp); f.appendChild(b);
+      panel.appendChild(f);
+      const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
+      b.addEventListener("click", pujar);
     }
-    panel.appendChild(w);
-  } else if (user) {
-    const f = el("div", "bid-form");
-    const inp = el("input"); inp.id = "pjAmount"; inp.type = "number"; inp.placeholder = "Tu puja (ej. " + money(p.base + step(p.base)) + ")";
-    const b = el("button", "btn-primary", "Pujar");
-    f.appendChild(inp); f.appendChild(b);
-    panel.appendChild(f);
-    const err = el("p", "error"); err.id = "pjErr";
-    panel.appendChild(err);
-    b.addEventListener("click", pujar);
   }
 
+  // Clasificación / participantes (pujas)
   const list = el("div", "bid-list");
-  const bids = (p.bids || []).slice().sort((a, b) => b.amount - a.amount);
+  const bids = ((p && p.bids) || []).slice().sort((a, b) => b.amount - a.amount);
   const top = bids[0];
   bids.forEach((bd) => {
     const row = el("div", "bid-row");
@@ -101,40 +94,32 @@ function render() {
     row.appendChild(el("span", "bid-amount", money(bd.amount) + " €"));
     list.appendChild(row);
   });
-  if (!bids.length) list.appendChild(el("p", "empty", "Todavía no hay pujas. ¡Sé el primero!"));
+  if (!bids.length) list.appendChild(el("p", "empty", "Todavía no hay pujas."));
   panel.appendChild(list);
 
   startTimer();
 }
 
-function escapeHtml(s) {
-  return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
 function startTimer() {
   if (timerId) clearInterval(timerId);
   const tick = () => {
-    const p = data.puja;
     const t = $("pjTimer");
     const sub = $("pjSub");
-    if (!p) { if (timerId) clearInterval(timerId); return; }
-    if (p.status === "closed") {
-      if (t) { t.classList.add("closed"); t.textContent = "CERRADA"; }
-      if (sub) sub.textContent = "Subasta finalizada";
-      if (timerId) clearInterval(timerId);
-      return;
-    }
-    const diff = p.closesAt - Date.now();
-    if (diff <= 0) {
-      if (t) { t.classList.add("closed"); t.textContent = "CERRADA"; }
-      if (sub) sub.textContent = "Subasta finalizada";
-      return;
-    }
+    if (!t) return;
+    const p = data.puja;
+    const open = p && p.status === "open";
+    const target = open ? p.closesAt : data.nextTuesday;
+    if (sub) sub.textContent = open
+      ? (p.extended ? "En prórroga (se amplía con cada puja)" : "Termina a las 22:00 (hora de Madrid)")
+      : "Próxima subasta: martes a las 22:00";
+    if (!target) { t.textContent = "--:--:--"; return; }
+    const diff = target - Date.now();
+    if (diff <= 0) { t.classList.add("closed"); t.textContent = "00:00:00"; return; }
+    t.classList.remove("closed");
     const s = Math.floor(diff / 1000);
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sc = s % 60;
     const pad = (n) => String(n).padStart(2, "0");
-    if (t) t.textContent = pad(h) + ":" + pad(m) + ":" + pad(sc);
-    if (sub) sub.textContent = p.extended ? "En prórroga (se amplía con cada puja)" : "Termina a las 22:00 (hora de Madrid)";
+    t.textContent = pad(h) + ":" + pad(m) + ":" + pad(sc);
   };
   tick();
   timerId = setInterval(tick, 1000);
@@ -150,20 +135,16 @@ async function load() {
 
 async function auth(kind) {
   const err = $("pjErr");
-  const name = $("pjName").value.trim();
-  const pin = $("pjPin").value.trim();
   try {
     const res = await fetch(API + "/" + kind, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ nombre: name, pin }),
+      body: JSON.stringify({ nombre: $("pjName").value, pin: $("pjPin").value }),
     });
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || "Error");
     await load();
-  } catch (e) {
-    if (err) err.textContent = e.message;
-  }
+  } catch (e) { if (err) err.textContent = e.message; }
 }
 
 async function crear() {
@@ -177,9 +158,7 @@ async function crear() {
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || "Error");
     await load();
-  } catch (e) {
-    if (err) err.textContent = e.message;
-  }
+  } catch (e) { if (err) err.textContent = e.message; }
 }
 
 async function pujar() {
@@ -192,11 +171,8 @@ async function pujar() {
     });
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || "Error");
-    $("pjAmount").value = "";
     await load();
-  } catch (e) {
-    if (err) err.textContent = e.message;
-  }
+  } catch (e) { if (err) err.textContent = e.message; }
 }
 
 load();

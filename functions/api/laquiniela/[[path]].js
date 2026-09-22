@@ -858,7 +858,7 @@ export async function onRequestGet({ request, env, params }) {
   }
   if (path === "puja") {
     const p = await getPuja(env);
-    return json({ puja: p, user: user ? { name: user.name } : null });
+    return json({ puja: p, user: user ? { name: user.name } : null, nextTuesday: nextTuesday2200Utc(new Date()) });
   }
   return json({ error: "not found" }, 404);
 }

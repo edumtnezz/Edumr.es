@@ -1106,6 +1106,28 @@ body {
 .partido-entry.winner .pe-score { color: #34d399; }
 .partido-entry.winner .pe-tag { color: #34d399; }
 
+/* Pujas */
+.puja-countdown { text-align: center; margin-bottom: 18px; }
+.puja-player { font-family: 'Space Grotesk', sans-serif; font-size: clamp(1.4rem, 6vw, 2rem); font-weight: 700; text-align: center; }
+.puja-player .stars { color: #fbbf24; font-size: 0.85em; margin-left: 6px; letter-spacing: 2px; }
+.puja-base { color: var(--muted); margin-top: 4px; text-align: center; }
+.puja-base b { color: var(--text); }
+.puja-timer { font-family: 'Space Grotesk', monospace; font-size: clamp(2rem, 9vw, 3.2rem); font-weight: 700; color: var(--accent); line-height: 1.1; }
+.puja-timer.closed { color: #f87171; }
+.puja-sub { font-size: 0.82rem; color: var(--muted); margin-top: 6px; }
+.bid-list { display: grid; gap: 8px; margin-top: 16px; }
+.bid-row { display: flex; align-items: center; gap: 12px; padding: 11px 15px; border-radius: 11px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); }
+.bid-row.top { border-color: rgba(16, 185, 129, 0.55); background: linear-gradient(90deg, rgba(16, 185, 129, 0.13), rgba(16, 185, 129, 0.02)); }
+.bid-user { flex: 1; font-weight: 700; }
+.bid-amount { font-family: 'Space Grotesk', monospace; font-weight: 700; color: var(--accent); }
+.bid-row.top .bid-amount { color: #34d399; }
+.bid-form { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+.bid-form input { flex: 1; min-width: 150px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text); font-size: 1rem; font-family: inherit; outline: none; }
+.bid-form input:focus { border-color: var(--accent); }
+.winner-box { text-align: center; padding: 22px; border-radius: 16px; border: 1px solid rgba(16, 185, 129, 0.5); background: linear-gradient(135deg, rgba(16, 185, 129, 0.16), rgba(16, 185, 129, 0.03)); margin-top: 18px; }
+.winner-box .w-name { font-family: 'Space Grotesk', sans-serif; font-size: 1.5rem; font-weight: 700; }
+.winner-box .w-amount { font-family: 'Space Grotesk', monospace; font-weight: 700; font-size: 1.3rem; color: #34d399; margin-top: 6px; }
+
 @media (max-width: 1140px) {
   .top-right-tools { gap: 10px; }
 }
