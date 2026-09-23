@@ -581,7 +581,7 @@ const FUTMONDO_USERTEAM = "6ab314563a9cf632cef6291c";
 const FACE_BASE = "https://static01.mondocore.com/futmondo/img/faces/64/";
 const LOGO_BASE = "https://static02.mondocore.com/futmondo/img/teams/64/";
 const MARKET_KEY = "fm:market";
-const MARKET_TTL_MS = 3 * 60 * 1000;
+const MARKET_TTL_MS = 10 * 60 * 1000;
 let fmToken = null;
 
 async function futbolPost(path, header, query) {
@@ -617,23 +617,29 @@ async function getMarketPlayers(env) {
   const cached = await env.PORRA.get(MARKET_KEY, "json");
   if (cached && Date.now() - (cached.at || 0) < MARKET_TTL_MS) return cached.players;
   const header = await futbolHeader(env);
-  const r = await futbolPost("/1/market/players", header, {
-    championshipId: FUTMONDO_CHAMPIONSHIP,
-    userteamId: FUTMONDO_USERTEAM,
-    type: "market",
+  const [plRes, tmRes] = await Promise.all([
+    futbolPost("/5/league/championshipplayers", header, { championshipId: FUTMONDO_CHAMPIONSHIP }),
+    futbolPost("/1/league/championshipteams", header, { championshipId: FUTMONDO_CHAMPIONSHIP }),
+  ]);
+  const teamMap = {};
+  for (const t of tmRes.answer || []) {
+    if (t && t.id) teamMap[t.id] = { name: t.name || "", logo: t.logo || "" };
+  }
+  const arr = (plRes.answer && plRes.answer.players) || (Array.isArray(plRes.answer) ? plRes.answer : []);
+  const players = arr.map((p) => {
+    const tm = teamMap[p.teamId] || {};
+    return {
+      name: String(p.name || ""),
+      role: String(p.role || ""),
+      value: Number(p.value) || 0,
+      team: tm.name || String(p.team || ""),
+      status: String(p.status || ""),
+      points: Number(p.points) || 0,
+      photo: p.photo ? FACE_BASE + p.photo : "",
+      logo: tm.logo ? LOGO_BASE + tm.logo : "",
+    };
   });
-  const arr = Array.isArray(r.answer) ? r.answer : [];
-  const players = arr.map((p) => ({
-    name: String(p.name || ""),
-    role: String(p.role || ""),
-    value: Number(p.value) || 0,
-    team: String(p.team || ""),
-    status: String(p.status || ""),
-    points: Number(p.points) || 0,
-    photo: p.photo ? FACE_BASE + p.photo : "",
-    logo: p.logo ? LOGO_BASE + p.logo : "",
-  }));
-  await env.PORRA.put(MARKET_KEY, JSON.stringify({ at: Date.now(), players }), { expirationTtl: 600 });
+  await env.PORRA.put(MARKET_KEY, JSON.stringify({ at: Date.now(), players }), { expirationTtl: 1800 });
   return players;
 }
 
