@@ -15,6 +15,13 @@ function escapeHtml(s) {
   return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+function formatDots(v) {
+  const digits = String(v == null ? "" : v).replace(/\D/g, "").replace(/^0+(?=\d)/, "");
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+function parseDots(v) { return Number(String(v == null ? "" : v).replace(/\D/g, "")) || 0; }
+let selValue = 0;
+
 function initials(name) {
   const parts = String(name || "?").trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return "?";
@@ -84,18 +91,17 @@ function render() {
   } else if (!p) {
     panel.appendChild(el("p", "muted", "Elige el jugador a subasta y el precio de salida. El resto verá la subasta y podrá pujar."));
     const f = el("div", "auth-form");
-    const pl = el("input"); pl.id = "pjPlayer"; pl.placeholder = "Busca un jugador (ej. Diomande)"; pl.maxLength = 40; pl.autocomplete = "off";
-    const res = el("div", "pj-results"); res.id = "pjResults";
+    const pl = el("input"); pl.id = "pjPlayer"; pl.placeholder = "Elige un jugador en la lista de abajo"; pl.readOnly = true;
     const prev = el("div", "pj-preview"); prev.id = "pjPreview";
-    const bi = el("div", "pj-base-info"); bi.id = "pjBaseInfo"; bi.textContent = "Elige un jugador de la lista.";
-    const bs = el("input"); bs.id = "pjBase"; bs.type = "number"; bs.placeholder = "Precio de salida de la puja (€)";
+    const bi = el("div", "pj-base-info"); bi.id = "pjBaseInfo"; bi.textContent = "Elige un jugador de la lista de abajo.";
+    const bs = el("input"); bs.id = "pjBase"; bs.type = "text"; bs.inputMode = "numeric"; bs.placeholder = "Precio de la puja (p. ej. 45.500.000)";
+    bs.addEventListener("input", () => { bs.value = formatDots(bs.value); });
     const hid = el("input"); hid.id = "pjPhoto"; hid.type = "hidden";
-    f.appendChild(pl); f.appendChild(res); f.appendChild(prev); f.appendChild(bi); f.appendChild(bs); f.appendChild(hid);
+    f.appendChild(pl); f.appendChild(prev); f.appendChild(bi); f.appendChild(bs); f.appendChild(hid);
     const b = el("button", "btn-primary big", "Sacar a subasta"); f.appendChild(b);
     panel.appendChild(f);
     const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
     b.addEventListener("click", crear);
-    attachSearch();
   } else {
     if (p.status === "closed") {
       const w = el("div", "winner-box");
@@ -214,57 +220,84 @@ async function load(force) {
   } catch (e) {}
 }
 
-let searchTimer = null;
+let marketTimer = null;
+let marketData = { players: [], updatedAt: null };
 
-function attachSearch() {
-  const inp = $("pjPlayer");
-  if (!inp) return;
-  inp.addEventListener("input", () => {
-    clearTimeout(searchTimer);
-    const q = inp.value.trim();
-    const box = $("pjResults");
-    if (q.length < 2) { if (box) box.innerHTML = ""; return; }
-    searchTimer = setTimeout(() => buscarJugador(q), 300);
+function updateMarketTime() {
+  const upd = $("mercadoUpdated");
+  if (!upd) return;
+  if (!marketData.updatedAt) { upd.textContent = ""; return; }
+  const mins = Math.max(0, Math.round((Date.now() - marketData.updatedAt) / 60000));
+  upd.textContent = mins <= 0 ? "Actualizado ahora" : "Actualizado hace " + mins + " min";
+}
+
+function renderMarket() {
+  const grid = $("marketGrid");
+  if (!grid) return;
+  updateMarketTime();
+  grid.innerHTML = "";
+  const players = marketData.players || [];
+  if (!players.length) { grid.appendChild(el("p", "market-empty", "Sin resultados.")); return; }
+  players.forEach((p) => {
+    const card = el("button", "mcard");
+    card.type = "button";
+    if (p.photo) {
+      const im = el("img", "mcard-img");
+      im.src = p.photo;
+      im.alt = p.name;
+      im.loading = "lazy";
+      card.appendChild(im);
+    } else {
+      card.appendChild(el("div", "mcard-img", initials(p.name)));
+    }
+    const body = el("div", "mcard-body");
+    body.appendChild(el("div", "mcard-name", p.name + (p.status ? " · " + p.status : "")));
+    if (p.team) body.appendChild(el("div", "mcard-team", p.team));
+    body.appendChild(el("div", "mcard-val", money(p.value) + " €"));
+    card.appendChild(body);
+    card.addEventListener("click", () => elegirDesdeMercado(p));
+    grid.appendChild(card);
   });
 }
 
-async function buscarJugador(q) {
-  const box = $("pjResults");
-  if (!box) return;
+async function loadMarket(q) {
+  const grid = $("marketGrid");
+  if (!grid) return;
   try {
-    const res = await fetch(API + "/mercado?q=" + encodeURIComponent(q));
+    const res = await fetch(API + "/mercado" + (q ? "?q=" + encodeURIComponent(q) : ""));
     const d = await res.json();
-    if (!box.isConnected) return;
-    box.innerHTML = "";
-    if (!d.players || !d.players.length) { box.appendChild(el("div", "pj-res-empty", "Sin resultados")); return; }
-    d.players.forEach((p) => {
-      const row = el("button", "pj-res-row");
-      row.type = "button";
-      if (p.photo) { const im = el("img", "pj-res-img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; row.appendChild(im); }
-      const info = el("div", "pj-res-info");
-      info.appendChild(el("div", "pj-res-name", p.name + (p.status ? " · " + p.status : "")));
-      info.appendChild(el("div", "pj-res-meta", (p.team || "") + (p.role ? " · " + p.role : "")));
-      row.appendChild(info);
-      row.appendChild(el("div", "pj-res-val", money(p.value) + " €"));
-      row.addEventListener("click", () => elegirJugador(p));
-      box.appendChild(row);
-    });
-  } catch (e) { if (box && box.isConnected) { box.innerHTML = ""; box.appendChild(el("div", "pj-res-empty", "No se pudo cargar la lista. Escribe otra letra para reintentar.")); } }
+    if (!grid.isConnected) return;
+    marketData = { players: d.players || [], updatedAt: d.updatedAt || null };
+    renderMarket();
+  } catch (e) {
+    if (grid.isConnected) { grid.innerHTML = ""; grid.appendChild(el("p", "market-empty", "No se pudo cargar la lista.")); }
+  }
+}
+
+function elegirDesdeMercado(p) {
+  const msg = $("mercadoMsg");
+  if (!data.user) { if (msg) msg.textContent = "Entra con tu usuario para sacar a un jugador a subasta."; return; }
+  if (data.puja && data.puja.status === "open") { if (msg) msg.textContent = "Ya hay una subasta abierta. Espera a que termine para sacar otro jugador."; return; }
+  elegirJugador(p);
+  const f = $("pjPlayer");
+  if (f && f.scrollIntoView) f.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 function elegirJugador(p) {
+  selValue = Number(p.value) || 0;
   const inp = $("pjPlayer"); if (inp) inp.value = p.name;
-  const bs = $("pjBase"); if (bs) bs.value = p.value;
+  const bs = $("pjBase"); if (bs) bs.value = formatDots(p.value);
   const hid = $("pjPhoto"); if (hid) hid.value = p.photo || "";
   const bi = $("pjBaseInfo");
-  if (bi) bi.innerHTML = "Valor de mercado: <b>" + money(p.value) + " €</b>";
+  if (bi) bi.innerHTML = "Valor de mercado: <b>" + money(p.value) + " €</b> · el precio no puede ser menor.";
   const prev = $("pjPreview");
   if (prev) {
     prev.innerHTML = "";
     if (p.photo) { const im = el("img", "puja-photo"); im.src = p.photo; im.alt = p.name; prev.appendChild(im); }
     prev.appendChild(el("div", "pj-preview-name", p.name + (p.team ? " · " + p.team : "")));
   }
-  const box = $("pjResults"); if (box) box.innerHTML = "";
+  const msg = $("mercadoMsg");
+  if (msg) msg.textContent = "Has elegido a " + p.name + ". Escribe el precio de la puja.";
 }
 
 async function auth(kind) {
@@ -283,13 +316,14 @@ async function auth(kind) {
 
 async function crear() {
   const err = $("pjErr");
-  const baseVal = $("pjBase") ? Number($("pjBase").value) : 0;
-  if (!baseVal) { if (err) err.textContent = "Elige un jugador de la lista."; return; }
+  const baseVal = $("pjBase") ? parseDots($("pjBase").value) : 0;
+  if (!baseVal) { if (err) err.textContent = "Elige un jugador y pon el precio."; return; }
+  if (selValue && baseVal < selValue) { if (err) err.textContent = "El precio no puede ser menor que el valor del jugador (" + money(selValue) + " €)."; return; }
   try {
     const res = await fetch(API + "/puja/crear", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ player: $("pjPlayer").value, base: $("pjBase").value, photo: $("pjPhoto") ? $("pjPhoto").value : "" }),
+      body: JSON.stringify({ player: $("pjPlayer").value, base: baseVal, photo: $("pjPhoto") ? $("pjPhoto").value : "" }),
     });
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || "Error");
@@ -355,6 +389,19 @@ document.querySelectorAll(".tab").forEach((t) => {
     switchTab(order[i]);
   }, { passive: true });
 })();
+
+function initMarket() {
+  const inp = $("mjSearch");
+  if (inp) {
+    inp.addEventListener("input", () => {
+      clearTimeout(marketTimer);
+      marketTimer = setTimeout(() => loadMarket(inp.value.trim()), 300);
+    });
+  }
+  loadMarket("");
+  setInterval(updateMarketTime, 30000);
+}
+initMarket();
 
 load(true);
 setInterval(load, 10000);

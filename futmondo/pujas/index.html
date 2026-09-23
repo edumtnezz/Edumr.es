@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="../theme.js?v=64"></script>
-  <link rel="stylesheet" href="../quiniela/quiniela.css?v=66">
+  <link rel="stylesheet" href="../quiniela/quiniela.css?v=69">
 </head>
 <body class="page-simple">
   <header class="appbar">
@@ -39,6 +39,17 @@
   <main class="quiniela-main">
     <section class="tab-panel" id="tab-subasta">
       <section class="panel" id="pujaPanel"><p class="muted">Cargando…</p></section>
+
+      <section class="panel" id="mercadoPanel">
+        <div class="panel-head">
+          <h2>Jugadores</h2>
+          <span class="muted small" id="mercadoUpdated"></span>
+        </div>
+        <p class="muted small">Elige un jugador para sacarlo a subasta (solo si no hay otra abierta).</p>
+        <input id="mjSearch" class="market-search" type="text" placeholder="Buscar jugador…" autocomplete="off">
+        <p class="muted small" id="mercadoMsg"></p>
+        <div class="market-grid" id="marketGrid"></div>
+      </section>
     </section>
 
     <section class="tab-panel hidden" id="tab-participantes">
@@ -70,6 +81,6 @@
 
   <footer class="quiniela-footer"></footer>
 
-  <script src="pujas.js?v=68"></script>
+  <script src="pujas.js?v=69"></script>
 </body>
 </html>

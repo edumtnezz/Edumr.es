@@ -615,7 +615,7 @@ async function futbolHeader(env) {
 
 async function getMarketPlayers(env) {
   const cached = await env.PORRA.get(MARKET_KEY, "json");
-  if (cached && Date.now() - (cached.at || 0) < MARKET_TTL_MS) return cached.players;
+  if (cached && Date.now() - (cached.at || 0) < MARKET_TTL_MS) return cached;
   const header = await futbolHeader(env);
   const [plRes, tmRes] = await Promise.all([
     futbolPost("/5/league/championshipplayers", header, { championshipId: FUTMONDO_CHAMPIONSHIP }),
@@ -639,22 +639,28 @@ async function getMarketPlayers(env) {
       logo: tm.logo ? LOGO_BASE + tm.logo : "",
     };
   });
-  await env.PORRA.put(MARKET_KEY, JSON.stringify({ at: Date.now(), players }), { expirationTtl: 1800 });
-  return players;
+  const out = { at: Date.now(), players };
+  await env.PORRA.put(MARKET_KEY, JSON.stringify(out), { expirationTtl: 1800 });
+  return out;
+}
+
+function fmtEur(n) {
+  return String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 async function searchMercado(env, q) {
-  let players;
+  let cache;
   try {
-    players = await getMarketPlayers(env);
+    cache = await getMarketPlayers(env);
   } catch (e) {
     return json({ error: "No se pudo consultar Futmondo." }, 502);
   }
+  const players = cache.players || [];
   const query = stripAccents(String(q || "").toLowerCase().trim());
   let list = players;
   if (query) list = players.filter((p) => stripAccents(p.name.toLowerCase()).includes(query));
   list = list.slice().sort((a, b) => b.value - a.value);
-  return json({ players: list.slice(0, 20) });
+  return json({ players: list.slice(0, 30), updatedAt: cache.at || null });
 }
 
 function pujaStep(base) {
@@ -703,6 +709,17 @@ async function createPuja(request, env, user) {
   const photo = /^https?:\/\/.+/i.test(photoRaw) ? photoRaw : "";
   if (!player) return json({ error: "Escribe el nombre del jugador." }, 400);
   if (!Number.isFinite(base) || base < 1000000) return json({ error: "El valor debe ser al menos 1.000.000." }, 400);
+  try {
+    const cache = await getMarketPlayers(env);
+    const list = cache.players || [];
+    const q = stripAccents(player.toLowerCase());
+    const found =
+      list.find((x) => stripAccents(x.name.toLowerCase()) === q) ||
+      list.find((x) => stripAccents(x.name.toLowerCase()).includes(q));
+    if (found && base < found.value) {
+      return json({ error: `El precio no puede ser menor que el valor del jugador (${fmtEur(found.value)} €).` }, 400);
+    }
+  } catch (e) {}
   const existing = await env.PORRA.get(PUJA_KEY, "json");
   if (existing && existing.status === "open") {
     return json({ error: "Ya hay una puja abierta. Espera a que termine." }, 409);
