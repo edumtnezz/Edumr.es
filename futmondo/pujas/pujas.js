@@ -154,6 +154,7 @@ function render() {
       if (leader) lead.innerHTML = "Va primero <b>" + escapeHtml(leader.user) + "</b> con <b>" + money(leader.amount) + " €</b>";
       else lead.textContent = "Aún no hay pujas. ¡Sé el primero!";
       panel.appendChild(lead);
+      panel.appendChild(el("p", "bid-note", "⚠️ Al pujar no se puede retirar ni bajar la puja. Piénsalo antes de pujar."));
 
       const big = el("button", "btn-primary big", "Pujar " + money(min) + " €");
       big.addEventListener("click", () => doPujar(min));

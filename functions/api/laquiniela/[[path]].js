@@ -713,6 +713,11 @@ function nextTuesday2200Utc(now) {
   return d.getTime() - offset;
 }
 
+function pujaStub(env) {
+  if (!env.PUJA || typeof env.PUJA.idFromName !== "function") return null;
+  return env.PUJA.get(env.PUJA.idFromName("main"));
+}
+
 async function getPuja(env) {
   let p = await env.PORRA.get(PUJA_KEY, "json");
   if (!p) return null;
@@ -751,6 +756,20 @@ async function createPuja(request, env, user) {
       }
     }
   } catch (e) {}
+  const closesAt = nextTuesday2200Utc(new Date());
+  const stubC = pujaStub(env);
+  if (stubC) {
+    try {
+      const r = await stubC.fetch("https://do/crear", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ user: { name: user.name, key: user.key }, player, base, value: playerValue, photo, closesAt }),
+      });
+      const d = await r.json();
+      if (!r.ok) return json({ error: d.error || "Error" }, r.status);
+      return json({ ok: true, puja: d.puja });
+    } catch (e) {}
+  }
   const existing = await env.PORRA.get(PUJA_KEY, "json");
   if (existing && existing.status === "open") {
     return json({ error: "Ya hay una puja abierta. Espera a que termine." }, 409);
@@ -782,6 +801,19 @@ async function placeBid(request, env, user) {
   if (!user) return json({ error: "Inicia sesion para pujar." }, 401);
   let body;
   try { body = await request.json(); } catch { return json({ error: "Datos invalidos" }, 400); }
+  const stubB = pujaStub(env);
+  if (stubB) {
+    try {
+      const r = await stubB.fetch("https://do/pujar", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ user: { name: user.name, key: user.key }, amount: body.amount }),
+      });
+      const d = await r.json();
+      if (!r.ok) return json({ error: d.error || "Error" }, r.status);
+      return json({ ok: true, puja: d.puja });
+    } catch (e) {}
+  }
   const p = await getPuja(env);
   if (!p) return json({ error: "No hay ninguna puja abierta." }, 404);
   if (p.status !== "open") return json({ error: "La puja ya ha terminado." }, 403);

@@ -1225,6 +1225,7 @@ body.page-simple .appbar .tabs { margin: 6px 0 0; }
 .bid-form input:focus { border-color: var(--accent); }
 .bid-lead { text-align: center; margin: 16px 0 12px; font-size: 1rem; color: var(--muted); }
 .bid-lead b { color: var(--text); }
+.bid-note { text-align: center; color: var(--amber); font-size: 0.85rem; margin: 10px 0 2px; font-weight: 600; }
 .bid-extras { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 10px; }
 .share-btn { display: block; margin: 12px auto 0; }
 #toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 30px); background: #10b981; color: #04120c; font-weight: 800; padding: 14px 22px; border-radius: 14px; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35); opacity: 0; pointer-events: none; transition: all 0.3s ease; z-index: 200; font-family: 'Space Grotesk', sans-serif; max-width: 90vw; text-align: center; }
