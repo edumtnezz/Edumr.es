@@ -222,11 +222,16 @@ function updateCountdown() {
   box.classList.remove("closed");
 
   const totalSec = Math.floor(diff / 1000);
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = totalSec % 60;
-  const pad = (n) => String(n).padStart(2, "0");
-  timer.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+  if (totalSec >= 86400) {
+    const days = Math.floor(totalSec / 86400);
+    timer.textContent = days + (days === 1 ? " día" : " días");
+  } else {
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    const pad = (n) => String(n).padStart(2, "0");
+    timer.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
+  }
 
   const f = fmtDate(nm.utcDate);
   info.innerHTML = `Próximo partido: <span class="cd-team">${escapeHtml(nm.home)} - ${escapeHtml(

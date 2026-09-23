@@ -183,6 +183,11 @@ function startTimer() {
     if (diff <= 0) { t.classList.add("closed"); t.textContent = "00:00:00"; return; }
     t.classList.remove("closed");
     const s = Math.floor(diff / 1000);
+    if (s >= 86400) {
+      const d = Math.floor(s / 86400);
+      t.textContent = d + (d === 1 ? " día" : " días");
+      return;
+    }
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sc = s % 60;
     const pad = (n) => String(n).padStart(2, "0");
     t.textContent = pad(h) + ":" + pad(m) + ":" + pad(sc);
