@@ -838,12 +838,27 @@ async function handleLogin(request, env) {
     return json({ error: "Nombre o codigo incorrectos." }, 400);
   }
   const key = nameKey(name);
+  const existing = await getUser(env, key);
+  if (!existing) {
+    const salt = randomHex(16);
+    const hash = await pbkdf2Hex(pin, salt, PBKDF2_ITER);
+    await env.PORRA.put(
+      `user:${key}`,
+      JSON.stringify({ name, salt, hash, iter: PBKDF2_ITER, createdAt: new Date().toISOString() })
+    );
+    await migrateLegacy(env, key, name);
+    const token = await createSession(env, key);
+    const state = await buildState(env, null, { key, name });
+    return json({ ok: true, user: { name }, state, created: true }, 200, {
+      "Set-Cookie": sessionCookie(token, SESSION_TTL),
+    });
+  }
   const failKey = `fail:${key}`;
   const fails = (await env.PORRA.get(failKey, "json")) || { n: 0 };
   if (fails.n >= MAX_LOGIN_FAILS) {
     return json({ error: "Demasiados intentos fallidos. Espera 15 minutos." }, 429);
   }
-  const user = await getUser(env, key);
+  const user = existing;
   const hash = user ? await pbkdf2Hex(pin, user.salt, user.iter || PBKDF2_ITER) : null;
   if (!user || !safeEqual(hash, user.hash)) {
     await env.PORRA.put(failKey, JSON.stringify({ n: fails.n + 1 }), { expirationTtl: 900 });

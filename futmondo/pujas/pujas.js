@@ -40,14 +40,14 @@ function render() {
     pl.innerHTML = escapeHtml(p.player) + '<span class="stars">' + "⭐".repeat(Math.min(5, p.stars || 0)) + "</span>";
     panel.appendChild(pl);
     const baseTxt = el("div", "puja-base");
-    baseTxt.innerHTML = "Valor de salida: <b>" + money(p.base) + " €</b> · la saca <b>" + escapeHtml(p.creator) + "</b>";
+    baseTxt.innerHTML = "Precio de salida: <b>" + money(p.base) + " €</b> · la saca <b>" + escapeHtml(p.creator) + "</b>";
     panel.appendChild(baseTxt);
   } else {
     panel.appendChild(el("div", "puja-player", "Sin subasta activa"));
   }
 
   if (!user) {
-    panel.appendChild(el("p", "muted", "Entra para crear la subasta o pujar. Usa tu mismo nombre y código de La Quiniela."));
+    panel.appendChild(el("p", "muted", "Entra con tu nombre y un código de 4 o 6 dígitos. Si no existes, se crea solo. Tu sesión queda guardada."));
     const f = el("div", "auth-form");
     const name = el("input"); name.id = "pjName"; name.placeholder = "Tu nombre"; name.maxLength = 24;
     const pin = el("input"); pin.id = "pjPin"; pin.type = "password"; pin.placeholder = "Código (4 o 6 números)"; pin.maxLength = 6;
@@ -57,16 +57,16 @@ function render() {
     const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
     b.addEventListener("click", () => auth("login"));
   } else if (!p) {
-    panel.appendChild(el("p", "muted", "Crea la subasta del martes: busca el jugador y confirma su valor de salida."));
+    panel.appendChild(el("p", "muted", "Elige el jugador a subasta y el precio de salida. El resto verá la subasta y podrá pujar."));
     const f = el("div", "auth-form");
     const pl = el("input"); pl.id = "pjPlayer"; pl.placeholder = "Busca un jugador (ej. Diomande)"; pl.maxLength = 40; pl.autocomplete = "off";
     const res = el("div", "pj-results"); res.id = "pjResults";
-    const bs = el("input"); bs.id = "pjBase"; bs.type = "hidden";
-    const bi = el("div", "pj-base-info"); bi.id = "pjBaseInfo"; bi.textContent = "Elige un jugador para ver su valor de salida.";
+    const prev = el("div", "pj-preview"); prev.id = "pjPreview";
+    const bi = el("div", "pj-base-info"); bi.id = "pjBaseInfo"; bi.textContent = "Elige un jugador de la lista.";
+    const bs = el("input"); bs.id = "pjBase"; bs.type = "number"; bs.placeholder = "Precio de salida de la puja (€)";
     const st = el("input"); st.id = "pjStars"; st.type = "number"; st.min = 0; st.max = 5; st.placeholder = "Estrellas (0-5)";
     const hid = el("input"); hid.id = "pjPhoto"; hid.type = "hidden";
-    const prev = el("div", "pj-preview"); prev.id = "pjPreview";
-    f.appendChild(pl); f.appendChild(res); f.appendChild(bi); f.appendChild(st); f.appendChild(prev); f.appendChild(bs); f.appendChild(hid);
+    f.appendChild(pl); f.appendChild(res); f.appendChild(prev); f.appendChild(bi); f.appendChild(bs); f.appendChild(st); f.appendChild(hid);
     const b = el("button", "btn-primary big", "Sacar a subasta"); f.appendChild(b);
     panel.appendChild(f);
     const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
@@ -197,7 +197,7 @@ function elegirJugador(p) {
   const bs = $("pjBase"); if (bs) bs.value = p.value;
   const hid = $("pjPhoto"); if (hid) hid.value = p.photo || "";
   const bi = $("pjBaseInfo");
-  if (bi) bi.innerHTML = "Valor de salida: <b>" + money(p.value) + " €</b>";
+  if (bi) bi.innerHTML = "Valor de mercado: <b>" + money(p.value) + " €</b>";
   const prev = $("pjPreview");
   if (prev) {
     prev.innerHTML = "";
