@@ -1164,6 +1164,17 @@ body.page-simple .appbar { position: sticky; margin-bottom: 18px; }
 .mcard-trend.down { color: #ef4444; }
 .mcard-trend.flat { color: var(--muted); }
 .market-more { grid-column: 1 / -1; margin-top: 6px; }
+
+.pj-suggest-wrap { position: relative; }
+.pj-suggest { position: absolute; top: 100%; left: 0; right: 0; z-index: 30; background: var(--card-solid); border: 1px solid var(--border); border-radius: 12px; margin-top: 4px; max-height: 320px; overflow-y: auto; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35); }
+.pj-sug-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 8px 10px; background: transparent; border: 0; border-bottom: 1px solid var(--border); color: var(--text); cursor: pointer; }
+.pj-sug-row:last-child { border-bottom: 0; }
+.pj-sug-row:hover { background: rgba(34, 197, 94, 0.1); }
+.pj-sug-img { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; background: var(--bg-surface); }
+.pj-sug-info { flex: 1 1 auto; min-width: 0; }
+.pj-sug-name { font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pj-sug-meta { font-size: 0.76rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pj-sug-val { font-weight: 700; font-size: 0.85rem; color: var(--accent); white-space: nowrap; }
 .market-empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 20px; }
 
 .hist-list { display: grid; gap: 12px; margin-top: 12px; }

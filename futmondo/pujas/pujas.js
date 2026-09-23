@@ -99,17 +99,20 @@ function render() {
   } else if (!p) {
     panel.appendChild(el("p", "muted", "Elige el jugador a subasta y el precio de salida. El resto verá la subasta y podrá pujar."));
     const f = el("div", "auth-form");
-    const pl = el("input"); pl.id = "pjPlayer"; pl.placeholder = "Elige un jugador en la lista de abajo"; pl.readOnly = true;
+    const pl = el("input"); pl.id = "pjPlayer"; pl.placeholder = "Escribe el jugador (ej. Diomande)"; pl.autocomplete = "off";
+    const sug = el("div", "pj-suggest hidden"); sug.id = "pjSuggest";
+    const sw = el("div", "pj-suggest-wrap"); sw.appendChild(pl); sw.appendChild(sug);
     const prev = el("div", "pj-preview"); prev.id = "pjPreview";
-    const bi = el("div", "pj-base-info"); bi.id = "pjBaseInfo"; bi.textContent = "Elige un jugador de la lista de abajo.";
+    const bi = el("div", "pj-base-info"); bi.id = "pjBaseInfo"; bi.textContent = "Escribe o elige un jugador abajo.";
     const bs = el("input"); bs.id = "pjBase"; bs.type = "text"; bs.inputMode = "numeric"; bs.placeholder = "Precio de la puja (p. ej. 45.500.000)";
     bs.addEventListener("input", () => { bs.value = formatDots(bs.value); });
     const hid = el("input"); hid.id = "pjPhoto"; hid.type = "hidden";
-    f.appendChild(pl); f.appendChild(prev); f.appendChild(bi); f.appendChild(bs); f.appendChild(hid);
+    f.appendChild(sw); f.appendChild(prev); f.appendChild(bi); f.appendChild(bs); f.appendChild(hid);
     const b = el("button", "btn-primary big", "Sacar a subasta"); f.appendChild(b);
     panel.appendChild(f);
     const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
     b.addEventListener("click", crear);
+    attachPlayerSearch();
   } else {
     if (p.status === "closed") {
       const w = el("div", "winner-box");
@@ -350,6 +353,63 @@ async function loadMarket(q) {
   }
 }
 
+let playerTimer = null;
+
+function attachPlayerSearch() {
+  const inp = $("pjPlayer");
+  if (!inp) return;
+  inp.addEventListener("input", () => {
+    clearTimeout(playerTimer);
+    const q = inp.value.trim();
+    const box = $("pjSuggest");
+    if (q.length < 2) { if (box) { box.innerHTML = ""; box.classList.add("hidden"); } return; }
+    playerTimer = setTimeout(() => buscarSugerencias(q), 250);
+  });
+  inp.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const box = $("pjSuggest");
+      const first = box && box.querySelector(".pj-sug-row");
+      if (first) first.click();
+    }
+  });
+  document.addEventListener("click", (e) => {
+    const wrap = document.querySelector(".pj-suggest-wrap");
+    const box = $("pjSuggest");
+    if (box && wrap && !wrap.contains(e.target)) box.classList.add("hidden");
+  });
+}
+
+async function buscarSugerencias(q) {
+  const box = $("pjSuggest");
+  if (!box) return;
+  try {
+    const res = await fetch(API + "/mercado?q=" + encodeURIComponent(q));
+    const d = await res.json();
+    if (!box.isConnected) return;
+    box.innerHTML = "";
+    const players = (d.players || []).slice(0, 8);
+    if (!players.length) { box.classList.add("hidden"); return; }
+    players.forEach((p) => {
+      const row = el("button", "pj-sug-row");
+      row.type = "button";
+      if (p.photo) { const im = el("img", "pj-sug-img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; row.appendChild(im); }
+      const info = el("div", "pj-sug-info");
+      info.appendChild(el("div", "pj-sug-name", p.name));
+      if (p.team) info.appendChild(el("div", "pj-sug-meta", p.team));
+      row.appendChild(info);
+      row.appendChild(el("div", "pj-sug-val", money(p.value) + " €"));
+      row.addEventListener("click", () => {
+        elegirJugador(p);
+        box.innerHTML = "";
+        box.classList.add("hidden");
+      });
+      box.appendChild(row);
+    });
+    box.classList.remove("hidden");
+  } catch (e) { if (box) box.classList.add("hidden"); }
+}
+
 function elegirDesdeMercado(p) {
   const msg = $("mercadoMsg");
   if (!data.user) { if (msg) msg.textContent = "Entra con tu usuario para sacar a un jugador a subasta."; return; }
@@ -380,6 +440,8 @@ function elegirJugador(p) {
   }
   const msg = $("mercadoMsg");
   if (msg) msg.textContent = "Has elegido a " + p.name + ". Escribe el precio de la puja.";
+  const sug = $("pjSuggest");
+  if (sug) { sug.innerHTML = ""; sug.classList.add("hidden"); }
 }
 
 async function auth(kind) {
