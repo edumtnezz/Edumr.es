@@ -1110,6 +1110,21 @@ body.page-simple { padding-top: 104px; }
 .partido-entry.winner .pe-score { color: #34d399; }
 .partido-entry.winner .pe-tag { color: #34d399; }
 
+.porra-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  padding: 18px 16px;
+  margin: 16px 0;
+}
+.porra-card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.porra-team-label { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.1rem; color: var(--accent); }
+.porra-comp { font-size: 0.82rem; color: var(--muted); }
+.porra-pred { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 14px 0 6px; flex-wrap: wrap; }
+.porra-pred input { width: 74px; text-align: center; font-size: 1.2rem; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text); }
+.porra-dash { font-weight: 700; font-size: 1.2rem; color: var(--muted); }
+.porra-locked { text-align: center; margin: 12px 0 4px; font-size: 0.86rem; color: var(--muted); font-weight: 600; }
+
 /* Pujas */
 .puja-countdown { text-align: center; margin-bottom: 18px; }
 .puja-photo { width: 112px; height: 112px; border-radius: 50%; object-fit: cover; display: block; margin: 0 auto 12px; border: 2px solid var(--border); background: var(--bg-surface); }
