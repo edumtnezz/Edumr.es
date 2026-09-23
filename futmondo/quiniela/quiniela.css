@@ -31,8 +31,12 @@ body {
   padding: 132px 16px 60px;
 }
 
-body.page-simple { padding-top: 0; }
-body.page-simple .appbar { position: sticky; margin-bottom: 18px; }
+body.page-simple { padding-top: 104px; }
+body.page-simple .appbar { position: fixed; top: 0; left: 0; right: 0; margin: 0; padding: 7px 16px; }
+body.page-simple .appbar-left { flex-direction: row; flex-wrap: wrap; align-items: center; gap: 10px; }
+body.page-simple .appbar-brand h1 { font-size: 1.1rem; }
+body.page-simple .appbar .tabs { margin: 6px 0 0; }
+body.page-simple .user-box { margin-right: 4px; }
 
 #bgCanvas {
   position: fixed;
