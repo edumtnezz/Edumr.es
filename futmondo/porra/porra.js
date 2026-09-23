@@ -156,7 +156,6 @@ function render() {
   if (!state.user) renderLogin(panel);
   state.matches.forEach((m) => renderMatch(panel, m));
 
-  renderRank();
   renderParts();
   renderHistory();
 }
@@ -196,40 +195,6 @@ function renderHistory() {
   });
 }
 
-function renderRank() {
-  const box = $("porraRank");
-  const hint = $("porraRankHint");
-  if (!box) return;
-  box.innerHTML = "";
-  const agg = {};
-  state.matches.forEach((m) => {
-    (m.entries || []).forEach((e) => {
-      if (!agg[e.name]) agg[e.name] = { name: e.name, total: 0, exactos: 0, signos: 0 };
-      if (e.tipo === "exacto") agg[e.name].exactos++;
-      else if (e.tipo === "signo") agg[e.name].signos++;
-      agg[e.name].total += e.prize || 0;
-    });
-  });
-  const list = Object.values(agg).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
-  if (!list.length) {
-    if (hint) hint.textContent = "Todavía no hay pronósticos.";
-    box.appendChild(el("p", "empty", "Sin pronósticos todavía."));
-    return;
-  }
-  if (hint) hint.textContent = "Ordenada por premio: quien acierta el marcador exacto, primero.";
-  list.forEach((s, i) => {
-    const row = el("div", "partido-entry");
-    if (s.total > 0) row.classList.add("winner");
-    row.appendChild(el("span", "pe-name", (i + 1) + ". " + s.name));
-    row.appendChild(el("span", "pe-score", money(s.total) + " €"));
-    const aciertos = [];
-    if (s.exactos) aciertos.push(s.exactos + " exacto" + (s.exactos === 1 ? "" : "s"));
-    if (s.signos) aciertos.push(s.signos + " signo" + (s.signos === 1 ? "" : "s"));
-    row.appendChild(el("span", "pe-tag", aciertos.length ? aciertos.join(" · ") : "—"));
-    box.appendChild(row);
-  });
-}
-
 function renderParts() {
   const box = $("porraParts");
   const hint = $("porraPartsHint");
@@ -242,7 +207,8 @@ function renderParts() {
       if (!seen[e.name]) { seen[e.name] = true; names.push(e.name); }
     });
   });
-  if (hint) hint.textContent = names.length ? names.length + " participante" + (names.length === 1 ? "" : "s") + "." : "";
+  const teams = state.matches.map((m) => m.home + " - " + m.away).join("   ·   ");
+  if (hint) hint.textContent = (teams ? "La porra de esta jornada es sobre: " + teams + ". " : "") + (names.length ? names.length + " participante" + (names.length === 1 ? "" : "s") + "." : "");
   if (!names.length) {
     box.appendChild(el("p", "empty", "Todavía no hay participantes."));
     return;
@@ -287,7 +253,7 @@ document.querySelectorAll(".tab").forEach((t) => {
 });
 
 (function initSwipe() {
-  const order = ["porra", "historial", "clasificacion", "participantes", "instrucciones"];
+  const order = ["porra", "historial", "participantes", "instrucciones"];
   const main = document.querySelector(".quiniela-main") || document.body;
   let sx = 0, sy = 0, st = 0;
   main.addEventListener("touchstart", (e) => {
