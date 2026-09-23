@@ -1096,9 +1096,12 @@ body.page-simple .appbar .tabs { margin: 6px 0 0; }
 /* Partido (resultado exacto) */
 .partido-match { text-align: center; margin: 18px 0 20px; }
 .pm-row {
-  display: flex; align-items: center; justify-content: center; gap: 14px; flex-wrap: wrap;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px;
   font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.05rem;
 }
+.pm-row .pm-team:first-child { justify-self: end; }
+.pm-row .pm-team:last-child { justify-self: start; }
+.pm-row .vs { justify-self: center; }
 .pm-team { display: inline-flex; align-items: center; gap: 9px; }
 .pm-team .crest { width: 34px; height: 34px; }
 .pm-result { margin-top: 12px; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.1rem; color: #34d399; }
