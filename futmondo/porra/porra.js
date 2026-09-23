@@ -158,6 +158,42 @@ function render() {
 
   renderRank();
   renderParts();
+  renderHistory();
+}
+
+function renderHistory() {
+  const box = $("porraHistory");
+  if (!box) return;
+  box.innerHTML = "";
+  const list = (state && state.history) || [];
+  if (!list.length) {
+    box.appendChild(el("p", "empty", "Todavía no hay jornadas pasadas."));
+    return;
+  }
+  list.forEach((h) => {
+    const card = el("div", "porra-card");
+    const head = el("div", "porra-card-head");
+    const r = h.result ? h.result.home + " - " + h.result.away : "";
+    head.appendChild(el("span", "porra-team-label", h.home + (r ? "  " + r + "  " : " vs ") + h.away));
+    head.appendChild(el("span", "porra-comp", h.utcDate ? fmtDate(h.utcDate).date : ""));
+    card.appendChild(head);
+    const plist = el("div", "partido-list");
+    (h.entries || []).forEach((e) => {
+      const row = el("div", "partido-entry");
+      if (e.prize != null && e.prize > 0) row.classList.add("winner");
+      row.appendChild(el("span", "pe-name", e.name));
+      row.appendChild(el("span", "pe-score", e.home + " - " + e.away));
+      const tag = el("span", "pe-tag");
+      if (e.prize != null && e.prize > 0) {
+        const pref = e.tipo === "exacto" ? "Exacto · " : e.tipo === "signo" ? "Signo · " : "";
+        tag.textContent = pref + money(e.prize) + " €";
+      }
+      row.appendChild(tag);
+      plist.appendChild(row);
+    });
+    card.appendChild(plist);
+    box.appendChild(card);
+  });
 }
 
 function renderRank() {
@@ -251,7 +287,7 @@ document.querySelectorAll(".tab").forEach((t) => {
 });
 
 (function initSwipe() {
-  const order = ["porra", "clasificacion", "participantes", "instrucciones"];
+  const order = ["porra", "historial", "clasificacion", "participantes", "instrucciones"];
   const main = document.querySelector(".quiniela-main") || document.body;
   let sx = 0, sy = 0, st = 0;
   main.addEventListener("touchstart", (e) => {

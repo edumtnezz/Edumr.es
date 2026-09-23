@@ -814,6 +814,7 @@ async function placeBid(request, env, user) {
 const TEAM_RM = 86;
 const TEAM_BARCA = 81;
 const PORRA_FIX_KEY = "porra:fixtures";
+const PORRA_HIST_KEY = "porra:history";
 const PORRA_FIX_TTL = 30 * 60 * 1000;
 const PRIZE_EXACT = 1000000;
 const PRIZE_SIGN = 500000;
@@ -910,7 +911,8 @@ async function getPorraState(env, user) {
       my: my ? { home: my.home, away: my.away } : null,
     });
   }
-  return { user: user ? { name: user.name } : null, matches };
+  const history = (await env.PORRA.get(PORRA_HIST_KEY, "json")) || [];
+  return { user: user ? { name: user.name } : null, matches, history };
 }
 
 async function savePorraPred(request, env, user) {

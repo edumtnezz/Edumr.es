@@ -30,6 +30,7 @@
       </div>
       <nav class="tabs" id="tabsNav">
         <button class="tab active" data-tab="porra">La porra</button>
+        <button class="tab" data-tab="historial">Historial</button>
         <button class="tab" data-tab="clasificacion">Clasificación</button>
         <button class="tab" data-tab="participantes">Participantes</button>
         <button class="tab" data-tab="instrucciones">Instrucciones</button>
@@ -46,6 +47,14 @@
           <li><span>Ganador / empate (sin exacto)</span><b>500.000 €</b></li>
         </ul>
         <div id="porraPanel"></div>
+      </section>
+    </section>
+
+    <section class="tab-panel hidden" id="tab-historial">
+      <section class="panel">
+        <h2>Jornadas pasadas</h2>
+        <p class="muted small">Resultados y premios de porras anteriores.</p>
+        <div id="porraHistory"></div>
       </section>
     </section>
 
@@ -86,6 +95,6 @@
 
   <footer class="quiniela-footer"></footer>
 
-  <script src="porra.js?v=66"></script>
+  <script src="porra.js?v=76"></script>
 </body>
 </html>
