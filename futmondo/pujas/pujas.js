@@ -132,35 +132,9 @@ function render() {
   if (!bids.length) list.appendChild(el("p", "empty", "Todavía no hay pujas."));
   panel.appendChild(list);
 
-  renderRank();
   renderParts();
 
   startTimer();
-}
-
-function renderRank() {
-  const box = $("pujaRank");
-  const hint = $("pujaRankHint");
-  if (!box) return;
-  box.innerHTML = "";
-  const p = data.puja;
-  const bids = ((p && p.bids) || []).slice().sort((a, b) => b.amount - a.amount);
-  if (!bids.length) {
-    if (hint) hint.textContent = "Todavía no hay pujas en la subasta actual.";
-    box.appendChild(el("p", "empty", "Sin pujas todavía."));
-    return;
-  }
-  if (hint) hint.textContent = "Orden de las pujas de la subasta actual.";
-  bids.forEach((b, i) => {
-    const row = el("div", "partido-entry");
-    if (i === 0 && p.status === "closed") row.classList.add("winner");
-    row.appendChild(el("span", "pe-name", (i + 1) + ". " + b.user));
-    row.appendChild(el("span", "pe-score", money(b.amount) + " €"));
-    const tag = el("span", "pe-tag");
-    if (i === 0) tag.textContent = p.status === "closed" ? "Ganador" : "Va primero";
-    row.appendChild(tag);
-    box.appendChild(row);
-  });
 }
 
 function renderParts() {
@@ -353,7 +327,7 @@ document.querySelectorAll(".tab").forEach((t) => {
 });
 
 (function initSwipe() {
-  const order = ["subasta", "clasificacion", "participantes", "instrucciones"];
+  const order = ["subasta", "participantes", "instrucciones"];
   const main = document.querySelector(".quiniela-main") || document.body;
   let sx = 0, sy = 0, st = 0;
   main.addEventListener("touchstart", (e) => {
