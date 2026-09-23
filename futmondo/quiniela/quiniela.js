@@ -815,7 +815,7 @@ function renderAll() {
 function adjustAppbar() {
   const bar = document.querySelector(".appbar");
   if (!bar) return;
-  document.body.style.paddingTop = bar.offsetHeight + 14 + "px";
+  document.body.style.paddingTop = "";
 }
 
 /* ---------- Red ---------- */
