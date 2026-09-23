@@ -321,8 +321,8 @@ function renderMarket() {
     }
     body.appendChild(el("div", "mcard-val", money(p.value) + " €"));
     const chg = Number(p.change) || 0;
-    if (chg > 0) body.appendChild(el("div", "mcard-trend up", "▲ " + formatDots(chg)));
-    else if (chg < 0) body.appendChild(el("div", "mcard-trend down", "▼ " + formatDots(-chg)));
+    if (chg > 0) body.appendChild(el("div", "mcard-trend up", "▲ " + formatDots(chg) + " €"));
+    else if (chg < 0) body.appendChild(el("div", "mcard-trend down", "▼ " + formatDots(-chg) + " €"));
     else body.appendChild(el("div", "mcard-trend flat", "—"));
     card.appendChild(body);
     card.addEventListener("click", () => elegirDesdeMercado(p));
