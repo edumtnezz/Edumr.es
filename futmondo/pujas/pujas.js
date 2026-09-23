@@ -29,6 +29,12 @@ function statusInfo(s) {
   if (s === "doubt") return { cls: "st-doubt", label: "?" };
   return null;
 }
+function fmtDia(v) {
+  if (!v) return "";
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
 
 function initials(name) {
   const parts = String(name || "?").trim().split(/\s+/).filter(Boolean);
@@ -153,7 +159,6 @@ function render() {
   if (!bids.length) list.appendChild(el("p", "empty", "Todavía no hay pujas."));
   panel.appendChild(list);
 
-  renderParts();
   renderHistory();
 
   startTimer();
@@ -186,8 +191,10 @@ function renderHistory() {
     body.appendChild(el("div", "hist-player", h.player));
     if (h.value) body.appendChild(el("div", "hist-line", "Valor de mercado: " + money(h.value) + " €"));
     const wl = el("div", "hist-line");
-    if (h.winner) wl.innerHTML = "Se lo llevó <b>" + escapeHtml(h.winner) + "</b>";
-    else wl.textContent = "Nadie pujó.";
+    if (h.winner) {
+      const fecha = fmtDia(h.closedAt);
+      wl.innerHTML = "Se lo llevó <b>" + escapeHtml(h.winner) + "</b>" + (fecha ? " · " + fecha : "");
+    } else wl.textContent = "Nadie pujó.";
     body.appendChild(wl);
     const nb = (h.bids || []).length;
     body.appendChild(el("div", "hist-tag", nb > 1 ? nb + " pujas" : nb === 1 ? "1 puja" : "sin pujas"));
@@ -196,35 +203,6 @@ function renderHistory() {
     wrap.appendChild(card);
   });
   box.appendChild(wrap);
-}
-
-function renderParts() {
-  const box = $("pujaParts");
-  const hint = $("pujaPartsHint");
-  if (!box) return;
-  box.innerHTML = "";
-  const p = data.puja;
-  const list = [];
-  if (p) {
-    if (p.creator) list.push({ name: p.creator, amount: null, role: "Saca la subasta" });
-    (p.bids || []).forEach((b) => {
-      const found = list.find((x) => x.name === b.user);
-      if (found) found.amount = Math.max(found.amount || 0, b.amount);
-      else list.push({ name: b.user, amount: b.amount, role: "Puja" });
-    });
-  }
-  if (hint) hint.textContent = list.length ? list.length + " participante" + (list.length === 1 ? "" : "s") + " en la subasta actual." : "";
-  if (!list.length) {
-    box.appendChild(el("p", "empty", "Todavía no hay participantes."));
-    return;
-  }
-  list.forEach((it) => {
-    const row = el("div", "partido-entry");
-    row.appendChild(el("span", "pe-name", it.name));
-    row.appendChild(el("span", "pe-score", it.amount != null ? money(it.amount) + " €" : "—"));
-    row.appendChild(el("span", "pe-tag", it.role));
-    box.appendChild(row);
-  });
 }
 
 function startTimer() {
@@ -514,7 +492,7 @@ document.querySelectorAll(".tab").forEach((t) => {
 });
 
 (function initSwipe() {
-  const order = ["subasta", "historial", "participantes", "instrucciones"];
+  const order = ["subasta", "historial", "instrucciones"];
   const main = document.querySelector(".quiniela-main") || document.body;
   let sx = 0, sy = 0, st = 0;
   main.addEventListener("touchstart", (e) => {
