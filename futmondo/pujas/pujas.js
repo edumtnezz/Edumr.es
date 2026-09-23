@@ -30,6 +30,12 @@ function render() {
   panel.appendChild(cd);
 
   if (p) {
+    if (p.photo) {
+      const img = el("img", "puja-photo");
+      img.src = p.photo;
+      img.alt = p.player;
+      panel.appendChild(img);
+    }
     const pl = el("div", "puja-player");
     pl.innerHTML = escapeHtml(p.player) + '<span class="stars">' + "⭐".repeat(Math.min(5, p.stars || 0)) + "</span>";
     panel.appendChild(pl);
@@ -56,7 +62,8 @@ function render() {
     const pl = el("input"); pl.id = "pjPlayer"; pl.placeholder = "Jugador (ej. Diomande)"; pl.maxLength = 40;
     const bs = el("input"); bs.id = "pjBase"; bs.type = "number"; bs.placeholder = "Valor (ej. 45500000)";
     const st = el("input"); st.id = "pjStars"; st.type = "number"; st.min = 0; st.max = 5; st.placeholder = "Estrellas (0-5)";
-    f.appendChild(pl); f.appendChild(bs); f.appendChild(st);
+    const ph = el("input"); ph.id = "pjPhoto"; ph.placeholder = "Foto (URL, opcional) · clic derecho en la foto en Futmondo → Copiar dirección de imagen";
+    f.appendChild(pl); f.appendChild(bs); f.appendChild(st); f.appendChild(ph);
     const b = el("button", "btn-primary big", "Sacar a subasta"); f.appendChild(b);
     panel.appendChild(f);
     const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
@@ -153,7 +160,7 @@ async function crear() {
     const res = await fetch(API + "/puja/crear", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ player: $("pjPlayer").value, base: $("pjBase").value, stars: $("pjStars").value }),
+      body: JSON.stringify({ player: $("pjPlayer").value, base: $("pjBase").value, stars: $("pjStars").value, photo: $("pjPhoto") ? $("pjPhoto").value : "" }),
     });
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || "Error");
