@@ -271,13 +271,16 @@ function updateMarketTime() {
   upd.textContent = mins <= 0 ? "Actualizado ahora" : "Actualizado hace " + mins + " min";
 }
 
+let marketShown = 60;
+
 function renderMarket() {
   const grid = $("marketGrid");
   if (!grid) return;
   updateMarketTime();
   grid.innerHTML = "";
-  const players = marketData.players || [];
-  if (!players.length) { grid.appendChild(el("p", "market-empty", "Sin resultados.")); return; }
+  const all = marketData.players || [];
+  if (!all.length) { grid.appendChild(el("p", "market-empty", "Sin resultados.")); return; }
+  const players = all.slice(0, marketShown);
   players.forEach((p) => {
     const card = el("button", "mcard");
     card.type = "button";
@@ -294,10 +297,19 @@ function renderMarket() {
     body.appendChild(el("div", "mcard-name", p.name + (p.status ? " · " + p.status : "")));
     if (p.team) body.appendChild(el("div", "mcard-team", p.team));
     body.appendChild(el("div", "mcard-val", money(p.value) + " €"));
+    const chg = Number(p.change) || 0;
+    if (chg > 0) body.appendChild(el("div", "mcard-trend up", "▲ " + money(chg)));
+    else if (chg < 0) body.appendChild(el("div", "mcard-trend down", "▼ " + money(-chg)));
+    else body.appendChild(el("div", "mcard-trend flat", "—"));
     card.appendChild(body);
     card.addEventListener("click", () => elegirDesdeMercado(p));
     grid.appendChild(card);
   });
+  if (all.length > players.length) {
+    const more = el("button", "btn-ghost market-more", "Ver más jugadores (" + (all.length - players.length) + ")");
+    more.addEventListener("click", () => { marketShown += 60; renderMarket(); });
+    grid.appendChild(more);
+  }
 }
 
 async function loadMarket(q) {
@@ -308,6 +320,7 @@ async function loadMarket(q) {
     const d = await res.json();
     if (!grid.isConnected) return;
     marketData = { players: d.players || [], updatedAt: d.updatedAt || null };
+    marketShown = 60;
     renderMarket();
   } catch (e) {
     if (grid.isConnected) { grid.innerHTML = ""; grid.appendChild(el("p", "market-empty", "No se pudo cargar la lista.")); }

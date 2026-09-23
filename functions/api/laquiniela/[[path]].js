@@ -657,6 +657,7 @@ async function getMarketPlayers(env) {
       name: String(p.name || ""),
       role: String(p.role || ""),
       value: Number(p.value) || 0,
+      change: Number(p.change) || 0,
       team: tm.name || String(p.team || ""),
       status: String(p.status || ""),
       points: Number(p.points) || 0,
@@ -685,7 +686,8 @@ async function searchMercado(env, q) {
   let list = players;
   if (query) list = players.filter((p) => stripAccents(p.name.toLowerCase()).includes(query));
   list = list.slice().sort((a, b) => b.value - a.value);
-  return json({ players: list.slice(0, 30), updatedAt: cache.at || null });
+  const limit = query ? 60 : 300;
+  return json({ players: list.slice(0, limit), updatedAt: cache.at || null });
 }
 
 function pujaStep(base) {

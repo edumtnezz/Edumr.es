@@ -1151,6 +1151,11 @@ body.page-simple .appbar { position: sticky; margin-bottom: 18px; }
 .mcard-name { font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mcard-team { font-size: 0.78rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mcard-val { font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--accent); font-size: 0.95rem; margin-top: 2px; }
+.mcard-trend { font-size: 0.74rem; font-weight: 700; }
+.mcard-trend.up { color: #10b981; }
+.mcard-trend.down { color: #ef4444; }
+.mcard-trend.flat { color: var(--muted); }
+.market-more { grid-column: 1 / -1; margin-top: 6px; }
 .market-empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 20px; }
 
 .hist-list { display: grid; gap: 12px; margin-top: 12px; }
