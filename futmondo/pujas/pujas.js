@@ -98,6 +98,9 @@ function render() {
     const baseTxt = el("div", "puja-base");
     baseTxt.innerHTML = "Precio de salida: <b>" + money(p.base) + " €</b> · la saca <b>" + escapeHtml(p.creator) + "</b>";
     panel.appendChild(baseTxt);
+    const shareBtn = el("button", "btn-ghost share-btn", "📲 Compartir por WhatsApp");
+    shareBtn.addEventListener("click", () => shareWhatsApp(p));
+    panel.appendChild(shareBtn);
   } else {
     panel.appendChild(el("div", "puja-player", "Sin subasta activa"));
   }
@@ -141,13 +144,37 @@ function render() {
       }
       panel.appendChild(w);
     } else {
+      const step = p.base >= 10000000 ? 1000000 : 100000;
+      const curBids = (p.bids || []).slice().sort((a, b) => b.amount - a.amount);
+      const leader = curBids[0] || null;
+      const minFirst = Math.ceil(p.base / step) * step;
+      const min = leader ? leader.amount + step : minFirst;
+
+      const lead = el("div", "bid-lead");
+      if (leader) lead.innerHTML = "Va primero <b>" + escapeHtml(leader.user) + "</b> con <b>" + money(leader.amount) + " €</b>";
+      else lead.textContent = "Aún no hay pujas. ¡Sé el primero!";
+      panel.appendChild(lead);
+
+      const big = el("button", "btn-primary big", "Pujar " + money(min) + " €");
+      big.addEventListener("click", () => doPujar(min));
+      panel.appendChild(big);
+
+      const extras = el("div", "bid-extras");
+      [min + step, min + 2 * step].forEach((amt) => {
+        const eb = el("button", "btn-ghost", "Pujar " + money(amt) + " €");
+        eb.addEventListener("click", () => doPujar(amt));
+        extras.appendChild(eb);
+      });
+      panel.appendChild(extras);
+
+      panel.appendChild(el("p", "muted small", "O escribe otra cantidad:"));
       const f = el("div", "bid-form");
-      const inp = el("input"); inp.id = "pjAmount"; inp.type = "number"; inp.placeholder = "Tu puja (ej. " + money(p.base + (p.base >= 10000000 ? 1000000 : 100000)) + ")";
-      const b = el("button", "btn-primary", "Pujar");
+      const inp = el("input"); inp.id = "pjAmount"; inp.type = "number"; inp.inputMode = "numeric"; inp.placeholder = "Cantidad (€)";
+      const b = el("button", "btn-ghost", "Pujar");
       f.appendChild(inp); f.appendChild(b);
       panel.appendChild(f);
       const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
-      b.addEventListener("click", pujar);
+      b.addEventListener("click", () => doPujar(Math.floor(Number(inp.value))));
     }
   }
 
@@ -462,20 +489,42 @@ async function crear() {
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || "Error");
     await load(true);
+    toast("¡Subasta creada! 🟢");
   } catch (e) { if (err) err.textContent = e.message; }
 }
 
-async function pujar() {
+let toastTimer = null;
+function toast(msg) {
+  let t = document.getElementById("toast");
+  if (!t) { t = document.createElement("div"); t.id = "toast"; document.body.appendChild(t); }
+  t.textContent = msg;
+  requestAnimationFrame(() => t.classList.add("show"));
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+function shareWhatsApp(p) {
+  if (!p) return;
+  const url = "https://edumr.es/futmondo/pujas/";
+  const txt = "🟢 Subasta en Futmondo MR\n\nJugador: " + p.player + "\nPrecio de salida: " + money(p.base) + " €\n\n¡Entra y puja! 👉 " + url;
+  window.open("https://wa.me/?text=" + encodeURIComponent(txt), "_blank");
+}
+
+async function doPujar(amount) {
   const err = $("pjErr");
+  if (err) err.textContent = "";
+  if (!Number.isFinite(amount) || amount <= 0) { if (err) err.textContent = "Cantidad inválida."; return; }
   try {
     const res = await fetch(API + "/puja/pujar", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ amount: $("pjAmount").value }),
+      body: JSON.stringify({ amount }),
     });
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || "Error");
     await load(true);
+    const top = ((data.puja && data.puja.bids) || []).slice().sort((a, b) => b.amount - a.amount)[0];
+    toast(top && data.user && top.user === data.user.name ? "¡Puja registrada! Vas primero 🟢" : "¡Puja registrada! ✅");
   } catch (e) { if (err) err.textContent = e.message; }
 }
 
