@@ -62,7 +62,7 @@ function render() {
       panel.appendChild(img);
     }
     const pl = el("div", "puja-player");
-    pl.innerHTML = escapeHtml(p.player) + '<span class="stars">' + "⭐".repeat(Math.min(5, p.stars || 0)) + "</span>";
+    pl.textContent = p.player;
     panel.appendChild(pl);
     const baseTxt = el("div", "puja-base");
     baseTxt.innerHTML = "Precio de salida: <b>" + money(p.base) + " €</b> · la saca <b>" + escapeHtml(p.creator) + "</b>";
@@ -89,9 +89,8 @@ function render() {
     const prev = el("div", "pj-preview"); prev.id = "pjPreview";
     const bi = el("div", "pj-base-info"); bi.id = "pjBaseInfo"; bi.textContent = "Elige un jugador de la lista.";
     const bs = el("input"); bs.id = "pjBase"; bs.type = "number"; bs.placeholder = "Precio de salida de la puja (€)";
-    const st = el("input"); st.id = "pjStars"; st.type = "number"; st.min = 0; st.max = 5; st.placeholder = "Estrellas (0-5)";
     const hid = el("input"); hid.id = "pjPhoto"; hid.type = "hidden";
-    f.appendChild(pl); f.appendChild(res); f.appendChild(prev); f.appendChild(bi); f.appendChild(bs); f.appendChild(st); f.appendChild(hid);
+    f.appendChild(pl); f.appendChild(res); f.appendChild(prev); f.appendChild(bi); f.appendChild(bs); f.appendChild(hid);
     const b = el("button", "btn-primary big", "Sacar a subasta"); f.appendChild(b);
     panel.appendChild(f);
     const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
@@ -133,7 +132,64 @@ function render() {
   if (!bids.length) list.appendChild(el("p", "empty", "Todavía no hay pujas."));
   panel.appendChild(list);
 
+  renderRank();
+  renderParts();
+
   startTimer();
+}
+
+function renderRank() {
+  const box = $("pujaRank");
+  const hint = $("pujaRankHint");
+  if (!box) return;
+  box.innerHTML = "";
+  const p = data.puja;
+  const bids = ((p && p.bids) || []).slice().sort((a, b) => b.amount - a.amount);
+  if (!bids.length) {
+    if (hint) hint.textContent = "Todavía no hay pujas en la subasta actual.";
+    box.appendChild(el("p", "empty", "Sin pujas todavía."));
+    return;
+  }
+  if (hint) hint.textContent = "Orden de las pujas de la subasta actual.";
+  bids.forEach((b, i) => {
+    const row = el("div", "partido-entry");
+    if (i === 0 && p.status === "closed") row.classList.add("winner");
+    row.appendChild(el("span", "pe-name", (i + 1) + ". " + b.user));
+    row.appendChild(el("span", "pe-score", money(b.amount) + " €"));
+    const tag = el("span", "pe-tag");
+    if (i === 0) tag.textContent = p.status === "closed" ? "Ganador" : "Va primero";
+    row.appendChild(tag);
+    box.appendChild(row);
+  });
+}
+
+function renderParts() {
+  const box = $("pujaParts");
+  const hint = $("pujaPartsHint");
+  if (!box) return;
+  box.innerHTML = "";
+  const p = data.puja;
+  const list = [];
+  if (p) {
+    if (p.creator) list.push({ name: p.creator, amount: null, role: "Saca la subasta" });
+    (p.bids || []).forEach((b) => {
+      const found = list.find((x) => x.name === b.user);
+      if (found) found.amount = Math.max(found.amount || 0, b.amount);
+      else list.push({ name: b.user, amount: b.amount, role: "Puja" });
+    });
+  }
+  if (hint) hint.textContent = list.length ? list.length + " participante" + (list.length === 1 ? "" : "s") + " en la subasta actual." : "";
+  if (!list.length) {
+    box.appendChild(el("p", "empty", "Todavía no hay participantes."));
+    return;
+  }
+  list.forEach((it) => {
+    const row = el("div", "partido-entry");
+    row.appendChild(el("span", "pe-name", it.name));
+    row.appendChild(el("span", "pe-score", it.amount != null ? money(it.amount) + " €" : "—"));
+    row.appendChild(el("span", "pe-tag", it.role));
+    box.appendChild(row);
+  });
 }
 
 function startTimer() {
@@ -254,7 +310,7 @@ async function crear() {
     const res = await fetch(API + "/puja/crear", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ player: $("pjPlayer").value, base: $("pjBase").value, stars: $("pjStars").value, photo: $("pjPhoto") ? $("pjPhoto").value : "" }),
+      body: JSON.stringify({ player: $("pjPlayer").value, base: $("pjBase").value, photo: $("pjPhoto") ? $("pjPhoto").value : "" }),
     });
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || "Error");
@@ -275,6 +331,51 @@ async function pujar() {
     await load(true);
   } catch (e) { if (err) err.textContent = e.message; }
 }
+
+function switchTab(name, scroll) {
+  if (scroll === undefined) scroll = true;
+  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
+  document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
+  const panel = $("tab-" + name);
+  if (panel) {
+    panel.classList.remove("hidden");
+    if (scroll) {
+      const bar = document.querySelector(".appbar");
+      const off = (bar ? bar.offsetHeight : 0) + 12;
+      const y = panel.getBoundingClientRect().top + window.scrollY - off;
+      window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+    }
+  }
+}
+
+document.querySelectorAll(".tab").forEach((t) => {
+  t.addEventListener("click", () => switchTab(t.dataset.tab));
+});
+
+(function initSwipe() {
+  const order = ["subasta", "clasificacion", "participantes", "instrucciones"];
+  const main = document.querySelector(".quiniela-main") || document.body;
+  let sx = 0, sy = 0, st = 0;
+  main.addEventListener("touchstart", (e) => {
+    const t = e.changedTouches[0];
+    sx = t.clientX; sy = t.clientY; st = Date.now();
+  }, { passive: true });
+  main.addEventListener("touchend", (e) => {
+    const t = e.changedTouches[0];
+    const dx = t.clientX - sx;
+    const dy = t.clientY - sy;
+    if (Date.now() - st > 900) return;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+    const hit = document.elementFromPoint(sx, sy);
+    if (hit && hit.closest("button, a, input, select")) return;
+    const active = document.querySelector(".tab.active");
+    let i = order.indexOf(active ? active.dataset.tab : "subasta");
+    if (i < 0) i = 0;
+    if (dx < 0) i = Math.min(order.length - 1, i + 1);
+    else i = Math.max(0, i - 1);
+    switchTab(order[i]);
+  }, { passive: true });
+})();
 
 load(true);
 setInterval(load, 10000);

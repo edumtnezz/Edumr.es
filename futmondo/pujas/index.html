@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="../theme.js?v=64"></script>
-  <link rel="stylesheet" href="../quiniela/quiniela.css?v=65">
+  <link rel="stylesheet" href="../quiniela/quiniela.css?v=66">
 </head>
 <body class="page-simple">
   <header class="appbar">
@@ -28,19 +28,57 @@
           </div>
         </div>
       </div>
+      <nav class="tabs" id="tabsNav">
+        <button class="tab active" data-tab="subasta">La subasta</button>
+        <button class="tab" data-tab="clasificacion">Clasificación</button>
+        <button class="tab" data-tab="participantes">Participantes</button>
+        <button class="tab" data-tab="instrucciones">Instrucciones</button>
+      </nav>
     </div>
   </header>
 
   <main class="quiniela-main">
-    <section class="panel" id="pujaPanel"><p class="muted">Cargando…</p></section>
-    <section class="panel">
-      <h2>Cómo funciona</h2>
-      <div class="info-block"><p>Las subastas salen los <b>martes</b>. El <b>ganador de la jornada</b> elige al jugador a subastar. Se puja con <b>redondeo</b> (de 100.000 en 100.000 si el jugador vale menos de 10M; de 1.000.000 en 1.000.000 si vale 10M o más). Cierra a las <b>22:00</b>; si hay pujas en los últimos 5 minutos, se amplía 5 minutos más.</p></div>
+    <section class="tab-panel" id="tab-subasta">
+      <section class="panel" id="pujaPanel"><p class="muted">Cargando…</p></section>
+    </section>
+
+    <section class="tab-panel hidden" id="tab-clasificacion">
+      <section class="panel">
+        <h2>Clasificación</h2>
+        <p class="muted" id="pujaRankHint">Orden de las pujas de la subasta actual.</p>
+        <div class="partido-list" id="pujaRank"></div>
+      </section>
+    </section>
+
+    <section class="tab-panel hidden" id="tab-participantes">
+      <section class="panel">
+        <h2>Participantes</h2>
+        <p class="muted" id="pujaPartsHint"></p>
+        <div class="partido-list" id="pujaParts"></div>
+      </section>
+    </section>
+
+    <section class="tab-panel hidden" id="tab-instrucciones">
+      <section class="panel">
+        <h2>Cómo funciona</h2>
+        <div class="info-block">
+          <h3>1. Elige jugador y precio</h3>
+          <p>Las subastas salen los <b>martes</b>. El ganador de la jornada elige al jugador a subastar y el <b>precio de salida</b>.</p>
+        </div>
+        <div class="info-block">
+          <h3>2. Puja con tus compañeros</h3>
+          <p>Se puja con <b>redondeo</b>: de 100.000 en 100.000 si el jugador vale menos de 10M; de 1.000.000 en 1.000.000 si vale 10M o más.</p>
+        </div>
+        <div class="info-block">
+          <h3>3. Cierre y ganador</h3>
+          <p>Cierra los martes a las <b>22:00</b>. Si hay pujas en los últimos 5 minutos, se amplía 5 minutos más. Gana la <b>puja más alta</b>.</p>
+        </div>
+      </section>
     </section>
   </main>
 
   <footer class="quiniela-footer"></footer>
 
-  <script src="pujas.js?v=63"></script>
+  <script src="pujas.js?v=66"></script>
 </body>
 </html>

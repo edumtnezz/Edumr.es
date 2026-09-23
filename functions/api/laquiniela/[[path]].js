@@ -693,7 +693,6 @@ async function createPuja(request, env, user) {
   try { body = await request.json(); } catch { return json({ error: "Datos invalidos" }, 400); }
   const player = String(body.player || "").trim().slice(0, 40);
   const base = Math.floor(Number(body.base));
-  const stars = Math.max(0, Math.min(5, Math.floor(Number(body.stars) || 0)));
   const photoRaw = String(body.photo || "").trim().slice(0, 600);
   const photo = /^https?:\/\/.+/i.test(photoRaw) ? photoRaw : "";
   if (!player) return json({ error: "Escribe el nombre del jugador." }, 400);
@@ -709,7 +708,6 @@ async function createPuja(request, env, user) {
     creatorKey: user.key,
     player,
     base,
-    stars,
     photo,
     createdAt: new Date(now).toISOString(),
     closesAt: nextTuesday2200Utc(new Date(now)),

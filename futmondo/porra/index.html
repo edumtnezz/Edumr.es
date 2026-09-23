@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="../theme.js?v=64"></script>
-  <link rel="stylesheet" href="../quiniela/quiniela.css?v=65">
+  <link rel="stylesheet" href="../quiniela/quiniela.css?v=66">
 </head>
 <body class="page-simple">
   <header class="appbar">
@@ -28,22 +28,64 @@
           </div>
         </div>
       </div>
+      <nav class="tabs" id="tabsNav">
+        <button class="tab active" data-tab="porra">La porra</button>
+        <button class="tab" data-tab="clasificacion">Clasificación</button>
+        <button class="tab" data-tab="participantes">Participantes</button>
+        <button class="tab" data-tab="instrucciones">Instrucciones</button>
+      </nav>
     </div>
   </header>
 
   <main class="quiniela-main">
-    <section class="panel">
-      <p class="muted">Porra de resultado exacto: adivina el marcador del partido.</p>
-      <ul class="prize-list partido-prizes">
-        <li><span>Resultado exacto</span><b>1.000.000 €</b></li>
-        <li><span>Ganador / empate (sin exacto)</span><b>500.000 €</b></li>
-      </ul>
-      <div id="porraPanel"></div>
+    <section class="tab-panel" id="tab-porra">
+      <section class="panel">
+        <p class="muted">Porra de resultado exacto: adivina el marcador de los próximos partidos de <b>Real Madrid</b> y <b>Barcelona</b>.</p>
+        <ul class="prize-list partido-prizes">
+          <li><span>Resultado exacto</span><b>1.000.000 €</b></li>
+          <li><span>Ganador / empate (sin exacto)</span><b>500.000 €</b></li>
+        </ul>
+        <div id="porraPanel"></div>
+      </section>
+    </section>
+
+    <section class="tab-panel hidden" id="tab-clasificacion">
+      <section class="panel">
+        <h2>Clasificación</h2>
+        <p class="muted" id="porraRankHint">Ordenada por premio: quien acierta el marcador exacto, primero.</p>
+        <div class="partido-list" id="porraRank"></div>
+      </section>
+    </section>
+
+    <section class="tab-panel hidden" id="tab-participantes">
+      <section class="panel">
+        <h2>Participantes</h2>
+        <p class="muted" id="porraPartsHint"></p>
+        <div id="porraParts"></div>
+      </section>
+    </section>
+
+    <section class="tab-panel hidden" id="tab-instrucciones">
+      <section class="panel">
+        <h2>Cómo funciona</h2>
+        <div class="info-block">
+          <h3>1. Entra con tu cuenta</h3>
+          <p>Usa tu <b>nombre</b> y tu <b>código de 4 o 6 números</b> (el mismo de La Quiniela o La Puja). Si no existes, se crea solo.</p>
+        </div>
+        <div class="info-block">
+          <h3>2. Acierta el marcador</h3>
+          <p>Cada semana salen los próximos partidos de <b>Real Madrid</b> y <b>Barcelona</b>. Escribe el <b>resultado exacto</b> antes de que empiece el partido.</p>
+        </div>
+        <div class="info-block">
+          <h3>3. Primas</h3>
+          <p><b>1.000.000 €</b> si aciertas el marcador exacto, <b>500.000 €</b> si aciertas solo el ganador o el empate. Puedes cambiar tu marcador hasta que empieza cada partido.</p>
+        </div>
+      </section>
     </section>
   </main>
 
   <footer class="quiniela-footer"></footer>
 
-  <script src="porra.js?v=65"></script>
+  <script src="porra.js?v=66"></script>
 </body>
 </html>

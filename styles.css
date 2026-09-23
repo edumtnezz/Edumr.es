@@ -30,14 +30,17 @@
   --bg-navbar: rgba(255, 255, 255, 0.9);
   --bg-footer: #e2e8f0;
   --border: rgba(15, 23, 42, 0.12);
-  --border-hover: rgba(37, 99, 235, 0.45);
+  --border-hover: rgba(22, 163, 74, 0.45);
   --text: #0f172a;
   --text-muted: #475569;
-  --glow: rgba(37, 99, 235, 0.12);
+  --primary: #16a34a;
+  --accent: #22c55e;
+  --accent-purple: #10b981;
+  --glow: rgba(34, 197, 94, 0.12);
   --chip-bg: rgba(15, 23, 42, 0.05);
   --techbar-bg: rgba(255, 255, 255, 0.95);
   --copy-bg: rgba(15, 23, 42, 0.04);
-  --featured-bg: linear-gradient(135deg, #ede9fe, #e0f2fe);
+  --featured-bg: linear-gradient(135deg, #dcfce7, #e0f2fe);
 }
 
 * {
@@ -206,11 +209,11 @@ body {
 }
 
 [data-theme="light"] .accent {
-  color: #0284c7;
+  color: #16a34a;
 }
 
 [data-theme="light"] .project-tagline {
-  color: #0284c7;
+  color: #16a34a;
 }
 
 [data-theme="light"] .highlight-badge {
@@ -308,9 +311,8 @@ body {
 }
 
 [data-theme="light"] .status-pill {
-  background: rgba(2, 132, 199, 0.08);
-  border: 1px solid rgba(2, 132, 199, 0.3);
-  color: #0369a1;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
 }
 
 .status-indicator {
@@ -941,4 +943,45 @@ body {
   .project-card h3 { font-size: 1.25rem; }
   .project-desc { font-size: 0.95rem; }
   .footer-content { flex-direction: column; text-align: center; }
+}
+
+/* ---------- Modo claro: detalles en verde (como Futmondo) ---------- */
+[data-theme="light"] .logo-emblem {
+  border-color: rgba(34, 197, 94, 0.3);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.25);
+}
+[data-theme="light"] .logo:hover .logo-emblem {
+  box-shadow: 0 0 28px rgba(34, 197, 94, 0.45);
+}
+[data-theme="light"] .gradient-text {
+  background: linear-gradient(135deg, #22c55e 0%, #10b981 45%, #16a34a 75%, #34d399 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+[data-theme="light"] .btn-primary {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  box-shadow: 0 0 25px rgba(34, 197, 94, 0.35);
+}
+[data-theme="light"] .btn-primary:hover {
+  box-shadow: 0 0 35px rgba(34, 197, 94, 0.55);
+}
+[data-theme="light"] .section-alt {
+  background: linear-gradient(180deg, transparent, rgba(22, 163, 74, 0.07), transparent);
+}
+[data-theme="light"] .glass-card:hover {
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12), 0 0 30px rgba(34, 197, 94, 0.14);
+}
+[data-theme="light"] .project-card:hover {
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.18), 0 0 30px rgba(34, 197, 94, 0.14);
+}
+[data-theme="light"] .project-card:hover .project-logo-wrap {
+  box-shadow: 0 12px 30px rgba(34, 197, 94, 0.25);
+}
+[data-theme="light"] .porra-project {
+  border-color: rgba(34, 197, 94, 0.35);
+}
+[data-theme="light"] .porra-project:hover {
+  border-color: rgba(34, 197, 94, 0.7);
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.18), 0 0 40px rgba(34, 197, 94, 0.22);
 }

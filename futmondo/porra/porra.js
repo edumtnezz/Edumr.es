@@ -155,7 +155,125 @@ function render() {
   }
   if (!state.user) renderLogin(panel);
   state.matches.forEach((m) => renderMatch(panel, m));
+
+  renderRank();
+  renderParts();
 }
+
+function renderRank() {
+  const box = $("porraRank");
+  const hint = $("porraRankHint");
+  if (!box) return;
+  box.innerHTML = "";
+  const agg = {};
+  state.matches.forEach((m) => {
+    (m.entries || []).forEach((e) => {
+      if (!agg[e.name]) agg[e.name] = { name: e.name, total: 0, exactos: 0, signos: 0 };
+      if (e.tipo === "exacto") agg[e.name].exactos++;
+      else if (e.tipo === "signo") agg[e.name].signos++;
+      agg[e.name].total += e.prize || 0;
+    });
+  });
+  const list = Object.values(agg).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
+  if (!list.length) {
+    if (hint) hint.textContent = "Todavía no hay pronósticos.";
+    box.appendChild(el("p", "empty", "Sin pronósticos todavía."));
+    return;
+  }
+  if (hint) hint.textContent = "Ordenada por premio: quien acierta el marcador exacto, primero.";
+  list.forEach((s, i) => {
+    const row = el("div", "partido-entry");
+    if (s.total > 0) row.classList.add("winner");
+    row.appendChild(el("span", "pe-name", (i + 1) + ". " + s.name));
+    row.appendChild(el("span", "pe-score", money(s.total) + " €"));
+    const aciertos = [];
+    if (s.exactos) aciertos.push(s.exactos + " exacto" + (s.exactos === 1 ? "" : "s"));
+    if (s.signos) aciertos.push(s.signos + " signo" + (s.signos === 1 ? "" : "s"));
+    row.appendChild(el("span", "pe-tag", aciertos.length ? aciertos.join(" · ") : "—"));
+    box.appendChild(row);
+  });
+}
+
+function renderParts() {
+  const box = $("porraParts");
+  const hint = $("porraPartsHint");
+  if (!box) return;
+  box.innerHTML = "";
+  const names = [];
+  const seen = {};
+  state.matches.forEach((m) => {
+    (m.entries || []).forEach((e) => {
+      if (!seen[e.name]) { seen[e.name] = true; names.push(e.name); }
+    });
+  });
+  if (hint) hint.textContent = names.length ? names.length + " participante" + (names.length === 1 ? "" : "s") + "." : "";
+  if (!names.length) {
+    box.appendChild(el("p", "empty", "Todavía no hay participantes."));
+    return;
+  }
+  names.forEach((n) => {
+    const card = el("div", "porra-card");
+    card.appendChild(el("div", "porra-team-label", n));
+    const list = el("div", "partido-list");
+    state.matches.forEach((m) => {
+      const e = (m.entries || []).find((x) => x.name === n);
+      const row = el("div", "partido-entry");
+      row.appendChild(el("span", "pe-name", m.label + " · " + m.home + " - " + m.away));
+      row.appendChild(el("span", "pe-score", e ? e.home + " - " + e.away : "—"));
+      const tag = el("span", "pe-tag");
+      if (e && e.prize != null && e.prize > 0) tag.textContent = money(e.prize) + " €";
+      row.appendChild(tag);
+      list.appendChild(row);
+    });
+    card.appendChild(list);
+    box.appendChild(card);
+  });
+}
+
+function switchTab(name, scroll) {
+  if (scroll === undefined) scroll = true;
+  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
+  document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
+  const panel = $("tab-" + name);
+  if (panel) {
+    panel.classList.remove("hidden");
+    if (scroll) {
+      const bar = document.querySelector(".appbar");
+      const off = (bar ? bar.offsetHeight : 0) + 12;
+      const y = panel.getBoundingClientRect().top + window.scrollY - off;
+      window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+    }
+  }
+}
+
+document.querySelectorAll(".tab").forEach((t) => {
+  t.addEventListener("click", () => switchTab(t.dataset.tab));
+});
+
+(function initSwipe() {
+  const order = ["porra", "clasificacion", "participantes", "instrucciones"];
+  const main = document.querySelector(".quiniela-main") || document.body;
+  let sx = 0, sy = 0, st = 0;
+  main.addEventListener("touchstart", (e) => {
+    const t = e.changedTouches[0];
+    sx = t.clientX; sy = t.clientY; st = Date.now();
+  }, { passive: true });
+  main.addEventListener("touchend", (e) => {
+    const t = e.changedTouches[0];
+    const dx = t.clientX - sx;
+    const dy = t.clientY - sy;
+    if (Date.now() - st > 900) return;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+    const hit = document.elementFromPoint(sx, sy);
+    if (hit && hit.closest("button, a, input, select")) return;
+    const active = document.querySelector(".tab.active");
+    let i = order.indexOf(active ? active.dataset.tab : "porra");
+    if (i < 0) i = 0;
+    if (dx < 0) i = Math.min(order.length - 1, i + 1);
+    else i = Math.max(0, i - 1);
+    switchTab(order[i]);
+  }, { passive: true });
+})();
 
 async function guardar(m) {
   const err = $("poErr" + m.matchId);
