@@ -24,4 +24,7 @@ Para ver estilos/posiciones calculadas (depurar huecos, etc.) usar el CDP:
 - CSS compartido de los juegos: `futmondo/quiniela/quiniela.css`.
 - Tema claro/oscuro compartido: `futmondo/theme.js` (clave `theme` en localStorage; por defecto CLARO).
 - Backend: `functions/api/laquiniela/[[path]].js` (KV namespace PORRA `4f99553a34954704b9786bbb14ca74c5`).
+- Pujas: estado en un **Durable Object** (Worker aparte `puja-do/` → `edumr-puja`), enlazado desde el `wrangler.toml` de Pages con binding `PUJA` (clase `PujaRoom`, `script_name="edumr-puja"`). El estado atómico evita perder pujas.
+  - Para redesplegar el DO: `cd puja-do; $env:CLOUDFLARE_ACCOUNT_ID="9d0e362ef9848559e9e7b5ff1416bc6f"; npx wrangler@4.131.1 deploy`.
+  - Si el binding no existe, la Function cae al KV antiguo (`puja:current`, `puja:history`).
 - Los ids/credenciales de Futmondo y de la API están como secretos en Cloudflare Pages.
