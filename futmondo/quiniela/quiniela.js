@@ -1069,8 +1069,8 @@ function goToCreateAccount() {
   }, 80);
 }
 $("goPlayBtn").addEventListener("click", goToCreateAccount);
-$("goPlayBtn2").addEventListener("click", goToCreateAccount);
-$("howToBtn").addEventListener("click", () => {
+if ($("goPlayBtn2")) $("goPlayBtn2").addEventListener("click", goToCreateAccount);
+if ($("howToBtn")) $("howToBtn").addEventListener("click", () => {
   markSeen();
   switchTab("instrucciones");
   window.scrollTo({ top: 0, behavior: "smooth" });

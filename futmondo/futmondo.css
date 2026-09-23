@@ -55,6 +55,8 @@ body {
 .hub-header h1 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(1.7rem, 6vw, 2.6rem); letter-spacing: -0.02em; }
 .grad { background: linear-gradient(135deg, #22c55e, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .hub-sub { color: var(--muted); font-size: 1rem; margin-top: 4px; }
+.hub-welcome { max-width: 720px; margin: 0 auto 28px; padding: 14px 20px; text-align: center; border-radius: 16px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.05rem; }
+.hub-welcome:empty { display: none; }
 
 .hub-grid {
   max-width: 940px;
