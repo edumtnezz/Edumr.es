@@ -1166,6 +1166,7 @@ body.page-simple .appbar { position: sticky; margin-bottom: 18px; }
 .market-more { grid-column: 1 / -1; margin-top: 6px; }
 
 .pj-suggest-wrap { position: relative; }
+.pj-suggest-wrap input { width: 100%; padding: 16px 18px; font-size: 1.08rem; border-radius: 14px; }
 .pj-suggest { position: absolute; top: 100%; left: 0; right: 0; z-index: 30; background: var(--card-solid); border: 1px solid var(--border); border-radius: 12px; margin-top: 4px; max-height: 320px; overflow-y: auto; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35); }
 .pj-sug-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 8px 10px; background: transparent; border: 0; border-bottom: 1px solid var(--border); color: var(--text); cursor: pointer; }
 .pj-sug-row:last-child { border-bottom: 0; }
