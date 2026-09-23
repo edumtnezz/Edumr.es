@@ -1149,7 +1149,9 @@ body.page-simple .appbar { position: sticky; margin-bottom: 18px; }
 .mcard-img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; background: var(--bg-surface); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--muted); }
 .mcard-body { display: flex; flex-direction: column; gap: 2px; width: 100%; }
 .mcard-name { font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mcard-team { font-size: 0.78rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mcard-team { display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; color: var(--muted); }
+.mcard-team span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mcard-crest { width: 16px; height: 16px; object-fit: contain; flex: 0 0 auto; }
 .mcard-val { font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--accent); font-size: 0.95rem; margin-top: 2px; }
 .mcard-trend { font-size: 0.74rem; font-weight: 700; }
 .mcard-trend.up { color: #10b981; }

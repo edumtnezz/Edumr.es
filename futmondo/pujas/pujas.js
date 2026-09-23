@@ -294,12 +294,23 @@ function renderMarket() {
       card.appendChild(el("div", "mcard-img", initials(p.name)));
     }
     const body = el("div", "mcard-body");
-    body.appendChild(el("div", "mcard-name", p.name + (p.status ? " · " + p.status : "")));
-    if (p.team) body.appendChild(el("div", "mcard-team", p.team));
+    body.appendChild(el("div", "mcard-name", p.name));
+    if (p.team) {
+      const teamRow = el("div", "mcard-team");
+      if (p.logo) {
+        const lg = el("img", "mcard-crest");
+        lg.src = p.logo;
+        lg.alt = "";
+        lg.loading = "lazy";
+        teamRow.appendChild(lg);
+      }
+      teamRow.appendChild(el("span", null, p.team));
+      body.appendChild(teamRow);
+    }
     body.appendChild(el("div", "mcard-val", money(p.value) + " €"));
     const chg = Number(p.change) || 0;
-    if (chg > 0) body.appendChild(el("div", "mcard-trend up", "▲ " + money(chg)));
-    else if (chg < 0) body.appendChild(el("div", "mcard-trend down", "▼ " + money(-chg)));
+    if (chg > 0) body.appendChild(el("div", "mcard-trend up", "▲ " + formatDots(chg)));
+    else if (chg < 0) body.appendChild(el("div", "mcard-trend down", "▼ " + formatDots(-chg)));
     else body.appendChild(el("div", "mcard-trend flat", "—"));
     card.appendChild(body);
     card.addEventListener("click", () => elegirDesdeMercado(p));
