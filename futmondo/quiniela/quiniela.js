@@ -34,13 +34,7 @@ function saveTheme(t) {
   try {
     saved = localStorage.getItem(THEME_KEY);
   } catch (e) {}
-  if (saved === "light" || saved === "dark") {
-    setThemeAttr(saved);
-    return;
-  }
-  const prefersLight =
-    window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
-  setThemeAttr(prefersLight ? "light" : "dark");
+  setThemeAttr(saved === "dark" ? "dark" : "light");
 })();
 
 /* ---------- Saludo ---------- */

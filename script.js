@@ -138,13 +138,15 @@ function animateParticles() {
 
 // Cambio de tema claro/oscuro
 function initThemeToggle() {
-  const toggle = document.getElementById('themeToggle');
-  if (!toggle) return;
-
   const savedTheme = localStorage.getItem('theme');
-  if (savedTheme === 'light') {
+  if (savedTheme === 'dark') {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
     document.documentElement.setAttribute('data-theme', 'light');
   }
+
+  const toggle = document.getElementById('themeToggle');
+  if (!toggle) return;
 
   toggle.addEventListener('click', () => {
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';

@@ -6,8 +6,10 @@
   }
   try {
     var s = localStorage.getItem(KEY);
-    if (s === "light" || s === "dark") apply(s);
-  } catch (e) {}
+    apply(s === "dark" ? "dark" : "light");
+  } catch (e) {
+    apply("light");
+  }
   window.addEventListener("DOMContentLoaded", function () {
     if (window.__themeHandled) return;
     var b = document.getElementById("themeToggle");

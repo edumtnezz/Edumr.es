@@ -8,7 +8,7 @@ if (Test-Path -LiteralPath $dist) {
 }
 New-Item -ItemType Directory -Path $dist | Out-Null
 
-$publicFiles = @("index.html", "404.html", "script.js", "styles.css", "favicon.ico", "favicon.png", "_headers", "_redirects")
+$publicFiles = @("index.html", "404.html", "script.js", "theme-init.js", "styles.css", "favicon.ico", "favicon.png", "_headers", "_redirects")
 foreach ($f in $publicFiles) {
   $src = Join-Path $root $f
   if (Test-Path -LiteralPath $src) {
