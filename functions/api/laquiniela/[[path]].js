@@ -575,6 +575,82 @@ async function buildGlobal(env) {
 
 const PUJA_KEY = "puja:current";
 
+const FUTMONDO_BASE = "https://api.futmondo.com";
+const FUTMONDO_CHAMPIONSHIP = "6a5f4b833633f9d0e371f838";
+const FUTMONDO_USERTEAM = "6ab314563a9cf632cef6291c";
+const FACE_BASE = "https://static01.mondocore.com/futmondo/img/faces/64/";
+const LOGO_BASE = "https://static02.mondocore.com/futmondo/img/teams/64/";
+const MARKET_KEY = "fm:market";
+const MARKET_TTL_MS = 3 * 60 * 1000;
+let fmToken = null;
+
+async function futbolPost(path, header, query) {
+  const res = await fetch(FUTMONDO_BASE + path, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      origin: "https://app.futmondo.com",
+      referer: "https://app.futmondo.com/",
+    },
+    body: JSON.stringify({ header, query, answer: {} }),
+  });
+  if (!res.ok) throw new Error("futmondo " + res.status);
+  return res.json();
+}
+
+async function futbolHeader(env) {
+  if (fmToken && Date.now() - fmToken.at < 50 * 60 * 1000) {
+    return { token: fmToken.token, userid: fmToken.userid };
+  }
+  const login = await futbolPost(
+    "/5/login/with_mail",
+    { token: "null", userid: "" },
+    { mail: env.FUTMONDO_EMAIL, pwd: env.FUTMONDO_PASSWORD }
+  );
+  const m = (login.answer && login.answer.mobile) || {};
+  if (!m.token) throw new Error("login fallido");
+  fmToken = { token: m.token, userid: m.userid, at: Date.now() };
+  return { token: m.token, userid: m.userid };
+}
+
+async function getMarketPlayers(env) {
+  const cached = await env.PORRA.get(MARKET_KEY, "json");
+  if (cached && Date.now() - (cached.at || 0) < MARKET_TTL_MS) return cached.players;
+  const header = await futbolHeader(env);
+  const r = await futbolPost("/1/market/players", header, {
+    championshipId: FUTMONDO_CHAMPIONSHIP,
+    userteamId: FUTMONDO_USERTEAM,
+    type: "market",
+  });
+  const arr = Array.isArray(r.answer) ? r.answer : [];
+  const players = arr.map((p) => ({
+    name: String(p.name || ""),
+    role: String(p.role || ""),
+    value: Number(p.value) || 0,
+    team: String(p.team || ""),
+    status: String(p.status || ""),
+    points: Number(p.points) || 0,
+    photo: p.photo ? FACE_BASE + p.photo : "",
+    logo: p.logo ? LOGO_BASE + p.logo : "",
+  }));
+  await env.PORRA.put(MARKET_KEY, JSON.stringify({ at: Date.now(), players }), { expirationTtl: 600 });
+  return players;
+}
+
+async function searchMercado(env, q) {
+  let players;
+  try {
+    players = await getMarketPlayers(env);
+  } catch (e) {
+    return json({ error: "No se pudo consultar Futmondo." }, 502);
+  }
+  const query = stripAccents(String(q || "").toLowerCase().trim());
+  let list = players;
+  if (query) list = players.filter((p) => stripAccents(p.name.toLowerCase()).includes(query));
+  list = list.slice().sort((a, b) => b.value - a.value);
+  return json({ players: list.slice(0, 20) });
+}
+
 function pujaStep(base) {
   return Number(base) >= 10000000 ? 1000000 : 100000;
 }
@@ -862,6 +938,9 @@ export async function onRequestGet({ request, env, params }) {
   if (path === "puja") {
     const p = await getPuja(env);
     return json({ puja: p, user: user ? { name: user.name } : null, nextTuesday: nextTuesday2200Utc(new Date()) });
+  }
+  if (path === "mercado") {
+    return searchMercado(env, url.searchParams.get("q"));
   }
   return json({ error: "not found" }, 404);
 }

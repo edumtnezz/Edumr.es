@@ -57,17 +57,20 @@ function render() {
     const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
     b.addEventListener("click", () => auth("login"));
   } else if (!p) {
-    panel.appendChild(el("p", "muted", "Crea la subasta del martes: jugador y valor de salida."));
+    panel.appendChild(el("p", "muted", "Crea la subasta del martes: busca el jugador y confirma su valor de salida."));
     const f = el("div", "auth-form");
-    const pl = el("input"); pl.id = "pjPlayer"; pl.placeholder = "Jugador (ej. Diomande)"; pl.maxLength = 40;
-    const bs = el("input"); bs.id = "pjBase"; bs.type = "number"; bs.placeholder = "Valor (ej. 45500000)";
+    const pl = el("input"); pl.id = "pjPlayer"; pl.placeholder = "Busca un jugador (ej. Diomande)"; pl.maxLength = 40; pl.autocomplete = "off";
+    const res = el("div", "pj-results"); res.id = "pjResults";
+    const bs = el("input"); bs.id = "pjBase"; bs.type = "number"; bs.placeholder = "Valor de salida (€)";
     const st = el("input"); st.id = "pjStars"; st.type = "number"; st.min = 0; st.max = 5; st.placeholder = "Estrellas (0-5)";
-    const ph = el("input"); ph.id = "pjPhoto"; ph.placeholder = "Foto (URL, opcional) · clic derecho en la foto en Futmondo → Copiar dirección de imagen";
-    f.appendChild(pl); f.appendChild(bs); f.appendChild(st); f.appendChild(ph);
+    const hid = el("input"); hid.id = "pjPhoto"; hid.type = "hidden";
+    const prev = el("div", "pj-preview"); prev.id = "pjPreview";
+    f.appendChild(pl); f.appendChild(res); f.appendChild(bs); f.appendChild(st); f.appendChild(prev); f.appendChild(hid);
     const b = el("button", "btn-primary big", "Sacar a subasta"); f.appendChild(b);
     panel.appendChild(f);
     const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
     b.addEventListener("click", crear);
+    attachSearch();
   } else {
     if (p.status === "closed") {
       const w = el("div", "winner-box");
@@ -138,6 +141,57 @@ async function load() {
     data = await res.json();
     render();
   } catch (e) {}
+}
+
+let searchTimer = null;
+
+function attachSearch() {
+  const inp = $("pjPlayer");
+  if (!inp) return;
+  inp.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    const q = inp.value.trim();
+    const box = $("pjResults");
+    if (q.length < 2) { if (box) box.innerHTML = ""; return; }
+    searchTimer = setTimeout(() => buscarJugador(q), 300);
+  });
+}
+
+async function buscarJugador(q) {
+  const box = $("pjResults");
+  if (!box) return;
+  try {
+    const res = await fetch(API + "/mercado?q=" + encodeURIComponent(q));
+    const d = await res.json();
+    if (!box.isConnected) return;
+    box.innerHTML = "";
+    if (!d.players || !d.players.length) { box.appendChild(el("div", "pj-res-empty", "Sin resultados")); return; }
+    d.players.forEach((p) => {
+      const row = el("button", "pj-res-row");
+      row.type = "button";
+      if (p.photo) { const im = el("img", "pj-res-img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; row.appendChild(im); }
+      const info = el("div", "pj-res-info");
+      info.appendChild(el("div", "pj-res-name", p.name + (p.status ? " · " + p.status : "")));
+      info.appendChild(el("div", "pj-res-meta", (p.team || "") + (p.role ? " · " + p.role : "")));
+      row.appendChild(info);
+      row.appendChild(el("div", "pj-res-val", money(p.value) + " €"));
+      row.addEventListener("click", () => elegirJugador(p));
+      box.appendChild(row);
+    });
+  } catch (e) { if (box) box.innerHTML = ""; }
+}
+
+function elegirJugador(p) {
+  const inp = $("pjPlayer"); if (inp) inp.value = p.name;
+  const bs = $("pjBase"); if (bs) bs.value = p.value;
+  const hid = $("pjPhoto"); if (hid) hid.value = p.photo || "";
+  const prev = $("pjPreview");
+  if (prev) {
+    prev.innerHTML = "";
+    if (p.photo) { const im = el("img", "puja-photo"); im.src = p.photo; im.alt = p.name; prev.appendChild(im); }
+    prev.appendChild(el("div", "pj-preview-name", p.name + " · " + money(p.value) + " €"));
+  }
+  const box = $("pjResults"); if (box) box.innerHTML = "";
 }
 
 async function auth(kind) {
