@@ -39,19 +39,23 @@ function initials(name) {
 
 function renderUser() {
   const box = $("userBox");
-  if (!box) return;
-  box.innerHTML = "";
+  const exit = $("exitBox");
+  if (box) box.innerHTML = "";
+  if (exit) { exit.hidden = true; exit.onclick = null; }
   const u = data.user;
   if (!u) return;
-  const chip = el("span", "user-chip");
-  chip.innerHTML = '<span class="user-avatar">' + escapeHtml(initials(u.name)) + "</span><span>" + escapeHtml(u.name) + "</span>";
-  const out = el("button", "btn-ghost", "Salir");
-  out.addEventListener("click", async () => {
-    try { await fetch(API + "/logout", { method: "POST" }); } catch (e) {}
-    await load(true);
-  });
-  box.appendChild(chip);
-  box.appendChild(out);
+  if (box) {
+    const chip = el("span", "user-chip");
+    chip.innerHTML = '<span class="user-avatar">' + escapeHtml(initials(u.name)) + "</span><span>" + escapeHtml(u.name) + "</span>";
+    box.appendChild(chip);
+  }
+  if (exit) {
+    exit.hidden = false;
+    exit.onclick = async () => {
+      try { await fetch(API + "/logout", { method: "POST" }); } catch (e) {}
+      await load(true);
+    };
+  }
 }
 
 function render() {

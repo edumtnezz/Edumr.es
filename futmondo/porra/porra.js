@@ -36,23 +36,25 @@ function initials(name) {
 
 function renderUserBox() {
   const box = $("userBox");
-  if (!box) return;
-  box.innerHTML = "";
+  const exit = $("exitBox");
+  if (box) box.innerHTML = "";
+  if (exit) { exit.hidden = true; exit.onclick = null; }
   const name = state.user && state.user.name;
   if (!name) return;
-  const chip = document.createElement("span");
-  chip.className = "user-chip";
-  chip.innerHTML = '<span class="user-avatar">' + escapeHtml(initials(name)) + '</span><span>' + escapeHtml(name) + '</span>';
-  const out = document.createElement("button");
-  out.className = "btn-ghost";
-  out.textContent = "Salir";
-  out.addEventListener("click", async () => {
-    try { await fetch(API + "/logout", { method: "POST" }); } catch (e) {}
-    state.user = null;
-    await load();
-  });
-  box.appendChild(chip);
-  box.appendChild(out);
+  if (box) {
+    const chip = document.createElement("span");
+    chip.className = "user-chip";
+    chip.innerHTML = '<span class="user-avatar">' + escapeHtml(initials(name)) + '</span><span>' + escapeHtml(name) + '</span>';
+    box.appendChild(chip);
+  }
+  if (exit) {
+    exit.hidden = false;
+    exit.onclick = async () => {
+      try { await fetch(API + "/logout", { method: "POST" }); } catch (e) {}
+      state.user = null;
+      await load();
+    };
+  }
 }
 
 function el(tag, cls, txt) {

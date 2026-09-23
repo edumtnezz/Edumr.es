@@ -245,20 +245,18 @@ function renderHeader() {
   const jn = $("jornadaNum");
   if (jn) jn.textContent = state.matchday || "–";
   const box = $("userBox");
-  box.innerHTML = "";
+  const exit = $("exitBox");
+  if (box) box.innerHTML = "";
+  if (exit) { exit.hidden = true; exit.onclick = null; }
   if (state.myName) {
     apodo = state.myName;
-    const chip = document.createElement("span");
-    chip.className = "user-chip";
-    chip.innerHTML = `<span class="user-avatar">${escapeHtml(initials(state.myName))}</span><span>${escapeHtml(
-      state.myName
-    )}</span>`;
-    const out = document.createElement("button");
-    out.className = "btn-ghost";
-    out.textContent = "Salir";
-    out.addEventListener("click", logout);
-    box.appendChild(chip);
-    box.appendChild(out);
+    if (box) {
+      const chip = document.createElement("span");
+      chip.className = "user-chip";
+      chip.innerHTML = `<span class="user-avatar">${escapeHtml(initials(state.myName))}</span><span>${escapeHtml(state.myName)}</span>`;
+      box.appendChild(chip);
+    }
+    if (exit) { exit.hidden = false; exit.onclick = logout; }
   }
 }
 
