@@ -139,8 +139,29 @@ function render() {
   panel.appendChild(list);
 
   renderParts();
+  renderHistory();
 
   startTimer();
+}
+
+function renderHistory() {
+  const box = $("pujaHistory");
+  if (!box) return;
+  box.innerHTML = "";
+  const list = data.history || [];
+  if (!list.length) {
+    box.appendChild(el("p", "empty", "Todavía no hay subastas cerradas."));
+    return;
+  }
+  list.forEach((h) => {
+    const row = el("div", "partido-entry");
+    if (h.winner) row.classList.add("winner");
+    row.appendChild(el("span", "pe-name", h.player + " → " + (h.winner || "sin pujas")));
+    row.appendChild(el("span", "pe-score", h.amount ? money(h.amount) + " €" : "—"));
+    const nb = (h.bids || []).length;
+    row.appendChild(el("span", "pe-tag", nb > 1 ? nb + " pujas" : (nb === 1 ? "1 puja" : "sin pujas")));
+    box.appendChild(row);
+  });
 }
 
 function renderParts() {
@@ -366,7 +387,7 @@ document.querySelectorAll(".tab").forEach((t) => {
 });
 
 (function initSwipe() {
-  const order = ["subasta", "participantes", "instrucciones"];
+  const order = ["subasta", "historial", "participantes", "instrucciones"];
   const main = document.querySelector(".quiniela-main") || document.body;
   let sx = 0, sy = 0, st = 0;
   main.addEventListener("touchstart", (e) => {

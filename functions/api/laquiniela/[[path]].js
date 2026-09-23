@@ -574,6 +574,30 @@ async function buildGlobal(env) {
 /* ---------- Handlers ---------- */
 
 const PUJA_KEY = "puja:current";
+const PUJA_HIST_KEY = "puja:history";
+
+async function getPujaHistory(env) {
+  const h = await env.PORRA.get(PUJA_HIST_KEY, "json");
+  return Array.isArray(h) ? h : [];
+}
+
+async function archivePuja(env, p) {
+  if (!p || p.archived) return;
+  const hist = await getPujaHistory(env);
+  hist.unshift({
+    id: p.id,
+    player: p.player,
+    photo: p.photo || "",
+    creator: p.creator || "",
+    winner: p.winner ? p.winner.user : null,
+    amount: p.winner ? p.winner.amount : 0,
+    bids: (p.bids || []).map((b) => ({ user: b.user, amount: b.amount })),
+    closedAt: p.closesAt || null,
+  });
+  await env.PORRA.put(PUJA_HIST_KEY, JSON.stringify(hist.slice(0, 100)));
+  p.archived = true;
+  await env.PORRA.put(PUJA_KEY, JSON.stringify(p));
+}
 
 const FUTMONDO_BASE = "https://api.futmondo.com";
 const FUTMONDO_CHAMPIONSHIP = "6a5f4b833633f9d0e371f838";
@@ -694,7 +718,7 @@ async function getPuja(env) {
     const top = (p.bids || []).slice().sort((a, b) => b.amount - a.amount)[0] || null;
     p.status = "closed";
     p.winner = top ? { user: top.user, amount: top.amount } : null;
-    await env.PORRA.put(PUJA_KEY, JSON.stringify(p));
+    await archivePuja(env, p);
   }
   return p;
 }
@@ -723,6 +747,9 @@ async function createPuja(request, env, user) {
   const existing = await env.PORRA.get(PUJA_KEY, "json");
   if (existing && existing.status === "open") {
     return json({ error: "Ya hay una puja abierta. Espera a que termine." }, 409);
+  }
+  if (existing && existing.status === "closed") {
+    await archivePuja(env, existing);
   }
   const now = Date.now();
   const p = {
@@ -1106,7 +1133,8 @@ export async function onRequestGet({ request, env, params }) {
   }
   if (path === "puja") {
     const p = await getPuja(env);
-    return json({ puja: p, user: user ? { name: user.name } : null, nextTuesday: nextTuesday2200Utc(new Date()) });
+    const history = await getPujaHistory(env);
+    return json({ puja: p, user: user ? { name: user.name } : null, nextTuesday: nextTuesday2200Utc(new Date()), history });
   }
   if (path === "me") {
     return json({ user: user ? { name: user.name } : null });
