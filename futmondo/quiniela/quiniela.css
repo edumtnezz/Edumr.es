@@ -1185,8 +1185,10 @@ body.page-simple .appbar .tabs { margin: 6px 0 0; }
 .market-empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 20px; }
 
 .hist-list { display: grid; gap: 12px; margin-top: 12px; }
-.hist-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); }
+.hist-card { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); }
 .hist-card.winner { border-color: rgba(16, 185, 129, 0.55); background: linear-gradient(90deg, rgba(16, 185, 129, 0.14), rgba(16, 185, 129, 0.03)); }
+.hist-date { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.85rem; color: var(--accent); text-transform: capitalize; }
+.hist-main { display: flex; align-items: center; gap: 14px; }
 .hist-img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; background: var(--bg-surface); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--muted); font-family: 'Space Grotesk', sans-serif; }
 .hist-body { flex: 1 1 auto; min-width: 0; }
 .hist-player { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.05rem; }

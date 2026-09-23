@@ -35,6 +35,12 @@ function fmtDia(v) {
   if (isNaN(d.getTime())) return "";
   return d.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
+function fmtFechaLarga(v) {
+  if (!v) return "";
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("es-ES", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" });
+}
 
 function initials(name) {
   const parts = String(name || "?").trim().split(/\s+/).filter(Boolean);
@@ -177,29 +183,31 @@ function renderHistory() {
   list.forEach((h) => {
     const card = el("div", "hist-card");
     if (h.winner) card.classList.add("winner");
+    const fecha = fmtFechaLarga(h.closedAt);
+    if (fecha) card.appendChild(el("div", "hist-date", fecha));
+    const main = el("div", "hist-main");
     if (h.photo) {
       const im = el("img", "hist-img");
       im.src = h.photo;
       im.alt = h.player;
       im.loading = "lazy";
       im.addEventListener("error", () => { if (im.parentNode) im.parentNode.replaceChild(el("div", "hist-img", initials(h.player)), im); });
-      card.appendChild(im);
+      main.appendChild(im);
     } else {
-      card.appendChild(el("div", "hist-img", initials(h.player)));
+      main.appendChild(el("div", "hist-img", initials(h.player)));
     }
     const body = el("div", "hist-body");
     body.appendChild(el("div", "hist-player", h.player));
     if (h.value) body.appendChild(el("div", "hist-line", "Valor de mercado: " + money(h.value) + " €"));
     const wl = el("div", "hist-line");
-    if (h.winner) {
-      const fecha = fmtDia(h.closedAt);
-      wl.innerHTML = "Se lo llevó <b>" + escapeHtml(h.winner) + "</b>" + (fecha ? " · " + fecha : "");
-    } else wl.textContent = "Nadie pujó.";
+    if (h.winner) wl.innerHTML = "Se lo llevó <b>" + escapeHtml(h.winner) + "</b>";
+    else wl.textContent = "Nadie pujó.";
     body.appendChild(wl);
     const nb = (h.bids || []).length;
     body.appendChild(el("div", "hist-tag", nb > 1 ? nb + " pujas" : nb === 1 ? "1 puja" : "sin pujas"));
-    card.appendChild(body);
-    card.appendChild(el("div", "hist-amount", h.amount ? money(h.amount) + " €" : "—"));
+    main.appendChild(body);
+    main.appendChild(el("div", "hist-amount", h.amount ? money(h.amount) + " €" : "—"));
+    card.appendChild(main);
     wrap.appendChild(card);
   });
   box.appendChild(wrap);
