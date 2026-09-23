@@ -61,11 +61,12 @@ function render() {
     const f = el("div", "auth-form");
     const pl = el("input"); pl.id = "pjPlayer"; pl.placeholder = "Busca un jugador (ej. Diomande)"; pl.maxLength = 40; pl.autocomplete = "off";
     const res = el("div", "pj-results"); res.id = "pjResults";
-    const bs = el("input"); bs.id = "pjBase"; bs.type = "number"; bs.placeholder = "Valor de salida (€)";
+    const bs = el("input"); bs.id = "pjBase"; bs.type = "hidden";
+    const bi = el("div", "pj-base-info"); bi.id = "pjBaseInfo"; bi.textContent = "Elige un jugador para ver su valor de salida.";
     const st = el("input"); st.id = "pjStars"; st.type = "number"; st.min = 0; st.max = 5; st.placeholder = "Estrellas (0-5)";
     const hid = el("input"); hid.id = "pjPhoto"; hid.type = "hidden";
     const prev = el("div", "pj-preview"); prev.id = "pjPreview";
-    f.appendChild(pl); f.appendChild(res); f.appendChild(bs); f.appendChild(st); f.appendChild(prev); f.appendChild(hid);
+    f.appendChild(pl); f.appendChild(res); f.appendChild(bi); f.appendChild(st); f.appendChild(prev); f.appendChild(bs); f.appendChild(hid);
     const b = el("button", "btn-primary big", "Sacar a subasta"); f.appendChild(b);
     panel.appendChild(f);
     const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
@@ -135,10 +136,20 @@ function startTimer() {
   timerId = setInterval(tick, 1000);
 }
 
-async function load() {
+let lastJson = "";
+async function load(force) {
   try {
     const res = await fetch(API + "/puja");
-    data = await res.json();
+    const d = await res.json();
+    const j = JSON.stringify(d);
+    if (!force) {
+      if (j === lastJson) return;
+      const panel = $("pujaPanel");
+      const ae = document.activeElement;
+      if (panel && ae && panel.contains(ae) && (ae.tagName === "INPUT" || ae.tagName === "TEXTAREA")) return;
+    }
+    lastJson = j;
+    data = d;
     render();
   } catch (e) {}
 }
@@ -178,18 +189,20 @@ async function buscarJugador(q) {
       row.addEventListener("click", () => elegirJugador(p));
       box.appendChild(row);
     });
-  } catch (e) { if (box) box.innerHTML = ""; }
+  } catch (e) { if (box && box.isConnected) { box.innerHTML = ""; box.appendChild(el("div", "pj-res-empty", "No se pudo cargar la lista. Escribe otra letra para reintentar.")); } }
 }
 
 function elegirJugador(p) {
   const inp = $("pjPlayer"); if (inp) inp.value = p.name;
   const bs = $("pjBase"); if (bs) bs.value = p.value;
   const hid = $("pjPhoto"); if (hid) hid.value = p.photo || "";
+  const bi = $("pjBaseInfo");
+  if (bi) bi.innerHTML = "Valor de salida: <b>" + money(p.value) + " €</b>";
   const prev = $("pjPreview");
   if (prev) {
     prev.innerHTML = "";
     if (p.photo) { const im = el("img", "puja-photo"); im.src = p.photo; im.alt = p.name; prev.appendChild(im); }
-    prev.appendChild(el("div", "pj-preview-name", p.name + " · " + money(p.value) + " €"));
+    prev.appendChild(el("div", "pj-preview-name", p.name + (p.team ? " · " + p.team : "")));
   }
   const box = $("pjResults"); if (box) box.innerHTML = "";
 }
@@ -204,12 +217,14 @@ async function auth(kind) {
     });
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || "Error");
-    await load();
+    await load(true);
   } catch (e) { if (err) err.textContent = e.message; }
 }
 
 async function crear() {
   const err = $("pjErr");
+  const baseVal = $("pjBase") ? Number($("pjBase").value) : 0;
+  if (!baseVal) { if (err) err.textContent = "Elige un jugador de la lista."; return; }
   try {
     const res = await fetch(API + "/puja/crear", {
       method: "POST",
@@ -218,7 +233,7 @@ async function crear() {
     });
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || "Error");
-    await load();
+    await load(true);
   } catch (e) { if (err) err.textContent = e.message; }
 }
 
@@ -232,9 +247,9 @@ async function pujar() {
     });
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || "Error");
-    await load();
+    await load(true);
   } catch (e) { if (err) err.textContent = e.message; }
 }
 
-load();
+load(true);
 setInterval(load, 10000);
