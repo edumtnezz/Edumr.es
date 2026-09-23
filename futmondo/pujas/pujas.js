@@ -153,15 +153,34 @@ function renderHistory() {
     box.appendChild(el("p", "empty", "Todavía no hay subastas cerradas."));
     return;
   }
+  const wrap = el("div", "hist-list");
   list.forEach((h) => {
-    const row = el("div", "partido-entry");
-    if (h.winner) row.classList.add("winner");
-    row.appendChild(el("span", "pe-name", h.player + " → " + (h.winner || "sin pujas")));
-    row.appendChild(el("span", "pe-score", h.amount ? money(h.amount) + " €" : "—"));
+    const card = el("div", "hist-card");
+    if (h.winner) card.classList.add("winner");
+    if (h.photo) {
+      const im = el("img", "hist-img");
+      im.src = h.photo;
+      im.alt = h.player;
+      im.loading = "lazy";
+      im.addEventListener("error", () => { if (im.parentNode) im.parentNode.replaceChild(el("div", "hist-img", initials(h.player)), im); });
+      card.appendChild(im);
+    } else {
+      card.appendChild(el("div", "hist-img", initials(h.player)));
+    }
+    const body = el("div", "hist-body");
+    body.appendChild(el("div", "hist-player", h.player));
+    if (h.value) body.appendChild(el("div", "hist-line", "Valor de mercado: " + money(h.value) + " €"));
+    const wl = el("div", "hist-line");
+    if (h.winner) wl.innerHTML = "Se lo llevó <b>" + escapeHtml(h.winner) + "</b>";
+    else wl.textContent = "Nadie pujó.";
+    body.appendChild(wl);
     const nb = (h.bids || []).length;
-    row.appendChild(el("span", "pe-tag", nb > 1 ? nb + " pujas" : (nb === 1 ? "1 puja" : "sin pujas")));
-    box.appendChild(row);
+    body.appendChild(el("div", "hist-tag", nb > 1 ? nb + " pujas" : nb === 1 ? "1 puja" : "sin pujas"));
+    card.appendChild(body);
+    card.appendChild(el("div", "hist-amount", h.amount ? money(h.amount) + " €" : "—"));
+    wrap.appendChild(card);
   });
+  box.appendChild(wrap);
 }
 
 function renderParts() {

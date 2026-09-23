@@ -588,6 +588,7 @@ async function archivePuja(env, p) {
     id: p.id,
     player: p.player,
     photo: p.photo || "",
+    value: p.value || 0,
     creator: p.creator || "",
     winner: p.winner ? p.winner.user : null,
     amount: p.winner ? p.winner.amount : 0,
@@ -733,6 +734,7 @@ async function createPuja(request, env, user) {
   const photo = /^https?:\/\/.+/i.test(photoRaw) ? photoRaw : "";
   if (!player) return json({ error: "Escribe el nombre del jugador." }, 400);
   if (!Number.isFinite(base) || base < 1000000) return json({ error: "El valor debe ser al menos 1.000.000." }, 400);
+  let playerValue = 0;
   try {
     const cache = await getMarketPlayers(env);
     const list = cache.players || [];
@@ -740,8 +742,11 @@ async function createPuja(request, env, user) {
     const found =
       list.find((x) => stripAccents(x.name.toLowerCase()) === q) ||
       list.find((x) => stripAccents(x.name.toLowerCase()).includes(q));
-    if (found && base < found.value) {
-      return json({ error: `El precio no puede ser menor que el valor del jugador (${fmtEur(found.value)} €).` }, 400);
+    if (found) {
+      playerValue = found.value;
+      if (base < found.value) {
+        return json({ error: `El precio no puede ser menor que el valor del jugador (${fmtEur(found.value)} €).` }, 400);
+      }
     }
   } catch (e) {}
   const existing = await env.PORRA.get(PUJA_KEY, "json");
@@ -758,6 +763,7 @@ async function createPuja(request, env, user) {
     creatorKey: user.key,
     player,
     base,
+    value: playerValue,
     photo,
     createdAt: new Date(now).toISOString(),
     closesAt: nextTuesday2200Utc(new Date(now)),

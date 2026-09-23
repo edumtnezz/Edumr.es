@@ -1152,6 +1152,17 @@ body.page-simple .appbar { position: sticky; margin-bottom: 18px; }
 .mcard-team { font-size: 0.78rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mcard-val { font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--accent); font-size: 0.95rem; margin-top: 2px; }
 .market-empty { grid-column: 1 / -1; text-align: center; color: var(--muted); padding: 20px; }
+
+.hist-list { display: grid; gap: 12px; margin-top: 12px; }
+.hist-card { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); }
+.hist-card.winner { border-color: rgba(16, 185, 129, 0.55); background: linear-gradient(90deg, rgba(16, 185, 129, 0.14), rgba(16, 185, 129, 0.03)); }
+.hist-img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; background: var(--bg-surface); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--muted); font-family: 'Space Grotesk', sans-serif; }
+.hist-body { flex: 1 1 auto; min-width: 0; }
+.hist-player { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.05rem; }
+.hist-line { font-size: 0.86rem; color: var(--muted); }
+.hist-line b { color: var(--text); }
+.hist-tag { font-size: 0.74rem; color: var(--muted); margin-top: 2px; }
+.hist-amount { font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--accent); font-size: 1.1rem; white-space: nowrap; }
 .pj-preview { display: flex; align-items: center; gap: 10px; }
 .pj-preview .puja-photo { margin: 0; width: 64px; height: 64px; }
 .pj-preview-name { font-weight: 600; font-size: 14px; }
