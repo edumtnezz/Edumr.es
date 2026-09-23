@@ -22,6 +22,14 @@ function formatDots(v) {
 function parseDots(v) { return Number(String(v == null ? "" : v).replace(/\D/g, "")) || 0; }
 let selValue = 0;
 
+function statusInfo(s) {
+  if (!s) return null;
+  if (s === "redcard") return { cls: "st-red", label: "" };
+  if (String(s).indexOf("injured") === 0) return { cls: "st-inj", label: "+" };
+  if (s === "doubt") return { cls: "st-doubt", label: "?" };
+  return null;
+}
+
 function initials(name) {
   const parts = String(name || "?").trim().split(/\s+/).filter(Boolean);
   if (!parts.length) return "?";
@@ -284,15 +292,19 @@ function renderMarket() {
   players.forEach((p) => {
     const card = el("button", "mcard");
     card.type = "button";
+    const photoWrap = el("div", "mcard-photo");
     if (p.photo) {
       const im = el("img", "mcard-img");
       im.src = p.photo;
       im.alt = p.name;
       im.loading = "lazy";
-      card.appendChild(im);
+      photoWrap.appendChild(im);
     } else {
-      card.appendChild(el("div", "mcard-img", initials(p.name)));
+      photoWrap.appendChild(el("div", "mcard-img", initials(p.name)));
     }
+    const st = statusInfo(p.status);
+    if (st) photoWrap.appendChild(el("span", "mcard-badge " + st.cls, st.label));
+    card.appendChild(photoWrap);
     const body = el("div", "mcard-body");
     body.appendChild(el("div", "mcard-name", p.name));
     if (p.team) {
@@ -357,7 +369,13 @@ function elegirJugador(p) {
   const prev = $("pjPreview");
   if (prev) {
     prev.innerHTML = "";
-    if (p.photo) { const im = el("img", "puja-photo"); im.src = p.photo; im.alt = p.name; prev.appendChild(im); }
+    if (p.photo) {
+      const wrap = el("div", "pj-preview-photo");
+      const im = el("img", "puja-photo"); im.src = p.photo; im.alt = p.name; wrap.appendChild(im);
+      const st = statusInfo(p.status);
+      if (st) wrap.appendChild(el("span", "mcard-badge " + st.cls, st.label));
+      prev.appendChild(wrap);
+    }
     prev.appendChild(el("div", "pj-preview-name", p.name + (p.team ? " · " + p.team : "")));
   }
   const msg = $("mercadoMsg");
