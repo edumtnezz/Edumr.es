@@ -31,6 +31,8 @@ body {
   padding: 132px 16px 60px;
 }
 
+body.page-simple { padding-top: 104px; }
+
 #bgCanvas {
   position: fixed;
   inset: 0;
