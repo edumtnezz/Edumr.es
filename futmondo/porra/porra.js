@@ -26,6 +26,38 @@ function crestEl(crest, fallback) {
   return img;
 }
 
+function initials(name) {
+  const parts = String(name || "?").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+async function renderUserBox() {
+  const box = $("userBox");
+  if (!box) return;
+  let name = null;
+  try {
+    const r = await fetch(API + "/me");
+    const d = await r.json();
+    name = d.user && d.user.name;
+  } catch (e) {}
+  box.innerHTML = "";
+  if (!name) return;
+  const chip = document.createElement("span");
+  chip.className = "user-chip";
+  chip.innerHTML = '<span class="user-avatar">' + escapeHtml(initials(name)) + '</span><span>' + escapeHtml(name) + '</span>';
+  const out = document.createElement("button");
+  out.className = "btn-ghost";
+  out.textContent = "Salir";
+  out.addEventListener("click", async () => {
+    try { await fetch(API + "/logout", { method: "POST" }); } catch (e) {}
+    renderUserBox();
+  });
+  box.appendChild(chip);
+  box.appendChild(out);
+}
+
 function render(data) {
   const match = $("partidoMatch");
   const list = $("partidoList");
@@ -95,5 +127,6 @@ async function load() {
     render(await res.json());
   } catch (e) {}
 }
+renderUserBox();
 load();
 setInterval(load, 60000);

@@ -15,11 +15,36 @@ function escapeHtml(s) {
   return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+function initials(name) {
+  const parts = String(name || "?").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+function renderUser() {
+  const box = $("userBox");
+  if (!box) return;
+  box.innerHTML = "";
+  const u = data.user;
+  if (!u) return;
+  const chip = el("span", "user-chip");
+  chip.innerHTML = '<span class="user-avatar">' + escapeHtml(initials(u.name)) + "</span><span>" + escapeHtml(u.name) + "</span>";
+  const out = el("button", "btn-ghost", "Salir");
+  out.addEventListener("click", async () => {
+    try { await fetch(API + "/logout", { method: "POST" }); } catch (e) {}
+    await load(true);
+  });
+  box.appendChild(chip);
+  box.appendChild(out);
+}
+
 function render() {
   const panel = $("pujaPanel");
   panel.innerHTML = "";
   const user = data.user;
   const p = data.puja;
+  renderUser();
 
   // Contador (siempre visible)
   const cd = el("div", "puja-countdown");

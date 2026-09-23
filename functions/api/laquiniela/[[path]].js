@@ -954,6 +954,9 @@ export async function onRequestGet({ request, env, params }) {
     const p = await getPuja(env);
     return json({ puja: p, user: user ? { name: user.name } : null, nextTuesday: nextTuesday2200Utc(new Date()) });
   }
+  if (path === "me") {
+    return json({ user: user ? { name: user.name } : null });
+  }
   if (path === "mercado") {
     return searchMercado(env, url.searchParams.get("q"));
   }
