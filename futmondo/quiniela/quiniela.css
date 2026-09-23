@@ -936,10 +936,14 @@ body.page-simple .appbar .tabs { margin: 6px 0 0; }
 .header-tools { display: flex; align-items: center; gap: 12px; }
 .top-right-tools {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.tools-row {
+  display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
 }
 .appbar-right {
   position: absolute;
