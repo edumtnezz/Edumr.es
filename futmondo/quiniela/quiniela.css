@@ -66,6 +66,8 @@ body {
 }
 .top-btn:hover { border-color: var(--accent); transform: translateY(-1px); }
 
+.top-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 1000px; margin: 0 auto 14px; position: relative; z-index: 1; }
+
 /* ---------- Ambiente ---------- */
 
 .grass-band {

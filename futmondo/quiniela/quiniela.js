@@ -1,5 +1,6 @@
 const API = "/api/laquiniela";
 const THEME_KEY = "theme";
+window.__themeHandled = true;
 let state = null;
 let picks = {};
 let apodo = "";
