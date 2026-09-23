@@ -967,7 +967,7 @@ body.page-simple .appbar .tabs { margin: 6px 0 0; }
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(10px);
 }
-[data-theme="light"] .appbar { background: rgba(255, 255, 255, 0.9); }
+[data-theme="light"] .appbar { background: transparent; }
 .appbar-inner { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
 .appbar-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 10px; }
 .appbar-top .appbar-brand { justify-self: start; min-width: 0; margin-top: 9px; }
