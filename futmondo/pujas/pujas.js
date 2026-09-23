@@ -235,6 +235,17 @@ function renderHistory() {
     main.appendChild(body);
     main.appendChild(el("div", "hist-amount", h.amount ? money(h.amount) + " €" : "—"));
     card.appendChild(main);
+    const hbids = (h.bids || []).slice().sort((a, b) => b.amount - a.amount);
+    if (hbids.length) {
+      const bl = el("div", "hist-bids");
+      hbids.forEach((bd, i) => {
+        const row = el("div", "hist-bid");
+        row.appendChild(el("span", "hb-name", (i + 1) + ". " + bd.user));
+        row.appendChild(el("span", "hb-amt", money(bd.amount) + " €"));
+        bl.appendChild(row);
+      });
+      card.appendChild(bl);
+    }
     wrap.appendChild(card);
   });
   box.appendChild(wrap);
@@ -510,10 +521,13 @@ function shareWhatsApp(p) {
   window.open("https://wa.me/?text=" + encodeURIComponent(txt), "_blank");
 }
 
+let bidding = false;
 async function doPujar(amount) {
   const err = $("pjErr");
+  if (bidding) return;
   if (err) err.textContent = "";
   if (!Number.isFinite(amount) || amount <= 0) { if (err) err.textContent = "Cantidad inválida."; return; }
+  bidding = true;
   try {
     const res = await fetch(API + "/puja/pujar", {
       method: "POST",
@@ -526,6 +540,7 @@ async function doPujar(amount) {
     const top = ((data.puja && data.puja.bids) || []).slice().sort((a, b) => b.amount - a.amount)[0];
     toast(top && data.user && top.user === data.user.name ? "¡Puja registrada! Vas primero 🟢" : "¡Puja registrada! ✅");
   } catch (e) { if (err) err.textContent = e.message; }
+  finally { bidding = false; }
 }
 
 function switchTab(name, scroll) {
@@ -587,4 +602,4 @@ function initMarket() {
 initMarket();
 
 load(true);
-setInterval(load, 10000);
+setInterval(load, 4000);
