@@ -84,8 +84,13 @@ function render() {
   const cd = el("div", "puja-countdown");
   const timer = el("div", "puja-timer"); timer.id = "pjTimer";
   const sub = el("div", "puja-sub"); sub.id = "pjSub";
+  const refresh = el("button", "puja-refresh", "⟳");
+  refresh.title = "Actualizar subasta";
+  refresh.setAttribute("aria-label", "Actualizar subasta");
+  refresh.addEventListener("click", async () => { await load(true); toast("Subasta actualizada ✅"); });
   cd.appendChild(timer);
   cd.appendChild(sub);
+  cd.appendChild(refresh);
   panel.appendChild(cd);
 
   if (p) {
@@ -130,6 +135,7 @@ function render() {
     bs.addEventListener("input", () => { bs.value = formatDots(bs.value); });
     const hid = el("input"); hid.id = "pjPhoto"; hid.type = "hidden";
     f.appendChild(sw); f.appendChild(prev); f.appendChild(bi); f.appendChild(bs); f.appendChild(hid);
+    f.appendChild(el("p", "bid-note", "⚠️ Una vez alguien puje, no se puede retirar ni bajar la puja."));
     const b = el("button", "btn-primary big", "Sacar a subasta"); f.appendChild(b);
     panel.appendChild(f);
     const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
@@ -198,7 +204,12 @@ function render() {
   const top = bids[0];
   bids.forEach((bd) => {
     const row = el("div", "bid-row");
-    if (top && bd.amount === top.amount) row.classList.add("top");
+    const isTop = top && bd.amount === top.amount;
+    if (isTop) row.classList.add("top");
+    if (data.user && bd.user === data.user.name) {
+      row.classList.add("mine");
+      if (!isTop) row.classList.add("losing");
+    }
     row.appendChild(el("span", "bid-user", bd.user));
     row.appendChild(el("span", "bid-amount", money(bd.amount) + " €"));
     list.appendChild(row);
@@ -567,6 +578,7 @@ async function doPujar(amount) {
   lastErr = "";
   if (err) err.textContent = "";
   if (!Number.isFinite(amount) || amount <= 0) { lastErr = "Cantidad inválida."; if (err) err.textContent = lastErr; return; }
+  if (!window.confirm("¿Seguro que quieres pujar " + money(amount) + " €?\n\nNo se puede retirar ni bajar la puja.")) return;
   bidding = true;
   try {
     const res = await fetch(API + "/puja/pujar", {

@@ -691,7 +691,7 @@ async function searchMercado(env, q) {
 }
 
 function pujaStep(base) {
-  return Number(base) >= 10000000 ? 1000000 : 100000;
+  return Number(base) >= 10000000 ? 1000000 : 500000;
 }
 
 function nextTuesday2200Utc(now) {
@@ -703,7 +703,7 @@ function nextTuesday2200Utc(now) {
   const parts = {};
   for (const p of fmt.formatToParts(now)) parts[p.type] = p.value;
   const wall = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second);
-  const offset = wall - now.getTime();
+  const offset = wall - Math.floor(now.getTime() / 1000) * 1000;
   const d = new Date(wall);
   let days = (2 - d.getUTCDay() + 7) % 7;
   const past = d.getUTCHours() > 22 || (d.getUTCHours() === 22 && (d.getUTCMinutes() > 0 || d.getUTCSeconds() > 0));
@@ -1213,6 +1213,19 @@ export async function onRequestPost({ request, env, params }) {
   if (path === "puja/pujar") {
     const user = await getSessionUser(env, request);
     return placeBid(request, env, user);
+  }
+  if (path === "puja/reset") {
+    const user = await getSessionUser(env, request);
+    if (!user) return json({ error: "Inicia sesion." }, 401);
+    const stub = pujaStub(env);
+    if (stub) {
+      try {
+        const r = await stub.fetch("https://do/reset", { method: "POST" });
+        return json(await r.json());
+      } catch (e) {}
+    }
+    await env.PORRA.delete(PUJA_KEY);
+    return json({ ok: true });
   }
   if (path === "porra/predecir") {
     const user = await getSessionUser(env, request);

@@ -1,5 +1,5 @@
 const STEP_HIGH = 1000000;
-const STEP_LOW = 100000;
+const STEP_LOW = 500000;
 
 export class PujaRoom {
   constructor(state, env) {
@@ -123,6 +123,11 @@ export class PujaRoom {
         const hist = await this.state.storage.get("history");
         if (hist === undefined && Array.isArray(body.history)) await this.state.storage.put("history", body.history);
       });
+      return Response.json({ ok: true });
+    }
+
+    if (request.method === "POST" && action === "reset") {
+      await this.state.storage.delete("puja");
       return Response.json({ ok: true });
     }
 

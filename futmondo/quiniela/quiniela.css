@@ -1136,7 +1136,11 @@ body.page-simple .appbar .tabs { margin: 6px 0 0; }
 .porra-locked { text-align: center; margin: 12px 0 4px; font-size: 0.86rem; color: var(--muted); font-weight: 600; }
 
 /* Pujas */
-.puja-countdown { text-align: center; margin-bottom: 18px; }
+.puja-countdown { text-align: center; margin-bottom: 18px; position: relative; }
+.puja-refresh { position: absolute; top: 0; right: 4px; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); cursor: pointer; font-size: 1.1rem; line-height: 1; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; }
+.puja-refresh:hover { border-color: var(--accent); transform: rotate(90deg); }
+.bid-row.mine.losing { border-color: rgba(239, 68, 68, 0.6); background: linear-gradient(90deg, rgba(239, 68, 68, 0.14), rgba(239, 68, 68, 0.02)); }
+.bid-row.mine.losing .bid-amount { color: #f87171; }
 .puja-photo { width: 112px; height: 112px; border-radius: 50%; object-fit: cover; display: block; margin: 0 auto 12px; border: 2px solid var(--border); background: var(--bg-surface); }
 .pj-results { display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; margin: 2px 0 4px; }
 .pj-res-row { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 6px 8px; background: var(--card-solid); border: 1px solid var(--border); border-radius: 10px; color: var(--text); cursor: pointer; }
