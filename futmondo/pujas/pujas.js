@@ -82,6 +82,16 @@ function render() {
   const p = data.puja;
   renderUser();
 
+  if (!user) {
+    const intro = el("div", "auth-intro");
+    intro.appendChild(el("h2", null, "Entra o crea tu cuenta"));
+    intro.appendChild(el("p", "muted", "Con un nombre y un código de 4 o 6 números juegas a La Puja, La Porra y La Quiniela. Si aún no tienes cuenta, se crea sola. Después entra siempre con lo mismo."));
+    panel.appendChild(intro);
+    const go = el("a", "btn-primary big", "Crear cuenta o entrar");
+    go.href = "/futmondo/cuenta/?next=" + encodeURIComponent("/futmondo/pujas/");
+    panel.appendChild(go);
+  }
+
   // Contador (siempre visible)
   const cd = el("div", "puja-countdown");
   const timer = el("div", "puja-timer"); timer.id = "pjTimer";
@@ -94,16 +104,6 @@ function render() {
   cd.appendChild(sub);
   cd.appendChild(refresh);
   panel.appendChild(cd);
-
-  if (!user) {
-    const intro = el("div", "auth-intro");
-    intro.appendChild(el("h2", null, "Entra o crea tu cuenta"));
-    intro.appendChild(el("p", "muted", "Con un nombre y un código de 4 o 6 números juegas a La Puja, La Porra y La Quiniela. Si aún no tienes cuenta, se crea sola. Después entra siempre con lo mismo."));
-    panel.appendChild(intro);
-    const go = el("a", "btn-primary big", "Crear cuenta o entrar");
-    go.href = "/futmondo/cuenta/?next=" + encodeURIComponent("/futmondo/pujas/");
-    panel.appendChild(go);
-  }
 
   if (p) {
     if (p.status === "open") {

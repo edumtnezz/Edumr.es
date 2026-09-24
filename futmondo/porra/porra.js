@@ -69,7 +69,7 @@ function renderLogin(panel) {
   intro.appendChild(el("h2", null, "Entra o crea tu cuenta"));
   intro.appendChild(el("p", "muted", "Con un nombre y un código de 4 o 6 números juegas a La Porra, La Puja y La Quiniela. Si aún no tienes cuenta, se crea sola. Después entra siempre con lo mismo."));
   panel.appendChild(intro);
-  const go = el("a", "btn-primary", "Crear cuenta o entrar");
+  const go = el("a", "btn-primary big", "Crear cuenta o entrar");
   go.href = "/futmondo/cuenta/?next=" + encodeURIComponent("/futmondo/porra/");
   panel.appendChild(go);
 }
@@ -134,15 +134,17 @@ function renderMatch(panel, m) {
 
 function render() {
   const panel = $("porraPanel");
+  const auth = $("porraAuth");
   if (!panel) return;
   panel.innerHTML = "";
+  if (auth) auth.innerHTML = "";
   renderUserBox();
 
   if (!state.matches.length) {
     panel.appendChild(el("p", "muted", "Cargando partidos…"));
     return;
   }
-  if (!state.user) renderLogin(panel);
+  if (!state.user && auth) renderLogin(auth);
   state.matches.forEach((m) => renderMatch(panel, m));
 
   renderParts();
