@@ -69,6 +69,7 @@ function renderUser() {
     exit.hidden = false;
     exit.onclick = async () => {
       try { await fetch(API + "/logout", { method: "POST" }); } catch (e) {}
+      lastErr = "";
       await load(true);
     };
   }
@@ -559,6 +560,7 @@ function elegirJugador(p) {
 
 async function auth(kind) {
   const err = $("pjErr");
+  lastErr = "";
   try {
     const res = await fetch(API + "/" + kind, {
       method: "POST",
@@ -567,6 +569,7 @@ async function auth(kind) {
     });
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || "Error");
+    lastErr = "";
     await load(true);
   } catch (e) { lastErr = e.message; if (err) err.textContent = e.message; }
 }
