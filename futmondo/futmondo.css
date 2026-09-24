@@ -57,6 +57,10 @@ body {
 .hub-sub { color: var(--muted); font-size: 1rem; margin-top: 4px; }
 .hub-welcome { max-width: 720px; margin: 0 auto 28px; padding: 14px 20px; text-align: center; border-radius: 16px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.05rem; }
 .hub-welcome:empty { display: none; }
+.hub-cta { text-align: center; margin: 0 auto 26px; }
+.hub-cta:empty { display: none; }
+.hub-cta a { display: inline-block; padding: 12px 24px; border-radius: 99px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); text-decoration: none; font-weight: 700; font-size: 0.92rem; transition: all 0.2s ease; }
+.hub-cta a:hover { border-color: var(--border-hover); transform: translateY(-1px); }
 
 .hub-grid {
   max-width: 940px;
