@@ -174,7 +174,7 @@ function render() {
       }
       panel.appendChild(w);
     } else {
-      const step = p.base >= 10000000 ? 1000000 : 500000;
+      const step = p.base >= 10000000 ? 500000 : 100000;
       const curBids = (p.bids || []).slice().sort((a, b) => b.amount - a.amount);
       const leader = curBids[0] || null;
       const minFirst = Math.ceil(p.base / step) * step;

@@ -1,5 +1,5 @@
-const STEP_HIGH = 1000000;
-const STEP_LOW = 500000;
+const STEP_HIGH = 500000;
+const STEP_LOW = 100000;
 
 export class PujaRoom {
   constructor(state, env) {

@@ -691,7 +691,7 @@ async function searchMercado(env, q) {
 }
 
 function pujaStep(base) {
-  return Number(base) >= 10000000 ? 1000000 : 500000;
+  return Number(base) >= 10000000 ? 500000 : 100000;
 }
 
 function nextTuesday2200Utc(now) {
