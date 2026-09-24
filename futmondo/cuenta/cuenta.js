@@ -64,6 +64,8 @@ function renderPanel(user) {
   panel.appendChild(f);
   panel.appendChild(el("p", "muted small", "¿Ya tienes cuenta? Pon tu mismo nombre y código y entra."));
   const err = el("p", "error"); err.id = "cuentaErr"; panel.appendChild(err);
+  panel.appendChild(el("p", "muted small", "Cuando crees la cuenta, ve a «Inicio» y entra al juego que quieras: La Quiniela, La Porra o La Puja."));
+  panel.appendChild(el("p", "muted small", "La sesión se queda guardada en este dispositivo, así que no tendrás que poner tu nombre y código cada vez."));
 
   const entrar = async () => {
     err.textContent = "";
