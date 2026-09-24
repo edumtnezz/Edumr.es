@@ -306,6 +306,10 @@ body.page-simple .appbar .tabs { margin: 6px 0 0; }
 }
 .auth-tab.active { background: linear-gradient(135deg, #22c55e, #16a34a); color: #050b14; }
 .auth-form { display: grid; gap: 12px; margin-top: 16px; max-width: 440px; }
+.auth-intro { margin: 6px 0 12px; }
+.auth-intro h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.25rem; margin-bottom: 8px; }
+.auth-steps { margin: 0 0 10px 20px; display: grid; gap: 6px; color: var(--muted); font-size: 0.92rem; }
+.auth-steps li { padding-left: 2px; }
 .auth-form input, .select, .login-row input {
   padding: 13px 16px;
   border-radius: 12px;

@@ -65,13 +65,22 @@ function el(tag, cls, txt) {
 }
 
 function renderLogin(panel) {
-  panel.appendChild(el("p", "muted", "Entra con tu nombre y un código de 4 o 6 dígitos para pronosticar el marcador. Si no existes, se crea solo."));
+  const intro = el("div", "auth-intro");
+  intro.appendChild(el("h2", null, "¿Primera vez? Crea tu cuenta"));
+  const ol = el("ol", "auth-steps");
+  ol.appendChild(el("li", null, "Escribe tu NOMBRE (el tuyo)."));
+  ol.appendChild(el("li", null, "Inventa un CÓDIGO de 4 o 6 números y apúntalo (no se puede recuperar)."));
+  ol.appendChild(el("li", null, "Pulsa «Entrar» y escribe tu marcador."));
+  intro.appendChild(ol);
+  intro.appendChild(el("p", "muted small", "La primera vez tu cuenta se crea sola. Después entra siempre con el mismo nombre y código."));
+  panel.appendChild(intro);
   const f = el("div", "auth-form");
   const name = el("input"); name.id = "poName"; name.placeholder = "Tu nombre"; name.maxLength = 24;
-  const pin = el("input"); pin.id = "poPin"; pin.type = "password"; pin.placeholder = "Código (4 o 6 números)"; pin.maxLength = 6;
+  const pin = el("input"); pin.id = "poPin"; pin.type = "password"; pin.placeholder = "Tu código (4 o 6 números)"; pin.maxLength = 6;
   const b = el("button", "btn-primary", "Entrar");
   f.appendChild(name); f.appendChild(pin); f.appendChild(b);
   panel.appendChild(f);
+  panel.appendChild(el("p", "muted small", "¿Ya tienes cuenta? Pon tu mismo nombre y código y entra."));
   const err = el("p", "error"); err.id = "poErr"; panel.appendChild(err);
   b.addEventListener("click", async () => {
     try {
