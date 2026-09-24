@@ -99,7 +99,7 @@ export class PujaRoom {
         const amount = Math.floor(Number(body.amount));
         if (!Number.isFinite(amount)) { out = { error: "Cantidad invalida.", status: 400 }; return; }
         if (amount % step !== 0) { out = { error: "La puja debe ir de " + step.toLocaleString("es-ES") + " en " + step.toLocaleString("es-ES") + ".", status: 400 }; return; }
-        if (amount < min) { out = { error: "La puja mínima es " + min.toLocaleString("es-ES") + " €.", status: 400 }; return; }
+        if (amount < min) { out = { error: "Alguien ha pujado antes que tú. Mínimo ahora: " + min.toLocaleString("es-ES") + " €.", status: 400 }; return; }
         const now = Date.now();
         const bids = (p.bids || []).filter((b) => b.user !== body.user.name);
         bids.push({ user: body.user.name, userKey: body.user.key, amount, at: new Date(now).toISOString() });

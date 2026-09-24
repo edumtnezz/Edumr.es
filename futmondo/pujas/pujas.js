@@ -21,6 +21,8 @@ function formatDots(v) {
 }
 function parseDots(v) { return Number(String(v == null ? "" : v).replace(/\D/g, "")) || 0; }
 let selValue = 0;
+let iWasLeading = false;
+let suppressOutbid = false;
 
 function statusInfo(s) {
   if (!s) return null;
@@ -149,6 +151,19 @@ function render() {
       const leader = curBids[0] || null;
       const minFirst = Math.ceil(p.base / step) * step;
       const min = leader ? leader.amount + step : minFirst;
+
+      const iLead = !!(leader && data.user && leader.user === data.user.name);
+      if (data.user && leader && iWasLeading && !iLead && !suppressOutbid) {
+        const ob = el("div", "outbid");
+        ob.appendChild(el("div", "outbid-title", "🔔 ¡Te han superado!"));
+        ob.appendChild(el("div", "outbid-sub", "Para ir primero: " + money(min) + " €"));
+        const obBtn = el("button", "btn-primary", "Superar por " + money(min) + " €");
+        obBtn.addEventListener("click", () => doPujar(min));
+        ob.appendChild(obBtn);
+        panel.appendChild(ob);
+      }
+      iWasLeading = iLead;
+      suppressOutbid = false;
 
       const lead = el("div", "bid-lead");
       if (leader) lead.innerHTML = "Va primero <b>" + escapeHtml(leader.user) + "</b> con <b>" + money(leader.amount) + " €</b>";
@@ -537,6 +552,7 @@ async function doPujar(amount) {
     });
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || "Error");
+    suppressOutbid = true;
     await load(true);
     const top = ((data.puja && data.puja.bids) || []).slice().sort((a, b) => b.amount - a.amount)[0];
     toast(top && data.user && top.user === data.user.name ? "¡Puja registrada! Vas primero 🟢" : "¡Puja registrada! ✅");

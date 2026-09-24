@@ -828,7 +828,7 @@ async function placeBid(request, env, user) {
     return json({ error: `La puja debe ir de ${step.toLocaleString("es-ES")} en ${step.toLocaleString("es-ES")}.` }, 400);
   }
   if (amount < min) {
-    return json({ error: `La puja mínima es ${min.toLocaleString("es-ES")} €.` }, 400);
+    return json({ error: `Alguien ha pujado antes que tú. Mínimo ahora: ${min.toLocaleString("es-ES")} €.` }, 400);
   }
   const bids = (p.bids || []).filter((b) => b.user !== user.name);
   bids.push({ user: user.name, userKey: user.key, amount, at: new Date(now).toISOString() });
