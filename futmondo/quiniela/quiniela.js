@@ -971,6 +971,7 @@ function openParticipant(key) {
 /* ---------- Eventos ---------- */
 
 function setAuthMode(mode) {
+  if (!$("authBtn")) return;
   authMode = mode;
   const isLogin = mode === "login";
   $("tabLogin").classList.toggle("active", isLogin);
@@ -986,15 +987,17 @@ function setAuthMode(mode) {
   $("authError").textContent = "";
 }
 
-$("tabLogin").addEventListener("click", () => setAuthMode("login"));
-$("tabRegistro").addEventListener("click", () => setAuthMode("registro"));
-$("authBtn").addEventListener("click", submitAuth);
-$("authPin").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") submitAuth();
-});
-$("authName").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") $("authPin").focus();
-});
+if ($("authBtn")) {
+  $("tabLogin").addEventListener("click", () => setAuthMode("login"));
+  $("tabRegistro").addEventListener("click", () => setAuthMode("registro"));
+  $("authBtn").addEventListener("click", submitAuth);
+  $("authPin").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") submitAuth();
+  });
+  $("authName").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") $("authPin").focus();
+  });
+}
 
 document.querySelectorAll(".tab").forEach((t) => {
   t.addEventListener("click", () => switchTab(t.dataset.tab));

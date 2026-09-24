@@ -97,24 +97,12 @@ function render() {
 
   if (!user) {
     const intro = el("div", "auth-intro");
-    intro.appendChild(el("h2", null, "¿Primera vez? Crea tu cuenta"));
-    const ol = el("ol", "auth-steps");
-    ol.appendChild(el("li", null, "Escribe tu NOMBRE (el tuyo)."));
-    ol.appendChild(el("li", null, "Inventa un CÓDIGO de 4 o 6 números y apúntalo (no se puede recuperar)."));
-    ol.appendChild(el("li", null, "Pulsa «Entrar»."));
-    intro.appendChild(ol);
-    intro.appendChild(el("p", "muted small", "La primera vez tu cuenta se crea sola. Después entra siempre con el mismo nombre y código."));
+    intro.appendChild(el("h2", null, "Entra o crea tu cuenta"));
+    intro.appendChild(el("p", "muted", "Con un nombre y un código de 4 o 6 números juegas a La Puja, La Porra y La Quiniela. Si aún no tienes cuenta, se crea sola. Después entra siempre con lo mismo."));
     panel.appendChild(intro);
-
-    const af = el("div", "auth-form");
-    const aname = el("input"); aname.id = "pjName"; aname.placeholder = "Tu nombre"; aname.maxLength = 24;
-    const apin = el("input"); apin.id = "pjPin"; apin.type = "password"; apin.placeholder = "Tu código (4 o 6 números)"; apin.maxLength = 6;
-    af.appendChild(aname); af.appendChild(apin);
-    const ab = el("button", "btn-primary big", "Entrar"); af.appendChild(ab);
-    panel.appendChild(af);
-    panel.appendChild(el("p", "muted small", "¿Ya tienes cuenta? Pon tu mismo nombre y código y entra."));
-    const aerr = el("p", "error"); aerr.id = "pjErr"; panel.appendChild(aerr);
-    ab.addEventListener("click", () => auth("login"));
+    const go = el("a", "btn-primary big", "Crear cuenta o entrar");
+    go.href = "/futmondo/cuenta/?next=" + encodeURIComponent("/futmondo/pujas/");
+    panel.appendChild(go);
   }
 
   if (p) {

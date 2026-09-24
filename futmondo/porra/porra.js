@@ -66,34 +66,12 @@ function el(tag, cls, txt) {
 
 function renderLogin(panel) {
   const intro = el("div", "auth-intro");
-  intro.appendChild(el("h2", null, "¿Primera vez? Crea tu cuenta"));
-  const ol = el("ol", "auth-steps");
-  ol.appendChild(el("li", null, "Escribe tu NOMBRE (el tuyo)."));
-  ol.appendChild(el("li", null, "Inventa un CÓDIGO de 4 o 6 números y apúntalo (no se puede recuperar)."));
-  ol.appendChild(el("li", null, "Pulsa «Entrar» y escribe tu marcador."));
-  intro.appendChild(ol);
-  intro.appendChild(el("p", "muted small", "La primera vez tu cuenta se crea sola. Después entra siempre con el mismo nombre y código."));
+  intro.appendChild(el("h2", null, "Entra o crea tu cuenta"));
+  intro.appendChild(el("p", "muted", "Con un nombre y un código de 4 o 6 números juegas a La Porra, La Puja y La Quiniela. Si aún no tienes cuenta, se crea sola. Después entra siempre con lo mismo."));
   panel.appendChild(intro);
-  const f = el("div", "auth-form");
-  const name = el("input"); name.id = "poName"; name.placeholder = "Tu nombre"; name.maxLength = 24;
-  const pin = el("input"); pin.id = "poPin"; pin.type = "password"; pin.placeholder = "Tu código (4 o 6 números)"; pin.maxLength = 6;
-  const b = el("button", "btn-primary", "Entrar");
-  f.appendChild(name); f.appendChild(pin); f.appendChild(b);
-  panel.appendChild(f);
-  panel.appendChild(el("p", "muted small", "¿Ya tienes cuenta? Pon tu mismo nombre y código y entra."));
-  const err = el("p", "error"); err.id = "poErr"; panel.appendChild(err);
-  b.addEventListener("click", async () => {
-    try {
-      const res = await fetch(API + "/login", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ nombre: name.value, pin: pin.value }),
-      });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error || "Error");
-      await load();
-    } catch (e) { err.textContent = e.message; }
-  });
+  const go = el("a", "btn-primary", "Crear cuenta o entrar");
+  go.href = "/futmondo/cuenta/?next=" + encodeURIComponent("/futmondo/porra/");
+  panel.appendChild(go);
 }
 
 function renderMatch(panel, m) {
