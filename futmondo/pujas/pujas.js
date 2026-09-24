@@ -94,6 +94,18 @@ function render() {
   cd.appendChild(refresh);
   panel.appendChild(cd);
 
+  if (!user) {
+    panel.appendChild(el("p", "muted", "Entra con tu nombre y un código de 4 o 6 dígitos. Si no existes, se crea solo. Tu sesión queda guardada."));
+    const af = el("div", "auth-form");
+    const aname = el("input"); aname.id = "pjName"; aname.placeholder = "Tu nombre"; aname.maxLength = 24;
+    const apin = el("input"); apin.id = "pjPin"; apin.type = "password"; apin.placeholder = "Código (4 o 6 números)"; apin.maxLength = 6;
+    af.appendChild(aname); af.appendChild(apin);
+    const ab = el("button", "btn-primary big", "Entrar"); af.appendChild(ab);
+    panel.appendChild(af);
+    const aerr = el("p", "error"); aerr.id = "pjErr"; panel.appendChild(aerr);
+    ab.addEventListener("click", () => auth("login"));
+  }
+
   if (p) {
     if (p.status === "open") {
       panel.appendChild(el("p", "bid-note", "⚠️ Al pujar no se puede retirar ni bajar la puja. Piénsalo antes de pujar."));
@@ -134,17 +146,8 @@ function render() {
     panel.appendChild(el("div", "puja-player", "Sin subasta activa"));
   }
 
-  if (!user) {
-    panel.appendChild(el("p", "muted", "Entra con tu nombre y un código de 4 o 6 dígitos. Si no existes, se crea solo. Tu sesión queda guardada."));
-    const f = el("div", "auth-form");
-    const name = el("input"); name.id = "pjName"; name.placeholder = "Tu nombre"; name.maxLength = 24;
-    const pin = el("input"); pin.id = "pjPin"; pin.type = "password"; pin.placeholder = "Código (4 o 6 números)"; pin.maxLength = 6;
-    f.appendChild(name); f.appendChild(pin);
-    const b = el("button", "btn-primary big", "Entrar"); f.appendChild(b);
-    panel.appendChild(f);
-    const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
-    b.addEventListener("click", () => auth("login"));
-  } else if (!p) {
+  if (user) {
+    if (!p) {
     panel.appendChild(el("p", "muted", "Elige el jugador a subasta y el precio de salida. El resto verá la subasta y podrá pujar."));
     const f = el("div", "auth-form");
     const pl = el("input"); pl.id = "pjPlayer"; pl.placeholder = "Escribe el jugador (ej. Diomande)"; pl.autocomplete = "off";
@@ -162,8 +165,7 @@ function render() {
     const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
     b.addEventListener("click", crear);
     attachPlayerSearch();
-  } else {
-    if (p.status === "closed") {
+    } else if (p.status === "closed") {
       const w = el("div", "winner-box");
       if (p.winner) {
         w.appendChild(el("div", "muted", "Ganador"));
