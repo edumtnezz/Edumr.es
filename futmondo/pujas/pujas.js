@@ -247,7 +247,8 @@ function render() {
 }
 
 function renderHistory() {
-  const box = $("pujaHistory");
+  ["pujaHistory", "pujaHistMain"].forEach((id) => {
+  const box = $(id);
   if (!box) return;
   box.innerHTML = "";
   const list = data.history || [];
@@ -298,6 +299,7 @@ function renderHistory() {
     wrap.appendChild(card);
   });
   box.appendChild(wrap);
+  });
 }
 
 function startTimer() {
