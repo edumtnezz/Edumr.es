@@ -1,7 +1,7 @@
 const COMPETITION = "PD";
 const CACHE_TTL_MS = 60 * 1000;
 const FORM_TTL_MS = 10 * 60 * 1000;
-const SESSION_TTL = 60 * 60 * 24 * 60;
+const SESSION_TTL = 60 * 60 * 24 * 400;
 const COOKIE_NAME = "porra_session";
 const PBKDF2_ITER = 100000;
 const MAX_LOGIN_FAILS = 3;
