@@ -23,6 +23,7 @@ function parseDots(v) { return Number(String(v == null ? "" : v).replace(/\D/g, 
 let selValue = 0;
 let iWasLeading = false;
 let suppressOutbid = false;
+let lastErr = "";
 
 function statusInfo(s) {
   if (!s) return null;
@@ -153,7 +154,8 @@ function render() {
       const min = leader ? leader.amount + step : minFirst;
 
       const iLead = !!(leader && data.user && leader.user === data.user.name);
-      if (data.user && leader && iWasLeading && !iLead && !suppressOutbid) {
+      const myBid = (p.bids || []).find((b) => data.user && b.user === data.user.name) || null;
+      if (data.user && leader && myBid && !iLead && !suppressOutbid) {
         const ob = el("div", "outbid");
         ob.appendChild(el("div", "outbid-title", "🔔 ¡Te han superado!"));
         ob.appendChild(el("div", "outbid-sub", "Para ir primero: " + money(min) + " €"));
@@ -209,6 +211,9 @@ function render() {
   panel.appendChild(list);
 
   renderHistory();
+
+  const eEl = $("pjErr");
+  if (eEl && lastErr) eEl.textContent = lastErr;
 
   startTimer();
 }
@@ -499,14 +504,15 @@ async function auth(kind) {
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || "Error");
     await load(true);
-  } catch (e) { if (err) err.textContent = e.message; }
+  } catch (e) { lastErr = e.message; if (err) err.textContent = e.message; }
 }
 
 async function crear() {
   const err = $("pjErr");
+  lastErr = "";
   const baseVal = $("pjBase") ? parseDots($("pjBase").value) : 0;
-  if (!baseVal) { if (err) err.textContent = "Elige un jugador y pon el precio."; return; }
-  if (selValue && baseVal < selValue) { if (err) err.textContent = "El precio no puede ser menor que el valor del jugador (" + money(selValue) + " €)."; return; }
+  if (!baseVal) { lastErr = "Elige un jugador y pon el precio."; if (err) err.textContent = lastErr; return; }
+  if (selValue && baseVal < selValue) { lastErr = "El precio no puede ser menor que el valor del jugador (" + money(selValue) + " €)."; if (err) err.textContent = lastErr; return; }
   try {
     const res = await fetch(API + "/puja/crear", {
       method: "POST",
@@ -517,7 +523,7 @@ async function crear() {
     if (!res.ok) throw new Error(d.error || "Error");
     await load(true);
     toast("¡Subasta creada! 🟢");
-  } catch (e) { if (err) err.textContent = e.message; }
+  } catch (e) { lastErr = e.message; if (err) err.textContent = e.message; }
 }
 
 let toastTimer = null;
@@ -541,8 +547,9 @@ let bidding = false;
 async function doPujar(amount) {
   const err = $("pjErr");
   if (bidding) return;
+  lastErr = "";
   if (err) err.textContent = "";
-  if (!Number.isFinite(amount) || amount <= 0) { if (err) err.textContent = "Cantidad inválida."; return; }
+  if (!Number.isFinite(amount) || amount <= 0) { lastErr = "Cantidad inválida."; if (err) err.textContent = lastErr; return; }
   bidding = true;
   try {
     const res = await fetch(API + "/puja/pujar", {
@@ -556,7 +563,7 @@ async function doPujar(amount) {
     await load(true);
     const top = ((data.puja && data.puja.bids) || []).slice().sort((a, b) => b.amount - a.amount)[0];
     toast(top && data.user && top.user === data.user.name ? "¡Puja registrada! Vas primero 🟢" : "¡Puja registrada! ✅");
-  } catch (e) { if (err) err.textContent = e.message; }
+  } catch (e) { lastErr = e.message; if (err) err.textContent = e.message; }
   finally { bidding = false; }
 }
 

@@ -1174,6 +1174,16 @@ export async function onRequestGet({ request, env, params }) {
     return json(await getPorraState(env, user));
   }
   if (path === "puja") {
+    const stub = pujaStub(env);
+    if (stub) {
+      try {
+        const r = await stub.fetch("https://do/state");
+        const d = await r.json();
+        if (r.ok && d && d.puja !== undefined) {
+          return json({ puja: d.puja || null, user: user ? { name: user.name } : null, nextTuesday: nextTuesday2200Utc(new Date()), history: d.history || [] });
+        }
+      } catch (e) {}
+    }
     const p = await getPuja(env);
     const history = await getPujaHistory(env);
     return json({ puja: p, user: user ? { name: user.name } : null, nextTuesday: nextTuesday2200Utc(new Date()), history });
