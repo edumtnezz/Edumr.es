@@ -441,9 +441,18 @@ async function buscarSugerencias(q) {
       if (p.photo) { const im = el("img", "pj-sug-img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; row.appendChild(im); }
       const info = el("div", "pj-sug-info");
       info.appendChild(el("div", "pj-sug-name", p.name));
-      if (p.team) info.appendChild(el("div", "pj-sug-meta", p.team));
+      const meta = el("div", "pj-sug-meta");
+      if (p.logo) { const lg = el("img", "pj-sug-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; meta.appendChild(lg); }
+      if (p.team) meta.appendChild(el("span", null, p.team));
+      info.appendChild(meta);
       row.appendChild(info);
-      row.appendChild(el("div", "pj-sug-val", money(p.value) + " €"));
+      const right = el("div", "pj-sug-right");
+      right.appendChild(el("div", "pj-sug-val", money(p.value) + " €"));
+      const chg = Number(p.change) || 0;
+      if (chg > 0) right.appendChild(el("div", "pj-sug-trend up", "▲ " + formatDots(chg) + " €"));
+      else if (chg < 0) right.appendChild(el("div", "pj-sug-trend down", "▼ " + formatDots(-chg) + " €"));
+      else right.appendChild(el("div", "pj-sug-trend flat", "—"));
+      row.appendChild(right);
       row.addEventListener("click", () => {
         elegirJugador(p);
         box.innerHTML = "";
@@ -469,8 +478,10 @@ function elegirJugador(p) {
   const inp = $("pjPlayer"); if (inp) inp.value = p.name;
   const bs = $("pjBase"); if (bs) bs.value = formatDots(p.value);
   const hid = $("pjPhoto"); if (hid) hid.value = p.photo || "";
+  const chg = Number(p.change) || 0;
+  const trendHtml = chg > 0 ? ' <span class="up">▲ ' + formatDots(chg) + " €</span>" : chg < 0 ? ' <span class="down">▼ ' + formatDots(-chg) + " €</span>" : "";
   const bi = $("pjBaseInfo");
-  if (bi) bi.innerHTML = "Valor de mercado: <b>" + money(p.value) + " €</b> · el precio no puede ser menor.";
+  if (bi) bi.innerHTML = "Valor de mercado: <b>" + money(p.value) + " €</b>" + trendHtml + " · el precio no puede ser menor.";
   const prev = $("pjPreview");
   if (prev) {
     prev.innerHTML = "";
@@ -481,7 +492,17 @@ function elegirJugador(p) {
       if (st) wrap.appendChild(el("span", "mcard-badge " + st.cls, st.label));
       prev.appendChild(wrap);
     }
-    prev.appendChild(el("div", "pj-preview-name", p.name + (p.team ? " · " + p.team : "")));
+    const info = el("div", "pj-preview-info");
+    info.appendChild(el("div", "pj-preview-name", p.name));
+    const meta = el("div", "pj-preview-meta");
+    if (p.logo) { const lg = el("img", "pj-preview-crest"); lg.src = p.logo; lg.alt = ""; meta.appendChild(lg); }
+    if (p.team) meta.appendChild(el("span", null, p.team));
+    info.appendChild(meta);
+    const val = el("div", "pj-preview-val", money(p.value) + " €");
+    if (chg > 0) val.appendChild(el("span", "up", "   ▲ " + formatDots(chg) + " €"));
+    else if (chg < 0) val.appendChild(el("span", "down", "   ▼ " + formatDots(-chg) + " €"));
+    info.appendChild(val);
+    prev.appendChild(info);
   }
   const msg = $("mercadoMsg");
   if (msg) msg.textContent = "Has elegido a " + p.name + ". Escribe el precio de la puja.";
