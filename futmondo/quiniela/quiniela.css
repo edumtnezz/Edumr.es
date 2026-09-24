@@ -1227,6 +1227,15 @@ body.page-simple .appbar .tabs { margin: 6px 0 0; }
 .puja-player .stars { color: #fbbf24; font-size: 0.85em; margin-left: 6px; letter-spacing: 2px; }
 .puja-base { color: var(--muted); margin-top: 4px; text-align: center; }
 .puja-base b { color: var(--text); }
+.puja-pcard { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 8px 0 4px; }
+.puja-pcard-photo { position: relative; }
+.puja-pcard-photo .puja-photo { margin: 0; }
+.puja-pcard-name { font-family: 'Space Grotesk', sans-serif; font-size: clamp(1.3rem, 5vw, 1.8rem); font-weight: 700; text-align: center; margin-top: 6px; }
+.puja-pcard-team { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 0.9rem; }
+.puja-pcard-crest { width: 20px; height: 20px; object-fit: contain; flex: 0 0 auto; }
+.puja-pcard-val { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.05rem; color: var(--accent); }
+.puja-pcard-val .up { color: #10b981; }
+.puja-pcard-val .down { color: #ef4444; }
 .puja-timer { font-family: 'Space Grotesk', monospace; font-size: clamp(2rem, 9vw, 3.2rem); font-weight: 700; color: var(--accent); line-height: 1.1; }
 .puja-timer.closed { color: #f87171; }
 .puja-sub { font-size: 0.82rem; color: var(--muted); margin-top: 6px; }

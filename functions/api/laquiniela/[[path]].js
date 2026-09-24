@@ -738,7 +738,12 @@ async function createPuja(request, env, user) {
   const player = String(body.player || "").trim().slice(0, 40);
   const base = Math.floor(Number(body.base));
   const photoRaw = String(body.photo || "").trim().slice(0, 600);
-  const photo = /^https?:\/\/.+/i.test(photoRaw) ? photoRaw : "";
+  let photo = /^https?:\/\/.+/i.test(photoRaw) ? photoRaw : "";
+  let team = String(body.team || "").trim().slice(0, 60);
+  const logoRaw = String(body.logo || "").trim().slice(0, 600);
+  let logo = /^https?:\/\/.+/i.test(logoRaw) ? logoRaw : "";
+  let change = Math.floor(Number(body.change) || 0);
+  let pstatus = String(body.pstatus || "").trim().slice(0, 20);
   if (!player) return json({ error: "Escribe el nombre del jugador." }, 400);
   if (!Number.isFinite(base) || base < 1000000) return json({ error: "El valor debe ser al menos 1.000.000." }, 400);
   let playerValue = 0;
@@ -751,6 +756,11 @@ async function createPuja(request, env, user) {
       list.find((x) => stripAccents(x.name.toLowerCase()).includes(q));
     if (found) {
       playerValue = found.value;
+      team = found.team || team;
+      logo = found.logo || logo;
+      change = Number(found.change) || change;
+      pstatus = found.status || pstatus;
+      if (!photo) photo = found.photo || "";
       if (base < found.value) {
         return json({ error: `El precio no puede ser menor que el valor del jugador (${fmtEur(found.value)} €).` }, 400);
       }
@@ -763,7 +773,7 @@ async function createPuja(request, env, user) {
       const r = await stubC.fetch("https://do/crear", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ user: { name: user.name, key: user.key }, player, base, value: playerValue, photo, closesAt }),
+        body: JSON.stringify({ user: { name: user.name, key: user.key }, player, base, value: playerValue, photo, team, logo, change, pstatus, closesAt }),
       });
       const d = await r.json();
       if (!r.ok) return json({ error: d.error || "Error" }, r.status);
@@ -786,6 +796,10 @@ async function createPuja(request, env, user) {
     base,
     value: playerValue,
     photo,
+    team: team || "",
+    logo: logo || "",
+    change: change || 0,
+    pstatus: pstatus || "",
     createdAt: new Date(now).toISOString(),
     closesAt: nextTuesday2200Utc(new Date(now)),
     extended: false,
@@ -1180,7 +1194,18 @@ export async function onRequestGet({ request, env, params }) {
         const r = await stub.fetch("https://do/state");
         const d = await r.json();
         if (r.ok && d && d.puja !== undefined) {
-          return json({ puja: d.puja || null, user: user ? { name: user.name } : null, nextTuesday: nextTuesday2200Utc(new Date()), history: d.history || [] });
+          let pj = d.puja;
+          if (pj && !pj.team) {
+            try {
+              const cached = await env.PORRA.get(MARKET_KEY, "json");
+              if (cached && cached.players) {
+                const q = stripAccents(String(pj.player || "").toLowerCase());
+                const f = cached.players.find((x) => stripAccents(x.name.toLowerCase()) === q) || cached.players.find((x) => stripAccents(x.name.toLowerCase()).includes(q));
+                if (f) pj = { ...pj, team: f.team, logo: f.logo, change: f.change, pstatus: f.status, value: pj.value || f.value, photo: pj.photo || f.photo };
+              }
+            } catch (e) {}
+          }
+          return json({ puja: pj || null, user: user ? { name: user.name } : null, nextTuesday: nextTuesday2200Utc(new Date()), history: d.history || [] });
         }
       } catch (e) {}
     }

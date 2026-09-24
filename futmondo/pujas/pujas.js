@@ -21,6 +21,7 @@ function formatDots(v) {
 }
 function parseDots(v) { return Number(String(v == null ? "" : v).replace(/\D/g, "")) || 0; }
 let selValue = 0;
+let selPlayer = null;
 let iWasLeading = false;
 let suppressOutbid = false;
 let lastErr = "";
@@ -94,15 +95,35 @@ function render() {
   panel.appendChild(cd);
 
   if (p) {
+    if (p.status === "open") {
+      panel.appendChild(el("p", "bid-note", "⚠️ Al pujar no se puede retirar ni bajar la puja. Piénsalo antes de pujar."));
+    }
+    const pcard = el("div", "puja-pcard");
+    const pwrap = el("div", "puja-pcard-photo");
     if (p.photo) {
       const img = el("img", "puja-photo");
       img.src = p.photo;
       img.alt = p.player;
-      panel.appendChild(img);
+      pwrap.appendChild(img);
     }
-    const pl = el("div", "puja-player");
-    pl.textContent = p.player;
-    panel.appendChild(pl);
+    const pst = statusInfo(p.pstatus);
+    if (pst) pwrap.appendChild(el("span", "mcard-badge " + pst.cls, pst.label));
+    pcard.appendChild(pwrap);
+    pcard.appendChild(el("div", "puja-pcard-name", p.player));
+    if (p.team) {
+      const tr = el("div", "puja-pcard-team");
+      if (p.logo) { const lg = el("img", "puja-pcard-crest"); lg.src = p.logo; lg.alt = ""; tr.appendChild(lg); }
+      tr.appendChild(el("span", null, p.team));
+      pcard.appendChild(tr);
+    }
+    if (p.value) {
+      const vv = el("div", "puja-pcard-val", money(p.value) + " €");
+      const chg = Number(p.change) || 0;
+      if (chg > 0) vv.appendChild(el("span", "up", "   ▲ " + formatDots(chg) + " €"));
+      else if (chg < 0) vv.appendChild(el("span", "down", "   ▼ " + formatDots(-chg) + " €"));
+      pcard.appendChild(vv);
+    }
+    panel.appendChild(pcard);
     const baseTxt = el("div", "puja-base");
     baseTxt.innerHTML = "Precio de salida: <b>" + money(p.base) + " €</b> · la saca <b>" + escapeHtml(p.creator) + "</b>";
     panel.appendChild(baseTxt);
@@ -153,7 +174,7 @@ function render() {
       }
       panel.appendChild(w);
     } else {
-      const step = p.base >= 10000000 ? 1000000 : 100000;
+      const step = p.base >= 10000000 ? 1000000 : 500000;
       const curBids = (p.bids || []).slice().sort((a, b) => b.amount - a.amount);
       const leader = curBids[0] || null;
       const minFirst = Math.ceil(p.base / step) * step;
@@ -173,7 +194,6 @@ function render() {
       if (leader) lead.innerHTML = "Va primero <b>" + escapeHtml(leader.user) + "</b> con <b>" + money(leader.amount) + " €</b>";
       else lead.textContent = "Aún no hay pujas. ¡Sé el primero!";
       panel.appendChild(lead);
-      panel.appendChild(el("p", "bid-note", "⚠️ Al pujar no se puede retirar ni bajar la puja. Piénsalo antes de pujar."));
 
       const big = el("button", "btn-primary big", "Pujar " + money(min) + " €");
       big.addEventListener("click", () => doPujar(min));
@@ -189,12 +209,13 @@ function render() {
 
       panel.appendChild(el("p", "muted small", "O escribe otra cantidad:"));
       const f = el("div", "bid-form");
-      const inp = el("input"); inp.id = "pjAmount"; inp.type = "number"; inp.inputMode = "numeric"; inp.placeholder = "Cantidad (€)";
+      const inp = el("input"); inp.id = "pjAmount"; inp.type = "text"; inp.inputMode = "numeric"; inp.placeholder = "Cantidad (€)";
+      inp.addEventListener("input", () => { inp.value = formatDots(inp.value); });
       const b = el("button", "btn-ghost", "Pujar");
       f.appendChild(inp); f.appendChild(b);
       panel.appendChild(f);
       const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
-      b.addEventListener("click", () => doPujar(Math.floor(Number(inp.value))));
+      b.addEventListener("click", () => doPujar(parseDots(inp.value)));
     }
   }
 
@@ -486,6 +507,7 @@ function elegirDesdeMercado(p) {
 
 function elegirJugador(p) {
   selValue = Number(p.value) || 0;
+  selPlayer = p;
   const inp = $("pjPlayer"); if (inp) inp.value = p.name;
   const bs = $("pjBase"); if (bs) bs.value = formatDots(p.value);
   const hid = $("pjPhoto"); if (hid) hid.value = p.photo || "";
@@ -545,7 +567,7 @@ async function crear() {
     const res = await fetch(API + "/puja/crear", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ player: $("pjPlayer").value, base: baseVal, photo: $("pjPhoto") ? $("pjPhoto").value : "" }),
+      body: JSON.stringify({ player: $("pjPlayer").value, base: baseVal, photo: $("pjPhoto") ? $("pjPhoto").value : "", team: selPlayer ? selPlayer.team : "", logo: selPlayer ? selPlayer.logo : "", change: selPlayer ? selPlayer.change : 0, pstatus: selPlayer ? selPlayer.status : "" }),
     });
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || "Error");
