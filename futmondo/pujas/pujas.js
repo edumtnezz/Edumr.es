@@ -158,10 +158,6 @@ function render() {
       if (data.user && leader && myBid && !iLead && !suppressOutbid) {
         const ob = el("div", "outbid");
         ob.appendChild(el("div", "outbid-title", "🔔 ¡Te han superado!"));
-        ob.appendChild(el("div", "outbid-sub", "Para ir primero: " + money(min) + " €"));
-        const obBtn = el("button", "btn-primary", "Superar por " + money(min) + " €");
-        obBtn.addEventListener("click", () => doPujar(min));
-        ob.appendChild(obBtn);
         panel.appendChild(ob);
       }
       iWasLeading = iLead;
