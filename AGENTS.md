@@ -28,3 +28,18 @@ Para ver estilos/posiciones calculadas (depurar huecos, etc.) usar el CDP:
   - Para redesplegar el DO: `cd puja-do; $env:CLOUDFLARE_ACCOUNT_ID="9d0e362ef9848559e9e7b5ff1416bc6f"; npx wrangler@4.131.1 deploy`.
   - Si el binding no existe, la Function cae al KV antiguo (`puja:current`, `puja:history`).
 - Los ids/credenciales de Futmondo y de la API están como secretos en Cloudflare Pages.
+
+## Despliegue automático (NUEVO)
+- Al hacer push a `main`, un **GitHub Action** (`.github/workflows/deploy.yml`) publica sola la web (Pages) y el Worker (`puja-do`). Usa `build.sh` para armar `dist`.
+- Secretos del repo: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
+- Ya NO hace falta `deploy.ps1` (ni el PC). Cualquier push despliega.
+
+## Agente en el VPS (edición desde el móvil por Telegram)
+- VPS (C2G): `193.36.236.222`, root. Ubuntu 22.04, 2 vCPU, 2 GB.
+- Carpeta `/opt/edumr`: `repo` (clon del repo), `venv` (Aider), `bot.py` (bot de Telegram), `config.json` (token Telegram, secret, clave DeepSeek).
+- Servicio `edumr-bot` (systemd, `Restart=always`). Reiniciar: `systemctl restart edumr-bot`.
+- Bot Telegram: **@eduarIA_bot**. Autorización con `/start <SECRET>` (secret en `config.json`).
+- Flujo: mensaje → `git fetch+reset` → Aider (modelo `openai/deepseek-flash`, base `https://api.deepseek.com`) → commit+push → GitHub Action despliega.
+- Git del VPS usa clave `/root/.ssh/edumr_deploy` (deploy key con escritura en el repo).
+- Comandos del bot: `/estado`, `/deshacer`, `/web`.
+
