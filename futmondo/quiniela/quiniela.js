@@ -791,8 +791,8 @@ function renderAll() {
   renderHeader();
   renderJornadaBar();
   const logged = !!state.myName;
-  $("authPanel").classList.toggle("hidden", logged);
-  $("picksPanel").classList.toggle("hidden", !logged);
+  $("authPanel").hidden = logged;
+  $("picksPanel").hidden = !logged;
   updateCtas();
   if (!tabInitialized) {
     tabInitialized = true;
