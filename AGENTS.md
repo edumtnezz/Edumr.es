@@ -47,12 +47,12 @@ Para ver estilos/posiciones calculadas (depurar huecos, etc.) usar el CDP:
 - Comandos: `/ayuda` `/menu` `/modelo` `/preguntar <duda>` `/revisar` `/captura` `/estado` `/actualizar` `/deshacer` `/web` `/coste` `/tarea`.
 - 🎛️ Menú con **botones**: Preguntar, Revisar, Estado, Coste, Web, Deshacer, Ayuda.
 - 🎙️ **Notas de voz**: `getFile` → ffmpeg (16k mono) → `faster-whisper` `small` (español).
-- 🖼️ **Fotos/capturas**: visión de `deepseek-flash` (OpenAI-compatible). Con texto → actúa; sin texto → describe y propone.
-- 🧠 **IA "rápida y segura"**: 1) intento **directo** (sin plan, rápido) → 2) si no cambia o la verificación dice NO, genera **plan** (máx. 4 pasos) y **reintenta** (hasta 3) → 3) **verifica** el diff (`<SI|NO> | <resumen>`). El resumen se usa para el mensaje final. Nunca pide "sé más concreto".
-- 🖼️ **Foto/captura de la web + "modifica esto"**: visión en 3 partes (qué se ve con textos literales / qué quiere / instrucción). Con texto → ejecuta; sin texto → propone y espera un "hazlo".
-- 📸 **Auto-comprobación visual** (interna): tras desplegar, captura la web (Playwright/Chromium, cache-bust) y la compara con visión; si no se ve, **reintenta una vez**. **No envía la captura al chat.**
-- 💶 **Coste en euros**: tokens (entrada/salida) × precio DeepSeek V4.1-Flash (peack/off-peak), mostrado al terminar y acumulado en `/coste`.
-- 🛡️ **Guardián anti-destructivo**: si un cambio borra mucho contenido (>40 líneas y <5 añadidas), se cancela y se restaura.
+- 🖼️ **Fotos/capturas**: visión de `deepseek-flash` (OpenAI-compatible, thinking OFF). Responde "ACCIÓN:" + "PISTAS:" → dice **"🖼️ Voy a: …"**. Con texto → ejecuta; sin texto → espera un "hazlo".
+- 🧠 **IA rápida (~15 s)**: **plan** por API directa (en español, ~2 s) → **edición con Aider** → **verificación** del diff por API directa (`<SI|NO> | <resumen>`). El resumen alimenta el mensaje final. Si la verificación dice NO, reintenta (hasta 3). Nunca pide "sé más concreto".
+- ⚡ **Claves de la velocidad** (¡importante!): DeepSeek V4.1 trae **thinking ACTIVADO por defecto** (¡lentísimo!). Se desactiva con `--model-settings-file /opt/edumr/myset.yml` (`extra_body.thinking.type=disabled`). Además Aider con `--edit-format diff` (no reescribe el archivo entero) y `--map-tokens 0`. Resultado: **~14 s** vs **>10 min**. Guardar `thinking: disabled` también en las llamadas directas (plan/verify/visión).
+- ⚠️ **Sin chequeo visual automático**: se quitó porque la visión **lee mal el texto pequeño** de las capturas (falsos NO → reintentos en bucle). La fiabilidad la da la verificación del diff.
+- 💶 **Coste en euros**: tokens (entrada/salida) × precio DeepSeek V4.1-Flash (peak/off-peak), mostrado al terminar y acumulado en `/coste`.
+- 🛡️ **Guardián anti-destructivo**: si un cambio borra muchísimo (>=100 líneas y añade <20%), se cancela y se restaura.
 - 🧵 **Memoria corta** por chat (últimos 4 turnos) para resolver "esto"/"eso" sin disparar el consumo.
 - ⏰ **Tareas programadas**: `/tarea`, `/tarea diario 09:00 <petición>`, `/tarea borrar <id>`. Hilo `scheduler` (hora Europe/Madrid).
 - 🔔 Siempre responde: sticker/vídeo/archivo reciben contestación, nunca silencio.
