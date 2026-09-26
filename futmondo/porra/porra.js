@@ -1,4 +1,14 @@
 const API = "/api/laquiniela";
+
+// Oculta el widget de cuenta hasta resolver la sesión: evita el parpadeo del
+// estado "sin cuenta" en los primeros milisegundos de carga.
+document.documentElement.classList.add("auth-loading");
+(function () {
+  const style = document.createElement("style");
+  style.textContent = ".auth-loading #userBox,.auth-loading #exitBox{visibility:hidden}";
+  document.head.appendChild(style);
+})();
+
 let state = { user: null, matches: [] };
 
 function $(id) { return document.getElementById(id); }
@@ -293,6 +303,7 @@ async function load() {
     state = await res.json();
     render();
   } catch (e) {}
+  document.documentElement.classList.remove("auth-loading");
 }
 
 load();
