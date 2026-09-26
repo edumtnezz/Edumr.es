@@ -44,8 +44,8 @@ Para ver estilos/posiciones calculadas (depurar huecos, etc.) usar el CDP:
 - Git del VPS usa clave `/root/.ssh/edumr_deploy` (deploy key con escritura en el repo).
 - Extra en `config.json`: `github_token` + `github_repo` (para el aviso de despliegue vía API de GitHub Actions).
 - ⚠️ **Este bot es SOLO para la web `edumr.es`** (proyecto fijo `web`). Para proyectos nuevos hay otro bot aparte (ver `C:\Users\PC\Desktop\PROMPT-BOT-PROYECTOS.md`).
-- Comandos: `/ayuda` `/menu` `/modelo` `/preguntar <duda>` `/revisar` `/captura` `/estado` `/actualizar` `/deshacer` `/web` `/coste` `/tarea` `/log` `/ping`.
-- 🎛️ Menú con **botones**: Estado, Captura web, Preguntar, Revisar, Coste, Deshacer, Web, Ayuda.
+- Comandos: `/ayuda` `/menu` `/modelo` `/preguntar <duda>` `/revisar` `/captura` `/estado` `/actualizar` `/deshacer` `/web` `/coste` `/tarea`.
+- 🎛️ Menú con **botones**: Preguntar, Revisar, Estado, Coste, Web, Deshacer, Ayuda.
 - 🎙️ **Notas de voz**: `getFile` → ffmpeg (16k mono) → `faster-whisper` `small` (español).
 - 🖼️ **Fotos/capturas**: visión de `deepseek-flash` (OpenAI-compatible). Con texto → actúa; sin texto → describe y propone.
 - 🧠 **IA en 3 fases**: 1) *interpreta* (plan máx. 4 pasos) → 2) *ejecuta* con Aider → 3) *verifica* el diff y **reintenta** (hasta 3). Nunca pide "sé más concreto".
