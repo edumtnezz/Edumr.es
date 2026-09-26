@@ -46,5 +46,12 @@ Para ver estilos/posiciones calculadas (depurar huecos, etc.) usar el CDP:
 - Comandos: `/ayuda` `/menu` `/proyectos` `/nuevo` `/proyecto` `/modelo` `/preguntar <duda>` (consulta sin tocar nada) `/estado` `/actualizar` `/deshacer` `/web` `/log` `/ping`.
 - 🎛️ Menú con **botones** (reply keyboard): Proyectos, Estado, Preguntar, Web, Modelo, Deshacer, Ayuda.
 - 🎙️ **Notas de voz**: se descargan con `getFile`, se convierten (ffmpeg 16k mono) y se transcriben con `faster-whisper` modelo `small` (español).
+- 🖼️ **Fotos/capturas**: se envían al modelo de visión (DeepSeek, OpenAI-compatible). Con texto (caption) actúa; sin texto describe y propone.
+- 🧠 **IA en 3 fases**: 1) *interpreta* (plan concreto, máx. 4 pasos) → 2) *ejecuta* con Aider → 3) *verifica* su propio diff y **reintenta** si no cumple (hasta 3). Nunca pide "sé más concreto".
+- 💸 **Coste**: cada trabajo muestra `🧮 tokens`; acumulado en `/coste`.
+- ⏰ **Tareas programadas**: `/tarea` (lista), `/tarea diario 09:00 <petición>`, `/tarea lunes 09:00 /revisar`, `/tarea borrar <id>`. Hilo `scheduler` (hora del servidor = Europe/Madrid).
+- 🩺 **Auto-revisión**: `/revisar` (o `/ideas`) analiza el repo y propone 5 mejoras.
+- 🔔 Siempre responde: mensajes sin texto (sticker/vídeo/archivo) reciben contestación, no silencio.
+- Toda la configuración vive en `config.json` (chmod 600): token, clave DeepSeek, token+repo GitHub, proyectos, tareas, offset, usage.
 
 
