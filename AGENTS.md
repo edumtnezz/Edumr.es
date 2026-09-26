@@ -43,15 +43,18 @@ Para ver estilos/posiciones calculadas (depurar huecos, etc.) usar el CDP:
 - Progreso visible: `🧠 Pensando…` → `⏳ Trabajando… (N min)` → `✅ Hecho y subido` / `🤔 No he cambiado nada` / `❌ Error`.
 - Git del VPS usa clave `/root/.ssh/edumr_deploy` (deploy key con escritura en el repo).
 - Extra en `config.json`: `github_token` + `github_repo` (para el aviso de despliegue vía API de GitHub Actions).
-- Comandos: `/ayuda` `/menu` `/proyectos` `/nuevo` `/proyecto` `/modelo` `/preguntar <duda>` (consulta sin tocar nada) `/estado` `/actualizar` `/deshacer` `/web` `/log` `/ping`.
-- 🎛️ Menú con **botones** (reply keyboard): Proyectos, Estado, Preguntar, Web, Modelo, Deshacer, Ayuda.
-- 🎙️ **Notas de voz**: se descargan con `getFile`, se convierten (ffmpeg 16k mono) y se transcriben con `faster-whisper` modelo `small` (español).
-- 🖼️ **Fotos/capturas**: se envían al modelo de visión (DeepSeek, OpenAI-compatible). Con texto (caption) actúa; sin texto describe y propone.
-- 🧠 **IA en 3 fases**: 1) *interpreta* (plan concreto, máx. 4 pasos) → 2) *ejecuta* con Aider → 3) *verifica* su propio diff y **reintenta** si no cumple (hasta 3). Nunca pide "sé más concreto".
-- 💸 **Coste**: cada trabajo muestra `🧮 tokens`; acumulado en `/coste`.
-- ⏰ **Tareas programadas**: `/tarea` (lista), `/tarea diario 09:00 <petición>`, `/tarea lunes 09:00 /revisar`, `/tarea borrar <id>`. Hilo `scheduler` (hora del servidor = Europe/Madrid).
-- 🩺 **Auto-revisión**: `/revisar` (o `/ideas`) analiza el repo y propone 5 mejoras.
-- 🔔 Siempre responde: mensajes sin texto (sticker/vídeo/archivo) reciben contestación, no silencio.
-- Toda la configuración vive en `config.json` (chmod 600): token, clave DeepSeek, token+repo GitHub, proyectos, tareas, offset, usage.
+- ⚠️ **Este bot es SOLO para la web `edumr.es`** (proyecto fijo `web`). Para proyectos nuevos hay otro bot aparte (ver `C:\Users\PC\Desktop\PROMPT-BOT-PROYECTOS.md`).
+- Comandos: `/ayuda` `/menu` `/modelo` `/preguntar <duda>` `/revisar` `/captura` `/estado` `/actualizar` `/deshacer` `/web` `/coste` `/tarea` `/log` `/ping`.
+- 🎛️ Menú con **botones**: Estado, Captura web, Preguntar, Revisar, Coste, Deshacer, Web, Ayuda.
+- 🎙️ **Notas de voz**: `getFile` → ffmpeg (16k mono) → `faster-whisper` `small` (español).
+- 🖼️ **Fotos/capturas**: visión de `deepseek-flash` (OpenAI-compatible). Con texto → actúa; sin texto → describe y propone.
+- 🧠 **IA en 3 fases**: 1) *interpreta* (plan máx. 4 pasos) → 2) *ejecuta* con Aider → 3) *verifica* el diff y **reintenta** (hasta 3). Nunca pide "sé más concreto".
+- 💶 **Coste en euros**: tokens (entrada/salida) × precio DeepSeek V4.1-Flash (peack/off-peak), mostrado al terminar y acumulado en `/coste`.
+- 📸 **Auto-comprobación visual**: tras desplegar, captura la web (Playwright/Chromium, con cache-bust) y la envía; si el cambio no se ve, **reintenta una vez**.
+- 🛡️ **Guardián anti-destructivo**: si un cambio borra mucho contenido (>40 líneas y <5 añadidas), se cancela y se restaura.
+- 🧵 **Memoria corta** por chat (últimos 4 turnos) para resolver "esto"/"eso" sin disparar el consumo.
+- ⏰ **Tareas programadas**: `/tarea`, `/tarea diario 09:00 <petición>`, `/tarea borrar <id>`. Hilo `scheduler` (hora Europe/Madrid).
+- 🔔 Siempre responde: sticker/vídeo/archivo reciben contestación, nunca silencio.
+- Config en `config.json` (chmod 600): token, clave DeepSeek, token+repo GitHub, model, tareas, offset, usage, memory.
 
 
