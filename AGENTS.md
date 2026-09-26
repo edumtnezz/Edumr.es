@@ -38,8 +38,13 @@ Para ver estilos/posiciones calculadas (depurar huecos, etc.) usar el CDP:
 - VPS (C2G): `193.36.236.222`, root. Ubuntu 22.04, 2 vCPU, 2 GB.
 - Carpeta `/opt/edumr`: `repo` (clon del repo), `venv` (Aider), `bot.py` (bot de Telegram), `config.json` (token Telegram, secret, clave DeepSeek).
 - Servicio `edumr-bot` (systemd, `Restart=always`). Reiniciar: `systemctl restart edumr-bot`.
-- Bot Telegram: **@eduarIA_bot**. Autorización con `/start <SECRET>` (secret en `config.json`).
-- Flujo: mensaje → `git fetch+reset` → Aider (modelo `openai/deepseek-flash`, base `https://api.deepseek.com`) → commit+push → GitHub Action despliega.
+- Bot Telegram: **@eduarIA_bot**. Autoriza el **primer chat** que escribe (queda como dueño; ya no hay `/start <SECRET>`).
+- Flujo: mensaje → `git fetch+reset` → Aider (modelo `openai/deepseek-flash`, base `https://api.deepseek.com`) → commit+push → GitHub Action despliega → aviso `🔔 ya publicado`.
+- Progreso visible: `🧠 Pensando…` → `⏳ Trabajando… (N min)` → `✅ Hecho y subido` / `🤔 No he cambiado nada` / `❌ Error`.
 - Git del VPS usa clave `/root/.ssh/edumr_deploy` (deploy key con escritura en el repo).
-- Comandos del bot: `/estado`, `/deshacer`, `/web`.
+- Extra en `config.json`: `github_token` + `github_repo` (para el aviso de despliegue vía API de GitHub Actions).
+- Comandos: `/ayuda` `/menu` `/proyectos` `/nuevo` `/proyecto` `/modelo` `/preguntar <duda>` (consulta sin tocar nada) `/estado` `/actualizar` `/deshacer` `/web` `/log` `/ping`.
+- 🎛️ Menú con **botones** (reply keyboard): Proyectos, Estado, Preguntar, Web, Modelo, Deshacer, Ayuda.
+- 🎙️ **Notas de voz**: se descargan con `getFile`, se convierten (ffmpeg 16k mono) y se transcriben con `faster-whisper` modelo `small` (español).
+
 
