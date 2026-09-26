@@ -48,9 +48,10 @@ Para ver estilos/posiciones calculadas (depurar huecos, etc.) usar el CDP:
 - 🎛️ Menú con **botones**: Preguntar, Revisar, Estado, Coste, Web, Deshacer, Ayuda.
 - 🎙️ **Notas de voz**: `getFile` → ffmpeg (16k mono) → `faster-whisper` `small` (español).
 - 🖼️ **Fotos/capturas**: visión de `deepseek-flash` (OpenAI-compatible). Con texto → actúa; sin texto → describe y propone.
-- 🧠 **IA en 3 fases**: 1) *interpreta* (plan máx. 4 pasos) → 2) *ejecuta* con Aider → 3) *verifica* el diff y **reintenta** (hasta 3). Nunca pide "sé más concreto".
+- 🧠 **IA "rápida y segura"**: 1) intento **directo** (sin plan, rápido) → 2) si no cambia o la verificación dice NO, genera **plan** (máx. 4 pasos) y **reintenta** (hasta 3) → 3) **verifica** el diff (`<SI|NO> | <resumen>`). El resumen se usa para el mensaje final. Nunca pide "sé más concreto".
+- 🖼️ **Foto/captura de la web + "modifica esto"**: visión en 3 partes (qué se ve con textos literales / qué quiere / instrucción). Con texto → ejecuta; sin texto → propone y espera un "hazlo".
+- 📸 **Auto-comprobación visual** (interna): tras desplegar, captura la web (Playwright/Chromium, cache-bust) y la compara con visión; si no se ve, **reintenta una vez**. **No envía la captura al chat.**
 - 💶 **Coste en euros**: tokens (entrada/salida) × precio DeepSeek V4.1-Flash (peack/off-peak), mostrado al terminar y acumulado en `/coste`.
-- 📸 **Auto-comprobación visual**: tras desplegar, captura la web (Playwright/Chromium, con cache-bust) y la envía; si el cambio no se ve, **reintenta una vez**.
 - 🛡️ **Guardián anti-destructivo**: si un cambio borra mucho contenido (>40 líneas y <5 añadidas), se cancela y se restaura.
 - 🧵 **Memoria corta** por chat (últimos 4 turnos) para resolver "esto"/"eso" sin disparar el consumo.
 - ⏰ **Tareas programadas**: `/tarea`, `/tarea diario 09:00 <petición>`, `/tarea borrar <id>`. Hilo `scheduler` (hora Europe/Madrid).
