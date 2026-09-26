@@ -729,6 +729,8 @@ body {
   font-family: 'Space Grotesk', monospace;
   font-size: 0.82rem;
   color: var(--text-muted);
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .project-card h3 {
