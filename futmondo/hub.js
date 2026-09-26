@@ -15,5 +15,4 @@
   if (box) box.textContent = "Con permiso, ¡" + saludo() + (name ? ", " + name : "") + "!";
   const cta = document.getElementById("hubCta");
   if (cta) cta.hidden = !!name;
-  else if (cta) cta.hidden = false;
 })();
