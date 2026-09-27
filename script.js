@@ -160,28 +160,10 @@ function initThemeToggle() {
   });
 }
 
-// Menú móvil
-function initMobileMenu() {
-  const btn = document.getElementById('mobileMenuBtn');
-  const navLinks = document.getElementById('navLinks');
-  if (!btn || !navLinks) return;
-
-  btn.addEventListener('click', () => {
-    navLinks.classList.toggle('open');
-  });
-
-  navLinks.querySelectorAll('a').forEach(link => {
-    link.addEventListener('click', () => {
-      navLinks.classList.remove('open');
-    });
-  });
-}
-
 // Inicialización general
 document.addEventListener('DOMContentLoaded', () => {
   type();
   initThemeToggle();
-  initMobileMenu();
 
   if (canvas) {
     resizeCanvas();
