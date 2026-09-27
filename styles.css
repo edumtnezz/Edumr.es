@@ -130,6 +130,22 @@ body {
   transition: all 0.3s ease;
 }
 
+.nav-futmondo {
+  display: none;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+.nav-futmondo:hover { border-color: var(--border-hover); color: var(--accent); transform: translateY(-1px); }
+
 .theme-toggle {
   width: 38px;
   height: 38px;
@@ -859,6 +875,7 @@ body {
   .nav-links.open { display: flex; }
   .nav-link { padding: 12px 0; font-size: 1.05rem; }
   .mobile-menu-btn { display: flex; }
+  .nav-futmondo { display: inline-flex; }
 }
 
 @media (max-width: 480px) {
