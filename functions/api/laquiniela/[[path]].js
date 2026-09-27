@@ -710,7 +710,7 @@ function cleanArticle(s) {
 }
 
 async function getNoticia(url) {
-  if (!/^https:\/\/www\.futbolfantasy\.com\//.test(String(url || ""))) return { error: "no permitido" };
+  if (!/^https:\/\/www\.futbolfantasy\.com\/laliga\/noticias\//.test(String(url || ""))) return { error: "no permitido" };
   const res = await fetch(url, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
   const html = await res.text();
   const title = ((html.match(/<h1[^>]*class="[^"]*titulo[^"]*"[^>]*>([\s\S]*?)<\/h1>/i) || [])[1] || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
@@ -735,7 +735,7 @@ async function getNoticia(url) {
     while ((m = reP.exec(scope))) {
       const inner = m[1];
       const txt = inner.replace(/<[^>]+>/g, "").replace(/&[a-z#0-9]+;/gi, " ").replace(/\s+/g, " ").trim();
-      if (txt.length > 40) parts.push("<p>" + inner + "</p>");
+      if (txt.length > 60) parts.push("<p>" + inner + "</p>");
       if (parts.length > 40) break;
     }
     if (parts.length) body = cleanArticle(parts.join(""));

@@ -27,6 +27,15 @@
     const parts = String(name || "?").trim().split(/\s+/).filter(Boolean);
     return ((parts[0] ? parts[0][0] : "?") + (parts[1] ? parts[1][0] : "")).toUpperCase();
   }
+  const DEFAULT_AVATAR = "/img/avatar.svg";
+  function photoImg(src, cls) {
+    const im = el("img", cls || "");
+    im.loading = "lazy";
+    im.alt = "";
+    im.src = src || DEFAULT_AVATAR;
+    im.addEventListener("error", () => { if (im.getAttribute("src") !== DEFAULT_AVATAR) im.src = DEFAULT_AVATAR; }, { once: true });
+    return im;
+  }
   function statusInfo(s) {
     if (!s) return null;
     if (s === "redcard") return { cls: "st-red", label: "" };
@@ -57,12 +66,7 @@
   function playerCard(p, onClick) {
     const card = el("div", "mcard" + (onClick ? " clickable" : ""));
     const photoWrap = el("div", "mcard-photo");
-    if (p.photo) {
-      const im = el("img", "mcard-img"); im.src = p.photo; im.alt = p.name; im.loading = "lazy";
-      photoWrap.appendChild(im);
-    } else {
-      photoWrap.appendChild(el("div", "mcard-img", initials(p.name)));
-    }
+    photoWrap.appendChild(photoImg(p.photo, "mcard-img"));
     const st = statusInfo(p.status);
     if (st) photoWrap.appendChild(el("span", "mcard-badge " + st.cls, st.label));
     card.appendChild(photoWrap);
@@ -188,7 +192,7 @@
       const row = el("button", "cmp-sugrow");
       row.type = "button";
       const ph = el("span", "cmp-sugphoto");
-      if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; ph.appendChild(im); } else ph.textContent = initials(p.name);
+      ph.appendChild(photoImg(p.photo));
       row.appendChild(ph);
       const body = el("span", "cmp-sugbody");
       body.appendChild(el("span", "cmp-sugname", p.name));
@@ -223,7 +227,7 @@
     const side = (p) => {
       const d = el("div", "cmp-side");
       const ph = el("div", "mcard-photo");
-      if (p.photo) { const im = el("img", "mcard-img"); im.src = p.photo; im.alt = p.name; ph.appendChild(im); }
+      ph.appendChild(photoImg(p.photo, "mcard-img"));
       d.appendChild(ph);
       d.appendChild(el("div", "cmp-name", p.name));
       const rbs = roleBadge(p.role), rb2s = roleBadge(p.role2);
@@ -459,8 +463,7 @@
     const root = el("div", "ficha");
     const head = el("div", "ficha-head");
     const ph = el("div", "mcard-photo");
-    const pic = d.photo || p.photo;
-    if (pic) { const im = el("img", "mcard-img"); im.src = pic; im.alt = d.name || p.name || ""; ph.appendChild(im); }
+    ph.appendChild(photoImg(d.photo || p.photo, "mcard-img"));
     const rb = roleBadge(d.role || p.role), rb2 = roleBadge(d.role2 || p.role2);
     if (rb) ph.appendChild(el("span", "mcard-role" + (rb2 ? " multi" : ""), rb + (rb2 ? " · " + rb2 : "")));
     head.appendChild(ph);
@@ -539,8 +542,7 @@
       ps.forEach((p) => {
         const card = el("div", "pitch-player");
         const ph = el("div", "pitch-photo");
-        if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = p.nombre || ""; im.loading = "lazy"; ph.appendChild(im); }
-        else ph.textContent = initials(p.nombre);
+        ph.appendChild(photoImg(p.photo));
         card.appendChild(ph);
         card.appendChild(el("div", "pitch-name", p.nombre || ""));
         let tag = "";
