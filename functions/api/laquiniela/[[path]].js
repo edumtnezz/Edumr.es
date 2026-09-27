@@ -724,6 +724,22 @@ async function getNoticia(url) {
     if (m > 0) seg = seg.slice(0, m);
     body = cleanArticle(seg);
   }
+  if (!body || body.replace(/<[^>]+>/g, "").trim().length < 40) {
+    const dIdx = html.search(/class="noticia-detail"/i);
+    const scope = dIdx >= 0 ? html.slice(dIdx, dIdx + 40000) : html;
+    const parts = [];
+    const img = scope.match(/<img[^>]+src="([^"]*fotos_noticias[^"]+)"/i);
+    if (img) parts.push('<p><img src="' + img[1] + '" /></p>');
+    const reP = /<p[^>]*>([\s\S]*?)<\/p>/gi;
+    let m;
+    while ((m = reP.exec(scope))) {
+      const inner = m[1];
+      const txt = inner.replace(/<[^>]+>/g, "").replace(/&[a-z#0-9]+;/gi, " ").replace(/\s+/g, " ").trim();
+      if (txt.length > 60) parts.push("<p>" + inner + "</p>");
+      if (parts.length > 40) break;
+    }
+    if (parts.length) body = cleanArticle(parts.join(""));
+  }
   return { title, lead, html: body };
 }
 

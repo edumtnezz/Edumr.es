@@ -5,6 +5,9 @@
   let all = [];
   let shown = 60;
   let sortMode = "up";
+  let teamFilter = "";
+  let rangeInit = false;
+  let selA = null, selB = null;
   let rangeMin = 0;
   let rangeMax = Infinity;
 
@@ -115,7 +118,7 @@
 
   function filteredList() {
     const q = stripAccents($("mjSearch") ? $("mjSearch").value.trim() : "");
-    const team = $("mjTeam") ? $("mjTeam").value : "";
+    const team = teamFilter;
     const role = $("mjRole") ? $("mjRole").value : "";
     let list = all.filter((p) => {
       if (q && !stripAccents(p.name).includes(q)) return false;
@@ -175,13 +178,47 @@
     return all.find((p) => stripAccents(p.name) === q) || all.find((p) => stripAccents(p.name).includes(q)) || null;
   }
 
+  function sugList(input, box, onPick) {
+    const q = stripAccents(input.value.trim());
+    let list = q ? all.filter((p) => stripAccents(p.name).includes(q)) : all.slice().sort((a, b) => b.value - a.value);
+    list = list.slice(0, 10);
+    box.innerHTML = "";
+    if (!list.length) { box.classList.add("hidden"); return; }
+    list.forEach((p) => {
+      const row = el("button", "cmp-sugrow");
+      row.type = "button";
+      const ph = el("span", "cmp-sugphoto");
+      if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; ph.appendChild(im); } else ph.textContent = initials(p.name);
+      row.appendChild(ph);
+      const body = el("span", "cmp-sugbody");
+      body.appendChild(el("span", "cmp-sugname", p.name));
+      body.appendChild(el("span", "cmp-sugteam", p.team || ""));
+      row.appendChild(body);
+      row.appendChild(el("span", "cmp-sugval", money(p.value) + " €"));
+      row.addEventListener("click", () => onPick(p));
+      box.appendChild(row);
+    });
+    box.classList.remove("hidden");
+  }
+
+  function wireCmp(input, box) {
+    if (!input || !box) return;
+    const pick = (p) => {
+      if (input === $("cmpA")) selA = p; else selB = p;
+      input.value = p.name;
+      box.classList.add("hidden");
+      renderComparador();
+    };
+    input.addEventListener("focus", () => sugList(input, box, pick));
+    input.addEventListener("input", () => { if (input === $("cmpA")) selA = null; else selB = null; sugList(input, box, pick); });
+  }
+
   function renderComparador() {
     const out = $("cmpOut");
     if (!out) return;
-    const a = findPlayer($("cmpA").value);
-    const b = findPlayer($("cmpB").value);
     out.innerHTML = "";
-    if (!a || !b) { out.appendChild(el("p", "muted small", "Escribe dos jugadores (elige de la lista) para compararlos.")); return; }
+    const a = selA, b = selB;
+    if (!a || !b) { out.appendChild(el("p", "muted small", "Toca el buscador y elige dos jugadores (con foto) para compararlos.")); return; }
     const wrap = el("div", "cmp-cols");
     const side = (p) => {
       const d = el("div", "cmp-side");
@@ -230,6 +267,11 @@
     const box = $("mercClubs");
     if (!box || box.dataset.init) return;
     box.dataset.init = "1";
+    const allBtn = el("button", "merc-club merc-club-all", "Todos");
+    allBtn.type = "button";
+    allBtn.title = "Todos los equipos";
+    allBtn.addEventListener("click", () => setTeam(""));
+    box.appendChild(allBtn);
     const map = {};
     all.forEach((p) => { if (p.team && p.logo && !map[p.team]) map[p.team] = p.logo; });
     Object.keys(map).sort((a, b) => a.localeCompare(b)).forEach((t) => {
@@ -238,22 +280,25 @@
       btn.title = t;
       const im = el("img", "merc-club-img"); im.src = map[t]; im.alt = t; im.loading = "lazy";
       btn.appendChild(im);
-      btn.addEventListener("click", () => {
-        const sel = $("mjTeam");
-        const cur = sel.value === t ? "" : t;
-        sel.value = cur;
-        syncClubActive();
-        shown = 60;
-        renderGrid();
-      });
+      btn.addEventListener("click", () => setTeam(teamFilter === t ? "" : t));
       box.appendChild(btn);
     });
   }
 
+  function setTeam(t) {
+    teamFilter = t || "";
+    syncClubActive();
+    shown = 60;
+    renderGrid();
+    const grid = $("marketGrid");
+    if (grid && grid.scrollIntoView) grid.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function syncClubActive() {
-    const sel = $("mjTeam");
-    const cur = sel ? sel.value : "";
-    document.querySelectorAll(".merc-club").forEach((x) => x.classList.toggle("active", x.title === cur));
+    document.querySelectorAll(".merc-club").forEach((x) => {
+      const on = x.classList.contains("merc-club-all") ? !teamFilter : (x.title === teamFilter);
+      x.classList.toggle("active", !!on);
+    });
   }
 
   function setupTeams() {
@@ -299,11 +344,9 @@
       renderHighlights();
       renderGrid();
       renderEstado();
-      fillDatalist();
       renderComparador();
-      if (all.length && !$("mjTeam").dataset.init) {
-        $("mjTeam").dataset.init = "1";
-        setupTeams();
+      if (all.length && !rangeInit) {
+        rangeInit = true;
         setupRange();
       }
       setupClubs();
@@ -382,12 +425,16 @@
       .then((r) => r.json())
       .then((d) => {
         const c = el("div");
-        c.appendChild(el("h2", "ficha-name", d.title || title || ""));
+        c.appendChild(el("h2", "ficha-name", title || d.title || ""));
         if (d.lead) c.appendChild(el("p", "art-lead", d.lead));
-        const art = el("div", "art-body");
-        art.innerHTML = d.html || "";
-        if (!d.html) c.appendChild(el("p", "muted small", "No se pudo cargar el contenido."));
-        else c.appendChild(art);
+        if (d.html) {
+          const art = el("div", "art-body");
+          art.innerHTML = d.html;
+          c.appendChild(art);
+        } else {
+          c.appendChild(el("p", "muted small", "No pude extraer el texto de esta noticia."));
+          if (url) { const a = el("a", "cmp-trend up", "Ver en FutbolFantasy →"); a.href = url; a.target = "_blank"; a.rel = "noopener"; c.appendChild(a); }
+        }
         showModal(c);
       })
       .catch(() => {
@@ -531,7 +578,14 @@
   const bind = (id, ev) => { const e = $(id); if (e) e.addEventListener(ev, () => { shown = 60; renderGrid(); }); };
   bind("mjSearch", "input"); bind("mjRole", "change");
   const teamSel = $("mjTeam"); if (teamSel) teamSel.addEventListener("change", () => { syncClubActive(); shown = 60; renderGrid(); });
-  ["cmpA", "cmpB"].forEach((id) => { const e = $(id); if (e) e.addEventListener("input", renderComparador); });
+  wireCmp($("cmpA"), $("cmpSugA"));
+  wireCmp($("cmpB"), $("cmpSugB"));
+  document.addEventListener("click", (e) => {
+    [["cmpA", "cmpSugA"], ["cmpB", "cmpSugB"]].forEach((pair) => {
+      const inp = $(pair[0]), box = $(pair[1]);
+      if (box && e.target !== inp && !box.contains(e.target)) box.classList.add("hidden");
+    });
+  });
 
   loadNoticias();
   load();

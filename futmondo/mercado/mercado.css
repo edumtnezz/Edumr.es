@@ -121,3 +121,17 @@
 .ficha-modal .ficha-close { color: #ffffff; border-color: rgba(255,255,255,0.22); }
 .ficha-modal a { color: #22c55e; }
 .ficha-modal .art-body, .ficha-modal .art-body p, .ficha-modal .art-lead { color: #dfe6ef; }
+
+/* Comparador: buscador con foto */
+.cmp-pick { position: relative; }
+.cmp-sug { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 60; background: #0d131d; border: 1px solid rgba(255,255,255,0.14); border-radius: 12px; max-height: 300px; overflow-y: auto; box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
+.cmp-sugrow { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; background: transparent; border: none; border-top: 1px solid rgba(255,255,255,0.06); color: #e9eef6; text-align: left; cursor: pointer; }
+.cmp-sugrow:first-child { border-top: none; }
+.cmp-sugrow:hover { background: rgba(255,255,255,0.06); }
+.cmp-sugphoto { width: 34px; height: 34px; border-radius: 50%; overflow: hidden; background: rgba(255,255,255,0.08); flex: 0 0 auto; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; color: #9fb0c4; }
+.cmp-sugphoto img { width: 100%; height: 100%; object-fit: cover; }
+.cmp-sugbody { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
+.cmp-sugname { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmp-sugteam { font-size: 0.74rem; color: #9fb0c4; }
+.cmp-sugval { font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+.merc-club.merc-club-all { width: auto; padding: 0 12px; border-radius: 999px; font-size: 0.82rem; font-weight: 700; color: var(--text); }

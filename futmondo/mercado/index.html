@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="../theme.js?v=64"></script>
   <link rel="stylesheet" href="../quiniela/quiniela.css?v=110">
-  <link rel="stylesheet" href="mercado.css?v=8">
+  <link rel="stylesheet" href="mercado.css?v=9">
 </head>
 <body class="page-simple">
   <div class="grass-band"></div>
@@ -52,16 +52,14 @@
         <div id="mercHighlights"></div>
         <div class="merc-filters">
           <input id="mjSearch" class="market-search" type="text" placeholder="Buscar jugador por nombre…" autocomplete="off">
-          <div class="merc-filters-row">
-            <select id="mjTeam" class="merc-select"><option value="">Todos los equipos</option></select>
-            <select id="mjRole" class="merc-select">
-              <option value="">Todas las posiciones</option>
-              <option value="portero">Porteros</option>
-              <option value="defensa">Defensas</option>
-              <option value="centrocampista">Centrocampistas</option>
-              <option value="delantero">Delanteros</option>
-            </select>
-          </div>
+          <select id="mjRole" class="merc-select">
+            <option value="">Todas las posiciones</option>
+            <option value="portero">Porteros</option>
+            <option value="defensa">Defensas</option>
+            <option value="centrocampista">Centrocampistas</option>
+            <option value="delantero">Delanteros</option>
+          </select>
+        </div>
           <div class="merc-range">
             <span class="muted small">Rango de precio: <b id="mjRangeLabel">—</b></span>
             <input type="range" id="mjMin" min="0" max="100" value="0" aria-label="Precio mínimo">
@@ -90,10 +88,9 @@
         <h2>Comparador</h2>
         <p class="muted small">Compara dos jugadores: valor, tendencia y estado.</p>
         <div class="cmp-row">
-          <input id="cmpA" class="market-search" list="cmpList" placeholder="Jugador A…" autocomplete="off">
-          <input id="cmpB" class="market-search" list="cmpList" placeholder="Jugador B…" autocomplete="off">
+          <div class="cmp-pick"><input id="cmpA" class="market-search" placeholder="Jugador A…" autocomplete="off"><div class="cmp-sug hidden" id="cmpSugA"></div></div>
+          <div class="cmp-pick"><input id="cmpB" class="market-search" placeholder="Jugador B…" autocomplete="off"><div class="cmp-sug hidden" id="cmpSugB"></div></div>
         </div>
-        <datalist id="cmpList"></datalist>
         <div id="cmpOut"></div>
       </section>
     </section>
@@ -130,6 +127,6 @@
     </div>
   </div>
 
-  <script src="mercado.js?v=8"></script>
+  <script src="mercado.js?v=9"></script>
 </body>
 </html>
