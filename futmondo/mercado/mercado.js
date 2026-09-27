@@ -515,11 +515,46 @@
     renderGrid();
   }));
   let anImg = null;
+  function miniMd(t) {
+    return String(t || "")
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/^#{1,6}\s*(.+)$/gm, "<strong>$1</strong>")
+      .replace(/^\s*[-*]\s+/gm, "• ")
+      .split(/\n+/).filter((x) => x.trim()).map((ln) => "<p>" + ln.trim() + "</p>").join("");
+  }
+
   function renderAnalisis(d) {
     const out = $("anOut");
     if (!out) return;
     out.innerHTML = "";
     if (d.formacion) out.appendChild(el("div", "an-form", "Formación detectada: " + d.formacion));
+
+    const rows = ["DEL", "CEN", "DEF", "POR"];
+    const field = el("div", "pitch");
+    rows.forEach((pos) => {
+      const ps = (d.titulares || []).filter((p) => p.pos === pos);
+      if (!ps.length) return;
+      const row = el("div", "pitch-row");
+      ps.forEach((p) => {
+        const card = el("div", "pitch-player");
+        const ph = el("div", "pitch-photo");
+        if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = p.nombre || ""; im.loading = "lazy"; ph.appendChild(im); }
+        else ph.textContent = initials(p.nombre);
+        card.appendChild(ph);
+        card.appendChild(el("div", "pitch-name", p.nombre || ""));
+        let tag = "";
+        let cls = "ok";
+        if (p.estado && p.estado !== "OK" && p.estado !== "?") { tag = p.estado; cls = p.estado === "LESIÓN" ? "inj" : p.estado === "DUDA" ? "doubt" : "red"; }
+        else if (p.puntos != null) { tag = p.puntos + " pts"; cls = "ok"; }
+        if (tag) card.appendChild(el("div", "pitch-tag " + cls, tag));
+        if (p.casa === true || p.casa === false) card.appendChild(el("div", "pitch-ha", p.casa ? "🏠 Casa" : "✈️ Fuera"));
+        row.appendChild(card);
+      });
+      field.appendChild(row);
+    });
+    if (field.children.length) out.appendChild(field);
+
     const table = (title, list) => {
       const sec = el("div", "estado-sec");
       sec.appendChild(el("div", "estado-title", title));
@@ -544,7 +579,7 @@
       const sec = el("div", "estado-sec");
       sec.appendChild(el("div", "estado-title", "Recomendaciones de la IA"));
       const t = el("div", "an-text");
-      String(d.analisis).split(/\n/).forEach((ln) => { if (ln.trim()) t.appendChild(el("p", null, ln.trim())); });
+      t.innerHTML = miniMd(d.analisis);
       sec.appendChild(t);
       out.appendChild(sec);
     }

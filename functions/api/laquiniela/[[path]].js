@@ -872,7 +872,7 @@ async function handleAnaliza(request, env, user) {
   const visionRaw = await dsChat(env, [{
     role: "user",
     content: [
-      { type: "text", text: "Esta imagen es una captura de un equipo de fútbol fantasy (Futmondo). Léelo y responde SOLO con un JSON, sin texto alrededor, con esta forma: {\"formacion\":\"1-4-3-3\",\"titulares\":[{\"nombre\":\"...\",\"pos\":\"POR|DEF|CEN|DEL\"}],\"suplentes\":[{\"nombre\":\"...\",\"pos\":\"...\"}]}. Sé literal con los nombres (con el apellido basta). No inventes jugadores." },
+      { type: "text", text: "Esta imagen es una captura de un equipo de fútbol fantasy (Futmondo) dibujado sobre un campo, con las líneas de jugadores. Léelo y responde SOLO con un JSON, sin nada alrededor: {\"formacion\":\"3-4-3\",\"titulares\":[{\"nombre\":\"...\",\"pos\":\"POR|DEF|CEN|DEL\"}],\"suplentes\":[{\"nombre\":\"...\",\"pos\":\"...\"}]}. La formación son 3 números DEFENSAS-CENTROCAMPISTAS-DELANTEROS (cuenta las líneas del campo y fíjate bien, no la pongas genérica). Sé literal con los nombres (con el apellido basta). No inventes jugadores." },
       { type: "image_url", image_url: { url: img } },
     ],
   }], "deepseek-flash");
@@ -913,6 +913,7 @@ async function handleAnaliza(request, env, user) {
       estado: p ? statusLabelEs(p.status) : "?",
       puntos: p ? p.points : null,
       valor: p ? p.value : null,
+      photo: p ? p.photo : "",
       rival: mt ? mt.rival : "",
       casa: mt ? mt.home : null,
       fecha: mt ? mt.date : "",
@@ -920,11 +921,13 @@ async function handleAnaliza(request, env, user) {
   });
   const titulares = enrich(team.titulares);
   const suplentes = enrich(team.suplentes);
+  const cnt = (pos) => titulares.filter((p) => p.pos === pos).length;
+  const formacion = (cnt("DEF") + cnt("CEN") + cnt("DEL")) ? [cnt("DEF"), cnt("CEN"), cnt("DEL")].join("-") : (team.formacion || "");
   const line = (p) => `- ${p.pos} ${p.nombre} (${p.equipo || "?"}) · ${p.estado} · ${p.puntos != null ? p.puntos + " pts" : "sin datos"} · rival ${p.rival || "?"} ${p.casa === true ? "(CASA)" : p.casa === false ? "(FUERA)" : ""}`;
-  const ctx = "FORMACIÓN: " + (team.formacion || "?") + "\nTITULARES:\n" + titulares.map(line).join("\n") + "\nBANQUILLO:\n" + suplentes.map(line).join("\n");
-  const prompt = "Eres un analista experto de fútbol fantasy (Futmondo, puntuación por estadísticas). Te doy el equipo del usuario y datos de cada jugador (estado, puntos y si su equipo juega en CASA o FUERA en el próximo partido).\n\n" + ctx + "\n\nDa un análisis BREVE en español con:\n1) Quién preocupa (lesionados/dudas): probabilidad de jugar.\n2) 2-3 cambios concretos (a quién sentar y a quién poner), mirando estado, puntos y si juega en casa (los de casa suelen puntuar mejor).\n3) Si cambiarías la formación y a cuál.\n4) Un once ideal. Sé directo y concreto.";
+  const ctx = "FORMACIÓN: " + formacion + "\nTITULARES:\n" + titulares.map(line).join("\n") + "\nBANQUILLO:\n" + suplentes.map(line).join("\n");
+  const prompt = "Eres un analista experto de fútbol fantasy (Futmondo, puntuación por estadísticas). Te doy el equipo del usuario y datos de cada jugador (estado, puntos y si su equipo juega en CASA o FUERA en el próximo partido).\n\n" + ctx + "\n\nDa un análisis BREVE en español, AGRADABLE de leer, con emojis y palabras en **negrita** (markdown doble asterisco). PROHIBIDO usar almohadillas (#), tablas o líneas de guiones. Máximo 8 líneas cortas. Incluye:\n1) Quién preocupa (lesionados/dudas) y probabilidad de jugar.\n2) 2-3 cambios concretos (a quién sentar y a quién poner), mirando estado, puntos y si juega en casa.\n3) Si cambiarías la formación y a cuál.\n4) Un once ideal. Sé directo.";
   const analisis = await dsChat(env, [{ role: "user", content: prompt }], "deepseek-flash");
-  return json({ formacion: team.formacion || "", titulares, suplentes, analisis });
+  return json({ formacion, titulares, suplentes, analisis });
 }
 
 function madrid(now) {
