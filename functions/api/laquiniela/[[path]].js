@@ -714,6 +714,7 @@ function cleanArticle(s) {
 function cleanBrand(s) {
   return String(s || "")
     .replace(/<a\b[^>]*>([\s\S]*?)<\/a>/gi, "$1")
+    .replace(/<[^>]*frpg[^>]*>/gi, "")
     .replace(/<div class="d-flex my-4">[\s\S]*?<\/div>\s*<\/div>/gi, "")
     .replace(/<span[^>]*class="[^"]*(autor|cargo|fecha)[^"]*"[^>]*>[\s\S]*?<\/span>/gi, "")
     .replace(/<img[^>]*(rounded-circle|header-author|avatar)[^>]*>/gi, "")
@@ -771,7 +772,7 @@ async function getNoticia(url) {
   if (ci >= 0) {
     const start = html.indexOf(">", ci) + 1;
     let seg = html.slice(start, start + 22000);
-    const m = seg.search(/(<div class="noticia (prev|next)|class="relacionad|class="mas-noticias|id="comentarios"|<footer|class="clearfix")/i);
+    const m = seg.search(/(<div class="noticia (prev|next)|class="relacionad|class="mas-noticias|class="relative-noticias|id="comentarios"|<footer|class="clearfix")/i);
     if (m > 0) seg = seg.slice(0, m);
     body = cleanArticle(seg);
   }
