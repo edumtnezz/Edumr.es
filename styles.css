@@ -131,7 +131,7 @@ body {
 }
 
 .nav-futmondo {
-  display: none;
+  display: inline-flex;
   align-items: center;
   padding: 8px 14px;
   border-radius: 999px;
