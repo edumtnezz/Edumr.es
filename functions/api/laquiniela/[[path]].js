@@ -695,21 +695,34 @@ function stripHtml(s) {
   return String(s || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
 }
 
+async function getFfNoticias() {
+  try {
+    const res = await fetch("https://www.futbolfantasy.com/laliga/noticias", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+    const html = await res.text();
+    const out = [];
+    for (const part of html.split('<div class="noticia">').slice(1)) {
+      const block = part.slice(0, 600);
+      const date = ((block.match(/class="date">([^<]*)</) || [])[1] || "").trim();
+      const icon = (block.match(/<img[^>]+src="([^"]+)"/) || [])[1] || "";
+      const link = (block.match(/<a[^>]+href="([^"]+)"/) || [])[1] || "";
+      const title = ((block.match(/<a[^>]*>([^<]+)<\/a>/) || [])[1] || "").trim();
+      if (link && title) out.push({ date, icon, link, title });
+      if (out.length >= 30) break;
+    }
+    return out;
+  } catch (e) {
+    return [];
+  }
+}
+
 async function getNoticias(env) {
-  const header = await futbolHeader(env);
-  const out = { anuncios: [], locker: [] };
+  const out = { noticias: [], locker: [] };
+  out.noticias = await getFfNoticias();
   try {
-    const a = await futbolPost("/5/announcement/list", header, {});
-    const arr = (a.answer && Array.isArray(a.answer)) ? a.answer : [];
-    out.anuncios = arr.slice(0, 20).map((x) => {
-      const tx = (x.text || []).find((t) => t.lng === "es") || (x.text || [])[0] || {};
-      return { t: String(tx.t || ""), summary: stripHtml(tx.summary || ""), img: String(x.img || ""), date: x.uAt || x.cAt || "" };
-    });
-  } catch (e) {}
-  try {
+    const header = await futbolHeader(env);
     const l = await futbolPost("/2/locker/news", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
     const arr = (l.answer && l.answer.news) || [];
-    out.locker = arr.slice(0, 30).map((x) => ({
+    out.locker = arr.slice(0, 25).map((x) => ({
       n: (x.u && x.u.n) || "",
       p: (x.u && x.u.p) || "",
       txt: stripHtml(x.txt || ""),

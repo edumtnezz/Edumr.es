@@ -320,15 +320,17 @@
     const a = $("newsAnuncios");
     if (a) {
       a.innerHTML = "";
-      const list = d.anuncios || [];
-      if (!list.length) a.appendChild(el("p", "muted small", "Sin avisos."));
+      const list = d.noticias || [];
+      if (!list.length) a.appendChild(el("p", "muted small", "Sin noticias ahora mismo."));
       list.forEach((x) => {
-        const it = el("div", "news-item");
-        if (x.img) { const im = el("img", "news-img"); im.src = x.img; im.alt = ""; im.loading = "lazy"; it.appendChild(im); }
+        const it = el("a", "news-item news-link");
+        it.href = x.link || "#";
+        it.target = "_blank";
+        it.rel = "noopener";
+        if (x.icon) { const im = el("img", "news-ico"); im.src = x.icon; im.alt = ""; im.loading = "lazy"; it.appendChild(im); }
         const b = el("div", "news-body");
-        if (x.t) b.appendChild(el("div", "news-title", x.t));
-        if (x.summary) b.appendChild(el("div", "news-sum", x.summary));
-        b.appendChild(el("div", "news-date", fmtFecha(x.date)));
+        b.appendChild(el("div", "news-title", x.title));
+        b.appendChild(el("div", "news-date", x.date));
         it.appendChild(b);
         a.appendChild(it);
       });

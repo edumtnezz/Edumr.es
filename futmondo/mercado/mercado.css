@@ -61,3 +61,7 @@
 .news-avatar { width: 24px; height: 24px; border-radius: 50%; }
 .news-user { font-weight: 700; }
 .news-head .news-date { margin: 0; margin-left: auto; }
+.news-link { text-decoration: none; color: inherit; }
+.news-link:hover .news-title { color: #22c55e; }
+.news-ico { width: 26px; height: 26px; flex: 0 0 auto; object-fit: contain; margin-top: 2px; }
+.merc-clubs-hint { font-size: 0.86rem; color: var(--muted); margin: 2px 0 6px; }
