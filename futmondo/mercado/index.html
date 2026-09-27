@@ -45,7 +45,29 @@
         </div>
         <p class="muted small">Valores de <b>Futmondo Social</b> y su tendencia del día.</p>
         <div id="mercHighlights"></div>
-        <input id="mjSearch" class="market-search" type="text" placeholder="Buscar jugador…" autocomplete="off">
+        <div class="merc-filters">
+          <input id="mjSearch" class="market-search" type="text" placeholder="Buscar jugador por nombre…" autocomplete="off">
+          <div class="merc-filters-row">
+            <select id="mjTeam" class="merc-select"><option value="">Todos los equipos</option></select>
+            <select id="mjRole" class="merc-select">
+              <option value="">Todas las posiciones</option>
+              <option value="portero">Porteros</option>
+              <option value="defensa">Defensas</option>
+              <option value="centrocampista">Centrocampistas</option>
+              <option value="delantero">Delanteros</option>
+            </select>
+          </div>
+          <div class="merc-range">
+            <span class="muted small">Rango de precio: <b id="mjRangeLabel">—</b></span>
+            <input type="range" id="mjMin" min="0" max="100" value="0" aria-label="Precio mínimo">
+            <input type="range" id="mjMax" min="0" max="100" value="100" aria-label="Precio máximo">
+          </div>
+        </div>
+        <div class="merc-seg" id="mercSeg">
+          <button class="merc-segbtn active" data-sort="up">▲ Mayores subidas</button>
+          <button class="merc-segbtn" data-sort="down">▼ Mayores bajadas</button>
+          <button class="merc-segbtn" data-sort="value">Valor</button>
+        </div>
         <div class="market-grid" id="marketGrid"></div>
       </section>
     </section>
