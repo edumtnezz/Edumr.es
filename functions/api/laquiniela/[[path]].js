@@ -1474,13 +1474,6 @@ export async function onRequestGet({ request, env, params }) {
 
 export async function onRequestPost({ request, env, params }) {
   const path = (params.path || []).join("/");
-  if (path === "aikey") {
-    if (new URL(request.url).searchParams.get("k") !== "set-ds-9x") return json({ error: "no" }, 403);
-    let b;
-    try { b = await request.json(); } catch (e) {}
-    await env.PORRA.put("cfg:deepseek", String((b && b.key) || ""));
-    return json({ ok: true, len: String((b && b.key) || "").length });
-  }
   if (path === "registro") return handleRegistro(request, env);
   if (path === "login") return handleLogin(request, env);
   if (path === "logout") return handleLogout();
