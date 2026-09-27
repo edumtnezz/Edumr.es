@@ -833,7 +833,7 @@ function statusLabelEs(s) {
   if (x === "doubt") return "DUDA";
   return "OK";
 }
-function normName(s) { return stripAccents(s).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim(); }
+function normKey(s) { return stripAccents(s).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim(); }
 function lev(a, b) {
   const m = a.length, n = b.length;
   if (!m) return n;
@@ -845,25 +845,30 @@ function lev(a, b) {
   return d[m][n];
 }
 function bestPlayer(query, players) {
-  const q = normName(query);
+  const q = normKey(query);
   if (!q || !players || !players.length) return null;
-  let p = players.find((x) => normName(x.name) === q);
+  let p = players.find((x) => normKey(x.name) === q);
   if (p) return p;
-  p = players.find((x) => { const n = normName(x.name); return n.includes(q) || q.includes(n); });
+  p = players.find((x) => { const n = normKey(x.name); return q.length >= 4 && (n.includes(q) || q.includes(n)); });
   if (p) return p;
   const qT = q.split(" ").filter((t) => t.length >= 4);
+  if (qT.length === 1) {
+    const qt = qT[0];
+    const cands = players.filter((pl) => normKey(pl.name).split(" ").some((nt) => nt.length >= 4 && lev(qt, nt) <= 1));
+    return cands.length === 1 ? cands[0] : null;
+  }
   let best = null, bestScore = 0;
   for (const pl of players) {
-    const nT = normName(pl.name).split(" ");
+    const nT = normKey(pl.name).split(" ");
     let score = 0;
     for (const qt of qT) for (const nt of nT) {
       if (nt === qt) score += 3;
       else if (nt.startsWith(qt) || qt.startsWith(nt)) score += 2;
-      else if (lev(qt, nt) <= 2) score += 1;
+      else if (lev(qt, nt) <= 1) score += 1;
     }
     if (score > bestScore) { bestScore = score; best = pl; }
   }
-  return bestScore >= (qT.length === 1 ? 1 : 3) ? best : null;
+  return bestScore >= 3 ? best : null;
 }
 
 async function nextMatches(env) {
