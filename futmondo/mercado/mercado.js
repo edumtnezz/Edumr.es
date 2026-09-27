@@ -459,6 +459,9 @@
       .catch(() => { const c = el("div"); c.appendChild(el("p", "muted small", "No se pudo cargar la ficha.")); showModal(c); });
   }
 
+  function ptClass(p) { p = Number(p) || 0; return p < 3 ? "lo" : p < 6 ? "mid" : "hi"; }
+  function shortRival(s) { const t = String(s || "").trim(); return t.length > 14 ? t.slice(0, 13) + "…" : t; }
+
   function renderFicha(d, p) {
     const root = el("div", "ficha");
     const head = el("div", "ficha-head");
@@ -487,10 +490,22 @@
     root.appendChild(stats);
 
     const fit = d.fitness || [];
-    if (fit.length) {
+    const msAll = d.matches || [];
+    if (fit.length || msAll.length) {
       root.appendChild(el("div", "estado-title", "Últimos partidos (puntos)"));
       const chips = el("div", "ficha-chips");
-      fit.forEach((v) => chips.appendChild(el("span", "ficha-chip", String(v))));
+      const last5 = msAll.slice(0, 5);
+      if (last5.length) {
+        last5.forEach((m) => {
+          const rival = (m.home === d.team) ? m.away : (m.away === d.team ? m.home : m.away);
+          const c = el("span", "ficha-chip pt-" + ptClass(m.stats));
+          c.appendChild(el("span", "chip-rival", "J" + m.r + " vs " + shortRival(rival)));
+          c.appendChild(el("span", "chip-pts", String(m.stats)));
+          chips.appendChild(c);
+        });
+      } else {
+        fit.forEach((v) => chips.appendChild(el("span", "ficha-chip pt-" + ptClass(v), String(v))));
+      }
       root.appendChild(chips);
     }
 
@@ -502,7 +517,7 @@
         const row = el("div", "fm-row");
         row.appendChild(el("span", "fm-j", "J" + m.r));
         row.appendChild(el("span", "fm-match", (m.home || "") + " " + (m.hs != null ? m.hs : "-") + "-" + (m.as != null ? m.as : "-") + " " + (m.away || "")));
-        row.appendChild(el("span", "fm-pts", String(m.stats || 0)));
+        row.appendChild(el("span", "fm-pts pt-" + ptClass(m.stats), String(m.stats || 0)));
         tbl.appendChild(row);
       });
       root.appendChild(tbl);

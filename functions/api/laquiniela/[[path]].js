@@ -772,7 +772,7 @@ async function playerFicha(env, id) {
     const order = [["Hoy", 0], ["Ayer", 1], ["2 días", 2], ["3 días", 3], ["5 días", 5], ["10 días", 10], ["14 días", 14], ["30 días", 30]];
     valores = order.map((o) => {
       const v = o[1] === 0 ? todayVal : (byDate[dstrMadrid(o[1])] != null ? byDate[dstrMadrid(o[1])] : null);
-      return { label: o[0], v, diff: v != null ? todayVal - v : null };
+      return { label: o[0], v, diff: (o[1] === 0 || v == null) ? null : todayVal - v };
     });
   } catch (e) {}
   const fitArr = (pl.average && pl.average.fitness) || [];
