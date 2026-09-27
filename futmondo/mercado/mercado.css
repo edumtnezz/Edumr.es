@@ -65,3 +65,29 @@
 .news-link:hover .news-title { color: #22c55e; }
 .news-ico { width: 26px; height: 26px; flex: 0 0 auto; object-fit: contain; margin-top: 2px; }
 .merc-clubs-hint { font-size: 0.86rem; color: var(--muted); margin: 2px 0 6px; }
+
+/* Modal / ficha / lector */
+.ficha-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.62); z-index: 200; display: flex; align-items: flex-start; justify-content: center; padding: 18px; overflow-y: auto; }
+.ficha-modal { position: relative; width: 100%; max-width: 720px; background: var(--bg-card-solid, #0f1620); border: 1px solid var(--border); border-radius: 16px; padding: 22px; margin: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.55); }
+.ficha-close { position: absolute; top: 10px; right: 12px; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border); background: transparent; color: var(--text); font-size: 1rem; cursor: pointer; }
+.mcard.clickable, .news-link { cursor: pointer; }
+.ficha-head { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 12px; padding-right: 34px; }
+.ficha-name { font-family: 'Space Grotesk', sans-serif; font-size: 1.3rem; }
+.ficha-val { font-weight: 700; margin-top: 6px; }
+.ficha-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 12px 0; }
+.ficha-stat { background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 12px; padding: 10px; text-align: center; }
+.fs-val { font-weight: 800; font-size: 1.15rem; }
+.fs-lab { font-size: 0.72rem; color: var(--muted); }
+.ficha-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+.ficha-chip { background: rgba(34,197,94,0.16); color: #22c55e; font-weight: 700; padding: 4px 12px; border-radius: 8px; font-size: 0.85rem; }
+.ficha-matches { display: grid; gap: 2px; }
+.fm-row { display: grid; grid-template-columns: 42px 1fr auto; gap: 8px; padding: 7px 0; border-top: 1px solid var(--border); font-size: 0.88rem; }
+.fm-row:first-child { border-top: none; }
+.fm-j { color: var(--muted); font-weight: 700; }
+.fm-match { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fm-pts { font-weight: 800; }
+.art-lead { font-size: 1.02rem; font-weight: 600; margin: 6px 0 12px; }
+.art-body { line-height: 1.7; }
+.art-body img { max-width: 100%; height: auto; border-radius: 10px; margin: 10px 0; }
+.art-body p { margin: 10px 0; }
+.art-body a { color: #22c55e; }

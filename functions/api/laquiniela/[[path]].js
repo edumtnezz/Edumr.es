@@ -654,6 +654,7 @@ async function getMarketPlayers(env) {
   const players = arr.map((p) => {
     const tm = teamMap[p.teamId] || {};
     return {
+      id: String(p.id || ""),
       name: String(p.name || ""),
       role: String(p.role || ""),
       role2: String(p.role2 || ""),
@@ -693,6 +694,74 @@ async function searchMercado(env, q) {
 
 function stripHtml(s) {
   return String(s || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function cleanArticle(s) {
+  return String(s || "")
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<iframe[\s\S]*?<\/iframe>/gi, "")
+    .replace(/<form[\s\S]*?<\/form>/gi, "")
+    .replace(/ on\w+="[^"]*"/gi, "")
+    .replace(/ on\w+='[^']*'/gi, "")
+    .replace(/ style="[^"]*"/gi, "")
+    .replace(/<div class="[^"]*(btn-|share|whatsapp|twitter|facebook|autor|cargo|fecha|header-author)[^"]*"[\s\S]*?<\/div>/gi, "")
+    .trim();
+}
+
+async function getNoticia(url) {
+  if (!/^https:\/\/www\.futbolfantasy\.com\/laliga\/noticias\//.test(String(url || ""))) return { error: "no permitido" };
+  const res = await fetch(url, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+  const html = await res.text();
+  const title = ((html.match(/<h1[^>]*class="[^"]*titulo[^"]*"[^>]*>([\s\S]*?)<\/h1>/i) || [])[1] || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  const lead = ((html.match(/<p[^>]*class="[^"]*entradilla[^"]*"[^>]*>([\s\S]*?)<\/p>/i) || [])[1] || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  let body = "";
+  const ci = html.search(/class="cuerpo"/i);
+  if (ci >= 0) {
+    const start = html.indexOf(">", ci) + 1;
+    let seg = html.slice(start, start + 22000);
+    const m = seg.search(/(<div class="noticia (prev|next)|class="relacionad|class="mas-noticias|id="comentarios"|<footer|class="clearfix")/i);
+    if (m > 0) seg = seg.slice(0, m);
+    body = cleanArticle(seg);
+  }
+  return { title, lead, html: body };
+}
+
+async function playerFicha(env, id) {
+  if (!id) return { error: "falta id" };
+  const header = await futbolHeader(env);
+  const r = await futbolPost("/2/player/matches", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP });
+  const a = r.answer || {};
+  const pl = a.player || {};
+  const matches = (a.matches || []).map((m) => {
+    const po = (m.ps && m.ps.po) || [];
+    const g = (mode) => { const z = po.find((k) => k.mode === mode); return z ? Number(z.p) || 0 : 0; };
+    return {
+      r: m.r || 0,
+      home: (m.h && m.h.name) || "", hs: m.h ? m.h.score : null,
+      away: (m.a && m.a.name) || "", as: m.a ? m.a.score : null,
+      date: (m.info && m.info.date) || "",
+      finished: m.st === "F",
+      stats: g("stats"), picas: g("picas"), ff: g("ff"), ss: g("ss"), as: g("as"), marca: g("marca"),
+    };
+  }).slice(0, 12);
+  return {
+    id,
+    name: pl.name || "",
+    role: pl.role || "",
+    role2: pl.role2 || "",
+    value: Number(pl.value) || 0,
+    change: Number(pl.change) || 0,
+    status: pl.status || "",
+    points: Number(pl.points) || 0,
+    average: (pl.average && Number(pl.average.average)) || 0,
+    matches5: (pl.average && Number(pl.average.matches)) || 0,
+    fitness: (pl.average && pl.average.fitness) || [],
+    team: (a.team && a.team.name) || pl.team || "",
+    logo: pl.logo ? LOGO_BASE + pl.logo : "",
+    photo: pl.photo ? FACE_BASE + pl.photo : "",
+    matches,
+  };
 }
 
 async function getFfNoticias() {
@@ -1287,6 +1356,12 @@ export async function onRequestGet({ request, env, params }) {
   }
   if (path === "noticias") {
     return json(await getNoticias(env));
+  }
+  if (path === "noticia") {
+    return json(await getNoticia(url.searchParams.get("u")));
+  }
+  if (path === "jugador") {
+    return json(await playerFicha(env, url.searchParams.get("id")));
   }
   return json({ error: "not found" }, 404);
 }

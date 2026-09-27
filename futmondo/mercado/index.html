@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="../theme.js?v=64"></script>
   <link rel="stylesheet" href="../quiniela/quiniela.css?v=110">
-  <link rel="stylesheet" href="mercado.css?v=5">
+  <link rel="stylesheet" href="mercado.css?v=6">
 </head>
 <body class="page-simple">
   <div class="grass-band"></div>
@@ -110,6 +110,13 @@
 
   <footer class="quiniela-footer"></footer>
 
-  <script src="mercado.js?v=5"></script>
+  <div class="ficha-overlay hidden" id="fichaOverlay">
+    <div class="ficha-modal">
+      <button class="ficha-close" id="fichaClose" aria-label="Cerrar">✕</button>
+      <div id="fichaBody"></div>
+    </div>
+  </div>
+
+  <script src="mercado.js?v=6"></script>
 </body>
 </html>

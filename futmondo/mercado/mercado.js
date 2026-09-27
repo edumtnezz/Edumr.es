@@ -51,8 +51,8 @@
     return " (" + (p >= 0 ? "+" : "") + p.toFixed(2).replace(".", ",") + "%)";
   }
 
-  function playerCard(p) {
-    const card = el("div", "mcard");
+  function playerCard(p, onClick) {
+    const card = el("div", "mcard" + (onClick ? " clickable" : ""));
     const photoWrap = el("div", "mcard-photo");
     if (p.photo) {
       const im = el("img", "mcard-img"); im.src = p.photo; im.alt = p.name; im.loading = "lazy";
@@ -85,6 +85,7 @@
     else if (chg < 0) body.appendChild(el("div", "mcard-trend down", "▼ " + formatDots(-chg) + " €" + pct(p.value, chg)));
     else body.appendChild(el("div", "mcard-trend flat", "—"));
     card.appendChild(body);
+    if (onClick) card.addEventListener("click", () => onClick(p));
     return card;
   }
 
@@ -136,7 +137,7 @@
     grid.innerHTML = "";
     const list = filteredList();
     if (!list.length) { grid.appendChild(el("p", "market-empty", "Sin resultados.")); return; }
-    list.slice(0, shown).forEach((p) => grid.appendChild(playerCard(p)));
+    list.slice(0, shown).forEach((p) => grid.appendChild(playerCard(p, openFicha)));
     if (list.length > shown) {
       const more = el("button", "btn-ghost market-more", "Ver más (" + (list.length - shown) + ")");
       more.addEventListener("click", () => { shown += 60; renderGrid(); });
@@ -161,7 +162,7 @@
       const sec = el("div", "estado-sec");
       sec.appendChild(el("h3", "estado-title", g.title + " (" + list.length + ")"));
       const grid = el("div", "market-grid");
-      list.slice(0, 40).forEach((p) => grid.appendChild(playerCard(p)));
+      list.slice(0, 40).forEach((p) => grid.appendChild(playerCard(p, openFicha)));
       sec.appendChild(grid);
       box.appendChild(sec);
     });
@@ -323,10 +324,8 @@
       const list = d.noticias || [];
       if (!list.length) a.appendChild(el("p", "muted small", "Sin noticias ahora mismo."));
       list.forEach((x) => {
-        const it = el("a", "news-item news-link");
-        it.href = x.link || "#";
-        it.target = "_blank";
-        it.rel = "noopener";
+        const it = el("div", "news-item news-link");
+        it.addEventListener("click", () => openNoticia(x.link, x.title));
         if (x.icon) { const im = el("img", "news-ico"); im.src = x.icon; im.alt = ""; im.loading = "lazy"; it.appendChild(im); }
         const b = el("div", "news-body");
         b.appendChild(el("div", "news-title", x.title));
@@ -362,6 +361,104 @@
     } catch (e) {}
   }
 
+  function showModal(node) {
+    const body = $("fichaBody");
+    if (!body) return;
+    body.innerHTML = "";
+    body.appendChild(node);
+    const ov = $("fichaOverlay");
+    if (ov) ov.classList.remove("hidden");
+  }
+  function closeModal() {
+    const ov = $("fichaOverlay");
+    if (ov) ov.classList.add("hidden");
+  }
+
+  function openNoticia(url, title) {
+    const w = el("div");
+    w.appendChild(el("h2", "ficha-name", "Cargando noticia…"));
+    showModal(w);
+    fetch(API + "/noticia?u=" + encodeURIComponent(url || ""))
+      .then((r) => r.json())
+      .then((d) => {
+        const c = el("div");
+        c.appendChild(el("h2", "ficha-name", d.title || title || ""));
+        if (d.lead) c.appendChild(el("p", "art-lead", d.lead));
+        const art = el("div", "art-body");
+        art.innerHTML = d.html || "";
+        if (!d.html) c.appendChild(el("p", "muted small", "No se pudo cargar el contenido."));
+        else c.appendChild(art);
+        showModal(c);
+      })
+      .catch(() => {
+        const c = el("div");
+        c.appendChild(el("h2", "ficha-name", title || ""));
+        c.appendChild(el("p", "muted small", "No se pudo cargar la noticia."));
+        showModal(c);
+      });
+  }
+
+  function openFicha(p) {
+    const w = el("div");
+    w.appendChild(el("p", "muted small", "Cargando ficha…"));
+    showModal(w);
+    fetch(API + "/jugador?id=" + encodeURIComponent(p.id || ""))
+      .then((r) => r.json())
+      .then((d) => showModal(renderFicha(d, p)))
+      .catch(() => { const c = el("div"); c.appendChild(el("p", "muted small", "No se pudo cargar la ficha.")); showModal(c); });
+  }
+
+  function renderFicha(d, p) {
+    const root = el("div", "ficha");
+    const head = el("div", "ficha-head");
+    const ph = el("div", "mcard-photo");
+    const pic = d.photo || p.photo;
+    if (pic) { const im = el("img", "mcard-img"); im.src = pic; im.alt = d.name || p.name || ""; ph.appendChild(im); }
+    const rb = roleBadge(d.role || p.role), rb2 = roleBadge(d.role2 || p.role2);
+    if (rb) ph.appendChild(el("span", "mcard-role" + (rb2 ? " multi" : ""), rb + (rb2 ? " · " + rb2 : "")));
+    head.appendChild(ph);
+    const info = el("div", "ficha-info");
+    info.appendChild(el("h2", "ficha-name", d.name || p.name || ""));
+    if (d.team || p.team) info.appendChild(el("div", "muted small", d.team || p.team));
+    info.appendChild(el("div", "ficha-val", money(d.value || p.value) + " €"));
+    const chg = Number(d.change != null ? d.change : p.change) || 0;
+    info.appendChild(el("div", "cmp-trend " + (chg > 0 ? "up" : chg < 0 ? "down" : "flat"),
+      chg > 0 ? "▲ " + formatDots(chg) + " €" + pct(d.value || p.value, chg) : chg < 0 ? "▼ " + formatDots(-chg) + " €" + pct(d.value || p.value, chg) : "—"));
+    info.appendChild(el("div", "cmp-status", statusLabel(d.status || p.status)));
+    head.appendChild(info);
+    root.appendChild(head);
+
+    const stats = el("div", "ficha-stats");
+    const st = (label, val) => { const c = el("div", "ficha-stat"); c.appendChild(el("div", "fs-val", String(val))); c.appendChild(el("div", "fs-lab", label)); stats.appendChild(c); };
+    st("Puntos", d.points || 0);
+    st("Media", String(d.average || 0).replace(".", ","));
+    st("Partidos", d.matches5 || 0);
+    root.appendChild(stats);
+
+    const fit = d.fitness || [];
+    if (fit.length) {
+      root.appendChild(el("div", "estado-title", "Últimos partidos (puntos)"));
+      const chips = el("div", "ficha-chips");
+      fit.forEach((v) => chips.appendChild(el("span", "ficha-chip", String(v))));
+      root.appendChild(chips);
+    }
+
+    const ms = d.matches || [];
+    if (ms.length) {
+      root.appendChild(el("div", "estado-title", "Puntos por jornada"));
+      const tbl = el("div", "ficha-matches");
+      ms.forEach((m) => {
+        const row = el("div", "fm-row");
+        row.appendChild(el("span", "fm-j", "J" + m.r));
+        row.appendChild(el("span", "fm-match", (m.home || "") + " " + (m.hs != null ? m.hs : "-") + "-" + (m.as != null ? m.as : "-") + " " + (m.away || "")));
+        row.appendChild(el("span", "fm-pts", String(m.stats || 0)));
+        tbl.appendChild(row);
+      });
+      root.appendChild(tbl);
+    }
+    return root;
+  }
+
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
   document.querySelectorAll(".merc-segbtn").forEach((b) => b.addEventListener("click", () => {
     document.querySelectorAll(".merc-segbtn").forEach((x) => x.classList.remove("active"));
@@ -370,6 +467,9 @@
     shown = 60;
     renderGrid();
   }));
+  const fclose = $("fichaClose"); if (fclose) fclose.addEventListener("click", closeModal);
+  const fov = $("fichaOverlay"); if (fov) fov.addEventListener("click", (e) => { if (e.target === fov) closeModal(); });
+
   const bind = (id, ev) => { const e = $(id); if (e) e.addEventListener(ev, () => { shown = 60; renderGrid(); }); };
   bind("mjSearch", "input"); bind("mjRole", "change");
   const teamSel = $("mjTeam"); if (teamSel) teamSel.addEventListener("change", () => { syncClubActive(); shown = 60; renderGrid(); });
