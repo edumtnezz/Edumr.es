@@ -1,8 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <rect x="12" y="10" width="40" height="44" rx="9" fill="#0b1220" stroke="#22c55e" stroke-width="3"/>
-  <circle cx="25" cy="41" r="5.2" fill="#22c55e"/>
-  <circle cx="42" cy="38" r="5.2" fill="#22c55e"/>
-  <path d="M30.2 41V25.5L47.2 22.5V38" stroke="#22c55e" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M44 47v6" stroke="#eab308" stroke-width="3.4" stroke-linecap="round"/>
-  <path d="M40.5 50l3.5 3.5 3.5-3.5" stroke="#eab308" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22c55e"/>
+      <stop offset="1" stop-color="#eab308"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" fill="url(#g)"/>
+  <path d="M64 26v46" stroke="#0b1220" stroke-width="9" stroke-linecap="round"/>
+  <path d="M41 53l23 23 23-23" stroke="#0b1220" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M33 88v6a11 11 0 0 0 11 11h40a11 11 0 0 0 11-11v-6" stroke="#0b1220" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
