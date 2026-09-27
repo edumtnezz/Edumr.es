@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="../theme.js?v=64"></script>
   <link rel="stylesheet" href="../quiniela/quiniela.css?v=110">
-  <link rel="stylesheet" href="mercado.css?v=6">
+  <link rel="stylesheet" href="mercado.css?v=7">
 </head>
 <body class="page-simple">
   <div class="grass-band"></div>
@@ -33,6 +33,7 @@
         <button class="tab" data-tab="estado">Estado</button>
         <button class="tab" data-tab="comparador">Comparador</button>
         <button class="tab" data-tab="noticias">Noticias</button>
+        <button class="tab" data-tab="analiza">Analiza tu equipo</button>
       </nav>
     </div>
   </header>
@@ -106,6 +107,18 @@
         <div id="newsLocker"><p class="muted small">Cargando…</p></div>
       </section>
     </section>
+
+    <section class="tab-panel hidden" id="tab-analiza">
+      <section class="panel">
+        <h2>Analiza tu equipo</h2>
+        <p class="muted small">Sube una <b>captura de tu equipo</b> de Futmondo y la IA te dirá a quién sentar, qué cambios hacer y qué formación, mirando el <b>estado</b>, los <b>puntos</b> y si juega en <b>casa o fuera</b>.</p>
+        <input type="file" id="anFile" accept="image/*" class="an-file">
+        <img id="anPreview" class="an-preview hidden" alt="">
+        <button class="btn-primary big" id="anBtn">Analizar mi equipo</button>
+        <p class="muted small" id="anMsg"></p>
+        <div id="anOut"></div>
+      </section>
+    </section>
   </main>
 
   <footer class="quiniela-footer"></footer>
@@ -117,6 +130,6 @@
     </div>
   </div>
 
-  <script src="mercado.js?v=6"></script>
+  <script src="mercado.js?v=7"></script>
 </body>
 </html>

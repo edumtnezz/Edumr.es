@@ -467,6 +467,64 @@
     shown = 60;
     renderGrid();
   }));
+  let anImg = null;
+  function renderAnalisis(d) {
+    const out = $("anOut");
+    if (!out) return;
+    out.innerHTML = "";
+    if (d.formacion) out.appendChild(el("div", "an-form", "Formación detectada: " + d.formacion));
+    const table = (title, list) => {
+      const sec = el("div", "estado-sec");
+      sec.appendChild(el("div", "estado-title", title));
+      const box = el("div", "an-list");
+      (list || []).forEach((p) => {
+        const row = el("div", "an-row");
+        row.appendChild(el("span", "an-pos", p.pos || ""));
+        row.appendChild(el("span", "an-name", p.nombre || ""));
+        row.appendChild(el("span", "an-team", p.equipo || ""));
+        const cls = p.estado === "LESIÓN" ? "inj" : p.estado === "SANCIÓN" ? "red" : p.estado === "DUDA" ? "doubt" : "ok";
+        row.appendChild(el("span", "an-st st-" + cls, p.estado || ""));
+        row.appendChild(el("span", "an-ha", p.casa === true ? "Casa" : p.casa === false ? "Fuera" : ""));
+        row.appendChild(el("span", "an-pts", p.puntos != null ? p.puntos + " pts" : ""));
+        box.appendChild(row);
+      });
+      sec.appendChild(box);
+      return sec;
+    };
+    if ((d.titulares || []).length) out.appendChild(table("Titulares", d.titulares));
+    if ((d.suplentes || []).length) out.appendChild(table("Banquillo", d.suplentes));
+    if (d.analisis) {
+      const sec = el("div", "estado-sec");
+      sec.appendChild(el("div", "estado-title", "Recomendaciones de la IA"));
+      const t = el("div", "an-text");
+      String(d.analisis).split(/\n/).forEach((ln) => { if (ln.trim()) t.appendChild(el("p", null, ln.trim())); });
+      sec.appendChild(t);
+      out.appendChild(sec);
+    }
+  }
+
+  const anFile = $("anFile");
+  if (anFile) anFile.addEventListener("change", () => {
+    const f = anFile.files && anFile.files[0];
+    if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => { anImg = rd.result; const pv = $("anPreview"); if (pv) { pv.src = anImg; pv.classList.remove("hidden"); } const m = $("anMsg"); if (m) m.textContent = ""; };
+    rd.readAsDataURL(f);
+  });
+  const anBtn = $("anBtn");
+  if (anBtn) anBtn.addEventListener("click", async () => {
+    if (!anImg) { $("anMsg").textContent = "Elige primero una captura de tu equipo."; return; }
+    $("anMsg").textContent = "🧠 Analizando… (puede tardar 20-40 s)";
+    $("anOut").innerHTML = "";
+    try {
+      const r = await fetch(API + "/analiza", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ img: anImg }) });
+      const d = await r.json();
+      if (!r.ok) { $("anMsg").textContent = d.error || "No se pudo analizar."; return; }
+      $("anMsg").textContent = "";
+      renderAnalisis(d);
+    } catch (e) { $("anMsg").textContent = "Error de red."; }
+  });
+
   const fclose = $("fichaClose"); if (fclose) fclose.addEventListener("click", closeModal);
   const fov = $("fichaOverlay"); if (fov) fov.addEventListener("click", (e) => { if (e.target === fov) closeModal(); });
 

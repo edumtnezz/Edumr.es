@@ -805,6 +805,112 @@ function pujaStep(base) {
   return Number(base) >= 10000000 ? 500000 : 100000;
 }
 
+function roleShort(r) {
+  const s = String(r || "").toLowerCase();
+  return s === "portero" ? "POR" : s === "defensa" ? "DEF" : s === "centrocampista" ? "CEN" : s === "delantero" ? "DEL" : "";
+}
+function statusLabelEs(s) {
+  const x = String(s || "");
+  if (!x) return "OK";
+  if (x === "redcard") return "SANCIÓN";
+  if (x.indexOf("injured") === 0) return "LESIÓN";
+  if (x === "doubt") return "DUDA";
+  return "OK";
+}
+
+async function nextMatches(env) {
+  const token = env.FOOTBALL_API_KEY;
+  const res = await fetch(`https://api.football-data.org/v4/competitions/${COMPETITION}/matches`, { headers: { "X-Auth-Token": token } });
+  const d = await res.json();
+  const now = Date.now();
+  const map = {};
+  const rows = (d.matches || []).filter((m) => new Date(m.utcDate).getTime() >= now).sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+  for (const m of rows) {
+    const h = m.homeTeam && m.homeTeam.name;
+    const a = m.awayTeam && m.awayTeam.name;
+    if (h && !map[h]) map[h] = { home: true, rival: a || "", date: m.utcDate };
+    if (a && !map[a]) map[a] = { home: false, rival: h || "", date: m.utcDate };
+  }
+  return map;
+}
+
+async function dsChat(env, messages, model) {
+  const key = await env.PORRA.get("cfg:deepseek");
+  if (!key) return "";
+  const res = await fetch("https://api.deepseek.com/chat/completions", {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: "Bearer " + key },
+    body: JSON.stringify({ model: model || "deepseek-flash", messages, thinking: { type: "disabled" } }),
+  });
+  const d = await res.json();
+  return (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content) || "";
+}
+
+async function handleAnaliza(request, env, user) {
+  if (!user) return json({ error: "Inicia sesión para analizar tu equipo." }, 401);
+  let body;
+  try { body = await request.json(); } catch (e) { return json({ error: "Datos inválidos." }, 400); }
+  const img = String(body.img || "");
+  if (!/^data:image\//.test(img) || img.length > 7000000) return json({ error: "Sube una captura de tu equipo (JPG/PNG)." }, 400);
+
+  const visionRaw = await dsChat(env, [{
+    role: "user",
+    content: [
+      { type: "text", text: "Esta imagen es una captura de un equipo de fútbol fantasy (Futmondo). Léelo y responde SOLO con un JSON, sin texto alrededor, con esta forma: {\"formacion\":\"1-4-3-3\",\"titulares\":[{\"nombre\":\"...\",\"pos\":\"POR|DEF|CEN|DEL\"}],\"suplentes\":[{\"nombre\":\"...\",\"pos\":\"...\"}]}. Sé literal con los nombres (con el apellido basta). No inventes jugadores." },
+      { type: "image_url", image_url: { url: img } },
+    ],
+  }], "deepseek-flash");
+  if (!visionRaw) return json({ error: "IA no configurada." }, 500);
+  let team = null;
+  try { const m = visionRaw.match(/\{[\s\S]*\}/); team = m ? JSON.parse(m[0]) : null; } catch (e) { team = null; }
+  if (!team) return json({ error: "No pude leer el equipo de la captura.", raw: String(visionRaw).slice(0, 300) }, 422);
+
+  let market = { players: [] };
+  try { market = await getMarketPlayers(env); } catch (e) {}
+  const byName = {};
+  (market.players || []).forEach((p) => { const k = stripAccents(p.name); if (k && !byName[k]) byName[k] = p; });
+  const findP = (n) => {
+    const q = stripAccents(n);
+    if (!q) return null;
+    if (byName[q]) return byName[q];
+    const keys = Object.keys(byName);
+    const k = keys.find((x) => x.includes(q) || q.includes(x));
+    return k ? byName[k] : null;
+  };
+  let next = {};
+  try { next = await nextMatches(env); } catch (e) {}
+  const matchTeam = (t) => {
+    const q = stripAccents(t);
+    if (!q) return null;
+    const keys = Object.keys(next);
+    const k = keys.find((x) => stripAccents(x) === q) || keys.find((x) => stripAccents(x).includes(q) || q.includes(stripAccents(x)));
+    return k ? next[k] : null;
+  };
+  const enrich = (list) => (list || []).map((pl) => {
+    const nm = String(pl.nombre || pl.name || "").trim();
+    const p = findP(nm);
+    const mt = p ? matchTeam(p.team) : null;
+    return {
+      nombre: nm,
+      pos: roleShort(pl.pos) || (p ? roleShort(p.role) : ""),
+      equipo: p ? p.team : "",
+      estado: p ? statusLabelEs(p.status) : "?",
+      puntos: p ? p.points : null,
+      valor: p ? p.value : null,
+      rival: mt ? mt.rival : "",
+      casa: mt ? mt.home : null,
+      fecha: mt ? mt.date : "",
+    };
+  });
+  const titulares = enrich(team.titulares);
+  const suplentes = enrich(team.suplentes);
+  const line = (p) => `- ${p.pos} ${p.nombre} (${p.equipo || "?"}) · ${p.estado} · ${p.puntos != null ? p.puntos + " pts" : "sin datos"} · rival ${p.rival || "?"} ${p.casa === true ? "(CASA)" : p.casa === false ? "(FUERA)" : ""}`;
+  const ctx = "FORMACIÓN: " + (team.formacion || "?") + "\nTITULARES:\n" + titulares.map(line).join("\n") + "\nBANQUILLO:\n" + suplentes.map(line).join("\n");
+  const prompt = "Eres un analista experto de fútbol fantasy (Futmondo, puntuación por estadísticas). Te doy el equipo del usuario y datos de cada jugador (estado, puntos y si su equipo juega en CASA o FUERA en el próximo partido).\n\n" + ctx + "\n\nDa un análisis BREVE en español con:\n1) Quién preocupa (lesionados/dudas): probabilidad de jugar.\n2) 2-3 cambios concretos (a quién sentar y a quién poner), mirando estado, puntos y si juega en casa (los de casa suelen puntuar mejor).\n3) Si cambiarías la formación y a cuál.\n4) Un once ideal. Sé directo y concreto.";
+  const analisis = await dsChat(env, [{ role: "user", content: prompt }], "deepseek-flash");
+  return json({ formacion: team.formacion || "", titulares, suplentes, analisis });
+}
+
 function madrid(now) {
   const fmt = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Europe/Madrid",
@@ -1385,6 +1491,10 @@ export async function onRequestPost({ request, env, params }) {
   if (path === "puja/crear") {
     const user = await getSessionUser(env, request);
     return createPuja(request, env, user);
+  }
+  if (path === "analiza") {
+    const user = await getSessionUser(env, request);
+    return handleAnaliza(request, env, user);
   }
   if (path === "puja/pujar") {
     const user = await getSessionUser(env, request);
