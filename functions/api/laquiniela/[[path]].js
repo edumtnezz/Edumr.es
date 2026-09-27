@@ -1249,23 +1249,16 @@ export async function onRequestGet({ request, env, params }) {
     const C = FUTMONDO_CHAMPIONSHIP;
     const PID = url.searchParams.get("pid") || "57363a66ad212396073bce9f";
     const tries = [
-      ["/2/league/standing", { championshipId: C }],
-      ["/2/league/matches", { championshipId: C }],
-      ["/2/league/players", { championshipId: C }],
-      ["/1/ranking/round", { championshipId: C }],
-      ["/1/ranking/general", { championshipId: C }],
-      ["/2/locker/news", { championshipId: C }],
       ["/5/announcement/list", { championshipId: C }],
+      ["/2/locker/news", { championshipId: C }],
       ["/1/player/fullprofile", { playerId: PID, championshipId: C }],
-      ["/1/player/summary", { playerId: PID, championshipId: C }],
       ["/2/player/matches", { playerId: PID, championshipId: C }],
-      ["/2/player/statistics", { playerId: PID, championshipId: C }],
     ];
     const out = {};
     for (const [p, q] of tries) {
       try {
         const r = await futbolPost(p, header, q);
-        out[p] = JSON.stringify(r).slice(0, 500);
+        out[p] = JSON.stringify(r).slice(0, 3500);
       } catch (e) {
         out[p] = "ERR " + String(e && e.message || e).slice(0, 120);
       }
