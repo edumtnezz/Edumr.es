@@ -532,6 +532,7 @@
     if (!out) return;
     out.innerHTML = "";
     if (d.formacion) out.appendChild(el("div", "an-form", "Formación detectada: " + d.formacion));
+    if (d.leido && d.leido.length) out.appendChild(el("div", "an-leido", "🔎 La IA leyó: " + d.leido.join(", ")));
 
     const rows = ["DEL", "CEN", "DEF", "POR"];
     const field = el("div", "pitch");

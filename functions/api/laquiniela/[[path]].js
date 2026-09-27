@@ -833,6 +833,38 @@ function statusLabelEs(s) {
   if (x === "doubt") return "DUDA";
   return "OK";
 }
+function normName(s) { return stripAccents(s).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim(); }
+function lev(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  const d = [];
+  for (let i = 0; i <= m; i++) { d.push(new Array(n + 1).fill(0)); d[i][0] = i; }
+  for (let j = 0; j <= n; j++) d[0][j] = j;
+  for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+  return d[m][n];
+}
+function bestPlayer(query, players) {
+  const q = normName(query);
+  if (!q || !players || !players.length) return null;
+  let p = players.find((x) => normName(x.name) === q);
+  if (p) return p;
+  p = players.find((x) => { const n = normName(x.name); return n.includes(q) || q.includes(n); });
+  if (p) return p;
+  const qT = q.split(" ").filter((t) => t.length >= 4);
+  let best = null, bestScore = 0;
+  for (const pl of players) {
+    const nT = normName(pl.name).split(" ");
+    let score = 0;
+    for (const qt of qT) for (const nt of nT) {
+      if (nt === qt) score += 3;
+      else if (nt.startsWith(qt) || qt.startsWith(nt)) score += 2;
+      else if (lev(qt, nt) <= 2) score += 1;
+    }
+    if (score > bestScore) { bestScore = score; best = pl; }
+  }
+  return bestScore >= (qT.length === 1 ? 1 : 3) ? best : null;
+}
 
 async function nextMatches(env) {
   const token = env.FOOTBALL_API_KEY;
@@ -850,13 +882,13 @@ async function nextMatches(env) {
   return map;
 }
 
-async function dsChat(env, messages, model) {
+async function dsChat(env, messages, model, think) {
   const key = await env.PORRA.get("cfg:deepseek");
   if (!key) return "";
   const res = await fetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
     headers: { "content-type": "application/json", authorization: "Bearer " + key },
-    body: JSON.stringify({ model: model || "deepseek-flash", messages, thinking: { type: "disabled" } }),
+    body: JSON.stringify({ model: model || "deepseek-flash", messages, thinking: { type: think ? "enabled" : "disabled" } }),
   });
   const d = await res.json();
   return (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content) || "";
@@ -872,27 +904,34 @@ async function handleAnaliza(request, env, user) {
   const visionRaw = await dsChat(env, [{
     role: "user",
     content: [
-      { type: "text", text: "Esta imagen es una captura de un equipo de fútbol fantasy (Futmondo) dibujado sobre un campo, con las líneas de jugadores. Léelo y responde SOLO con un JSON, sin nada alrededor: {\"formacion\":\"3-4-3\",\"titulares\":[{\"nombre\":\"...\",\"pos\":\"POR|DEF|CEN|DEL\"}],\"suplentes\":[{\"nombre\":\"...\",\"pos\":\"...\"}]}. La formación son 3 números DEFENSAS-CENTROCAMPISTAS-DELANTEROS (cuenta las líneas del campo y fíjate bien, no la pongas genérica). Sé literal con los nombres (con el apellido basta). No inventes jugadores." },
+      { type: "text", text: "Esta imagen es la captura de un equipo de fútbol fantasy dibujado sobre un campo verde. Cada jugador tiene una FOTO y, justo DEBAJO, su NOMBRE. Lee con mucha atención TODOS los nombres (ignora marcas de agua). Responde SOLO con un JSON, sin nada alrededor: {\"formacion\":\"3-4-3\",\"titulares\":[{\"nombre\":\"...\",\"pos\":\"POR|DEF|CEN|DEL\"}],\"suplentes\":[{\"nombre\":\"...\",\"pos\":\"...\"}]}. La formación son 3 números: nº de DEFENSAS-nº de CENTROCAMPISTAS-nº de DELANTEROS (cuéntalos por las líneas del campo, el portero va aparte). Sé literal con los nombres y no inventes jugadores." },
       { type: "image_url", image_url: { url: img } },
     ],
-  }], "deepseek-flash");
+  }], "deepseek-flash", true);
   if (!visionRaw) return json({ error: "IA no configurada." }, 500);
-  let team = null;
-  try { const m = visionRaw.match(/\{[\s\S]*\}/); team = m ? JSON.parse(m[0]) : null; } catch (e) { team = null; }
-  if (!team) return json({ error: "No pude leer el equipo de la captura.", raw: String(visionRaw).slice(0, 300) }, 422);
+  const parseTeam = (raw) => {
+    try {
+      const m = String(raw).match(/\{[\s\S]*\}/);
+      if (m) { const o = JSON.parse(m[0]); if (o && (o.titulares || o.suplentes)) return o; }
+    } catch (e) {}
+    return null;
+  };
+  let team = parseTeam(visionRaw);
+  if (!team) {
+    const raw2 = await dsChat(env, [{
+      role: "user",
+      content: [
+        { type: "text", text: "Mira la imagen otra vez con calma y responde ÚNICAMENTE con el JSON pedido ({\"formacion\":\"...\",\"titulares\":[{\"nombre\":\"...\",\"pos\":\"...\"}],\"suplentes\":[...]}), sin nada de texto extra." },
+        { type: "image_url", image_url: { url: img } },
+      ],
+    }], "deepseek-flash", true);
+    team = parseTeam(raw2);
+  }
+  if (!team) return json({ error: "No pude leer el equipo de la captura. Prueba con una captura más nítida (sin recortar).", raw: String(visionRaw).slice(0, 300) }, 422);
 
   let market = { players: [] };
   try { market = await getMarketPlayers(env); } catch (e) {}
-  const byName = {};
-  (market.players || []).forEach((p) => { const k = stripAccents(p.name); if (k && !byName[k]) byName[k] = p; });
-  const findP = (n) => {
-    const q = stripAccents(n);
-    if (!q) return null;
-    if (byName[q]) return byName[q];
-    const keys = Object.keys(byName);
-    const k = keys.find((x) => x.includes(q) || q.includes(x));
-    return k ? byName[k] : null;
-  };
+  const findP = (n) => bestPlayer(n, market.players || []);
   let next = {};
   try { next = await nextMatches(env); } catch (e) {}
   const matchTeam = (t) => {
@@ -927,7 +966,8 @@ async function handleAnaliza(request, env, user) {
   const ctx = "FORMACIÓN: " + formacion + "\nTITULARES:\n" + titulares.map(line).join("\n") + "\nBANQUILLO:\n" + suplentes.map(line).join("\n");
   const prompt = "Eres un analista experto de fútbol fantasy (Futmondo, puntuación por estadísticas). Te doy el equipo del usuario y datos de cada jugador (estado, puntos y si su equipo juega en CASA o FUERA en el próximo partido).\n\n" + ctx + "\n\nDa un análisis BREVE en español, AGRADABLE de leer, con emojis y palabras en **negrita** (markdown doble asterisco). PROHIBIDO usar almohadillas (#), tablas o líneas de guiones. Máximo 8 líneas cortas. Incluye:\n1) Quién preocupa (lesionados/dudas) y probabilidad de jugar.\n2) 2-3 cambios concretos (a quién sentar y a quién poner), mirando estado, puntos y si juega en casa.\n3) Si cambiarías la formación y a cuál.\n4) Un once ideal. Sé directo.";
   const analisis = await dsChat(env, [{ role: "user", content: prompt }], "deepseek-flash");
-  return json({ formacion, titulares, suplentes, analisis });
+  const leido = [].concat(team.titulares || [], team.suplentes || []).map((x) => String(x.nombre || x.name || "").trim()).filter(Boolean);
+  return json({ formacion, titulares, suplentes, analisis, leido });
 }
 
 function madrid(now) {
