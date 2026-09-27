@@ -607,7 +607,7 @@
       .split(/\n+/).filter((x) => x.trim()).map((ln) => "<p>" + ln.trim() + "</p>").join("");
   }
 
-  let anData = null, anStale = false;
+  let anData = null, anStale = false, anDrag = null;
   function openPicker(title, cb) {
     const root = el("div");
     root.appendChild(el("h2", "ficha-name", title || "Elegir jugador"));
@@ -699,22 +699,39 @@
       const row = el("div", "pitch-row");
       ps.forEach((p) => {
         const card = el("div", "pitch-player");
+        card.draggable = true;
         const ph = el("div", "pitch-photo");
         ph.appendChild(photoImg(p.photo));
         card.appendChild(ph);
         card.appendChild(el("div", "pitch-name", p.nombre || ""));
-        let tag = "";
-        let cls = "ok";
-        if (p.estado && p.estado !== "OK" && p.estado !== "?") { tag = p.estado; cls = p.estado === "LESIÓN" ? "inj" : p.estado === "DUDA" ? "doubt" : "red"; }
-        else if (p.puntos != null) { tag = p.puntos + " pts"; cls = "ok"; }
-        if (tag) card.appendChild(el("div", "pitch-tag " + cls, tag));
-        if (p.casa === true || p.casa === false) card.appendChild(el("div", "pitch-ha", p.casa ? "🏠 Casa" : "✈️ Fuera"));
-        card.classList.add("clickable"); card.title = "Toca para cambiar"; card.addEventListener("click", () => openPicker("Cambiar jugador", (pl) => applyPlayer(p, pl)));
+        const info = el("div", "pitch-info");
+        if (p.prob != null) info.appendChild(el("span", "pc-prob", "~" + p.prob + "% insp."));
+        if (p.estado && p.estado !== "OK" && p.estado !== "?") info.appendChild(el("span", "pc-bad", p.estado));
+        card.appendChild(info);
+        if (p.casa === true || p.casa === false) card.appendChild(el("div", "pitch-ha", (p.casa ? "🏠 " : "✈️ ") + (p.rival || "?")));
+        card.appendChild(el("div", "pitch-pts", p.puntos != null ? p.puntos + " pts" : ""));
+        card.addEventListener("click", () => openPicker("Cambiar jugador", (pl) => applyPlayer(p, pl)));
+        card.addEventListener("dragstart", () => { anDrag = p; card.classList.add("dragging"); });
+        card.addEventListener("dragend", () => card.classList.remove("dragging"));
+        card.addEventListener("dragover", (ev) => ev.preventDefault());
+        card.addEventListener("drop", (ev) => {
+          ev.preventDefault();
+          if (anDrag && anDrag !== p) {
+            const t = anDrag.pos;
+            anDrag.pos = p.pos;
+            p.pos = t;
+            anDrag = null;
+            anStale = true;
+            renderAnalisis(anData);
+          }
+        });
         row.appendChild(card);
       });
       field.appendChild(row);
     });
     if (field.children.length) out.appendChild(field);
+    out.appendChild(el("p", "muted small", "Arrastra un jugador sobre otro para cambiar su posición."));
+
 
     if ((d.titulares || []).length) {
       const sec = el("div", "estado-sec");

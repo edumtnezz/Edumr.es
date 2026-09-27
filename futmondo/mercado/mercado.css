@@ -201,6 +201,17 @@
 .newscard .news-date { color: var(--muted); font-size: 0.72rem; margin-top: 6px; }
 .newscard:hover .news-title { color: #22c55e; }
 @media (max-width: 560px) { .news-grid { grid-template-columns: 1fr; } }
+
+/* Campo: info clara + arrastre */
+.pitch-player { width: 86px; cursor: grab; }
+.pitch-name { max-width: 86px; font-size: 0.74rem; }
+.pitch-info { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-top: 3px; }
+.pc-prob { font-size: 0.6rem; font-weight: 800; color: #eaf2ff; background: rgba(0,0,0,0.42); padding: 1px 6px; border-radius: 6px; }
+.pc-bad { font-size: 0.58rem; font-weight: 800; background: #ef4444; color: #fff; padding: 1px 6px; border-radius: 6px; }
+.pitch-ha { font-size: 0.58rem; color: rgba(255,255,255,0.95); margin-top: 2px; max-width: 86px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pitch-pts { font-size: 0.66rem; font-weight: 800; color: #fff; margin-top: 1px; }
+.pitch-player.dragging { opacity: 0.45; }
+.pitch-player.clickable, .pitch-player { cursor: grab; }
 .merc-club.merc-club-all { width: auto; padding: 0 12px; border-radius: 999px; font-size: 0.82rem; font-weight: 700; color: var(--text); }
 
 /* Campo de fútbol (analiza) */

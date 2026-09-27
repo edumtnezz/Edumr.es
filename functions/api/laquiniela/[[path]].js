@@ -880,6 +880,19 @@ function statusLabelEs(s) {
   if (x === "doubt") return "DUDA";
   return "OK";
 }
+function probTitular(p) {
+  if (!p) return null;
+  if (p.status === "redcard") return 0;
+  if (String(p.status || "").indexOf("injured") === 0) return 5;
+  if (p.status === "doubt") return 50;
+  const f = p.fitness || [];
+  const played = f.filter((x) => Number(x) !== 0).length;
+  const avg = f.length ? f.reduce((s, x) => s + (Number(x) || 0), 0) / f.length : 0;
+  let base = 55 + (avg - 3) * 6;
+  if (played <= 1) base -= 25;
+  return Math.max(15, Math.min(95, Math.round(base)));
+}
+
 function pronosticoFor(p) {
   if (!p) return "";
   if (p.status === "redcard") return "Sancionado 🟥";
@@ -1036,6 +1049,7 @@ async function handleAnaliza(request, env, user) {
       equipo: p ? p.team : "",
       estado: p ? statusLabelEs(p.status) : "?",
       pronostico: p ? pronosticoFor(p) : "",
+      prob: p ? probTitular(p) : null,
       puntos: p ? p.points : null,
       valor: p ? p.value : null,
       fitness: p ? (p.fitness || []) : [],
@@ -1049,9 +1063,9 @@ async function handleAnaliza(request, env, user) {
   const suplentes = enrich(team.suplentes);
   const cnt = (pos) => titulares.filter((p) => p.pos === pos).length;
   const formacion = (cnt("DEF") + cnt("CEN") + cnt("DEL")) ? [cnt("DEF"), cnt("CEN"), cnt("DEL")].join("-") : (team.formacion || "");
-  const line = (p) => `- ${p.pos}${p.pos2 ? "/" + p.pos2 : ""} ${p.nombre} (${p.equipo || "?"}) · ${p.estado} · ${p.puntos != null ? p.puntos + " pts" : "sin datos"} · últ5 ${(p.fitness || []).join("-")} · rival ${p.rival || "?"} ${p.casa === true ? "(CASA)" : p.casa === false ? "(FUERA)" : ""}`;
+  const line = (p) => `- ${p.pos}${p.pos2 ? "/" + p.pos2 : ""} ${p.nombre} (${p.equipo || "?"}) · ${p.estado} · prob.titular ~${p.prob != null ? p.prob : "?"}% · ${p.puntos != null ? p.puntos + " pts" : "sin datos"} · últ5 ${(p.fitness || []).join("-")} · rival ${p.rival || "desconocido"} ${p.casa === true ? "(CASA)" : p.casa === false ? "(FUERA)" : ""}`;
   const ctx = "FORMACIÓN: " + formacion + "\nTITULARES:\n" + titulares.map(line).join("\n") + "\nBANQUILLO:\n" + suplentes.map(line).join("\n");
-  const prompt = "Eres un analista experto de fútbol fantasy, especializado en las REGLAS de Futmondo Social. Te doy el equipo del usuario con cada jugador: sus posiciones (si tiene dos, separadas por '/'), estado, puntos de la temporada, sus últimos 5 partidos, y si su equipo juega en CASA o FUERA.\n\n" + ctx + "\n\nDa un análisis BREVE en español, AGRADABLE, con emojis y palabras en **negrita**. PROHIBIDO usar almohadillas (#), tablas o líneas de guiones. Máximo 9 líneas cortas. Incluye:\n1) Quién preocupa (lesionados/dudas) y probabilidad de jugar.\n2) MULTIPOSICIÓN: para cada jugador con dos posiciones (ej. DEL/CEN), di en qué posición conviene alinearlo para sacar MÁS puntos según las reglas de Futmondo (un gol o una asistencia desde una posición más atrasada -centrocampista o defensa- puntúa más que desde la delantera; los defensas suman por portería a cero). Sé concreto: 'pon a X de CEN'.\n3) 2-3 cambios concretos (a quién sentar y a quién poner), mirando estado, forma (últimos 5) y si juega en casa.\n4) Si cambiarías la formación y a cuál te conviene más.\n5) Un once ideal, cada jugador en su MEJOR posición. Sé directo.";
+  const prompt = "Eres un analista experto de fútbol fantasy, especializado en las REGLAS de Futmondo Social. Te doy el equipo del usuario con cada jugador: posiciones (si tiene dos, separadas por '/'), estado, probabilidad de ser titular, puntos de la temporada, últimos 5 partidos y si su equipo juega en CASA o FUERA.\n\n" + ctx + "\n\nDa un análisis BREVE en español, AGRADABLE, con emojis y palabras en **negrita**. PROHIBIDO usar almohadillas (#), tablas o líneas de guiones. Máximo 10 líneas cortas. Incluye:\n1) TITULARES vs BANQUILLO: di claramente quién debería JUGAR de inicio y quién sentarse (la liga permite hacer cambios de banquillo). Ordena por probabilidad de jugar y forma.\n2) MULTIPOSICIÓN: para cada jugador con dos posiciones (ej. DEL/CEN), di en qué posición alinearlo para sacar MÁS puntos según Futmondo (gol/asistencia desde más atrás puntúa más; defensas suman por portería a cero). Sé concreto: 'pon a X de CEN'.\n3) 2-3 cambios concretos (a quién sentar y a quién poner), mirando estado, forma, probabilidad y si juega en casa.\n4) Si conviene cambiar de formación y a cuál.\n5) Un once ideal, cada jugador en su MEJOR posición. Sé directo.";
   const analisis = await dsChat(env, [{ role: "user", content: prompt }], "deepseek-flash");
   return json({ formacion, titulares, suplentes, analisis, leido });
 }
