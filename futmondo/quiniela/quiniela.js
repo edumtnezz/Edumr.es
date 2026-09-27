@@ -756,12 +756,12 @@ async function loadPartido() {
 
 function renderPrizes() {
   const ul = $("prizeList");
+  if (!ul) return;
   ul.innerHTML = "";
-  (state.prizes || []).forEach((p, i) => {
-    const li = document.createElement("li");
-    li.innerHTML = `<span>${i + 1}º puesto</span><b>${money(p)}</b>`;
-    ul.appendChild(li);
-  });
+  const perHit = (state && state.prizePerHit) || 150000;
+  const li = document.createElement("li");
+  li.innerHTML = `<span>Cada partido acertado</span><b>${money(perHit)} €</b>`;
+  ul.appendChild(li);
 }
 
 function renderJornadaBar() {

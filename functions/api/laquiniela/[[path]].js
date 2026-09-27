@@ -5,7 +5,7 @@ const SESSION_TTL = 60 * 60 * 24 * 400;
 const COOKIE_NAME = "porra_session";
 const PBKDF2_ITER = 100000;
 const MAX_LOGIN_FAILS = 3;
-const PREMIOS = [1200000, 1000000, 800000, 600000, 400000, 200000];
+const PRIZE_PER_HIT = 150000;
 
 function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
@@ -430,7 +430,7 @@ async function buildState(env, matchday, user) {
 
   standings.forEach((s, i) => {
     s.rank = i + 1;
-    s.prize = PREMIOS[i] || 0;
+    s.prize = s.hits * PRIZE_PER_HIT;
   });
 
   const revealAll = true;
@@ -521,7 +521,7 @@ async function buildState(env, matchday, user) {
     standings,
     participants,
     revealAll,
-    prizes: PREMIOS,
+    prizePerHit: PRIZE_PER_HIT,
     players: standings.length,
   };
 }
