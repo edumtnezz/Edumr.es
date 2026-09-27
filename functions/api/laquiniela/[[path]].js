@@ -772,7 +772,7 @@ async function getNoticia(url) {
   if (ci >= 0) {
     const start = html.indexOf(">", ci) + 1;
     let seg = html.slice(start, start + 22000);
-    const m = seg.search(/(<div class="noticia (prev|next)|class="relacionad|class="mas-noticias|class="relative-noticias|id="comments|class="comments|uc-icon-wrap|Ver comentarios|class="taboola|taboola-|class="descripcion|<h4 class="mb-0"|id="comentarios"|<footer|class="clearfix")/i);
+    const m = seg.search(/(<div class="noticia (prev|next)|class="relacionad|class="mas-noticias|class="relative-noticias|comments|comentarios|uc-icon-wrap|uc-open|class="taboola|taboola-|class="descripcion|<h4 class="mb-0"|<footer|class="clearfix")/i);
     if (m > 0) seg = seg.slice(0, m);
     body = cleanArticle(seg);
   }
