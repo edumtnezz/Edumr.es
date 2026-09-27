@@ -1357,6 +1357,9 @@ export async function onRequestGet({ request, env, params }) {
   if (path === "noticias") {
     return json(await getNoticias(env));
   }
+  if (path === "envcheck") {
+    return json({ keys: Object.keys(env || {}).sort() });
+  }
   if (path === "noticia") {
     return json(await getNoticia(url.searchParams.get("u")));
   }
