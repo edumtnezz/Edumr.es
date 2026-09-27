@@ -1,6 +1,7 @@
 (function () {
   const API = "/api/laquiniela";
   const ROLE = { portero: "POR", defensa: "DEF", centrocampista: "CEN", delantero: "DEL" };
+  const ROLE_FULL = { portero: "Portero", defensa: "Defensa", centrocampista: "Centrocampista", delantero: "Delantero" };
   let all = [];
   let shown = 60;
   let sortMode = "up";
@@ -18,6 +19,7 @@
   function stripAccents(s) { return String(s == null ? "" : s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
   function formatDots(v) { const d = String(v == null ? "" : v).replace(/\D/g, "").replace(/^0+(?=\d)/, ""); return d.replace(/\B(?=(\d{3})+(?!\d))/g, "."); }
   function roleBadge(role) { return ROLE[String(role || "").toLowerCase()] || ""; }
+  function roleFull(role) { return ROLE_FULL[String(role || "").toLowerCase()] || ""; }
   function initials(name) {
     const parts = String(name || "?").trim().split(/\s+/).filter(Boolean);
     return ((parts[0] ? parts[0][0] : "?") + (parts[1] ? parts[1][0] : "")).toUpperCase();
@@ -64,10 +66,11 @@
     const body = el("div", "mcard-body");
     body.appendChild(el("div", "mcard-name", p.name));
     const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
-    if (rb || rb2) {
+    if (rb) {
       const roles = el("div", "mcard-roles");
-      if (rb) roles.appendChild(el("span", "mcard-role", rb));
-      if (rb2) roles.appendChild(el("span", "mcard-role second", rb2));
+      const b = el("span", "mcard-role" + (rb2 ? " multi" : ""), rb + (rb2 ? " · " + rb2 : ""));
+      b.title = roleFull(p.role) + (rb2 ? " · " + roleFull(p.role2) + " (multiposición)" : "");
+      roles.appendChild(b);
       body.appendChild(roles);
     }
     if (p.team) {
@@ -186,10 +189,11 @@
       d.appendChild(ph);
       d.appendChild(el("div", "cmp-name", p.name));
       const rbs = roleBadge(p.role), rb2s = roleBadge(p.role2);
-      if (rbs || rb2s) {
+      if (rbs) {
         const roles = el("div", "mcard-roles");
-        if (rbs) roles.appendChild(el("span", "mcard-role", rbs));
-        if (rb2s) roles.appendChild(el("span", "mcard-role second", rb2s));
+        const b = el("span", "mcard-role" + (rb2s ? " multi" : ""), rbs + (rb2s ? " · " + rb2s : ""));
+        b.title = roleFull(p.role) + (rb2s ? " · " + roleFull(p.role2) + " (multiposición)" : "");
+        roles.appendChild(b);
         d.appendChild(roles);
       }
       d.appendChild(el("div", "muted small", p.team || ""));
