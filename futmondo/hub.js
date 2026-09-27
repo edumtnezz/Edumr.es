@@ -5,14 +5,16 @@
     if (h >= 12 && h < 21) return "Buenas Tardes";
     return "Buenas Noches";
   }
-  let name = null;
+  let name = null, loggedIn = false;
   try {
-    const res = await fetch("/api/laquiniela/me");
+    const res = await fetch("/api/laquiniela/me", { cache: "no-store" });
     const d = await res.json();
-    name = d.user && d.user.name;
+    loggedIn = !!(d && d.user);
+    name = d && d.user && d.user.name;
   } catch (e) {}
   const box = document.getElementById("hubGreeting");
   if (box) box.textContent = "Con permiso, ¡" + saludo() + (name ? ", " + name : "") + "!";
   const cta = document.getElementById("hubCta");
-  if (cta) cta.hidden = !!name;
+  if (cta) cta.hidden = loggedIn;
+  document.documentElement.classList.remove("auth-loading");
 })();
