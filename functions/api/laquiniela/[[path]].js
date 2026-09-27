@@ -871,6 +871,9 @@ function pronosticoFor(p) {
 }
 
 function normKey(s) { return stripAccents(s).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim(); }
+function teamKey(s) {
+  return stripAccents(s).replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w && ["de", "del", "cf", "fc", "club", "sad", "sd", "ud", "rcd", "balompie"].indexOf(w) < 0).join("");
+}
 function lev(a, b) {
   const m = a.length, n = b.length;
   if (!m) return n;
@@ -958,7 +961,7 @@ async function handleAnaliza(request, env, user) {
     const visionRaw = await dsChat(env, [{
       role: "user",
       content: [
-        { type: "text", text: "Esta imagen es la captura de un equipo de fútbol fantasy dibujado sobre un campo verde. Cada jugador tiene una FOTO y, justo DEBAJO, su NOMBRE. Lee con mucha atención TODOS los nombres (ignora marcas de agua). Responde SOLO con un JSON, sin nada alrededor: {\"formacion\":\"3-4-3\",\"titulares\":[{\"nombre\":\"...\",\"pos\":\"POR|DEF|CEN|DEL\"}],\"suplentes\":[{\"nombre\":\"...\",\"pos\":\"...\"}]}. La formación son 3 números: nº de DEFENSAS-nº de CENTROCAMPISTAS-nº de DELANTEROS (cuéntalos por las líneas del campo, el portero va aparte). Sé literal con los nombres y no inventes jugadores." },
+        { type: "text", text: "Esta imagen es la captura de un equipo de fútbol fantasy dibujado sobre un campo verde. Cada jugador tiene una FOTO con su NOMBRE justo debajo. Lee los nombres con mucha atención (ignora marcas de agua). Responde SOLO con un JSON: {\"titulares\":[{\"nombre\":\"...\",\"linea\":1}],\"suplentes\":[{\"nombre\":\"...\"}]}. 'linea' = fila del campo CONTANDO DE ABAJO A ARRIBA: 1 = portero (abajo del todo), 2 = defensas, 3 = centrocampistas, 4 = delanteros (arriba). Cuenta bien cuántos hay en cada fila (ej.: arriba 3 delanteros, luego 4 medios, luego 3 defensas y 1 portero = 3-4-3). Sé literal con los nombres y no inventes jugadores." },
         { type: "image_url", image_url: { url: img } },
       ],
     }], "deepseek-flash", true);
@@ -983,6 +986,9 @@ async function handleAnaliza(request, env, user) {
     }
     if (!team) return json({ error: "No pude leer el equipo de la captura. Prueba con una captura más nítida (sin recortar).", raw: String(visionRaw).slice(0, 300) }, 422);
     leido = [].concat(team.titulares || [], team.suplentes || []).map((x) => String(x.nombre || x.name || "").trim()).filter(Boolean);
+    const LINE_POS = { 1: "POR", 2: "DEF", 3: "CEN", 4: "DEL" };
+    team.titulares = (team.titulares || []).map((x) => ({ nombre: String(x.nombre || x.name || "").trim(), pos: roleShort(x.pos) || LINE_POS[Number(x.linea)] || "" })).filter((x) => x.nombre);
+    team.suplentes = (team.suplentes || []).map((x) => ({ nombre: String(x.nombre || x.name || "").trim(), pos: roleShort(x.pos) || "" })).filter((x) => x.nombre);
   }
 
   let market = { players: [] };
@@ -991,10 +997,10 @@ async function handleAnaliza(request, env, user) {
   let next = {};
   try { next = await nextMatches(env); } catch (e) {}
   const matchTeam = (t) => {
-    const q = stripAccents(t);
+    const q = teamKey(t);
     if (!q) return null;
     const keys = Object.keys(next);
-    const k = keys.find((x) => stripAccents(x) === q) || keys.find((x) => stripAccents(x).includes(q) || q.includes(stripAccents(x)));
+    const k = keys.find((x) => teamKey(x) === q) || keys.find((x) => { const kk = teamKey(x); return kk && (kk.includes(q) || q.includes(kk)); });
     return k ? next[k] : null;
   };
   const enrich = (list) => (list || []).map((pl) => {
@@ -1004,6 +1010,7 @@ async function handleAnaliza(request, env, user) {
     return {
       nombre: nm,
       pos: roleShort(pl.pos) || (p ? roleShort(p.role) : ""),
+      pos2: p ? roleShort(p.role2) : "",
       equipo: p ? p.team : "",
       estado: p ? statusLabelEs(p.status) : "?",
       pronostico: p ? pronosticoFor(p) : "",
@@ -1020,9 +1027,9 @@ async function handleAnaliza(request, env, user) {
   const suplentes = enrich(team.suplentes);
   const cnt = (pos) => titulares.filter((p) => p.pos === pos).length;
   const formacion = (cnt("DEF") + cnt("CEN") + cnt("DEL")) ? [cnt("DEF"), cnt("CEN"), cnt("DEL")].join("-") : (team.formacion || "");
-  const line = (p) => `- ${p.pos} ${p.nombre} (${p.equipo || "?"}) · ${p.estado} · ${p.puntos != null ? p.puntos + " pts" : "sin datos"} · rival ${p.rival || "?"} ${p.casa === true ? "(CASA)" : p.casa === false ? "(FUERA)" : ""}`;
+  const line = (p) => `- ${p.pos}${p.pos2 ? "/" + p.pos2 : ""} ${p.nombre} (${p.equipo || "?"}) · ${p.estado} · ${p.puntos != null ? p.puntos + " pts" : "sin datos"} · últ5 ${(p.fitness || []).join("-")} · rival ${p.rival || "?"} ${p.casa === true ? "(CASA)" : p.casa === false ? "(FUERA)" : ""}`;
   const ctx = "FORMACIÓN: " + formacion + "\nTITULARES:\n" + titulares.map(line).join("\n") + "\nBANQUILLO:\n" + suplentes.map(line).join("\n");
-  const prompt = "Eres un analista experto de fútbol fantasy (Futmondo, puntuación por estadísticas). Te doy el equipo del usuario y datos de cada jugador (estado, puntos y si su equipo juega en CASA o FUERA en el próximo partido).\n\n" + ctx + "\n\nDa un análisis BREVE en español, AGRADABLE de leer, con emojis y palabras en **negrita** (markdown doble asterisco). PROHIBIDO usar almohadillas (#), tablas o líneas de guiones. Máximo 8 líneas cortas. Incluye:\n1) Quién preocupa (lesionados/dudas) y probabilidad de jugar.\n2) 2-3 cambios concretos (a quién sentar y a quién poner), mirando estado, puntos y si juega en casa.\n3) Si cambiarías la formación y a cuál.\n4) Un once ideal. Sé directo.";
+  const prompt = "Eres un analista experto de fútbol fantasy, especializado en las REGLAS de Futmondo Social. Te doy el equipo del usuario con cada jugador: sus posiciones (si tiene dos, separadas por '/'), estado, puntos de la temporada, sus últimos 5 partidos, y si su equipo juega en CASA o FUERA.\n\n" + ctx + "\n\nDa un análisis BREVE en español, AGRADABLE, con emojis y palabras en **negrita**. PROHIBIDO usar almohadillas (#), tablas o líneas de guiones. Máximo 9 líneas cortas. Incluye:\n1) Quién preocupa (lesionados/dudas) y probabilidad de jugar.\n2) MULTIPOSICIÓN: para cada jugador con dos posiciones (ej. DEL/CEN), di en qué posición conviene alinearlo para sacar MÁS puntos según las reglas de Futmondo (un gol o una asistencia desde una posición más atrasada -centrocampista o defensa- puntúa más que desde la delantera; los defensas suman por portería a cero). Sé concreto: 'pon a X de CEN'.\n3) 2-3 cambios concretos (a quién sentar y a quién poner), mirando estado, forma (últimos 5) y si juega en casa.\n4) Si cambiarías la formación y a cuál te conviene más.\n5) Un once ideal, cada jugador en su MEJOR posición. Sé directo.";
   const analisis = await dsChat(env, [{ role: "user", content: prompt }], "deepseek-flash");
   return json({ formacion, titulares, suplentes, analisis, leido });
 }

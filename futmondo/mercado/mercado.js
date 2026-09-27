@@ -704,18 +704,19 @@
         else if (p.puntos != null) { tag = p.puntos + " pts"; cls = "ok"; }
         if (tag) card.appendChild(el("div", "pitch-tag " + cls, tag));
         if (p.casa === true || p.casa === false) card.appendChild(el("div", "pitch-ha", p.casa ? "🏠 Casa" : "✈️ Fuera"));
+        card.classList.add("clickable"); card.title = "Toca para cambiar"; card.addEventListener("click", () => openPicker("Cambiar jugador", (pl) => applyPlayer(p, pl)));
         row.appendChild(card);
       });
       field.appendChild(row);
     });
     if (field.children.length) out.appendChild(field);
 
-    const table = (title, list, tipo) => {
+    if ((d.titulares || []).length) {
       const sec = el("div", "estado-sec");
-      sec.appendChild(el("div", "estado-title", title));
+      sec.appendChild(el("div", "estado-title", "Titulares (toca un jugador para cambiarlo)"));
       const box = el("div", "an-list");
-      (list || []).forEach((p) => {
-        const row = el("div", "an-row");
+      d.titulares.forEach((p) => {
+        const row = el("div", "an-row clickable");
         row.appendChild(el("span", "an-pos", p.pos || ""));
         const main = el("div", "an-main");
         main.appendChild(el("span", "an-name", p.nombre || ""));
@@ -729,19 +730,13 @@
         row.appendChild(el("span", "an-st st-" + cls, p.estado || ""));
         row.appendChild(el("span", "an-ha", p.casa === true ? "🏠" : p.casa === false ? "✈️" : ""));
         row.appendChild(el("span", "an-pts", p.puntos != null ? p.puntos + " pts" : ""));
-        const ed = el("span", "an-edit", "✏️");
-        ed.title = "Cambiar jugador";
-        ed.addEventListener("click", () => openPicker("Cambiar jugador", (pl) => applyPlayer(p, pl)));
-        row.appendChild(ed);
+        row.appendChild(el("span", "an-edit", "✏️"));
+        row.addEventListener("click", () => openPicker("Cambiar jugador", (pl) => applyPlayer(p, pl)));
         box.appendChild(row);
       });
-      const add = el("button", "btn-ghost an-add", "➕ Añadir al " + (tipo === "suplente" ? "banquillo" : "once"));
-      add.addEventListener("click", () => openPicker("Añadir jugador", (pl) => addPlayer(tipo, pl)));
-      sec.appendChild(add);
-      return sec;
-    };
-    if ((d.titulares || []).length) out.appendChild(table("Titulares", d.titulares, "titular"));
-    if ((d.suplentes || []).length) out.appendChild(table("Banquillo", d.suplentes, "suplente"));
+      sec.appendChild(box);
+      out.appendChild(sec);
+    }
     if (d.analisis) {
       const sec = el("div", "estado-sec");
       sec.appendChild(el("div", "estado-title", "Recomendaciones de la IA"));
