@@ -305,6 +305,57 @@
     } catch (e) {}
   }
 
+  function fmtFecha(v) {
+    if (!v) return "";
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
+  }
+
+  function renderNews(d) {
+    const a = $("newsAnuncios");
+    if (a) {
+      a.innerHTML = "";
+      const list = d.anuncios || [];
+      if (!list.length) a.appendChild(el("p", "muted small", "Sin avisos."));
+      list.forEach((x) => {
+        const it = el("div", "news-item");
+        if (x.img) { const im = el("img", "news-img"); im.src = x.img; im.alt = ""; im.loading = "lazy"; it.appendChild(im); }
+        const b = el("div", "news-body");
+        if (x.t) b.appendChild(el("div", "news-title", x.t));
+        if (x.summary) b.appendChild(el("div", "news-sum", x.summary));
+        b.appendChild(el("div", "news-date", fmtFecha(x.date)));
+        it.appendChild(b);
+        a.appendChild(it);
+      });
+    }
+    const l = $("newsLocker");
+    if (l) {
+      l.innerHTML = "";
+      const list = d.locker || [];
+      if (!list.length) l.appendChild(el("p", "muted small", "Sin actividad."));
+      list.forEach((x) => {
+        const it = el("div", "news-item");
+        const b = el("div", "news-body");
+        const head = el("div", "news-head");
+        if (x.p) { const av = el("img", "news-avatar"); av.src = x.p; av.alt = ""; av.loading = "lazy"; head.appendChild(av); }
+        head.appendChild(el("span", "news-user", x.n));
+        head.appendChild(el("span", "news-date", fmtFecha(x.date)));
+        b.appendChild(head);
+        if (x.txt) b.appendChild(el("div", "news-sum", x.txt));
+        it.appendChild(b);
+        l.appendChild(it);
+      });
+    }
+  }
+
+  async function loadNoticias() {
+    try {
+      const d = await (await fetch(API + "/noticias")).json();
+      renderNews(d);
+    } catch (e) {}
+  }
+
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
   document.querySelectorAll(".merc-segbtn").forEach((b) => b.addEventListener("click", () => {
     document.querySelectorAll(".merc-segbtn").forEach((x) => x.classList.remove("active"));
@@ -318,6 +369,7 @@
   const teamSel = $("mjTeam"); if (teamSel) teamSel.addEventListener("change", () => { syncClubActive(); shown = 60; renderGrid(); });
   ["cmpA", "cmpB"].forEach((id) => { const e = $(id); if (e) e.addEventListener("input", renderComparador); });
 
+  loadNoticias();
   load();
   setInterval(load, 60000);
 })();

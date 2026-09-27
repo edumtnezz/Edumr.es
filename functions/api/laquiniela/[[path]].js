@@ -691,6 +691,34 @@ async function searchMercado(env, q) {
   return json({ players: list.slice(0, limit), updatedAt: cache.at || null });
 }
 
+function stripHtml(s) {
+  return String(s || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+}
+
+async function getNoticias(env) {
+  const header = await futbolHeader(env);
+  const out = { anuncios: [], locker: [] };
+  try {
+    const a = await futbolPost("/5/announcement/list", header, {});
+    const arr = (a.answer && Array.isArray(a.answer)) ? a.answer : [];
+    out.anuncios = arr.slice(0, 20).map((x) => {
+      const tx = (x.text || []).find((t) => t.lng === "es") || (x.text || [])[0] || {};
+      return { t: String(tx.t || ""), summary: stripHtml(tx.summary || ""), img: String(x.img || ""), date: x.uAt || x.cAt || "" };
+    });
+  } catch (e) {}
+  try {
+    const l = await futbolPost("/2/locker/news", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
+    const arr = (l.answer && l.answer.news) || [];
+    out.locker = arr.slice(0, 30).map((x) => ({
+      n: (x.u && x.u.n) || "",
+      p: (x.u && x.u.p) || "",
+      txt: stripHtml(x.txt || ""),
+      date: x.created || "",
+    }));
+  } catch (e) {}
+  return out;
+}
+
 function pujaStep(base) {
   return Number(base) >= 10000000 ? 500000 : 100000;
 }
@@ -1244,26 +1272,8 @@ export async function onRequestGet({ request, env, params }) {
   if (path === "mercado") {
     return searchMercado(env, url.searchParams.get("q"));
   }
-  if (path === "fm-probe") {
-    const header = await futbolHeader(env);
-    const C = FUTMONDO_CHAMPIONSHIP;
-    const PID = url.searchParams.get("pid") || "57363a66ad212396073bce9f";
-    const tries = [
-      ["/5/announcement/list", { championshipId: C }],
-      ["/2/locker/news", { championshipId: C }],
-      ["/1/player/fullprofile", { playerId: PID, championshipId: C }],
-      ["/2/player/matches", { playerId: PID, championshipId: C }],
-    ];
-    const out = {};
-    for (const [p, q] of tries) {
-      try {
-        const r = await futbolPost(p, header, q);
-        out[p] = JSON.stringify(r).slice(0, 3500);
-      } catch (e) {
-        out[p] = "ERR " + String(e && e.message || e).slice(0, 120);
-      }
-    }
-    return json(out);
+  if (path === "noticias") {
+    return json(await getNoticias(env));
   }
   return json({ error: "not found" }, 404);
 }
