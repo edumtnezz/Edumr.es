@@ -221,6 +221,36 @@
     });
   }
 
+  function setupClubs() {
+    const box = $("mercClubs");
+    if (!box || box.dataset.init) return;
+    box.dataset.init = "1";
+    const map = {};
+    all.forEach((p) => { if (p.team && p.logo && !map[p.team]) map[p.team] = p.logo; });
+    Object.keys(map).sort((a, b) => a.localeCompare(b)).forEach((t) => {
+      const btn = el("button", "merc-club");
+      btn.type = "button";
+      btn.title = t;
+      const im = el("img", "merc-club-img"); im.src = map[t]; im.alt = t; im.loading = "lazy";
+      btn.appendChild(im);
+      btn.addEventListener("click", () => {
+        const sel = $("mjTeam");
+        const cur = sel.value === t ? "" : t;
+        sel.value = cur;
+        syncClubActive();
+        shown = 60;
+        renderGrid();
+      });
+      box.appendChild(btn);
+    });
+  }
+
+  function syncClubActive() {
+    const sel = $("mjTeam");
+    const cur = sel ? sel.value : "";
+    document.querySelectorAll(".merc-club").forEach((x) => x.classList.toggle("active", x.title === cur));
+  }
+
   function setupTeams() {
     const sel = $("mjTeam");
     if (!sel) return;
@@ -271,6 +301,7 @@
         setupTeams();
         setupRange();
       }
+      setupClubs();
     } catch (e) {}
   }
 
@@ -283,7 +314,8 @@
     renderGrid();
   }));
   const bind = (id, ev) => { const e = $(id); if (e) e.addEventListener(ev, () => { shown = 60; renderGrid(); }); };
-  bind("mjSearch", "input"); bind("mjTeam", "change"); bind("mjRole", "change");
+  bind("mjSearch", "input"); bind("mjRole", "change");
+  const teamSel = $("mjTeam"); if (teamSel) teamSel.addEventListener("change", () => { syncClubActive(); shown = 60; renderGrid(); });
   ["cmpA", "cmpB"].forEach((id) => { const e = $(id); if (e) e.addEventListener("input", renderComparador); });
 
   load();
