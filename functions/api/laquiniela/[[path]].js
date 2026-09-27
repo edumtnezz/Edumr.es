@@ -1244,6 +1244,33 @@ export async function onRequestGet({ request, env, params }) {
   if (path === "mercado") {
     return searchMercado(env, url.searchParams.get("q"));
   }
+  if (path === "fm-probe") {
+    const header = await futbolHeader(env);
+    const C = FUTMONDO_CHAMPIONSHIP;
+    const tries = [
+      ["/5/league/championship", { championshipId: C }],
+      ["/5/league/championshipclassification", { championshipId: C }],
+      ["/5/league/championshipranking", { championshipId: C }],
+      ["/5/league/championshipmatches", { championshipId: C }],
+      ["/5/league/championshiprounds", { championshipId: C }],
+      ["/5/league/championshipjornadas", { championshipId: C }],
+      ["/5/league/championshipmatchplayers", { championshipId: C }],
+      ["/5/league/championshipmatchesplayers", { championshipId: C }],
+      ["/5/league/matchplayers", { championshipId: C }],
+      ["/5/league/playerspoints", { championshipId: C }],
+      ["/5/league/championshipplayerspoints", { championshipId: C }],
+    ];
+    const out = {};
+    for (const [p, q] of tries) {
+      try {
+        const r = await futbolPost(p, header, q);
+        out[p] = JSON.stringify(r).slice(0, 300);
+      } catch (e) {
+        out[p] = "ERR " + String(e && e.message || e).slice(0, 120);
+      }
+    }
+    return json(out);
+  }
   return json({ error: "not found" }, 404);
 }
 
