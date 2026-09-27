@@ -188,6 +188,19 @@
 .cmp2-cell.right { text-align: right; }
 .cmp2-cell.win { color: #22c55e; }
 .cmp2-lab { text-align: center; font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+
+/* Noticias en tarjetas con miniatura */
+.news-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.newscard { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: rgba(127,127,127,0.06); cursor: pointer; transition: border-color 0.2s ease, transform 0.2s ease; }
+.newscard:hover { border-color: var(--border-hover, #22c55e); transform: translateY(-2px); }
+.newscard-thumb { width: 100%; aspect-ratio: 16 / 10; background: rgba(127,127,127,0.12); overflow: hidden; }
+.newscard-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.newscard-thumb.ball img { object-fit: contain; padding: 30px; }
+.newscard-body { padding: 10px 12px 12px; }
+.newscard .news-title { font-weight: 700; font-size: 0.9rem; line-height: 1.3; }
+.newscard .news-date { color: var(--muted); font-size: 0.72rem; margin-top: 6px; }
+.newscard:hover .news-title { color: #22c55e; }
+@media (max-width: 560px) { .news-grid { grid-template-columns: 1fr; } }
 .merc-club.merc-club-all { width: auto; padding: 0 12px; border-radius: 999px; font-size: 0.82rem; font-weight: 700; color: var(--text); }
 
 /* Campo de fútbol (analiza) */

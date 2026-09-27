@@ -386,16 +386,21 @@
     const a = $("newsAnuncios");
     if (a) {
       a.innerHTML = "";
+      a.classList.add("news-grid");
       const list = d.noticias || [];
       if (!list.length) a.appendChild(el("p", "muted small", "Sin noticias ahora mismo."));
       list.forEach((x) => {
-        const it = el("div", "news-item news-link");
+        const it = el("div", "newscard news-link");
         it.addEventListener("click", () => openNoticia(x.link, x.title));
-        const im = el("img", "news-ico"); im.src = "/img/balon.svg"; im.alt = ""; im.loading = "lazy"; it.appendChild(im);
-        const b = el("div", "news-body");
-        b.appendChild(el("div", "news-title", x.title));
-        b.appendChild(el("div", "news-date", x.date));
-        it.appendChild(b);
+        const th = el("div", "newscard-thumb" + (x.thumb ? "" : " ball"));
+        const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = x.thumb || "/img/balon.svg";
+        im.addEventListener("error", () => { im.src = "/img/balon.svg"; it.querySelector(".newscard-thumb").classList.add("ball"); }, { once: true });
+        th.appendChild(im);
+        it.appendChild(th);
+        const bd = el("div", "newscard-body");
+        bd.appendChild(el("div", "news-title", x.title));
+        bd.appendChild(el("div", "news-date", x.date));
+        it.appendChild(bd);
         a.appendChild(it);
       });
     }
