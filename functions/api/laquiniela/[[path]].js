@@ -694,7 +694,7 @@ function pujaStep(base) {
   return Number(base) >= 10000000 ? 500000 : 100000;
 }
 
-function nextTuesday2200Utc(now) {
+function madrid(now) {
   const fmt = new Intl.DateTimeFormat("en-GB", {
     timeZone: "Europe/Madrid",
     year: "numeric", month: "2-digit", day: "2-digit",
@@ -704,12 +704,33 @@ function nextTuesday2200Utc(now) {
   for (const p of fmt.formatToParts(now)) parts[p.type] = p.value;
   const wall = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second);
   const offset = wall - Math.floor(now.getTime() / 1000) * 1000;
-  const d = new Date(wall);
+  return { d: new Date(wall), offset };
+}
+
+function nextTuesday2200Utc(now) {
+  const { d, offset } = madrid(now);
   let days = (2 - d.getUTCDay() + 7) % 7;
   const past = d.getUTCHours() > 22 || (d.getUTCHours() === 22 && (d.getUTCMinutes() > 0 || d.getUTCSeconds() > 0));
   if (days === 0 && past) days = 7;
   d.setUTCDate(d.getUTCDate() + days);
   d.setUTCHours(22, 0, 0, 0);
+  return d.getTime() - offset;
+}
+
+// Ventana de subasta: lunes 00:00 -> martes 22:00 (hora de Madrid)
+function inPujaWindow(now) {
+  const { d } = madrid(now);
+  const wd = d.getUTCDay(); // 0 dom, 1 lun, 2 mar
+  return wd === 1 || (wd === 2 && d.getUTCHours() < 22);
+}
+
+// Próxima apertura (siguiente lunes 00:00, hora de Madrid)
+function nextWindowOpenUtc(now) {
+  const { d, offset } = madrid(now);
+  let days = (1 - d.getUTCDay() + 7) % 7;
+  if (days === 0) days = 7;
+  d.setUTCDate(d.getUTCDate() + days);
+  d.setUTCHours(0, 0, 0, 0);
   return d.getTime() - offset;
 }
 
@@ -733,6 +754,9 @@ async function getPuja(env) {
 
 async function createPuja(request, env, user) {
   if (!user) return json({ error: "Inicia sesion." }, 401);
+  if (!inPujaWindow(new Date())) {
+    return json({ error: "La subasta solo se puede abrir de lunes 00:00 a martes 22:00 (hora de Madrid)." }, 403);
+  }
   let body;
   try { body = await request.json(); } catch { return json({ error: "Datos invalidos" }, 400); }
   const player = String(body.player || "").trim().slice(0, 40);
@@ -1205,13 +1229,13 @@ export async function onRequestGet({ request, env, params }) {
               }
             } catch (e) {}
           }
-          return json({ puja: pj || null, user: user ? { name: user.name } : null, nextTuesday: nextTuesday2200Utc(new Date()), history: d.history || [] });
+          return json({ puja: pj || null, user: user ? { name: user.name } : null, nextTuesday: nextTuesday2200Utc(new Date()), nextWindow: nextWindowOpenUtc(new Date()), inWindow: inPujaWindow(new Date()), history: d.history || [] });
         }
       } catch (e) {}
     }
     const p = await getPuja(env);
     const history = await getPujaHistory(env);
-    return json({ puja: p, user: user ? { name: user.name } : null, nextTuesday: nextTuesday2200Utc(new Date()), history });
+    return json({ puja: p, user: user ? { name: user.name } : null, nextTuesday: nextTuesday2200Utc(new Date()), nextWindow: nextWindowOpenUtc(new Date()), inWindow: inPujaWindow(new Date()), history });
   }
   if (path === "me") {
     return json({ user: user ? { name: user.name } : null });

@@ -115,10 +115,8 @@ function render() {
   cd.appendChild(refresh);
   panel.appendChild(cd);
 
-  if (p) {
-    if (p.status === "open") {
-      panel.appendChild(el("p", "bid-note", "⚠️ Al pujar no se puede retirar ni bajar la puja. Piénsalo antes de pujar."));
-    }
+  if (p && p.status === "open") {
+    panel.appendChild(el("p", "bid-note", "⚠️ Al pujar no se puede retirar ni bajar la puja. Piénsalo antes de pujar."));
     const pcard = el("div", "puja-pcard");
     const pwrap = el("div", "puja-pcard-photo");
     if (p.photo) {
@@ -151,12 +149,13 @@ function render() {
     const shareBtn = el("button", "btn-ghost share-btn", "📲 Compartir por WhatsApp");
     shareBtn.addEventListener("click", () => shareWhatsApp(p));
     panel.appendChild(shareBtn);
-  } else {
+  } else if (!p) {
     panel.appendChild(el("div", "puja-player", "Sin subasta activa"));
   }
 
   if (user) {
-    if (!p) {
+    const open = p && p.status === "open";
+    if (!open && data.inWindow) {
     panel.appendChild(el("p", "muted", "Elige el jugador a subasta y el precio de salida. El resto verá la subasta y podrá pujar."));
     const f = el("div", "auth-form");
     const pl = el("input"); pl.id = "pjPlayer"; pl.placeholder = "Escribe el jugador (ej. Diomande)"; pl.autocomplete = "off";
@@ -174,7 +173,7 @@ function render() {
     const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
     b.addEventListener("click", crear);
     attachPlayerSearch();
-    } else if (p.status === "closed") {
+    } else if (p && p.status === "closed") {
       const w = el("div", "winner-box");
       if (p.winner) {
         w.appendChild(el("div", "muted", "Ganador"));
@@ -184,7 +183,7 @@ function render() {
         w.appendChild(el("div", "muted", "Nadie pujó."));
       }
       panel.appendChild(w);
-    } else {
+    } else if (open) {
       const step = p.base >= 10000000 ? 500000 : 100000;
       const curBids = (p.bids || []).slice().sort((a, b) => b.amount - a.amount);
       const leader = curBids[0] || null;
@@ -227,6 +226,8 @@ function render() {
       panel.appendChild(f);
       const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
       b.addEventListener("click", () => doPujar(parseDots(inp.value)));
+    } else {
+      panel.appendChild(el("p", "muted", "La subasta se abre el lunes a las 00:00 (hora de Madrid)."));
     }
   }
 
@@ -321,10 +322,11 @@ function startTimer() {
     if (!t) return;
     const p = data.puja;
     const open = p && p.status === "open";
-    const target = open ? p.closesAt : data.nextTuesday;
-    if (sub) sub.textContent = open
-      ? (p.extended ? "En prórroga (se amplía con cada puja)" : "Termina a las 22:00 (hora de Madrid)")
-      : "Próxima subasta: martes a las 22:00";
+    let target, txt;
+    if (open) { target = p.closesAt; txt = p.extended ? "En prórroga (se amplía con cada puja)" : "Termina a las 22:00 (hora de Madrid)"; }
+    else if (data.inWindow) { target = data.nextTuesday; txt = "Elige el jugador — cierra el martes a las 22:00 (hora de Madrid)"; }
+    else { target = data.nextWindow; txt = "La subasta se abre el lunes a las 00:00 (hora de Madrid)"; }
+    if (sub) sub.textContent = txt;
     if (!target) { t.textContent = "--:--:--"; return; }
     const diff = target - Date.now();
     if (diff <= 0) { t.classList.add("closed"); t.textContent = "00:00:00"; return; }
