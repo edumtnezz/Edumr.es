@@ -60,11 +60,16 @@
     }
     const st = statusInfo(p.status);
     if (st) photoWrap.appendChild(el("span", "mcard-badge " + st.cls, st.label));
-    const rb = roleBadge(p.role);
-    if (rb) photoWrap.appendChild(el("span", "mcard-role", rb));
     card.appendChild(photoWrap);
     const body = el("div", "mcard-body");
     body.appendChild(el("div", "mcard-name", p.name));
+    const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
+    if (rb || rb2) {
+      const roles = el("div", "mcard-roles");
+      if (rb) roles.appendChild(el("span", "mcard-role", rb));
+      if (rb2) roles.appendChild(el("span", "mcard-role second", rb2));
+      body.appendChild(roles);
+    }
     if (p.team) {
       const row = el("div", "mcard-team");
       if (p.logo) { const lg = el("img", "mcard-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; row.appendChild(lg); }
@@ -178,10 +183,15 @@
       const d = el("div", "cmp-side");
       const ph = el("div", "mcard-photo");
       if (p.photo) { const im = el("img", "mcard-img"); im.src = p.photo; im.alt = p.name; ph.appendChild(im); }
-      const rb = roleBadge(p.role);
-      if (rb) ph.appendChild(el("span", "mcard-role", rb));
       d.appendChild(ph);
       d.appendChild(el("div", "cmp-name", p.name));
+      const rbs = roleBadge(p.role), rb2s = roleBadge(p.role2);
+      if (rbs || rb2s) {
+        const roles = el("div", "mcard-roles");
+        if (rbs) roles.appendChild(el("span", "mcard-role", rbs));
+        if (rb2s) roles.appendChild(el("span", "mcard-role second", rb2s));
+        d.appendChild(roles);
+      }
       d.appendChild(el("div", "muted small", p.team || ""));
       d.appendChild(el("div", "cmp-val", money(p.value) + " €"));
       const chg = Number(p.change) || 0;

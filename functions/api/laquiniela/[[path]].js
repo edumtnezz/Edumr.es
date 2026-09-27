@@ -656,6 +656,7 @@ async function getMarketPlayers(env) {
     return {
       name: String(p.name || ""),
       role: String(p.role || ""),
+      role2: String(p.role2 || ""),
       value: Number(p.value) || 0,
       change: Number(p.change) || 0,
       team: tm.name || String(p.team || ""),
@@ -1242,12 +1243,6 @@ export async function onRequestGet({ request, env, params }) {
   }
   if (path === "mercado") {
     return searchMercado(env, url.searchParams.get("q"));
-  }
-  if (path === "mercado-debug") {
-    const header = await futbolHeader(env);
-    const pl = await futbolPost("/5/league/championshipplayers", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
-    const arr = (pl.answer && pl.answer.players) || (Array.isArray(pl.answer) ? pl.answer : []);
-    return json({ keys: arr[0] ? Object.keys(arr[0]) : [], sample: arr.slice(0, 2) });
   }
   return json({ error: "not found" }, 404);
 }
