@@ -663,6 +663,7 @@ async function getMarketPlayers(env) {
       team: tm.name || String(p.team || ""),
       status: String(p.status || ""),
       points: Number(p.points) || 0,
+      fitness: (p.average && p.average.fitness) || [],
       photo: p.photo ? FACE_BASE + p.photo : "",
       logo: tm.logo ? LOGO_BASE + tm.logo : "",
     };
@@ -684,6 +685,7 @@ async function searchMercado(env, q) {
     return json({ error: "No se pudo consultar Futmondo." }, 502);
   }
   const players = cache.players || [];
+  try { await snapshotMarket(env, players); } catch (e) {}
   const query = stripAccents(String(q || "").toLowerCase().trim());
   let list = players;
   if (query) list = players.filter((p) => stripAccents(p.name.toLowerCase()).includes(query));
@@ -761,22 +763,37 @@ async function playerFicha(env, id) {
       stats: g("stats"), picas: g("picas"), ff: g("ff"), ss: g("ss"), as: g("as"), marca: g("marca"),
     };
   }).slice(0, 12);
+  const todayVal = Number(pl.value) || 0;
+  let valores = [];
+  try {
+    const h = await env.PORRA.get("fmhist", "json");
+    const byDate = {};
+    if (h && Array.isArray(h.days)) h.days.forEach((x) => { if (x.v && x.v[pl.name] != null) byDate[x.d] = x.v[pl.name]; });
+    const order = [["Hoy", 0], ["Ayer", 1], ["2 días", 2], ["3 días", 3], ["5 días", 5], ["10 días", 10], ["14 días", 14], ["30 días", 30]];
+    valores = order.map((o) => {
+      const v = o[1] === 0 ? todayVal : (byDate[dstrMadrid(o[1])] != null ? byDate[dstrMadrid(o[1])] : null);
+      return { label: o[0], v, diff: v != null ? todayVal - v : null };
+    });
+  } catch (e) {}
+  const fitArr = (pl.average && pl.average.fitness) || [];
   return {
     id,
     name: pl.name || "",
     role: pl.role || "",
     role2: pl.role2 || "",
-    value: Number(pl.value) || 0,
+    value: todayVal,
     change: Number(pl.change) || 0,
     status: pl.status || "",
     points: Number(pl.points) || 0,
     average: (pl.average && Number(pl.average.average)) || 0,
     matches5: (pl.average && Number(pl.average.matches)) || 0,
-    fitness: (pl.average && pl.average.fitness) || [],
+    fitness: fitArr,
+    pronostico: pronosticoFor({ status: pl.status, fitness: fitArr }),
     team: (a.team && a.team.name) || pl.team || "",
     logo: pl.logo ? LOGO_BASE + pl.logo : "",
     photo: pl.photo ? FACE_BASE + pl.photo : "",
     matches,
+    valores,
   };
 }
 
@@ -833,6 +850,18 @@ function statusLabelEs(s) {
   if (x === "doubt") return "DUDA";
   return "OK";
 }
+function pronosticoFor(p) {
+  if (!p) return "";
+  if (p.status === "redcard") return "Sancionado 🟥";
+  if (String(p.status || "").indexOf("injured") === 0) return "Lesionado ❌";
+  if (p.status === "doubt") return "Duda 🟠";
+  const fit = p.fitness || [];
+  const avg = fit.length ? fit.reduce((a, b) => a + (Number(b) || 0), 0) / fit.length : 0;
+  if (avg >= 5) return "Titular probable 🔥";
+  if (avg >= 3) return "Probable ✅";
+  return "Suplente 🤔";
+}
+
 function normKey(s) { return stripAccents(s).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim(); }
 function lev(a, b) {
   const m = a.length, n = b.length;
@@ -903,36 +932,50 @@ async function handleAnaliza(request, env, user) {
   if (!user) return json({ error: "Inicia sesión para analizar tu equipo." }, 401);
   let body;
   try { body = await request.json(); } catch (e) { return json({ error: "Datos inválidos." }, 400); }
-  const img = String(body.img || "");
-  if (!/^data:image\//.test(img) || img.length > 7000000) return json({ error: "Sube una captura de tu equipo (JPG/PNG)." }, 400);
-
-  const visionRaw = await dsChat(env, [{
-    role: "user",
-    content: [
-      { type: "text", text: "Esta imagen es la captura de un equipo de fútbol fantasy dibujado sobre un campo verde. Cada jugador tiene una FOTO y, justo DEBAJO, su NOMBRE. Lee con mucha atención TODOS los nombres (ignora marcas de agua). Responde SOLO con un JSON, sin nada alrededor: {\"formacion\":\"3-4-3\",\"titulares\":[{\"nombre\":\"...\",\"pos\":\"POR|DEF|CEN|DEL\"}],\"suplentes\":[{\"nombre\":\"...\",\"pos\":\"...\"}]}. La formación son 3 números: nº de DEFENSAS-nº de CENTROCAMPISTAS-nº de DELANTEROS (cuéntalos por las líneas del campo, el portero va aparte). Sé literal con los nombres y no inventes jugadores." },
-      { type: "image_url", image_url: { url: img } },
-    ],
-  }], "deepseek-flash", true);
-  if (!visionRaw) return json({ error: "IA no configurada." }, 500);
-  const parseTeam = (raw) => {
-    try {
-      const m = String(raw).match(/\{[\s\S]*\}/);
-      if (m) { const o = JSON.parse(m[0]); if (o && (o.titulares || o.suplentes)) return o; }
-    } catch (e) {}
-    return null;
-  };
-  let team = parseTeam(visionRaw);
-  if (!team) {
-    const raw2 = await dsChat(env, [{
+  let team = null, leido = [];
+  if (Array.isArray(body.jugadores) && body.jugadores.length) {
+    const tit = [], sup = [];
+    for (const j of body.jugadores) {
+      const nombre = String(j.nombre || "").trim();
+      if (!nombre) continue;
+      const o = { nombre, pos: roleShort(j.pos) };
+      if (j.tipo === "suplente") sup.push(o); else tit.push(o);
+    }
+    if (!tit.length && !sup.length) return json({ error: "Sin jugadores." }, 400);
+    team = { titulares: tit, suplentes: sup };
+    leido = [].concat(tit, sup).map((x) => x.nombre);
+  } else {
+    const img = String(body.img || "");
+    if (!/^data:image\//.test(img) || img.length > 7000000) return json({ error: "Sube una captura de tu equipo (JPG/PNG)." }, 400);
+    const visionRaw = await dsChat(env, [{
       role: "user",
       content: [
-        { type: "text", text: "Mira la imagen otra vez con calma y responde ÚNICAMENTE con el JSON pedido ({\"formacion\":\"...\",\"titulares\":[{\"nombre\":\"...\",\"pos\":\"...\"}],\"suplentes\":[...]}), sin nada de texto extra." },
+        { type: "text", text: "Esta imagen es la captura de un equipo de fútbol fantasy dibujado sobre un campo verde. Cada jugador tiene una FOTO y, justo DEBAJO, su NOMBRE. Lee con mucha atención TODOS los nombres (ignora marcas de agua). Responde SOLO con un JSON, sin nada alrededor: {\"formacion\":\"3-4-3\",\"titulares\":[{\"nombre\":\"...\",\"pos\":\"POR|DEF|CEN|DEL\"}],\"suplentes\":[{\"nombre\":\"...\",\"pos\":\"...\"}]}. La formación son 3 números: nº de DEFENSAS-nº de CENTROCAMPISTAS-nº de DELANTEROS (cuéntalos por las líneas del campo, el portero va aparte). Sé literal con los nombres y no inventes jugadores." },
         { type: "image_url", image_url: { url: img } },
       ],
     }], "deepseek-flash", true);
-    team = parseTeam(raw2);
+    if (!visionRaw) return json({ error: "IA no configurada." }, 500);
+    const parseTeam = (raw) => {
+      try {
+        const m = String(raw).match(/\{[\s\S]*\}/);
+        if (m) { const o = JSON.parse(m[0]); if (o && (o.titulares || o.suplentes)) return o; }
+      } catch (e) {}
+      return null;
+    };
+    team = parseTeam(visionRaw);
+    if (!team) {
+      const raw2 = await dsChat(env, [{
+        role: "user",
+        content: [
+          { type: "text", text: "Mira la imagen otra vez con calma y responde ÚNICAMENTE con el JSON pedido ({\"formacion\":\"...\",\"titulares\":[{\"nombre\":\"...\",\"pos\":\"...\"}],\"suplentes\":[...]}), sin nada de texto extra." },
+          { type: "image_url", image_url: { url: img } },
+        ],
+      }], "deepseek-flash", true);
+      team = parseTeam(raw2);
+    }
+    if (!team) return json({ error: "No pude leer el equipo de la captura. Prueba con una captura más nítida (sin recortar).", raw: String(visionRaw).slice(0, 300) }, 422);
+    leido = [].concat(team.titulares || [], team.suplentes || []).map((x) => String(x.nombre || x.name || "").trim()).filter(Boolean);
   }
-  if (!team) return json({ error: "No pude leer el equipo de la captura. Prueba con una captura más nítida (sin recortar).", raw: String(visionRaw).slice(0, 300) }, 422);
 
   let market = { players: [] };
   try { market = await getMarketPlayers(env); } catch (e) {}
@@ -955,8 +998,10 @@ async function handleAnaliza(request, env, user) {
       pos: roleShort(pl.pos) || (p ? roleShort(p.role) : ""),
       equipo: p ? p.team : "",
       estado: p ? statusLabelEs(p.status) : "?",
+      pronostico: p ? pronosticoFor(p) : "",
       puntos: p ? p.points : null,
       valor: p ? p.value : null,
+      fitness: p ? (p.fitness || []) : [],
       photo: p ? p.photo : "",
       rival: mt ? mt.rival : "",
       casa: mt ? mt.home : null,
@@ -971,8 +1016,30 @@ async function handleAnaliza(request, env, user) {
   const ctx = "FORMACIÓN: " + formacion + "\nTITULARES:\n" + titulares.map(line).join("\n") + "\nBANQUILLO:\n" + suplentes.map(line).join("\n");
   const prompt = "Eres un analista experto de fútbol fantasy (Futmondo, puntuación por estadísticas). Te doy el equipo del usuario y datos de cada jugador (estado, puntos y si su equipo juega en CASA o FUERA en el próximo partido).\n\n" + ctx + "\n\nDa un análisis BREVE en español, AGRADABLE de leer, con emojis y palabras en **negrita** (markdown doble asterisco). PROHIBIDO usar almohadillas (#), tablas o líneas de guiones. Máximo 8 líneas cortas. Incluye:\n1) Quién preocupa (lesionados/dudas) y probabilidad de jugar.\n2) 2-3 cambios concretos (a quién sentar y a quién poner), mirando estado, puntos y si juega en casa.\n3) Si cambiarías la formación y a cuál.\n4) Un once ideal. Sé directo.";
   const analisis = await dsChat(env, [{ role: "user", content: prompt }], "deepseek-flash");
-  const leido = [].concat(team.titulares || [], team.suplentes || []).map((x) => String(x.nombre || x.name || "").trim()).filter(Boolean);
   return json({ formacion, titulares, suplentes, analisis, leido });
+}
+
+function dstrMadrid(off) {
+  const { d } = madrid(new Date());
+  const x = new Date(d);
+  x.setUTCDate(x.getUTCDate() - off);
+  const p = (n) => String(n).padStart(2, "0");
+  return x.getUTCFullYear() + "-" + p(x.getUTCMonth() + 1) + "-" + p(x.getUTCDate());
+}
+
+async function snapshotMarket(env, players) {
+  try {
+    const today = dstrMadrid(0);
+    let hist = await env.PORRA.get("fmhist", "json");
+    if (!hist || !Array.isArray(hist.days)) hist = { days: [] };
+    const last = hist.days[hist.days.length - 1];
+    if (last && last.d === today) return;
+    const v = {};
+    (players || []).forEach((pl) => { if (pl.name) v[pl.name] = pl.value; });
+    hist.days.push({ d: today, v });
+    if (hist.days.length > 45) hist.days = hist.days.slice(-45);
+    await env.PORRA.put("fmhist", JSON.stringify(hist));
+  } catch (e) {}
 }
 
 function madrid(now) {

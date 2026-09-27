@@ -475,6 +475,7 @@
     info.appendChild(el("div", "cmp-trend " + (chg > 0 ? "up" : chg < 0 ? "down" : "flat"),
       chg > 0 ? "▲ " + formatDots(chg) + " €" + pct(d.value || p.value, chg) : chg < 0 ? "▼ " + formatDots(-chg) + " €" + pct(d.value || p.value, chg) : "—"));
     info.appendChild(el("div", "cmp-status", statusLabel(d.status || p.status)));
+    if (d.pronostico) info.appendChild(el("div", "ficha-pron", "Pronóstico: " + d.pronostico));
     head.appendChild(info);
     root.appendChild(head);
 
@@ -506,6 +507,47 @@
       });
       root.appendChild(tbl);
     }
+
+    const vals = d.valores || [];
+    if (vals.length && vals.some((x) => x.v != null)) {
+      root.appendChild(el("div", "estado-title", "Valor de mercado"));
+      const box = el("div", "ficha-vals");
+      vals.forEach((x) => {
+        const r = el("div", "fv-row");
+        r.appendChild(el("span", "fv-label", x.label));
+        if (x.diff != null) {
+          const up = x.diff >= 0;
+          r.appendChild(el("span", "fv-diff " + (up ? "up" : "down"), (up ? "▲ +" : "▼ −") + formatDots(Math.abs(x.diff)) + " €"));
+        } else r.appendChild(el("span", "fv-diff", ""));
+        r.appendChild(el("span", "fv-val", x.v != null ? money(x.v) + " €" : "—"));
+        box.appendChild(r);
+      });
+      root.appendChild(box);
+      const pts = vals.filter((x) => x.v != null).reverse();
+      if (pts.length >= 2) {
+        const w = 320, h = 90, pad = 8;
+        const maxv = Math.max.apply(null, pts.map((x) => x.v));
+        const minv = Math.min.apply(null, pts.map((x) => x.v));
+        const nn = pts.length;
+        const coords = pts.map((x, i) => [
+          pad + (i / (nn - 1)) * (w - 2 * pad),
+          h - pad - ((x.v - minv) / Math.max(1, maxv - minv)) * (h - 2 * pad),
+        ]);
+        const svgNS = "http://www.w3.org/2000/svg";
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.setAttribute("viewBox", "0 0 " + w + " " + h);
+        svg.setAttribute("class", "ficha-chart");
+        const pa = document.createElementNS(svgNS, "path");
+        pa.setAttribute("d", coords.map((c, i) => (i ? "L" : "M") + c[0].toFixed(1) + " " + c[1].toFixed(1)).join(" "));
+        pa.setAttribute("fill", "none");
+        pa.setAttribute("stroke", "#22c55e");
+        pa.setAttribute("stroke-width", "2.5");
+        pa.setAttribute("stroke-linejoin", "round");
+        svg.appendChild(pa);
+        coords.forEach((c) => { const ci = document.createElementNS(svgNS, "circle"); ci.setAttribute("cx", c[0].toFixed(1)); ci.setAttribute("cy", c[1].toFixed(1)); ci.setAttribute("r", "2.4"); ci.setAttribute("fill", "#22c55e"); svg.appendChild(ci); });
+        root.appendChild(svg);
+      }
+    }
     return root;
   }
 
@@ -527,12 +569,89 @@
       .split(/\n+/).filter((x) => x.trim()).map((ln) => "<p>" + ln.trim() + "</p>").join("");
   }
 
+  let anData = null, anStale = false;
+  function openPicker(title, cb) {
+    const root = el("div");
+    root.appendChild(el("h2", "ficha-name", title || "Elegir jugador"));
+    const inp = el("input", "market-search"); inp.placeholder = "Buscar jugador por nombre…"; inp.autocomplete = "off";
+    root.appendChild(inp);
+    const list = el("div", "pick-list");
+    root.appendChild(list);
+    const render = () => {
+      const q = stripAccents(inp.value.trim());
+      let arr = q ? all.filter((p) => stripAccents(p.name).includes(q)) : all.slice().sort((a, b) => b.value - a.value);
+      list.innerHTML = "";
+      arr.slice(0, 60).forEach((p) => {
+        const row = el("button", "cmp-sugrow"); row.type = "button";
+        const ph = el("span", "cmp-sugphoto"); ph.appendChild(photoImg(p.photo)); row.appendChild(ph);
+        const bb = el("span", "cmp-sugbody");
+        bb.appendChild(el("span", "cmp-sugname", p.name));
+        bb.appendChild(el("span", "cmp-sugteam", p.team || ""));
+        row.appendChild(bb);
+        row.appendChild(el("span", "cmp-sugval", money(p.value) + " €"));
+        row.addEventListener("click", () => { cb(p); closeModal(); });
+        list.appendChild(row);
+      });
+      if (!arr.length) list.appendChild(el("p", "muted small", "Sin resultados."));
+    };
+    inp.addEventListener("input", render);
+    showModal(root);
+    render();
+    inp.focus();
+  }
+  function toPlayer(pl, pos) {
+    return {
+      nombre: pl.name, pos: roleBadge(pl.role) || pos || "", equipo: pl.team || "",
+      estado: statusLabel(pl.status), puntos: pl.points, valor: pl.value,
+      fitness: pl.fitness || [], photo: pl.photo || "", casa: null, rival: "",
+    };
+  }
+  function applyPlayer(target, pl) {
+    Object.assign(target, toPlayer(pl, target.pos));
+    anStale = true;
+    renderAnalisis(anData);
+  }
+  function addPlayer(tipo, pl) {
+    if (!anData) return;
+    const arr = tipo === "suplente" ? (anData.suplentes = anData.suplentes || []) : (anData.titulares = anData.titulares || []);
+    arr.push(toPlayer(pl));
+    anStale = true;
+    renderAnalisis(anData);
+  }
+  function flatPlayers(d) {
+    const out = [];
+    (d.titulares || []).forEach((p) => out.push({ nombre: p.nombre, pos: p.pos, tipo: "titular" }));
+    (d.suplentes || []).forEach((p) => out.push({ nombre: p.nombre, pos: p.pos, tipo: "suplente" }));
+    return out;
+  }
+  async function reanalizar() {
+    if (!anData) return;
+    $("anMsg").textContent = "🧠 Reanalizando con tus jugadores… (20-40 s)";
+    try {
+      const r = await fetch(API + "/analiza", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jugadores: flatPlayers(anData) }) });
+      const d = await r.json();
+      if (!r.ok) { $("anMsg").textContent = d.error || "No se pudo analizar."; return; }
+      $("anMsg").textContent = "";
+      anStale = false;
+      renderAnalisis(d);
+    } catch (e) { $("anMsg").textContent = "Error de red."; }
+  }
+
   function renderAnalisis(d) {
+    anData = d;
     const out = $("anOut");
     if (!out) return;
     out.innerHTML = "";
     if (d.formacion) out.appendChild(el("div", "an-form", "Formación detectada: " + d.formacion));
-    if (d.leido && d.leido.length) out.appendChild(el("div", "an-leido", "🔎 La IA leyó: " + d.leido.join(", ")));
+    if (d.leido && d.leido.length && !anStale) out.appendChild(el("div", "an-leido", "🔎 La IA leyó: " + d.leido.join(", ")));
+    if (anStale) {
+      const bar = el("div", "an-tools");
+      bar.appendChild(el("div", "an-stale", "✏️ Has cambiado jugadores. Vuelve a analizar:"));
+      const b = el("button", "btn-primary big", "🔄 Analizar de nuevo");
+      b.addEventListener("click", reanalizar);
+      bar.appendChild(b);
+      out.appendChild(bar);
+    }
 
     const rows = ["DEL", "CEN", "DEF", "POR"];
     const field = el("div", "pitch");
@@ -558,26 +677,38 @@
     });
     if (field.children.length) out.appendChild(field);
 
-    const table = (title, list) => {
+    const table = (title, list, tipo) => {
       const sec = el("div", "estado-sec");
       sec.appendChild(el("div", "estado-title", title));
       const box = el("div", "an-list");
       (list || []).forEach((p) => {
         const row = el("div", "an-row");
         row.appendChild(el("span", "an-pos", p.pos || ""));
-        row.appendChild(el("span", "an-name", p.nombre || ""));
-        row.appendChild(el("span", "an-team", p.equipo || ""));
+        const main = el("div", "an-main");
+        main.appendChild(el("span", "an-name", p.nombre || ""));
+        const sub = [];
+        if (p.equipo) sub.push(p.equipo);
+        if (p.fitness && p.fitness.length) sub.push("Últ5: " + p.fitness.join("·"));
+        if (p.pronostico) sub.push(p.pronostico);
+        if (sub.length) main.appendChild(el("span", "an-sub", sub.join("  ·  ")));
+        row.appendChild(main);
         const cls = p.estado === "LESIÓN" ? "inj" : p.estado === "SANCIÓN" ? "red" : p.estado === "DUDA" ? "doubt" : "ok";
         row.appendChild(el("span", "an-st st-" + cls, p.estado || ""));
-        row.appendChild(el("span", "an-ha", p.casa === true ? "Casa" : p.casa === false ? "Fuera" : ""));
+        row.appendChild(el("span", "an-ha", p.casa === true ? "🏠" : p.casa === false ? "✈️" : ""));
         row.appendChild(el("span", "an-pts", p.puntos != null ? p.puntos + " pts" : ""));
+        const ed = el("span", "an-edit", "✏️");
+        ed.title = "Cambiar jugador";
+        ed.addEventListener("click", () => openPicker("Cambiar jugador", (pl) => applyPlayer(p, pl)));
+        row.appendChild(ed);
         box.appendChild(row);
       });
-      sec.appendChild(box);
+      const add = el("button", "btn-ghost an-add", "➕ Añadir al " + (tipo === "suplente" ? "banquillo" : "once"));
+      add.addEventListener("click", () => openPicker("Añadir jugador", (pl) => addPlayer(tipo, pl)));
+      sec.appendChild(add);
       return sec;
     };
-    if ((d.titulares || []).length) out.appendChild(table("Titulares", d.titulares));
-    if ((d.suplentes || []).length) out.appendChild(table("Banquillo", d.suplentes));
+    if ((d.titulares || []).length) out.appendChild(table("Titulares", d.titulares, "titular"));
+    if ((d.suplentes || []).length) out.appendChild(table("Banquillo", d.suplentes, "suplente"));
     if (d.analisis) {
       const sec = el("div", "estado-sec");
       sec.appendChild(el("div", "estado-title", "Recomendaciones de la IA"));

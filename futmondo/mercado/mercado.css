@@ -135,6 +135,26 @@
 .cmp-sugname { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cmp-sugteam { font-size: 0.74rem; color: #9fb0c4; }
 .cmp-sugval { font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+
+/* Corrección del equipo + histórico + pronóstico */
+.an-row { grid-template-columns: 34px minmax(0,1fr) 58px 38px 46px 22px; }
+.an-main { display: flex; flex-direction: column; overflow: hidden; }
+.an-sub { font-size: 0.66rem; color: #9fb0c4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.an-edit { cursor: pointer; text-align: center; font-size: 0.9rem; }
+.an-add { margin-top: 8px; }
+.an-tools { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; margin: 10px 0; }
+.an-stale { font-size: 0.82rem; color: #eab308; }
+.pick-list { margin-top: 10px; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; max-height: 52vh; overflow-y: auto; }
+.ficha-pron { font-weight: 700; margin-top: 4px; }
+.ficha-vals { display: grid; gap: 2px; margin: 6px 0 10px; }
+.fv-row { display: grid; grid-template-columns: 76px 1fr auto; gap: 8px; padding: 5px 0; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.86rem; align-items: center; }
+.fv-row:first-child { border-top: none; }
+.fv-label { color: #9fb0c4; }
+.fv-diff { font-weight: 700; font-size: 0.82rem; }
+.fv-diff.up { color: #22c55e; }
+.fv-diff.down { color: #ef4444; }
+.fv-val { font-weight: 700; text-align: right; }
+.ficha-chart { width: 100%; height: auto; margin-top: 8px; background: rgba(255,255,255,0.03); border-radius: 10px; }
 .merc-club.merc-club-all { width: auto; padding: 0 12px; border-radius: 999px; font-size: 0.82rem; font-weight: 700; color: var(--text); }
 
 /* Campo de fútbol (analiza) */
