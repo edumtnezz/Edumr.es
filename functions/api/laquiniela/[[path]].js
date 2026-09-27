@@ -719,9 +719,8 @@ function nextTuesday2200Utc(now) {
 
 // Ventana de subasta: lunes 00:00 -> martes 22:00 (hora de Madrid)
 function inPujaWindow(now) {
-  const { d } = madrid(now);
-  const wd = d.getUTCDay(); // 0 dom, 1 lun, 2 mar
-  return wd === 1 || (wd === 2 && d.getUTCHours() < 22);
+  // TEMPORAL: puja de prueba (permite abrir fuera de la franja). Se revierte.
+  return true;
 }
 
 // Próxima apertura (siguiente lunes 00:00, hora de Madrid)
