@@ -528,9 +528,8 @@ function elegirJugador(p) {
   const bs = $("pjBase"); if (bs) bs.value = formatDots(p.value);
   const hid = $("pjPhoto"); if (hid) hid.value = p.photo || "";
   const chg = Number(p.change) || 0;
-  const trendHtml = chg > 0 ? ' <span class="up">▲ ' + formatDots(chg) + " €</span>" : chg < 0 ? ' <span class="down">▼ ' + formatDots(-chg) + " €</span>" : "";
   const bi = $("pjBaseInfo");
-  if (bi) bi.innerHTML = "Valor de mercado: <b>" + money(p.value) + " €</b>" + trendHtml + " · el precio no puede ser menor.";
+  if (bi) bi.textContent = "El precio de salida no puede ser menor que su valor.";
   const prev = $("pjPreview");
   if (prev) {
     prev.innerHTML = "";
