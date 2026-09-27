@@ -711,6 +711,14 @@ function cleanArticle(s) {
     .trim();
 }
 
+function cleanBrand(s) {
+  return String(s || "")
+    .replace(/<a\b[^>]*>([\s\S]*?)<\/a>/gi, "$1")
+    .replace(/(?<![.\w])f[uú]tbolfantasy(?![.\w])/gi, "")
+    .replace(/(?<![.\w])footballfantasy(?![.\w])/gi, "")
+    .replace(/<span[^>]*class="[^"]*brand[^"]*"[^>]*>[\s\S]*?<\/span>/gi, "");
+}
+
 async function getNoticia(url) {
   if (!/^https:\/\/www\.futbolfantasy\.com\//.test(String(url || ""))) return { error: "no permitido" };
   const res = await fetch(url, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
@@ -742,7 +750,7 @@ async function getNoticia(url) {
     }
     if (parts.length) body = cleanArticle(parts.join(""));
   }
-  return { title, lead, html: body };
+  return { title: cleanBrand(title), lead: cleanBrand(lead), html: cleanBrand(body) };
 }
 
 async function playerFicha(env, id) {
@@ -802,14 +810,14 @@ async function getFfNoticias() {
     const res = await fetch("https://www.futbolfantasy.com/laliga/noticias", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
     const html = await res.text();
     const out = [];
+    const EX = /(jerarqu|internacional|convoc|entrenador|t[eé]cnico|rueda de prensa|declaraci|palabras|gu[ií]a|onces?|alineaci|cr[oó]nica|amistoso|camiseta|equipaci|predicci|apuestas)/i;
     for (const part of html.split('<div class="noticia">').slice(1)) {
       const block = part.slice(0, 600);
       const date = ((block.match(/class="date">([^<]*)</) || [])[1] || "").trim();
-      const icon = (block.match(/<img[^>]+src="([^"]+)"/) || [])[1] || "";
       const link = (block.match(/<a[^>]+href="([^"]+)"/) || [])[1] || "";
       const title = ((block.match(/<a[^>]*>([^<]+)<\/a>/) || [])[1] || "").trim();
-      if (link && title) out.push({ date, icon, link, title });
-      if (out.length >= 30) break;
+      if (link && title && !EX.test(title)) out.push({ date, link, title });
+      if (out.length >= 25) break;
     }
     return out;
   } catch (e) {

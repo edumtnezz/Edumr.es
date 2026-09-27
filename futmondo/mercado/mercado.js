@@ -217,38 +217,56 @@
     input.addEventListener("input", () => { if (input === $("cmpA")) selA = null; else selB = null; sugList(input, box, pick); });
   }
 
+  function pronosticoOf(p) {
+    if (p.status === "redcard") return "Sancionado 🟥";
+    if (String(p.status || "").indexOf("injured") === 0) return "Lesionado ❌";
+    if (p.status === "doubt") return "Duda 🟠";
+    const f = p.fitness || [];
+    const avg = f.length ? f.reduce((s, x) => s + (Number(x) || 0), 0) / f.length : 0;
+    return avg >= 5 ? "Titular 🔥" : avg >= 3 ? "Probable ✅" : "Suplente 🤔";
+  }
+  function cmpCard(p) {
+    const c = el("div", "cmp2-card");
+    const ph = el("div", "cmp2-photo");
+    ph.appendChild(photoImg(p.photo));
+    c.appendChild(ph);
+    c.appendChild(el("div", "cmp2-name", p.name));
+    const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
+    if (rb) c.appendChild(el("span", "mcard-role" + (rb2 ? " multi" : ""), rb + (rb2 ? " · " + rb2 : "")));
+    c.appendChild(el("div", "cmp2-team", p.team || ""));
+    return c;
+  }
   function renderComparador() {
     const out = $("cmpOut");
     if (!out) return;
     out.innerHTML = "";
     const a = selA, b = selB;
-    if (!a || !b) { out.appendChild(el("p", "muted small", "Toca el buscador y elige dos jugadores (con foto) para compararlos.")); return; }
-    const wrap = el("div", "cmp-cols");
-    const side = (p) => {
-      const d = el("div", "cmp-side");
-      const ph = el("div", "mcard-photo");
-      ph.appendChild(photoImg(p.photo, "mcard-img"));
-      d.appendChild(ph);
-      d.appendChild(el("div", "cmp-name", p.name));
-      const rbs = roleBadge(p.role), rb2s = roleBadge(p.role2);
-      if (rbs) {
-        const roles = el("div", "mcard-roles");
-        const b = el("span", "mcard-role" + (rb2s ? " multi" : ""), rbs + (rb2s ? " · " + rb2s : ""));
-        b.title = roleFull(p.role) + (rb2s ? " · " + roleFull(p.role2) + " (multiposición)" : "");
-        roles.appendChild(b);
-        d.appendChild(roles);
-      }
-      d.appendChild(el("div", "muted small", p.team || ""));
-      d.appendChild(el("div", "cmp-val", money(p.value) + " €"));
-      const chg = Number(p.change) || 0;
-      d.appendChild(el("div", "cmp-trend " + (chg > 0 ? "up" : chg < 0 ? "down" : "flat"),
-        chg > 0 ? "▲ " + formatDots(chg) + " €" + pct(p.value, chg) : chg < 0 ? "▼ " + formatDots(-chg) + " €" + pct(p.value, chg) : "—"));
-      d.appendChild(el("div", "cmp-status", statusLabel(p.status)));
-      return d;
+    if (!a || !b) { out.appendChild(el("p", "muted small", "Toca el buscador y elige dos jugadores para compararlos.")); return; }
+    const grid = el("div", "cmp2");
+    grid.appendChild(cmpCard(a));
+    grid.appendChild(el("div", "cmp2-vs", "VS"));
+    grid.appendChild(cmpCard(b));
+    out.appendChild(grid);
+    const avg = (p) => { const f = p.fitness || []; return f.length ? f.reduce((s, x) => s + (Number(x) || 0), 0) / f.length : 0; };
+    const stats = el("div", "cmp2-stats");
+    const stat = (label, va, vb, wa, wb) => {
+      const row = el("div", "cmp2-row");
+      row.appendChild(el("span", "cmp2-cell" + (wa ? " win" : ""), va));
+      row.appendChild(el("span", "cmp2-lab", label));
+      row.appendChild(el("span", "cmp2-cell right" + (wb ? " win" : ""), vb));
+      stats.appendChild(row);
     };
-    wrap.appendChild(side(a));
-    wrap.appendChild(side(b));
-    out.appendChild(wrap);
+    const va = Number(a.value) || 0, vb = Number(b.value) || 0;
+    stat("Valor", money(va) + " €", money(vb) + " €", va > vb, vb > va);
+    const pa = Number(a.points) || 0, pb = Number(b.points) || 0;
+    stat("Puntos", String(pa), String(pb), pa > pb, pb > pa);
+    const ma = avg(a), mb = avg(b);
+    stat("Media ú.5", ma.toFixed(1).replace(".", ","), mb.toFixed(1).replace(".", ","), ma > mb, mb > ma);
+    const ca = Number(a.change) || 0, cb = Number(b.change) || 0;
+    stat("Tendencia", (ca >= 0 ? "▲ +" : "▼ −") + formatDots(Math.abs(ca)) + " €", (cb >= 0 ? "▲ +" : "▼ −") + formatDots(Math.abs(cb)) + " €", ca > cb, cb > ca);
+    stat("Estado", statusLabel(a.status), statusLabel(b.status), false, false);
+    stat("Pronóstico", pronosticoOf(a), pronosticoOf(b), false, false);
+    out.appendChild(stats);
   }
 
   function updateTime(at) {
@@ -373,7 +391,7 @@
       list.forEach((x) => {
         const it = el("div", "news-item news-link");
         it.addEventListener("click", () => openNoticia(x.link, x.title));
-        if (x.icon) { const im = el("img", "news-ico"); im.src = x.icon; im.alt = ""; im.loading = "lazy"; it.appendChild(im); }
+        const im = el("img", "news-ico"); im.src = "/img/balon.svg"; im.alt = ""; im.loading = "lazy"; it.appendChild(im);
         const b = el("div", "news-body");
         b.appendChild(el("div", "news-title", x.title));
         b.appendChild(el("div", "news-date", x.date));
