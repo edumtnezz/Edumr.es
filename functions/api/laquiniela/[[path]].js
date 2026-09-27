@@ -687,7 +687,7 @@ async function searchMercado(env, q) {
   let list = players;
   if (query) list = players.filter((p) => stripAccents(p.name.toLowerCase()).includes(query));
   list = list.slice().sort((a, b) => b.value - a.value);
-  const limit = query ? 60 : 300;
+  const limit = query ? 80 : 700;
   return json({ players: list.slice(0, limit), updatedAt: cache.at || null });
 }
 
