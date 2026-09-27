@@ -110,3 +110,14 @@
 .an-ha { font-size: 0.76rem; text-align: center; }
 .an-pts { text-align: right; font-weight: 700; }
 .an-text p { margin: 8px 0; line-height: 1.6; }
+
+/* Ficha: forzar contraste correcto (fondo oscuro + texto claro) */
+.ficha-overlay .ficha-modal { background: #0d131d; color: #e9eef6; border-color: rgba(255,255,255,0.14); }
+.ficha-modal .ficha-name, .ficha-modal .fs-val, .ficha-modal .fm-pts, .ficha-modal h2 { color: #ffffff; }
+.ficha-modal .muted, .ficha-modal .fs-lab, .ficha-modal .cmp-status, .ficha-modal .fm-j { color: #9fb0c4; }
+.ficha-modal .fm-match { color: #e9eef6; }
+.ficha-modal .ficha-stat { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.12); }
+.ficha-modal .fm-row { border-top-color: rgba(255,255,255,0.10); }
+.ficha-modal .ficha-close { color: #ffffff; border-color: rgba(255,255,255,0.22); }
+.ficha-modal a { color: #22c55e; }
+.ficha-modal .art-body, .ficha-modal .art-body p, .ficha-modal .art-lead { color: #dfe6ef; }

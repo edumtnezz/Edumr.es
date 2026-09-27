@@ -431,7 +431,7 @@
     const stats = el("div", "ficha-stats");
     const st = (label, val) => { const c = el("div", "ficha-stat"); c.appendChild(el("div", "fs-val", String(val))); c.appendChild(el("div", "fs-lab", label)); stats.appendChild(c); };
     st("Puntos", d.points || 0);
-    st("Media", String(d.average || 0).replace(".", ","));
+    st("Media", String(Math.round((Number(d.average) || 0) * 10) / 10).replace(".", ","));
     st("Partidos", d.matches5 || 0);
     root.appendChild(stats);
 
