@@ -1,0 +1,31 @@
+/* Mercado · Futmondo EduMR */
+.merc-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 12px 0 18px; }
+.merc-col { background: var(--card-solid, rgba(255,255,255,0.04)); border: 1px solid var(--border); border-radius: 14px; padding: 12px; }
+.merc-col-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.95rem; margin-bottom: 8px; }
+.merc-col-title.up { color: #22c55e; }
+.merc-col-title.down { color: #ef4444; }
+.merc-row { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; font-size: 0.86rem; border-top: 1px solid var(--border); }
+.merc-row:first-of-type { border-top: none; }
+.merc-row-name { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.merc-row-val { font-weight: 700; white-space: nowrap; }
+.merc-row-val.up { color: #22c55e; }
+.merc-row-val.down { color: #ef4444; }
+
+.estado-sec { margin-bottom: 22px; }
+.estado-title { font-family: 'Space Grotesk', sans-serif; font-size: 1.05rem; margin: 4px 0 10px; }
+
+.cmp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0 14px; }
+.cmp-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.cmp-side { background: var(--card-solid, rgba(255,255,255,0.04)); border: 1px solid var(--border); border-radius: 14px; padding: 14px; text-align: center; }
+.cmp-side .mcard-photo { margin: 0 auto 10px; }
+.cmp-name { font-weight: 700; margin-bottom: 2px; }
+.cmp-val { font-weight: 700; margin-top: 6px; }
+.cmp-trend { font-weight: 700; font-size: 0.9rem; }
+.cmp-trend.up { color: #22c55e; }
+.cmp-trend.down { color: #ef4444; }
+.cmp-trend.flat { color: var(--text-muted, #888); }
+.cmp-status { margin-top: 6px; font-size: 0.85rem; color: var(--text-muted, #aaa); }
+
+@media (max-width: 560px) {
+  .merc-cols { grid-template-columns: 1fr; }
+}

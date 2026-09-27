@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mercado · Futmondo EduMR</title>
+  <meta name="description" content="Valores, subidas y bajadas y estado de los jugadores de tu liga de Futmondo Social.">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#07090e">
+  <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="../theme.js?v=64"></script>
+  <link rel="stylesheet" href="../quiniela/quiniela.css?v=110">
+  <link rel="stylesheet" href="mercado.css?v=1">
+</head>
+<body class="page-simple">
+  <div class="grass-band"></div>
+  <header class="appbar">
+    <div class="appbar-inner">
+      <div class="appbar-top">
+        <a class="appbar-brand" href="../"><h1>Mercado</h1></a>
+        <a class="top-btn appbar-inicio" href="../">Inicio</a>
+        <div class="top-right-tools">
+          <div class="tools-row">
+            <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema" title="Modo claro / oscuro"><svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg><svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+          </div>
+        </div>
+      </div>
+      <nav class="tabs" id="tabsNav">
+        <button class="tab active" data-tab="mercado">Mercado</button>
+        <button class="tab" data-tab="estado">Estado</button>
+        <button class="tab" data-tab="comparador">Comparador</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="quiniela-main">
+    <section class="tab-panel" id="tab-mercado">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Mercado</h2>
+          <span class="muted small" id="mercadoUpdated"></span>
+        </div>
+        <p class="muted small">Valores de <b>Futmondo Social</b> y su tendencia del día.</p>
+        <div id="mercHighlights"></div>
+        <input id="mjSearch" class="market-search" type="text" placeholder="Buscar jugador…" autocomplete="off">
+        <div class="market-grid" id="marketGrid"></div>
+      </section>
+    </section>
+
+    <section class="tab-panel hidden" id="tab-estado">
+      <section class="panel">
+        <h2>Estado</h2>
+        <p class="muted small">Lesionados, sancionados y dudas de tu liga de Futmondo Social.</p>
+        <div id="estadoBox"></div>
+      </section>
+    </section>
+
+    <section class="tab-panel hidden" id="tab-comparador">
+      <section class="panel">
+        <h2>Comparador</h2>
+        <p class="muted small">Compara dos jugadores: valor, tendencia y estado.</p>
+        <div class="cmp-row">
+          <input id="cmpA" class="market-search" list="cmpList" placeholder="Jugador A…" autocomplete="off">
+          <input id="cmpB" class="market-search" list="cmpList" placeholder="Jugador B…" autocomplete="off">
+        </div>
+        <datalist id="cmpList"></datalist>
+        <div id="cmpOut"></div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="quiniela-footer"></footer>
+
+  <script src="mercado.js?v=1"></script>
+</body>
+</html>
