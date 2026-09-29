@@ -1296,7 +1296,14 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .outbid-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.05rem; color: var(--amber); }
 .outbid-sub { font-size: 0.9rem; color: var(--muted); }
 .bid-extras { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 10px; }
-.share-btn { display: block; margin: 12px auto 0; }
+.share-btn { display: block; margin: 18px auto 0; }
+.puja-sep { height: 1px; background: var(--border); margin: 16px 0 12px; }
+.puja-sec { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.95rem; color: var(--text); margin: 0 0 8px; }
+.puja-base { margin-top: 10px; }
+.puja-pcard { margin: 8px 0 4px; }
+.puja-photo { margin-bottom: 8px; }
+.bid-lead { margin: 4px 0 10px; }
+.bid-list { gap: 8px; }
 #toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 30px); background: #10b981; color: #04120c; font-weight: 800; padding: 14px 22px; border-radius: 14px; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35); opacity: 0; pointer-events: none; transition: all 0.3s ease; z-index: 200; font-family: 'Space Grotesk', sans-serif; max-width: 90vw; text-align: center; }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 .winner-box { text-align: center; padding: 22px; border-radius: 16px; border: 1px solid rgba(16, 185, 129, 0.5); background: linear-gradient(135deg, rgba(16, 185, 129, 0.16), rgba(16, 185, 129, 0.03)); margin-top: 18px; }

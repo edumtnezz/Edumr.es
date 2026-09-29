@@ -173,12 +173,33 @@ function render() {
     const baseTxt = el("div", "puja-base");
     baseTxt.innerHTML = "Precio de salida: <b>" + money(p.base) + " €</b> · la saca <b>" + escapeHtml(p.creator) + "</b>";
     panel.appendChild(baseTxt);
-    const shareBtn = el("button", "btn-ghost share-btn", "📲 Compartir por WhatsApp");
-    shareBtn.addEventListener("click", () => shareWhatsApp(p));
-    panel.appendChild(shareBtn);
   } else if (!p) {
     panel.appendChild(el("div", "puja-player", "Sin subasta activa"));
   }
+
+  // Pujas (clasificación en vivo)
+  const list = el("div", "bid-list");
+  const bids = ((p && p.bids) || []).slice().sort((a, b) => b.amount - a.amount);
+  const top = bids[0];
+  if (p && p.status === "open") {
+    const bs = el("div", "puja-sec", "Pujas" + (bids.length ? " (" + bids.length + ")" : ""));
+    list.appendChild(bs);
+  }
+  bids.forEach((bd) => {
+    const row = el("div", "bid-row");
+    const isTop = top && bd.amount === top.amount;
+    if (isTop) row.classList.add("top");
+    if (data.user && bd.user === data.user.name) {
+      row.classList.add("mine");
+      if (!isTop) row.classList.add("losing");
+    }
+    row.appendChild(el("span", "bid-user", bd.user));
+    if (bd.at) row.appendChild(el("span", "bid-time", hortxt(bd.at)));
+    row.appendChild(el("span", "bid-amount", money(bd.amount) + " €"));
+    list.appendChild(row);
+  });
+  if (!bids.length && (!p || p.status === "open")) list.appendChild(el("p", "empty", "Todavía no hay pujas."));
+  if (bids.length || (p && p.status === "open")) { panel.appendChild(el("div", "puja-sep")); panel.appendChild(list); }
 
   if (user) {
     const open = p && p.status === "open";
@@ -227,6 +248,8 @@ function render() {
       iWasLeading = iLead;
       suppressOutbid = false;
 
+      panel.appendChild(el("div", "puja-sep"));
+      panel.appendChild(el("div", "puja-sec", "Pujar"));
       const lead = el("div", "bid-lead");
       if (leader) lead.innerHTML = "Va primero <b>" + escapeHtml(leader.user) + "</b> con <b>" + money(leader.amount) + " €</b>";
       else lead.textContent = "Aún no hay pujas. ¡Sé el primero!";
@@ -258,25 +281,26 @@ function render() {
     }
   }
 
-  // Clasificación / participantes (pujas)
-  const list = el("div", "bid-list");
-  const bids = ((p && p.bids) || []).slice().sort((a, b) => b.amount - a.amount);
-  const top = bids[0];
-  bids.forEach((bd) => {
-    const row = el("div", "bid-row");
-    const isTop = top && bd.amount === top.amount;
-    if (isTop) row.classList.add("top");
-    if (data.user && bd.user === data.user.name) {
-      row.classList.add("mine");
-      if (!isTop) row.classList.add("losing");
+  if (p && p.status === "closed") {
+    if (!user) {
+      const w = el("div", "winner-box");
+      if (p.winner) {
+        w.appendChild(el("div", "muted", "Ganador"));
+        w.appendChild(el("div", "w-name", p.winner.user));
+        w.appendChild(el("div", "w-amount", money(p.winner.amount) + " €"));
+      } else {
+        w.appendChild(el("div", "muted", "Nadie pujó."));
+      }
+      panel.appendChild(w);
     }
-    row.appendChild(el("span", "bid-user", bd.user));
-    if (bd.at) row.appendChild(el("span", "bid-time", hortxt(bd.at)));
-    row.appendChild(el("span", "bid-amount", money(bd.amount) + " €"));
-    list.appendChild(row);
-  });
-  if (!bids.length) list.appendChild(el("p", "empty", "Todavía no hay pujas."));
-  panel.appendChild(list);
+    const wb = el("button", "btn-primary big share-btn", "📲 Enviar resultado por WhatsApp");
+    wb.addEventListener("click", () => shareWhatsApp(p));
+    panel.appendChild(wb);
+  } else if (p && p.status === "open") {
+    const shareBtn = el("button", "btn-ghost share-btn", "📲 Compartir por WhatsApp");
+    shareBtn.addEventListener("click", () => shareWhatsApp(p));
+    panel.appendChild(shareBtn);
+  }
 
   renderHistory();
 
@@ -648,7 +672,14 @@ function toast(msg) {
 function shareWhatsApp(p) {
   if (!p) return;
   const url = "https://edumr.es/futmondo/pujas/";
-  const txt = "🟢 Subasta en Futmondo MR\n\nJugador: " + p.player + "\nPrecio de salida: " + money(p.base) + " €\n\n¡Entra y puja! 👉 " + url;
+  let txt;
+  if (p.status === "closed") {
+    if (p.winner) txt = "🏆 Subasta finalizada en Futmondo MR\n\nJugador: " + p.player + "\nGanador: " + p.winner.user + "\nPuja ganadora: " + money(p.winner.amount) + " €";
+    else txt = "🏁 Subasta finalizada en Futmondo MR\n\nJugador: " + p.player + "\nNadie pujó esta vez.";
+    txt += "\n\n👉 " + url;
+  } else {
+    txt = "🟢 Subasta en Futmondo MR\n\nJugador: " + p.player + "\nPrecio de salida: " + money(p.base) + " €\n\n¡Entra y puja! 👉 " + url;
+  }
   window.open("https://wa.me/?text=" + encodeURIComponent(txt), "_blank");
 }
 
