@@ -887,33 +887,43 @@ async function playerFicha(env, id) {
       finished: m.st === "F",
       stats: g("stats"), picas: g("picas"), ff: g("ff"), ss: g("ss"), as: g("as"), marca: g("marca"),
     };
-  }).slice(0, 12);
+  }).slice(0, 60);
   const todayVal = Number(pl.value) || 0;
-  let valores = [];
+  const ptsSum = matches.reduce((s, m) => s + (Number(m.stats) || 0), 0);
+  const played = matches.length;
+  const order = [["Hoy", 0], ["Ayer", 1], ["2 días", 2], ["3 días", 3], ["5 días", 5], ["10 días", 10], ["14 días", 14], ["30 días", 30]];
+  let serie = null, temporada = null;
   try {
-    const h = await env.PORRA.get("fmhist", "json");
-    const byDate = {};
-    if (h && Array.isArray(h.days)) h.days.forEach((x) => { if (x.v && x.v[pl.name] != null) byDate[x.d] = x.v[pl.name]; });
-    const order = [["Hoy", 0], ["Ayer", 1], ["2 días", 2], ["3 días", 3], ["5 días", 5], ["10 días", 10], ["14 días", 14], ["30 días", 30]];
-    valores = order.map((o) => {
-      const v = o[1] === 0 ? todayVal : (byDate[dstrMadrid(o[1])] != null ? byDate[dstrMadrid(o[1])] : null);
-      return { label: o[0], days: o[1], v, diff: (o[1] === 0 || v == null) ? null : todayVal - v };
-    });
-  } catch (e) {}
-  let temporada = null;
-  try {
-    const pts = await ffSeason(env, pl.name || "");
-    if (pts) {
-      const first = pts[0], last = pts[pts.length - 1];
+    serie = await ffSeason(env, pl.name || "");
+    if (serie && serie.length >= 2) {
+      const first = serie[0], last = serie[serie.length - 1];
       temporada = {
         desde: first.d, hasta: last.d, v0: first.v, v1: last.v,
         diff: last.v - first.v,
         pct: first.v > 0 ? ((last.v - first.v) / first.v) * 100 : 0,
-        n: pts.length,
-        serie: pts,
+        n: serie.length,
+        serie,
       };
     }
   } catch (e) {}
+  let valores = [];
+  if (serie && serie.length >= 2) {
+    valores = order.map((o) => {
+      const idx = serie.length - 1 - o[1];
+      const v = o[1] === 0 ? (todayVal || serie[serie.length - 1].v) : (idx >= 0 ? serie[idx].v : null);
+      return { label: o[0], days: o[1], v, diff: (o[1] === 0 || v == null) ? null : todayVal - v };
+    });
+  } else {
+    try {
+      const h = await env.PORRA.get("fmhist", "json");
+      const byDate = {};
+      if (h && Array.isArray(h.days)) h.days.forEach((x) => { if (x.v && x.v[pl.name] != null) byDate[x.d] = x.v[pl.name]; });
+      valores = order.map((o) => {
+        const v = o[1] === 0 ? todayVal : (byDate[dstrMadrid(o[1])] != null ? byDate[dstrMadrid(o[1])] : null);
+        return { label: o[0], days: o[1], v, diff: (o[1] === 0 || v == null) ? null : todayVal - v };
+      });
+    } catch (e) {}
+  }
   const fitArr = (pl.average && pl.average.fitness) || [];
   return {
     id,
@@ -923,9 +933,9 @@ async function playerFicha(env, id) {
     value: todayVal,
     change: Number(pl.change) || 0,
     status: pl.status || "",
-    points: Number(pl.points) || 0,
-    average: (pl.average && Number(pl.average.average)) || 0,
-    matches5: (pl.average && Number(pl.average.matches)) || 0,
+    points: ptsSum,
+    average: played ? ptsSum / played : 0,
+    matches5: played,
     fitness: fitArr,
     pronostico: pronosticoFor({ status: pl.status, fitness: fitArr }),
     team: (a.team && a.team.name) || pl.team || "",
