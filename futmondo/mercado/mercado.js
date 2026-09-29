@@ -159,7 +159,7 @@
     else if (quick === "racha") list = list.filter((p) => { const f = (p.fitness || []).slice(-3); return f.length === 3 && f.every((x) => Number(x) > 0); });
     else if (quick === "vuelven") list = list.filter((p) => { const f = p.fitness || []; return f.length >= 3 && Number(f[0]) <= 0 && Number(f[f.length - 1]) > 0; });
     else if (quick === "multipos") list = list.filter((p) => p.role2);
-    if (quick) list = list.slice().sort((a, b) => b.value - a.value);
+    if (q || quick) list = list.slice().sort((a, b) => b.value - a.value);
     else if (sortMode === "up") list = list.filter((p) => (Number(p.change) || 0) > 0).sort((a, b) => b.change - a.change);
     else if (sortMode === "down") list = list.filter((p) => (Number(p.change) || 0) < 0).sort((a, b) => a.change - b.change);
     else list = list.slice().sort((a, b) => b.value - a.value);
