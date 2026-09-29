@@ -1254,6 +1254,7 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .pj-base-info .down, .pj-preview-val .down { color: #ef4444; }
 .pj-preview .puja-photo { margin: 0; width: 64px; height: 64px; }
 .pj-preview-name { font-weight: 600; font-size: 14px; }
+.pj-preview-pos { font-size: 0.78rem; font-weight: 800; color: var(--accent); margin: 1px 0 2px; }
 .puja-player { font-family: 'Space Grotesk', sans-serif; font-size: clamp(1.4rem, 6vw, 2rem); font-weight: 700; text-align: center; }
 .puja-player .stars { color: #fbbf24; font-size: 0.85em; margin-left: 6px; letter-spacing: 2px; }
 .puja-base { color: var(--muted); margin-top: 4px; text-align: center; }

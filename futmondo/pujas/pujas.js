@@ -312,6 +312,8 @@ function renderHistory() {
     }
     const body = el("div", "hist-body");
     body.appendChild(el("div", "hist-player", h.player));
+    const hrb = roleBadge(h.role), hrb2 = roleBadge(h.role2);
+    if (hrb) body.appendChild(el("div", "hist-line", hrb + (hrb2 ? " · " + hrb2 + " (multiposición)" : "")));
     if (h.value) body.appendChild(el("div", "hist-line", "Valor de mercado: " + money(h.value) + " €"));
     const wl = el("div", "hist-line");
     if (h.winner) wl.innerHTML = "Se lo llevó <b>" + escapeHtml(h.winner) + "</b>";
@@ -568,6 +570,8 @@ function elegirJugador(p) {
     }
     const info = el("div", "pj-preview-info");
     info.appendChild(el("div", "pj-preview-name", p.name));
+    const prb = roleBadge(p.role), prb2 = roleBadge(p.role2);
+    if (prb) info.appendChild(el("div", "pj-preview-pos", prb + (prb2 ? " · " + prb2 + " (multiposición)" : "")));
     const meta = el("div", "pj-preview-meta");
     if (p.logo) { const lg = el("img", "pj-preview-crest"); lg.src = p.logo; lg.alt = ""; meta.appendChild(lg); }
     if (p.team) meta.appendChild(el("span", null, p.team));

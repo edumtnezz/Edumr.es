@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>La Quiniela LaLiga Â· EduMR</title>
-  <meta name="description" content="La Quiniela de LaLiga (1X2) entre compaÃ±eros. Pronostica, acierta y gana tu prima.">
+  <title>La Quiniela LaLiga Ã‚Â· EduMR</title>
+  <meta name="description" content="La Quiniela de LaLiga (1X2) entre compaÃƒÂ±eros. Pronostica, acierta y gana tu prima.">
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#07090e">
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="../theme.js?v=64"></script>
-  <link rel="stylesheet" href="quiniela.css?v=112">
+  <link rel="stylesheet" href="quiniela.css?v=113">
 </head>
 <body>
   <canvas id="bgCanvas"></canvas>
@@ -40,7 +40,7 @@
       </div>
       <nav class="tabs" id="tabsNav">
         <button class="tab active" data-tab="miQuiniela">Mi quiniela</button>
-        <button class="tab" data-tab="clasificacion">ClasificaciÃ³n</button>
+        <button class="tab" data-tab="clasificacion">ClasificaciÃƒÂ³n</button>
         <button class="tab" data-tab="participantes">Participantes</button>
         <button class="tab" data-tab="instrucciones">Instrucciones</button>
       </nav>
@@ -51,22 +51,22 @@
     <!-- Acceso / registro -->
     <div class="panel" id="authPanel" hidden>
       <h2>Entra o crea tu cuenta</h2>
-      <p class="muted">Con un nombre y un cÃ³digo de 4 o 6 nÃºmeros juegas a La Quiniela, La Porra y La Puja. Si aÃºn no tienes cuenta, se crea sola. DespuÃ©s entra siempre con lo mismo.</p>
+      <p class="muted">Con un nombre y un cÃƒÂ³digo de 4 o 6 nÃƒÂºmeros juegas a La Quiniela, La Porra y La Puja. Si aÃƒÂºn no tienes cuenta, se crea sola. DespuÃƒÂ©s entra siempre con lo mismo.</p>
       <a class="btn-primary big" href="/futmondo/cuenta/?next=%2Ffutmondo%2Fquiniela%2F">Crear cuenta o entrar</a>
     </div>
 
     <!-- Jornada + contador -->
     <section class="jornada-card" id="countdownPanel">
-      <button class="jbtn" id="jPrev" title="Jornada anterior">â—€</button>
+      <button class="jbtn" id="jPrev" title="Jornada anterior">Ã¢â€”â‚¬</button>
       <div class="jc-body">
         <div class="jc-line">
-          <span class="jc-jornada">Jornada <b id="jView">â€“</b></span>
+          <span class="jc-jornada">Jornada <b id="jView">Ã¢â‚¬â€œ</b></span>
           <span class="jc-timer" id="cdTimer">--:--:--</span>
         </div>
-        <div class="jc-info" id="cdInfo">Cargando la jornadaâ€¦</div>
-        <span class="jnote hidden" id="jNote">EstÃ¡s viendo una jornada pasada</span>
+        <div class="jc-info" id="cdInfo">Cargando la jornadaÃ¢â‚¬Â¦</div>
+        <span class="jnote hidden" id="jNote">EstÃƒÂ¡s viendo una jornada pasada</span>
       </div>
-      <button class="jbtn" id="jNext" title="Jornada siguiente">â–¶</button>
+      <button class="jbtn" id="jNext" title="Jornada siguiente">Ã¢â€“Â¶</button>
     </section>
 
     <!-- Mi quiniela -->
@@ -74,7 +74,7 @@
       <div class="panel" id="picksPanel" hidden>
         <div class="picks-head">
           <div>
-            <h2>Tus pronÃ³sticos</h2>
+            <h2>Tus pronÃƒÂ³sticos</h2>
             <p class="muted" id="picksHint">Elige 1, X o 2 en cada partido.</p>
           </div>
           <div class="picks-tools">
@@ -86,38 +86,38 @@
             </select>
           </div>
         </div>
-        <p class="legend">Forma de cada equipo (5 Ãºltimos): <b>V</b> victoria Â· <b>E</b> empate Â· <b>D</b> derrota Â· <b>C</b> en casa Â· <b>F</b> fuera. Se leen de <b>izquierda (mÃ¡s antiguo)</b> a <b>derecha (mÃ¡s reciente)</b>.</p>
+        <p class="legend">Forma de cada equipo (5 ÃƒÂºltimos): <b>V</b> victoria Ã‚Â· <b>E</b> empate Ã‚Â· <b>D</b> derrota Ã‚Â· <b>C</b> en casa Ã‚Â· <b>F</b> fuera. Se leen de <b>izquierda (mÃƒÂ¡s antiguo)</b> a <b>derecha (mÃƒÂ¡s reciente)</b>.</p>
         <div class="match-list" id="matchList"></div>
         <div class="save-row">
-          <button class="btn-primary big" id="saveBtn">Guardar pronÃ³sticos</button>
+          <button class="btn-primary big" id="saveBtn">Guardar pronÃƒÂ³sticos</button>
           <span class="save-msg" id="saveMsg"></span>
         </div>
       </div>
     </section>
 
-    <!-- ClasificaciÃ³n -->
+    <!-- ClasificaciÃƒÂ³n -->
     <section class="tab-panel hidden" id="tab-clasificacion">
       <div class="panel">
         <div class="panel-head">
           <div>
-            <h2>ClasificaciÃ³n</h2>
-            <p class="muted" id="rankingHint">Ordenada por aciertos: quien mÃ¡s aciertos suma, primero.</p>
+            <h2>ClasificaciÃƒÂ³n</h2>
+            <p class="muted" id="rankingHint">Ordenada por aciertos: quien mÃƒÂ¡s aciertos suma, primero.</p>
           </div>
           <span class="pulse-chip" id="playersChip">0 jugadores</span>
         </div>
         <div class="seg" id="rankSeg">
-          <button class="seg-btn active" id="segJornada">Jornada <span id="segJNum">â€“</span></button>
+          <button class="seg-btn active" id="segJornada">Jornada <span id="segJNum">Ã¢â‚¬â€œ</span></button>
           <button class="seg-btn" id="segGlobal">General (todas)</button>
         </div>
         <div class="podium" id="podium"></div>
         <div class="rank-cards" id="rankCards"></div>
-        <p class="empty" id="rankEmpty">AÃºn no hay pronÃ³sticos. Â¡SÃ© el primero!</p>
+        <p class="empty" id="rankEmpty">AÃƒÂºn no hay pronÃƒÂ³sticos. Ã‚Â¡SÃƒÂ© el primero!</p>
       </div>
       <div class="panel hidden" id="summaryPanel">
         <div class="panel-head">
           <div>
             <h2>Reparto de la jornada</h2>
-            <p class="muted">Copia este resumen y repÃ¡rtelo en Futmondo.</p>
+            <p class="muted">Copia este resumen y repÃƒÂ¡rtelo en Futmondo.</p>
           </div>
           <button class="btn-ghost" id="copyBtn">Copiar</button>
         </div>
@@ -136,38 +136,38 @@
     <!-- Instrucciones -->
     <section class="tab-panel hidden" id="tab-instrucciones">
       <div class="panel">
-        <h2>CÃ³mo funciona</h2>
+        <h2>CÃƒÂ³mo funciona</h2>
 
         <div class="info-block">
           <h3>1. Haz tu quiniela</h3>
-          <p>En cada partido elige <strong>1</strong> (gana el local), <strong>X</strong> (empate) o <strong>2</strong> (gana el visitante). Debes rellenar <strong>todos</strong> los partidos: si te falta alguno, no te dejarÃ¡ guardar y te llevarÃ¡ al que falta.</p>
-          <p>Debajo de cada escudo verÃ¡s la forma del equipo (sus <strong>5 Ãºltimos partidos</strong>): <b>V</b> victoria, <b>E</b> empate, <b>D</b> derrota, y <b>C</b> si jugÃ³ en casa o <b>F</b> si jugÃ³ fuera. Se leen de <strong>izquierda (mÃ¡s antiguo) a derecha (mÃ¡s reciente)</strong>, y la flecha <b>â†’</b> marca el lado del partido mÃ¡s reciente.</p>
+          <p>En cada partido elige <strong>1</strong> (gana el local), <strong>X</strong> (empate) o <strong>2</strong> (gana el visitante). Debes rellenar <strong>todos</strong> los partidos: si te falta alguno, no te dejarÃƒÂ¡ guardar y te llevarÃƒÂ¡ al que falta.</p>
+          <p>Debajo de cada escudo verÃƒÂ¡s la forma del equipo (sus <strong>5 ÃƒÂºltimos partidos</strong>): <b>V</b> victoria, <b>E</b> empate, <b>D</b> derrota, y <b>C</b> si jugÃƒÂ³ en casa o <b>F</b> si jugÃƒÂ³ fuera. Se leen de <strong>izquierda (mÃƒÂ¡s antiguo) a derecha (mÃƒÂ¡s reciente)</strong>, y la flecha <b>Ã¢â€ â€™</b> marca el lado del partido mÃƒÂ¡s reciente.</p>
         </div>
 
         <div class="info-block">
-          <h3>2. Hasta cuÃ¡ndo puedes editar</h3>
-          <p>Cada partido se <strong>bloquea cuando empieza</strong>. Puedes cambiar o completar tu pronÃ³stico de los partidos que <strong>aÃºn no han empezado</strong>; los que ya empezaron quedan cerrados (ni tÃº ni nadie los puede tocar). El contador de arriba te avisa del <strong>prÃ³ximo partido</strong>.</p>
+          <h3>2. Hasta cuÃƒÂ¡ndo puedes editar</h3>
+          <p>Cada partido se <strong>bloquea cuando empieza</strong>. Puedes cambiar o completar tu pronÃƒÂ³stico de los partidos que <strong>aÃƒÂºn no han empezado</strong>; los que ya empezaron quedan cerrados (ni tÃƒÂº ni nadie los puede tocar). El contador de arriba te avisa del <strong>prÃƒÂ³ximo partido</strong>.</p>
         </div>
 
         <div class="info-block">
-          <h3>3. PuntuaciÃ³n</h3>
-          <p>Gana <strong>quien mÃ¡s aciertos</strong> tenga. Cada <strong>partido acertado vale 150.000 â‚¬</strong> y la clasificaciÃ³n se ordena por aciertos (de mÃ¡s a menos).</p>
+          <h3>3. PuntuaciÃƒÂ³n</h3>
+          <p>Gana <strong>quien mÃƒÂ¡s aciertos</strong> tenga. Cada <strong>partido acertado vale 150.000 Ã¢â€šÂ¬</strong> y la clasificaciÃƒÂ³n se ordena por aciertos (de mÃƒÂ¡s a menos).</p>
         </div>
 
         <div class="info-block">
           <h3>4. Primas de la jornada</h3>
-          <p>Al terminar los partidos, cada acierto se paga asÃ­:</p>
+          <p>Al terminar los partidos, cada acierto se paga asÃƒÂ­:</p>
           <ul class="prize-list" id="prizeList"></ul>
-          <p class="muted">Esto se exporta desde la pestaÃ±a <strong>ClasificaciÃ³n</strong> para repartir el dinero en la app de Futmondo.</p>
+          <p class="muted">Esto se exporta desde la pestaÃƒÂ±a <strong>ClasificaciÃƒÂ³n</strong> para repartir el dinero en la app de Futmondo.</p>
         </div>
 
         <div class="info-block">
-          <h3>5. PronÃ³sticos de todos</h3>
-          <p>Puedes ver los pronÃ³sticos de <strong>todos</strong> en la pestaÃ±a <strong>Participantes</strong> desde el primer momento, para picarte con los compaÃ±eros. Eso sÃ­: <strong>nadie puede cambiarlos</strong> despuÃ©s de que empiece el primer partido.</p>
+          <h3>5. PronÃƒÂ³sticos de todos</h3>
+          <p>Puedes ver los pronÃƒÂ³sticos de <strong>todos</strong> en la pestaÃƒÂ±a <strong>Participantes</strong> desde el primer momento, para picarte con los compaÃƒÂ±eros. Eso sÃƒÂ­: <strong>nadie puede cambiarlos</strong> despuÃƒÂ©s de que empiece el primer partido.</p>
         </div>
 
         <div class="cta-block">
-          <p class="cta-title">Â¿Listo para jugar?</p>
+          <p class="cta-title">Ã‚Â¿Listo para jugar?</p>
           <button class="btn-primary big" id="goPlayBtn">Crear mi cuenta y hacer la quiniela</button>
         </div>
       </div>
