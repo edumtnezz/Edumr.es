@@ -52,7 +52,9 @@ function statusInfo(s) {
   return null;
 }
 const ROLE = { portero: "POR", defensa: "DEF", centrocampista: "CEN", delantero: "DEL" };
+const ROLE_FULL = { portero: "Portero", defensa: "Defensa", centrocampista: "Centrocampista", delantero: "Delantero" };
 function roleBadge(role) { return ROLE[String(role || "").toLowerCase()] || ""; }
+function roleFull(role) { return ROLE_FULL[String(role || "").toLowerCase()] || ""; }
 function statusBorder(s) {
   if (s === "redcard") return "#f97316";
   if (String(s || "").indexOf("injured") === 0) return "#ef4444";
@@ -150,7 +152,8 @@ function render() {
     const prb = roleBadge(p.role), prb2 = roleBadge(p.role2);
     if (prb) {
       const pr = el("div", "puja-pcard-roles");
-      pr.appendChild(el("span", "pos-badge" + (prb2 ? " multi" : ""), prb + (prb2 ? " · " + prb2 + " (multi)" : "")));
+      const full = [roleFull(p.role), roleFull(p.role2)].filter(Boolean).join(" · ");
+      pr.appendChild(el("span", "pos-badge" + (prb2 ? " multi" : ""), "Posición: " + (full || prb) + (prb2 ? " (multiposición)" : "")));
       pcard.appendChild(pr);
     }
     if (p.team) {
@@ -313,7 +316,7 @@ function renderHistory() {
     const body = el("div", "hist-body");
     body.appendChild(el("div", "hist-player", h.player));
     const hrb = roleBadge(h.role), hrb2 = roleBadge(h.role2);
-    if (hrb) body.appendChild(el("div", "hist-line", hrb + (hrb2 ? " · " + hrb2 + " (multiposición)" : "")));
+    if (hrb) { body.appendChild(el("div", "hist-line", "Posición: " + [roleFull(h.role), roleFull(h.role2)].filter(Boolean).join(" · ") + (hrb2 ? " (multiposición)" : ""))); }
     if (h.value) body.appendChild(el("div", "hist-line", "Valor de mercado: " + money(h.value) + " €"));
     const wl = el("div", "hist-line");
     if (h.winner) wl.innerHTML = "Se lo llevó <b>" + escapeHtml(h.winner) + "</b>";
@@ -572,7 +575,7 @@ function elegirJugador(p) {
     const info = el("div", "pj-preview-info");
     info.appendChild(el("div", "pj-preview-name", p.name));
     const prb = roleBadge(p.role), prb2 = roleBadge(p.role2);
-    if (prb) info.appendChild(el("div", "pj-preview-pos", prb + (prb2 ? " · " + prb2 + " (multiposición)" : "")));
+    if (prb) info.appendChild(el("div", "pj-preview-pos", "Posición: " + [roleFull(p.role), roleFull(p.role2)].filter(Boolean).join(" · ") + (prb2 ? " (multiposición)" : "")));
     const meta = el("div", "pj-preview-meta");
     if (p.logo) { const lg = el("img", "pj-preview-crest"); lg.src = p.logo; lg.alt = ""; meta.appendChild(lg); }
     if (p.team) meta.appendChild(el("span", null, p.team));
