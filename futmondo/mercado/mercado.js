@@ -466,13 +466,36 @@
     return d.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
   }
 
+  let myTeam = [];
+  let newsMineOnly = false;
+  let lastNews = null;
+  try { const s = JSON.parse(localStorage.getItem("merc_myteam") || "[]"); if (Array.isArray(s)) myTeam = s; } catch (e) {}
+  function updateNewsFilter() {
+    const b = $("newsMine");
+    if (!b) return;
+    if (!myTeam.length) { b.classList.add("hidden"); return; }
+    b.classList.remove("hidden");
+    b.classList.toggle("active", newsMineOnly);
+    b.textContent = "🔎 Solo mis jugadores (" + myTeam.length + ")";
+  }
+  function newsMatchMyTeam(x) {
+    if (!myTeam.length) return true;
+    const t = stripAccents(String(x.title || "") + " " + String(x.lead || ""));
+    return myTeam.some((n) => { const k = stripAccents(n); return k.length >= 4 && t.includes(k); });
+  }
+
   function renderNews(d) {
+    lastNews = d;
     const a = $("newsAnuncios");
     if (a) {
       a.innerHTML = "";
       a.classList.add("news-grid");
-      const list = d.noticias || [];
-      if (!list.length) a.appendChild(el("p", "muted small", "Sin noticias ahora mismo."));
+      let list = d.noticias || [];
+      if (newsMineOnly && myTeam.length) {
+        list = list.filter(newsMatchMyTeam);
+        if (!list.length) a.appendChild(el("p", "muted small", "Ninguna noticia de tus jugadores ahora mismo."));
+      }
+      if (!list.length && !(newsMineOnly && myTeam.length)) a.appendChild(el("p", "muted small", "Sin noticias ahora mismo."));
       list.forEach((x) => {
         const it = el("div", "newscard news-link");
         it.addEventListener("click", () => openNoticia(x.link, x.title));
@@ -513,6 +536,12 @@
       const d = await (await fetch(API + "/noticias")).json();
       renderNews(d);
     } catch (e) {}
+    updateNewsFilter();
+    const b = $("newsMine");
+    if (b && !b.dataset.wired) {
+      b.dataset.wired = "1";
+      b.addEventListener("click", () => { newsMineOnly = !newsMineOnly; updateNewsFilter(); if (lastNews) renderNews(lastNews); });
+    }
   }
 
   function showModal(node) {
@@ -807,6 +836,37 @@
     const out = $("anOut");
     if (!out) return;
     out.innerHTML = "";
+    try {
+      const names = [].concat(d.titulares || [], d.suplentes || []).map((p) => p.nombre).filter(Boolean);
+      if (names.length) { myTeam = names; localStorage.setItem("merc_myteam", JSON.stringify(names)); updateNewsFilter(); }
+    } catch (e) {}
+    const scoreOf = (p) => {
+      if (String(p.estado || "").toUpperCase().indexOf("LESI") >= 0) return 5;
+      const f = p.fitness || [];
+      const avg = f.length ? f.reduce((a, b) => a + (Number(b) || 0), 0) / f.length : 0;
+      const prob = p.prob != null ? p.prob : 60;
+      let s = avg * 9 + (prob - 50) * 0.5;
+      if (p.casa === true) s += 4; else if (p.casa === false) s -= 2;
+      if (p.pos2) s += 2;
+      return Math.max(5, Math.min(99, Math.round(s)));
+    };
+    const tits = d.titulares || [];
+    if (tits.length) {
+      const nota = Math.round(tits.reduce((a, p) => a + scoreOf(p), 0) / tits.length);
+      const parts = ["DEL", "CEN", "DEF", "POR"].map((k) => { const g = tits.filter((p) => p.pos === k); return g.length ? k + " " + Math.round(g.reduce((a, p) => a + scoreOf(p), 0) / g.length) : null; }).filter(Boolean);
+      const box = el("div", "an-nota");
+      box.appendChild(el("div", "an-nota-num", nota + "/100"));
+      box.appendChild(el("div", "an-nota-txt", "Nota de tu once · " + parts.join(" · ")));
+      out.appendChild(box);
+      const cla = tits.filter((p) => p.clause && p.valor && p.clause < p.valor * 1.6).sort((a, b) => scoreOf(b) - scoreOf(a));
+      if (cla.length) {
+        const cb = el("div", "an-clauses");
+        cb.appendChild(el("div", "an-clauses-t", "🔒 Cláusulas bajas (te los pueden pagar):"));
+        cla.slice(0, 6).forEach((p) => cb.appendChild(el("div", "an-clause", p.nombre + " — cláusula " + money(p.clause) + " € (valor " + money(p.valor) + " €)")));
+        cb.appendChild(el("div", "muted small", "Súbeles la cláusula para no perderlos."));
+        out.appendChild(cb);
+      }
+    }
     if (d.formacion) out.appendChild(el("div", "an-form", "Formación detectada: " + d.formacion));
     if (d.leido && d.leido.length && !anStale) out.appendChild(el("div", "an-leido", "🔎 La IA leyó: " + d.leido.join(", ")));
     if (anStale) {

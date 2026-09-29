@@ -179,6 +179,12 @@
 .merc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
 .mchip { font-size: 0.74rem; font-weight: 700; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); cursor: pointer; }
 .mchip.active { background: rgba(34,197,94,0.16); border-color: rgba(34,197,94,0.5); color: #22c55e; }
+.an-nota { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--border); background: var(--card-solid); margin-bottom: 10px; }
+.an-nota-num { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 1.6rem; color: #22c55e; }
+.an-nota-txt { font-size: 0.82rem; color: #9fb0c4; }
+.an-clauses { padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(245,158,11,0.4); background: rgba(245,158,11,0.06); margin-bottom: 4px; }
+.an-clauses-t { font-weight: 800; font-size: 0.88rem; margin-bottom: 4px; }
+.an-clause { font-size: 0.84rem; }
 .ficha-chart { width: 100%; height: auto; margin-top: 8px; background: rgba(255,255,255,0.03); border-radius: 10px; }
 
 /* Colores por puntuación */

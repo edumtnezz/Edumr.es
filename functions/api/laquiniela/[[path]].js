@@ -1190,6 +1190,19 @@ async function handleAnaliza(request, env, user) {
   });
   const titulares = enrich(team.titulares);
   const suplentes = enrich(team.suplentes);
+  try {
+    const fh = await futbolHeader(env);
+    const allp = [].concat(titulares, suplentes);
+    await Promise.all(allp.map(async (t) => {
+      const pp = findP(t.nombre);
+      if (!pp || !pp.id) return;
+      try {
+        const s = await futbolPost("/1/player/summary", fh, { playerId: pp.id, championshipId: FUTMONDO_CHAMPIONSHIP });
+        const cl = s.answer && s.answer.championship && s.answer.championship.clause;
+        if (cl && cl.price) { t.clause = Number(cl.price) || 0; t.clauseDate = cl.date || ""; }
+      } catch (e) {}
+    }));
+  } catch (e) {}
   const cnt = (pos) => titulares.filter((p) => p.pos === pos).length;
   const formacion = (cnt("DEF") + cnt("CEN") + cnt("DEL")) ? [cnt("DEF"), cnt("CEN"), cnt("DEL")].join("-") : (team.formacion || "");
   const line = (p) => `- ${p.pos}${p.pos2 ? "/" + p.pos2 : ""} ${p.nombre} (${p.equipo || "?"}) · ${p.estado} · prob.jugar ${p.prob != null ? p.prob : "?"}%${p.probFf != null ? " (FutbolFantasy)" : ""} · ${p.puntos != null ? p.puntos + " pts" : "sin datos"} · últ5 ${(p.fitness || []).join("-")} · rival ${p.rival || "desconocido"} ${p.casa === true ? "(CASA)" : p.casa === false ? "(FUERA)" : ""}`;
