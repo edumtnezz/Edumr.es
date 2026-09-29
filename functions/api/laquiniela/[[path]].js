@@ -890,6 +890,28 @@ async function playerFicha(env, id) {
     };
   }).slice(0, 60);
   const todayVal = Number(pl.value) || 0;
+  let temporadas = [];
+  try {
+    const ls = await futbolPost("/2/player/lastseasons", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP });
+    const arr = Array.isArray(ls.answer) ? ls.answer : ((ls.answer && (ls.answer.seasons || ls.answer.lastseasons)) || []);
+    temporadas = arr.map((x) => {
+      const lg = x.league || {};
+      const byMode = {};
+      (x.points || []).forEach((z) => { byMode[z.mode] = z; });
+      const pick = byMode.stats || byMode.press || byMode.presstats || (x.points && x.points[0]) || null;
+      const t = (pick && pick.t) || {};
+      const tot = Number(t.p) || 0;
+      const games = t.games != null ? Number(t.games) : (Number((pick && pick.h && pick.h.games) || 0) + Number((pick && pick.a && pick.a.games) || 0));
+      return {
+        season: lg.season || "",
+        league: lg.name || "",
+        team: (x.teams && x.teams[0] && x.teams[0].name) || "",
+        points: tot,
+        games,
+        media: games ? Math.round((tot / games) * 10) / 10 : 0,
+      };
+    }).filter((x) => x.season).slice(0, 8);
+  } catch (e) {}
   const ptsSum = matches.reduce((s, m) => s + (Number(m.stats) || 0), 0);
   const played = matches.length;
   const order = [["Hoy", 0], ["Ayer", 1], ["2 días", 2], ["3 días", 3], ["5 días", 5], ["10 días", 10], ["14 días", 14], ["30 días", 30]];
@@ -945,6 +967,7 @@ async function playerFicha(env, id) {
     matches,
     valores,
     temporada,
+    temporadas,
   };
 }
 
@@ -1191,10 +1214,16 @@ async function snapshotMarket(env, players) {
     if (!hist || !Array.isArray(hist.days)) hist = { days: [] };
     const last = hist.days[hist.days.length - 1];
     if (last && last.d === today) return;
-    const v = {};
-    (players || []).forEach((pl) => { if (pl.name) v[pl.name] = pl.value; });
-    hist.days.push({ d: today, v });
-    if (hist.days.length > 45) hist.days = hist.days.slice(-45);
+    const v = {}, p = {}, fi = {};
+    (players || []).forEach((pl) => {
+      if (!pl.name) return;
+      v[pl.name] = pl.value;
+      p[pl.name] = pl.points;
+      const f = pl.fitness || [];
+      fi[pl.name] = f.length ? Math.round((f.reduce((a, b) => a + (Number(b) || 0), 0) / f.length) * 10) / 10 : 0;
+    });
+    hist.days.push({ d: today, v, p, fi });
+    if (hist.days.length > 140) hist.days = hist.days.slice(-140);
     await env.PORRA.put("fmhist", JSON.stringify(hist));
   } catch (e) {}
 }

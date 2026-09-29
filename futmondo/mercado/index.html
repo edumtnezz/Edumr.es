@@ -13,7 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="../theme.js?v=64"></script>
   <link rel="stylesheet" href="../quiniela/quiniela.css?v=119">
-  <link rel="stylesheet" href="mercado.css?v=20">
+  <link rel="stylesheet" href="mercado.css?v=21">
 </head>
 <body class="page-simple">
   <div class="grass-band"></div>
@@ -50,6 +50,7 @@
         <p class="merc-clubs-hint"><b>👉 Toca un equipo</b> para ver solo sus jugadores (vuelve a tocarlo para quitarlo).</p>
         <div class="merc-clubs" id="mercClubs"></div>
         <div id="mercHighlights"></div>
+        <div id="mercBest" class="hidden"></div>
         <div class="merc-filters">
           <input id="mjSearch" class="market-search" type="text" placeholder="Buscar jugador por nombre…" autocomplete="off">
           <select id="mjRole" class="merc-select">
@@ -71,6 +72,7 @@
           <button class="merc-segbtn" data-sort="down">▼ Mayores bajadas</button>
           <button class="merc-segbtn" data-sort="value">Valor</button>
         </div>
+        <div class="merc-chips" id="mercChips"></div>
         <div class="market-grid" id="marketGrid"></div>
       </section>
     </section>
@@ -127,6 +129,6 @@
     </div>
   </div>
 
-  <script src="mercado.js?v=21"></script>
+  <script src="mercado.js?v=22"></script>
 </body>
 </html>

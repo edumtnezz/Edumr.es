@@ -5,6 +5,27 @@
   let all = [];
   let shown = 60;
   let sortMode = "up";
+  let quick = "";
+  const QUICKS = [
+    ["", "Todos"],
+    ["chollos", "🤑 Chollos"],
+    ["bajando", "▼ Bajando"],
+    ["subiendo", "▲ Subiendo"],
+    ["racha", "🔥 En racha"],
+    ["vuelven", "🔙 Vuelven de lesión"],
+    ["multipos", "🔀 Multiposición"],
+  ];
+  function renderChips() {
+    const box = $("mercChips");
+    if (!box) return;
+    box.innerHTML = "";
+    QUICKS.forEach(([k, label]) => {
+      const b = el("button", "mchip" + (quick === k ? " active" : ""), label);
+      b.type = "button";
+      b.addEventListener("click", () => { quick = k; shown = 60; renderChips(); renderGrid(); });
+      box.appendChild(b);
+    });
+  }
   let teamFilter = "";
   let rangeInit = false;
   let selA = null, selB = null;
@@ -132,7 +153,14 @@
       if (v < rangeMin || v > rangeMax) return false;
       return true;
     });
-    if (sortMode === "up") list = list.filter((p) => (Number(p.change) || 0) > 0).sort((a, b) => b.change - a.change);
+    if (quick === "chollos") list = list.filter((p) => (Number(p.change) || 0) < -150000 && (Number(p.points) || 0) > 25);
+    else if (quick === "bajando") list = list.filter((p) => (Number(p.change) || 0) < 0);
+    else if (quick === "subiendo") list = list.filter((p) => (Number(p.change) || 0) > 0);
+    else if (quick === "racha") list = list.filter((p) => { const f = (p.fitness || []).slice(-3); return f.length === 3 && f.every((x) => Number(x) > 0); });
+    else if (quick === "vuelven") list = list.filter((p) => { const f = p.fitness || []; return f.length >= 3 && Number(f[0]) <= 0 && Number(f[f.length - 1]) > 0; });
+    else if (quick === "multipos") list = list.filter((p) => p.role2);
+    if (quick) list = list.slice().sort((a, b) => b.value - a.value);
+    else if (sortMode === "up") list = list.filter((p) => (Number(p.change) || 0) > 0).sort((a, b) => b.change - a.change);
     else if (sortMode === "down") list = list.filter((p) => (Number(p.change) || 0) < 0).sort((a, b) => a.change - b.change);
     else list = list.slice().sort((a, b) => b.value - a.value);
     return list;
@@ -372,6 +400,45 @@
     if (panel) panel.classList.remove("hidden");
   }
 
+  function expOf(p) {
+    const f = p.fitness || [];
+    const played = f.filter((x) => Number(x) !== 0).length;
+    const avg = f.length ? f.reduce((a, b) => a + (Number(b) || 0), 0) / f.length : 0;
+    const prob = p.prob != null ? p.prob : (String(p.status || "").indexOf("injured") === 0 ? 0 : p.status === "doubt" ? 50 : 60);
+    const casa = p.casaFf === true ? 1.08 : p.casaFf === false ? 0.94 : 1;
+    const fit = played >= 3 ? 1 : played === 2 ? 0.85 : 0.6;
+    return avg * (prob / 100) * casa * fit;
+  }
+
+  function renderBest() {
+    const box = $("mercBest");
+    if (!box) return;
+    box.innerHTML = "";
+    const cand = all.filter((p) => p.fitness && p.fitness.length >= 3 && String(p.status || "").indexOf("injured") !== 0 && p.value > 0);
+    if (cand.length < 6) { box.classList.add("hidden"); return; }
+    box.classList.remove("hidden");
+    const top = cand.slice().sort((a, b) => expOf(b) - expOf(a)).slice(0, 6);
+    const head = el("div", "merc-besthead");
+    head.appendChild(el("span", "mbh-t", "⭐ Mejor fichaje de la jornada"));
+    head.appendChild(el("span", "mbh-s", "puntos esperados · rival"));
+    box.appendChild(head);
+    const row = el("div", "merc-bestrow");
+    top.forEach((p) => {
+      const c = el("button", "mbc"); c.type = "button";
+      const im = el("img", "mbc-img"); im.loading = "lazy"; im.alt = ""; im.src = p.photo || "/img/avatar.svg";
+      im.addEventListener("error", () => { if (im.getAttribute("src") !== "/img/avatar.svg") im.src = "/img/avatar.svg"; }, { once: true });
+      c.appendChild(im);
+      c.appendChild(el("div", "mbc-name", p.name));
+      const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
+      if (rb) c.appendChild(el("span", "mbc-role" + (rb2 ? " multi" : ""), rb + (rb2 ? "·" + rb2 : "")));
+      c.appendChild(el("div", "mbc-exp", "~" + expOf(p).toFixed(1).replace(".", ",") + " pts"));
+      if (p.rivalFf) c.appendChild(el("div", "mbc-rival", (p.casaFf === true ? "🏠 " : p.casaFf === false ? "✈️ " : "") + p.rivalFf));
+      c.addEventListener("click", () => openFicha(p));
+      row.appendChild(c);
+    });
+    box.appendChild(row);
+  }
+
   async function load() {
     try {
       const res = await fetch(API + "/mercado");
@@ -379,6 +446,8 @@
       if (Array.isArray(d.players)) all = d.players;
       updateTime(d.updatedAt);
       renderHighlights();
+      renderBest();
+      renderChips();
       renderGrid();
       renderEstado();
       renderComparador();
@@ -526,6 +595,12 @@
     st("Media", String(Math.round((Number(d.average) || 0) * 10) / 10).replace(".", ","));
     st("Partidos", d.matches5 || 0);
     root.appendChild(stats);
+    const peers = all.filter((x) => x.role && x.role === (d.role || p.role));
+    if (peers.length >= 8) {
+      const cheaper = peers.filter((x) => (Number(x.value) || 0) < (Number(d.value) || 0)).length;
+      const pct = Math.round((cheaper / (peers.length - 1)) * 100);
+      root.appendChild(el("div", "ficha-pct", "💶 Precio: más caro que el " + pct + "% de los " + (roleFull(d.role || p.role) || "jugadores") + " (" + peers.length + ")"));
+    }
 
     const fit = d.fitness || [];
     const msAll = d.matches || [];
@@ -624,6 +699,19 @@
         coords.forEach((c) => { const ci = document.createElementNS(svgNS, "circle"); ci.setAttribute("cx", c[0].toFixed(1)); ci.setAttribute("cy", c[1].toFixed(1)); ci.setAttribute("r", "2.4"); ci.setAttribute("fill", "#22c55e"); svg.appendChild(ci); });
         root.appendChild(svg);
       }
+    }
+    const temp = d.temporadas || [];
+    if (temp.length) {
+      root.appendChild(el("div", "estado-title", "Temporadas anteriores"));
+      const t = el("div", "ficha-vals");
+      temp.forEach((x) => {
+        const r = el("div", "fv-row");
+        r.appendChild(el("span", "fv-label", x.season));
+        r.appendChild(el("span", "fv-diff", x.points + " pts" + (x.games ? " · " + x.games + " part." : "")));
+        r.appendChild(el("span", "fv-val", x.team || ""));
+        t.appendChild(r);
+      });
+      root.appendChild(t);
     }
     return root;
   }
