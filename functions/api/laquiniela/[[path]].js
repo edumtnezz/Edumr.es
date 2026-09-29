@@ -718,7 +718,7 @@ async function ffIdMap(env) {
 }
 
 function ffPickId(name, map) {
-  const n = normKey(name);
+  const n = normKey(String(name || "").toLowerCase());
   if (!n) return null;
   if (map[n]) return map[n];
   const keys = Object.keys(map);
