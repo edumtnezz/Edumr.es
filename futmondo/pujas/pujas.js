@@ -133,8 +133,8 @@ function render() {
   cd.appendChild(refresh);
   panel.appendChild(cd);
 
-  if (p && p.status === "open") {
-    panel.appendChild(el("p", "bid-note", "⚠️ Al pujar no se puede retirar ni bajar la puja. Piénsalo antes de pujar."));
+  if (p) {
+    if (p.status === "open") panel.appendChild(el("p", "bid-note", "⚠️ Al pujar no se puede retirar ni bajar la puja. Piénsalo antes de pujar."));
     const pcard = el("div", "puja-pcard");
     const pwrap = el("div", "puja-pcard-photo");
     const pbc = statusBorder(p.pstatus);
@@ -170,10 +170,12 @@ function render() {
       pcard.appendChild(vv);
     }
     panel.appendChild(pcard);
-    const baseTxt = el("div", "puja-base");
-    baseTxt.innerHTML = "Precio de salida: <b>" + money(p.base) + " €</b> · la saca <b>" + escapeHtml(p.creator) + "</b>";
-    panel.appendChild(baseTxt);
-  } else if (!p) {
+    if (p.status === "open") {
+      const baseTxt = el("div", "puja-base");
+      baseTxt.innerHTML = "Precio de salida: <b>" + money(p.base) + " €</b> · la saca <b>" + escapeHtml(p.creator) + "</b>";
+      panel.appendChild(baseTxt);
+    }
+  } else {
     panel.appendChild(el("div", "puja-player", "Sin subasta activa"));
   }
 
@@ -181,9 +183,9 @@ function render() {
   const list = el("div", "bid-list");
   const bids = ((p && p.bids) || []).slice().sort((a, b) => b.amount - a.amount);
   const top = bids[0];
-  if (p && p.status === "open") {
-    const bs = el("div", "puja-sec", "Pujas" + (bids.length ? " (" + bids.length + ")" : ""));
-    list.appendChild(bs);
+  if (p) {
+    const lbl = p.status === "closed" ? "Pujas finales" : "Pujas";
+    list.appendChild(el("div", "puja-sec", lbl + (bids.length ? " (" + bids.length + ")" : "")));
   }
   bids.forEach((bd) => {
     const row = el("div", "bid-row");
@@ -390,9 +392,11 @@ function startTimer() {
     const s = Math.floor(diff / 1000);
     if (s >= 86400) {
       const d = Math.floor(s / 86400);
-      t.textContent = d + (d === 1 ? " día" : " días");
+      t.textContent = "Próxima puja en " + d + (d === 1 ? " día" : " días");
+      t.classList.add("small");
       return;
     }
+    t.classList.remove("small");
     const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sc = s % 60;
     const pad = (n) => String(n).padStart(2, "0");
     t.textContent = pad(h) + ":" + pad(m) + ":" + pad(sc);

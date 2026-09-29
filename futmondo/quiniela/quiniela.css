@@ -1279,6 +1279,7 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .pos-badge.multi { background: rgba(34,197,94,0.16); color: #22c55e; }
 .puja-timer { font-family: 'Space Grotesk', monospace; font-size: clamp(2rem, 9vw, 3.2rem); font-weight: 700; color: var(--accent); line-height: 1.1; }
 .puja-timer.closed { color: #f87171; }
+.puja-timer.small { font-size: clamp(1.2rem, 5.5vw, 1.7rem); }
 .puja-sub { font-size: 0.82rem; color: var(--muted); margin-top: 6px; }
 .bid-list { display: grid; gap: 8px; margin-top: 16px; }
 .bid-row { display: flex; align-items: center; gap: 12px; padding: 11px 15px; border-radius: 11px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); }
