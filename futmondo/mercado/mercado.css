@@ -154,6 +154,9 @@
 .fv-diff.up { color: #22c55e; }
 .fv-diff.down { color: #ef4444; }
 .fv-val { font-weight: 700; text-align: right; }
+.fv-streak { display: inline-block; font-size: 0.82rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; margin: 0 0 4px; }
+.fv-streak.up { color: #16a34a; background: rgba(34,197,94,0.12); }
+.fv-streak.down { color: #dc2626; background: rgba(239,68,68,0.12); }
 .ficha-chart { width: 100%; height: auto; margin-top: 8px; background: rgba(255,255,255,0.03); border-radius: 10px; }
 
 /* Colores por puntuación */

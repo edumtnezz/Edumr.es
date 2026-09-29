@@ -1181,6 +1181,32 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .mcard-trend.up { color: #10b981; }
 .mcard-trend.down { color: #ef4444; }
 .mcard-trend.flat { color: var(--muted); }
+
+/* ==== Compacto / menos vertical (móvil) ==== */
+.puja-countdown { margin-bottom: 10px; }
+.puja-photo { width: 84px; height: 84px; margin-bottom: 6px; }
+.puja-pcard { margin: 4px 0 2px; gap: 2px; }
+.puja-pcard-name { font-size: clamp(1.05rem, 4.6vw, 1.4rem); margin-top: 4px; }
+.puja-pcard-team { font-size: 0.8rem; }
+.puja-pcard-val { font-size: 0.92rem; }
+.mcard { padding: 10px 8px; gap: 6px; border-radius: 12px; }
+.mcard-photo, .mcard-photo .mcard-img, .mcard-img { width: 54px; height: 54px; }
+.mcard-name { font-size: 0.82rem; }
+.mcard-team { font-size: 0.72rem; }
+.mcard-crest { width: 14px; height: 14px; }
+.mcard-val { font-size: 0.86rem; margin-top: 1px; }
+.mcard-trend { font-size: 0.68rem; }
+.market-grid { gap: 9px; }
+.panel { padding: 16px 14px; }
+.bid-list { gap: 6px; margin-top: 10px; }
+.bid-row { padding: 9px 12px; }
+.bid-lead { font-size: 1.05rem; text-align: center; margin: 8px 0; }
+.bid-lead b { font-size: 1.16em; color: #34d399; }
+.bid-row.top { padding: 15px 15px; font-size: 1.06rem; border-width: 2px; }
+.bid-row.top .bid-amount { font-size: 1.2rem; }
+.bid-row.top .bid-user { font-weight: 800; }
+.bid-time { font-size: 0.7rem; color: var(--muted); margin-left: auto; margin-right: 10px; }
+.hb-time { font-size: 0.7rem; color: var(--muted); margin-right: 8px; }
 .market-more { grid-column: 1 / -1; margin-top: 6px; }
 
 .pj-suggest-wrap { position: relative; }

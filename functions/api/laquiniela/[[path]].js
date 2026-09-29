@@ -714,6 +714,7 @@ function cleanArticle(s) {
 function cleanBrand(s) {
   return String(s || "")
     .replace(/<a\b[^>]*>([\s\S]*?)<\/a>/gi, "$1")
+    .replace(/<div class="block-new">[\s\S]*?(?=<p)/gi, "")
     .replace(/<[^>]*frpg[^>]*>/gi, "")
     .replace(/<div class="d-flex my-4">[\s\S]*?<\/div>\s*<\/div>/gi, "")
     .replace(/<span[^>]*class="[^"]*(autor|cargo|fecha)[^"]*"[^>]*>[\s\S]*?<\/span>/gi, "")
@@ -822,7 +823,7 @@ async function playerFicha(env, id) {
     const order = [["Hoy", 0], ["Ayer", 1], ["2 días", 2], ["3 días", 3], ["5 días", 5], ["10 días", 10], ["14 días", 14], ["30 días", 30]];
     valores = order.map((o) => {
       const v = o[1] === 0 ? todayVal : (byDate[dstrMadrid(o[1])] != null ? byDate[dstrMadrid(o[1])] : null);
-      return { label: o[0], v, diff: (o[1] === 0 || v == null) ? null : todayVal - v };
+      return { label: o[0], days: o[1], v, diff: (o[1] === 0 || v == null) ? null : todayVal - v };
     });
   } catch (e) {}
   const fitArr = (pl.average && pl.average.fitness) || [];
@@ -1255,6 +1256,10 @@ async function placeBid(request, env, user) {
   if (!p) return json({ error: "No hay ninguna puja abierta." }, 404);
   if (p.status !== "open") return json({ error: "La puja ya ha terminado." }, 403);
   const now = Date.now();
+  const prevBid = (p.bids || []).find((b) => b.user === user.name);
+  if (prevBid && prevBid.at && now - new Date(prevBid.at).getTime() < 5000) {
+    return json({ error: "Espera unos segundos antes de volver a pujar." }, 429);
+  }
   const amount = Math.floor(Number(body.amount));
   const step = pujaStep(p.base);
   const highest = (p.bids || []).reduce((m, b) => Math.max(m, b.amount), 0);

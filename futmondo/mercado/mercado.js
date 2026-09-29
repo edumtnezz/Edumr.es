@@ -257,11 +257,25 @@
       stats.appendChild(row);
     };
     const va = Number(a.value) || 0, vb = Number(b.value) || 0;
+    const posOf = (p) => (roleBadge(p.role) || "") + (roleBadge(p.role2) ? "/" + roleBadge(p.role2) : "");
+    stat("Posición", posOf(a), posOf(b), false, false);
     stat("Valor", money(va) + " €", money(vb) + " €", va > vb, vb > va);
+    const probOf = (p) => {
+      if (String(p.status || "").indexOf("injured") === 0) return 5;
+      if (p.status === "doubt") return 50;
+      const f = p.fitness || [];
+      const played = f.filter((x) => Number(x) !== 0).length;
+      let base = 55 + (avg(p) - 3) * 6;
+      if (played <= 1) base -= 25;
+      return Math.max(15, Math.min(95, Math.round(base)));
+    };
+    const qa = probOf(a), qb = probOf(b);
+    stat("Prob. titular", "~" + qa + "%", "~" + qb + "%", qa > qb, qb > qa);
     const pa = Number(a.points) || 0, pb = Number(b.points) || 0;
     stat("Puntos", String(pa), String(pb), pa > pb, pb > pa);
     const ma = avg(a), mb = avg(b);
     stat("Media ú.5", ma.toFixed(1).replace(".", ","), mb.toFixed(1).replace(".", ","), ma > mb, mb > ma);
+    stat("Últimos 5", (a.fitness || []).join(" · ") || "—", (b.fitness || []).join(" · ") || "—", false, false);
     const ca = Number(a.change) || 0, cb = Number(b.change) || 0;
     stat("Tendencia", (ca >= 0 ? "▲ +" : "▼ −") + formatDots(Math.abs(ca)) + " €", (cb >= 0 ? "▲ +" : "▼ −") + formatDots(Math.abs(cb)) + " €", ca > cb, cb > ca);
     stat("Estado", statusLabel(a.status), statusLabel(b.status), false, false);
@@ -549,6 +563,19 @@
     const vals = d.valores || [];
     if (vals.length && vals.some((x) => x.v != null)) {
       root.appendChild(el("div", "estado-title", "Valor de mercado"));
+      const updown = vals.filter((x) => x.v != null && x.diff != null);
+      let streak = 0, ssign = 0;
+      for (const x of updown) {
+        if (!x.diff) break;
+        const s = x.diff > 0 ? 1 : -1;
+        if (ssign === 0) ssign = s;
+        if (s !== ssign) break;
+        streak = x.days || 0;
+      }
+      if (streak > 0) {
+        root.appendChild(el("div", "fv-streak " + (ssign > 0 ? "up" : "down"),
+          (ssign > 0 ? "📈 Lleva " : "📉 Lleva ") + streak + " día" + (streak === 1 ? "" : "s") + (ssign > 0 ? " subiendo" : " bajando")));
+      }
       const box = el("div", "ficha-vals");
       vals.forEach((x) => {
         const r = el("div", "fv-row");

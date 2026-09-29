@@ -105,6 +105,11 @@ export class PujaRoom {
         if (amount % step !== 0) { out = { error: "La puja debe ir de " + step.toLocaleString("es-ES") + " en " + step.toLocaleString("es-ES") + ".", status: 400 }; return; }
         if (amount < min) { out = { error: "Alguien ha pujado antes que tú. Mínimo ahora: " + min.toLocaleString("es-ES") + " €.", status: 400 }; return; }
         const now = Date.now();
+        const prev = (p.bids || []).find((b) => b.user === body.user.name);
+        if (prev && prev.at && now - new Date(prev.at).getTime() < 5000) {
+          out = { error: "Espera unos segundos antes de volver a pujar.", status: 429 };
+          return;
+        }
         const bids = (p.bids || []).filter((b) => b.user !== body.user.name);
         bids.push({ user: body.user.name, userKey: body.user.key, amount, at: new Date(now).toISOString() });
         p.bids = bids;

@@ -35,6 +35,14 @@ let selPlayer = null;
 let iWasLeading = false;
 let suppressOutbid = false;
 let lastErr = "";
+let bidCooldown = 0;
+
+function hortxt(v) {
+  if (!v) return "";
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+}
 
 function statusInfo(s) {
   if (!s) return null;
@@ -244,6 +252,7 @@ function render() {
       if (!isTop) row.classList.add("losing");
     }
     row.appendChild(el("span", "bid-user", bd.user));
+    if (bd.at) row.appendChild(el("span", "bid-time", hortxt(bd.at)));
     row.appendChild(el("span", "bid-amount", money(bd.amount) + " €"));
     list.appendChild(row);
   });
@@ -303,6 +312,7 @@ function renderHistory() {
       hbids.forEach((bd, i) => {
         const row = el("div", "hist-bid");
         row.appendChild(el("span", "hb-name", (i + 1) + ". " + bd.user));
+        if (bd.at) row.appendChild(el("span", "hb-time", hortxt(bd.at)));
         row.appendChild(el("span", "hb-amt", money(bd.amount) + " €"));
         bl.appendChild(row);
       });
@@ -616,6 +626,7 @@ async function doPujar(amount) {
   if (bidding) return;
   lastErr = "";
   if (err) err.textContent = "";
+  if (Date.now() < bidCooldown) { lastErr = "Espera " + Math.ceil((bidCooldown - Date.now()) / 1000) + " s entre pujas."; if (err) err.textContent = lastErr; return; }
   if (!Number.isFinite(amount) || amount <= 0) { lastErr = "Cantidad inválida."; if (err) err.textContent = lastErr; return; }
   if (!window.confirm("¿Seguro que quieres pujar " + money(amount) + " €?\n\nNo se puede retirar ni bajar la puja.")) return;
   bidding = true;
@@ -628,6 +639,7 @@ async function doPujar(amount) {
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || "Error");
     suppressOutbid = true;
+    bidCooldown = Date.now() + 5000;
     await load(true);
     const top = ((data.puja && data.puja.bids) || []).slice().sort((a, b) => b.amount - a.amount)[0];
     toast(top && data.user && top.user === data.user.name ? "¡Puja registrada! Vas primero 🟢" : "¡Puja registrada! ✅");
