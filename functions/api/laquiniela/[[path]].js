@@ -1654,16 +1654,15 @@ export async function onRequestGet({ request, env, params }) {
     const header = await futbolHeader(env);
     const r = await futbolPost("/5/league/championshipplayers", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
     const arr = (r.answer && r.answer.players) || (Array.isArray(r.answer) ? r.answer : []);
-    const pid = arr[0].id;
-    const sum = await futbolPost("/1/player/summary", header, { playerId: pid, championshipId: FUTMONDO_CHAMPIONSHIP });
-    const mk = await futbolPost("/1/market/players", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
-    const mArr = (mk.answer && mk.answer.players) || (Array.isArray(mk.answer) ? mk.answer : []);
-    return json({
-      sumKeys: Object.keys(sum.answer || {}),
-      sumSample: sum.answer || null,
-      mkKeys: Object.keys(mArr[0] || {}),
-      mkSample: (mArr[0] || null),
-    });
+    const out = [];
+    for (const p of arr.slice(0, 8)) {
+      try {
+        const s = await futbolPost("/1/player/summary", header, { playerId: p.id, championshipId: FUTMONDO_CHAMPIONSHIP });
+        const pr = (s.answer && s.answer.prices) || [];
+        out.push({ name: p.name, n: pr.length, first: pr[0] ? pr[0].date + " " + pr[0].price : null, last: pr[pr.length - 1] ? pr[pr.length - 1].date + " " + pr[pr.length - 1].price : null });
+      } catch (e) { out.push({ name: p.name, err: String(e) }); }
+    }
+    return json({ out });
   }
   if (path === "mercado") {
     return searchMercado(env, url.searchParams.get("q"));
