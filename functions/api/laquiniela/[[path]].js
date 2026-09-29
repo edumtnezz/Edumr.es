@@ -1168,6 +1168,8 @@ async function createPuja(request, env, user) {
   let logo = /^https?:\/\/.+/i.test(logoRaw) ? logoRaw : "";
   let change = Math.floor(Number(body.change) || 0);
   let pstatus = String(body.pstatus || "").trim().slice(0, 20);
+  let role = String(body.role || "").trim().slice(0, 20);
+  let role2 = String(body.role2 || "").trim().slice(0, 20);
   if (!player) return json({ error: "Escribe el nombre del jugador." }, 400);
   if (!Number.isFinite(base) || base < 1000000) return json({ error: "El valor debe ser al menos 1.000.000." }, 400);
   let playerValue = 0;
@@ -1184,6 +1186,8 @@ async function createPuja(request, env, user) {
       logo = found.logo || logo;
       change = Number(found.change) || change;
       pstatus = found.status || pstatus;
+      role = found.role || role;
+      role2 = found.role2 || role2;
       if (!photo) photo = found.photo || "";
       if (base < found.value) {
         return json({ error: `El precio no puede ser menor que el valor del jugador (${fmtEur(found.value)} €).` }, 400);
@@ -1197,7 +1201,7 @@ async function createPuja(request, env, user) {
       const r = await stubC.fetch("https://do/crear", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ user: { name: user.name, key: user.key }, player, base, value: playerValue, photo, team, logo, change, pstatus, closesAt }),
+        body: JSON.stringify({ user: { name: user.name, key: user.key }, player, base, value: playerValue, photo, team, logo, change, pstatus, role, role2, closesAt }),
       });
       const d = await r.json();
       if (!r.ok) return json({ error: d.error || "Error" }, r.status);
@@ -1224,6 +1228,8 @@ async function createPuja(request, env, user) {
     logo: logo || "",
     change: change || 0,
     pstatus: pstatus || "",
+    role: role || "",
+    role2: role2 || "",
     createdAt: new Date(now).toISOString(),
     closesAt: nextTuesday2200Utc(new Date(now)),
     extended: false,
@@ -1629,7 +1635,7 @@ export async function onRequestGet({ request, env, params }) {
               if (cached && cached.players) {
                 const q = stripAccents(String(pj.player || "").toLowerCase());
                 const f = cached.players.find((x) => stripAccents(x.name.toLowerCase()) === q) || cached.players.find((x) => stripAccents(x.name.toLowerCase()).includes(q));
-                if (f) pj = { ...pj, team: f.team, logo: f.logo, change: f.change, pstatus: f.status, value: pj.value || f.value, photo: pj.photo || f.photo };
+                if (f) pj = { ...pj, team: f.team, logo: f.logo, change: f.change, pstatus: f.status, role: f.role, role2: f.role2, value: pj.value || f.value, photo: pj.photo || f.photo };
               }
             } catch (e) {}
           }

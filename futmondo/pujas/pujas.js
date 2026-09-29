@@ -51,6 +51,14 @@ function statusInfo(s) {
   if (s === "doubt") return { cls: "st-doubt", label: "?" };
   return null;
 }
+const ROLE = { portero: "POR", defensa: "DEF", centrocampista: "CEN", delantero: "DEL" };
+function roleBadge(role) { return ROLE[String(role || "").toLowerCase()] || ""; }
+function statusBorder(s) {
+  if (s === "redcard") return "#f97316";
+  if (String(s || "").indexOf("injured") === 0) return "#ef4444";
+  if (s === "doubt") return "#eab308";
+  return "#22c55e";
+}
 function fmtDia(v) {
   if (!v) return "";
   const d = new Date(v);
@@ -127,16 +135,24 @@ function render() {
     panel.appendChild(el("p", "bid-note", "⚠️ Al pujar no se puede retirar ni bajar la puja. Piénsalo antes de pujar."));
     const pcard = el("div", "puja-pcard");
     const pwrap = el("div", "puja-pcard-photo");
+    const pbc = statusBorder(p.pstatus);
     if (p.photo) {
       const img = el("img", "puja-photo");
       img.src = p.photo;
       img.alt = p.player;
+      img.style.borderColor = pbc;
       pwrap.appendChild(img);
     }
     const pst = statusInfo(p.pstatus);
     if (pst) pwrap.appendChild(el("span", "mcard-badge " + pst.cls, pst.label));
     pcard.appendChild(pwrap);
     pcard.appendChild(el("div", "puja-pcard-name", p.player));
+    const prb = roleBadge(p.role), prb2 = roleBadge(p.role2);
+    if (prb) {
+      const pr = el("div", "puja-pcard-roles");
+      pr.appendChild(el("span", "pos-badge" + (prb2 ? " multi" : ""), prb + (prb2 ? " · " + prb2 + " (multi)" : "")));
+      pcard.appendChild(pr);
+    }
     if (p.team) {
       const tr = el("div", "puja-pcard-team");
       if (p.logo) { const lg = el("img", "puja-pcard-crest"); lg.src = p.logo; lg.alt = ""; tr.appendChild(lg); }
@@ -594,7 +610,7 @@ async function crear() {
     const res = await fetch(API + "/puja/crear", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ player: $("pjPlayer").value, base: baseVal, photo: $("pjPhoto") ? $("pjPhoto").value : "", team: selPlayer ? selPlayer.team : "", logo: selPlayer ? selPlayer.logo : "", change: selPlayer ? selPlayer.change : 0, pstatus: selPlayer ? selPlayer.status : "" }),
+      body: JSON.stringify({ player: $("pjPlayer").value, base: baseVal, photo: $("pjPhoto") ? $("pjPhoto").value : "", team: selPlayer ? selPlayer.team : "", logo: selPlayer ? selPlayer.logo : "", change: selPlayer ? selPlayer.change : 0, pstatus: selPlayer ? selPlayer.status : "", role: selPlayer ? selPlayer.role : "", role2: selPlayer ? selPlayer.role2 : "" }),
     });
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || "Error");
