@@ -1650,6 +1650,12 @@ export async function onRequestGet({ request, env, params }) {
   if (path === "me") {
     return json({ user: user ? { name: user.name } : null });
   }
+  if (path === "dbg") {
+    const header = await futbolHeader(env);
+    const r = await futbolPost("/5/league/championshipplayers", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
+    const arr = (r.answer && r.answer.players) || (Array.isArray(r.answer) ? r.answer : []);
+    return json({ keys: Object.keys(arr[0] || {}), sample: arr[0] || null });
+  }
   if (path === "mercado") {
     return searchMercado(env, url.searchParams.get("q"));
   }
