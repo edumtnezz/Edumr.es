@@ -684,8 +684,12 @@ async function searchMercado(env, q) {
   } catch (e) {
     return json({ error: "No se pudo consultar Futmondo." }, 502);
   }
-  const players = cache.players || [];
+  let players = cache.players || [];
   try { await snapshotMarket(env, players); } catch (e) {}
+  try {
+    const map = await ffMap(env);
+    players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa } : p; });
+  } catch (e) {}
   const query = stripAccents(String(q || "").toLowerCase().trim());
   let list = players;
   if (query) list = players.filter((p) => stripAccents(p.name.toLowerCase()).includes(query));
@@ -695,29 +699,44 @@ async function searchMercado(env, q) {
 }
 
 const FF_MARKET_URL = "https://www.futbolfantasy.com/analytics/futmondo/mercado/social";
-const FF_IDS_KEY = "ff:ids";
+const FF_MAP_KEY = "ff:map";
 
-async function ffIdMap(env) {
+async function ffMap(env) {
   try {
-    const c = await env.PORRA.get(FF_IDS_KEY, "json");
-    if (c && c.map && Date.now() - (c.at || 0) < 12 * 3600 * 1000) return c.map;
+    const c = await env.PORRA.get(FF_MAP_KEY, "json");
+    if (c && c.map && Date.now() - (c.at || 0) < 6 * 3600 * 1000) return c.map;
   } catch (e) {}
   const res = await fetch(FF_MARKET_URL, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
   const html = await res.text();
   const map = {};
-  const re = /data-id="(\d+)"\s*data-nombre="([^"]+)"/g;
-  let m;
-  while ((m = re.exec(html))) {
-    const id = m[1], nm = normKey(m[2]);
-    if (id && nm && !map[nm]) map[nm] = id;
+  const rows = html.split('class="elemento_jugador');
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const idm = r.match(/data-id="(\d+)"/);
+    const nm = r.match(/data-nombre="([^"]+)"/);
+    if (!idm || !nm) continue;
+    const key = normKey(nm[1].toLowerCase());
+    if (!key || map[key]) continue;
+    const pm = r.match(/class="prob-\d+"[^>]*>\s*(\d+)%/);
+    const tb = r.match(/class="rival-probability[^"]*"[^>]*title="([^"]*)"/);
+    let rival = "", casa = null, jornada = "";
+    if (tb && /rival/i.test(tb[1])) {
+      const t = tb[1];
+      const rr = t.match(/rival:\s*([^()]+)/i);
+      if (rr) rival = rr[1].trim();
+      if (/\(Casa\)/i.test(t)) casa = true; else if (/\(Fuera\)/i.test(t)) casa = false;
+      const jm = t.match(/jornada\s*(\d+)/i);
+      if (jm) jornada = jm[1];
+    }
+    map[key] = { id: idm[1], prob: pm ? Number(pm[1]) : null, rival, casa, jornada };
   }
   if (Object.keys(map).length > 50) {
-    try { await env.PORRA.put(FF_IDS_KEY, JSON.stringify({ at: Date.now(), map })); } catch (e) {}
+    try { await env.PORRA.put(FF_MAP_KEY, JSON.stringify({ at: Date.now(), map })); } catch (e) {}
   }
   return map;
 }
 
-function ffPickId(name, map) {
+function ffPick(name, map) {
   const n = normKey(String(name || "").toLowerCase());
   if (!n) return null;
   if (map[n]) return map[n];
@@ -736,10 +755,10 @@ function ffPickId(name, map) {
 }
 
 async function ffSeason(env, name) {
-  const map = await ffIdMap(env);
-  const id = ffPickId(name, map);
-  if (!id) return null;
-  const res = await fetch("https://www.futbolfantasy.com/analytics/futmondo/mercado/detalle/" + id + "/social", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+  const map = await ffMap(env);
+  const e = ffPick(name, map);
+  if (!e || !e.id) return null;
+  const res = await fetch("https://www.futbolfantasy.com/analytics/futmondo/mercado/detalle/" + e.id + "/social", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
   const html = await res.text();
   const pts = [];
   const re = /player_chartjs\.push\(\{date:\s*"([^"]+)",\s*value:\s*(\d+)\}\)/g;
@@ -1102,6 +1121,8 @@ async function handleAnaliza(request, env, user) {
   const findP = (n) => bestPlayer(n, market.players || []);
   let next = {};
   try { next = await nextMatches(env); } catch (e) {}
+  let ffm = {};
+  try { ffm = await ffMap(env); } catch (e) {}
   const matchTeam = (t) => {
     const q = teamKey(t);
     if (!q) return null;
@@ -1113,6 +1134,8 @@ async function handleAnaliza(request, env, user) {
     const nm = String(pl.nombre || pl.name || "").trim();
     const p = findP(nm);
     const mt = p ? matchTeam(p.team) : null;
+    const ffe = ffPick(nm, ffm);
+    const probFf = ffe && ffe.prob != null ? ffe.prob : null;
     return {
       nombre: nm,
       pos: roleShort(pl.pos) || (p ? roleShort(p.role) : ""),
@@ -1120,13 +1143,14 @@ async function handleAnaliza(request, env, user) {
       equipo: p ? p.team : "",
       estado: p ? statusLabelEs(p.status) : "?",
       pronostico: p ? pronosticoFor(p) : "",
-      prob: p ? probTitular(p) : null,
+      prob: probFf != null ? probFf : (p ? probTitular(p) : null),
+      probFf,
       puntos: p ? p.points : null,
       valor: p ? p.value : null,
       fitness: p ? (p.fitness || []) : [],
       photo: p ? p.photo : "",
-      rival: mt ? mt.rival : "",
-      casa: mt ? mt.home : null,
+      rival: (ffe && ffe.rival) ? ffe.rival : (mt ? mt.rival : ""),
+      casa: (ffe && ffe.casa != null) ? ffe.casa : (mt ? mt.home : null),
       fecha: mt ? mt.date : "",
     };
   });
@@ -1134,7 +1158,7 @@ async function handleAnaliza(request, env, user) {
   const suplentes = enrich(team.suplentes);
   const cnt = (pos) => titulares.filter((p) => p.pos === pos).length;
   const formacion = (cnt("DEF") + cnt("CEN") + cnt("DEL")) ? [cnt("DEF"), cnt("CEN"), cnt("DEL")].join("-") : (team.formacion || "");
-  const line = (p) => `- ${p.pos}${p.pos2 ? "/" + p.pos2 : ""} ${p.nombre} (${p.equipo || "?"}) · ${p.estado} · prob.titular ~${p.prob != null ? p.prob : "?"}% · ${p.puntos != null ? p.puntos + " pts" : "sin datos"} · últ5 ${(p.fitness || []).join("-")} · rival ${p.rival || "desconocido"} ${p.casa === true ? "(CASA)" : p.casa === false ? "(FUERA)" : ""}`;
+  const line = (p) => `- ${p.pos}${p.pos2 ? "/" + p.pos2 : ""} ${p.nombre} (${p.equipo || "?"}) · ${p.estado} · prob.jugar ${p.prob != null ? p.prob : "?"}%${p.probFf != null ? " (FutbolFantasy)" : ""} · ${p.puntos != null ? p.puntos + " pts" : "sin datos"} · últ5 ${(p.fitness || []).join("-")} · rival ${p.rival || "desconocido"} ${p.casa === true ? "(CASA)" : p.casa === false ? "(FUERA)" : ""}`;
   const ctx = "FORMACIÓN: " + formacion + "\nTITULARES:\n" + titulares.map(line).join("\n") + "\nBANQUILLO:\n" + suplentes.map(line).join("\n");
   const prompt = "Eres un analista experto de fútbol fantasy, especializado en las REGLAS de Futmondo Social. Te doy el equipo del usuario con cada jugador: posiciones (si tiene dos, separadas por '/'), estado, probabilidad de ser titular, puntos de la temporada, últimos 5 partidos y si su equipo juega en CASA o FUERA.\n\n" + ctx + "\n\nDa un análisis BREVE en español, AGRADABLE, con emojis y palabras en **negrita**. PROHIBIDO usar almohadillas (#), tablas o líneas de guiones. Máximo 10 líneas cortas. Incluye:\n1) TITULARES vs BANQUILLO: di claramente quién debería JUGAR de inicio y quién sentarse (la liga permite hacer cambios de banquillo). Ordena por probabilidad de jugar y forma.\n2) MULTIPOSICIÓN: para cada jugador con dos posiciones (ej. DEL/CEN), di en qué posición alinearlo para sacar MÁS puntos según Futmondo (gol/asistencia desde más atrás puntúa más; defensas suman por portería a cero). Sé concreto: 'pon a X de CEN'.\n3) 2-3 cambios concretos (a quién sentar y a quién poner), mirando estado, forma, probabilidad y si juega en casa.\n4) Si conviene cambiar de formación y a cuál.\n5) Un once ideal, cada jugador en su MEJOR posición. Sé directo.";
   const analisis = await dsChat(env, [{ role: "user", content: prompt }], "deepseek-flash");

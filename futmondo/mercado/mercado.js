@@ -261,6 +261,7 @@
     stat("Posición", posOf(a), posOf(b), false, false);
     stat("Valor", money(va) + " €", money(vb) + " €", va > vb, vb > va);
     const probOf = (p) => {
+      if (p.prob != null) return p.prob;
       if (String(p.status || "").indexOf("injured") === 0) return 5;
       if (p.status === "doubt") return 50;
       const f = p.fitness || [];
@@ -270,7 +271,7 @@
       return Math.max(15, Math.min(95, Math.round(base)));
     };
     const qa = probOf(a), qb = probOf(b);
-    stat("Prob. titular", "~" + qa + "%", "~" + qb + "%", qa > qb, qb > qa);
+    stat("Prob. jugar", qa + "%", qb + "%", qa > qb, qb > qa);
     const pa = Number(a.points) || 0, pb = Number(b.points) || 0;
     stat("Puntos", String(pa), String(pb), pa > pb, pb > pa);
     const ma = avg(a), mb = avg(b);
@@ -743,7 +744,7 @@
         card.appendChild(ph);
         card.appendChild(el("div", "pitch-name", p.nombre || ""));
         const info = el("div", "pitch-info");
-        if (p.prob != null) info.appendChild(el("span", "pc-prob", "~" + p.prob + "% insp."));
+        if (p.prob != null) info.appendChild(el("span", "pc-prob", p.prob + "% " + (p.probFf != null ? "juega" : "insp.")));
         if (p.estado && p.estado !== "OK" && p.estado !== "?") info.appendChild(el("span", "pc-bad", p.estado));
         card.appendChild(info);
         if (p.casa === true || p.casa === false) card.appendChild(el("div", "pitch-ha", (p.casa ? "🏠 " : "✈️ ") + (p.rival || "?")));
