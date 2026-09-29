@@ -699,7 +699,7 @@ async function searchMercado(env, q) {
 }
 
 const FF_MARKET_URL = "https://www.futbolfantasy.com/analytics/futmondo/mercado/social";
-const FF_MAP_KEY = "ff:map";
+const FF_MAP_KEY = "ff:map2";
 
 async function ffMap(env) {
   try {
@@ -717,7 +717,7 @@ async function ffMap(env) {
     if (!idm || !nm) continue;
     const key = normKey(nm[1].toLowerCase());
     if (!key || map[key]) continue;
-    const pm = r.match(/class="prob-\d+"[^>]*>\s*(\d+)%/);
+    const pm = r.match(/class="prob-[^"]*"[^>]*>\s*(\d+)%/);
     const tb = r.match(/class="rival-probability[^"]*"[^>]*title="([^"]*)"/);
     let rival = "", casa = null, jornada = "";
     if (tb && /rival/i.test(tb[1])) {
