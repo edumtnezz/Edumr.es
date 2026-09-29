@@ -1249,6 +1249,13 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .hist-line b { color: var(--text); }
 .hist-tag { font-size: 0.74rem; color: var(--muted); margin-top: 2px; }
 .hist-amount { font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: var(--accent); font-size: 1.1rem; white-space: nowrap; }
+.hist-imgcol { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 0 0 auto; max-width: 88px; }
+.hist-pos { font-size: 0.62rem; font-weight: 800; color: #22c55e; text-align: center; line-height: 1.15; }
+.puja-won { text-align: center; padding: 16px 18px; border-radius: 16px; border: 1px solid rgba(16, 185, 129, 0.5); background: linear-gradient(135deg, rgba(16, 185, 129, 0.16), rgba(16, 185, 129, 0.03)); margin: 6px 0 16px; }
+.pw-ico { font-size: 1.7rem; line-height: 1; }
+.pw-txt { font-size: 0.8rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.pw-name { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: clamp(1.4rem, 6.5vw, 2rem); margin-top: 2px; }
+.pw-amt { font-family: 'Space Grotesk', monospace; font-weight: 700; font-size: 1.2rem; color: #34d399; margin-top: 4px; }
 .pj-preview { display: flex; align-items: center; gap: 10px; }
 .pj-preview-photo { position: relative; }
 .pj-preview-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }

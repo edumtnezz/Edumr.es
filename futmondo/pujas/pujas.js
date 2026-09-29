@@ -133,7 +133,21 @@ function render() {
   cd.appendChild(refresh);
   panel.appendChild(cd);
 
+  if (p && p.status === "closed") {
+    const won = el("div", "puja-won");
+    won.appendChild(el("div", "pw-ico", "🏆"));
+    if (p.winner) {
+      won.appendChild(el("div", "pw-txt", "Puja ganada por"));
+      won.appendChild(el("div", "pw-name", p.winner.user));
+      won.appendChild(el("div", "pw-amt", money(p.winner.amount) + " €"));
+    } else {
+      won.appendChild(el("div", "pw-txt", "Nadie pujó esta vez"));
+    }
+    panel.appendChild(won);
+  }
+
   if (p) {
+    if (p.status === "closed") panel.appendChild(el("div", "puja-sec", "Jugador subastado"));
     if (p.status === "open") panel.appendChild(el("p", "bid-note", "⚠️ Al pujar no se puede retirar ni bajar la puja. Piénsalo antes de pujar."));
     const pcard = el("div", "puja-pcard");
     const pwrap = el("div", "puja-pcard-photo");
@@ -223,16 +237,6 @@ function render() {
     const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
     b.addEventListener("click", crear);
     attachPlayerSearch();
-    } else if (p && p.status === "closed") {
-      const w = el("div", "winner-box");
-      if (p.winner) {
-        w.appendChild(el("div", "muted", "Ganador"));
-        w.appendChild(el("div", "w-name", p.winner.user));
-        w.appendChild(el("div", "w-amount", money(p.winner.amount) + " €"));
-      } else {
-        w.appendChild(el("div", "muted", "Nadie pujó."));
-      }
-      panel.appendChild(w);
     } else if (open) {
       const step = p.base >= 10000000 ? 500000 : 100000;
       const curBids = (p.bids || []).slice().sort((a, b) => b.amount - a.amount);
@@ -284,17 +288,6 @@ function render() {
   }
 
   if (p && p.status === "closed") {
-    if (!user) {
-      const w = el("div", "winner-box");
-      if (p.winner) {
-        w.appendChild(el("div", "muted", "Ganador"));
-        w.appendChild(el("div", "w-name", p.winner.user));
-        w.appendChild(el("div", "w-amount", money(p.winner.amount) + " €"));
-      } else {
-        w.appendChild(el("div", "muted", "Nadie pujó."));
-      }
-      panel.appendChild(w);
-    }
     const wb = el("button", "btn-primary big share-btn", "📲 Enviar resultado por WhatsApp");
     wb.addEventListener("click", () => shareWhatsApp(p));
     panel.appendChild(wb);
@@ -329,20 +322,22 @@ function renderHistory() {
     const fecha = fmtFechaLarga(h.closedAt);
     if (fecha) card.appendChild(el("div", "hist-date", fecha));
     const main = el("div", "hist-main");
+    const imgCol = el("div", "hist-imgcol");
     if (h.photo) {
       const im = el("img", "hist-img");
       im.src = h.photo;
       im.alt = h.player;
       im.loading = "lazy";
       im.addEventListener("error", () => { if (im.parentNode) im.parentNode.replaceChild(el("div", "hist-img", initials(h.player)), im); });
-      main.appendChild(im);
+      imgCol.appendChild(im);
     } else {
-      main.appendChild(el("div", "hist-img", initials(h.player)));
+      imgCol.appendChild(el("div", "hist-img", initials(h.player)));
     }
+    const hrb = roleBadge(h.role), hrb2 = roleBadge(h.role2);
+    if (hrb) imgCol.appendChild(el("div", "hist-pos", [roleFull(h.role), roleFull(h.role2)].filter(Boolean).join(" · ") + (hrb2 ? " (multi)" : "")));
+    main.appendChild(imgCol);
     const body = el("div", "hist-body");
     body.appendChild(el("div", "hist-player", h.player));
-    const hrb = roleBadge(h.role), hrb2 = roleBadge(h.role2);
-    if (hrb) { body.appendChild(el("div", "hist-line", "Posición: " + [roleFull(h.role), roleFull(h.role2)].filter(Boolean).join(" · ") + (hrb2 ? " (multiposición)" : ""))); }
     if (h.value) body.appendChild(el("div", "hist-line", "Valor de mercado: " + money(h.value) + " €"));
     const wl = el("div", "hist-line");
     if (h.winner) wl.innerHTML = "Se lo llevó <b>" + escapeHtml(h.winner) + "</b>";
