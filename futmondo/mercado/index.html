@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mercado Ãƒâ€šÃ‚Â· Futmondo EduMR</title>
+  <title>Mercado · Futmondo EduMR</title>
   <meta name="description" content="Valores, subidas y bajadas y estado de los jugadores de tu liga de Futmondo Social.">
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#07090e">
@@ -45,13 +45,13 @@
           <h2>Mercado</h2>
           <span class="muted small" id="mercadoUpdated"></span>
         </div>
-        <p class="muted small">Valores de <b>Futmondo Social</b> y su tendencia del dÃƒÆ’Ã‚Â­a.</p>
-        <p class="muted small">Posiciones: <b>POR</b> Portero Ãƒâ€šÃ‚Â· <b>DEF</b> Defensa Ãƒâ€šÃ‚Â· <b>CEN</b> Centrocampista Ãƒâ€šÃ‚Â· <b>DEL</b> Delantero. Si ves dos (ej. <b>DEL Ãƒâ€šÃ‚Â· CEN</b>), el jugador <b>vale para las dos</b> (multiposiciÃƒÆ’Ã‚Â³n).</p>
-        <p class="merc-clubs-hint"><b>ÃƒÂ°Ã…Â¸Ã¢â‚¬ËœÃ¢â‚¬Â° Toca un equipo</b> para ver solo sus jugadores (vuelve a tocarlo para quitarlo).</p>
+        <p class="muted small">Valores de <b>Futmondo Social</b> y su tendencia del día.</p>
+        <p class="muted small">Posiciones: <b>POR</b> Portero · <b>DEF</b> Defensa · <b>CEN</b> Centrocampista · <b>DEL</b> Delantero. Si ves dos (ej. <b>DEL · CEN</b>), el jugador <b>vale para las dos</b> (multiposición).</p>
+        <p class="merc-clubs-hint"><b>👉 Toca un equipo</b> para ver solo sus jugadores (vuelve a tocarlo para quitarlo).</p>
         <div class="merc-clubs" id="mercClubs"></div>
         <div id="mercHighlights"></div>
         <div class="merc-filters">
-          <input id="mjSearch" class="market-search" type="text" placeholder="Buscar jugador por nombreÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦" autocomplete="off">
+          <input id="mjSearch" class="market-search" type="text" placeholder="Buscar jugador por nombre…" autocomplete="off">
           <select id="mjRole" class="merc-select">
             <option value="">Todas las posiciones</option>
             <option value="portero">Porteros</option>
@@ -61,14 +61,14 @@
           </select>
         </div>
           <div class="merc-range">
-            <span class="muted small">Rango de precio: <b id="mjRangeLabel">ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â</b></span>
-            <input type="range" id="mjMin" min="0" max="100" value="0" aria-label="Precio mÃƒÆ’Ã‚Â­nimo">
-            <input type="range" id="mjMax" min="0" max="100" value="100" aria-label="Precio mÃƒÆ’Ã‚Â¡ximo">
+            <span class="muted small">Rango de precio: <b id="mjRangeLabel">—</b></span>
+            <input type="range" id="mjMin" min="0" max="100" value="0" aria-label="Precio mínimo">
+            <input type="range" id="mjMax" min="0" max="100" value="100" aria-label="Precio máximo">
           </div>
         </div>
         <div class="merc-seg" id="mercSeg">
-          <button class="merc-segbtn active" data-sort="up">ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â² Mayores subidas</button>
-          <button class="merc-segbtn" data-sort="down">ÃƒÂ¢Ã¢â‚¬â€œÃ‚Â¼ Mayores bajadas</button>
+          <button class="merc-segbtn active" data-sort="up">▲ Mayores subidas</button>
+          <button class="merc-segbtn" data-sort="down">▼ Mayores bajadas</button>
           <button class="merc-segbtn" data-sort="value">Valor</button>
         </div>
         <div class="market-grid" id="marketGrid"></div>
@@ -88,8 +88,8 @@
         <h2>Comparador</h2>
         <p class="muted small">Compara dos jugadores: valor, tendencia y estado.</p>
         <div class="cmp-row">
-          <div class="cmp-pick"><input id="cmpA" class="market-search" placeholder="Jugador AÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦" autocomplete="off"><div class="cmp-sug hidden" id="cmpSugA"></div></div>
-          <div class="cmp-pick"><input id="cmpB" class="market-search" placeholder="Jugador BÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦" autocomplete="off"><div class="cmp-sug hidden" id="cmpSugB"></div></div>
+          <div class="cmp-pick"><input id="cmpA" class="market-search" placeholder="Jugador A…" autocomplete="off"><div class="cmp-sug hidden" id="cmpSugA"></div></div>
+          <div class="cmp-pick"><input id="cmpB" class="market-search" placeholder="Jugador B…" autocomplete="off"><div class="cmp-sug hidden" id="cmpSugB"></div></div>
         </div>
         <div id="cmpOut"></div>
       </section>
@@ -99,16 +99,16 @@
       <section class="panel">
         <h2>Noticias</h2>
         <h3 class="estado-title">Noticias de LaLiga</h3>
-        <div id="newsAnuncios"><p class="muted small">CargandoÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦</p></div>
+        <div id="newsAnuncios"><p class="muted small">Cargando…</p></div>
         <h3 class="estado-title">Actividad de tu liga</h3>
-        <div id="newsLocker"><p class="muted small">CargandoÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¦</p></div>
+        <div id="newsLocker"><p class="muted small">Cargando…</p></div>
       </section>
     </section>
 
     <section class="tab-panel hidden" id="tab-analiza">
       <section class="panel">
         <h2>Analiza tu equipo</h2>
-        <p class="muted small">Sube una <b>captura de tu equipo</b> de Futmondo y la IA te dirÃƒÆ’Ã‚Â¡ a quiÃƒÆ’Ã‚Â©n sentar, quÃƒÆ’Ã‚Â© cambios hacer y quÃƒÆ’Ã‚Â© formaciÃƒÆ’Ã‚Â³n, mirando el <b>estado</b>, los <b>puntos</b> y si juega en <b>casa o fuera</b>.</p>
+        <p class="muted small">Sube una <b>captura de tu equipo</b> de Futmondo y la IA te dirá a quién sentar, qué cambios hacer y qué formación, mirando el <b>estado</b>, los <b>puntos</b> y si juega en <b>casa o fuera</b>.</p>
         <input type="file" id="anFile" accept="image/*" class="an-file">
         <img id="anPreview" class="an-preview hidden" alt="">
         <button class="btn-primary big" id="anBtn">Analizar mi equipo</button>
@@ -122,7 +122,7 @@
 
   <div class="ficha-overlay hidden" id="fichaOverlay">
     <div class="ficha-modal">
-      <button class="ficha-close" id="fichaClose" aria-label="Cerrar">ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¢</button>
+      <button class="ficha-close" id="fichaClose" aria-label="Cerrar">✕</button>
       <div id="fichaBody"></div>
     </div>
   </div>
