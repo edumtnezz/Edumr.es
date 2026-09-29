@@ -1724,7 +1724,10 @@ export async function onRequestGet({ request, env, params }) {
     const out = {};
     try {
       const map = await ffIdMap(env);
-      out.mapSize = Object.keys(map).length;
+      const keys = Object.keys(map);
+      out.mapSize = keys.length;
+      out.sample = keys.slice(0, 12);
+      out.zubel = keys.filter((k) => k.includes("zubel") || k.includes("mandi") || k.includes("raphin"));
       out.zubeldia = ffPickId("Zubeldia", map);
       out.mandi = ffPickId("Mandi", map);
       out.raphinha = ffPickId("Raphinha", map);
