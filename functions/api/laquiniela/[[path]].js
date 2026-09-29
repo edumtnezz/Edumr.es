@@ -1654,15 +1654,23 @@ export async function onRequestGet({ request, env, params }) {
     const header = await futbolHeader(env);
     const r = await futbolPost("/5/league/championshipplayers", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
     const arr = (r.answer && r.answer.players) || (Array.isArray(r.answer) ? r.answer : []);
-    const out = [];
-    for (const p of arr.slice(0, 8)) {
+    const p = arr.find((x) => Number(x.value) > 5000000) || arr[0];
+    const variants = {
+      base: { playerId: p.id, championshipId: FUTMONDO_CHAMPIONSHIP },
+      days: { playerId: p.id, championshipId: FUTMONDO_CHAMPIONSHIP, days: 365 },
+      limit: { playerId: p.id, championshipId: FUTMONDO_CHAMPIONSHIP, limit: 365 },
+      all: { playerId: p.id, championshipId: FUTMONDO_CHAMPIONSHIP, all: true },
+      from: { playerId: p.id, championshipId: FUTMONDO_CHAMPIONSHIP, from: "2026-08-01" },
+    };
+    const out = { name: p.name };
+    for (const k of Object.keys(variants)) {
       try {
-        const s = await futbolPost("/1/player/summary", header, { playerId: p.id, championshipId: FUTMONDO_CHAMPIONSHIP });
+        const s = await futbolPost("/1/player/summary", header, variants[k]);
         const pr = (s.answer && s.answer.prices) || [];
-        out.push({ name: p.name, n: pr.length, first: pr[0] ? pr[0].date + " " + pr[0].price : null, last: pr[pr.length - 1] ? pr[pr.length - 1].date + " " + pr[pr.length - 1].price : null });
-      } catch (e) { out.push({ name: p.name, err: String(e) }); }
+        out[k] = pr.length + " " + (pr[0] ? pr[0].date.slice(0, 10) : "");
+      } catch (e) { out[k] = "err " + e; }
     }
-    return json({ out });
+    return json(out);
   }
   if (path === "mercado") {
     return searchMercado(env, url.searchParams.get("q"));
