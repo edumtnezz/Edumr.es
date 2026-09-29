@@ -1720,26 +1720,6 @@ export async function onRequestGet({ request, env, params }) {
   if (path === "me") {
     return json({ user: user ? { name: user.name } : null });
   }
-  if (path === "dbg2") {
-    const out = {};
-    try {
-      const map = await ffIdMap(env);
-      const keys = Object.keys(map);
-      out.mapSize = keys.length;
-      out.sample = keys.slice(0, 12);
-      out.zubel = keys.filter((k) => k.includes("zubel") || k.includes("mandi") || k.includes("raphin"));
-      out.zubeldia = ffPickId("Zubeldia", map);
-      out.mandi = ffPickId("Mandi", map);
-      out.raphinha = ffPickId("Raphinha", map);
-    } catch (e) { out.mapErr = String(e); }
-    try {
-      const pts = await ffSeason(env, "Zubeldia");
-      out.seasonLen = pts ? pts.length : null;
-      out.first = pts ? pts[0] : null;
-      out.last = pts ? pts[pts.length - 1] : null;
-    } catch (e) { out.seasonErr = String(e); }
-    return json(out);
-  }
   if (path === "mercado") {
     return searchMercado(env, url.searchParams.get("q"));
   }
