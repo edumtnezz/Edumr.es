@@ -163,7 +163,7 @@ function render() {
       pcard.appendChild(tr);
     }
     if (p.value) {
-      const vv = el("div", "puja-pcard-val", money(p.value) + " €");
+      const vv = el("div", "puja-pcard-val", "Valor: " + money(p.value) + " €");
       const chg = Number(p.change) || 0;
       if (chg > 0) vv.appendChild(el("span", "up", "   ▲ " + formatDots(chg) + " €"));
       else if (chg < 0) vv.appendChild(el("span", "down", "   ▼ " + formatDots(-chg) + " €"));

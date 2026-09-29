@@ -1378,7 +1378,37 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 @keyframes spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 620px) {
-  .panel { padding: 20px 16px; }
+  .panel { padding: 14px 12px; }
+  .panel + .panel { margin-top: 12px; }
+  .puja-timer { font-size: clamp(1.5rem, 7.5vw, 2.2rem); }
+  .puja-sub { font-size: 0.74rem; margin-top: 4px; }
+  .puja-refresh { width: 30px; height: 30px; font-size: 0.95rem; }
+  .puja-photo { width: 64px; height: 64px; margin-bottom: 4px; }
+  .puja-pcard-name { font-size: 1.08rem; margin-top: 2px; }
+  .puja-pcard-team { font-size: 0.74rem; }
+  .puja-pcard-val { font-size: 0.86rem; }
+  .pos-badge { font-size: 0.6rem; padding: 2px 6px; }
+  .btn-primary.big { padding: 11px; font-size: 0.92rem; }
+  .bid-note { font-size: 0.76rem; margin: 8px 0 2px; }
+  .bid-list { gap: 4px; margin-top: 8px; }
+  .bid-row { padding: 7px 10px; }
+  .bid-row.top { padding: 10px 12px; font-size: 0.98rem; }
+  .bid-row.top .bid-amount { font-size: 1.05rem; }
+  .bid-lead { font-size: 0.95rem; margin: 6px 0; }
+  .bid-extras { gap: 6px; margin-top: 6px; }
+  .puja-base { font-size: 0.82rem; }
+  .share-btn { margin-top: 8px; }
+  .market-search { padding: 10px 12px; font-size: 0.9rem; margin: 8px 0 4px; }
+  .market-grid { grid-template-columns: repeat(auto-fill, minmax(102px, 1fr)); gap: 7px; margin-top: 8px; }
+  .mcard { padding: 8px 6px; gap: 4px; border-radius: 10px; }
+  .mcard-photo, .mcard-photo .mcard-img, .mcard-img { width: 44px; height: 44px; }
+  .mcard-name { font-size: 0.74rem; }
+  .mcard-team { font-size: 0.66rem; }
+  .mcard-val { font-size: 0.8rem; }
+  .mcard-trend { font-size: 0.62rem; }
+  .mcard-role { font-size: 0.56rem; padding: 1px 5px; }
+  .mcard-crest { width: 12px; height: 12px; }
+  .mcard-badge { width: 18px; height: 18px; font-size: 12px; }
   .match-row { grid-template-columns: 1fr; padding: 12px; }
   .pick-buttons { justify-content: stretch; }
   .pick-btn { flex: 1; width: auto; }
