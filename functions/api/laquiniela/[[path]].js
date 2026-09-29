@@ -1733,18 +1733,28 @@ export async function onRequestGet({ request, env, params }) {
         const r = await stub.fetch("https://do/state");
         const d = await r.json();
         if (r.ok && d && d.puja !== undefined) {
-          let pj = d.puja;
-          if (pj && !pj.team) {
-            try {
-              const cached = await env.PORRA.get(MARKET_KEY, "json");
-              if (cached && cached.players) {
-                const q = stripAccents(String(pj.player || "").toLowerCase());
-                const f = cached.players.find((x) => stripAccents(x.name.toLowerCase()) === q) || cached.players.find((x) => stripAccents(x.name.toLowerCase()).includes(q));
-                if (f) pj = { ...pj, team: f.team, logo: f.logo, change: f.change, pstatus: f.status, role: f.role, role2: f.role2, value: pj.value || f.value, photo: pj.photo || f.photo };
-              }
-            } catch (e) {}
-          }
-          return json({ puja: pj || null, user: user ? { name: user.name } : null, nextTuesday: nextTuesday2200Utc(new Date()), nextWindow: nextWindowOpenUtc(new Date()), inWindow: inPujaWindow(new Date()), history: d.history || [] });
+          let mk = null;
+          try { mk = await getMarketPlayers(env); } catch (e) {}
+          const mlist = (mk && mk.players) || [];
+          const findM = (name) => {
+            const q = stripAccents(String(name || "").toLowerCase()).trim();
+            if (!q) return null;
+            return mlist.find((x) => stripAccents(x.name.toLowerCase()) === q) || mlist.find((x) => stripAccents(x.name.toLowerCase()).includes(q));
+          };
+          const fill = (o) => {
+            if (!o) return o;
+            const f = findM(o.player);
+            if (!f) return o;
+            return {
+              ...o,
+              team: o.team || f.team, logo: o.logo || f.logo, change: o.change || f.change,
+              pstatus: o.pstatus || f.status, role: o.role || f.role, role2: o.role2 || f.role2,
+              value: o.value || f.value, photo: o.photo || f.photo,
+            };
+          };
+          const pj = fill(d.puja);
+          const hist = (d.history || []).map(fill);
+          return json({ puja: pj || null, user: user ? { name: user.name } : null, nextTuesday: nextTuesday2200Utc(new Date()), nextWindow: nextWindowOpenUtc(new Date()), inWindow: inPujaWindow(new Date()), history: hist });
         }
       } catch (e) {}
     }

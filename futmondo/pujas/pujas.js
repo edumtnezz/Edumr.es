@@ -329,6 +329,7 @@ function renderHistory() {
       const bl = el("div", "hist-bids");
       hbids.forEach((bd, i) => {
         const row = el("div", "hist-bid");
+        if (i === 0) row.classList.add("top");
         row.appendChild(el("span", "hb-name", (i + 1) + ". " + bd.user));
         if (bd.at) row.appendChild(el("span", "hb-time", hortxt(bd.at)));
         row.appendChild(el("span", "hb-amt", money(bd.amount) + " €"));

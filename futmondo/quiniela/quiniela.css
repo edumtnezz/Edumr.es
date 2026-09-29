@@ -1236,7 +1236,9 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .hist-bids { display: grid; gap: 4px; border-top: 1px solid var(--border); padding-top: 8px; }
 .hist-bid { display: flex; justify-content: space-between; gap: 10px; font-size: 0.82rem; color: var(--muted); }
 .hb-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.hb-amt { font-weight: 700; color: var(--text); white-space: nowrap; }
+.hb-amt { font-weight: 700; color: #ef4444; white-space: nowrap; }
+.hist-bid.top .hb-amt { color: #34d399; }
+.hist-bid.top .hb-name { color: var(--text); }
 .hist-img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; background: var(--bg-surface); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--muted); font-family: 'Space Grotesk', sans-serif; }
 .hist-body { flex: 1 1 auto; min-width: 0; }
 .hist-player { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.05rem; }
@@ -1279,7 +1281,7 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .bid-row { display: flex; align-items: center; gap: 12px; padding: 11px 15px; border-radius: 11px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); }
 .bid-row.top { border-color: rgba(16, 185, 129, 0.55); background: linear-gradient(90deg, rgba(16, 185, 129, 0.13), rgba(16, 185, 129, 0.02)); }
 .bid-user { flex: 1; font-weight: 700; }
-.bid-amount { font-family: 'Space Grotesk', monospace; font-weight: 700; color: var(--accent); }
+.bid-amount { font-family: 'Space Grotesk', monospace; font-weight: 700; color: #ef4444; }
 .bid-row.top .bid-amount { color: #34d399; }
 .bid-form { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
 .bid-form input { flex: 1; min-width: 150px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-surface); color: var(--text); font-size: 1rem; font-family: inherit; outline: none; }
