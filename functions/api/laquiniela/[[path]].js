@@ -1654,7 +1654,8 @@ export async function onRequestGet({ request, env, params }) {
     const header = await futbolHeader(env);
     const r = await futbolPost("/5/league/championshipplayers", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
     const arr = (r.answer && r.answer.players) || (Array.isArray(r.answer) ? r.answer : []);
-    return json({ keys: Object.keys(arr[0] || {}), sample: arr[0] || null });
+    const fp = await futbolPost("/1/player/fullprofile", header, { playerId: arr[0].id, championshipId: FUTMONDO_CHAMPIONSHIP });
+    return json({ keys: Object.keys(arr[0] || {}), sample: arr[0] || null, fpKeys: Object.keys((fp.answer && fp.answer.player) || fp.answer || {}), fp: (fp.answer && fp.answer.player) || fp.answer || null });
   }
   if (path === "mercado") {
     return searchMercado(env, url.searchParams.get("q"));
