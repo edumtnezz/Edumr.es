@@ -435,6 +435,14 @@ function renderMarket() {
     card.appendChild(photoWrap);
     const body = el("div", "mcard-body");
     body.appendChild(el("div", "mcard-name", p.name));
+    const mrb = roleBadge(p.role), mrb2 = roleBadge(p.role2);
+    if (mrb) {
+      const roles = el("div", "mcard-roles");
+      const b = el("span", "mcard-role" + (mrb2 ? " multi" : ""), mrb + (mrb2 ? " · " + mrb2 : ""));
+      b.title = roleFull(p.role) + (mrb2 ? " · " + roleFull(p.role2) + " (multiposición)" : "");
+      roles.appendChild(b);
+      body.appendChild(roles);
+    }
     if (p.team) {
       const teamRow = el("div", "mcard-team");
       if (p.logo) {
