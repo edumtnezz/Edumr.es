@@ -694,6 +694,61 @@ async function searchMercado(env, q) {
   return json({ players: list.slice(0, limit), updatedAt: cache.at || null });
 }
 
+const FF_MARKET_URL = "https://www.futbolfantasy.com/analytics/futmondo/mercado/social";
+const FF_IDS_KEY = "ff:ids";
+
+async function ffIdMap(env) {
+  try {
+    const c = await env.PORRA.get(FF_IDS_KEY, "json");
+    if (c && c.map && Date.now() - (c.at || 0) < 12 * 3600 * 1000) return c.map;
+  } catch (e) {}
+  const res = await fetch(FF_MARKET_URL, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+  const html = await res.text();
+  const map = {};
+  const re = /data-id="(\d+)"\s*data-nombre="([^"]+)"/g;
+  let m;
+  while ((m = re.exec(html))) {
+    const id = m[1], nm = normKey(m[2]);
+    if (id && nm && !map[nm]) map[nm] = id;
+  }
+  if (Object.keys(map).length > 50) {
+    try { await env.PORRA.put(FF_IDS_KEY, JSON.stringify({ at: Date.now(), map })); } catch (e) {}
+  }
+  return map;
+}
+
+function ffPickId(name, map) {
+  const n = normKey(name);
+  if (!n) return null;
+  if (map[n]) return map[n];
+  const keys = Object.keys(map);
+  const ends = keys.filter((k) => k.endsWith(" " + n));
+  if (ends.length === 1) return map[ends[0]];
+  const words = n.split(" ");
+  const last = words[words.length - 1];
+  if (last.length >= 4) {
+    const byLast = keys.filter((k) => k.split(" ").pop() === last);
+    if (byLast.length === 1) return map[byLast[0]];
+  }
+  const cont = keys.filter((k) => k.split(" ").indexOf(n) >= 0 || k.includes(" " + n + " "));
+  if (cont.length === 1) return map[cont[0]];
+  return null;
+}
+
+async function ffSeason(env, name) {
+  const map = await ffIdMap(env);
+  const id = ffPickId(name, map);
+  if (!id) return null;
+  const res = await fetch("https://www.futbolfantasy.com/analytics/futmondo/mercado/detalle/" + id + "/social", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+  const html = await res.text();
+  const pts = [];
+  const re = /player_chartjs\.push\(\{date:\s*"([^"]+)",\s*value:\s*(\d+)\}\)/g;
+  let m;
+  while ((m = re.exec(html))) pts.push({ d: m[1], v: Number(m[2]) });
+  pts.reverse();
+  return pts.length >= 2 ? pts : null;
+}
+
 function stripHtml(s) {
   return String(s || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
 }
@@ -826,6 +881,20 @@ async function playerFicha(env, id) {
       return { label: o[0], days: o[1], v, diff: (o[1] === 0 || v == null) ? null : todayVal - v };
     });
   } catch (e) {}
+  let temporada = null;
+  try {
+    const pts = await ffSeason(env, pl.name || "");
+    if (pts) {
+      const first = pts[0], last = pts[pts.length - 1];
+      temporada = {
+        desde: first.d, hasta: last.d, v0: first.v, v1: last.v,
+        diff: last.v - first.v,
+        pct: first.v > 0 ? ((last.v - first.v) / first.v) * 100 : 0,
+        n: pts.length,
+        serie: pts,
+      };
+    }
+  } catch (e) {}
   const fitArr = (pl.average && pl.average.fitness) || [];
   return {
     id,
@@ -845,6 +914,7 @@ async function playerFicha(env, id) {
     photo: pl.photo ? FACE_BASE + pl.photo : "",
     matches,
     valores,
+    temporada,
   };
 }
 

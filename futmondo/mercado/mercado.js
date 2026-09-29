@@ -561,8 +561,17 @@
     }
 
     const vals = d.valores || [];
-    if (vals.length && vals.some((x) => x.v != null)) {
+    if ((vals.length && vals.some((x) => x.v != null)) || (d.temporada && d.temporada.n >= 2)) {
       root.appendChild(el("div", "estado-title", "Valor de mercado"));
+      if (d.temporada && d.temporada.n >= 2) {
+        const tt = d.temporada;
+        const tup = tt.diff >= 0;
+        const srow = el("div", "fv-season");
+        srow.appendChild(el("span", "fvs-label", "Temporada"));
+        srow.appendChild(el("span", "fvs-diff " + (tup ? "up" : "down"), (tup ? "▲ +" : "▼ −") + formatDots(Math.abs(tt.diff)) + " € (" + (tup ? "+" : "−") + Math.abs(tt.pct).toFixed(1).replace(".", ",") + "%)"));
+        srow.appendChild(el("span", "fvs-range", tt.desde + " → " + tt.hasta));
+        root.appendChild(srow);
+      }
       const updown = vals.filter((x) => x.v != null && x.diff != null);
       let streak = 0, ssign = 0;
       for (const x of updown) {
@@ -588,7 +597,9 @@
         box.appendChild(r);
       });
       root.appendChild(box);
-      const pts = vals.filter((x) => x.v != null).reverse();
+      const pts = (d.temporada && d.temporada.serie && d.temporada.serie.length >= 2)
+        ? d.temporada.serie.map((x) => ({ v: x.v }))
+        : vals.filter((x) => x.v != null).reverse();
       if (pts.length >= 2) {
         const w = 320, h = 90, pad = 8;
         const maxv = Math.max.apply(null, pts.map((x) => x.v));
