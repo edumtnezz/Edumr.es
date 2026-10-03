@@ -410,7 +410,7 @@
     const box = $("mercBest");
     if (!box) return;
     box.innerHTML = "";
-    const cand = all.filter((p) => p.fitness && p.fitness.length >= 3 && String(p.status || "").indexOf("injured") !== 0 && p.value > 0);
+    const cand = all.filter((p) => p.fitness && p.fitness.length >= 3 && p.value > 0);
     if (cand.length < 8) { box.classList.add("hidden"); return; }
     box.classList.remove("hidden");
     const byExp = cand.slice().sort((a, b) => expOf(b) - expOf(a));
@@ -427,9 +427,13 @@
     const row = el("div", "merc-bestrow");
     top.forEach((p) => {
       const c = el("button", "mbc"); c.type = "button";
+      const ph = el("div", "mbc-photo");
       const im = el("img", "mbc-img"); im.loading = "lazy"; im.alt = ""; im.src = p.photo || "/img/avatar.svg";
       im.addEventListener("error", () => { if (im.getAttribute("src") !== "/img/avatar.svg") im.src = "/img/avatar.svg"; }, { once: true });
-      c.appendChild(im);
+      ph.appendChild(im);
+      const sti = statusInfo(p.status);
+      if (sti) ph.appendChild(el("span", "mcard-badge " + sti.cls, sti.label));
+      c.appendChild(ph);
       c.appendChild(el("div", "mbc-name", p.name));
       if (p.team) {
         const tr = el("div", "mbc-team");
