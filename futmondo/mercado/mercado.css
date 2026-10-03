@@ -159,6 +159,8 @@
 [data-theme="light"] .ficha-modal .fm-j,
 [data-theme="light"] .ficha-modal .fv-thead { color: #69727d; }
 [data-theme="light"] .ficha-modal .fm-match { color: #1a1d21; }
+[data-theme="light"] .ficha-modal .fv-td.up { color: #16a34a; }
+[data-theme="light"] .ficha-modal .fv-td.down { color: #dc2626; }
 [data-theme="light"] .ficha-modal .ficha-stat { background: #f1f5f9; border-color: #e2e8f0; }
 [data-theme="light"] .ficha-modal .fm-row, [data-theme="light"] .ficha-modal .fv-trow { border-top-color: #eef2f7; }
 [data-theme="light"] .ficha-modal .ficha-close { color: #111827; border-color: #d0d7de; }
