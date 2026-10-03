@@ -760,21 +760,42 @@
       const serie = (d.temporada && d.temporada.serie) || [];
       const valsSeries = serie.length >= 2 ? serie.map((x) => x.v) : vals.filter((x) => x.v != null).reverse().map((x) => x.v);
       if (valsSeries.length >= 2) {
-        const w = 440, h = 180, pad = 12;
+        const W = 520, H = 220, pl = 48, pr = 10, pt = 12, pb = 26;
         const maxv = Math.max.apply(null, valsSeries);
         const minv = Math.min.apply(null, valsSeries);
         const nn = valsSeries.length;
-        const coords = valsSeries.map((v, i) => [
-          pad + (i / (nn - 1)) * (w - 2 * pad),
-          h - pad - ((v - minv) / Math.max(1, maxv - minv)) * (h - 2 * pad),
-        ]);
+        const xf = (i) => pl + (i / (nn - 1)) * (W - pl - pr);
+        const yf = (v) => H - pb - ((v - minv) / Math.max(1, maxv - minv)) * (H - pt - pb);
         const svgNS = "http://www.w3.org/2000/svg";
         const svg = document.createElementNS(svgNS, "svg");
-        svg.setAttribute("viewBox", "0 0 " + w + " " + h);
+        svg.setAttribute("viewBox", "0 0 " + W + " " + H);
         svg.setAttribute("class", "ficha-chart");
-        const dLine = coords.map((c, i) => (i ? "L" : "M") + c[0].toFixed(1) + " " + c[1].toFixed(1)).join(" ");
+        const steps = 4;
+        for (let k = 0; k <= steps; k++) {
+          const v = minv + (maxv - minv) * (k / steps);
+          const yy = yf(v);
+          const gl = document.createElementNS(svgNS, "line");
+          gl.setAttribute("x1", pl); gl.setAttribute("x2", W - pr); gl.setAttribute("y1", yy.toFixed(1)); gl.setAttribute("y2", yy.toFixed(1));
+          gl.setAttribute("stroke", "rgba(255,255,255,0.10)");
+          svg.appendChild(gl);
+          const tl = document.createElementNS(svgNS, "text");
+          tl.setAttribute("x", pl - 6); tl.setAttribute("y", (yy + 3).toFixed(1));
+          tl.setAttribute("text-anchor", "end"); tl.setAttribute("class", "fx-lab");
+          tl.textContent = (v / 1000000).toFixed(0) + "M";
+          svg.appendChild(tl);
+        }
+        const nlab = 7;
+        for (let k = 0; k < nlab; k++) {
+          const i = Math.round((k / (nlab - 1)) * (nn - 1));
+          const tl = document.createElementNS(svgNS, "text");
+          tl.setAttribute("x", xf(i).toFixed(1)); tl.setAttribute("y", H - 8);
+          tl.setAttribute("text-anchor", "middle"); tl.setAttribute("class", "fx-lab");
+          tl.textContent = (serie.length >= 2 && serie[i]) ? serie[i].d : "";
+          svg.appendChild(tl);
+        }
+        const dLine = valsSeries.map((v, i) => (i ? "L" : "M") + xf(i).toFixed(1) + " " + yf(v).toFixed(1)).join(" ");
         const area = document.createElementNS(svgNS, "path");
-        area.setAttribute("d", dLine + " L" + coords[nn - 1][0].toFixed(1) + " " + (h - pad) + " L" + coords[0][0].toFixed(1) + " " + (h - pad) + " Z");
+        area.setAttribute("d", dLine + " L" + xf(nn - 1).toFixed(1) + " " + (H - pb) + " L" + xf(0).toFixed(1) + " " + (H - pb) + " Z");
         area.setAttribute("fill", "rgba(34,197,94,0.12)");
         svg.appendChild(area);
         const pa = document.createElementNS(svgNS, "path");

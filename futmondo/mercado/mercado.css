@@ -81,6 +81,7 @@
 @media (max-width: 780px) { .ficha-cols { grid-template-columns: 1fr; gap: 0; } }
 .ficha-col > .estado-title:first-child { margin-top: 0; }
 .ficha-chart { border: 1px solid var(--border); padding: 6px; }
+.fx-lab { fill: #9fb0c4; font-size: 11px; font-family: 'Space Grotesk', sans-serif; }
 .fv-thead { display: grid; grid-template-columns: 70px 1fr auto; gap: 8px; font-size: 0.72rem; font-weight: 800; color: #9fb0c4; padding: 6px 0; border-bottom: 1px solid var(--border); margin-top: 10px; }
 .fv-thead span:nth-child(2), .fv-thead span:nth-child(3) { text-align: right; }
 .fv-table { max-height: 280px; overflow-y: auto; }
