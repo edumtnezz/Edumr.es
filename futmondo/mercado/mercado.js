@@ -693,10 +693,13 @@
       root.appendChild(el("div", "ficha-pct", "💶 Precio: más caro que el " + pct + "% de los " + (roleFull(d.role || p.role) || "jugadores") + " (" + peers.length + ")"));
     }
 
+    const cols = el("div", "ficha-cols");
+    const colL = el("div", "ficha-col");
+    const colR = el("div", "ficha-col");
     const fit = d.fitness || [];
     const msAll = d.matches || [];
     if (fit.length || msAll.length) {
-      root.appendChild(el("div", "estado-title", "Últimos partidos (puntos)"));
+      colL.appendChild(el("div", "estado-title", "Últimos partidos (puntos)"));
       const chips = el("div", "ficha-chips");
       const last5 = msAll.slice(0, 5);
       if (last5.length) {
@@ -710,12 +713,12 @@
       } else {
         fit.forEach((v) => chips.appendChild(el("span", "ficha-chip pt-" + ptClass(v), String(v))));
       }
-      root.appendChild(chips);
+      colL.appendChild(chips);
     }
 
     const ms = d.matches || [];
     if (ms.length) {
-      root.appendChild(el("div", "estado-title", "Puntos por jornada"));
+      colL.appendChild(el("div", "estado-title", "Puntos por jornada"));
       const tbl = el("div", "ficha-matches");
       ms.forEach((m) => {
         const row = el("div", "fm-row");
@@ -724,12 +727,12 @@
         row.appendChild(el("span", "fm-pts pt-" + ptClass(m.stats), String(m.stats || 0)));
         tbl.appendChild(row);
       });
-      root.appendChild(tbl);
+      colL.appendChild(tbl);
     }
 
     const vals = d.valores || [];
     if ((vals.length && vals.some((x) => x.v != null)) || (d.temporada && d.temporada.n >= 2)) {
-      root.appendChild(el("div", "estado-title", "Valor de mercado"));
+      colR.appendChild(el("div", "estado-title", "Valor de mercado"));
       if (d.temporada && d.temporada.n >= 2) {
         const tt = d.temporada;
         const tup = tt.diff >= 0;
@@ -737,7 +740,7 @@
         srow.appendChild(el("span", "fvs-label", "Temporada"));
         srow.appendChild(el("span", "fvs-diff " + (tup ? "up" : "down"), (tup ? "▲ +" : "▼ −") + formatDots(Math.abs(tt.diff)) + " € (" + (tup ? "+" : "−") + Math.abs(tt.pct).toFixed(1).replace(".", ",") + "%)"));
         srow.appendChild(el("span", "fvs-range", tt.desde + " → " + tt.hasta));
-        root.appendChild(srow);
+        colR.appendChild(srow);
       }
       const updown = vals.filter((x) => x.v != null && x.diff != null);
       let streak = 0, ssign = 0;
@@ -749,7 +752,7 @@
         streak = x.days || 0;
       }
       if (streak > 0) {
-        root.appendChild(el("div", "fv-streak " + (ssign > 0 ? "up" : "down"),
+        colR.appendChild(el("div", "fv-streak " + (ssign > 0 ? "up" : "down"),
           (ssign > 0 ? "📈 Lleva " : "📉 Lleva ") + streak + " día" + (streak === 1 ? "" : "s") + (ssign > 0 ? " subiendo" : " bajando")));
       }
       const box = el("div", "ficha-vals");
@@ -763,7 +766,7 @@
         r.appendChild(el("span", "fv-val", x.v != null ? money(x.v) + " €" : "—"));
         box.appendChild(r);
       });
-      root.appendChild(box);
+      colR.appendChild(box);
       const pts = (d.temporada && d.temporada.serie && d.temporada.serie.length >= 2)
         ? d.temporada.serie.map((x) => ({ v: x.v }))
         : vals.filter((x) => x.v != null).reverse();
@@ -788,12 +791,12 @@
         pa.setAttribute("stroke-linejoin", "round");
         svg.appendChild(pa);
         coords.forEach((c) => { const ci = document.createElementNS(svgNS, "circle"); ci.setAttribute("cx", c[0].toFixed(1)); ci.setAttribute("cy", c[1].toFixed(1)); ci.setAttribute("r", "2.4"); ci.setAttribute("fill", "#22c55e"); svg.appendChild(ci); });
-        root.appendChild(svg);
+        colR.appendChild(svg);
       }
     }
     const temp = d.temporadas || [];
     if (temp.length) {
-      root.appendChild(el("div", "estado-title", "Temporadas anteriores"));
+      colR.appendChild(el("div", "estado-title", "Temporadas anteriores"));
       const t = el("div", "ficha-vals");
       temp.forEach((x) => {
         const r = el("div", "fv-row");
@@ -802,8 +805,10 @@
         r.appendChild(el("span", "fv-val", x.team || ""));
         t.appendChild(r);
       });
-      root.appendChild(t);
+      colR.appendChild(t);
     }
+    cols.appendChild(colL); cols.appendChild(colR);
+    root.appendChild(cols);
     return root;
   }
 
