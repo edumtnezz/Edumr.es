@@ -47,7 +47,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="theme-init.js"></script>
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
 
@@ -344,6 +344,55 @@
         </div>
       </div>
     </section>
+
+    <!-- Demo JassTrack -->
+    <section class="section demo-section" id="demo">
+      <div class="container">
+        <div class="section-heading">
+          <span class="badge-sub">Demo</span>
+          <h2 class="section-title">Cómo funciona JassTrack</h2>
+          <p class="section-sub">La app de control de medicación, paso a paso. Pulsa cada punto para ver la pantalla.</p>
+        </div>
+        <div class="demo-wrap">
+          <div class="demo-phone">
+            <div class="demo-notch"></div>
+            <div class="demo-screen">
+              <img id="demoImg" src="img/demo/jasstrack-1.png" alt="JassTrack — captura 1" loading="lazy">
+              <div class="demo-fallback" id="demoFallback" hidden>
+                <span>📱</span>
+                <p>Coloca aquí las capturas en <code>img/demo/jasstrack-N.png</code></p>
+              </div>
+            </div>
+          </div>
+          <div class="demo-steps" id="demoSteps">
+            <button class="demo-step active" data-img="img/demo/jasstrack-1.png" data-alt="JassTrack — Tomas">
+              <span class="demo-step-n">1</span>
+              <div><b>Registra cada toma</b><small>Marca la pastilla en el momento exacto.</small></div>
+            </button>
+            <button class="demo-step" data-img="img/demo/jasstrack-2.png" data-alt="JassTrack — Stock">
+              <span class="demo-step-n">2</span>
+              <div><b>Control de stock</b><small>Avisa cuando quedan pocas pastillas.</small></div>
+            </button>
+            <button class="demo-step" data-img="img/demo/jasstrack-3.png" data-alt="JassTrack — Cuidador">
+              <span class="demo-step-n">3</span>
+              <div><b>Aviso al cuidador</b><small>Alerta inmediata a la persona cuidadora.</small></div>
+            </button>
+            <button class="demo-step" data-img="img/demo/jasstrack-4.png" data-alt="JassTrack — IA personal">
+              <span class="demo-step-n">4</span>
+              <div><b>Asistente con IA</b><small>Resuelve dudas sobre la medicación.</small></div>
+            </button>
+            <button class="demo-step" data-img="img/demo/jasstrack-5.png" data-alt="JassTrack — Calendario">
+              <span class="demo-step-n">5</span>
+              <div><b>Calendario de dosis</b><small>Todas las tomas de un vistazo.</small></div>
+            </button>
+            <button class="demo-step" data-img="img/demo/jasstrack-6.png" data-alt="JassTrack — Reporte semanal">
+              <span class="demo-step-n">6</span>
+              <div><b>Reporte semanal</b><small>Balance de cumplimiento cada semana.</small></div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="footer">
@@ -358,6 +407,6 @@
     </div>
   </footer>
 
-  <script src="script.js?v=2"></script>
+  <script src="script.js?v=3"></script>
 </body>
 </html>

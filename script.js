@@ -194,3 +194,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 });
+
+/* ===== Demo JassTrack ===== */
+(function () {
+  var wrap = document.getElementById("demoSteps");
+  if (!wrap) return;
+  var img = document.getElementById("demoImg");
+  var fb = document.getElementById("demoFallback");
+  var steps = Array.prototype.slice.call(wrap.querySelectorAll(".demo-step"));
+  function show(step) {
+    steps.forEach(function (s) { s.classList.toggle("active", s === step); });
+    if (!img) return;
+    img.hidden = false;
+    if (fb) fb.hidden = true;
+    img.src = step.dataset.img;
+    img.alt = step.dataset.alt || "";
+  }
+  if (img) img.addEventListener("error", function () { img.hidden = true; if (fb) fb.hidden = false; });
+  steps.forEach(function (s) { s.addEventListener("click", function () { show(s); }); });
+})();

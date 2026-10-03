@@ -8,11 +8,7 @@
   let quick = "";
   const QUICKS = [
     ["", "Todos"],
-    ["chollos", "🤑 Chollos"],
-    ["bajando", "▼ Bajando"],
-    ["subiendo", "▲ Subiendo"],
     ["racha", "🔥 En racha"],
-    ["vuelven", "🔙 Vuelven de lesión"],
     ["multipos", "🔀 Multiposición"],
   ];
   function renderChips() {
@@ -450,7 +446,6 @@
       renderChips();
       renderGrid();
       renderEstado();
-      renderComparador();
       if (all.length && !rangeInit) {
         rangeInit = true;
         setupRange();
@@ -984,14 +979,6 @@
   const bind = (id, ev) => { const e = $(id); if (e) e.addEventListener(ev, () => { shown = 60; renderGrid(); }); };
   bind("mjSearch", "input"); bind("mjRole", "change");
   const teamSel = $("mjTeam"); if (teamSel) teamSel.addEventListener("change", () => { syncClubActive(); shown = 60; renderGrid(); });
-  wireCmp($("cmpA"), $("cmpSugA"));
-  wireCmp($("cmpB"), $("cmpSugB"));
-  document.addEventListener("click", (e) => {
-    [["cmpA", "cmpSugA"], ["cmpB", "cmpSugB"]].forEach((pair) => {
-      const inp = $(pair[0]), box = $(pair[1]);
-      if (box && e.target !== inp && !box.contains(e.target)) box.classList.add("hidden");
-    });
-  });
 
   loadNoticias();
   load();

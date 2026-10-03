@@ -9,14 +9,21 @@ export class PujaRoom {
 
   async getPuja() {
     let p = await this.state.storage.get("puja");
+    if (!p) return null;
     const now = Date.now();
-    if (p && p.status === "open" && now >= p.closesAt) {
+    if (p.status === "open" && now >= p.closesAt) {
       const top = (p.bids || []).slice().sort((a, b) => b.amount - a.amount)[0] || null;
       p.status = "closed";
+      p.closedAt = p.closesAt || now;
       p.winner = top ? { user: top.user, amount: top.amount } : null;
       await this.archive(p);
+      await this.state.storage.put("puja", p);
     }
-    return p || null;
+    if (p.status === "closed" && now >= (p.closedAt || p.closesAt) + 24 * 3600 * 1000) {
+      await this.state.storage.delete("puja");
+      return null;
+    }
+    return p;
   }
 
   async getHistory() {

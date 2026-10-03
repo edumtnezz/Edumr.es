@@ -929,3 +929,24 @@ body {
   border-color: rgba(34, 197, 94, 0.7);
   box-shadow: 0 15px 45px rgba(0, 0, 0, 0.18), 0 0 40px rgba(34, 197, 94, 0.22);
 }
+
+/* ===== Demo JassTrack ===== */
+.demo-wrap { display: grid; grid-template-columns: 300px 1fr; gap: 34px; align-items: start; margin-top: 26px; }
+.demo-phone { position: relative; width: 100%; max-width: 300px; margin: 0 auto; aspect-ratio: 9 / 18; border-radius: 38px; border: 8px solid #0d1117; background: #0d1117; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.06); overflow: hidden; }
+.demo-notch { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 96px; height: 20px; background: #0d1117; border-radius: 0 0 16px 16px; z-index: 3; }
+.demo-screen { position: absolute; inset: 0; background: #000; display: flex; align-items: center; justify-content: center; }
+.demo-screen img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.demo-screen img[hidden] { display: none; }
+.demo-fallback { text-align: center; color: #8b96a8; padding: 20px; font-size: 0.82rem; }
+.demo-fallback span { font-size: 2.4rem; display: block; margin-bottom: 8px; }
+.demo-fallback code { background: rgba(255, 255, 255, 0.08); padding: 1px 5px; border-radius: 5px; }
+.demo-steps { display: grid; gap: 10px; }
+.demo-step { display: flex; align-items: center; gap: 14px; text-align: left; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text); cursor: pointer; transition: all 0.18s ease; font: inherit; width: 100%; }
+.demo-step:hover { border-color: var(--border-hover); transform: translateX(3px); }
+.demo-step.active { border-color: rgba(34, 197, 94, 0.6); background: linear-gradient(90deg, rgba(34, 197, 94, 0.12), transparent); }
+.demo-step-n { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; background: rgba(34, 197, 94, 0.16); color: #22c55e; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.demo-step b { display: block; font-size: 0.95rem; }
+.demo-step small { color: var(--text-muted); font-size: 0.82rem; }
+@media (max-width: 780px) {
+  .demo-wrap { grid-template-columns: 1fr; gap: 20px; }
+}
