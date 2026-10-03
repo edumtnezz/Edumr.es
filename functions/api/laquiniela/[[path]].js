@@ -818,19 +818,26 @@ async function ogThumb(env, url) {
 
 async function getFfNoticias(env) {
   try {
-    const res = await fetch("https://www.futbolfantasy.com/laliga/noticias", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+    const res = await fetch("https://www.futbolfantasy.com/laliga/home", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
     const html = await res.text();
     const out = [];
+    const seen = {};
     const EX = /(jerarqu|internacional|convoc|entrenador|t[eé]cnico|rueda de prensa|declaraci|palabras|gu[ií]a|onces?|alineaci|cr[oó]nica|amistoso|camiseta|equipaci|predicci|apuestas)/i;
-    for (const part of html.split('<div class="noticia">').slice(1)) {
-      const block = part.slice(0, 600);
-      const date = ((block.match(/class="date">([^<]*)</) || [])[1] || "").trim();
-      const link = (block.match(/<a[^>]+href="([^"]+)"/) || [])[1] || "";
-      const title = ((block.match(/<a[^>]*>([^<]+)<\/a>/) || [])[1] || "").trim();
-      if (link && title && !EX.test(title)) out.push({ date, link, title, thumb: "" });
-      if (out.length >= 15) break;
+    const re = /<a[^>]+href="(https:\/\/www\.futbolfantasy\.com\/laliga\/noticias\/[^"]+)"[^>]*class="[^"]*\bnoticia\b[^"]*"[^>]*>([\s\S]*?)<\/a>/g;
+    let m;
+    while ((m = re.exec(html))) {
+      const link = m[1];
+      if (seen[link]) continue;
+      const inner = m[2].slice(0, 1600);
+      const title = ((inner.match(/<h2[^>]*class="[^"]*titular[^"]*"[^>]*>([\s\S]*?)<\/h2>/) || [])[1] || (inner.match(/alt="([^"]+)"/) || [])[1] || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+      const thumb = (inner.match(/data-src="([^"]*fotos_noticias[^"]+)"/) || inner.match(/<img[^>]+src="([^"]*fotos_noticias[^"]+)"/) || [])[1] || "";
+      const day = ((inner.match(/class="day">([^<]+)</) || [])[1] || "").trim();
+      if (!link || !title || EX.test(title)) continue;
+      seen[link] = 1;
+      out.push({ date: day, link, title, thumb });
+      if (out.length >= 24) break;
     }
-    if (env) await Promise.all(out.map(async (x) => { x.thumb = await ogThumb(env, x.link); }));
+    if (env) await Promise.all(out.map(async (x) => { if (!x.thumb) x.thumb = await ogThumb(env, x.link); }));
     return out;
   } catch (e) {
     return [];
@@ -973,7 +980,7 @@ async function playerFicha(env, id) {
 
 async function getNoticias(env) {
   try {
-    const c = await env.PORRA.get("ff:news:v1", "json");
+    const c = await env.PORRA.get("ff:news:v2", "json");
     if (c && c.at && Date.now() - c.at < 15 * 60 * 1000) return c.data;
   } catch (e) {}
   const out = { noticias: [], locker: [] };
@@ -989,7 +996,7 @@ async function getNoticias(env) {
       date: x.created || "",
     }));
   } catch (e) {}
-  try { await env.PORRA.put("ff:news:v1", JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 6 * 3600 }); } catch (e) {}
+  try { await env.PORRA.put("ff:news:v2", JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 6 * 3600 }); } catch (e) {}
   return out;
 }
 
