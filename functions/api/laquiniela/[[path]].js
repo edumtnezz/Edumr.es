@@ -667,7 +667,7 @@ async function getMarketPlayers(env) {
       photo: p.photo ? FACE_BASE + p.photo : "",
       logo: tm.logo ? LOGO_BASE + tm.logo : "",
     };
-  });
+  }).filter((p) => p.name && p.team);
   const out = { at: Date.now(), players };
   await env.PORRA.put(MARKET_KEY, JSON.stringify(out), { expirationTtl: 1800 });
   return out;

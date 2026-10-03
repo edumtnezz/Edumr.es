@@ -455,7 +455,6 @@
     const top = picked.sort((a, b) => expOf(b) - expOf(a));
     const head = el("div", "merc-besthead");
     head.appendChild(el("span", "mbh-t", "⭐ Mejor fichaje de la jornada"));
-    head.appendChild(el("span", "mbh-s", "mín. 2 por posición · puntos esperados"));
     box.appendChild(head);
     const row = el("div", "merc-bestrow");
     top.forEach((p) => {
