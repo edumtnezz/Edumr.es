@@ -535,6 +535,20 @@
     return d.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
   }
 
+  function fmtDia(v) {
+    if (!v) return "";
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  function fmtHora(v) {
+    if (!v) return "";
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+  }
+
   let myTeam = [];
   let newsMineOnly = false;
   let lastNews = null;
@@ -563,7 +577,7 @@
   }
 
   function waColor(name) {
-    const cols = ["#53bdeb", "#f0a24b", "#a5ce6b", "#e07ba0", "#9a91f5", "#5fd0b0", "#f5c542"];
+    const cols = ["#0e7a5f", "#c2410c", "#3f6212", "#be185d", "#4338ca", "#0f766e", "#a16207"];
     let h = 0;
     const s = String(name || "");
     for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
@@ -611,25 +625,48 @@
       l.innerHTML = "";
       l.classList.add("wa-chat");
       const list = (d.locker || []).slice().sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
-      if (!list.length) l.appendChild(el("p", "muted small", "Sin actividad."));
+
+      const top = el("div", "wa-top");
+      top.appendChild(photoImg("/img/avatar.svg", "wa-top-av"));
+      const tt = el("div", "wa-top-txt");
+      tt.appendChild(el("b", "", "Actividad de tu liga"));
+      tt.appendChild(el("span", "", "Vestuario"));
+      top.appendChild(tt);
+      l.appendChild(top);
+
+      const body = el("div", "wa-body");
+      const pin = el("div", "wa-pin");
+      pin.appendChild(el("div", "wa-pin-head", "📌 Mensajes pineados"));
+      const pinb = el("div", "wa-pin-txt");
+      pinb.innerHTML = "<b>FORMATO de subasta:</b><br>Saco a subasta a JUGADOR 🔸 DINERO 🔸 ⭐⭐⭐<br><br><b>FORMATO de puja</b><br>JUGADOR 🔸 DINERO 🔸 ⭐⭐⭐";
+      pin.appendChild(pinb);
+      body.appendChild(pin);
+
+      if (!list.length) body.appendChild(el("p", "muted small", "Sin actividad."));
+      let lastDay = "";
       list.forEach((x) => {
+        const dd = new Date(x.date || 0);
+        const dk = isNaN(dd.getTime()) ? "" : dd.toISOString().slice(0, 10);
+        if (dk && dk !== lastDay) {
+          lastDay = dk;
+          body.appendChild(el("div", "wa-day", fmtDia(x.date)));
+        }
         const msg = el("div", "wa-msg");
-        const av = el("img", "wa-avatar"); av.loading = "lazy"; av.alt = ""; av.src = x.p || "/img/avatar.svg";
-        av.addEventListener("error", () => { if (av.getAttribute("src") !== "/img/avatar.svg") av.src = "/img/avatar.svg"; }, { once: true });
-        msg.appendChild(av);
+        msg.appendChild(photoImg(x.p || DEFAULT_AVATAR, "wa-avatar"));
         const bub = el("div", "wa-bubble");
         const head = el("div", "wa-head");
         const nm = el("span", "wa-name", x.n || "Liga");
         nm.style.color = waColor(x.n || "Liga");
         head.appendChild(nm);
-        head.appendChild(el("span", "wa-time", fmtFecha(x.date)));
+        head.appendChild(el("span", "wa-time", fmtHora(x.date)));
         bub.appendChild(head);
         const t = el("div", "wa-text");
         t.innerHTML = waBold(x.txt || "");
         bub.appendChild(t);
         msg.appendChild(bub);
-        l.appendChild(msg);
+        body.appendChild(msg);
       });
+      l.appendChild(body);
     }
   }
 
