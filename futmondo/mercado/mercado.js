@@ -142,9 +142,23 @@
       const c = el("div", "merc-col");
       c.appendChild(el("div", "merc-col-title " + cls, title));
       list.forEach((p) => {
-        const row = el("div", "merc-row");
-        row.appendChild(el("span", "merc-row-name", p.name));
+        const row = el("button", "merc-row"); row.type = "button";
+        const ph = el("div", "merc-row-photo");
+        const im = el("img", "merc-row-img"); im.loading = "lazy"; im.alt = ""; im.src = p.photo || "/img/avatar.svg";
+        im.addEventListener("error", () => { if (im.getAttribute("src") !== "/img/avatar.svg") im.src = "/img/avatar.svg"; }, { once: true });
+        ph.appendChild(im);
+        const rb = roleBadge(p.role);
+        if (rb) ph.appendChild(el("span", "merc-row-role r-" + String(p.role || "").slice(0, 3), rb));
+        row.appendChild(ph);
+        const info = el("div", "merc-row-info");
+        info.appendChild(el("span", "merc-row-name", p.name));
+        const meta = el("div", "merc-row-meta");
+        if (p.logo) { const lg = el("img", "merc-row-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; meta.appendChild(lg); }
+        if (p.team) meta.appendChild(el("span", null, p.team));
+        info.appendChild(meta);
+        row.appendChild(info);
         row.appendChild(el("span", "merc-row-val " + cls, (cls === "up" ? "▲ " : "▼ ") + formatDots(Math.abs(hlChange(p))) + " €"));
+        row.addEventListener("click", () => openFicha(p));
         c.appendChild(row);
       });
       return c;
@@ -559,7 +573,7 @@
     const l = $("newsLocker");
     if (l) {
       l.innerHTML = "";
-      const list = d.locker || [];
+      const list = (d.locker || []).slice().sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
       if (!list.length) l.appendChild(el("p", "muted small", "Sin actividad."));
       list.forEach((x) => {
         const it = el("div", "news-item");
