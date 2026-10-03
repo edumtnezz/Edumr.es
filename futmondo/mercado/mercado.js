@@ -431,15 +431,15 @@
       im.addEventListener("error", () => { if (im.getAttribute("src") !== "/img/avatar.svg") im.src = "/img/avatar.svg"; }, { once: true });
       c.appendChild(im);
       c.appendChild(el("div", "mbc-name", p.name));
-      const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
-      if (rb) c.appendChild(el("span", "mbc-role" + (rb2 ? " multi" : ""), rb + (rb2 ? "·" + rb2 : "")));
-      c.appendChild(el("div", "mbc-exp", "~" + expOf(p).toFixed(1).replace(".", ",") + " pts"));
       if (p.team) {
         const tr = el("div", "mbc-team");
         if (p.logo) { const lg = el("img", "mbc-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; tr.appendChild(lg); }
         tr.appendChild(el("span", null, p.team));
         c.appendChild(tr);
       }
+      const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
+      if (rb) c.appendChild(el("span", "mbc-role" + (rb2 ? " multi" : ""), rb + (rb2 ? "·" + rb2 : "")));
+      c.appendChild(el("div", "mbc-exp", "~" + expOf(p).toFixed(1).replace(".", ",") + " pts"));
       if (p.value) c.appendChild(el("div", "mbc-val", money(p.value) + " €"));
       const f = (p.fitness || []).slice(0, 5);
       if (f.length) c.appendChild(el("div", "mbc-last", "Últ.: " + f.join(" · ")));
