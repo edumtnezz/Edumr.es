@@ -1080,6 +1080,7 @@
   });
 
   const fclose = $("fichaClose"); if (fclose) fclose.addEventListener("click", closeModal);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { const ov = $("fichaOverlay"); if (ov && !ov.classList.contains("hidden")) closeModal(); } });
   const fov = $("fichaOverlay"); if (fov) fov.addEventListener("click", (e) => { if (e.target === fov) closeModal(); });
 
   const bind = (id, ev) => { const e = $(id); if (e) e.addEventListener(ev, () => { shown = 60; renderGrid(); }); };
