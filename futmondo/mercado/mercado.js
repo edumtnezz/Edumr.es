@@ -773,43 +773,54 @@
         colR.appendChild(el("div", "fv-streak " + (ssign > 0 ? "up" : "down"),
           (ssign > 0 ? "📈 Lleva " : "📉 Lleva ") + streak + " día" + (streak === 1 ? "" : "s") + (ssign > 0 ? " subiendo" : " bajando")));
       }
-      const box = el("div", "ficha-vals");
-      vals.forEach((x) => {
-        const r = el("div", "fv-row");
-        r.appendChild(el("span", "fv-label", x.label));
-        if (x.diff != null) {
-          const up = x.diff >= 0;
-          r.appendChild(el("span", "fv-diff " + (up ? "up" : "down"), (up ? "▲ +" : "▼ −") + formatDots(Math.abs(x.diff)) + " €"));
-        } else r.appendChild(el("span", "fv-diff", ""));
-        r.appendChild(el("span", "fv-val", x.v != null ? money(x.v) + " €" : "—"));
-        box.appendChild(r);
-      });
-      colR.appendChild(box);
-      const pts = (d.temporada && d.temporada.serie && d.temporada.serie.length >= 2)
-        ? d.temporada.serie.map((x) => ({ v: x.v }))
-        : vals.filter((x) => x.v != null).reverse();
-      if (pts.length >= 2) {
-        const w = 320, h = 90, pad = 8;
-        const maxv = Math.max.apply(null, pts.map((x) => x.v));
-        const minv = Math.min.apply(null, pts.map((x) => x.v));
-        const nn = pts.length;
-        const coords = pts.map((x, i) => [
+      const serie = (d.temporada && d.temporada.serie) || [];
+      const valsSeries = serie.length >= 2 ? serie.map((x) => x.v) : vals.filter((x) => x.v != null).reverse().map((x) => x.v);
+      if (valsSeries.length >= 2) {
+        const w = 440, h = 180, pad = 12;
+        const maxv = Math.max.apply(null, valsSeries);
+        const minv = Math.min.apply(null, valsSeries);
+        const nn = valsSeries.length;
+        const coords = valsSeries.map((v, i) => [
           pad + (i / (nn - 1)) * (w - 2 * pad),
-          h - pad - ((x.v - minv) / Math.max(1, maxv - minv)) * (h - 2 * pad),
+          h - pad - ((v - minv) / Math.max(1, maxv - minv)) * (h - 2 * pad),
         ]);
         const svgNS = "http://www.w3.org/2000/svg";
         const svg = document.createElementNS(svgNS, "svg");
         svg.setAttribute("viewBox", "0 0 " + w + " " + h);
         svg.setAttribute("class", "ficha-chart");
+        const dLine = coords.map((c, i) => (i ? "L" : "M") + c[0].toFixed(1) + " " + c[1].toFixed(1)).join(" ");
+        const area = document.createElementNS(svgNS, "path");
+        area.setAttribute("d", dLine + " L" + coords[nn - 1][0].toFixed(1) + " " + (h - pad) + " L" + coords[0][0].toFixed(1) + " " + (h - pad) + " Z");
+        area.setAttribute("fill", "rgba(34,197,94,0.12)");
+        svg.appendChild(area);
         const pa = document.createElementNS(svgNS, "path");
-        pa.setAttribute("d", coords.map((c, i) => (i ? "L" : "M") + c[0].toFixed(1) + " " + c[1].toFixed(1)).join(" "));
+        pa.setAttribute("d", dLine);
         pa.setAttribute("fill", "none");
         pa.setAttribute("stroke", "#22c55e");
         pa.setAttribute("stroke-width", "2.5");
         pa.setAttribute("stroke-linejoin", "round");
         svg.appendChild(pa);
-        coords.forEach((c) => { const ci = document.createElementNS(svgNS, "circle"); ci.setAttribute("cx", c[0].toFixed(1)); ci.setAttribute("cy", c[1].toFixed(1)); ci.setAttribute("r", "2.4"); ci.setAttribute("fill", "#22c55e"); svg.appendChild(ci); });
         colR.appendChild(svg);
+      }
+      if (serie.length >= 2) {
+        const thead = el("div", "fv-thead");
+        thead.appendChild(el("span", null, "Fecha"));
+        thead.appendChild(el("span", null, "Subida/Bajada"));
+        thead.appendChild(el("span", null, "Valor"));
+        colR.appendChild(thead);
+        const tb = el("div", "fv-table");
+        for (let i = serie.length - 1; i >= 0; i--) {
+          const cur = serie[i], prev = serie[i - 1];
+          const diff = prev ? cur.v - prev.v : null;
+          const pv = prev && prev.v ? (diff / prev.v) * 100 : null;
+          const row = el("div", "fv-trow");
+          row.appendChild(el("span", "fv-td", cur.d));
+          row.appendChild(el("span", "fv-td " + (diff > 0 ? "up" : diff < 0 ? "down" : ""),
+            diff == null ? "—" : (diff >= 0 ? "+" : "−") + formatDots(Math.abs(diff)) + (pv != null ? " (" + (pv >= 0 ? "+" : "−") + Math.abs(pv).toFixed(2).replace(".", ",") + "%)" : "")));
+          row.appendChild(el("span", "fv-td fv-tval", money(cur.v) + " €"));
+          tb.appendChild(row);
+        }
+        colR.appendChild(tb);
       }
     }
     const temp = d.temporadas || [];
