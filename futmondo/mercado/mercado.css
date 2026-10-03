@@ -185,6 +185,9 @@
 .mbc-last5 { display: flex; gap: 3px; margin-top: 2px; }
 .mbc-last5 .ficha-chip { font-size: 0.58rem; padding: 1px 5px; }
 .news-updated { font-size: 0.72rem; font-weight: 600; color: #9fb0c4; }
+.hl-seg { display: flex; gap: 6px; margin: 0 0 8px; flex-wrap: wrap; }
+.hl-btn { font-size: 0.74rem; font-weight: 700; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); cursor: pointer; }
+.hl-btn.active { background: rgba(34,197,94,0.16); border-color: rgba(34,197,94,0.5); color: #22c55e; }
 .merc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
 .mchip { font-size: 0.74rem; font-weight: 700; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); cursor: pointer; }
 .mchip.active { background: rgba(34,197,94,0.16); border-color: rgba(34,197,94,0.5); color: #22c55e; }

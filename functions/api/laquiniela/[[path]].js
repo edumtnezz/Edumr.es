@@ -688,7 +688,7 @@ async function searchMercado(env, q) {
   try { await snapshotMarket(env, players); } catch (e) {}
   try {
     const map = await ffMap(env);
-    players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa } : p; });
+    players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, chg1: e.d1, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
   } catch (e) {}
   const query = stripAccents(String(q || "").toLowerCase().trim());
   let list = players;
@@ -699,7 +699,7 @@ async function searchMercado(env, q) {
 }
 
 const FF_MARKET_URL = "https://www.futbolfantasy.com/analytics/futmondo/mercado/social";
-const FF_MAP_KEY = "ff:map2";
+const FF_MAP_KEY = "ff:map3";
 
 async function ffMap(env) {
   try {
@@ -728,7 +728,8 @@ async function ffMap(env) {
       const jm = t.match(/jornada\s*(\d+)/i);
       if (jm) jornada = jm[1];
     }
-    map[key] = { id: idm[1], prob: pm ? Number(pm[1]) : null, rival, casa, jornada };
+    const dif = (n) => { const m = r.match(new RegExp('data-diferencia' + n + '="(-?\\d+)"')); return m ? Number(m[1]) : null; };
+    map[key] = { id: idm[1], prob: pm ? Number(pm[1]) : null, rival, casa, jornada, d1: dif(1), d2: dif(2), d3: dif(3), d7: dif(7), d14: dif(14), d30: dif(30) };
   }
   if (Object.keys(map).length > 50) {
     try { await env.PORRA.put(FF_MAP_KEY, JSON.stringify({ at: Date.now(), map })); } catch (e) {}

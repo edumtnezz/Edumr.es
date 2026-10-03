@@ -113,12 +113,26 @@
     return card;
   }
 
+  let hlPeriod = "1";
+  function hlChange(p) {
+    if (hlPeriod === "1") return Number(p.change) || 0;
+    const v = p["chg" + hlPeriod];
+    return v != null ? Number(v) : (Number(p.change) || 0);
+  }
   function renderHighlights() {
     const box = $("mercHighlights");
     if (!box) return;
     box.innerHTML = "";
-    const up = all.filter((p) => (Number(p.change) || 0) > 0).sort((a, b) => b.change - a.change).slice(0, 5);
-    const down = all.filter((p) => (Number(p.change) || 0) < 0).sort((a, b) => a.change - b.change).slice(0, 5);
+    const seg = el("div", "hl-seg");
+    [["1", "Hoy"], ["7", "7 días"], ["14", "14 días"], ["30", "30 días"]].forEach((pair) => {
+      const b = el("button", "hl-btn" + (hlPeriod === pair[0] ? " active" : ""), pair[1]);
+      b.type = "button";
+      b.addEventListener("click", () => { hlPeriod = pair[0]; renderHighlights(); });
+      seg.appendChild(b);
+    });
+    box.appendChild(seg);
+    const up = all.filter((p) => hlChange(p) > 0).sort((a, b) => hlChange(b) - hlChange(a)).slice(0, 5);
+    const down = all.filter((p) => hlChange(p) < 0).sort((a, b) => hlChange(a) - hlChange(b)).slice(0, 5);
     if (!up.length && !down.length) return;
     const wrap = el("div", "merc-cols");
     const col = (title, list, cls) => {
@@ -127,7 +141,7 @@
       list.forEach((p) => {
         const row = el("div", "merc-row");
         row.appendChild(el("span", "merc-row-name", p.name));
-        row.appendChild(el("span", "merc-row-val " + cls, (cls === "up" ? "▲ " : "▼ ") + formatDots(Math.abs(p.change)) + " €"));
+        row.appendChild(el("span", "merc-row-val " + cls, (cls === "up" ? "▲ " : "▼ ") + formatDots(Math.abs(hlChange(p))) + " €"));
         c.appendChild(row);
       });
       return c;
