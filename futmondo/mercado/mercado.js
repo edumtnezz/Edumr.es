@@ -497,8 +497,19 @@
     return myTeam.some((n) => { const k = stripAccents(n); return k.length >= 4 && t.includes(k); });
   }
 
+  function haceTxt(ts) {
+    const m = Math.max(0, Math.round((Date.now() - ts) / 60000));
+    if (m <= 0) return "ahora mismo";
+    if (m < 60) return "hace " + m + " min";
+    const h = Math.round(m / 60);
+    if (h < 24) return "hace " + h + " h";
+    return "hace " + Math.round(h / 24) + " d";
+  }
+
   function renderNews(d) {
     lastNews = d;
+    const upd = $("newsUpdated");
+    if (upd) upd.textContent = d.updatedAt ? "· actualizado " + haceTxt(d.updatedAt) : "";
     const a = $("newsAnuncios");
     if (a) {
       a.innerHTML = "";
@@ -519,7 +530,7 @@
         it.appendChild(th);
         const bd = el("div", "newscard-body");
         bd.appendChild(el("div", "news-title", x.title));
-        bd.appendChild(el("div", "news-date", x.date));
+        bd.appendChild(el("div", "news-date", x.date + (x.time ? " · " + x.time : "")));
         it.appendChild(bd);
         a.appendChild(it);
       });

@@ -832,9 +832,10 @@ async function getFfNoticias(env) {
       const title = ((inner.match(/<h2[^>]*class="[^"]*titular[^"]*"[^>]*>([\s\S]*?)<\/h2>/) || [])[1] || (inner.match(/alt="([^"]+)"/) || [])[1] || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
       const thumb = (inner.match(/data-src="([^"]*fotos_noticias[^"]+)"/) || inner.match(/<img[^>]+src="([^"]*fotos_noticias[^"]+)"/) || [])[1] || "";
       const day = ((inner.match(/class="day">([^<]+)</) || [])[1] || "").trim();
+      const time = ((inner.match(/class="time">([^<]+)</) || [])[1] || "").trim();
       if (!link || !title || EX.test(title)) continue;
       seen[link] = 1;
-      out.push({ date: day, link, title, thumb });
+      out.push({ date: day, time, link, title, thumb });
       if (out.length >= 24) break;
     }
     if (env) await Promise.all(out.map(async (x) => { if (!x.thumb) x.thumb = await ogThumb(env, x.link); }));
@@ -981,7 +982,7 @@ async function playerFicha(env, id) {
 async function getNoticias(env) {
   try {
     const c = await env.PORRA.get("ff:news:v2", "json");
-    if (c && c.at && Date.now() - c.at < 15 * 60 * 1000) return c.data;
+    if (c && c.at && Date.now() - c.at < 15 * 60 * 1000) { c.data.updatedAt = c.at; return c.data; }
   } catch (e) {}
   const out = { noticias: [], locker: [] };
   out.noticias = await getFfNoticias(env);
@@ -996,6 +997,7 @@ async function getNoticias(env) {
       date: x.created || "",
     }));
   } catch (e) {}
+  out.updatedAt = Date.now();
   try { await env.PORRA.put("ff:news:v2", JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 6 * 3600 }); } catch (e) {}
   return out;
 }
