@@ -442,7 +442,11 @@
       c.appendChild(el("div", "mbc-exp", "~" + expOf(p).toFixed(1).replace(".", ",") + " pts"));
       if (p.value) c.appendChild(el("div", "mbc-val", money(p.value) + " €"));
       const f = (p.fitness || []).slice(0, 5);
-      if (f.length) c.appendChild(el("div", "mbc-last", "Últ.: " + f.join(" · ")));
+      if (f.length) {
+        const lc = el("div", "mbc-last5");
+        f.forEach((v) => lc.appendChild(el("span", "ficha-chip pt-" + ptClass(v), String(v))));
+        c.appendChild(lc);
+      }
       if (p.rivalFf) c.appendChild(el("div", "mbc-rival", (p.casaFf === true ? "🏠 " : p.casaFf === false ? "✈️ " : "") + p.rivalFf));
       c.addEventListener("click", () => openFicha(p));
       row.appendChild(c);
