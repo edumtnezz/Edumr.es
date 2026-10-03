@@ -213,11 +213,13 @@
     const box = $("estadoBox");
     if (!box) return;
     box.innerHTML = "";
-    const groups = [
-      { title: "Lesionados", test: (s) => String(s).indexOf("injured") === 0 },
-      { title: "Sancionados", test: (s) => s === "redcard" },
-      { title: "Dudas", test: (s) => s === "doubt" },
+    const sel = $("estadoSel") ? $("estadoSel").value : "";
+    const allGroups = [
+      { key: "injured", title: "Lesionados", test: (s) => String(s).indexOf("injured") === 0 },
+      { key: "redcard", title: "Sancionados", test: (s) => s === "redcard" },
+      { key: "doubt", title: "Dudas", test: (s) => s === "doubt" },
     ];
+    const groups = sel ? allGroups.filter((g) => g.key === sel) : allGroups;
     let any = false;
     groups.forEach((g) => {
       const list = all.filter((p) => g.test(p.status)).sort((a, b) => b.value - a.value);
@@ -230,7 +232,7 @@
       sec.appendChild(grid);
       box.appendChild(sec);
     });
-    if (!any) box.appendChild(el("p", "market-empty", "Sin bajas ni dudas ahora mismo."));
+    if (!any) box.appendChild(el("p", "market-empty", sel ? "Nadie en ese estado ahora mismo." : "Sin bajas ni dudas ahora mismo."));
   }
 
   function findPlayer(name) {
@@ -1043,6 +1045,7 @@
 
   const bind = (id, ev) => { const e = $(id); if (e) e.addEventListener(ev, () => { shown = 60; renderGrid(); }); };
   bind("mjSearch", "input"); bind("mjRole", "change");
+  const estadoSel = $("estadoSel"); if (estadoSel) estadoSel.addEventListener("change", renderEstado);
   const teamSel = $("mjTeam"); if (teamSel) teamSel.addEventListener("change", () => { syncClubActive(); shown = 60; renderGrid(); });
 
   loadNoticias();
