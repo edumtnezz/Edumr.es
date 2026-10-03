@@ -972,6 +972,10 @@ async function playerFicha(env, id) {
 }
 
 async function getNoticias(env) {
+  try {
+    const c = await env.PORRA.get("ff:news:v1", "json");
+    if (c && c.at && Date.now() - c.at < 15 * 60 * 1000) return c.data;
+  } catch (e) {}
   const out = { noticias: [], locker: [] };
   out.noticias = await getFfNoticias(env);
   try {
@@ -985,6 +989,7 @@ async function getNoticias(env) {
       date: x.created || "",
     }));
   } catch (e) {}
+  try { await env.PORRA.put("ff:news:v1", JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 6 * 3600 }); } catch (e) {}
   return out;
 }
 
@@ -1117,10 +1122,19 @@ async function handleAnaliza(request, env, user) {
   } else {
     const img = String(body.img || "");
     if (!/^data:image\//.test(img) || img.length > 7000000) return json({ error: "Sube una captura de tu equipo (JPG/PNG)." }, 400);
-    const visionRaw = await dsChat(env, [{
+    const VP = "Esta imagen es una captura de una ALINEACIÓN de fútbol fantasy (Futmondo). ARRIBA hay barras (jornada, media, logo) y publicidad: IGNÓRALAS. El CAMPO VERDE tiene los jugadores en FILAS:\n" +
+      "- La fila MÁS ABAJO (junto a la portería) tiene 1 jugador: el PORTERO.\n" +
+      "- Encima hay líneas de jugadores (defensas, centrocampistas, delanteros), normalmente de 3 a 5 por fila.\n" +
+      "- Debajo de la foto de cada jugador está su NOMBRE (a veces abreviado, p. ej. 'R.Fernán', 'L. Yamal').\n" +
+      "- Debajo del campo hay una zona 'Suplentes' (el banquillo).\n" +
+      "Lee TODOS los nombres del campo (deben ser 11 titulares) y del banquillo.\n" +
+      "Responde SOLO con JSON válido: {\"formacion\":\"3-4-3\",\"titulares\":[{\"nombre\":\"...\",\"linea\":1}],\"suplentes\":[{\"nombre\":\"...\"}]}.\n" +
+      "'linea': 1 = portero (fila de abajo), 2 = defensas, 3 = centrocampistas, 4 = delanteros (fila de arriba).\n" +
+      "Cuenta los jugadores por fila para la formación (DEF-CEN-DEL). Copia los nombres TAL CUAL se lean. No inventes, no traduzcas, no repitas.";
+    let visionRaw = await dsChat(env, [{
       role: "user",
       content: [
-        { type: "text", text: "Esta imagen es la captura de un equipo de fútbol fantasy dibujado sobre un campo verde. Cada jugador tiene una FOTO con su NOMBRE justo debajo. Lee los nombres con mucha atención (ignora marcas de agua). Responde SOLO con un JSON: {\"titulares\":[{\"nombre\":\"...\",\"linea\":1}],\"suplentes\":[{\"nombre\":\"...\"}]}. 'linea' = fila del campo CONTANDO DE ABAJO A ARRIBA: 1 = portero (abajo del todo), 2 = defensas, 3 = centrocampistas, 4 = delanteros (arriba). Cuenta bien cuántos hay en cada fila (ej.: arriba 3 delanteros, luego 4 medios, luego 3 defensas y 1 portero = 3-4-3). Sé literal con los nombres y no inventes jugadores." },
+        { type: "text", text: VP },
         { type: "image_url", image_url: { url: img } },
       ],
     }], "deepseek-flash", true);
@@ -1133,17 +1147,21 @@ async function handleAnaliza(request, env, user) {
       return null;
     };
     team = parseTeam(visionRaw);
-    if (!team) {
+    const nTit = (t) => (t && (t.titulares || []).length) || 0;
+    if (!team || nTit(team) !== 11) {
+      const hint = team ? ("En el primer intento leíste " + nTit(team) + " titulares. ") : "";
       const raw2 = await dsChat(env, [{
         role: "user",
         content: [
-          { type: "text", text: "Mira la imagen otra vez con calma y responde ÚNICAMENTE con el JSON pedido ({\"formacion\":\"...\",\"titulares\":[{\"nombre\":\"...\",\"pos\":\"...\"}],\"suplentes\":[...]}), sin nada de texto extra." },
+          { type: "text", text: hint + "Mira la imagen otra vez con MUCHO detalle. En el campo hay EXACTAMENTE 11 jugadores (1 portero abajo + varias líneas). Fíjate en los nombres pequeños bajo cada foto. Ignora barras superiores, publicidad y el banquillo. Responde ÚNICAMENTE con el JSON: {\"formacion\":\"...\",\"titulares\":[{\"nombre\":\"...\",\"linea\":1}],\"suplentes\":[{\"nombre\":\"...\"}]}, sin texto extra." },
           { type: "image_url", image_url: { url: img } },
         ],
       }], "deepseek-flash", true);
-      team = parseTeam(raw2);
+      const t2 = parseTeam(raw2);
+      if (t2 && nTit(t2) >= nTit(team)) team = t2;
     }
     if (!team) return json({ error: "No pude leer el equipo de la captura. Prueba con una captura más nítida (sin recortar).", raw: String(visionRaw).slice(0, 300) }, 422);
+    if (nTit(team) !== 11 && nTit(team) < 7) return json({ error: "Solo pude leer " + nTit(team) + " jugadores del campo. Prueba con una captura más nítida y completa (con las 3-4 líneas).", leido: (team.titulares || []).map((x) => x.nombre) }, 422);
     leido = [].concat(team.titulares || [], team.suplentes || []).map((x) => String(x.nombre || x.name || "").trim()).filter(Boolean);
     const LINE_POS = { 1: "POR", 2: "DEF", 3: "CEN", 4: "DEL" };
     team.titulares = (team.titulares || []).map((x) => ({ nombre: String(x.nombre || x.name || "").trim(), pos: roleShort(x.pos) || LINE_POS[Number(x.linea)] || "" })).filter((x) => x.nombre);
