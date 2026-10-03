@@ -411,12 +411,18 @@
     if (!box) return;
     box.innerHTML = "";
     const cand = all.filter((p) => p.fitness && p.fitness.length >= 3 && String(p.status || "").indexOf("injured") !== 0 && p.value > 0);
-    if (cand.length < 6) { box.classList.add("hidden"); return; }
+    if (cand.length < 8) { box.classList.add("hidden"); return; }
     box.classList.remove("hidden");
-    const top = cand.slice().sort((a, b) => expOf(b) - expOf(a)).slice(0, 6);
+    const byExp = cand.slice().sort((a, b) => expOf(b) - expOf(a));
+    const picked = [], seen = new Set();
+    ["portero", "defensa", "centrocampista", "delantero"].forEach((pos) => {
+      byExp.filter((p) => p.role === pos).slice(0, 2).forEach((p) => { if (!seen.has(p)) { picked.push(p); seen.add(p); } });
+    });
+    byExp.forEach((p) => { if (picked.length < 12 && !seen.has(p)) { picked.push(p); seen.add(p); } });
+    const top = picked.sort((a, b) => expOf(b) - expOf(a));
     const head = el("div", "merc-besthead");
     head.appendChild(el("span", "mbh-t", "⭐ Mejor fichaje de la jornada"));
-    head.appendChild(el("span", "mbh-s", "puntos esperados · rival"));
+    head.appendChild(el("span", "mbh-s", "mín. 2 por posición · puntos esperados"));
     box.appendChild(head);
     const row = el("div", "merc-bestrow");
     top.forEach((p) => {
@@ -428,6 +434,15 @@
       const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
       if (rb) c.appendChild(el("span", "mbc-role" + (rb2 ? " multi" : ""), rb + (rb2 ? "·" + rb2 : "")));
       c.appendChild(el("div", "mbc-exp", "~" + expOf(p).toFixed(1).replace(".", ",") + " pts"));
+      if (p.team) {
+        const tr = el("div", "mbc-team");
+        if (p.logo) { const lg = el("img", "mbc-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; tr.appendChild(lg); }
+        tr.appendChild(el("span", null, p.team));
+        c.appendChild(tr);
+      }
+      if (p.value) c.appendChild(el("div", "mbc-val", money(p.value) + " €"));
+      const f = (p.fitness || []).slice(0, 5);
+      if (f.length) c.appendChild(el("div", "mbc-last", "Últ.: " + f.join(" · ")));
       if (p.rivalFf) c.appendChild(el("div", "mbc-rival", (p.casaFf === true ? "🏠 " : p.casaFf === false ? "✈️ " : "") + p.rivalFf));
       c.addEventListener("click", () => openFicha(p));
       row.appendChild(c);

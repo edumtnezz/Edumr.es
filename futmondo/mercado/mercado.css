@@ -168,7 +168,7 @@
 .mbh-t { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1rem; }
 .mbh-s { font-size: 0.72rem; color: #9fb0c4; }
 .merc-bestrow { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
-.mbc { flex: 0 0 auto; width: 98px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px; border-radius: 12px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); cursor: pointer; }
+.mbc { flex: 0 0 auto; width: 122px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px; border-radius: 12px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); cursor: pointer; }
 .mbc:hover { border-color: var(--border-hover); }
 .mbc-img { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; background: var(--bg-surface); }
 .mbc-name { font-size: 0.74rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
@@ -176,6 +176,11 @@
 .mbc-role.multi { background: rgba(34,197,94,0.16); color: #22c55e; }
 .mbc-exp { font-size: 0.78rem; font-weight: 800; color: #22c55e; }
 .mbc-rival { font-size: 0.62rem; color: #9fb0c4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.mbc-team { display: flex; align-items: center; gap: 4px; font-size: 0.64rem; color: #9fb0c4; white-space: nowrap; overflow: hidden; max-width: 100%; }
+.mbc-team span { overflow: hidden; text-overflow: ellipsis; }
+.mbc-crest { width: 13px; height: 13px; object-fit: contain; flex: 0 0 auto; }
+.mbc-val { font-size: 0.72rem; font-weight: 800; color: var(--accent); }
+.mbc-last { font-size: 0.6rem; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .merc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
 .mchip { font-size: 0.74rem; font-weight: 700; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); cursor: pointer; }
 .mchip.active { background: rgba(34,197,94,0.16); border-color: rgba(34,197,94,0.5); color: #22c55e; }
