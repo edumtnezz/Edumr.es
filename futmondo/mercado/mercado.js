@@ -562,6 +562,13 @@
     return "hace " + Math.round(h / 24) + " d";
   }
 
+  function waBold(s) {
+    let t = String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    t = t.replace(/(\d{1,3}(?:\.\d{3})+)(\s?€)?/g, "<b>$1$2</b>");
+    t = t.replace(/\b([A-ZÁÉÍÓÚÑ]{3,}(?:\s+[A-ZÁÉÍÓÚÑ]{2,})*)\b/g, "<b>$1</b>");
+    return t;
+  }
+
   function renderNews(d) {
     lastNews = d;
     const upd = $("newsUpdated");
@@ -594,19 +601,24 @@
     const l = $("newsLocker");
     if (l) {
       l.innerHTML = "";
-      const list = (d.locker || []).slice().sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+      l.classList.add("wa-chat");
+      const list = (d.locker || []).slice().sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
       if (!list.length) l.appendChild(el("p", "muted small", "Sin actividad."));
       list.forEach((x) => {
-        const it = el("div", "news-item");
-        const b = el("div", "news-body");
-        const head = el("div", "news-head");
-        if (x.p) { const av = el("img", "news-avatar"); av.src = x.p; av.alt = ""; av.loading = "lazy"; head.appendChild(av); }
-        head.appendChild(el("span", "news-user", x.n));
-        head.appendChild(el("span", "news-date", fmtFecha(x.date)));
-        b.appendChild(head);
-        if (x.txt) b.appendChild(el("div", "news-sum", x.txt));
-        it.appendChild(b);
-        l.appendChild(it);
+        const msg = el("div", "wa-msg");
+        const av = el("img", "wa-avatar"); av.loading = "lazy"; av.alt = ""; av.src = x.p || "/img/avatar.svg";
+        av.addEventListener("error", () => { if (av.getAttribute("src") !== "/img/avatar.svg") av.src = "/img/avatar.svg"; }, { once: true });
+        msg.appendChild(av);
+        const bub = el("div", "wa-bubble");
+        const head = el("div", "wa-head");
+        head.appendChild(el("span", "wa-name", x.n || "Liga"));
+        head.appendChild(el("span", "wa-time", fmtFecha(x.date)));
+        bub.appendChild(head);
+        const t = el("div", "wa-text");
+        t.innerHTML = waBold(x.txt || "");
+        bub.appendChild(t);
+        msg.appendChild(bub);
+        l.appendChild(msg);
       });
     }
   }

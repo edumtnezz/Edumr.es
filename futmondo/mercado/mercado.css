@@ -231,6 +231,15 @@
 .mbc-last5 { display: flex; gap: 3px; margin-top: 2px; }
 .mbc-last5 .ficha-chip { font-size: 0.58rem; padding: 1px 5px; }
 .news-updated { font-size: 0.72rem; font-weight: 600; color: #9fb0c4; }
+.wa-chat { display: flex; flex-direction: column; gap: 10px; max-width: 760px; }
+.wa-msg { display: flex; align-items: flex-end; gap: 8px; }
+.wa-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; background: var(--bg-surface); }
+.wa-bubble { background: var(--card-solid); border: 1px solid var(--border); border-radius: 14px 14px 14px 3px; padding: 8px 12px; max-width: 84%; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+.wa-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+.wa-name { font-weight: 800; font-size: 0.82rem; color: #22c55e; }
+.wa-time { font-size: 0.66rem; color: var(--muted); margin-left: auto; white-space: nowrap; }
+.wa-text { font-size: 0.88rem; line-height: 1.45; }
+.wa-text b, .wa-text strong { font-weight: 800; color: var(--text); }
 .hl-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 24px 0 10px; padding-top: 16px; border-top: 1px solid var(--border); }
 .hl-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.02rem; }
 .hl-seg { display: flex; gap: 6px; margin: 0; flex-wrap: wrap; }
