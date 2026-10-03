@@ -562,6 +562,14 @@
     return "hace " + Math.round(h / 24) + " d";
   }
 
+  function waColor(name) {
+    const cols = ["#53bdeb", "#f0a24b", "#a5ce6b", "#e07ba0", "#9a91f5", "#5fd0b0", "#f5c542"];
+    let h = 0;
+    const s = String(name || "");
+    for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    return cols[h % cols.length];
+  }
+
   function waBold(s) {
     let t = String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     t = t.replace(/(\d{1,3}(?:\.\d{3})+)(\s?€)?/g, "<b>$1$2</b>");
@@ -611,7 +619,9 @@
         msg.appendChild(av);
         const bub = el("div", "wa-bubble");
         const head = el("div", "wa-head");
-        head.appendChild(el("span", "wa-name", x.n || "Liga"));
+        const nm = el("span", "wa-name", x.n || "Liga");
+        nm.style.color = waColor(x.n || "Liga");
+        head.appendChild(nm);
         head.appendChild(el("span", "wa-time", fmtFecha(x.date)));
         bub.appendChild(head);
         const t = el("div", "wa-text");
