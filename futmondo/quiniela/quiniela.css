@@ -1168,10 +1168,10 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .mcard-img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; background: var(--bg-surface); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--muted); }
 .mcard-photo { position: relative; width: 72px; height: 72px; }
 .mcard-photo .mcard-img { width: 72px; height: 72px; }
-.mcard-badge { position: absolute; right: -1px; bottom: -1px; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; line-height: 1; color: #fff; border: 2px solid var(--card-solid); box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3); }
+.mcard-badge { position: absolute; right: -1px; bottom: -1px; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 11px; line-height: 1; color: #fff; border: 1.5px solid var(--card-solid); box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3); }
 .mcard-badge.st-inj { background: #ef4444; }
 .mcard-badge.st-doubt { background: #f59e0b; }
-.mcard-badge.st-red { width: 14px; height: 20px; border-radius: 3px; background: #dc2626; right: 2px; bottom: 0; }
+.mcard-badge.st-red { width: 10px; height: 14px; border-radius: 3px; background: #dc2626; right: 2px; bottom: 0; }
 .mcard-body { display: flex; flex-direction: column; gap: 2px; width: 100%; }
 .mcard-name { font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mcard-roles { display: flex; gap: 5px; margin: 3px 0 4px; }
@@ -1431,7 +1431,7 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
   .mcard-trend { font-size: 0.62rem; }
   .mcard-role { font-size: 0.56rem; padding: 1px 5px; }
   .mcard-crest { width: 12px; height: 12px; }
-  .mcard-badge { width: 18px; height: 18px; font-size: 12px; }
+  .mcard-badge { width: 14px; height: 14px; font-size: 10px; }
   .match-row { grid-template-columns: 1fr; padding: 12px; }
   .pick-buttons { justify-content: stretch; }
   .pick-btn { flex: 1; width: auto; }
