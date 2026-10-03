@@ -336,7 +336,7 @@ function renderHistory() {
       imgCol.appendChild(el("div", "hist-img", initials(h.player)));
     }
     const hrb = roleBadge(h.role), hrb2 = roleBadge(h.role2);
-    if (hrb) imgCol.appendChild(el("div", "hist-pos posb posb-" + posCls(h.role), [roleFull(h.role), roleFull(h.role2)].filter(Boolean).join(" · ") + (hrb2 ? " (multi)" : "")));
+    if (hrb) imgCol.appendChild(el("div", "hist-pos posb posb-" + posCls(h.role), hrb + (hrb2 ? " · " + hrb2 : "")));
     main.appendChild(imgCol);
     const body = el("div", "hist-body");
     body.appendChild(el("div", "hist-player", h.player));
