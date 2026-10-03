@@ -443,7 +443,6 @@
       updateTime(d.updatedAt);
       renderHighlights();
       renderBest();
-      renderChips();
       renderGrid();
       renderEstado();
       if (all.length && !rangeInit) {
