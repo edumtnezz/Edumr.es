@@ -128,8 +128,10 @@ body {
     radial-gradient(760px 420px at 100% 2%, rgba(16, 185, 129, 0.12), transparent 62%);
 }
 
-.hub-top { max-width: 940px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
-.hub-top .back-link { margin-bottom: 0; }
+.hub-top { max-width: 940px; margin: 0 auto; display: flex; align-items: center; justify-content: center; position: relative; }
+.hub-top .theme-toggle { position: absolute; right: 0; }
+.hub-home { display: inline-block; padding: 9px 20px; border-radius: 999px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); text-decoration: none; font-weight: 700; font-size: 0.9rem; transition: all 0.2s ease; }
+.hub-home:hover { border-color: var(--border-hover); transform: translateY(-1px); }
 
 .theme-toggle {
   width: 44px;
