@@ -130,7 +130,10 @@
       b.addEventListener("click", () => { hlPeriod = pair[0]; renderHighlights(); });
       seg.appendChild(b);
     });
-    box.appendChild(seg);
+    const head = el("div", "hl-head");
+    head.appendChild(el("span", "hl-title", "📊 Movimiento del mercado"));
+    head.appendChild(seg);
+    box.appendChild(head);
     const up = all.filter((p) => hlChange(p) > 0).sort((a, b) => hlChange(b) - hlChange(a)).slice(0, 5);
     const down = all.filter((p) => hlChange(p) < 0).sort((a, b) => hlChange(a) - hlChange(b)).slice(0, 5);
     if (!up.length && !down.length) return;
