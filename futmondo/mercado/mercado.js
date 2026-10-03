@@ -743,7 +743,8 @@
         row.appendChild(el("span", "fm-j", "J" + m.r));
         const rival = (m.home === d.team) ? m.away : (m.away === d.team ? m.home : (m.away || m.home));
         const casa = m.home === d.team;
-        row.appendChild(el("span", "fm-match", (casa ? "🏠 " : "✈️ ") + (rival || "")));
+        const txt = m.score ? (m.home + " " + m.score + " " + m.away) : ((casa ? "🏠 " : "✈️ ") + (rival || ""));
+        row.appendChild(el("span", "fm-match", txt));
         row.appendChild(el("span", "fm-pts pt-" + ptClass(m.stats), String(m.stats || 0)));
         tbl.appendChild(row);
       });

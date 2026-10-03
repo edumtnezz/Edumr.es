@@ -880,19 +880,50 @@ async function getNoticia(url) {
   return { title: cleanBrand(title), lead: cleanBrand(lead), html: cleanBrand(body) };
 }
 
+async function getScoreMap(env) {
+  const key = "scores:PD";
+  try {
+    const c = await env.PORRA.get(key, "json");
+    if (c && c.at && Date.now() - c.at < 30 * 60 * 1000) return c.map;
+  } catch (e) {}
+  const map = {};
+  const token = env.FOOTBALL_API_KEY;
+  if (token) {
+    try {
+      const res = await fetch(`https://api.football-data.org/v4/competitions/${COMPETITION}/matches?status=FINISHED`, { headers: { "X-Auth-Token": token } });
+      if (res.ok) {
+        const j = await res.json();
+        for (const m of j.matches || []) {
+          const s = (m.score && m.score.fullTime) || {};
+          if (s.home == null || s.away == null) continue;
+          const hn = (m.homeTeam && m.homeTeam.name) || "";
+          const an = (m.awayTeam && m.awayTeam.name) || "";
+          map[teamKey(hn) + "|" + teamKey(an)] = { hs: s.home, as: s.away };
+        }
+      }
+    } catch (e) {}
+  }
+  try { await env.PORRA.put(key, JSON.stringify({ at: Date.now(), map })); } catch (e) {}
+  return map;
+}
+
 async function playerFicha(env, id) {
   if (!id) return { error: "falta id" };
   const header = await futbolHeader(env);
   const r = await futbolPost("/2/player/matches", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP });
   const a = r.answer || {};
   const pl = a.player || {};
+  const smap = await getScoreMap(env);
   const matches = (a.matches || []).map((m) => {
     const po = (m.ps && m.ps.po) || [];
     const g = (mode) => { const z = po.find((k) => k.mode === mode); return z ? Number(z.p) || 0 : 0; };
+    const hn = (m.h && m.h.name) || "", an = (m.a && m.a.name) || "";
+    const sc = smap[teamKey(hn) + "|" + teamKey(an)];
     return {
       r: m.r || 0,
-      home: (m.h && m.h.name) || "", hs: m.h ? m.h.score : null,
-      away: (m.a && m.a.name) || "", as: m.a ? m.a.score : null,
+      home: hn, hs: m.h ? m.h.score : null,
+      away: an, as: m.a ? m.a.score : null,
+      score: sc ? sc.hs + "-" + sc.as : "",
       date: (m.info && m.info.date) || "",
       finished: m.st === "F",
       stats: g("stats"), picas: g("picas"), ff: g("ff"), ss: g("ss"), as: g("as"), marca: g("marca"),
