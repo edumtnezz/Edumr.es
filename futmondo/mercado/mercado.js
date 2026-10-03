@@ -8,7 +8,7 @@
   function splitBadge(b) {
     const codes = String(b.textContent || "").split("·").map((s) => s.trim());
     if (codes.length === 2 && POSCOL_BY_CODE[codes[0]] && POSCOL_BY_CODE[codes[1]]) {
-      b.style.background = "linear-gradient(90deg, " + POSCOL_BY_CODE[codes[0]] + " 0 50%, " + POSCOL_BY_CODE[codes[1]] + " 50% 100%)";
+      b.style.background = "linear-gradient(120deg, " + POSCOL_BY_CODE[codes[0]] + " 0%, " + POSCOL_BY_CODE[codes[1]] + " 100%)";
     }
   }
   function applySplits(root) {
