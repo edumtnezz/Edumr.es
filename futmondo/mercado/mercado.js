@@ -675,7 +675,7 @@
       .catch(() => { const c = el("div"); c.appendChild(el("p", "muted small", "No se pudo cargar la ficha.")); showModal(c); });
   }
 
-  function ptClass(p) { p = Number(p) || 0; return p < 3 ? "lo" : p < 6 ? "mid" : "hi"; }
+  function ptClass(p) { p = Number(p) || 0; return p < 0 ? "lo" : p < 6 ? "mid" : "hi"; }
   function shortRival(s) { const t = String(s || "").trim(); return t.length > 14 ? t.slice(0, 13) + "…" : t; }
 
   function renderFicha(d, p) {
