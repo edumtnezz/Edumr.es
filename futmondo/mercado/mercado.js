@@ -4,6 +4,24 @@
   const ROLE_FULL = { portero: "Portero", defensa: "Defensa", centrocampista: "Centrocampista", delantero: "Delantero" };
   const POS = { portero: "por", defensa: "def", centrocampista: "med", delantero: "del" };
   function posCls(role) { return POS[String(role || "").toLowerCase()] || "x"; }
+  const POSCOL_BY_CODE = { POR: "#16a34a", DEF: "#b45309", MED: "#0891b2", DEL: "#be123c" };
+  function splitBadge(b) {
+    const codes = String(b.textContent || "").split("·").map((s) => s.trim());
+    if (codes.length === 2 && POSCOL_BY_CODE[codes[0]] && POSCOL_BY_CODE[codes[1]]) {
+      b.style.background = "linear-gradient(90deg, " + POSCOL_BY_CODE[codes[0]] + " 0 50%, " + POSCOL_BY_CODE[codes[1]] + " 50% 100%)";
+    }
+  }
+  function applySplits(root) {
+    if (!root) return;
+    if (root.nodeType === 1) {
+      if (root.classList && root.classList.contains("posb")) splitBadge(root);
+      if (root.querySelectorAll) root.querySelectorAll(".posb").forEach(splitBadge);
+    }
+  }
+  try {
+    new MutationObserver((muts) => { muts.forEach((m) => { m.addedNodes.forEach(applySplits); }); })
+      .observe(document.body, { childList: true, subtree: true });
+  } catch (e) {}
   let all = [];
   let shown = 60;
   let sortMode = "up";

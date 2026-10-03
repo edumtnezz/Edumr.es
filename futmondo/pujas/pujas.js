@@ -54,6 +54,21 @@ function statusInfo(s) {
 const ROLE = { portero: "POR", defensa: "DEF", centrocampista: "MED", delantero: "DEL" };
 const POS = { portero: "por", defensa: "def", centrocampista: "med", delantero: "del" };
 function posCls(role) { return POS[String(role || "").toLowerCase()] || "x"; }
+var POSCOL_BY_CODE = { POR: "#16a34a", DEF: "#b45309", MED: "#0891b2", DEL: "#be123c" };
+function splitBadge(b) {
+  var codes = String(b.textContent || "").split("·").map(function (s) { return s.trim(); });
+  if (codes.length === 2 && POSCOL_BY_CODE[codes[0]] && POSCOL_BY_CODE[codes[1]]) {
+    b.style.background = "linear-gradient(90deg, " + POSCOL_BY_CODE[codes[0]] + " 0 50%, " + POSCOL_BY_CODE[codes[1]] + " 50% 100%)";
+  }
+}
+function applySplits(root) {
+  if (!root || root.nodeType !== 1) return;
+  if (root.classList && root.classList.contains("posb")) splitBadge(root);
+  if (root.querySelectorAll) root.querySelectorAll(".posb").forEach(splitBadge);
+}
+document.addEventListener("DOMContentLoaded", function () {
+  try { new MutationObserver(function (muts) { muts.forEach(function (m) { m.addedNodes.forEach(applySplits); }); }).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+});
 const ROLE_FULL = { portero: "Portero", defensa: "Defensa", centrocampista: "Centrocampista", delantero: "Delantero" };
 function roleBadge(role) { return ROLE[String(role || "").toLowerCase()] || ""; }
 function roleFull(role) { return ROLE_FULL[String(role || "").toLowerCase()] || ""; }
