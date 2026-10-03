@@ -714,25 +714,6 @@
     const cols = el("div", "ficha-cols");
     const colL = el("div", "ficha-col");
     const colR = el("div", "ficha-col");
-    const fit = d.fitness || [];
-    const msAll = d.matches || [];
-    if (fit.length || msAll.length) {
-      colL.appendChild(el("div", "estado-title", "Últimos partidos (puntos)"));
-      const chips = el("div", "ficha-chips");
-      const last5 = msAll.slice(0, 5);
-      if (last5.length) {
-        last5.forEach((m) => {
-          const rival = (m.home === d.team) ? m.away : (m.away === d.team ? m.home : m.away);
-          const c = el("span", "ficha-chip pt-" + ptClass(m.stats));
-          c.appendChild(el("span", "chip-rival", "J" + m.r + " vs " + shortRival(rival)));
-          c.appendChild(el("span", "chip-pts", String(m.stats)));
-          chips.appendChild(c);
-        });
-      } else {
-        fit.forEach((v) => chips.appendChild(el("span", "ficha-chip pt-" + ptClass(v), String(v))));
-      }
-      colL.appendChild(chips);
-    }
 
     const ms = d.matches || [];
     if (ms.length) {
