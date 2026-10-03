@@ -86,7 +86,7 @@
 .fv-table { max-height: 280px; overflow-y: auto; }
 .fv-trow { display: grid; grid-template-columns: 70px 1fr auto; gap: 8px; font-size: 0.8rem; padding: 5px 0; border-top: 1px solid var(--border); align-items: center; }
 .fv-trow:first-child { border-top: none; }
-.fv-td { color: var(--text); white-space: nowrap; }
+.fv-td { color: inherit; white-space: nowrap; }
 .fv-td.up { color: #22c55e; }
 .fv-td.down { color: #ef4444; }
 .fv-td:nth-child(2) { text-align: right; }
