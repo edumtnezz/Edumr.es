@@ -47,7 +47,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="theme-init.js"></script>
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="stylesheet" href="styles.css?v=6">
 </head>
 <body>
 
@@ -357,8 +357,8 @@
           <div class="demo-phone">
             <div class="demo-cam"></div>
             <div class="demo-screen">
-              <img id="demoImg" src="img/demo/jasstrack-1.png" alt="JassTrack — captura 1" loading="lazy">
-              <div class="demo-fallback" id="demoFallback" hidden>
+              <img class="demo-img" src="img/demo/jasstrack-1.png" alt="JassTrack — captura 1" loading="lazy">
+              <div class="demo-fallback" hidden>
                 <span>📱</span>
                 <p>Coloca aquí las capturas en <code>img/demo/jasstrack-N.png</code></p>
               </div>
@@ -389,6 +389,39 @@
         </div>
       </div>
     </section>
+
+    <!-- Demo TrackerEdu (bot de alertas) -->
+    <section class="section demo-section" id="demo-tracker">
+      <div class="container">
+        <div class="section-heading">
+          <span class="badge-sub">Demo</span>
+          <h2 class="section-title">Cómo funciona TrackerEdu</h2>
+          <p class="section-sub">El bot de alertas de Vinted y Wallapop, paso a paso. Pulsa cada punto para ver la pantalla.</p>
+        </div>
+        <div class="demo-wrap">
+          <div class="demo-phone">
+            <div class="demo-cam"></div>
+            <div class="demo-screen">
+              <img class="demo-img" src="img/demo/trackeredu-1.png" alt="TrackerEdu — aviso de producto" loading="lazy">
+              <div class="demo-fallback" hidden>
+                <span>📱</span>
+                <p>Coloca aquí las capturas en <code>img/demo/trackeredu-N.png</code></p>
+              </div>
+            </div>
+          </div>
+          <div class="demo-steps">
+            <button class="demo-step active" data-img="img/demo/trackeredu-1.png" data-alt="Aviso de producto en Telegram">
+              <span class="demo-step-n">1</span>
+              <div><b>Te llega el aviso</b><small>Foto, precio, media de mercado, estado, marca, vendedor y descripción (traducida si hace falta).</small></div>
+            </button>
+            <button class="demo-step" data-img="img/demo/trackeredu-2.png" data-alt="Gestor de alertas">
+              <span class="demo-step-n">2</span>
+              <div><b>Gestiona tus alertas</b><small>Crea, edita o borra alertas con filtros de precio, marca, estado y palabras excluidas.</small></div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
   <footer class="footer">
@@ -403,6 +436,6 @@
     </div>
   </footer>
 
-  <script src="script.js?v=3"></script>
+  <script src="script.js?v=4"></script>
 </body>
 </html>

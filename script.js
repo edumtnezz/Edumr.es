@@ -195,21 +195,22 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-/* ===== Demo JassTrack ===== */
+/* ===== Demos (JassTrack / TrackerEdu) ===== */
 (function () {
-  var wrap = document.getElementById("demoSteps");
-  if (!wrap) return;
-  var img = document.getElementById("demoImg");
-  var fb = document.getElementById("demoFallback");
-  var steps = Array.prototype.slice.call(wrap.querySelectorAll(".demo-step"));
-  function show(step) {
-    steps.forEach(function (s) { s.classList.toggle("active", s === step); });
-    if (!img) return;
-    img.hidden = false;
-    if (fb) fb.hidden = true;
-    img.src = step.dataset.img;
-    img.alt = step.dataset.alt || "";
-  }
-  if (img) img.addEventListener("error", function () { img.hidden = true; if (fb) fb.hidden = false; });
-  steps.forEach(function (s) { s.addEventListener("click", function () { show(s); }); });
+  document.querySelectorAll(".demo-wrap").forEach(function (wrap) {
+    var img = wrap.querySelector(".demo-img");
+    var fb = wrap.querySelector(".demo-fallback");
+    var steps = Array.prototype.slice.call(wrap.querySelectorAll(".demo-step"));
+    if (!steps.length) return;
+    function show(step) {
+      steps.forEach(function (s) { s.classList.toggle("active", s === step); });
+      if (!img) return;
+      img.hidden = false;
+      if (fb) fb.hidden = true;
+      img.src = step.dataset.img;
+      img.alt = step.dataset.alt || "";
+    }
+    if (img) img.addEventListener("error", function () { img.hidden = true; if (fb) fb.hidden = false; });
+    steps.forEach(function (s) { s.addEventListener("click", function () { show(s); }); });
+  });
 })();
