@@ -741,7 +741,9 @@
       ms.forEach((m) => {
         const row = el("div", "fm-row");
         row.appendChild(el("span", "fm-j", "J" + m.r));
-        row.appendChild(el("span", "fm-match", (m.home || "") + " " + (m.hs != null ? m.hs : "-") + "-" + (m.as != null ? m.as : "-") + " " + (m.away || "")));
+        const rival = (m.home === d.team) ? m.away : (m.away === d.team ? m.home : (m.away || m.home));
+        const casa = m.home === d.team;
+        row.appendChild(el("span", "fm-match", (casa ? "🏠 " : "✈️ ") + (rival || "")));
         row.appendChild(el("span", "fm-pts pt-" + ptClass(m.stats), String(m.stats || 0)));
         tbl.appendChild(row);
       });
