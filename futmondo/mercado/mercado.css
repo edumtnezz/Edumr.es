@@ -145,6 +145,26 @@
 .ficha-modal .ficha-close { color: #ffffff; border-color: rgba(255,255,255,0.22); }
 .ficha-modal a { color: #22c55e; }
 .ficha-modal .art-body, .ficha-modal .art-body p, .ficha-modal .art-lead { color: #dfe6ef; }
+[data-theme="light"] .ficha-overlay .ficha-modal { background: #ffffff; color: #1a1d21; border-color: #e2e6ea; }
+[data-theme="light"] .ficha-modal .ficha-name,
+[data-theme="light"] .ficha-modal .fs-val,
+[data-theme="light"] .ficha-modal .fm-pts,
+[data-theme="light"] .ficha-modal .fv-tval,
+[data-theme="light"] .ficha-modal .fv-td,
+[data-theme="light"] .ficha-modal h2,
+[data-theme="light"] .ficha-modal .estado-title { color: #111827; }
+[data-theme="light"] .ficha-modal .muted,
+[data-theme="light"] .ficha-modal .fs-lab,
+[data-theme="light"] .ficha-modal .cmp-status,
+[data-theme="light"] .ficha-modal .fm-j,
+[data-theme="light"] .ficha-modal .fv-thead { color: #69727d; }
+[data-theme="light"] .ficha-modal .fm-match { color: #1a1d21; }
+[data-theme="light"] .ficha-modal .ficha-stat { background: #f1f5f9; border-color: #e2e8f0; }
+[data-theme="light"] .ficha-modal .fm-row, [data-theme="light"] .ficha-modal .fv-trow { border-top-color: #eef2f7; }
+[data-theme="light"] .ficha-modal .ficha-close { color: #111827; border-color: #d0d7de; }
+[data-theme="light"] .ficha-modal .fx-lab { fill: #69727d; }
+[data-theme="light"] .ficha-modal .ficha-chart { background: #ffffff; }
+[data-theme="light"] .ficha-modal .art-body, [data-theme="light"] .ficha-modal .art-body p, [data-theme="light"] .ficha-modal .art-lead { color: #334155; }
 
 /* Comparador: buscador con foto */
 .cmp-pick { position: relative; }
