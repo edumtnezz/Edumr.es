@@ -10,10 +10,6 @@
 .merc-row-photo { position: relative; flex: 0 0 auto; width: 36px; height: 36px; }
 .merc-row-img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--bg-surface); }
 .merc-row-role { position: absolute; left: -2px; bottom: -2px; font-size: 0.42rem; font-weight: 800; color: #fff; background: #334155; padding: 0 4px; line-height: 1.5; border-radius: 4px; letter-spacing: 0.02em; }
-.merc-row-role.r-por { background: #eab308; }
-.merc-row-role.r-def { background: #2563eb; }
-.merc-row-role.r-cen { background: #16a34a; }
-.merc-row-role.r-del { background: #dc2626; }
 .merc-row-info { flex: 1 1 auto; min-width: 0; }
 .merc-row-name { display: block; color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .merc-row-meta { display: flex; align-items: center; gap: 4px; font-size: 0.72rem; color: #9fb0c4; }

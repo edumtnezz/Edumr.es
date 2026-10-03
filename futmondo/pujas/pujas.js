@@ -51,7 +51,9 @@ function statusInfo(s) {
   if (s === "doubt") return { cls: "st-doubt", label: "?" };
   return null;
 }
-const ROLE = { portero: "POR", defensa: "DEF", centrocampista: "CEN", delantero: "DEL" };
+const ROLE = { portero: "POR", defensa: "DEF", centrocampista: "MED", delantero: "DEL" };
+const POS = { portero: "por", defensa: "def", centrocampista: "med", delantero: "del" };
+function posCls(role) { return POS[String(role || "").toLowerCase()] || "x"; }
 const ROLE_FULL = { portero: "Portero", defensa: "Defensa", centrocampista: "Centrocampista", delantero: "Delantero" };
 function roleBadge(role) { return ROLE[String(role || "").toLowerCase()] || ""; }
 function roleFull(role) { return ROLE_FULL[String(role || "").toLowerCase()] || ""; }
@@ -167,7 +169,7 @@ function render() {
     if (prb) {
       const pr = el("div", "puja-pcard-roles");
       const full = [roleFull(p.role), roleFull(p.role2)].filter(Boolean).join(" · ");
-      pr.appendChild(el("span", "pos-badge" + (prb2 ? " multi" : ""), "Posición: " + (full || prb) + (prb2 ? " (multiposición)" : "")));
+      pr.appendChild(el("span", "pos-badge posb posb-" + posCls(p.role) + (prb2 ? " multi" : ""), "Posición: " + (full || prb) + (prb2 ? " (multiposición)" : "")));
       pcard.appendChild(pr);
     }
     if (p.team) {
@@ -334,7 +336,7 @@ function renderHistory() {
       imgCol.appendChild(el("div", "hist-img", initials(h.player)));
     }
     const hrb = roleBadge(h.role), hrb2 = roleBadge(h.role2);
-    if (hrb) imgCol.appendChild(el("div", "hist-pos", [roleFull(h.role), roleFull(h.role2)].filter(Boolean).join(" · ") + (hrb2 ? " (multi)" : "")));
+    if (hrb) imgCol.appendChild(el("div", "hist-pos posb posb-" + posCls(h.role), [roleFull(h.role), roleFull(h.role2)].filter(Boolean).join(" · ") + (hrb2 ? " (multi)" : "")));
     main.appendChild(imgCol);
     const body = el("div", "hist-body");
     body.appendChild(el("div", "hist-player", h.player));
@@ -461,7 +463,7 @@ function renderMarket() {
     const mrb = roleBadge(p.role), mrb2 = roleBadge(p.role2);
     if (mrb) {
       const roles = el("div", "mcard-roles");
-      const b = el("span", "mcard-role" + (mrb2 ? " multi" : ""), mrb + (mrb2 ? " · " + mrb2 : ""));
+      const b = el("span", "mcard-role" + (mrb2 ? " multi" : "") + " posb posb-" + posCls(p.role), mrb + (mrb2 ? " · " + mrb2 : ""));
       b.title = roleFull(p.role) + (mrb2 ? " · " + roleFull(p.role2) + " (multiposición)" : "");
       roles.appendChild(b);
       body.appendChild(roles);

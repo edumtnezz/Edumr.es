@@ -1,7 +1,9 @@
 (function () {
   const API = "/api/laquiniela";
-  const ROLE = { portero: "POR", defensa: "DEF", centrocampista: "CEN", delantero: "DEL" };
+  const ROLE = { portero: "POR", defensa: "DEF", centrocampista: "MED", delantero: "DEL" };
   const ROLE_FULL = { portero: "Portero", defensa: "Defensa", centrocampista: "Centrocampista", delantero: "Delantero" };
+  const POS = { portero: "por", defensa: "def", centrocampista: "med", delantero: "del" };
+  function posCls(role) { return POS[String(role || "").toLowerCase()] || "x"; }
   let all = [];
   let shown = 60;
   let sortMode = "up";
@@ -92,7 +94,7 @@
     const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
     if (rb) {
       const roles = el("div", "mcard-roles");
-      const b = el("span", "mcard-role" + (rb2 ? " multi" : ""), rb + (rb2 ? " · " + rb2 : ""));
+      const b = el("span", "mcard-role" + (rb2 ? " multi" : "") + " posb posb-" + posCls(p.role), rb + (rb2 ? " · " + rb2 : ""));
       b.title = roleFull(p.role) + (rb2 ? " · " + roleFull(p.role2) + " (multiposición)" : "");
       roles.appendChild(b);
       body.appendChild(roles);
@@ -148,7 +150,7 @@
         im.addEventListener("error", () => { if (im.getAttribute("src") !== "/img/avatar.svg") im.src = "/img/avatar.svg"; }, { once: true });
         ph.appendChild(im);
         const rb = roleBadge(p.role);
-        if (rb) ph.appendChild(el("span", "merc-row-role r-" + String(p.role || "").slice(0, 3), rb));
+        if (rb) ph.appendChild(el("span", "merc-row-role posb posb-" + posCls(p.role), rb));
         row.appendChild(ph);
         const info = el("div", "merc-row-info");
         info.appendChild(el("span", "merc-row-name", p.name));
@@ -287,7 +289,7 @@
     c.appendChild(ph);
     c.appendChild(el("div", "cmp2-name", p.name));
     const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
-    if (rb) c.appendChild(el("span", "mcard-role" + (rb2 ? " multi" : ""), rb + (rb2 ? " · " + rb2 : "")));
+    if (rb) c.appendChild(el("span", "mcard-role" + (rb2 ? " multi" : "") + " posb posb-" + posCls(p.role), rb + (rb2 ? " · " + rb2 : "")));
     c.appendChild(el("div", "cmp2-team", p.team || ""));
     return c;
   }
@@ -473,7 +475,7 @@
         c.appendChild(tr);
       }
       const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
-      if (rb) c.appendChild(el("span", "mbc-role" + (rb2 ? " multi" : ""), rb + (rb2 ? "·" + rb2 : "")));
+      if (rb) c.appendChild(el("span", "mbc-role" + (rb2 ? " multi" : "") + " posb posb-" + posCls(p.role), rb + (rb2 ? "·" + rb2 : "")));
       c.appendChild(el("div", "mbc-exp", "~" + expOf(p).toFixed(1).replace(".", ",") + " pts"));
       if (p.value) c.appendChild(el("div", "mbc-val", money(p.value) + " €"));
       const f = (p.fitness || []).slice(0, 5);
@@ -663,7 +665,7 @@
     const ph = el("div", "mcard-photo");
     ph.appendChild(photoImg(d.photo || p.photo, "mcard-img"));
     const rb = roleBadge(d.role || p.role), rb2 = roleBadge(d.role2 || p.role2);
-    if (rb) ph.appendChild(el("span", "mcard-role" + (rb2 ? " multi" : ""), rb + (rb2 ? " · " + rb2 : "")));
+    if (rb) ph.appendChild(el("span", "mcard-role" + (rb2 ? " multi" : "") + " posb posb-" + posCls(p.role), rb + (rb2 ? " · " + rb2 : "")));
     head.appendChild(ph);
     const info = el("div", "ficha-info");
     info.appendChild(el("h2", "ficha-name", d.name || p.name || ""));

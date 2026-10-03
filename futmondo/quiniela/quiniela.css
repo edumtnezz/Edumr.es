@@ -1177,6 +1177,13 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .mcard-roles { display: flex; gap: 5px; margin: 3px 0 4px; }
 .mcard-role { background: rgba(255,255,255,0.12); color: var(--text); font-size: 0.62rem; font-weight: 800; padding: 2px 7px; border-radius: 6px; letter-spacing: 0.03em; }
 .mcard-role.multi { background: rgba(34,197,94,0.16); color: #22c55e; }
+/* Badges de posición compartidos (POR/DEF/MED/DEL) */
+.posb { display: inline-flex; align-items: center; justify-content: center; font-size: 0.56rem; font-weight: 800; letter-spacing: 0.03em; color: #fff; padding: 1px 6px; border-radius: 6px; line-height: 1.45; background: #475569; }
+.posb.por { background: #16a34a; }
+.posb.def { background: #b45309; }
+.posb.med { background: #0891b2; }
+.posb.del { background: #be123c; border-bottom-right-radius: 0; }
+.posb.mcard-role, .posb.pos-badge, .posb.hist-pos, .posb.pj-preview-pos, .posb.merc-row-role, .posb.mbc-role { color: #fff; }
 .mcard-team { display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 0.78rem; color: var(--muted); }
 .mcard-team span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mcard-crest { width: 16px; height: 16px; object-fit: contain; flex: 0 0 auto; }
