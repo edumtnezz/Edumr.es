@@ -104,9 +104,12 @@
   -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 }
 .typewriter-container {
-  font-family: var(--font-display); font-size: 1.3rem; color: var(--accent);
-  margin-bottom: 22px; min-height: 40px;
+  font-family: var(--font-display);
+  font-size: clamp(1.7rem, 4.2vw, 2.8rem);
+  color: var(--accent);
+  margin: 0 0 26px; min-height: 64px;
   display: flex; align-items: center; justify-content: center; gap: 4px;
+  letter-spacing: -0.01em;
 }
 .cursor { animation: blink 1s infinite; color: var(--accent); }
 @keyframes blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
@@ -279,36 +282,48 @@
 .site-cta:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
 #porque, #sec-proyectos, #metodo, #sec-demos { scroll-margin-top: 84px; }
 
-/* ===== Corte de stats (estilo Aureum) ===== */
+/* ===== Corte de stats (separador, tono de la web) ===== */
 .why {
-  background: #eee9df;
-  color: #151516;
-  padding: 86px 0 96px;
+  background: linear-gradient(180deg, rgba(34, 197, 94, 0.10), rgba(34, 197, 94, 0.015));
+  color: var(--text);
+  padding: 76px 0 82px;
   position: relative;
   z-index: 1;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 .why-eyebrow {
   text-align: center;
   font-family: var(--font-display);
   font-size: 0.78rem; font-weight: 600;
   letter-spacing: 0.34em; text-transform: uppercase;
-  color: #6b6255; margin-bottom: 24px;
+  color: var(--accent); margin-bottom: 22px;
 }
-.why-line { height: 1px; background: rgba(21, 21, 22, 0.18); margin-bottom: 48px; }
+.why-line { height: 1px; background: var(--border); margin-bottom: 44px; }
 .why-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px; }
 .why-item { display: flex; flex-direction: column; }
 .why-num {
   font-family: 'Bodoni Moda', Georgia, serif;
   font-weight: 500; font-size: clamp(2.8rem, 6vw, 5rem);
-  line-height: 1; letter-spacing: -0.02em;
+  line-height: 1; letter-spacing: -0.02em; color: var(--text);
 }
-.why-num .slash, .why-num .pct { font-style: normal; font-weight: 400; opacity: 0.5; padding: 0 2px; }
+.why-num .slash, .why-num .pct { font-style: normal; font-weight: 400; opacity: 0.4; padding: 0 2px; }
 .why-label {
   margin-top: 12px;
   font-family: var(--font-display);
   font-size: 0.78rem; font-weight: 600;
   letter-spacing: 0.12em; text-transform: uppercase;
-  color: #6b6255;
+  color: var(--muted);
+}
+
+/* ===== Separador de secciones ===== */
+.divider { display: flex; align-items: center; gap: 20px; margin: 0 0 40px; }
+.divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.divider span {
+  font-family: var(--font-display);
+  font-size: 0.78rem; font-weight: 600;
+  letter-spacing: 0.34em; text-transform: uppercase;
+  color: var(--accent); padding-left: 0.34em;
 }
 
 /* ===== Método ===== */
