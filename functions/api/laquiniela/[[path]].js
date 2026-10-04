@@ -755,8 +755,10 @@ async function getClausulas(env) {
         const ans = s.answer || {};
         const cl = (ans.championship && ans.championship.clause) || {};
         const owner = (ans.owners && ans.owners.n) || "";
+        const ownerLocked = !!(ans.owners && ans.owners.l);
         if (!cl.price) return;
-        if (myTeam && owner && stripAccents(owner.toLowerCase()) === stripAccents(myTeam.toLowerCase())) return;
+        if (!owner) return;
+        if (myTeam && stripAccents(owner.toLowerCase()) === stripAccents(myTeam.toLowerCase())) return;
         out.push({
           id: p.id, name: p.name, role: p.role, role2: p.role2, team: p.team, logo: p.logo, photo: p.photo,
           value: p.value, points: p.points, avg: p.avg, fitness: p.fitness, prob: p.prob, status: p.status,
