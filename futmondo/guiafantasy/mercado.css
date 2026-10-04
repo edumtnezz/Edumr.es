@@ -309,7 +309,7 @@
 .hl-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 24px 0 10px; padding-top: 16px; border-top: 1px solid var(--border); }
 .hl-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.02rem; }
 .hl-seg { display: flex; gap: 6px; margin: 0; flex-wrap: wrap; }
-.hl-btn { font-size: 0.74rem; font-weight: 700; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); cursor: pointer; }
+.hl-btn { font-size: 0.82rem; font-weight: 700; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); cursor: pointer; }
 .hl-btn.active { background: rgba(34,197,94,0.16); border-color: rgba(34,197,94,0.5); color: #22c55e; }
 .merc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
 .mchip { font-size: 0.74rem; font-weight: 700; padding: 6px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); cursor: pointer; }
@@ -495,7 +495,8 @@ html { overflow-anchor: none; }
 .claus-photo2 { position: relative; width: 60px; height: 60px; margin-bottom: 6px; }
 .claus-photo2 .claus-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; background: var(--bg-surface, #e2e8f0); }
 .claus-body2 { width: 100%; }
-.claus-name2 { font-weight: 800; font-family: 'Space Grotesk', sans-serif; font-size: 0.95rem; }
+.claus-name2 { font-weight: 800; font-family: 'Space Grotesk', sans-serif; font-size: 1.08rem; }
+.mbh-sub { font-size: 0.72rem; color: var(--muted); font-weight: 600; margin-left: 8px; }
 .claus-pos { display: flex; justify-content: center; gap: 4px; margin: 4px 0 2px; }
 .claus-team { display: flex; align-items: center; justify-content: center; gap: 5px; color: var(--muted); font-size: 0.76rem; }
 .claus-owner { color: var(--muted); font-size: 0.74rem; margin-top: 1px; }
@@ -524,14 +525,16 @@ html { overflow-anchor: none; }
 .dot.green { background: #16a34a; }
 .dot.yellow { background: #f59e0b; }
 .dash-media { margin-left: auto; color: #dc2626; font-weight: 700; }
-.dash-chart { position: relative; height: 180px; }
-.dash-chart::before { content: ''; position: absolute; left: 0; right: 0; bottom: 20px; height: 1px; background: var(--border); }
-.dash-avg { position: absolute; left: 0; right: 0; border-top: 1px dashed #dc2626; }
+.dash-chart { position: relative; height: 190px; }
+.dash-chart::before { content: ''; position: absolute; left: 24px; right: 0; bottom: 20px; height: 1px; background: var(--border); }
+.dash-yaxis { position: absolute; left: 0; top: 0; bottom: 20px; width: 20px; display: flex; flex-direction: column; justify-content: space-between; font-size: 0.56rem; color: var(--muted); text-align: right; }
+.dash-avg { position: absolute; left: 24px; right: 0; border-top: 1px dashed #dc2626; }
 .dash-avglab { position: absolute; right: 0; top: -13px; font-size: 0.6rem; color: #dc2626; font-weight: 700; }
-.dash-bars { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 6px; padding-bottom: 20px; }
+.dash-bars { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 6px; padding-bottom: 20px; padding-left: 24px; }
 .dash-col { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
 .dash-barwrap { width: 100%; flex: 1; display: flex; align-items: flex-end; justify-content: center; }
-.dash-bar { width: 62%; max-width: 28px; border-radius: 6px 6px 0 0; }
+.dash-bar { position: relative; width: 62%; max-width: 28px; border-radius: 6px 6px 0 0; }
+.dash-min { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); font-size: 0.55rem; color: var(--muted); font-weight: 700; white-space: nowrap; }
 .dash-bar.completo { background: #2563eb; }
 .dash-bar.sustituido { background: #16a34a; }
 .dash-bar.banquillo { background: #f59e0b; }
@@ -632,3 +635,15 @@ html { overflow-anchor: none; }
 
 
 
+
+@media (max-width: 640px) {
+  .claus-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .claus-card2 { padding: 10px 8px; border-radius: 12px; }
+  .claus-photo2 { width: 48px; height: 48px; margin-bottom: 4px; }
+  .claus-name2 { font-size: 0.9rem; }
+  .claus-stats { gap: 4px; margin: 6px 0; }
+  .claus-stat { padding: 4px 2px; }
+  .claus-stat b { font-size: 0.82rem; }
+  .claus-stat.media b { font-size: 1rem; }
+  .claus-stat.clause b { font-size: 0.72rem; }
+}

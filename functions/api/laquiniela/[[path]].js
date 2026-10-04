@@ -868,6 +868,15 @@ function ffPick(name, map) {
   }
   const cont = keys.filter((k) => k.split(" ").indexOf(n) >= 0 || k.includes(" " + n + " "));
   if (cont.length === 1) return map[cont[0]];
+  const toks = words.filter((t) => t.length >= 3);
+  if (toks.length) {
+    const cands = keys.filter((k) => { const kt = k.split(" "); return toks.every((t) => kt.some((x) => x === t || x.startsWith(t) || t.startsWith(x))); });
+    if (cands.length === 1) return map[cands[0]];
+  }
+  if (last.length >= 4) {
+    const byLast2 = keys.filter((k) => k.split(" ").some((x) => x === last || x.startsWith(last)));
+    if (byLast2.length === 1) return map[byLast2[0]];
+  }
   return null;
 }
 

@@ -282,20 +282,21 @@ body {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   background: var(--cx-green);
   color: #fff;
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 700;
-  font-size: 0.72rem;
-  letter-spacing: 0.04em;
-  padding: 10px 16px;
+  font-size: 0.66rem;
+  letter-spacing: 0.03em;
+  padding: 6px 12px;
   position: relative;
   z-index: 2;
+  white-space: nowrap;
 }
 .cx-live-tag::before {
   content: '';
-  width: 7px; height: 7px;
+  width: 6px; height: 6px;
   border-radius: 50%;
   background: #fff;
   animation: cxpulse 1.2s ease-in-out infinite;
@@ -305,17 +306,17 @@ body {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 26px;
+  gap: 18px;
   overflow-x: auto;
   scrollbar-width: none;
-  padding: 8px 18px;
+  padding: 6px 14px;
   min-width: 0;
 }
 .cx-live-track::-webkit-scrollbar { display: none; }
 .cx-live-item {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   color: rgba(255, 255, 255, 0.9);
   text-decoration: none;
   white-space: nowrap;
@@ -325,20 +326,26 @@ body {
 }
 .cx-live-item:hover { color: #fff; }
 .cx-live-item img {
-  width: 34px; height: 24px;
+  width: 28px; height: 20px;
   object-fit: cover;
   border-radius: 4px;
   flex: 0 0 auto;
 }
 .cx-live-txt {
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 340px;
+  max-width: 300px;
 }
-.cx-live-time { font-size: 0.7rem; color: rgba(255, 255, 255, 0.5); font-weight: 600; flex: 0 0 auto; }
-.cx-live-load { color: rgba(255, 255, 255, 0.55); font-size: 0.82rem; }
+.cx-live-time { font-size: 0.64rem; color: rgba(255, 255, 255, 0.5); font-weight: 600; flex: 0 0 auto; }
+.cx-live-load { color: rgba(255, 255, 255, 0.55); font-size: 0.78rem; }
+@media (max-width: 640px) {
+  .cx-live-tag { font-size: 0.58rem; padding: 5px 9px; }
+  .cx-live-txt { font-size: 0.72rem; max-width: 210px; }
+  .cx-live-item img { width: 24px; height: 17px; }
+  .cx-live-time { font-size: 0.6rem; }
+}
 
 /* ---------- Tarjetas / paneles (claro, sombras suaves) ---------- */
 .panel {
@@ -370,7 +377,7 @@ body {
   .cx-nav a { padding: 7px 11px; font-size: 0.84rem; }
   .cx-sub-inner { justify-content: flex-start; }
   .cx-sub .tabs { width: 100%; justify-content: flex-start; }
-  .cx-sub .tab { padding: 14px 12px; font-size: 0.85rem; }
+  .cx-sub .tab { padding: 12px 9px; font-size: 0.78rem; }
   .quiniela-main { padding: 16px 12px 50px; }
   .panel { padding: 20px 16px; border-radius: 14px; }
 }

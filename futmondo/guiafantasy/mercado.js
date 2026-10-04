@@ -174,6 +174,7 @@
     const v = p["chg" + hlPeriod];
     return v != null ? Number(v) : (Number(p.change) || 0);
   }
+  let rachasData = null;
   async function renderRachas() {
     const box = $("mercRachas");
     if (!box) return;
@@ -182,13 +183,14 @@
     if (best) box.appendChild(best);
     const head = el("div", "hl-head");
     head.appendChild(el("span", "hl-title", "🔥 Jugadores en racha"));
-    head.appendChild(el("span", "rachas-sub", "Últimos partidos con su jornada · más reciente primero"));
+    head.appendChild(el("span", "rachas-sub", "Partidos seguidos puntuando · más reciente primero"));
     box.appendChild(head);
     const table = el("div", "rachas-table");
     table.innerHTML = '<div class="rachas-empty">Cargando rachas…</div>';
     box.appendChild(table);
     try {
-      const d = await (await fetch(API + "/rachas")).json();
+      let d = rachasData;
+      if (!d) { d = await (await fetch(API + "/rachas")).json(); rachasData = d; }
       const list = (d && d.players) || [];
       const j0 = Number(d && d.jornada) || 0;
       if (!list.length) { table.innerHTML = '<div class="rachas-empty">Sin rachas ahora mismo.</div>'; return; }
@@ -363,7 +365,7 @@
     [["1", "Hoy"], ["7", "7 días"], ["14", "14 días"], ["30", "30 días"]].forEach(([k, lab]) => {
       const b = el("button", "hl-btn" + (hlPeriod === k ? " active" : ""), lab);
       b.type = "button";
-      b.addEventListener("click", () => { hlPeriod = k; renderGrid(); renderRachas(); });
+      b.addEventListener("click", () => { const y = window.scrollY; hlPeriod = k; renderGrid(); renderRachas(); window.scrollTo(0, y); });
       seg.appendChild(b);
     });
     top.appendChild(seg);
@@ -705,6 +707,7 @@
     const top = picked.sort((a, b) => expOf(b) - expOf(a));
     const head = el("div", "merc-besthead");
     head.appendChild(el("span", "mbh-t", "⭐ Mejor fichaje de la jornada"));
+    head.appendChild(el("span", "mbh-sub", "por puntos probables"));
     box.appendChild(head);
     const row = el("div", "merc-bestrow");
     top.forEach((p) => {
@@ -1029,6 +1032,9 @@
     legend.appendChild(el("span", "dash-media", "— Media: " + (Number(par.avgMin) || 0).toFixed(1).replace(".", ",") + "'"));
     card.appendChild(legend);
     const chart = el("div", "dash-chart");
+    const yax = el("div", "dash-yaxis");
+    ["90", "60", "30", "0"].forEach((v) => yax.appendChild(el("span", null, v)));
+    chart.appendChild(yax);
     const byR = {}; (par.byJornada || []).forEach((x) => { byR[x.r] = x; });
     const n = Number(par.jornada) || 0;
     const avg = el("div", "dash-avg");
@@ -1042,8 +1048,10 @@
       const bw = el("div", "dash-barwrap");
       if (c && c.cat && c.cat !== "none") {
         const b = el("div", "dash-bar " + c.cat);
-        b.style.height = Math.max(5, Math.min(100, ((Number(c.mins) || 0) / 90) * 100)) + "%";
-        b.title = "J" + j + " · " + c.mins + "'";
+        b.style.height = Math.max(6, Math.min(100, ((Number(c.mins) || 0) / 90) * 100)) + "%";
+        const det = c.cat === "completo" ? "Titular · 90'" : c.cat === "sustituido" ? "Titular · cambio " + c.mins + "'" : "Desde banquillo · " + c.mins + "'";
+        b.title = "J" + j + " · " + det;
+        b.appendChild(el("span", "dash-min", (Number(c.mins) || 0) + "'"));
         bw.appendChild(b);
       } else {
         bw.appendChild(el("div", "dash-bar none"));
