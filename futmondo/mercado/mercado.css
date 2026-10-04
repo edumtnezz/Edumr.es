@@ -263,9 +263,9 @@
 [data-theme="light"] .wa-text b, [data-theme="light"] .wa-text strong { color: #111b21; }
 
 /* Anillo de multiposición (color por posición) */
-.posring { display: inline-flex; border-radius: 50%; padding: 2.5px; background: conic-gradient(var(--c1) 0 50%, var(--c2) 50% 100%); }
+.posring { display: inline-flex; border-radius: 50%; padding: 2.5px; background: conic-gradient(from 180deg, var(--c1) 0 50%, var(--c2) 50% 100%); }
 .posring > img { border-radius: 50%; object-fit: cover; display: block; }
-.posring-clip { padding: 2px !important; border-color: transparent !important; background: conic-gradient(var(--c1) 0 50%, var(--c2) 50% 100%) !important; }
+.posring-clip { padding: 2px !important; border-color: transparent !important; background: conic-gradient(from 180deg, var(--c1) 0 50%, var(--c2) 50% 100%) !important; }
 .posring-clip > img { border-radius: 50%; }
 .hl-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 24px 0 10px; padding-top: 16px; border-top: 1px solid var(--border); }
 .hl-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.02rem; }

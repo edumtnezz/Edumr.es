@@ -18,9 +18,9 @@
 .wa-bottom-logo img { width: 72%; height: 72%; object-fit: contain; }
 
 /* Anillo de multiposición (color por posición) */
-.posring { display: inline-flex; border-radius: 50%; padding: 2.5px; background: conic-gradient(var(--c1) 0 50%, var(--c2) 50% 100%); }
+.posring { display: inline-flex; border-radius: 50%; padding: 2.5px; background: conic-gradient(from 180deg, var(--c1) 0 50%, var(--c2) 50% 100%); }
 .posring > img { border-radius: 50%; object-fit: cover; display: block; }
-.posring-clip { padding: 2px !important; border-color: transparent !important; background: conic-gradient(var(--c1) 0 50%, var(--c2) 50% 100%) !important; }
+.posring-clip { padding: 2px !important; border-color: transparent !important; background: conic-gradient(from 180deg, var(--c1) 0 50%, var(--c2) 50% 100%) !important; }
 .posring-clip > img { border-radius: 50%; }
 .wa-body { display: flex; flex-direction: column; gap: 8px; padding: 16px 12px; background: #0b141a; }
 [data-theme="light"] .wa-body { background: #e9edef; }
