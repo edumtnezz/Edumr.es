@@ -617,6 +617,7 @@
     const ch = $("cxChrome");
     if (ch) ch.classList.toggle("hidden", name !== "mercado");
     try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
+    try { history.replaceState(null, "", "/futmondo/guiafantasy/" + name); } catch (e) {}
   }
 
   function expOf(p) {
@@ -1134,7 +1135,11 @@
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
   (function restoreTab() {
     let name = "";
-    try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {}
+    try {
+      const m = location.pathname.match(/\/guiafantasy\/(mercado|estado|noticias|analiza)/);
+      if (m) name = m[1];
+    } catch (e) {}
+    if (!name) { try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {} }
     if (name && $("tab-" + name)) switchTab(name);
   })();
   document.querySelectorAll(".merc-segbtn").forEach((b) => b.addEventListener("click", () => {
