@@ -44,7 +44,14 @@
         if (title) title.textContent = jornada ? ("Jornada " + jornada) : "Jornada";
         if (!ms.length) { grid.innerHTML = '<span class="cx-strip-load">Sin jornada.</span>'; return; }
         grid.innerHTML = ms.map(function (m) {
-          var tv = (m.tv && m.tv[0]) ? '<img class="cx-jn-tv' + (/dazn/i.test(m.tv[0].name) ? " cx-jn-tv-sq" : "") + '" src="' + esc(m.tv[0].logo) + '" alt="' + esc(m.tv[0].name) + '" title="' + esc(m.tv[0].name) + '" loading="lazy" onerror="this.remove()">' : '<span class="cx-jn-tv-ph" title="Canal por confirmar">por confirmar</span>';
+          var tv;
+          if (m.tv && m.tv[0]) {
+            tv = m.tv[0].logo
+              ? '<img class="cx-jn-tv' + (/dazn/i.test(m.tv[0].name) ? " cx-jn-tv-sq" : "") + '" src="' + esc(m.tv[0].logo) + '" alt="' + esc(m.tv[0].name) + '" title="' + esc(m.tv[0].name) + '" loading="lazy" onerror="this.remove()">'
+              : '<span class="cx-jn-tv-name" title="' + esc(m.tv[0].name) + '">' + esc(m.tv[0].name) + '</span>';
+          } else {
+            tv = '<span class="cx-jn-tv-ph" title="Canal por confirmar">por confirmar</span>';
+          }
           return '<div class="cx-jn">' +
             '<img class="cx-jn-crest" src="' + esc(m.homeCrest) + '" alt="' + esc(m.home) + '" title="' + esc(m.home) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
             '<div class="cx-jn-mid">' + tv + '<span class="cx-jn-time">' + esc(((m.day || "") + " " + (m.date || "")).trim()) + '</span><span class="cx-jn-hora">' + esc(m.time || "") + '</span></div>' +

@@ -1180,12 +1180,57 @@ async function ffTvMap(env) {
   if (list.length > 10) { try { await env.PORRA.put("ff:tv:v7", JSON.stringify(out), { expirationTtl: 3600 }); } catch (e) {} }
   return out;
 }
+async function fltvMap(env) {
+  try {
+    const c = await env.PORRA.get("fltv:v1", "json");
+    if (c && c.list && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c;
+  } catch (e) {}
+  const list = [], byName = {};
+  const MOV = "https://static.futbolfantasy.com/uploads/images/canales/movistarlaliga.png";
+  try {
+    const res = await fetch("https://www.futbolenlatv.es/competicion/la-liga", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+    const html = await res.text();
+    const rows = html.split("<tr");
+    const dtF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" });
+    const tF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hour12: false });
+    let curDate = "";
+    for (const raw of rows) {
+      if (raw.indexOf("cabeceraTabla") >= 0) { const m = raw.match(/(\d{2}\/\d{2}\/\d{4})/); if (m) curDate = m[1]; continue; }
+      if (raw.indexOf('class="local"') < 0) continue;
+      const localCell = (raw.match(/class="local"[^>]*>([\s\S]*?)<\/td>/) || [])[1] || "";
+      const visitCell = (raw.match(/class="visitante"[^>]*>([\s\S]*?)<\/td>/) || [])[1] || "";
+      const nameOf = (cell) => { const s = cell.match(/<span[^>]*title="([^"]+)"/); if (s) return s[1]; const im = cell.match(/<img[^>]*title="([^"]+)"/); return im ? im[1] : ""; };
+      const home = nameOf(localCell), away = nameOf(visitCell);
+      if (!home || !away) continue;
+      const canc = (raw.match(/class="canales"[^>]*>([\s\S]*?)<\/td>/) || [])[1] || "";
+      const chans = [...canc.matchAll(/<li[^>]*title="([^"]+)"/g)].map((m) => m[1]);
+      if (!chans.length) continue;
+      let date = curDate.slice(0, 5), time = "";
+      const sm = raw.match(/itemprop="startDate" content="([^"]+)"/);
+      if (sm) { const s = sm[1]; const d = new Date(/[Zz]|[+-]\d\d:?\d\d$/.test(s) ? s : s + "Z"); if (!isNaN(d.getTime())) { date = dtF.format(d); time = tF.format(d); } }
+      if (!time) { const hm = raw.match(/class="hora[^"]*">\s*([0-9]{1,2}:[0-9]{2})/); if (hm) time = hm[1].padStart(5, "0"); }
+      let tv = [];
+      for (const ch of chans) { if (/dazn/i.test(ch)) { tv = [{ name: "DAZN", logo: "/img/dazn.svg?v=2" }]; break; } }
+      if (!tv.length) for (const ch of chans) { if (/m\+|movistar/i.test(ch)) { tv = [{ name: "Movistar LaLiga", logo: MOV }]; break; } }
+      if (!tv.length) tv = [{ name: chans[0].replace(/\s*\([^)]*\)\s*$/, "").trim(), logo: "" }];
+      if (!date || !time) continue;
+      const entry = { home, away, date, time, tv };
+      list.push(entry);
+      const key = stripAccents(home.toLowerCase()) + "|" + stripAccents(away.toLowerCase());
+      if (!byName[key]) byName[key] = entry;
+    }
+  } catch (e) {}
+  const out = { at: Date.now(), list, byName };
+  if (list.length > 10) { try { await env.PORRA.put("fltv:v1", JSON.stringify(out), { expirationTtl: 3600 }); } catch (e) {} }
+  return out;
+}
 async function getJornadaStrip(env, matchday) {
   let jd = null;
   try { jd = await getJornada(env, matchday || null); } catch (e) {}
   if (!jd || !jd.matches) return { matchday: 0, matches: [] };
   let tvmap = { byName: {}, list: [] };
-  try { tvmap = await ffTvMap(env); } catch (e) {}
+  try { tvmap = await fltvMap(env); } catch (e) {}
+  if (!(tvmap.list || []).length) { try { tvmap = await ffTvMap(env); } catch (e) {} }
   const list = tvmap.list || [];
   const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
   const dtF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" });
