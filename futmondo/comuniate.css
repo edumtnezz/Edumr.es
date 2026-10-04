@@ -259,6 +259,7 @@ body {
 .cx-jn-crest { width: 26px; height: 26px; object-fit: contain; justify-self: center; }
 .cx-jn-mid { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
 .cx-jn-tv { height: 15px; width: auto; max-width: 60px; object-fit: contain; }
+.cx-jn-tv-sq { height: 21px; max-width: 40px; }
 .cx-jn-tv-ph { font-size: 0.5rem; font-weight: 700; color: var(--cx-muted); line-height: 1; }
 .cx-jn-time { font-size: 0.62rem; font-weight: 800; color: var(--cx-text); white-space: nowrap; }
 .cx-jn-hora { font-size: 0.62rem; font-weight: 700; color: var(--cx-muted); white-space: nowrap; }
