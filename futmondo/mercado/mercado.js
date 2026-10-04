@@ -1024,15 +1024,23 @@
   }
   async function reanalizar() {
     if (!anData) return;
-    $("anMsg").textContent = "🧠 Reanalizando con tus jugadores… (20-40 s)";
+    const d = await runAnaliza({ jugadores: flatPlayers(anData) }, "Reanalizando…");
+    if (d) { anStale = false; renderAnalisis(d); }
+  }
+  async function runAnaliza(payload, prefijo) {
+    const t0 = Date.now();
+    const upd = () => { const s = Math.round((Date.now() - t0) / 1000); const m = $("anMsg"); if (m) m.textContent = "🧠 " + prefijo + " " + s + " s"; };
+    upd();
+    const timer = setInterval(upd, 250);
     try {
-      const r = await fetch(API + "/analiza", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jugadores: flatPlayers(anData) }) });
+      const r = await fetch(API + "/analiza", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
       const d = await r.json();
-      if (!r.ok) { $("anMsg").textContent = d.error || "No se pudo analizar."; return; }
-      $("anMsg").textContent = "";
-      anStale = false;
-      renderAnalisis(d);
-    } catch (e) { $("anMsg").textContent = "Error de red."; }
+      clearInterval(timer);
+      const total = ((Date.now() - t0) / 1000).toFixed(1).replace(".", ",");
+      if (!r.ok) { $("anMsg").textContent = (d.error || "No se pudo analizar.") + " · " + total + " s"; return null; }
+      $("anMsg").textContent = "✅ Analizado en " + total + " s";
+      return d;
+    } catch (e) { clearInterval(timer); $("anMsg").textContent = "Error de red."; return null; }
   }
 
   function renderAnalisis(d) {
@@ -1172,15 +1180,9 @@
   const anBtn = $("anBtn");
   if (anBtn) anBtn.addEventListener("click", async () => {
     if (!anImg) { $("anMsg").textContent = "Elige primero una captura de tu equipo."; return; }
-    $("anMsg").textContent = "🧠 Analizando… (puede tardar 20-40 s)";
     $("anOut").innerHTML = "";
-    try {
-      const r = await fetch(API + "/analiza", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ img: anImg }) });
-      const d = await r.json();
-      if (!r.ok) { $("anMsg").textContent = d.error || "No se pudo analizar."; return; }
-      $("anMsg").textContent = "";
-      renderAnalisis(d);
-    } catch (e) { $("anMsg").textContent = "Error de red."; }
+    const d = await runAnaliza({ img: anImg }, "Analizando…");
+    if (d) renderAnalisis(d);
   });
 
   const fclose = $("fichaClose"); if (fclose) fclose.addEventListener("click", closeModal);
