@@ -375,12 +375,12 @@
 .merc-club.merc-club-all { width: auto; padding: 0 12px; border-radius: 999px; font-size: 0.82rem; font-weight: 700; color: var(--text); }
 
 /* Campo de fútbol (analiza) */
-.pitch { position: relative; background: url('/img/campo.png') center / contain no-repeat; border-radius: 0; padding: 5% 7%; margin: 12px auto; max-width: 860px; display: flex; flex-direction: column; justify-content: space-between; gap: 6px; aspect-ratio: 16 / 9; }
+.pitch { position: relative; background: url('/img/campo.png') center / 100% 100% no-repeat; border-radius: 0; padding: 4% 5%; margin: 12px auto; max-width: 620px; display: flex; flex-direction: column; justify-content: space-between; gap: 6px; aspect-ratio: 1148 / 1038; }
 .pitch::before { content: none; }
 .pitch-row { display: flex; justify-content: space-around; gap: 6px; position: relative; z-index: 1; max-width: 94%; margin-left: auto; margin-right: auto; }
 .pitch-row:nth-child(1) { max-width: 56%; }
-.pitch-row:nth-child(2) { max-width: 80%; }
-.pitch-row:nth-child(3) { max-width: 96%; }
+.pitch-row:nth-child(2) { max-width: 74%; }
+.pitch-row:nth-child(3) { max-width: 88%; }
 .pitch-row:nth-child(4) { max-width: 34%; }
 .pitch-player { display: flex; flex-direction: column; align-items: center; width: 64px; }
 .pitch-photo { width: 46px; height: 46px; border-radius: 50%; overflow: hidden; background: rgba(0,0,0,0.35); border: 2px solid rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; color: #fff; }
