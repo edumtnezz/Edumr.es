@@ -1049,12 +1049,34 @@
   }
   function renderAiText(t) {
     const box = el("div", "an-ai");
+    const ICONS = [["ONCE", "⭐"], ["PORTERO", "🧤"], ["DEFENSA", "🛡️"], ["MEDIO", "🎯"], ["DELANTERO", "⚽"], ["CAMBIOS", "🔄"], ["MULTIPOSICI", "↔️"], ["AVISO", "⏰"]];
+    const iconOf = (title) => { const u = title.toUpperCase(); const f = ICONS.find((x) => u.indexOf(x[0]) === 0); return f ? f[1] : "•"; };
+    const isLineup = (title) => /PORTERO|DEFENSA|MEDIO|DELANTERO/i.test(title);
+    let body = null, lineup = false;
     String(t || "").split(/\n+/).forEach((ln) => {
       const s = ln.trim();
       if (!s) return;
       const m = s.match(/^\*\*(.+?)\*\*:?\s*$/);
-      if (m) box.appendChild(el("div", "an-ai-head", m[1].replace(/:$/, "")));
-      else { const line = el("div", "an-ai-line"); line.innerHTML = miniLine(s); box.appendChild(line); }
+      if (m) {
+        const title = m[1].replace(/:$/, "");
+        const sec = el("div", "an-sec");
+        const hd = el("div", "an-sec-head");
+        hd.appendChild(el("span", "an-sec-ic", iconOf(title)));
+        hd.appendChild(el("span", "an-sec-t", title));
+        sec.appendChild(hd);
+        body = el("div", "an-sec-body");
+        sec.appendChild(body);
+        lineup = isLineup(title);
+        box.appendChild(sec);
+      } else if (body) {
+        if (lineup && s.indexOf(",") >= 0) {
+          s.split(",").map((x) => x.trim()).filter(Boolean).forEach((nm) => { const c = el("span", "an-chip"); c.innerHTML = miniLine(nm); body.appendChild(c); });
+        } else {
+          const line = el("div", "an-ai-line"); line.innerHTML = miniLine(s); body.appendChild(line);
+        }
+      } else {
+        const line = el("div", "an-ai-line"); line.innerHTML = miniLine(s); box.appendChild(line);
+      }
     });
     return box;
   }
