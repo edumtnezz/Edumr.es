@@ -194,6 +194,7 @@ body {
   box-shadow: none;
   border-bottom-color: var(--cx-green);
 }
+.cx-sub .tab.active::after { display: none !important; }
 .cx-sub .user-box { position: absolute; right: 16px; }
 
 /* ---------- Tira de escudos ---------- */
