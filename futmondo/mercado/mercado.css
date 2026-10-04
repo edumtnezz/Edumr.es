@@ -287,6 +287,7 @@
 .pitch-bench .pitch-name { max-width: 78px; }
 .an-name-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .an-crest { width: 15px; height: 15px; object-fit: contain; flex: 0 0 auto; }
+.pitch-when { font-size: 0.56rem; color: rgba(255,255,255,0.85); }
 .hl-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 24px 0 10px; padding-top: 16px; border-top: 1px solid var(--border); }
 .hl-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.02rem; }
 .hl-seg { display: flex; gap: 6px; margin: 0; flex-wrap: wrap; }

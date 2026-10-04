@@ -770,6 +770,7 @@
   }
 
   function ptClass(p) { p = Number(p) || 0; return p < 0 ? "lo" : p < 6 ? "mid" : "hi"; }
+  const whenShort = (v) => { if (!v) return ""; try { return new Date(v).toLocaleString("es-ES", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }); } catch (e) { return ""; } };
   function shortRival(s) { const t = String(s || "").trim(); return t.length > 14 ? t.slice(0, 13) + "…" : t; }
 
   function renderFicha(d, p) {
@@ -1109,6 +1110,7 @@
         if (p.estado && p.estado !== "OK" && p.estado !== "?") info.appendChild(el("span", "pc-bad", p.estado));
         card.appendChild(info);
         if (p.casa === true || p.casa === false) card.appendChild(el("div", "pitch-ha", (p.casa ? "🏠 " : "✈️ ") + (p.rival || "?")));
+        if (p.fecha) card.appendChild(el("div", "pitch-when", whenShort(p.fecha)));
         card.appendChild(el("div", "pitch-pts", p.puntos != null ? p.puntos + " pts" : ""));
         card.addEventListener("click", () => openPicker("Cambiar jugador", (pl) => applyPlayer(p, pl)));
         card.addEventListener("dragstart", () => { anDrag = p; card.classList.add("dragging"); });
@@ -1148,6 +1150,7 @@
         if (p.estado && p.estado !== "OK" && p.estado !== "?") info.appendChild(el("span", "pc-bad", p.estado));
         card.appendChild(info);
         if (p.casa === true || p.casa === false) card.appendChild(el("div", "pitch-ha", (p.casa ? "🏠 " : "✈️ ") + (p.rival || "?")));
+        if (p.fecha) card.appendChild(el("div", "pitch-when", whenShort(p.fecha)));
         card.appendChild(el("div", "pitch-pts", p.puntos != null ? p.puntos + " pts" : ""));
         card.addEventListener("click", () => openPicker("Cambiar jugador", (pl) => applyPlayer(p, pl)));
         bench.appendChild(card);
