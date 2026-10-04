@@ -160,6 +160,7 @@ body {
   position: relative;
 }
 .cx-sub .tabs {
+  display: flex;
   background: transparent;
   border: none;
   border-radius: 0;
@@ -168,18 +169,21 @@ body {
   margin: 0 !important;
   width: auto;
   flex-wrap: nowrap;
+  justify-content: center;
   overflow-x: auto;
   scrollbar-width: none;
 }
 .cx-sub .tabs::-webkit-scrollbar { display: none; }
 .cx-sub .tab {
   flex: 0 0 auto;
+  min-width: auto;
   color: var(--cx-muted);
   background: transparent;
   border-radius: 0;
   padding: 16px 15px;
   font-size: 0.9rem;
   font-weight: 700;
+  white-space: nowrap;
   border-bottom: 3px solid transparent;
   transition: all 0.16s ease;
 }
@@ -329,6 +333,7 @@ body {
   .cx-nav { justify-content: flex-start; }
   .cx-nav a { padding: 7px 11px; font-size: 0.84rem; }
   .cx-sub-inner { justify-content: flex-start; }
+  .cx-sub .tabs { width: 100%; justify-content: flex-start; }
   .cx-sub .tab { padding: 14px 12px; font-size: 0.85rem; }
   .quiniela-main { padding: 16px 12px 50px; }
   .panel { padding: 20px 16px; border-radius: 14px; }
