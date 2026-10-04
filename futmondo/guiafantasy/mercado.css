@@ -544,6 +544,9 @@ html { overflow-anchor: none; }
 .mkt-head .mkt-h:nth-child(2), .mkt-head .mkt-h:nth-child(3) { text-align: center; }
 .mkt-head .mkt-h:nth-child(5), .mkt-head .mkt-h:nth-child(6), .mkt-head .mkt-h:nth-child(7) { text-align: right; }
 .mkt-head .mkt-h.active { color: #22c55e; }
+.mkt-h { white-space: nowrap; }
+.mkt-arrow { font-size: 0.72rem; opacity: 0.55; }
+.mkt-h.active .mkt-arrow { opacity: 1; }
 .mkt-jug { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .mkt-photo { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; flex: 0 0 auto; background: var(--bg-surface, #e2e8f0); }
 .mkt-img { width: 100%; height: 100%; object-fit: cover; }

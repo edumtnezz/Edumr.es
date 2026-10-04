@@ -415,11 +415,14 @@
     const wrap = el("div", "mkt-wrap");
     const tbl = el("div", "mkt-table");
     const head = el("div", "mkt-row mkt-head");
-    const cols = [["jugador", "Jugador"], ["pct", "% Dif"], ["tend", "Tend."], ["rival", "Próx. rival"], ["valor", "Valor"], ["vant", "Valor ant."], ["dif", "Diferencia"]];
-    cols.forEach(([key, label]) => {
-      const h = el("span", "mkt-h" + (mktSort.key === key ? " active" : ""), label + (mktSort.key === key ? (mktSort.dir > 0 ? " ▲" : " ▼") : ""));
-      h.style.cursor = "pointer";
-      h.addEventListener("click", () => { if (mktSort.key === key) mktSort.dir = -mktSort.dir; else { mktSort.key = key; mktSort.dir = -1; } renderGrid(); });
+    const cols = [["jugador", "Jugador", false], ["pct", "% Dif", true], ["tend", "Tend.", true], ["rival", "Próx. rival", false], ["valor", "Valor", true], ["vant", "Valor ant.", true], ["dif", "Diferencia", true]];
+    cols.forEach(([key, label, sortable]) => {
+      const h = el("span", "mkt-h" + (mktSort.key === key ? " active" : ""), label);
+      if (sortable) {
+        h.appendChild(el("span", "mkt-arrow", mktSort.key === key ? (mktSort.dir > 0 ? " ▲" : " ▼") : " ⇅"));
+        h.style.cursor = "pointer";
+        h.addEventListener("click", () => { if (mktSort.key === key) mktSort.dir = -mktSort.dir; else { mktSort.key = key; mktSort.dir = -1; } renderGrid(); });
+      }
       head.appendChild(h);
     });
     tbl.appendChild(head);
