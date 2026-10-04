@@ -664,6 +664,7 @@ async function getMarketPlayers(env) {
       status: String(p.status || ""),
       points: Number(p.points) || 0,
       fitness: (p.average && p.average.fitness) || [],
+      average: p.average || null,
       photo: p.photo ? FACE_BASE + p.photo : "",
       logo: tm.logo ? LOGO_BASE + tm.logo : "",
     };
