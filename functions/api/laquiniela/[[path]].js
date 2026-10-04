@@ -915,6 +915,12 @@ async function playerFicha(env, id) {
   const r = await futbolPost("/2/player/matches", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP });
   const a = r.answer || {};
   const pl = a.player || {};
+  let mp = null;
+  try {
+    const mk = await getMarketPlayers(env);
+    const k = String(id);
+    mp = (mk.players || []).find((x) => x.id === k) || (mk.players || []).find((x) => x.name && stripAccents(x.name) === stripAccents(pl.name || ""));
+  } catch (e) {}
   const smap = await getScoreMap(env);
   const matches = (a.matches || []).map((m) => {
     const po = (m.ps && m.ps.po) || [];
@@ -998,9 +1004,9 @@ async function playerFicha(env, id) {
     value: todayVal,
     change: Number(pl.change) || 0,
     status: pl.status || "",
-    points: (pl.average && Number(pl.average.total)) || ptsSum,
-    average: (pl.average && Number(pl.average.average)) || (played ? ptsSum / played : 0),
-    matches5: (pl.average && Number(pl.average.matches)) || played,
+    points: (mp && mp.points) || (pl.average && Number(pl.average.total)) || ptsSum,
+    average: (mp && mp.avg) || (pl.average && Number(pl.average.average)) || (played ? ptsSum / played : 0),
+    matches5: (mp && mp.matches) || (pl.average && Number(pl.average.matches)) || played,
     fitness: fitArr,
     pronostico: pronosticoFor({ status: pl.status, fitness: fitArr }),
     team: (a.team && a.team.name) || pl.team || "",
