@@ -605,7 +605,7 @@ const FUTMONDO_CHAMPIONSHIP = "6a5f4b833633f9d0e371f838";
 const FUTMONDO_USERTEAM = "6ab314563a9cf632cef6291c";
 const FACE_BASE = "https://static01.mondocore.com/futmondo/img/faces/64/";
 const LOGO_BASE = "https://static02.mondocore.com/futmondo/img/teams/64/";
-const MARKET_KEY = "fm:market";
+const MARKET_KEY = "fm:market:v2";
 const MARKET_TTL_MS = 10 * 60 * 1000;
 let fmToken = null;
 
@@ -663,8 +663,9 @@ async function getMarketPlayers(env) {
       team: tm.name || String(p.team || ""),
       status: String(p.status || ""),
       points: Number(p.points) || 0,
+      matches: Number((p.average && p.average.matches) || 0) || 0,
+      avg: Number((p.average && p.average.average) || 0) || 0,
       fitness: (p.average && p.average.fitness) || [],
-      average: p.average || null,
       photo: p.photo ? FACE_BASE + p.photo : "",
       logo: tm.logo ? LOGO_BASE + tm.logo : "",
     };
@@ -1885,16 +1886,6 @@ export async function onRequestGet({ request, env, params }) {
   }
   if (path === "jugador") {
     return json(await playerFicha(env, url.searchParams.get("id")));
-  }
-  if (path === "rawp") {
-    try {
-      const header = await futbolHeader(env);
-      const r = await futbolPost("/5/league/championshipplayers", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
-      const arr = (r.answer && r.answer.players) || (Array.isArray(r.answer) ? r.answer : []);
-      const q = String(url.searchParams.get("q") || "boy").toLowerCase();
-      const ex = arr.find((x) => String(x.name || "").toLowerCase().includes(q)) || arr[0] || {};
-      return json({ n: arr.length, keys: Object.keys(ex), avg: ex.average, avgKeys: ex.average ? Object.keys(ex.average) : [], sample: ex });
-    } catch (e) { return json({ error: String((e && e.message) || e) }, 500); }
   }
   return json({ error: "not found" }, 404);
 }

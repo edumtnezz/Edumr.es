@@ -26,6 +26,12 @@
 .posring-clip.single { background: var(--c1) !important; }
 .mcard-photo > .posring { position: absolute; inset: -2.5px; }
 .mcard-photo > .posring > img { width: 100%; height: 100%; }
+.mcard-roles { justify-content: center; }
+.mcard-stats { display: flex; gap: 5px; width: 100%; margin-top: 6px; }
+.mstat { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 5px 2px; border-radius: 9px; border: 1px solid var(--border); background: var(--bg-surface); }
+.mstat b { font-family: 'Space Grotesk', sans-serif; font-size: 0.84rem; font-weight: 700; color: var(--text); line-height: 1; }
+.mstat small { font-size: 0.55rem; font-weight: 700; letter-spacing: 0.03em; color: var(--muted); text-transform: uppercase; }
+.mstat.pts b { color: var(--accent); }
 .wa-body { display: flex; flex-direction: column; gap: 8px; padding: 16px 12px; background: #0b141a; }
 [data-theme="light"] .wa-body { background: #e9edef; }
 .wa-pin { background: #182229; border-left: 3px solid #06cf9c; border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; }

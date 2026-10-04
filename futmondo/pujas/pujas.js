@@ -75,6 +75,19 @@ function posRingCls(elx, a, b) {
   if (c2) elx.style.setProperty("--c2", c2); else elx.classList.add("single");
   return elx;
 }
+function statRow(p) {
+  const row = el("div", "mcard-stats");
+  const mk = (v, label, cls) => {
+    const s = el("div", "mstat" + (cls ? " " + cls : ""));
+    s.appendChild(el("b", null, String(v)));
+    s.appendChild(el("small", null, label));
+    return s;
+  };
+  row.appendChild(mk(Number(p.points) || 0, "PTS", "pts"));
+  row.appendChild(mk(Number(p.matches) || 0, "PART", null));
+  row.appendChild(mk((Number(p.avg) || 0).toFixed(1).replace(".", ","), "MEDIA", null));
+  return row;
+}
 function splitBadge(b) {
   var codes = String(b.textContent || "").split("·").map(function (s) { return s.trim(); });
   if (codes.length === 2 && POSCOL_BY_CODE[codes[0]] && POSCOL_BY_CODE[codes[1]]) {
@@ -515,6 +528,7 @@ function renderMarket() {
       teamRow.appendChild(el("span", null, p.team));
       body.appendChild(teamRow);
     }
+    body.appendChild(statRow(p));
     body.appendChild(el("div", "mcard-val", money(p.value) + " €"));
     const chg = Number(p.change) || 0;
     if (chg > 0) body.appendChild(el("div", "mcard-trend up", "▲ " + formatDots(chg) + " €"));

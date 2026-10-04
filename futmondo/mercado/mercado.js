@@ -25,6 +25,19 @@
     if (c2) elm.style.setProperty("--c2", c2); else elm.classList.add("single");
     return elm;
   }
+  function statRow(p) {
+    const row = el("div", "mcard-stats");
+    const mk = (v, label, cls) => {
+      const s = el("div", "mstat" + (cls ? " " + cls : ""));
+      s.appendChild(el("b", null, String(v)));
+      s.appendChild(el("small", null, label));
+      return s;
+    };
+    row.appendChild(mk(Number(p.points) || 0, "PTS", "pts"));
+    row.appendChild(mk(Number(p.matches) || 0, "PART", null));
+    row.appendChild(mk((Number(p.avg) || 0).toFixed(1).replace(".", ","), "MEDIA", null));
+    return row;
+  }
   function splitBadge(b) {
     const codes = String(b.textContent || "").split("·").map((s) => s.trim());
     if (codes.length === 2 && POSCOL_BY_CODE[codes[0]] && POSCOL_BY_CODE[codes[1]]) {
@@ -143,6 +156,7 @@
       row.appendChild(el("span", null, p.team));
       body.appendChild(row);
     }
+    body.appendChild(statRow(p));
     body.appendChild(el("div", "mcard-val", money(p.value) + " €"));
     const chg = Number(p.change) || 0;
     if (chg > 0) body.appendChild(el("div", "mcard-trend up", "▲ " + formatDots(chg) + " €" + pct(p.value, chg)));
@@ -516,6 +530,7 @@
       const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
       if (rb) c.appendChild(el("span", "mbc-role" + (rb2 ? " multi" : "") + " posb posb-" + posCls(p.role), rb + (rb2 ? "·" + rb2 : "")));
       c.appendChild(el("div", "mbc-exp", "~" + expOf(p).toFixed(1).replace(".", ",") + " pts"));
+      c.appendChild(statRow(p));
       if (p.value) c.appendChild(el("div", "mbc-val", money(p.value) + " €"));
       const f = (p.fitness || []).slice(0, 5);
       if (f.length) {
