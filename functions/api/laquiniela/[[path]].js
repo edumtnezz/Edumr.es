@@ -2193,59 +2193,6 @@ export async function onRequestGet({ request, env, params }) {
   if (path === "jornada") {
     try { return json(await getJornadaStrip(env, url.searchParams.get("jornada"))); } catch (e) { return json({ matchday: 0, matches: [] }); }
   }
-  if (path === "dbgplayers") {
-    try {
-      const header = await futbolHeader(env);
-      const plRes = await futbolPost("/5/league/championshipplayers", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
-      const ans = plRes.answer || {};
-      const arr = ans.players || (Array.isArray(ans) ? ans : []);
-      const ac = ans.automaticClauses;
-      return json({
-        count: arr.length,
-        acType: Array.isArray(ac) ? "array:" + ac.length : typeof ac,
-        acSample: ac,
-        ownedPlayers: arr.filter((p) => p.computer === false).slice(0, 2).map((p) => ({ id: p.id, name: p.name, computer: p.computer, fav: p.fav })),
-        compTrue: arr.filter((p) => p.computer === true).length,
-        compFalse: arr.filter((p) => p.computer === false).length,
-      });
-    } catch (e) { return json({ error: String(e) }); }
-  }
-  if (path === "dbgsum") {
-    try {
-      const header = await futbolHeader(env);
-      const s = await futbolPost("/1/player/summary", header, { playerId: url.searchParams.get("id"), championshipId: FUTMONDO_CHAMPIONSHIP });
-      return json(s);
-    } catch (e) { return json({ error: String(e) }); }
-  }
-  if (path === "dbglogin") {
-    try {
-      const login = await futbolPost("/5/login/with_mail", { token: "null", userid: "" }, { mail: env.FUTMONDO_EMAIL, pwd: env.FUTMONDO_PASSWORD });
-      const m = (login.answer && login.answer.mobile) || {};
-      return json({ answerKeys: Object.keys(login.answer || {}), mobile: m, profile: (login.answer && login.answer.profile) || null });
-    } catch (e) { return json({ error: String(e) }); }
-  }
-  if (path === "dbgteams") {
-    try {
-      const header = await futbolHeader(env);
-      const out = {};
-      for (const pth of ["/1/championship/teams", "/5/league/championshipteams", "/2/championship/teams", "/1/league/teams", "/5/user/teams"]) {
-        try { const s = await futbolPost(pth, header, { championshipId: FUTMONDO_CHAMPIONSHIP }); out[pth] = { keys: Object.keys(s.answer || {}), sample: Array.isArray(s.answer) ? s.answer.slice(0, 3) : s.answer }; }
-        catch (e) { out[pth] = "err:" + String(e); }
-      }
-      return json(out);
-    } catch (e) { return json({ error: String(e) }); }
-  }
-  if (path === "dbgplayer") {
-    try {
-      const id = url.searchParams.get("id");
-      const mk = await getMarketPlayers(env);
-      const p = (mk.players || []).find((x) => x.id === id) || null;
-      const header = await futbolHeader(env);
-      let sum = {};
-      try { const s = await futbolPost("/1/player/summary", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP }); sum = s.answer || {}; } catch (e) { sum = { err: String(e) }; }
-      return json({ marketPlayer: p, owners: sum.owners || null, clause: (sum.championship && sum.championship.clause) || null, sumKeys: Object.keys(sum) });
-    } catch (e) { return json({ error: String(e) }); }
-  }
   if (path === "clausulas") {
     try { return json(await getClausulas(env)); } catch (e) { return json({ players: [], error: String(e) }); }
   }
