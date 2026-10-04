@@ -104,11 +104,11 @@
 }
 .typewriter-container {
   font-family: var(--font-display);
-  font-size: clamp(1.7rem, 3.4vw, 2.2rem);
+  font-size: clamp(1.5rem, 3.2vw, 2rem);
   line-height: 1.25;
   color: var(--accent);
   margin: 0 0 18px;
-  height: 1.5em; overflow: hidden;
+  height: 2.6em; overflow: hidden;
   display: flex; align-items: center; justify-content: center; gap: 4px;
   letter-spacing: -0.01em;
 }
@@ -359,8 +359,8 @@
   .site-links { grid-column: 1 / -1; grid-row: 2; justify-self: center; margin-top: 8px; gap: 22px; }
   .site-links a { font-size: 0.76rem; letter-spacing: 0.14em; }
 }
-@media (max-width: 620px) {
-  .typewriter-container { font-size: 1.5rem; height: 78px; }
+@media (max-width: 700px) {
+  .typewriter-container { font-size: 1.4rem; }
 }
 @media (max-width: 520px) {
   .why { padding: 40px 0 44px; }
