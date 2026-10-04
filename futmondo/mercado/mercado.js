@@ -5,6 +5,24 @@
   const POS = { portero: "por", defensa: "def", centrocampista: "med", delantero: "del" };
   function posCls(role) { return POS[String(role || "").toLowerCase()] || "x"; }
   const POSCOL_BY_CODE = { POR: "#16a34a", DEF: "#b45309", MED: "#0891b2", DEL: "#be123c" };
+  const POSCOL_RING = { POR: "#22c55e", DEF: "#f59e0b", MED: "#38bdf8", DEL: "#ef4444" };
+  function posRing(node, a, b) {
+    if (!node) return node;
+    const c1 = POSCOL_RING[roleBadge(a) || a], c2 = POSCOL_RING[roleBadge(b) || b];
+    if (!c1 || !c2) return node;
+    const w = el("span", "posring");
+    w.style.setProperty("--c1", c1); w.style.setProperty("--c2", c2);
+    w.appendChild(node);
+    return w;
+  }
+  function posRingCls(elm, a, b) {
+    if (!elm) return elm;
+    const c1 = POSCOL_RING[roleBadge(a) || a], c2 = POSCOL_RING[roleBadge(b) || b];
+    if (!c1 || !c2) return elm;
+    elm.classList.add("posring-clip");
+    elm.style.setProperty("--c1", c1); elm.style.setProperty("--c2", c2);
+    return elm;
+  }
   function splitBadge(b) {
     const codes = String(b.textContent || "").split("·").map((s) => s.trim());
     if (codes.length === 2 && POSCOL_BY_CODE[codes[0]] && POSCOL_BY_CODE[codes[1]]) {
@@ -103,7 +121,7 @@
   function playerCard(p, onClick) {
     const card = el("div", "mcard" + (onClick ? " clickable" : ""));
     const photoWrap = el("div", "mcard-photo");
-    photoWrap.appendChild(photoImg(p.photo, "mcard-img"));
+    photoWrap.appendChild(posRing(photoImg(p.photo, "mcard-img"), p.role, p.role2));
     const st = statusInfo(p.status);
     if (st) photoWrap.appendChild(el("span", "mcard-badge " + st.cls, st.label));
     card.appendChild(photoWrap);
@@ -482,7 +500,7 @@
       const ph = el("div", "mbc-photo");
       const im = el("img", "mbc-img"); im.loading = "lazy"; im.alt = ""; im.src = p.photo || "/img/avatar.svg";
       im.addEventListener("error", () => { if (im.getAttribute("src") !== "/img/avatar.svg") im.src = "/img/avatar.svg"; }, { once: true });
-      ph.appendChild(im);
+      ph.appendChild(posRing(im, p.role, p.role2));
       const sti = statusInfo(p.status);
       if (sti) ph.appendChild(el("span", "mcard-badge " + sti.cls, sti.label));
       c.appendChild(ph);
@@ -741,7 +759,7 @@
     const root = el("div", "ficha");
     const head = el("div", "ficha-head");
     const ph = el("div", "mcard-photo");
-    ph.appendChild(photoImg(d.photo || p.photo, "mcard-img"));
+    ph.appendChild(posRing(photoImg(d.photo || p.photo, "mcard-img"), d.role || p.role, d.role2 || p.role2));
     const rb = roleBadge(d.role || p.role), rb2 = roleBadge(d.role2 || p.role2);
     if (rb) ph.appendChild(el("span", "mcard-role" + (rb2 ? " multi" : "") + " posb posb-" + posCls(p.role), rb + (rb2 ? " · " + rb2 : "")));
     head.appendChild(ph);
@@ -1049,6 +1067,7 @@
         card.draggable = true;
         const ph = el("div", "pitch-photo");
         ph.appendChild(photoImg(p.photo));
+        posRingCls(ph, p.pos2 ? p.pos : "", p.pos2);
         card.appendChild(ph);
         card.appendChild(el("div", "pitch-name", p.nombre || ""));
         const info = el("div", "pitch-info");

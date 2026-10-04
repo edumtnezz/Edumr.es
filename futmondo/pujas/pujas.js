@@ -55,6 +55,24 @@ const ROLE = { portero: "POR", defensa: "DEF", centrocampista: "MED", delantero:
 const POS = { portero: "por", defensa: "def", centrocampista: "med", delantero: "del" };
 function posCls(role) { return POS[String(role || "").toLowerCase()] || "x"; }
 var POSCOL_BY_CODE = { POR: "#16a34a", DEF: "#b45309", MED: "#0891b2", DEL: "#be123c" };
+var POSCOL_RING = { POR: "#22c55e", DEF: "#f59e0b", MED: "#38bdf8", DEL: "#ef4444" };
+function posRing(node, a, b) {
+  if (!node) return node;
+  var c1 = POSCOL_RING[roleBadge(a) || a], c2 = POSCOL_RING[roleBadge(b) || b];
+  if (!c1 || !c2) return node;
+  var w = el("span", "posring");
+  w.style.setProperty("--c1", c1); w.style.setProperty("--c2", c2);
+  w.appendChild(node);
+  return w;
+}
+function posRingCls(elx, a, b) {
+  if (!elx) return elx;
+  var c1 = POSCOL_RING[roleBadge(a) || a], c2 = POSCOL_RING[roleBadge(b) || b];
+  if (!c1 || !c2) return elx;
+  elx.classList.add("posring-clip");
+  elx.style.setProperty("--c1", c1); elx.style.setProperty("--c2", c2);
+  return elx;
+}
 function splitBadge(b) {
   var codes = String(b.textContent || "").split("·").map(function (s) { return s.trim(); });
   if (codes.length === 2 && POSCOL_BY_CODE[codes[0]] && POSCOL_BY_CODE[codes[1]]) {
@@ -346,7 +364,7 @@ function renderHistory() {
       im.alt = h.player;
       im.loading = "lazy";
       im.addEventListener("error", () => { if (im.parentNode) im.parentNode.replaceChild(el("div", "hist-img", initials(h.player)), im); });
-      imgCol.appendChild(im);
+      imgCol.appendChild(posRing(im, h.role, h.role2));
     } else {
       imgCol.appendChild(el("div", "hist-img", initials(h.player)));
     }
@@ -466,7 +484,7 @@ function renderMarket() {
       im.src = p.photo;
       im.alt = p.name;
       im.loading = "lazy";
-      photoWrap.appendChild(im);
+      photoWrap.appendChild(posRing(im, p.role, p.role2));
     } else {
       photoWrap.appendChild(el("div", "mcard-img", initials(p.name)));
     }
