@@ -269,6 +269,8 @@
 .posring-clip > img { border-radius: 50%; }
 .posring.single { background: var(--c1); }
 .posring-clip.single { background: var(--c1) !important; }
+.mcard-photo > .posring, .mbc-photo > .posring { position: absolute; inset: -2.5px; }
+.mcard-photo > .posring > img, .mbc-photo > .posring > img { width: 100%; height: 100%; }
 .hl-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 24px 0 10px; padding-top: 16px; border-top: 1px solid var(--border); }
 .hl-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.02rem; }
 .hl-seg { display: flex; gap: 6px; margin: 0; flex-wrap: wrap; }
