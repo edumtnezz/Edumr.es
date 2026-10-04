@@ -813,7 +813,7 @@ async function searchMercado(env, q) {
 }
 
 const FF_MARKET_URL = "https://www.futbolfantasy.com/analytics/futmondo/mercado/social";
-const FF_MAP_KEY = "ff:map3";
+const FF_MAP_KEY = "ff:map4";
 
 async function ffMap(env) {
   try {
