@@ -1,0 +1,178 @@
+/* ============================================================
+   EduMR · Sistema de diseño compartido (theme.css)
+   Un solo lenguaje: oscuro + verde, tarjetas y pestañas.
+   Lo usan la web principal y todo el hub Futmondo/Mercado.
+   ============================================================ */
+:root {
+  --bg: #07090e;
+  --bg-surface: #0d121d;
+  --card: rgba(18, 24, 38, 0.72);
+  --card-solid: #121826;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(74, 222, 128, 0.45);
+  --text: #f1f5f9;
+  --muted: #8b9bb4;
+  --accent: #22c55e;
+  --primary: #16a34a;
+  --green: #10b981;
+  --red: #ef4444;
+  --amber: #f59e0b;
+  --gold: #b7945c;
+  --radius: 16px;
+  --radius-sm: 12px;
+  --radius-lg: 22px;
+  --shadow: 0 18px 45px rgba(0, 0, 0, 0.45);
+  --glow: 0 0 30px rgba(34, 197, 94, 0.15);
+  --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Space Grotesk', sans-serif;
+}
+
+[data-theme="light"] {
+  --bg: #f1f5f9;
+  --bg-surface: #e2e8f0;
+  --card: rgba(255, 255, 255, 0.85);
+  --card-solid: #ffffff;
+  --border: rgba(15, 23, 42, 0.12);
+  --border-hover: rgba(22, 163, 74, 0.45);
+  --text: #0f172a;
+  --muted: #475569;
+  --accent: #16a34a;
+  --primary: #15803d;
+  --green: #059669;
+  --shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+  --glow: 0 0 30px rgba(34, 197, 94, 0.12);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font);
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(720px 380px at 10% -8%, rgba(34, 197, 94, 0.15), transparent 60%),
+    radial-gradient(760px 420px at 100% 2%, rgba(16, 185, 129, 0.17), transparent 62%);
+  background-attachment: fixed;
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+[data-theme="light"] body {
+  background-image:
+    radial-gradient(720px 380px at 10% -8%, rgba(34, 197, 94, 0.12), transparent 60%),
+    radial-gradient(760px 420px at 100% 2%, rgba(16, 185, 129, 0.12), transparent 62%);
+}
+
+img { max-width: 100%; display: block; }
+a { color: inherit; text-decoration: none; }
+
+#bgCanvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 1; }
+.container { max-width: 1120px; margin: 0 auto; padding: 0 20px; position: relative; z-index: 1; }
+.hidden { display: none !important; }
+
+/* Barra superior de app */
+.appbar {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  background: rgba(7, 9, 14, 0.82);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+}
+[data-theme="light"] .appbar { background: rgba(255, 255, 255, 0.85); }
+.appbar-inner { max-width: 1120px; margin: 0 auto; padding: 12px 20px; }
+.appbar .brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--text);
+}
+.appbar .brand .accent { color: var(--accent); }
+
+/* Banda verde superior (detalle Futmondo) */
+.grass-band {
+  position: fixed; top: 0; left: 0; right: 0; height: 4px; z-index: 80;
+  background: repeating-linear-gradient(90deg, #16a34a 0 20px, #15803d 20px 40px);
+  box-shadow: 0 2px 14px rgba(22, 163, 74, 0.45);
+  animation: grassmove 2.6s linear infinite;
+}
+@keyframes grassmove { from { background-position: 0 0; } to { background-position: 40px 0; } }
+
+/* Pestañas */
+.tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+.tab {
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.84rem;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card-solid);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+.tab:hover { color: var(--text); border-color: var(--border-hover); }
+.tab.active { background: var(--accent); border-color: var(--accent); color: #05130a; }
+
+/* Botones */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 24px; border-radius: 999px;
+  font-size: 0.92rem; font-weight: 700;
+  border: 1px solid transparent; cursor: pointer; transition: all 0.2s ease;
+}
+.btn-primary { background: var(--accent); color: #05130a; box-shadow: 0 0 22px rgba(34, 197, 94, 0.35); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 30px rgba(34, 197, 94, 0.55); }
+.btn-ghost { background: var(--card-solid); border-color: var(--border); color: var(--text); }
+.btn-ghost:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+.top-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 16px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--card-solid); color: var(--text);
+  font-size: 0.82rem; font-weight: 700; transition: all 0.2s ease;
+}
+.top-btn:hover { border-color: var(--accent); transform: translateY(-1px); }
+
+/* Tarjeta base */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(12px);
+}
+
+/* Chips / badges */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.76rem; font-weight: 700;
+  padding: 5px 12px; border-radius: 999px;
+  background: var(--card-solid); border: 1px solid var(--border); color: var(--muted);
+}
+.badge-good { background: rgba(34, 197, 94, 0.16); border-color: rgba(34, 197, 94, 0.4); color: var(--accent); }
+.badge-warn { background: rgba(245, 158, 11, 0.16); border-color: rgba(245, 158, 11, 0.4); color: var(--amber); }
+.badge-bad { background: rgba(239, 68, 68, 0.16); border-color: rgba(239, 68, 68, 0.4); color: var(--red); }
+
+/* Toggle de tema */
+.theme-toggle {
+  width: 42px; height: 42px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--card-solid); color: var(--text);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.25s ease;
+}
+.theme-toggle:hover { border-color: var(--accent); transform: scale(1.08); }
+.icon-moon { display: none; }
+[data-theme="light"] .icon-sun { display: none; }
+[data-theme="light"] .icon-moon { display: block; }
