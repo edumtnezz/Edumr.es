@@ -1133,10 +1133,10 @@ function ffTvFind(map, home, away) {
 }
 async function ffTvMap(env) {
   try {
-    const c = await env.PORRA.get("ff:tv:v4", "json");
-    if (c && c.byName && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c;
+    const c = await env.PORRA.get("ff:tv:v5", "json");
+    if (c && c.list && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c;
   } catch (e) {}
-  const byName = {}, byTime = {};
+  const byName = {}, list = [];
   try {
     const res = await fetch("https://www.futbolfantasy.com/laliga/calendario", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
     const html = await res.text();
@@ -1164,32 +1164,34 @@ async function ffTvMap(env) {
         }
       }
       if (!tv.length) continue;
-      const key = stripAccents(home.toLowerCase()) + "|" + stripAccents(away.toLowerCase());
-      if (!byName[key]) byName[key] = { tv };
       const fecha = (r.match(/class="fecha">([\s\S]*?)<\/div>/) || [])[1] || "";
       const clean = fecha.replace(/<br\s*\/?>/gi, " ").replace(/&nbsp;/g, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-      const dv = clean.match(/(\d{2}\/\d{2})/);
-      const tv2 = clean.match(/(\d{1,2}:\d{2})/);
-      if (dv && tv2) { const k2 = dv[1] + "|" + tv2[1].padStart(5, "0"); if (!byTime[k2]) byTime[k2] = { tv }; }
+      const dv = clean.match(/(\d{1,2}\/\d{1,2})/);
+      const tm = clean.match(/(\d{1,2}:\d{2})/);
+      const entry = { home, away, date: dv ? dv[1] : "", time: tm ? tm[1].padStart(5, "0") : "", tv };
+      list.push(entry);
+      const key = stripAccents(home.toLowerCase()) + "|" + stripAccents(away.toLowerCase());
+      if (!byName[key]) byName[key] = entry;
     }
   } catch (e) {}
-  const out = { at: Date.now(), byName, byTime };
-  if (Object.keys(byName).length > 10) { try { await env.PORRA.put("ff:tv:v4", JSON.stringify(out), { expirationTtl: 3600 }); } catch (e) {} }
+  const out = { at: Date.now(), byName, list };
+  if (list.length > 10) { try { await env.PORRA.put("ff:tv:v5", JSON.stringify(out), { expirationTtl: 3600 }); } catch (e) {} }
   return out;
 }
 async function getJornadaStrip(env) {
   let jd = null;
   try { jd = await getJornada(env, null); } catch (e) {}
   if (!jd || !jd.matches) return { matchday: 0, matches: [] };
-  let tvmap = { byName: {}, byTime: {} };
+  let tvmap = { byName: {}, list: [] };
   try { tvmap = await ffTvMap(env); } catch (e) {}
-  const byName = tvmap.byName || {}, byTime = tvmap.byTime || {};
+  const list = tvmap.list || [];
   const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
   const dmF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "short" });
   const dtF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" });
   const tF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hour12: false });
   const now = Date.now();
-  const matches = (jd.matches || []).map((m) => {
+  const used = new Array(list.length).fill(false);
+  const prep = (jd.matches || []).map((m) => {
     const d = new Date(m.utcDate);
     const home = (m.homeTeam && (m.homeTeam.shortName || m.homeTeam.name)) || "";
     const away = (m.awayTeam && (m.awayTeam.shortName || m.awayTeam.name)) || "";
@@ -1200,15 +1202,22 @@ async function getJornadaStrip(env) {
       else { when = dmF.format(d).replace(".", "").toUpperCase(); }
       time = tF.format(d);
     }
+    let bi = -1, bs = 0;
+    for (let i = 0; i < list.length; i++) {
+      const s = teamScore(list[i].home, home) + teamScore(list[i].away, away);
+      if (s > bs) { bs = s; bi = i; }
+    }
+    return { home, away, homeCrest: (m.homeTeam && m.homeTeam.crest) || "", awayCrest: (m.awayTeam && m.awayTeam.crest) || "", when, time, dt: dtF.format(d) + "|" + time, bi, bs };
+  });
+  prep.forEach((p) => { if (p.bs >= 4 && p.bi >= 0) used[p.bi] = true; });
+  const matches = prep.map((p) => {
     let tv = [];
-    const e = byTime[dtF.format(d) + "|" + time] || ffTvFind(byName, home, away);
-    if (e && e.tv) tv = e.tv;
-    return {
-      home, away,
-      homeCrest: (m.homeTeam && m.homeTeam.crest) || "",
-      awayCrest: (m.awayTeam && m.awayTeam.crest) || "",
-      when, time, tv,
-    };
+    if (p.bs >= 4 && p.bi >= 0) tv = list[p.bi].tv;
+    else {
+      const i = list.findIndex((e, idx) => !used[idx] && e.date && (e.date + "|" + e.time) === p.dt);
+      if (i >= 0) { tv = list[i].tv; used[i] = true; }
+    }
+    return { home: p.home, away: p.away, homeCrest: p.homeCrest, awayCrest: p.awayCrest, when: p.when, time: p.time, tv };
   });
   return { matchday: jd.matchday || 0, matches };
 }
