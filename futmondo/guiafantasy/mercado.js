@@ -254,6 +254,10 @@
         const rb = roleBadge(p.role);
         if (rb) meta.appendChild(el("span", "racha-role posb posb-" + posCls(p.role), rb));
         info.appendChild(meta);
+        if (p.status) {
+          const sc = p.status === "redcard" ? "red" : String(p.status).indexOf("injured") === 0 ? "inj" : p.status === "doubt" ? "doubt" : "ok";
+          info.appendChild(el("span", "racha-status " + sc, statusLabel(p.status)));
+        }
         row.appendChild(info);
         const scores = el("div", "racha-scores");
         const fit = (p.fit || []).map((x) => Number(x) || 0);
@@ -302,45 +306,60 @@
     return d.toLocaleString("es-ES", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" });
   }
 
+  function reasonOf(p) {
+    const parts = [];
+    const fit = (p.fitness || []).map(Number);
+    const med = Number(p.avg) || 0;
+    if (med) parts.push("media " + med.toFixed(1).replace(".", ","));
+    let racha = 0; for (let i = fit.length - 1; i >= 0; i--) { if (fit[i] > 0) racha++; else break; }
+    if (racha >= 3) parts.push(racha + " partidos puntuando");
+    if (p.prob != null) parts.push(p.prob + "% de jugar");
+    if (p.casaFf != null) parts.push(p.casaFf ? "juega en casa" : "juega fuera");
+    return parts.join(" · ") || "buen momento de forma";
+  }
+
   async function renderClausulas() {
-    const box = $("mercClaus");
-    if (!box) return;
-    box.innerHTML = "";
-    const head = el("div", "hl-head");
-    head.appendChild(el("span", "hl-title", "💸 Clausulazo jugoso"));
-    head.appendChild(el("span", "rachas-sub", "Jugadores de otros que merece la pena clausular · misma regla que el mejor fichaje"));
-    box.appendChild(head);
-    const grid = el("div", "claus-grid");
-    grid.innerHTML = '<div class="rachas-empty">Analizando tu liga…</div>';
-    box.appendChild(grid);
+    const box = $("clausOut");
+    if (!box || box.dataset.loaded === "1") return;
+    box.innerHTML = '<p class="muted small">Analizando tu liga… puede tardar un poco la primera vez.</p>';
     try {
       const d = await (await fetch(API + "/clausulas")).json();
       const list = (d && d.players) || [];
-      if (!list.length) { grid.innerHTML = '<div class="rachas-empty">Sin clausulazos jugosos ahora mismo.</div>'; return; }
-      grid.innerHTML = "";
+      box.dataset.loaded = "1";
+      box.innerHTML = "";
+      if (!list.length) { box.appendChild(el("p", "market-empty", "Sin clausulazos jugosos ahora mismo.")); return; }
+      const grid = el("div", "claus-grid");
       list.forEach((p) => {
-        const card = el("div", "claus-card");
-        const ph = el("div", "claus-photo");
-        ph.appendChild(photoImg(p.photo, "claus-img"));
-        card.appendChild(ph);
-        const body = el("div", "mcard-body");
-        body.appendChild(el("div", "mcard-name", p.name));
-        const meta = el("div", "racha-meta");
-        if (p.logo) { const lg = el("img", "racha-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; meta.appendChild(lg); }
-        if (p.team) meta.appendChild(el("span", null, p.team));
+        const card = el("div", "claus-card2");
+        const ph = el("div", "claus-photo2"); ph.appendChild(photoImg(p.photo, "claus-img")); card.appendChild(ph);
+        const body = el("div", "claus-body2");
+        const nm = el("div", "claus-name2", p.name || "");
         const rb = roleBadge(p.role);
-        if (rb) meta.appendChild(el("span", "racha-role posb posb-" + posCls(p.role), rb));
-        body.appendChild(meta);
-        body.appendChild(el("div", "claus-owner", "👤 de " + (p.owner || "?")));
-        body.appendChild(el("div", "claus-clause", "Cláusula: " + money(p.clause) + " €"));
-        body.appendChild(el("div", "claus-exp", "Valoración: " + (Number(p.exp) || 0).toFixed(1).replace(".", ",")));
+        if (rb) nm.appendChild(el("span", "posb posb-" + posCls(p.role), rb + (roleBadge(p.role2) ? " · " + roleBadge(p.role2) : "")));
+        body.appendChild(nm);
+        const tm = el("div", "racha-meta");
+        if (p.logo) { const lg = el("img", "racha-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; tm.appendChild(lg); }
+        if (p.team) tm.appendChild(el("span", null, p.team));
+        tm.appendChild(el("span", "claus-owner", "· 👤 " + (p.owner || "?")));
+        body.appendChild(tm);
+        body.appendChild(el("div", "claus-line", "💶 Valor: " + money(p.value) + " €"));
+        const diff = (Number(p.clause) || 0) - (Number(p.value) || 0);
+        const cl = el("div", "claus-line claus-clause", "🔓 Cláusula: " + money(p.clause) + " €");
+        cl.appendChild(el("span", "claus-diff", "(+" + (diff / 1e6).toFixed(1).replace(".", ",") + " M sobre su valor)"));
+        body.appendChild(cl);
+        body.appendChild(el("div", "claus-line", "⭐ " + (Number(p.points) || 0) + " pts"));
+        const sl = statusLabel(p.status);
+        const sc = p.status === "redcard" ? "red" : String(p.status || "").indexOf("injured") === 0 ? "inj" : p.status === "doubt" ? "doubt" : "ok";
+        body.appendChild(el("div", "claus-status " + sc, sl));
         const blocked = p.unlock && new Date(p.unlock).getTime() > Date.now();
-        body.appendChild(el("div", blocked ? "claus-lock" : "claus-free", blocked ? "🔒 se libera el " + fmtDiaLargo(p.unlock) : "✅ disponible para clausular"));
+        if (blocked) body.appendChild(el("div", "claus-lock", "🔒 se libera el " + fmtDiaLargo(p.unlock)));
+        body.appendChild(el("div", "claus-why", "💡 " + reasonOf(p)));
         card.appendChild(body);
         card.addEventListener("click", () => openFicha(p));
         grid.appendChild(card);
       });
-    } catch (e) { grid.innerHTML = '<div class="rachas-empty">No se pudo cargar.</div>'; }
+      box.appendChild(grid);
+    } catch (e) { box.innerHTML = '<p class="market-empty">No se pudo cargar.</p>'; }
   }
 
   function filteredList() {
@@ -662,6 +681,7 @@
     if (panel) panel.classList.remove("hidden");
     const ch = $("cxChrome");
     if (ch) ch.classList.toggle("hidden", name !== "mercado");
+    if (name === "clausulazos") renderClausulas();
     try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
     try { history.replaceState(null, "", "/futmondo/guiafantasy/" + name); } catch (e) {}
   }
@@ -727,16 +747,19 @@
     box.appendChild(row);
   }
 
+  let lastMarketAt = 0;
   async function load() {
     try {
       const res = await fetch(API + "/mercado");
       const d = await res.json();
+      if (d.updatedAt && d.updatedAt === lastMarketAt && all.length) { updateTime(d.updatedAt); return; }
+      lastMarketAt = d.updatedAt || 0;
       if (Array.isArray(d.players)) all = d.players;
       updateTime(d.updatedAt);
+      const _y = window.scrollY;
       renderHighlights();
       renderBest();
       renderRachas();
-      renderClausulas();
       renderGrid();
       renderEstado();
       if (all.length && !rangeInit) {
@@ -744,6 +767,7 @@
         setupRange();
       }
       setupClubs();
+      try { if (window.scrollY !== _y) window.scrollTo(0, _y); } catch (e) {}
     } catch (e) {}
   }
 
@@ -1017,6 +1041,7 @@
       tt.appendChild(el("span", null, teamName));
       head.appendChild(tt);
     }
+    if (rb2) head.appendChild(el("div", "ficha-multi", "Multiposición: " + rb + " · " + rb2));
     head.appendChild(el("div", "ficha-val", money(d.value || p.value) + " €"));
     const chg = Number(d.change != null ? d.change : p.change) || 0;
     head.appendChild(el("div", "cmp-trend " + (chg > 0 ? "up" : chg < 0 ? "down" : "flat"),
@@ -1182,7 +1207,7 @@
   (function restoreTab() {
     let name = "";
     try {
-      const m = location.pathname.match(/\/guiafantasy\/(mercado|estado|noticias|analiza)/);
+      const m = location.pathname.match(/\/guiafantasy\/(mercado|estado|noticias|analiza|clausulazos)/);
       if (m) name = m[1];
     } catch (e) {}
     if (!name) { try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {} }
