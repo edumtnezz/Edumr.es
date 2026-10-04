@@ -769,6 +769,9 @@ async function ffSeason(env, name) {
   while ((m = re.exec(html))) pts.push({ d: m[1], v: Number(m[2]) });
   pts.reverse();
   while (pts.length && Number(pts[0].v) <= 0) pts.shift();
+  for (let i = 1; i < pts.length; i++) {
+    if (pts[i - 1].v > 0 && pts[i].v < pts[i - 1].v * 0.7) { pts.splice(0, i); break; }
+  }
   return pts.length >= 2 ? pts : null;
 }
 
