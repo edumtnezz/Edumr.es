@@ -227,6 +227,8 @@
     const box = $("mercRachas");
     if (!box) return;
     box.innerHTML = "";
+    const best = buildBest();
+    if (best) box.appendChild(best);
     const head = el("div", "hl-head");
     head.appendChild(el("span", "hl-title", "🔥 Jugadores en racha"));
     head.appendChild(el("span", "rachas-sub", "Últimos partidos con su jornada · más reciente primero"));
@@ -714,13 +716,10 @@
     return avg * (prob / 100) * casa * fit;
   }
 
-  function renderBest() {
-    const box = $("mercBest");
-    if (!box) return;
-    box.innerHTML = "";
+  function buildBest() {
+    const box = el("div", "merc-best");
     const cand = all.filter((p) => p.fitness && p.fitness.length >= 3 && p.value > 0);
-    if (cand.length < 8) { box.classList.add("hidden"); return; }
-    box.classList.remove("hidden");
+    if (cand.length < 8) return null;
     const byExp = cand.slice().sort((a, b) => expOf(b) - expOf(a));
     const picked = [], seen = new Set();
     ["portero", "defensa", "centrocampista", "delantero"].forEach((pos) => {
@@ -763,6 +762,7 @@
       row.appendChild(c);
     });
     box.appendChild(row);
+    return box;
   }
 
   let lastMarketAt = 0;
@@ -776,7 +776,6 @@
       updateTime(d.updatedAt);
       const _y = window.scrollY;
       renderHighlights();
-      renderBest();
       renderRachas();
       renderGrid();
       renderEstado();

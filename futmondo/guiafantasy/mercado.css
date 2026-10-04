@@ -519,6 +519,7 @@ html { overflow-anchor: none; }
 .ficha-multi { font-size: 0.82rem; font-weight: 700; color: var(--accent); margin-top: 4px; }
 .fv-val { display: flex; align-items: center; gap: 5px; }
 .fv-crest { width: 16px; height: 16px; object-fit: contain; flex: 0 0 auto; }
+.merc-best { margin-bottom: 20px; }
 .ficha-fichaje { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
 
 /* ---------- Analiza: subida de archivo ---------- */
