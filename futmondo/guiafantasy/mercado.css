@@ -503,7 +503,7 @@ html { overflow-anchor: none; }
 .claus-stat { background: var(--bg-surface, rgba(127, 127, 127, 0.08)); border: 1px solid var(--border); border-radius: 8px; padding: 5px 3px; display: flex; flex-direction: column; align-items: center; }
 .claus-stat b { font-family: 'Space Grotesk', sans-serif; font-size: 0.95rem; }
 .claus-stat small { font-size: 0.5rem; color: var(--muted); text-transform: uppercase; font-weight: 700; }
-.claus-stat.clause b { color: var(--accent); }
+.claus-stat.clause b { color: var(--accent); font-size: 0.8rem; white-space: nowrap; }
 .claus-stat.media { background: #16a34a; border-color: #16a34a; }
 .claus-stat.media b { color: #fff; font-size: 1.3rem; line-height: 1.05; }
 .claus-stat.media small { color: rgba(255, 255, 255, 0.85); }
