@@ -367,6 +367,8 @@
 .newscard .news-date { color: var(--muted); font-size: 0.68rem; margin-top: 4px; }
 .newscard:hover .news-title { color: #22c55e; }
 @media (max-width: 560px) { .news-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; } .newscard .news-title { font-size: 0.74rem; } }
+.noti-back { margin-bottom: 16px; }
+#noticiaView .ficha-name { margin-bottom: 10px; }
 
 /* Campo: info clara + arrastre */
 .pitch-player { width: 86px; cursor: grab; }

@@ -561,6 +561,7 @@
   }
 
   function switchTab(name) {
+    closeNoticiaInline();
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
     document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
     const panel = $("tab-" + name);
@@ -729,7 +730,7 @@
       if (!list.length && !(newsMineOnly && myTeam.length)) a.appendChild(el("p", "muted small", "Sin noticias ahora mismo."));
       list.forEach((x) => {
         const it = el("div", "newscard news-link");
-        it.addEventListener("click", () => openNoticia(x.link, x.title));
+        it.addEventListener("click", () => openNoticiaInline(x.link, x.title));
         const th = el("div", "newscard-thumb" + (x.thumb ? "" : " ball"));
         const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = x.thumb || "/img/balon.svg";
         im.addEventListener("error", () => { im.src = "/img/balon.svg"; it.querySelector(".newscard-thumb").classList.add("ball"); }, { once: true });
@@ -844,6 +845,49 @@
         c.appendChild(el("p", "muted small", "No se pudo cargar la noticia."));
         showModal(c);
       });
+  }
+
+  function openNoticiaInline(url, title) {
+    const box = $("noticiaView");
+    if (!box) return;
+    const list = $("newsAnuncios");
+    const h3 = document.querySelector("#tab-noticias .estado-title");
+    box.innerHTML = '<p class="muted small">Cargando noticia…</p>';
+    box.classList.remove("hidden");
+    if (list) list.classList.add("hidden");
+    if (h3) h3.classList.add("hidden");
+    try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) {}
+    fetch(API + "/noticia?u=" + encodeURIComponent(url || ""))
+      .then((r) => r.json())
+      .then((d) => renderNoticiaInline(d, title, url))
+      .catch(() => renderNoticiaInline({}, title, url));
+  }
+  function renderNoticiaInline(d, title, url) {
+    const box = $("noticiaView");
+    if (!box) return;
+    box.innerHTML = "";
+    const back = el("button", "btn-ghost noti-back", "← Volver a noticias");
+    back.type = "button";
+    back.addEventListener("click", closeNoticiaInline);
+    box.appendChild(back);
+    box.appendChild(el("h2", "ficha-name", title || d.title || ""));
+    if (d.lead) box.appendChild(el("p", "art-lead", d.lead));
+    if (d.html) {
+      const art = el("div", "art-body");
+      art.innerHTML = d.html;
+      box.appendChild(art);
+    } else {
+      box.appendChild(el("p", "muted small", "No pude extraer el texto de esta noticia."));
+      if (url) { const a = el("a", "cmp-trend up", "Ver en FutbolFantasy →"); a.href = url; a.target = "_blank"; a.rel = "noopener"; box.appendChild(a); }
+    }
+  }
+  function closeNoticiaInline() {
+    const box = $("noticiaView");
+    if (box) { box.classList.add("hidden"); box.innerHTML = ""; }
+    const list = $("newsAnuncios");
+    if (list) list.classList.remove("hidden");
+    const h3 = document.querySelector("#tab-noticias .estado-title");
+    if (h3) h3.classList.remove("hidden");
   }
 
   function openFicha(p) {
