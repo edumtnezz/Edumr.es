@@ -245,6 +245,16 @@ body {
 }
 .cx-strip-load { color: var(--cx-muted); font-size: 0.82rem; padding: 6px 2px; }
 
+/* ---------- Franja de jornada ---------- */
+.cx-jornada { background: var(--cx-surface); border-bottom: 1px solid var(--cx-border); overflow: hidden; }
+.cx-jornada-track { display: flex; align-items: center; gap: 10px; overflow-x: auto; scrollbar-width: thin; padding: 12px 16px; max-width: 1140px; margin: 0 auto; }
+.cx-jn-label { flex: 0 0 auto; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.85rem; color: var(--cx-green); background: var(--cx-green-soft); padding: 8px 14px; border-radius: 10px; }
+.cx-jn { flex: 0 0 auto; display: flex; align-items: center; gap: 10px; padding: 8px 12px; border: 1px solid var(--cx-border); border-radius: 12px; background: var(--cx-surface); box-shadow: var(--cx-shadow-sm); }
+.cx-jn-crest { width: 30px; height: 30px; object-fit: contain; }
+.cx-jn-mid { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 66px; }
+.cx-jn-tv { height: 15px; width: auto; max-width: 60px; object-fit: contain; }
+.cx-jn-time { font-size: 0.72rem; font-weight: 800; color: var(--cx-text); white-space: nowrap; }
+
 /* ---------- Última hora (ticker) ---------- */
 .cx-live {
   background: var(--cx-black);

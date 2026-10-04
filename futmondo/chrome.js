@@ -10,10 +10,31 @@
     var host = document.getElementById("cxChrome");
     if (!host) return;
     host.innerHTML =
+      '<div class="cx-jornada"><div class="cx-jornada-track" id="cxJTrack"><span class="cx-strip-load">Cargando jornada…</span></div></div>' +
       '<div class="cx-strip"><div class="cx-strip-track" id="cxStrip"><span class="cx-strip-load">Cargando equipos…</span></div></div>' +
       '<div class="cx-live"><span class="cx-live-tag">Última hora</span><div class="cx-live-track" id="cxLiveTrack"><span class="cx-live-load">Cargando última hora…</span></div></div>';
+    loadJornada();
     loadTeams();
     loadLive();
+  }
+  function loadJornada() {
+    var box = document.getElementById("cxJTrack");
+    if (!box) return;
+    fetch(API + "/jornada", { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var ms = (d && d.matches) || [];
+        if (!ms.length) { box.innerHTML = '<span class="cx-strip-load">Sin jornada.</span>'; return; }
+        box.innerHTML = '<div class="cx-jn-label">Jornada ' + esc(d.matchday || "") + '</div>' + ms.map(function (m) {
+          var tv = (m.tv && m.tv[0]) ? '<img class="cx-jn-tv" src="' + esc(m.tv[0].logo) + '" alt="' + esc(m.tv[0].name) + '" title="' + esc(m.tv[0].name) + '" loading="lazy" onerror="this.remove()">' : "";
+          return '<div class="cx-jn">' +
+            '<img class="cx-jn-crest" src="' + esc(m.homeCrest) + '" alt="' + esc(m.home) + '" title="' + esc(m.home) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
+            '<div class="cx-jn-mid">' + tv + '<span class="cx-jn-time">' + esc(((m.when || "") + " " + (m.time || "")).trim()) + '</span></div>' +
+            '<img class="cx-jn-crest" src="' + esc(m.awayCrest) + '" alt="' + esc(m.away) + '" title="' + esc(m.away) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
+            '</div>';
+        }).join("");
+      })
+      .catch(function () { box.innerHTML = '<span class="cx-strip-load">No disponible.</span>'; });
   }
   function loadTeams() {
     var box = document.getElementById("cxStrip");
