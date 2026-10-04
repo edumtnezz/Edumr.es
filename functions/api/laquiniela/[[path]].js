@@ -1094,26 +1094,31 @@ function bestPlayer(query, players) {
   if (!q || !players || !players.length) return null;
   let p = players.find((x) => normKey(x.name) === q);
   if (p) return p;
-  p = players.find((x) => { const n = normKey(x.name); return q.length >= 4 && (n.includes(q) || q.includes(n)); });
+  p = players.find((x) => { const n = normKey(x.name); return q.length >= 6 && n.includes(q); });
   if (p) return p;
   const qT = q.split(" ").filter((t) => t.length >= 4);
   if (qT.length === 1) {
     const qt = qT[0];
-    const cands = players.filter((pl) => normKey(pl.name).split(" ").some((nt) => nt.length >= 4 && lev(qt, nt) <= 1));
+    let cands = players.filter((pl) => normKey(pl.name).split(" ").some((nt) => nt.length >= 4 && lev(qt, nt) <= 1));
+    if (cands.length !== 1) {
+      const pref = players.filter((pl) => normKey(pl.name).split(" ").some((nt) => nt.length >= 4 && (nt.startsWith(qt) || qt.startsWith(nt))));
+      if (pref.length === 1) cands = pref;
+    }
     return cands.length === 1 ? cands[0] : null;
   }
-  let best = null, bestScore = 0;
+  let best = null, bestScore = 0, ties = 0;
   for (const pl of players) {
     const nT = normKey(pl.name).split(" ");
     let score = 0;
     for (const qt of qT) for (const nt of nT) {
       if (nt === qt) score += 3;
-      else if (nt.startsWith(qt) || qt.startsWith(nt)) score += 2;
+      else if (nt.length >= 4 && (nt.startsWith(qt) || qt.startsWith(nt))) score += 2;
       else if (lev(qt, nt) <= 1) score += 1;
     }
-    if (score > bestScore) { bestScore = score; best = pl; }
+    if (score > bestScore) { bestScore = score; best = pl; ties = 1; }
+    else if (score === bestScore && score > 0) ties++;
   }
-  return bestScore >= 3 ? best : null;
+  return bestScore >= 3 && ties === 1 ? best : null;
 }
 
 async function nextMatches(env) {
@@ -1149,6 +1154,10 @@ async function handleAnaliza(request, env, user) {
   let body;
   try { body = await request.json(); } catch (e) { return json({ error: "Datos inválidos." }, 400); }
   let team = null, leido = [];
+  let market = { players: [] };
+  try { market = await getMarketPlayers(env); } catch (e) {}
+  const nameList = (market.players || []).map((p) => p.name).filter(Boolean);
+  const nameHint = nameList.length ? ("\n\nLista de nombres EXACTOS de los jugadores de la liga. Si un nombre leído coincide por apellido o inicial con uno de esta lista, escribe el de la lista TAL CUAL (así acierto el jugador): " + nameList.join(", ") + ".") : "";
   if (Array.isArray(body.jugadores) && body.jugadores.length) {
     const tit = [], sup = [];
     for (const j of body.jugadores) {
@@ -1175,7 +1184,7 @@ async function handleAnaliza(request, env, user) {
     let visionRaw = await dsChat(env, [{
       role: "user",
       content: [
-        { type: "text", text: VP },
+        { type: "text", text: VP + nameHint },
         { type: "image_url", image_url: { url: img } },
       ],
     }], "deepseek-flash", true);
@@ -1194,7 +1203,7 @@ async function handleAnaliza(request, env, user) {
       const raw2 = await dsChat(env, [{
         role: "user",
         content: [
-          { type: "text", text: hint + "Mira la imagen otra vez con MUCHO detalle. En el campo hay EXACTAMENTE 11 jugadores (1 portero abajo + varias líneas). Fíjate en los nombres pequeños bajo cada foto. Ignora barras superiores, publicidad y el banquillo. Responde ÚNICAMENTE con el JSON: {\"formacion\":\"...\",\"titulares\":[{\"nombre\":\"...\",\"linea\":1}],\"suplentes\":[{\"nombre\":\"...\"}]}, sin texto extra." },
+          { type: "text", text: hint + "Mira la imagen otra vez con MUCHO detalle. En el campo hay EXACTAMENTE 11 jugadores (1 portero abajo + varias líneas). Fíjate en los nombres pequeños bajo cada foto. Ignora barras superiores, publicidad y el banquillo. Responde ÚNICAMENTE con el JSON: {\"formacion\":\"...\",\"titulares\":[{\"nombre\":\"...\",\"linea\":1}],\"suplentes\":[{\"nombre\":\"...\"}]}, sin texto extra." + nameHint },
           { type: "image_url", image_url: { url: img } },
         ],
       }], "deepseek-flash", true);
@@ -1209,8 +1218,6 @@ async function handleAnaliza(request, env, user) {
     team.suplentes = (team.suplentes || []).map((x) => ({ nombre: String(x.nombre || x.name || "").trim(), pos: roleShort(x.pos) || "" })).filter((x) => x.nombre);
   }
 
-  let market = { players: [] };
-  try { market = await getMarketPlayers(env); } catch (e) {}
   const findP = (n) => bestPlayer(n, market.players || []);
   let next = {};
   try { next = await nextMatches(env); } catch (e) {}

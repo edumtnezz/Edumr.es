@@ -1,0 +1,31 @@
+/* Actividad de la liga (estilo Vestuario) para La Puja */
+.wa-chat { max-width: none; background: transparent; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); }
+.wa-top { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #075e54; color: #fff; }
+[data-theme="light"] .wa-top { background: #008069; }
+.wa-top-av { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; background: rgba(255,255,255,0.25); }
+.wa-top-txt { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.wa-top-txt b { font-size: 0.92rem; font-weight: 800; }
+.wa-top-txt span { font-size: 0.7rem; opacity: 0.85; }
+.wa-body { display: flex; flex-direction: column; gap: 8px; padding: 16px 12px; background: #0b141a; }
+[data-theme="light"] .wa-body { background: #e9edef; }
+.wa-pin { background: #182229; border-left: 3px solid #06cf9c; border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; }
+[data-theme="light"] .wa-pin { background: #ffffff; box-shadow: 0 1px 1px rgba(11,20,26,0.13); }
+.wa-pin-head { color: #06cf9c; font-weight: 800; font-size: 0.72rem; margin-bottom: 6px; letter-spacing: 0.02em; }
+[data-theme="light"] .wa-pin-head { color: #008069; }
+.wa-pin-txt { font-size: 0.82rem; line-height: 1.5; color: #e9edef; }
+[data-theme="light"] .wa-pin-txt { color: #111b21; }
+.wa-pin-txt b { font-weight: 800; }
+.wa-day { align-self: center; background: rgba(11,20,26,0.55); color: #fff; font-size: 0.68rem; font-weight: 700; padding: 4px 12px; border-radius: 999px; margin: 6px 0 2px; }
+.wa-msg { display: flex; align-items: flex-end; gap: 8px; }
+.wa-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; background: #1f2c34; }
+[data-theme="light"] .wa-avatar { background: #dfe5e7; }
+.wa-bubble { background: #202c33; border-radius: 8px 8px 8px 2px; padding: 7px 11px; max-width: 78%; box-shadow: 0 1px 1px rgba(0,0,0,0.35); }
+[data-theme="light"] .wa-bubble { background: #ffffff; box-shadow: 0 1px 0.5px rgba(11,20,26,0.13); }
+.wa-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+.wa-name { font-weight: 800; font-size: 0.8rem; }
+.wa-time { font-size: 0.64rem; color: #8696a0; margin-left: auto; white-space: nowrap; }
+[data-theme="light"] .wa-time { color: #667781; }
+.wa-text { font-size: 0.88rem; line-height: 1.45; color: #e9edef; }
+[data-theme="light"] .wa-text { color: #111b21; }
+.wa-text b, .wa-text strong { font-weight: 800; color: #ffffff; }
+[data-theme="light"] .wa-text b, [data-theme="light"] .wa-text strong { color: #111b21; }
