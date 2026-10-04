@@ -16,7 +16,7 @@ foreach ($f in $publicFiles) {
   }
 }
 
-foreach ($dir in @("img", "guia-fantasy")) {
+foreach ($dir in @("img", "futmondo")) {
   $src = Join-Path $root $dir
   if (Test-Path -LiteralPath $src) {
     Copy-Item -LiteralPath $src -Destination $dist -Recurse
