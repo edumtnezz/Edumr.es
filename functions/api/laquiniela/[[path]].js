@@ -733,7 +733,7 @@ function expOfB(p) {
 }
 
 async function getClausulas(env) {
-  try { const c = await env.PORRA.get("clausulas:v5", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
+  try { const c = await env.PORRA.get("clausulas:v6", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
   let cache;
   try { cache = await getMarketPlayers(env); } catch (e) { return { players: [], updatedAt: null }; }
   let players = cache.players || [];
@@ -749,6 +749,7 @@ async function getClausulas(env) {
   const header = await futbolHeader(env);
   const out = [];
   let okC = 0, ownC = 0, errC = 0;
+  const diag = [];
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const fetchSum = async (id) => {
     for (let a = 0; a < 4; a++) {
@@ -759,11 +760,12 @@ async function getClausulas(env) {
   };
   for (const p of top) {
     const s = await fetchSum(p.id);
-    if (!s) { errC++; continue; }
+    if (!s) { errC++; if (diag.length < 20) diag.push(p.name + ":ERR"); continue; }
     okC++;
     const ans = s.answer || {};
     const cl = (ans.championship && ans.championship.clause) || {};
     const owner = (ans.owners && ans.owners.n) || "";
+    if (diag.length < 20) diag.push(p.name + ":" + (owner ? "OWN[" + owner + "]" : "free") + " cl=" + (cl.price ? 1 : 0));
     if (cl.price && owner) {
       ownC++;
       if (!(myTeam && stripAccents(owner.toLowerCase()) === stripAccents(myTeam.toLowerCase()))) {
@@ -779,8 +781,8 @@ async function getClausulas(env) {
     await sleep(90);
   }
   out.sort((a, b) => b.exp - a.exp || b.clause - a.clause);
-  const data = { updatedAt: Date.now(), me: myTeam, debug: { own: top.length, ok: okC, owned: ownC, err: errC }, players: out.slice(0, 15) };
-  try { await env.PORRA.put("clausulas:v5", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
+  const data = { updatedAt: Date.now(), me: myTeam, debug: { own: top.length, ok: okC, owned: ownC, err: errC }, diag, players: out.slice(0, 15) };
+  try { await env.PORRA.put("clausulas:v6", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
   return data;
 }
 
