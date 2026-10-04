@@ -733,7 +733,7 @@ function expOfB(p) {
 }
 
 async function getClausulas(env) {
-  try { const c = await env.PORRA.get("clausulas:v2", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
+  try { const c = await env.PORRA.get("clausulas:v3", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
   let cache;
   try { cache = await getMarketPlayers(env); } catch (e) { return { players: [], updatedAt: null }; }
   let players = cache.players || [];
@@ -748,16 +748,18 @@ async function getClausulas(env) {
   const top = own;
   const header = await futbolHeader(env);
   const out = [];
+  let okC = 0, ownC = 0, errC = 0;
   for (let i = 0; i < top.length; i += 8) {
     await Promise.all(top.slice(i, i + 8).map(async (p) => {
       try {
         const s = await futbolPost("/1/player/summary", header, { playerId: p.id, championshipId: FUTMONDO_CHAMPIONSHIP });
+        okC++;
         const ans = s.answer || {};
         const cl = (ans.championship && ans.championship.clause) || {};
         const owner = (ans.owners && ans.owners.n) || "";
-        const ownerLocked = !!(ans.owners && ans.owners.l);
         if (!cl.price) return;
         if (!owner) return;
+        ownC++;
         if (myTeam && stripAccents(owner.toLowerCase()) === stripAccents(myTeam.toLowerCase())) return;
         out.push({
           id: p.id, name: p.name, role: p.role, role2: p.role2, team: p.team, logo: p.logo, photo: p.photo,
@@ -766,12 +768,12 @@ async function getClausulas(env) {
           exp: Math.round(expOfB(p) * 10) / 10,
           chg1: p.chg1, chg7: p.chg7, chg14: p.chg14, chg30: p.chg30,
         });
-      } catch (e) {}
+      } catch (e) { errC++; }
     }));
   }
   out.sort((a, b) => b.exp - a.exp || b.clause - a.clause);
-  const data = { updatedAt: Date.now(), me: myTeam, players: out.slice(0, 15) };
-  try { await env.PORRA.put("clausulas:v2", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
+  const data = { updatedAt: Date.now(), me: myTeam, debug: { own: top.length, ok: okC, owned: ownC, err: errC }, players: out.slice(0, 15) };
+  try { await env.PORRA.put("clausulas:v3", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
   return data;
 }
 
