@@ -605,7 +605,7 @@ const FUTMONDO_CHAMPIONSHIP = "6a5f4b833633f9d0e371f838";
 const FUTMONDO_USERTEAM = "6ab314563a9cf632cef6291c";
 const FACE_BASE = "https://static01.mondocore.com/futmondo/img/faces/64/";
 const LOGO_BASE = "https://static02.mondocore.com/futmondo/img/teams/64/";
-const MARKET_KEY = "fm:market:v2";
+const MARKET_KEY = "fm:market:v3";
 const MARKET_TTL_MS = 10 * 60 * 1000;
 let fmToken = null;
 
@@ -666,6 +666,7 @@ async function getMarketPlayers(env) {
       matches: Number((p.average && p.average.matches) || 0) || 0,
       avg: Number((p.average && p.average.average) || 0) || 0,
       fitness: (p.average && p.average.fitness) || [],
+      computer: p.computer === true,
       photo: p.photo ? FACE_BASE + p.photo : "",
       logo: tm.logo ? LOGO_BASE + tm.logo : "",
     };
@@ -719,6 +720,57 @@ async function getRachas(env) {
   rachas.sort((a, b) => b.streak - a.streak || (b.points || 0) - (a.points || 0));
   const jornada = players.reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0);
   return { updatedAt: cache.at || null, jornada, players: rachas.slice(0, 60) };
+}
+
+function expOfB(p) {
+  const f = p.fitness || [];
+  const played = f.filter((x) => Number(x) !== 0).length;
+  const avg = f.length ? f.reduce((a, b) => a + (Number(b) || 0), 0) / f.length : 0;
+  const prob = p.prob != null ? p.prob : (String(p.status || "").indexOf("injured") === 0 ? 0 : p.status === "doubt" ? 50 : 60);
+  const casa = p.casaFf === true ? 1.08 : p.casaFf === false ? 0.94 : 1;
+  const fit = played >= 3 ? 1 : played === 2 ? 0.85 : 0.6;
+  return avg * (prob / 100) * casa * fit;
+}
+
+async function getClausulas(env) {
+  try { const c = await env.PORRA.get("clausulas:v1", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
+  let cache;
+  try { cache = await getMarketPlayers(env); } catch (e) { return { players: [], updatedAt: null }; }
+  let players = cache.players || [];
+  try {
+    const map = await ffMap(env);
+    players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, chg1: e.d1, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
+  } catch (e) {}
+  let myTeam = "";
+  try { const mt = await env.PORRA.get("fm:myteam"); myTeam = mt || ""; } catch (e) {}
+  const own = players.filter((p) => p.computer === false);
+  own.sort((a, b) => expOfB(b) - expOfB(a));
+  const top = own.slice(0, 30);
+  const header = await futbolHeader(env);
+  const out = [];
+  for (let i = 0; i < top.length; i += 8) {
+    await Promise.all(top.slice(i, i + 8).map(async (p) => {
+      try {
+        const s = await futbolPost("/1/player/summary", header, { playerId: p.id, championshipId: FUTMONDO_CHAMPIONSHIP });
+        const ans = s.answer || {};
+        const cl = (ans.championship && ans.championship.clause) || {};
+        const owner = (ans.owners && ans.owners.n) || "";
+        if (!cl.price) return;
+        if (myTeam && owner && stripAccents(owner.toLowerCase()) === stripAccents(myTeam.toLowerCase())) return;
+        out.push({
+          id: p.id, name: p.name, role: p.role, role2: p.role2, team: p.team, logo: p.logo, photo: p.photo,
+          value: p.value, points: p.points, avg: p.avg, fitness: p.fitness, prob: p.prob, status: p.status,
+          clause: Number(cl.price) || 0, unlock: cl.date || "", owner,
+          exp: Math.round(expOfB(p) * 10) / 10,
+          chg1: p.chg1, chg7: p.chg7, chg14: p.chg14, chg30: p.chg30,
+        });
+      } catch (e) {}
+    }));
+  }
+  out.sort((a, b) => b.exp - a.exp || b.clause - a.clause);
+  const data = { updatedAt: Date.now(), me: myTeam, players: out.slice(0, 15) };
+  try { await env.PORRA.put("clausulas:v1", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
+  return data;
 }
 
 function fmtEur(n) {
@@ -2149,6 +2201,16 @@ export async function onRequestGet({ request, env, params }) {
       const s = await futbolPost("/1/player/summary", header, { playerId: url.searchParams.get("id"), championshipId: FUTMONDO_CHAMPIONSHIP });
       return json(s);
     } catch (e) { return json({ error: String(e) }); }
+  }
+  if (path === "dbglogin") {
+    try {
+      const login = await futbolPost("/5/login/with_mail", { token: "null", userid: "" }, { mail: env.FUTMONDO_EMAIL, pwd: env.FUTMONDO_PASSWORD });
+      const m = (login.answer && login.answer.mobile) || {};
+      return json({ answerKeys: Object.keys(login.answer || {}), mobile: m });
+    } catch (e) { return json({ error: String(e) }); }
+  }
+  if (path === "clausulas") {
+    try { return json(await getClausulas(env)); } catch (e) { return json({ players: [], error: String(e) }); }
   }
   if (path === "noticias") {
     return json(await getNoticias(env));
