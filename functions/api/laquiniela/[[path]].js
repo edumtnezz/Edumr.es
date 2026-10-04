@@ -898,12 +898,12 @@ async function tmProfile(env, name, club) {
     const nk = normKey(String(name || "").toLowerCase());
     for (const lk of links) {
       try {
-        const p = await (await fetch("https://www.transfermarkt.es" + lk, { headers: UA })).text();
+        const p = await (await fetch("https://www.transfermarkt.es" + lk.replace("/profil/", "/transfers/"), { headers: UA })).text();
         const h1m = p.match(/data-header__headline-wrapper[^>]*>([\s\S]*?)<\/h1>/);
         const nm = h1m ? h1m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").replace(/^#?\d*\s*/, "").trim() : "";
         const clm = p.match(/data-header__club[^>]*>([\s\S]{0,140}?)<\/span>/);
         const cl = clm ? clm[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "";
-        const fd = p.match(/Fichado:<\/span>\s*<span[^>]*>([\s\S]{0,60}?)<\/span>/);
+        const fd = p.match(/Fichado:[\s\S]{0,90}?data-header__content[^>]*>([^<]+)</);
         const date = fd ? fd[1].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim() : "";
         if (!date) continue;
         const nmk = normKey(nm.toLowerCase());
