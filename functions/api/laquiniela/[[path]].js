@@ -707,16 +707,17 @@ async function getRachas(env) {
     let streak = 0;
     for (let i = f.length - 1; i >= 0; i--) { if (f[i] > 0) streak++; else break; }
     if (streak < 3) continue;
-    const last3 = f.slice(-3);
+    const fit = f.slice(-5);
     rachas.push({
       id: p.id, name: p.name, role: p.role, role2: p.role2, team: p.team, logo: p.logo, photo: p.photo,
       value: p.value, change: p.change, points: p.points, matches: p.matches, avg: p.avg,
       status: p.status, prob: p.prob, rivalFf: p.rivalFf, casaFf: p.casaFf,
-      streak, last3, sum3: last3.reduce((a, b) => a + b, 0),
+      streak, fit,
     });
   }
-  rachas.sort((a, b) => b.streak - a.streak || b.sum3 - a.sum3 || (b.points || 0) - (a.points || 0));
-  return { updatedAt: cache.at || null, players: rachas.slice(0, 60) };
+  rachas.sort((a, b) => b.streak - a.streak || (b.points || 0) - (a.points || 0));
+  const jornada = players.reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0);
+  return { updatedAt: cache.at || null, jornada, players: rachas.slice(0, 60) };
 }
 
 function fmtEur(n) {
@@ -963,10 +964,12 @@ async function playerFicha(env, id) {
   const a = r.answer || {};
   const pl = a.player || {};
   let mp = null;
+  let lJornada = 0;
   try {
     const mk = await getMarketPlayers(env);
     const k = String(id);
     mp = (mk.players || []).find((x) => x.id === k) || (mk.players || []).find((x) => x.name && stripAccents(x.name) === stripAccents(pl.name || ""));
+    lJornada = (mk.players || []).reduce((m, x) => Math.max(m, Number(x.matches) || 0), 0);
   } catch (e) {}
   const smap = await getScoreMap(env);
   const matches = (a.matches || []).map((m) => {
@@ -1055,6 +1058,7 @@ async function playerFicha(env, id) {
     average: (mp && mp.avg) || (pl.average && Number(pl.average.average)) || (played ? ptsSum / played : 0),
     matches5: (mp && mp.matches) || (pl.average && Number(pl.average.matches)) || played,
     fitness: fitArr,
+    jornada: lJornada,
     pronostico: pronosticoFor({ status: pl.status, fitness: fitArr }),
     team: (a.team && a.team.name) || pl.team || "",
     logo: pl.logo ? LOGO_BASE + pl.logo : "",

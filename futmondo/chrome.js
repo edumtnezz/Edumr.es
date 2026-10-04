@@ -25,7 +25,7 @@
         if (!teams.length) { box.innerHTML = '<span class="cx-strip-load">Sin equipos.</span>'; return; }
         box.innerHTML = teams.map(function (t) {
           var img = t.logo ? '<img src="' + esc(t.logo) + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' : "";
-          return '<div class="cx-team" title="' + esc(t.name) + '">' + img + '<span>' + esc(t.name) + '</span></div>';
+          return '<div class="cx-team" data-team="' + esc(t.name) + '" title="' + esc(t.name) + '">' + img + '<span>' + esc(t.name) + '</span></div>';
         }).join("");
       })
       .catch(function () { box.innerHTML = '<span class="cx-strip-load">No disponible.</span>'; });

@@ -228,7 +228,7 @@
     box.innerHTML = "";
     const head = el("div", "hl-head");
     head.appendChild(el("span", "hl-title", "🔥 Jugadores en racha"));
-    head.appendChild(el("span", "rachas-sub", "3+ partidos seguidos puntuando · Futmondo Social"));
+    head.appendChild(el("span", "rachas-sub", "Últimos partidos con su jornada · más reciente primero"));
     box.appendChild(head);
     const table = el("div", "rachas-table");
     table.innerHTML = '<div class="rachas-empty">Cargando rachas…</div>';
@@ -236,6 +236,7 @@
     try {
       const d = await (await fetch(API + "/rachas")).json();
       const list = (d && d.players) || [];
+      const j0 = Number(d && d.jornada) || 0;
       if (!list.length) { table.innerHTML = '<div class="rachas-empty">Sin rachas ahora mismo.</div>'; return; }
       table.innerHTML = "";
       list.slice(0, 12).forEach((p) => {
@@ -254,19 +255,33 @@
         if (rb) meta.appendChild(el("span", "racha-role posb posb-" + posCls(p.role), rb));
         info.appendChild(meta);
         row.appendChild(info);
-        const chips = el("div", "racha-scores");
-        (p.last3 || []).forEach((v) => {
-          const n = Math.round(Number(v) || 0);
-          chips.appendChild(el("span", "racha-chip" + (n >= 6 ? " hi" : n >= 4 ? " mid" : " lo"), String(n)));
-        });
-        row.appendChild(chips);
-        const stk = el("div", "racha-streak");
-        stk.appendChild(el("b", null, String(p.streak)));
-        stk.appendChild(el("small", null, "en racha"));
-        row.appendChild(stk);
+        const scores = el("div", "racha-scores");
+        const fit = (p.fit || []).map((x) => Number(x) || 0);
+        for (let k = 0; k < fit.length; k++) {
+          const v = Math.round(fit[fit.length - 1 - k]);
+          const j = j0 ? j0 - k : 0;
+          const cls = v >= 6 ? " hi" : v >= 4 ? " mid" : v > 0 ? " lo" : " zero";
+          const cell = el("span", "racha-chip" + cls);
+          if (j > 0) cell.appendChild(el("i", null, "J" + j));
+          cell.appendChild(el("b", null, v > 0 ? String(v) : "–"));
+          scores.appendChild(cell);
+        }
+        row.appendChild(scores);
         const stats = el("div", "racha-stats");
-        stats.appendChild(el("span", null, "PTS " + (Number(p.points) || 0)));
-        stats.appendChild(el("span", null, "MED " + (Number(p.avg) || 0).toFixed(1).replace(".", ",")));
+        const pts = el("b", "rs-pts", String(Number(p.points) || 0));
+        pts.appendChild(el("small", null, "PTS"));
+        stats.appendChild(pts);
+        const med = Number(p.avg) || 0;
+        const mw = el("div", "rs-media");
+        const mv = el("b", null, med.toFixed(1).replace(".", ","));
+        mv.appendChild(el("small", null, "Media"));
+        mw.appendChild(mv);
+        const bar = el("span", "rs-bar");
+        const fill = el("span", "rs-bar-fill");
+        fill.style.width = Math.max(5, Math.min(100, (med / 30) * 100)) + "%";
+        bar.appendChild(fill);
+        mw.appendChild(bar);
+        stats.appendChild(mw);
         row.appendChild(stats);
         row.appendChild(el("div", "racha-val", money(p.value) + " €"));
         row.addEventListener("click", () => openFicha(p));
@@ -500,7 +515,18 @@
       const on = x.classList.contains("merc-club-all") ? !teamFilter : (x.title === teamFilter);
       x.classList.toggle("active", !!on);
     });
+    document.querySelectorAll("#cxStrip .cx-team").forEach((x) => {
+      const on = x.dataset.team === teamFilter && !!teamFilter;
+      x.classList.toggle("active", !!on);
+    });
   }
+
+  document.addEventListener("click", (e) => {
+    const cell = e.target.closest ? e.target.closest("#cxStrip .cx-team") : null;
+    if (!cell) return;
+    const t = cell.dataset.team || "";
+    setTeam(teamFilter === t ? "" : t);
+  });
 
   function setupTeams() {
     const sel = $("mjTeam");
@@ -869,19 +895,25 @@
     const colL = el("div", "ficha-col");
     const colR = el("div", "ficha-col");
 
-    const ms = d.matches || [];
-    if (ms.length) {
-      colL.appendChild(el("div", "estado-title", "Puntos por jornada"));
+    const fit = (d.fitness || []).map((x) => Number(x) || 0);
+    if (fit.length) {
+      colL.appendChild(el("div", "estado-title", "Puntos por jornada (Futmondo Social)"));
       const tbl = el("div", "ficha-matches");
-      ms.forEach((m) => {
+      const byR = {};
+      (d.matches || []).forEach((m) => { if (byR[m.r] == null) byR[m.r] = m; });
+      const j0 = Number(d.jornada) || 0;
+      for (let k = 0; k < fit.length; k++) {
+        const v = Math.round(fit[fit.length - 1 - k]);
+        const j = j0 ? j0 - k : 0;
+        const m = byR[j] || {};
         const row = el("div", "fm-row");
-        row.appendChild(el("span", "fm-j", "J" + m.r));
-        const rival = (m.home === d.team) ? m.away : (m.away === d.team ? m.home : (m.away || m.home));
+        row.appendChild(el("span", "fm-j", j ? "J" + j : ""));
+        const rival = (m.home === d.team) ? m.away : (m.away === d.team ? m.home : (m.away || m.home || ""));
         const casa = m.home === d.team;
-        row.appendChild(el("span", "fm-match", (casa ? "🏠 " : "✈️ ") + (rival || "")));
-        row.appendChild(el("span", "fm-pts pt-" + ptClass(m.stats), String(m.stats || 0)));
+        row.appendChild(el("span", "fm-match", rival ? ((casa ? "🏠 " : "✈️ ") + rival) : ""));
+        row.appendChild(el("span", "fm-pts pt-" + ptClass(v), String(v)));
         tbl.appendChild(row);
-      });
+      }
       colL.appendChild(tbl);
     }
 

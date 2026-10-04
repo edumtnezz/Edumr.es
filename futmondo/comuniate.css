@@ -224,7 +224,13 @@ body {
   align-items: center;
   gap: 3px;
   width: 54px;
+  padding: 4px 2px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
+.cx-team:hover { background: var(--cx-surface-2); }
+.cx-team.active { background: var(--cx-green-soft); box-shadow: inset 0 0 0 1px var(--cx-green); }
 .cx-team img { width: 30px; height: 30px; object-fit: contain; }
 .cx-team span {
   font-size: 0.6rem;
