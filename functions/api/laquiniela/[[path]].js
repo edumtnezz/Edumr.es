@@ -1134,7 +1134,7 @@ function ffTvFind(map, home, away) {
 }
 async function ffTvMap(env) {
   try {
-    const c = await env.PORRA.get("ff:tv:v7", "json");
+    const c = await env.PORRA.get("ff:tv:v8", "json");
     if (c && c.list && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c;
   } catch (e) {}
   const byName = {}, list = [];
@@ -1161,7 +1161,7 @@ async function ffTvMap(env) {
         let d = (tag.match(/data-src="([^"]*)"/) || [])[1] || "";
         if (a && !BAD.test(a) && d) {
           if (d.indexOf("//") === 0) d = "https:" + d;
-          if (/dazn/i.test(a)) d = "/img/dazn.svg?v=2";
+          if (/dazn/i.test(a)) d = "/img/dazn.svg?v=3";
           tv.push({ name: a, logo: d });
         }
       }
@@ -1177,12 +1177,12 @@ async function ffTvMap(env) {
     }
   } catch (e) {}
   const out = { at: Date.now(), byName, list };
-  if (list.length > 10) { try { await env.PORRA.put("ff:tv:v7", JSON.stringify(out), { expirationTtl: 3600 }); } catch (e) {} }
+  if (list.length > 10) { try { await env.PORRA.put("ff:tv:v8", JSON.stringify(out), { expirationTtl: 3600 }); } catch (e) {} }
   return out;
 }
 async function fltvMap(env) {
   try {
-    const c = await env.PORRA.get("fltv:v1", "json");
+    const c = await env.PORRA.get("fltv:v2", "json");
     if (c && c.list && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c;
   } catch (e) {}
   const list = [], byName = {};
@@ -1210,7 +1210,7 @@ async function fltvMap(env) {
       if (sm) { const s = sm[1]; const d = new Date(/[Zz]|[+-]\d\d:?\d\d$/.test(s) ? s : s + "Z"); if (!isNaN(d.getTime())) { date = dtF.format(d); time = tF.format(d); } }
       if (!time) { const hm = raw.match(/class="hora[^"]*">\s*([0-9]{1,2}:[0-9]{2})/); if (hm) time = hm[1].padStart(5, "0"); }
       let tv = [];
-      for (const ch of chans) { if (/dazn/i.test(ch)) { tv = [{ name: "DAZN", logo: "/img/dazn.svg?v=2" }]; break; } }
+      for (const ch of chans) { if (/dazn/i.test(ch)) { tv = [{ name: "DAZN", logo: "/img/dazn.svg?v=3" }]; break; } }
       if (!tv.length) for (const ch of chans) { if (/m\+|movistar/i.test(ch)) { tv = [{ name: "Movistar LaLiga", logo: MOV }]; break; } }
       if (!tv.length) tv = [{ name: chans[0].replace(/\s*\([^)]*\)\s*$/, "").trim(), logo: "" }];
       if (!date || !time) continue;
@@ -1221,7 +1221,7 @@ async function fltvMap(env) {
     }
   } catch (e) {}
   const out = { at: Date.now(), list, byName };
-  if (list.length > 10) { try { await env.PORRA.put("fltv:v1", JSON.stringify(out), { expirationTtl: 3600 }); } catch (e) {} }
+  if (list.length > 10) { try { await env.PORRA.put("fltv:v2", JSON.stringify(out), { expirationTtl: 3600 }); } catch (e) {} }
   return out;
 }
 async function getJornadaStrip(env, matchday) {
