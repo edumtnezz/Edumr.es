@@ -334,13 +334,17 @@
 .method-step small { color: var(--muted); font-size: 0.9rem; }
 
 @media (max-width: 860px) {
-  .site-links { display: none; }
+  .site-nav-in { flex-wrap: wrap; row-gap: 10px; }
+  .site-nav-right { order: 2; }
+  .site-links { order: 3; flex-basis: 100%; justify-content: center; gap: 22px; }
+  .site-links a { font-size: 0.76rem; letter-spacing: 0.14em; }
   .why-grid { grid-template-columns: 1fr 1fr; gap: 26px; }
-  .method-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 620px) {
+  .typewriter-container { font-size: 1.5rem; height: 84px; min-height: 0; overflow: hidden; }
 }
 @media (max-width: 520px) {
   .why { padding: 40px 0 44px; }
   .why-grid { grid-template-columns: 1fr; }
-  .method-grid { grid-template-columns: 1fr; }
 }
 
