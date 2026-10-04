@@ -295,6 +295,54 @@
     } catch (e) { table.innerHTML = '<div class="rachas-empty">No se pudo cargar.</div>'; }
   }
 
+  function fmtDiaLargo(v) {
+    if (!v) return "";
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleString("es-ES", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" });
+  }
+
+  async function renderClausulas() {
+    const box = $("mercClaus");
+    if (!box) return;
+    box.innerHTML = "";
+    const head = el("div", "hl-head");
+    head.appendChild(el("span", "hl-title", "💸 Clausulazo jugoso"));
+    head.appendChild(el("span", "rachas-sub", "Jugadores de otros que merece la pena clausular · misma regla que el mejor fichaje"));
+    box.appendChild(head);
+    const grid = el("div", "claus-grid");
+    grid.innerHTML = '<div class="rachas-empty">Analizando tu liga…</div>';
+    box.appendChild(grid);
+    try {
+      const d = await (await fetch(API + "/clausulas")).json();
+      const list = (d && d.players) || [];
+      if (!list.length) { grid.innerHTML = '<div class="rachas-empty">Sin clausulazos jugosos ahora mismo.</div>'; return; }
+      grid.innerHTML = "";
+      list.forEach((p) => {
+        const card = el("div", "claus-card");
+        const ph = el("div", "claus-photo");
+        ph.appendChild(photoImg(p.photo, "claus-img"));
+        card.appendChild(ph);
+        const body = el("div", "mcard-body");
+        body.appendChild(el("div", "mcard-name", p.name));
+        const meta = el("div", "racha-meta");
+        if (p.logo) { const lg = el("img", "racha-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; meta.appendChild(lg); }
+        if (p.team) meta.appendChild(el("span", null, p.team));
+        const rb = roleBadge(p.role);
+        if (rb) meta.appendChild(el("span", "racha-role posb posb-" + posCls(p.role), rb));
+        body.appendChild(meta);
+        body.appendChild(el("div", "claus-owner", "👤 de " + (p.owner || "?")));
+        body.appendChild(el("div", "claus-clause", "Cláusula: " + money(p.clause) + " €"));
+        body.appendChild(el("div", "claus-exp", "Valoración: " + (Number(p.exp) || 0).toFixed(1).replace(".", ",")));
+        const blocked = p.unlock && new Date(p.unlock).getTime() > Date.now();
+        body.appendChild(el("div", blocked ? "claus-lock" : "claus-free", blocked ? "🔒 se libera el " + fmtDiaLargo(p.unlock) : "✅ disponible para clausular"));
+        card.appendChild(body);
+        card.addEventListener("click", () => openFicha(p));
+        grid.appendChild(card);
+      });
+    } catch (e) { grid.innerHTML = '<div class="rachas-empty">No se pudo cargar.</div>'; }
+  }
+
   function filteredList() {
     const q = stripAccents($("mjSearch") ? $("mjSearch").value.trim() : "");
     const team = teamFilter;
@@ -641,6 +689,7 @@
       renderHighlights();
       renderBest();
       renderRachas();
+      renderClausulas();
       renderGrid();
       renderEstado();
       if (all.length && !rangeInit) {

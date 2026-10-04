@@ -741,8 +741,8 @@ async function getClausulas(env) {
     const map = await ffMap(env);
     players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, chg1: e.d1, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
   } catch (e) {}
-  let myTeam = "";
-  try { const mt = await env.PORRA.get("fm:myteam"); myTeam = mt || ""; } catch (e) {}
+  let myTeam = "Eduardo Martínez";
+  try { const mt = await env.PORRA.get("fm:myteam"); if (mt) myTeam = mt; } catch (e) {}
   const own = players.filter((p) => p.computer === false);
   own.sort((a, b) => expOfB(b) - expOfB(a));
   const top = own;
