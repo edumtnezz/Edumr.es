@@ -2224,6 +2224,17 @@ export async function onRequestGet({ request, env, params }) {
       return json({ answerKeys: Object.keys(login.answer || {}), mobile: m, profile: (login.answer && login.answer.profile) || null });
     } catch (e) { return json({ error: String(e) }); }
   }
+  if (path === "dbgteams") {
+    try {
+      const header = await futbolHeader(env);
+      const out = {};
+      for (const pth of ["/1/championship/teams", "/5/league/championshipteams", "/2/championship/teams", "/1/league/teams", "/5/user/teams"]) {
+        try { const s = await futbolPost(pth, header, { championshipId: FUTMONDO_CHAMPIONSHIP }); out[pth] = { keys: Object.keys(s.answer || {}), sample: Array.isArray(s.answer) ? s.answer.slice(0, 3) : s.answer }; }
+        catch (e) { out[pth] = "err:" + String(e); }
+      }
+      return json(out);
+    } catch (e) { return json({ error: String(e) }); }
+  }
   if (path === "dbgplayer") {
     try {
       const id = url.searchParams.get("id");
