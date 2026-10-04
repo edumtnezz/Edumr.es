@@ -1343,20 +1343,23 @@ function nextTuesday2200Utc(now) {
   return d.getTime() - offset;
 }
 
-// Ventana de subasta: lunes 00:00 -> martes 22:00 (hora de Madrid)
+// Ventana de subasta: lunes 23:59 -> martes 22:00 (hora de Madrid)
 function inPujaWindow(now) {
   const { d } = madrid(now);
   const wd = d.getUTCDay(); // 0 dom, 1 lun, 2 mar
-  return wd === 1 || (wd === 2 && d.getUTCHours() < 22);
+  if (wd === 1) return d.getUTCHours() === 23 && d.getUTCMinutes() >= 59; // lunes desde 23:59
+  if (wd === 2) return d.getUTCHours() < 22;
+  return false;
 }
 
-// Próxima apertura (siguiente lunes 00:00, hora de Madrid)
+// Próxima apertura (siguiente lunes 23:59, hora de Madrid)
 function nextWindowOpenUtc(now) {
   const { d, offset } = madrid(now);
   let days = (1 - d.getUTCDay() + 7) % 7;
-  if (days === 0) days = 7;
+  const past = d.getUTCHours() > 23 || (d.getUTCHours() === 23 && d.getUTCMinutes() >= 59);
+  if (days === 0 && past) days = 7;
   d.setUTCDate(d.getUTCDate() + days);
-  d.setUTCHours(0, 0, 0, 0);
+  d.setUTCHours(23, 59, 0, 0);
   return d.getTime() - offset;
 }
 
@@ -1381,7 +1384,7 @@ async function getPuja(env) {
 async function createPuja(request, env, user) {
   if (!user) return json({ error: "Inicia sesion." }, 401);
   if (!inPujaWindow(new Date())) {
-    return json({ error: "La subasta solo se puede abrir de lunes 00:00 a martes 22:00 (hora de Madrid)." }, 403);
+    return json({ error: "La subasta solo se puede abrir de lunes 23:59 a martes 22:00 (hora de Madrid)." }, 403);
   }
   let body;
   try { body = await request.json(); } catch { return json({ error: "Datos invalidos" }, 400); }
