@@ -1132,6 +1132,31 @@
     if (field.children.length) out.appendChild(field);
     out.appendChild(el("p", "muted small", "Arrastra un jugador sobre otro para cambiar su posición."));
 
+    if ((d.suplentes || []).length) {
+      const bsec = el("div", "estado-sec");
+      bsec.appendChild(el("div", "estado-title", "Banquillo (toca para cambiar con un titular)"));
+      const bench = el("div", "pitch-bench");
+      d.suplentes.forEach((p) => {
+        const card = el("div", "pitch-player bench");
+        const ph = el("div", "pitch-photo");
+        ph.appendChild(photoImg(p.photo));
+        posRingCls(ph, p.pos, p.pos2);
+        card.appendChild(ph);
+        card.appendChild(el("div", "pitch-name", p.nombre || ""));
+        const info = el("div", "pitch-info");
+        if (p.prob != null) info.appendChild(el("span", "pc-prob", p.prob + "%"));
+        if (p.estado && p.estado !== "OK" && p.estado !== "?") info.appendChild(el("span", "pc-bad", p.estado));
+        card.appendChild(info);
+        if (p.casa === true || p.casa === false) card.appendChild(el("div", "pitch-ha", (p.casa ? "🏠 " : "✈️ ") + (p.rival || "?")));
+        card.appendChild(el("div", "pitch-pts", p.puntos != null ? p.puntos + " pts" : ""));
+        card.addEventListener("click", () => openPicker("Cambiar jugador", (pl) => applyPlayer(p, pl)));
+        bench.appendChild(card);
+      });
+      bsec.appendChild(bench);
+      out.appendChild(bsec);
+    }
+
+
 
     if ((d.titulares || []).length) {
       const sec = el("div", "estado-sec");
@@ -1141,10 +1166,11 @@
         const row = el("div", "an-row clickable");
         row.appendChild(el("span", "an-pos", p.pos || ""));
         const main = el("div", "an-main");
-        main.appendChild(el("span", "an-name", p.nombre || ""));
+        const nameRow = el("div", "an-name-row");
+        if (p.logo) { const lg = el("img", "an-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; nameRow.appendChild(lg); }
+        nameRow.appendChild(el("span", "an-name", p.nombre || ""));
+        main.appendChild(nameRow);
         const sub = [];
-        if (p.equipo) sub.push(p.equipo);
-        if (p.fitness && p.fitness.length) sub.push("Últ5: " + p.fitness.join("·"));
         if (p.pronostico) sub.push(p.pronostico);
         if (sub.length) main.appendChild(el("span", "an-sub", sub.join("  ·  ")));
         row.appendChild(main);

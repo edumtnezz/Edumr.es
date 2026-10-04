@@ -281,6 +281,12 @@
 .ficha-head-center .mcard-photo { margin: 4px auto 8px; }
 .ficha-team { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); font-size: 0.9rem; }
 .ficha-team img { width: 18px; height: 18px; object-fit: contain; }
+.pitch-bench { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; padding: 12px; border: 1px dashed var(--border); border-radius: 14px; }
+.pitch-bench .pitch-player { width: 78px; }
+.pitch-bench .pitch-photo { width: 44px; height: 44px; }
+.pitch-bench .pitch-name { max-width: 78px; }
+.an-name-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.an-crest { width: 15px; height: 15px; object-fit: contain; flex: 0 0 auto; }
 .hl-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 24px 0 10px; padding-top: 16px; border-top: 1px solid var(--border); }
 .hl-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.02rem; }
 .hl-seg { display: flex; gap: 6px; margin: 0; flex-wrap: wrap; }
