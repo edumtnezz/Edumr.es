@@ -745,7 +745,7 @@ async function getClausulas(env) {
   try { const mt = await env.PORRA.get("fm:myteam"); myTeam = mt || ""; } catch (e) {}
   const own = players.filter((p) => p.computer === false);
   own.sort((a, b) => expOfB(b) - expOfB(a));
-  const top = own.slice(0, 30);
+  const top = own;
   const header = await futbolHeader(env);
   const out = [];
   for (let i = 0; i < top.length; i += 8) {
@@ -2206,7 +2206,7 @@ export async function onRequestGet({ request, env, params }) {
     try {
       const login = await futbolPost("/5/login/with_mail", { token: "null", userid: "" }, { mail: env.FUTMONDO_EMAIL, pwd: env.FUTMONDO_PASSWORD });
       const m = (login.answer && login.answer.mobile) || {};
-      return json({ answerKeys: Object.keys(login.answer || {}), mobile: m });
+      return json({ answerKeys: Object.keys(login.answer || {}), mobile: m, profile: (login.answer && login.answer.profile) || null });
     } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "clausulas") {
