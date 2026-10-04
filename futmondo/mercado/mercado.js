@@ -9,18 +9,20 @@
   function posRing(node, a, b) {
     if (!node) return node;
     const c1 = POSCOL_RING[roleBadge(a) || a], c2 = POSCOL_RING[roleBadge(b) || b];
-    if (!c1 || !c2) return node;
+    if (!c1) return node;
     const w = el("span", "posring");
-    w.style.setProperty("--c1", c1); w.style.setProperty("--c2", c2);
+    w.style.setProperty("--c1", c1);
+    if (c2) w.style.setProperty("--c2", c2); else w.classList.add("single");
     w.appendChild(node);
     return w;
   }
   function posRingCls(elm, a, b) {
     if (!elm) return elm;
     const c1 = POSCOL_RING[roleBadge(a) || a], c2 = POSCOL_RING[roleBadge(b) || b];
-    if (!c1 || !c2) return elm;
+    if (!c1) return elm;
     elm.classList.add("posring-clip");
-    elm.style.setProperty("--c1", c1); elm.style.setProperty("--c2", c2);
+    elm.style.setProperty("--c1", c1);
+    if (c2) elm.style.setProperty("--c2", c2); else elm.classList.add("single");
     return elm;
   }
   function splitBadge(b) {
@@ -1067,7 +1069,7 @@
         card.draggable = true;
         const ph = el("div", "pitch-photo");
         ph.appendChild(photoImg(p.photo));
-        posRingCls(ph, p.pos2 ? p.pos : "", p.pos2);
+        posRingCls(ph, p.pos, p.pos2);
         card.appendChild(ph);
         card.appendChild(el("div", "pitch-name", p.nombre || ""));
         const info = el("div", "pitch-info");

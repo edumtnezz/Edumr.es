@@ -59,18 +59,20 @@ var POSCOL_RING = { POR: "#22c55e", DEF: "#f59e0b", MED: "#38bdf8", DEL: "#ef444
 function posRing(node, a, b) {
   if (!node) return node;
   var c1 = POSCOL_RING[roleBadge(a) || a], c2 = POSCOL_RING[roleBadge(b) || b];
-  if (!c1 || !c2) return node;
+  if (!c1) return node;
   var w = el("span", "posring");
-  w.style.setProperty("--c1", c1); w.style.setProperty("--c2", c2);
+  w.style.setProperty("--c1", c1);
+  if (c2) w.style.setProperty("--c2", c2); else w.classList.add("single");
   w.appendChild(node);
   return w;
 }
 function posRingCls(elx, a, b) {
   if (!elx) return elx;
   var c1 = POSCOL_RING[roleBadge(a) || a], c2 = POSCOL_RING[roleBadge(b) || b];
-  if (!c1 || !c2) return elx;
+  if (!c1) return elx;
   elx.classList.add("posring-clip");
-  elx.style.setProperty("--c1", c1); elx.style.setProperty("--c2", c2);
+  elx.style.setProperty("--c1", c1);
+  if (c2) elx.style.setProperty("--c2", c2); else elx.classList.add("single");
   return elx;
 }
 function splitBadge(b) {

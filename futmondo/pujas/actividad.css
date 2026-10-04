@@ -22,6 +22,8 @@
 .posring > img { border-radius: 50%; object-fit: cover; display: block; }
 .posring-clip { padding: 2px !important; border-color: transparent !important; background: conic-gradient(from 180deg, var(--c1) 0 50%, var(--c2) 50% 100%) !important; }
 .posring-clip > img { border-radius: 50%; }
+.posring.single { background: var(--c1); }
+.posring-clip.single { background: var(--c1) !important; }
 .wa-body { display: flex; flex-direction: column; gap: 8px; padding: 16px 12px; background: #0b141a; }
 [data-theme="light"] .wa-body { background: #e9edef; }
 .wa-pin { background: #182229; border-left: 3px solid #06cf9c; border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; }
