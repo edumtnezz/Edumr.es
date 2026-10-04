@@ -2130,9 +2130,17 @@ export async function onRequestGet({ request, env, params }) {
     try {
       const header = await futbolHeader(env);
       const plRes = await futbolPost("/5/league/championshipplayers", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
-      const arr = (plRes.answer && plRes.answer.players) || (Array.isArray(plRes.answer) ? plRes.answer : []);
-      const withOwner = arr.filter((p) => p.owner || p.user || p.teamUser || p.manager).slice(0, 2);
-      return json({ answerKeys: (plRes.answer && !Array.isArray(plRes.answer)) ? Object.keys(plRes.answer) : null, count: arr.length, sampleKeys: arr[0] ? Object.keys(arr[0]) : [], sample: arr.slice(0, 2), withOwner });
+      const ans = plRes.answer || {};
+      const arr = ans.players || (Array.isArray(ans) ? ans : []);
+      const ac = ans.automaticClauses;
+      return json({
+        count: arr.length,
+        acType: Array.isArray(ac) ? "array:" + ac.length : typeof ac,
+        acSample: ac,
+        ownedPlayers: arr.filter((p) => p.computer === false).slice(0, 2).map((p) => ({ id: p.id, name: p.name, computer: p.computer, fav: p.fav })),
+        compTrue: arr.filter((p) => p.computer === true).length,
+        compFalse: arr.filter((p) => p.computer === false).length,
+      });
     } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "dbgsum") {
