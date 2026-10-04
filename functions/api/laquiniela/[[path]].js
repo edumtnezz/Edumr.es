@@ -675,6 +675,50 @@ async function getMarketPlayers(env) {
   return out;
 }
 
+const TEAMS_KEY = "fm:teams:v1";
+async function getTeams(env) {
+  try {
+    const cached = await env.PORRA.get(TEAMS_KEY, "json");
+    if (cached && cached.at && Date.now() - cached.at < 6 * 3600 * 1000) return cached.teams || [];
+  } catch (e) {}
+  const header = await futbolHeader(env);
+  const tmRes = await futbolPost("/1/league/championshipteams", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
+  const teams = (tmRes.answer || []).map((t) => ({
+    id: String(t.id || ""),
+    name: String(t.name || ""),
+    logo: t.logo ? LOGO_BASE + t.logo : "",
+  })).filter((t) => t.name);
+  try { await env.PORRA.put(TEAMS_KEY, JSON.stringify({ at: Date.now(), teams }), { expirationTtl: 6 * 3600 }); } catch (e) {}
+  return teams;
+}
+
+async function getRachas(env) {
+  let cache;
+  try { cache = await getMarketPlayers(env); } catch (e) { return { players: [], updatedAt: null }; }
+  let players = cache.players || [];
+  try {
+    const map = await ffMap(env);
+    players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa } : p; });
+  } catch (e) {}
+  const rachas = [];
+  for (const p of players) {
+    const f = (p.fitness || []).map((x) => Number(x) || 0);
+    if (f.length < 3) continue;
+    let streak = 0;
+    for (let i = f.length - 1; i >= 0; i--) { if (f[i] > 0) streak++; else break; }
+    if (streak < 3) continue;
+    const last3 = f.slice(-3);
+    rachas.push({
+      id: p.id, name: p.name, role: p.role, role2: p.role2, team: p.team, logo: p.logo, photo: p.photo,
+      value: p.value, change: p.change, points: p.points, matches: p.matches, avg: p.avg,
+      status: p.status, prob: p.prob, rivalFf: p.rivalFf, casaFf: p.casaFf,
+      streak, last3, sum3: last3.reduce((a, b) => a + b, 0),
+    });
+  }
+  rachas.sort((a, b) => b.streak - a.streak || b.sum3 - a.sum3 || (b.points || 0) - (a.points || 0));
+  return { updatedAt: cache.at || null, players: rachas.slice(0, 60) };
+}
+
 function fmtEur(n) {
   return String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
@@ -1043,6 +1087,19 @@ async function getNoticias(env) {
   out.updatedAt = Date.now();
   try { await env.PORRA.put("ff:news:v2", JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 6 * 3600 }); } catch (e) {}
   return out;
+}
+
+async function getUltimaHora(env) {
+  try {
+    const c = await env.PORRA.get("ff:ultima:v2", "json");
+    if (c && c.updatedAt && Date.now() - c.updatedAt < 10 * 60 * 1000) return c;
+  } catch (e) {}
+  let list = [];
+  try { list = await getFfNoticias(env); } catch (e) {}
+  const items = (list || []).slice(0, 12).map((x) => ({ title: x.title, link: x.link, thumb: x.thumb, date: x.date, time: x.time }));
+  const data = { updatedAt: Date.now(), items };
+  try { await env.PORRA.put("ff:ultima:v2", JSON.stringify(data), { expirationTtl: 1800 }); } catch (e) {}
+  return data;
 }
 
 function pujaStep(base) {
@@ -1891,6 +1948,15 @@ export async function onRequestGet({ request, env, params }) {
   }
   if (path === "mercado") {
     return searchMercado(env, url.searchParams.get("q"));
+  }
+  if (path === "equipos") {
+    try { return json({ teams: await getTeams(env) }); } catch (e) { return json({ teams: [] }); }
+  }
+  if (path === "ultimahora") {
+    return json(await getUltimaHora(env));
+  }
+  if (path === "rachas") {
+    try { return json(await getRachas(env)); } catch (e) { return json({ players: [] }); }
   }
   if (path === "noticias") {
     return json(await getNoticias(env));

@@ -222,6 +222,59 @@
     box.appendChild(wrap);
   }
 
+  async function renderRachas() {
+    const box = $("mercRachas");
+    if (!box) return;
+    box.innerHTML = "";
+    const head = el("div", "hl-head");
+    head.appendChild(el("span", "hl-title", "🔥 Jugadores en racha"));
+    head.appendChild(el("span", "rachas-sub", "3+ partidos seguidos puntuando · Futmondo Social"));
+    box.appendChild(head);
+    const table = el("div", "rachas-table");
+    table.innerHTML = '<div class="rachas-empty">Cargando rachas…</div>';
+    box.appendChild(table);
+    try {
+      const d = await (await fetch(API + "/rachas")).json();
+      const list = (d && d.players) || [];
+      if (!list.length) { table.innerHTML = '<div class="rachas-empty">Sin rachas ahora mismo.</div>'; return; }
+      table.innerHTML = "";
+      list.slice(0, 12).forEach((p) => {
+        const row = el("button", "racha-row"); row.type = "button";
+        const ph = el("div", "racha-photo");
+        const im = el("img", ""); im.loading = "lazy"; im.alt = ""; im.src = p.photo || "/img/avatar.svg";
+        im.addEventListener("error", () => { if (im.getAttribute("src") !== "/img/avatar.svg") im.src = "/img/avatar.svg"; }, { once: true });
+        ph.appendChild(im);
+        row.appendChild(ph);
+        const info = el("div", "racha-info");
+        info.appendChild(el("span", "racha-name", p.name));
+        const meta = el("div", "racha-meta");
+        if (p.logo) { const lg = el("img", "racha-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; meta.appendChild(lg); }
+        if (p.team) meta.appendChild(el("span", null, p.team));
+        const rb = roleBadge(p.role);
+        if (rb) meta.appendChild(el("span", "racha-role posb posb-" + posCls(p.role), rb));
+        info.appendChild(meta);
+        row.appendChild(info);
+        const chips = el("div", "racha-scores");
+        (p.last3 || []).forEach((v) => {
+          const n = Math.round(Number(v) || 0);
+          chips.appendChild(el("span", "racha-chip" + (n >= 6 ? " hi" : n >= 4 ? " mid" : " lo"), String(n)));
+        });
+        row.appendChild(chips);
+        const stk = el("div", "racha-streak");
+        stk.appendChild(el("b", null, String(p.streak)));
+        stk.appendChild(el("small", null, "en racha"));
+        row.appendChild(stk);
+        const stats = el("div", "racha-stats");
+        stats.appendChild(el("span", null, "PTS " + (Number(p.points) || 0)));
+        stats.appendChild(el("span", null, "MED " + (Number(p.avg) || 0).toFixed(1).replace(".", ",")));
+        row.appendChild(stats);
+        row.appendChild(el("div", "racha-val", money(p.value) + " €"));
+        row.addEventListener("click", () => openFicha(p));
+        table.appendChild(row);
+      });
+    } catch (e) { table.innerHTML = '<div class="rachas-empty">No se pudo cargar.</div>'; }
+  }
+
   function filteredList() {
     const q = stripAccents($("mjSearch") ? $("mjSearch").value.trim() : "");
     const team = teamFilter;
@@ -553,6 +606,7 @@
       updateTime(d.updatedAt);
       renderHighlights();
       renderBest();
+      renderRachas();
       renderGrid();
       renderEstado();
       if (all.length && !rangeInit) {

@@ -1,0 +1,335 @@
+/* ============================================================
+   Comuniate theme — hub Futmondo (claro, estilo diario deportivo)
+   Se carga DESPUÉS de quiniela.css y sobreescribe el chrome.
+   ============================================================ */
+
+:root {
+  --cx-bg: #eef1f5;
+  --cx-surface: #ffffff;
+  --cx-surface-2: #f7f9fb;
+  --cx-border: #e4e8ee;
+  --cx-border-2: #d6dbe3;
+  --cx-text: #10151c;
+  --cx-muted: #64748b;
+  --cx-green: #16a34a;
+  --cx-green-2: #15803d;
+  --cx-green-soft: #e7f7ec;
+  --cx-black: #0b0e13;
+  --cx-black-2: #14181f;
+  --cx-up: #16a34a;
+  --cx-down: #dc2626;
+  --cx-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.07);
+  --cx-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05), 0 3px 10px rgba(15, 23, 42, 0.05);
+  --radius: 14px;
+}
+
+[data-theme="dark"] {
+  --cx-bg: #0a0d12;
+  --cx-surface: #12161d;
+  --cx-surface-2: #171c25;
+  --cx-border: #232a35;
+  --cx-border-2: #2c3441;
+  --cx-text: #eef2f7;
+  --cx-muted: #94a3b8;
+  --cx-green-soft: rgba(22, 163, 74, 0.15);
+  --cx-black: #05080c;
+  --cx-black-2: #0f1319;
+  --cx-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 26px rgba(0, 0, 0, 0.4);
+  --cx-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* ---------- Base ---------- */
+body {
+  background: var(--cx-bg) !important;
+  background-image: none !important;
+  color: var(--cx-text);
+  padding: 0 !important;
+}
+.grass-band { display: none !important; }
+#bgCanvas { display: none !important; }
+
+.quiniela-main { max-width: 1140px; margin: 0 auto; padding: 22px 16px 60px; }
+
+/* ---------- Header negro ---------- */
+.cx-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 60;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: var(--cx-black) !important;
+  backdrop-filter: none !important;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.18);
+}
+.cx-top { background: var(--cx-black); }
+.cx-top-inner {
+  max-width: 1140px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 9px 16px;
+  min-height: 58px;
+}
+.cx-logo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #fff;
+  text-decoration: none;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 1.06rem;
+  letter-spacing: -0.01em;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.cx-logo img { width: 27px; height: 27px; object-fit: contain; }
+.cx-logo b { color: var(--cx-green); font-weight: 700; }
+.cx-page-name {
+  font-style: normal;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  padding-left: 9px;
+  margin-left: 3px;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.cx-nav {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.cx-nav::-webkit-scrollbar { display: none; }
+.cx-nav a {
+  color: rgba(255, 255, 255, 0.78);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 8px 15px;
+  border-radius: 999px;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+}
+.cx-nav a:hover { color: #fff; background: rgba(255, 255, 255, 0.09); }
+.cx-nav a.active { color: #fff; background: var(--cx-green); }
+
+.cx-tools { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.cx-inicio {
+  color: rgba(255, 255, 255, 0.82);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.84rem;
+  padding: 7px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+}
+.cx-inicio:hover { color: #fff; border-color: rgba(255, 255, 255, 0.45); }
+.cx-header .theme-toggle,
+.cx-top .theme-toggle {
+  width: 38px; height: 38px;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  box-shadow: none;
+}
+.cx-header .theme-toggle:hover { border-color: #fff; box-shadow: none; }
+
+/* ---------- Submenú claro ---------- */
+.cx-sub {
+  background: var(--cx-surface);
+  border-bottom: 1px solid var(--cx-border);
+}
+.cx-sub-inner {
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 52px;
+  position: relative;
+}
+.cx-sub .tabs {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  gap: 2px;
+  margin: 0 !important;
+  width: auto;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.cx-sub .tabs::-webkit-scrollbar { display: none; }
+.cx-sub .tab {
+  flex: 0 0 auto;
+  color: var(--cx-muted);
+  background: transparent;
+  border-radius: 0;
+  padding: 16px 15px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-bottom: 3px solid transparent;
+  transition: all 0.16s ease;
+}
+.cx-sub .tab:hover { color: var(--cx-text); }
+.cx-sub .tab.active {
+  color: var(--cx-green);
+  background: transparent;
+  box-shadow: none;
+  border-bottom-color: var(--cx-green);
+}
+.cx-sub .user-box { position: absolute; right: 16px; }
+
+/* ---------- Tira de escudos ---------- */
+.cx-strip {
+  background: var(--cx-surface);
+  border-bottom: 1px solid var(--cx-border);
+  overflow: hidden;
+}
+.cx-strip-track {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding: 10px 16px;
+  max-width: 1140px;
+  margin: 0 auto;
+}
+.cx-team {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 54px;
+}
+.cx-team img { width: 30px; height: 30px; object-fit: contain; }
+.cx-team span {
+  font-size: 0.6rem;
+  color: var(--cx-muted);
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.1;
+  max-width: 54px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cx-strip-load { color: var(--cx-muted); font-size: 0.82rem; padding: 6px 2px; }
+
+/* ---------- Última hora (ticker) ---------- */
+.cx-live {
+  background: var(--cx-black);
+  color: #fff;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+.cx-live-tag {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--cx-green);
+  color: #fff;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  padding: 10px 16px;
+  position: relative;
+  z-index: 2;
+}
+.cx-live-tag::before {
+  content: '';
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #fff;
+  animation: cxpulse 1.2s ease-in-out infinite;
+}
+@keyframes cxpulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+.cx-live-track {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 8px 18px;
+  min-width: 0;
+}
+.cx-live-track::-webkit-scrollbar { display: none; }
+.cx-live-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  max-width: 460px;
+  transition: color 0.16s;
+}
+.cx-live-item:hover { color: #fff; }
+.cx-live-item img {
+  width: 34px; height: 24px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex: 0 0 auto;
+}
+.cx-live-txt {
+  font-size: 0.82rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 340px;
+}
+.cx-live-time { font-size: 0.7rem; color: rgba(255, 255, 255, 0.5); font-weight: 600; flex: 0 0 auto; }
+.cx-live-load { color: rgba(255, 255, 255, 0.55); font-size: 0.82rem; }
+
+/* ---------- Tarjetas / paneles (claro, sombras suaves) ---------- */
+.panel {
+  background: var(--cx-surface);
+  border: 1px solid var(--cx-border);
+  border-radius: 16px;
+  box-shadow: var(--cx-shadow-sm);
+  backdrop-filter: none;
+  padding: 26px 24px;
+}
+.panel::before { display: none !important; }
+.panel h2 { color: var(--cx-text); }
+.muted { color: var(--cx-muted); }
+.market-card,
+.rank-card,
+.match-row,
+.participant,
+.countdown,
+.jornada-card,
+.prize-list li {
+  box-shadow: var(--cx-shadow-sm);
+}
+
+@media (max-width: 720px) {
+  .cx-top-inner { gap: 10px; padding: 8px 12px; }
+  .cx-page-name { display: none; }
+  .cx-inicio { display: none; }
+  .cx-nav { justify-content: flex-start; }
+  .cx-nav a { padding: 7px 11px; font-size: 0.84rem; }
+  .cx-sub-inner { justify-content: flex-start; }
+  .cx-sub .tab { padding: 14px 12px; font-size: 0.85rem; }
+  .quiniela-main { padding: 16px 12px 50px; }
+  .panel { padding: 20px 16px; border-radius: 14px; }
+}
