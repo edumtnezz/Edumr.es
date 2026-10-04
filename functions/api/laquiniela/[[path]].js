@@ -2219,6 +2219,17 @@ export async function onRequestGet({ request, env, params }) {
       return json({ answerKeys: Object.keys(login.answer || {}), mobile: m, profile: (login.answer && login.answer.profile) || null });
     } catch (e) { return json({ error: String(e) }); }
   }
+  if (path === "dbgplayer") {
+    try {
+      const id = url.searchParams.get("id");
+      const mk = await getMarketPlayers(env);
+      const p = (mk.players || []).find((x) => x.id === id) || null;
+      const header = await futbolHeader(env);
+      let sum = {};
+      try { const s = await futbolPost("/1/player/summary", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP }); sum = s.answer || {}; } catch (e) { sum = { err: String(e) }; }
+      return json({ marketPlayer: p, owners: sum.owners || null, clause: (sum.championship && sum.championship.clause) || null, sumKeys: Object.keys(sum) });
+    } catch (e) { return json({ error: String(e) }); }
+  }
   if (path === "clausulas") {
     try { return json(await getClausulas(env)); } catch (e) { return json({ players: [], error: String(e) }); }
   }
