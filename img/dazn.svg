@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 212 212" role="img" aria-label="DAZN">
-  <rect width="212" height="212" fill="#ffffff"/>
-  <path d="M36 36 H176 V88 L160 106 L176 124 V176 H36 V124 L52 106 L36 88 Z"
-        fill="#ffffff" stroke="#000000" stroke-width="18" stroke-linejoin="round"/>
-  <text x="106" y="100" text-anchor="middle" font-family="'Arial Black','Arial',sans-serif" font-weight="900" font-size="60" fill="#000000">DA</text>
-  <text x="106" y="166" text-anchor="middle" font-family="'Arial Black','Arial',sans-serif" font-weight="900" font-size="60" fill="#000000">ZN</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="DAZN">
+  <rect width="96" height="96" fill="#000000"/>
+  <path d="M17 9 H79 A8 8 0 0 1 87 17 V39 L78 48 L87 57 V79 A8 8 0 0 1 79 87 H17 A8 8 0 0 1 9 79 V57 L18 48 L9 39 V17 A8 8 0 0 1 17 9 Z"
+        fill="none" stroke="#ffffff" stroke-width="6" stroke-linejoin="miter"/>
+  <text x="48" y="45" text-anchor="middle" font-family="'Arial Black','Arial Bold',Arial,sans-serif" font-weight="900" font-size="27" fill="#ffffff">DA</text>
+  <text x="48" y="78" text-anchor="middle" font-family="'Arial Black','Arial Bold',Arial,sans-serif" font-weight="900" font-size="27" fill="#ffffff">ZN</text>
 </svg>
