@@ -1133,10 +1133,10 @@ function ffTvFind(map, home, away) {
 }
 async function ffTvMap(env) {
   try {
-    const c = await env.PORRA.get("ff:tv:v3", "json");
-    if (c && c.map && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.map;
+    const c = await env.PORRA.get("ff:tv:v4", "json");
+    if (c && c.byName && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c;
   } catch (e) {}
-  const map = {};
+  const byName = {}, byTime = {};
   try {
     const res = await fetch("https://www.futbolfantasy.com/laliga/calendario", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
     const html = await res.text();
@@ -1152,8 +1152,8 @@ async function ffTvMap(env) {
       home = home.replace(/&amp;/g, "&").trim();
       away = away.replace(/&amp;/g, "&").trim();
       if (!home || !away) continue;
-      const tv = [];
       const BAD = /comunio|sofascore|futmondo|prensa|fantasy|biwenger|mister|jornada|anal[ií]tica|^stats$|previa|picaroja|estrella/i;
+      const tv = [];
       const imgs = r.match(/<img[^>]*class="canal[^"]*"[^>]*>/g) || [];
       for (const tag of imgs) {
         const a = (tag.match(/alt="([^"]*)"/) || [])[1] || "";
@@ -1165,20 +1165,28 @@ async function ffTvMap(env) {
       }
       if (!tv.length) continue;
       const key = stripAccents(home.toLowerCase()) + "|" + stripAccents(away.toLowerCase());
-      if (!map[key]) map[key] = { tv };
+      if (!byName[key]) byName[key] = { tv };
+      const fecha = (r.match(/class="fecha">([\s\S]*?)<\/div>/) || [])[1] || "";
+      const clean = fecha.replace(/<br\s*\/?>/gi, " ").replace(/&nbsp;/g, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      const dv = clean.match(/(\d{2}\/\d{2})/);
+      const tv2 = clean.match(/(\d{1,2}:\d{2})/);
+      if (dv && tv2) { const k2 = dv[1] + "|" + tv2[1].padStart(5, "0"); if (!byTime[k2]) byTime[k2] = { tv }; }
     }
   } catch (e) {}
-  if (Object.keys(map).length > 10) { try { await env.PORRA.put("ff:tv:v3", JSON.stringify({ at: Date.now(), map }), { expirationTtl: 3600 }); } catch (e) {} }
-  return map;
+  const out = { at: Date.now(), byName, byTime };
+  if (Object.keys(byName).length > 10) { try { await env.PORRA.put("ff:tv:v4", JSON.stringify(out), { expirationTtl: 3600 }); } catch (e) {} }
+  return out;
 }
 async function getJornadaStrip(env) {
   let jd = null;
   try { jd = await getJornada(env, null); } catch (e) {}
   if (!jd || !jd.matches) return { matchday: 0, matches: [] };
-  let tvmap = {};
+  let tvmap = { byName: {}, byTime: {} };
   try { tvmap = await ffTvMap(env); } catch (e) {}
+  const byName = tvmap.byName || {}, byTime = tvmap.byTime || {};
   const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
   const dmF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "short" });
+  const dtF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" });
   const tF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hour12: false });
   const now = Date.now();
   const matches = (jd.matches || []).map((m) => {
@@ -1193,7 +1201,7 @@ async function getJornadaStrip(env) {
       time = tF.format(d);
     }
     let tv = [];
-    const e = ffTvFind(tvmap, home, away);
+    const e = byTime[dtF.format(d) + "|" + time] || ffTvFind(byName, home, away);
     if (e && e.tv) tv = e.tv;
     return {
       home, away,
