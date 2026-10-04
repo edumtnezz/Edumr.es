@@ -337,21 +337,30 @@
         if (cst) ph.appendChild(el("span", "mcard-badge " + cst.cls, cst.label));
         card.appendChild(ph);
         const body = el("div", "claus-body2");
-        const nm = el("div", "claus-name2", p.name || "");
-        const rb = roleBadge(p.role);
-        if (rb) nm.appendChild(el("span", "posb posb-" + posCls(p.role), rb + (roleBadge(p.role2) ? " · " + roleBadge(p.role2) : "")));
-        body.appendChild(nm);
-        const tm = el("div", "racha-meta");
+        body.appendChild(el("div", "claus-name2", p.name || ""));
+        const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
+        if (rb) {
+          const pros = el("div", "claus-pos");
+          pros.appendChild(el("span", "posb posb-" + posCls(p.role), rb));
+          if (rb2) pros.appendChild(el("span", "posb posb-" + posCls(p.role2), rb2));
+          body.appendChild(pros);
+        }
+        const tm = el("div", "claus-team");
         if (p.logo) { const lg = el("img", "racha-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; tm.appendChild(lg); }
         if (p.team) tm.appendChild(el("span", null, p.team));
-        tm.appendChild(el("span", "claus-owner", "· 👤 " + (p.owner || "?")));
         body.appendChild(tm);
-        body.appendChild(el("div", "claus-line", "💶 Valor: " + money(p.value) + " €"));
+        body.appendChild(el("div", "claus-owner", "👤 de " + (p.owner || "?")));
+        const st = el("div", "claus-stats");
+        const sbox = (val, lab, cls) => { const b = el("div", "claus-stat" + (cls ? " " + cls : "")); b.appendChild(el("b", null, String(val))); b.appendChild(el("small", null, lab)); return b; };
+        st.appendChild(sbox(Number(p.points) || 0, "PTS"));
+        st.appendChild(sbox((Number(p.avg) || 0).toFixed(1).replace(".", ","), "Media"));
+        st.appendChild(sbox((Number(p.clause) / 1e6).toFixed(1).replace(".", ",") + " M", "Cláusula", "clause"));
+        body.appendChild(st);
         const diff = (Number(p.clause) || 0) - (Number(p.value) || 0);
-        const cl = el("div", "claus-line claus-clause", "🔓 Cláusula: " + money(p.clause) + " €");
-        cl.appendChild(el("span", "claus-diff", "(+" + (diff / 1e6).toFixed(1).replace(".", ",") + " M sobre su valor)"));
-        body.appendChild(cl);
-        body.appendChild(el("div", "claus-line", "⭐ " + (Number(p.points) || 0) + " pts"));
+        const vrow = el("div", "claus-val");
+        vrow.appendChild(el("span", null, "Valor " + money(p.value) + " €"));
+        vrow.appendChild(el("span", "claus-diff", "+" + (diff / 1e6).toFixed(1).replace(".", ",") + " M sobre su valor"));
+        body.appendChild(vrow);
         const sl = statusLabel(p.status);
         const sc = p.status === "redcard" ? "red" : String(p.status || "").indexOf("injured") === 0 ? "inj" : p.status === "doubt" ? "doubt" : "ok";
         body.appendChild(el("div", "claus-status " + sc, sl));
