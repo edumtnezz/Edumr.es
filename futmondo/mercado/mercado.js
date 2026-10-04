@@ -530,7 +530,6 @@
       const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
       if (rb) c.appendChild(el("span", "mbc-role" + (rb2 ? " multi" : "") + " posb posb-" + posCls(p.role), rb + (rb2 ? "·" + rb2 : "")));
       c.appendChild(el("div", "mbc-exp", "~" + expOf(p).toFixed(1).replace(".", ",") + " pts"));
-      c.appendChild(statRow(p));
       if (p.value) c.appendChild(el("div", "mbc-val", money(p.value) + " €"));
       const f = (p.fitness || []).slice(0, 5);
       if (f.length) {
