@@ -2195,6 +2195,17 @@ export async function onRequestGet({ request, env, params }) {
   if (path === "clausulas") {
     try { return json(await getClausulas(env)); } catch (e) { return json({ players: [], error: String(e) }); }
   }
+  if (path === "dbgp") {
+    try {
+      const id = url.searchParams.get("id");
+      const header = await futbolHeader(env);
+      const s = await futbolPost("/1/player/summary", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP });
+      const m = await futbolPost("/2/player/matches", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP });
+      const data = (s.answer && s.answer.data) || {};
+      const pl = (m.answer && m.answer.player) || {};
+      return json({ dataKeys: Object.keys(data), data, playerKeys: Object.keys(pl), player: pl });
+    } catch (e) { return json({ error: String(e) }); }
+  }
   if (path === "noticias") {
     return json(await getNoticias(env));
   }
