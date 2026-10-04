@@ -55,7 +55,7 @@ const ROLE = { portero: "POR", defensa: "DEF", centrocampista: "MED", delantero:
 const POS = { portero: "por", defensa: "def", centrocampista: "med", delantero: "del" };
 function posCls(role) { return POS[String(role || "").toLowerCase()] || "x"; }
 var POSCOL_BY_CODE = { POR: "#16a34a", DEF: "#b45309", MED: "#0891b2", DEL: "#be123c" };
-var POSCOL_RING = { POR: "#22c55e", DEF: "#f59e0b", MED: "#38bdf8", DEL: "#ef4444" };
+var POSCOL_RING = { POR: "#22c55e", DEF: "#f59e0b", MED: "#38bdf8", CEN: "#38bdf8", DEL: "#ef4444" };
 function posRing(node, a, b) {
   if (!node) return node;
   var c1 = POSCOL_RING[roleBadge(a) || a], c2 = POSCOL_RING[roleBadge(b) || b];

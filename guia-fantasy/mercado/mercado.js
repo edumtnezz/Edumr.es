@@ -4,8 +4,8 @@
   const ROLE_FULL = { portero: "Portero", defensa: "Defensa", centrocampista: "Centrocampista", delantero: "Delantero" };
   const POS = { portero: "por", defensa: "def", centrocampista: "med", delantero: "del" };
   function posCls(role) { return POS[String(role || "").toLowerCase()] || "x"; }
-  const POSCOL_BY_CODE = { POR: "#16a34a", DEF: "#b45309", MED: "#0891b2", DEL: "#be123c" };
-  const POSCOL_RING = { POR: "#22c55e", DEF: "#f59e0b", MED: "#38bdf8", DEL: "#ef4444" };
+  const POSCOL_BY_CODE = { POR: "#16a34a", DEF: "#b45309", MED: "#0891b2", CEN: "#0891b2", DEL: "#be123c" };
+  const POSCOL_RING = { POR: "#22c55e", DEF: "#f59e0b", MED: "#38bdf8", CEN: "#38bdf8", DEL: "#ef4444" };
   function posRing(node, a, b) {
     if (!node) return node;
     const c1 = POSCOL_RING[roleBadge(a) || a], c2 = POSCOL_RING[roleBadge(b) || b];
@@ -1030,7 +1030,7 @@
   }
   async function runAnaliza(payload, prefijo) {
     const t0 = Date.now();
-    const upd = () => { const s = Math.round((Date.now() - t0) / 1000); const m = $("anMsg"); if (m) m.textContent = "🧠 " + prefijo + " " + s + " s"; };
+    const upd = () => { const s = Math.round((Date.now() - t0) / 1000); const m = $("anMsg"); if (m) m.textContent = "🧠 " + prefijo + " " + s + " s · suele tardar ~30 s, mantente a la espera"; };
     upd();
     const timer = setInterval(upd, 250);
     try {
@@ -1044,6 +1044,20 @@
     } catch (e) { clearInterval(timer); $("anMsg").textContent = "Error de red."; return null; }
   }
 
+  function miniLine(s) {
+    return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+  }
+  function renderAiText(t) {
+    const box = el("div", "an-ai");
+    String(t || "").split(/\n+/).forEach((ln) => {
+      const s = ln.trim();
+      if (!s) return;
+      const m = s.match(/^\*\*(.+?)\*\*:?\s*$/);
+      if (m) box.appendChild(el("div", "an-ai-head", m[1].replace(/:$/, "")));
+      else { const line = el("div", "an-ai-line"); line.innerHTML = miniLine(s); box.appendChild(line); }
+    });
+    return box;
+  }
   function renderAnalisis(d) {
     anData = d;
     const out = $("anOut");
@@ -1063,7 +1077,8 @@
       if (p.pos2) s += 2;
       return Math.max(5, Math.min(99, Math.round(s)));
     };
-    const tits = d.titulares || [];
+    const tits = (d.titulares = d.titulares || []);
+    const sups = (d.suplentes = d.suplentes || []);
     if (tits.length) {
       const nota = Math.round(tits.reduce((a, p) => a + scoreOf(p), 0) / tits.length);
       const parts = ["DEL", "CEN", "DEF", "POR"].map((k) => { const g = tits.filter((p) => p.pos === k); return g.length ? k + " " + Math.round(g.reduce((a, p) => a + scoreOf(p), 0) / g.length) : null; }).filter(Boolean);
@@ -1074,9 +1089,20 @@
       const cla = tits.filter((p) => p.clause && p.valor && p.clause < p.valor * 1.6).sort((a, b) => scoreOf(b) - scoreOf(a));
       if (cla.length) {
         const cb = el("div", "an-clauses");
-        cb.appendChild(el("div", "an-clauses-t", "🔒 Cláusulas bajas (te los pueden pagar):"));
-        cla.slice(0, 6).forEach((p) => cb.appendChild(el("div", "an-clause", p.nombre + " — cláusula " + money(p.clause) + " € (valor " + money(p.valor) + " €)")));
-        cb.appendChild(el("div", "muted small", "Súbeles la cláusula para no perderlos."));
+        cb.appendChild(el("div", "an-clauses-t", "🔒 Cláusulas bajas · súbeles la cláusula para no perderlos"));
+        const grid = el("div", "an-clause-grid");
+        cla.slice(0, 8).forEach((p) => {
+          const c = el("div", "an-clause-card");
+          const ph = el("div", "an-clause-photo");
+          ph.appendChild(photoImg(p.photo));
+          posRingCls(ph, p.pos, p.pos2);
+          c.appendChild(ph);
+          c.appendChild(el("div", "an-clause-name", p.nombre || ""));
+          c.appendChild(el("div", "an-clause-cl", "🔓 " + money(p.clause) + " €"));
+          c.appendChild(el("div", "an-clause-vl", "valor " + money(p.valor) + " €"));
+          grid.appendChild(c);
+        });
+        cb.appendChild(grid);
         out.appendChild(cb);
       }
     }
@@ -1091,81 +1117,77 @@
       out.appendChild(bar);
     }
 
-    const rows = ["DEL", "CEN", "DEF", "POR"];
+    function swapMembers(a, b) {
+      const aTit = tits.indexOf(a) >= 0;
+      const pa = a.pos, pb = b.pos;
+      if (aTit) { tits.splice(tits.indexOf(a), 1); sups.push(a); sups.splice(sups.indexOf(b), 1); tits.push(b); }
+      else { sups.splice(sups.indexOf(a), 1); tits.push(a); tits.splice(tits.indexOf(b), 1); sups.push(b); }
+      a.pos = pb; b.pos = pa;
+      anStale = true; renderAnalisis(d);
+    }
+    function swapPicker(a) {
+      const aTit = tits.indexOf(a) >= 0;
+      const others = aTit ? sups : tits;
+      if (!others.length) { openPicker("Cambiar jugador", (pl) => applyPlayer(a, pl)); return; }
+      const root = el("div");
+      root.appendChild(el("h2", "ficha-name", aTit ? "Sentar a " + (a.nombre || "") + " por…" : "Meter a " + (a.nombre || "") + " por…"));
+      const list = el("div", "pick-list");
+      others.forEach((o) => {
+        const row = el("button", "cmp-sugrow"); row.type = "button";
+        const ph = el("span", "cmp-sugphoto"); ph.appendChild(photoImg(o.photo)); posRingCls(ph, o.pos, o.pos2); row.appendChild(ph);
+        const bb = el("span", "cmp-sugbody");
+        bb.appendChild(el("span", "cmp-sugname", o.nombre || ""));
+        bb.appendChild(el("span", "cmp-sugteam", (o.pos || "") + (o.prob != null ? " · juega " + o.prob + "%" : "")));
+        row.appendChild(bb);
+        row.addEventListener("click", () => { swapMembers(a, o); closeModal(); });
+        list.appendChild(row);
+      });
+      root.appendChild(list);
+      showModal(root);
+    }
+    const pcard = (p, isBench) => {
+      const card = el("div", "pitch-player" + (isBench ? " bench" : ""));
+      const ph = el("div", "pitch-photo");
+      ph.appendChild(photoImg(p.photo));
+      posRingCls(ph, p.pos, p.pos2);
+      card.appendChild(ph);
+      card.appendChild(el("div", "pitch-name", p.nombre || ""));
+      const info = el("div", "pitch-info");
+      info.appendChild(el("span", "pc-prob", (p.prob != null ? p.prob : "?") + "%"));
+      if (p.estado && p.estado !== "OK" && p.estado !== "?") info.appendChild(el("span", "pc-bad", p.estado));
+      card.appendChild(info);
+      if (p.rival) card.appendChild(el("div", "pitch-ha", (p.casa === true ? "🏠 " : p.casa === false ? "✈️ " : "") + p.rival));
+      if (p.fecha) card.appendChild(el("div", "pitch-when", whenShort(p.fecha)));
+      card.appendChild(el("div", "pitch-pts", p.puntos != null ? p.puntos + " pts" : ""));
+      card.addEventListener("click", () => swapPicker(p));
+      return card;
+    };
     const field = el("div", "pitch");
-    rows.forEach((pos) => {
-      const ps = (d.titulares || []).filter((p) => p.pos === pos);
+    ["DEL", "CEN", "DEF", "POR"].forEach((pos) => {
+      const ps = tits.filter((p) => p.pos === pos);
       if (!ps.length) return;
       const row = el("div", "pitch-row");
-      ps.forEach((p) => {
-        const card = el("div", "pitch-player");
-        card.draggable = true;
-        const ph = el("div", "pitch-photo");
-        ph.appendChild(photoImg(p.photo));
-        posRingCls(ph, p.pos, p.pos2);
-        card.appendChild(ph);
-        card.appendChild(el("div", "pitch-name", p.nombre || ""));
-        const info = el("div", "pitch-info");
-        if (p.prob != null) info.appendChild(el("span", "pc-prob", p.prob + "% " + (p.probFf != null ? "juega" : "insp.")));
-        if (p.estado && p.estado !== "OK" && p.estado !== "?") info.appendChild(el("span", "pc-bad", p.estado));
-        card.appendChild(info);
-        if (p.casa === true || p.casa === false) card.appendChild(el("div", "pitch-ha", (p.casa ? "🏠 " : "✈️ ") + (p.rival || "?")));
-        if (p.fecha) card.appendChild(el("div", "pitch-when", whenShort(p.fecha)));
-        card.appendChild(el("div", "pitch-pts", p.puntos != null ? p.puntos + " pts" : ""));
-        card.addEventListener("click", () => openPicker("Cambiar jugador", (pl) => applyPlayer(p, pl)));
-        card.addEventListener("dragstart", () => { anDrag = p; card.classList.add("dragging"); });
-        card.addEventListener("dragend", () => card.classList.remove("dragging"));
-        card.addEventListener("dragover", (ev) => ev.preventDefault());
-        card.addEventListener("drop", (ev) => {
-          ev.preventDefault();
-          if (anDrag && anDrag !== p) {
-            const t = anDrag.pos;
-            anDrag.pos = p.pos;
-            p.pos = t;
-            anDrag = null;
-            anStale = true;
-            renderAnalisis(anData);
-          }
-        });
-        row.appendChild(card);
-      });
+      ps.forEach((p) => row.appendChild(pcard(p, false)));
       field.appendChild(row);
     });
     if (field.children.length) out.appendChild(field);
-    out.appendChild(el("p", "muted small", "Arrastra un jugador sobre otro para cambiar su posición."));
 
-    if ((d.suplentes || []).length) {
+    if (sups.length) {
       const bsec = el("div", "estado-sec");
-      bsec.appendChild(el("div", "estado-title", "Banquillo (toca para cambiar con un titular)"));
+      bsec.appendChild(el("div", "estado-title", "Banquillo (toca para meterlo en el once)"));
       const bench = el("div", "pitch-bench");
-      d.suplentes.forEach((p) => {
-        const card = el("div", "pitch-player bench");
-        const ph = el("div", "pitch-photo");
-        ph.appendChild(photoImg(p.photo));
-        posRingCls(ph, p.pos, p.pos2);
-        card.appendChild(ph);
-        card.appendChild(el("div", "pitch-name", p.nombre || ""));
-        const info = el("div", "pitch-info");
-        if (p.prob != null) info.appendChild(el("span", "pc-prob", p.prob + "%"));
-        if (p.estado && p.estado !== "OK" && p.estado !== "?") info.appendChild(el("span", "pc-bad", p.estado));
-        card.appendChild(info);
-        if (p.casa === true || p.casa === false) card.appendChild(el("div", "pitch-ha", (p.casa ? "🏠 " : "✈️ ") + (p.rival || "?")));
-        if (p.fecha) card.appendChild(el("div", "pitch-when", whenShort(p.fecha)));
-        card.appendChild(el("div", "pitch-pts", p.puntos != null ? p.puntos + " pts" : ""));
-        card.addEventListener("click", () => openPicker("Cambiar jugador", (pl) => applyPlayer(p, pl)));
-        bench.appendChild(card);
-      });
+      sups.forEach((p) => bench.appendChild(pcard(p, true)));
       bsec.appendChild(bench);
       out.appendChild(bsec);
     }
 
 
 
-    if ((d.titulares || []).length) {
+    if (tits.length) {
       const sec = el("div", "estado-sec");
-      sec.appendChild(el("div", "estado-title", "Titulares (toca un jugador para cambiarlo)"));
+      sec.appendChild(el("div", "estado-title", "Titulares"));
       const box = el("div", "an-list");
-      d.titulares.forEach((p) => {
+      tits.forEach((p) => {
         const row = el("div", "an-row clickable");
         row.appendChild(el("span", "an-pos", p.pos || ""));
         const main = el("div", "an-main");
@@ -1174,13 +1196,15 @@
         nameRow.appendChild(el("span", "an-name", p.nombre || ""));
         main.appendChild(nameRow);
         const sub = [];
-        if (p.pronostico) sub.push(p.pronostico);
-        if (sub.length) main.appendChild(el("span", "an-sub", sub.join("  ·  ")));
+        sub.push(p.prob != null ? "Juega " + p.prob + "%" : (p.pronostico || "—"));
+        if (p.puntos != null) sub.push(p.puntos + " pts");
+        main.appendChild(el("span", "an-sub", sub.filter(Boolean).join("  ·  ")));
         row.appendChild(main);
-        const cls = p.estado === "LESIÓN" ? "inj" : p.estado === "SANCIÓN" ? "red" : p.estado === "DUDA" ? "doubt" : "ok";
-        row.appendChild(el("span", "an-st st-" + cls, p.estado || ""));
-        row.appendChild(el("span", "an-ha", p.casa === true ? "🏠" : p.casa === false ? "✈️" : ""));
-        row.appendChild(el("span", "an-pts", p.puntos != null ? p.puntos + " pts" : ""));
+        if (p.estado && p.estado !== "OK" && p.estado !== "?") {
+          const cls = p.estado === "LESIÓN" ? "inj" : p.estado === "SANCIÓN" ? "red" : "doubt";
+          row.appendChild(el("span", "an-st st-" + cls, p.estado));
+        }
+        if (p.rival) row.appendChild(el("span", "an-ha", (p.casa === true ? "🏠 " : p.casa === false ? "✈️ " : "") + p.rival));
         row.appendChild(el("span", "an-edit", "✏️"));
         row.addEventListener("click", () => openPicker("Cambiar jugador", (pl) => applyPlayer(p, pl)));
         box.appendChild(row);
@@ -1191,9 +1215,7 @@
     if (d.analisis) {
       const sec = el("div", "estado-sec");
       sec.appendChild(el("div", "estado-title", "Recomendaciones de la IA"));
-      const t = el("div", "an-text");
-      t.innerHTML = miniMd(d.analisis);
-      sec.appendChild(t);
+      sec.appendChild(renderAiText(d.analisis));
       out.appendChild(sec);
     }
   }
