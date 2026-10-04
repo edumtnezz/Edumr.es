@@ -505,8 +505,12 @@ html { overflow-anchor: none; }
 .claus-stat small { font-size: 0.5rem; color: var(--muted); text-transform: uppercase; font-weight: 700; }
 .claus-stat.clause b { color: var(--accent); font-size: 0.8rem; white-space: nowrap; }
 .claus-stat.media { background: #16a34a; border-color: #16a34a; }
-.claus-stat.media b { color: #fff; font-size: 1.3rem; line-height: 1.05; }
+.claus-stat.media b { color: #fff; font-size: 1.12rem; line-height: 1.05; }
 .claus-stat.media small { color: rgba(255, 255, 255, 0.85); }
+.claus-val b { font-weight: 800; }
+.claus-above { color: #dc2626; font-size: 0.72rem; font-weight: 800; }
+.claus-played { font-size: 0.74rem; color: var(--muted); margin-top: 3px; }
+.fm-nojugo { color: var(--muted); font-style: italic; }
 .claus-val { display: flex; flex-direction: column; gap: 2px; font-size: 0.8rem; }
 .claus-val .claus-diff { color: var(--muted); font-size: 0.72rem; }
 .claus-status { display: inline-block; font-size: 0.68rem; font-weight: 800; padding: 1px 8px; border-radius: 6px; margin-top: 6px; color: #fff; background: #16a34a; }

@@ -358,15 +358,17 @@
         body.appendChild(st);
         const diff = (Number(p.clause) || 0) - (Number(p.value) || 0);
         const vrow = el("div", "claus-val");
-        vrow.appendChild(el("span", null, "Valor " + money(p.value) + " €"));
-        vrow.appendChild(el("span", "claus-diff", "+" + (diff / 1e6).toFixed(1).replace(".", ",") + " M sobre su valor"));
+        vrow.appendChild(el("b", null, "Valor " + money(p.value) + " €"));
+        vrow.appendChild(el("span", "claus-above", "+" + (diff / 1e6).toFixed(1).replace(".", ",") + " M por encima de su valor"));
         body.appendChild(vrow);
+        const j0 = Number(d && d.jornada) || 0;
+        const playedPct = j0 ? Math.round(((Number(p.matches) || 0) / j0) * 100) : 0;
+        body.appendChild(el("div", "claus-played", "Jugados: " + playedPct + "% de los partidos"));
         const sl = statusLabel(p.status);
         const sc = p.status === "redcard" ? "red" : String(p.status || "").indexOf("injured") === 0 ? "inj" : p.status === "doubt" ? "doubt" : "ok";
         body.appendChild(el("div", "claus-status " + sc, sl));
         const blocked = p.unlock && new Date(p.unlock).getTime() > Date.now();
         if (blocked) body.appendChild(el("div", "claus-lock", "🔒 se libera el " + fmtDiaLargo(p.unlock)));
-        body.appendChild(el("div", "claus-why", "💡 " + reasonOf(p)));
         card.appendChild(body);
         card.addEventListener("click", () => openFicha(p));
         grid.appendChild(card);
@@ -654,6 +656,8 @@
   function setTeam(t) {
     teamFilter = t || "";
     syncClubActive();
+    sortMode = "all";
+    document.querySelectorAll(".merc-segbtn").forEach((x) => x.classList.toggle("active", x.dataset.sort === "all"));
     shown = 18;
     renderGrid();
     const grid = $("marketGrid");
@@ -1100,21 +1104,28 @@
     const colR = el("div", "ficha-col");
 
     const fit = (d.fitness || []).map((x) => Number(x) || 0);
-    if (fit.length) {
+    const ms = d.matches || [];
+    const j0 = Number(d.jornada) || 0;
+    if (ms.length || fit.length) {
       colL.appendChild(el("div", "estado-title", "Puntos por jornada (Futmondo Social)"));
       const tbl = el("div", "ficha-matches");
-      const ms = d.matches || [];
-      const j0 = Number(d.jornada) || 0;
-      for (let k = 0; k < fit.length; k++) {
-        const v = Math.round(fit[fit.length - 1 - k]);
-        const m = ms[k] || {};
-        const j = m.r || (j0 ? j0 - k : 0);
+      const valByR = {}, rivals = {};
+      ms.forEach((m, k) => { if (k < fit.length) valByR[m.r] = Math.round(fit[fit.length - 1 - k]); rivals[m.r] = m; });
+      const topJ = j0 || Math.max.apply(null, ms.map((x) => x.r).concat([0]));
+      for (let j = topJ; j >= 1; j--) {
         const row = el("div", "fm-row");
-        row.appendChild(el("span", "fm-j", j ? "J" + j : ""));
-        const rival = (m.home === d.team) ? m.away : (m.away === d.team ? m.home : (m.away || m.home || ""));
-        const casa = m.home === d.team;
-        row.appendChild(el("span", "fm-match", (rival || m.r) ? ((rival && casa ? "🏠 " : rival ? "✈️ " : "") + (rival || "")) : ""));
-        row.appendChild(el("span", "fm-pts pt-" + ptClass(v), String(v)));
+        row.appendChild(el("span", "fm-j", "J" + j));
+        const m = rivals[j];
+        if (m) {
+          const rival = (m.home === d.team) ? m.away : (m.away === d.team ? m.home : (m.away || m.home || ""));
+          const casa = m.home === d.team;
+          row.appendChild(el("span", "fm-match", rival ? ((casa ? "🏠 " : "✈️ ") + rival) : ""));
+          const v = valByR[j] != null ? valByR[j] : null;
+          row.appendChild(el("span", "fm-pts " + (v != null ? "pt-" + ptClass(v) : ""), v != null ? String(v) : "—"));
+        } else {
+          row.appendChild(el("span", "fm-match fm-nojugo", "No jugó"));
+          row.appendChild(el("span", "fm-pts", "—"));
+        }
         tbl.appendChild(row);
       }
       colL.appendChild(tbl);

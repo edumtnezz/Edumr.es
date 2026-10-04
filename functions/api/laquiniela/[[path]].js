@@ -733,7 +733,7 @@ function expOfB(p) {
 }
 
 async function getClausulas(env) {
-  try { const c = await env.PORRA.get("clausulas:v9", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
+  try { const c = await env.PORRA.get("clausulas:v10", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
   let cache;
   try { cache = await getMarketPlayers(env); } catch (e) { return { players: [], updatedAt: null }; }
   let players = cache.players || [];
@@ -773,7 +773,7 @@ async function getClausulas(env) {
       const mine = !!(myTeam && stripAccents(owner.toLowerCase()) === stripAccents(myTeam.toLowerCase()));
       out.push({
         id: p.id, name: p.name, role: p.role, role2: p.role2, team: p.team, logo: p.logo, photo: p.photo,
-        value: p.value, points: p.points, avg: p.avg, fitness: p.fitness, prob: p.prob, status: p.status,
+        value: p.value, points: p.points, avg: p.avg, matches: p.matches, fitness: p.fitness, prob: p.prob, status: p.status,
         clause: Number(cl.price) || 0, unlock: cl.date || "", owner, mine,
         exp: Math.round(expOfB(p) * 10) / 10,
         chg1: p.chg1, chg7: p.chg7, chg14: p.chg14, chg30: p.chg30,
@@ -782,8 +782,9 @@ async function getClausulas(env) {
     await sleep(90);
   }
   out.sort((a, b) => b.exp - a.exp || b.clause - a.clause);
-  const data = { updatedAt: Date.now(), me: myTeam, debug: { own: top.length, ok: okC, owned: ownC, err: errC }, diag, players: out.slice(0, 15) };
-  try { await env.PORRA.put("clausulas:v9", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
+  const jornada = players.reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0);
+  const data = { updatedAt: Date.now(), me: myTeam, jornada, players: out.slice(0, 15) };
+  try { await env.PORRA.put("clausulas:v10", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
   return data;
 }
 
