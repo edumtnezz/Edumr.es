@@ -511,6 +511,52 @@ html { overflow-anchor: none; }
 .claus-above { color: #dc2626; font-size: 0.72rem; font-weight: 800; }
 .claus-played { font-size: 0.74rem; color: var(--muted); margin-top: 3px; }
 .fm-nojugo { color: var(--muted); font-style: italic; }
+
+/* Dashboard participación (ficha) */
+.dash { margin: 14px 0; }
+.dash-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; }
+.dash-kicker { color: #16a34a; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.dash-title { font-family: 'Space Grotesk', sans-serif; font-size: 1.2rem; margin: 2px 0 8px; }
+.dash-legend { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; font-size: 0.7rem; color: var(--muted); margin-bottom: 12px; }
+.dash-lg { display: inline-flex; align-items: center; gap: 5px; }
+.dash-lg .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.dot.blue { background: #2563eb; }
+.dot.green { background: #16a34a; }
+.dot.yellow { background: #f59e0b; }
+.dash-media { margin-left: auto; color: #dc2626; font-weight: 700; }
+.dash-chart { position: relative; height: 180px; }
+.dash-chart::before { content: ''; position: absolute; left: 0; right: 0; bottom: 20px; height: 1px; background: var(--border); }
+.dash-avg { position: absolute; left: 0; right: 0; border-top: 1px dashed #dc2626; }
+.dash-avglab { position: absolute; right: 0; top: -13px; font-size: 0.6rem; color: #dc2626; font-weight: 700; }
+.dash-bars { position: absolute; inset: 0; display: flex; align-items: flex-end; gap: 6px; padding-bottom: 20px; }
+.dash-col { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+.dash-barwrap { width: 100%; flex: 1; display: flex; align-items: flex-end; justify-content: center; }
+.dash-bar { width: 62%; max-width: 28px; border-radius: 6px 6px 0 0; }
+.dash-bar.completo { background: #2563eb; }
+.dash-bar.sustituido { background: #16a34a; }
+.dash-bar.banquillo { background: #f59e0b; }
+.dash-bar.none { height: 4px !important; background: var(--border); border-radius: 3px; }
+.dash-x { font-size: 0.62rem; color: var(--muted); }
+.dash-sect { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.92rem; margin: 16px 0 8px; color: var(--text); }
+.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dash-m { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px; }
+.dash-mh { display: flex; align-items: center; justify-content: space-between; }
+.dash-mt { font-size: 0.74rem; color: var(--muted); font-weight: 700; }
+.dash-ico { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.68rem; color: #fff; }
+.dash-ico.green { background: #16a34a; }
+.dash-ico.blue { background: #2563eb; }
+.dash-ico.purple { background: #7c3aed; }
+.dash-ico.orange { background: #ea580c; }
+.dash-mb { display: flex; align-items: baseline; gap: 5px; margin-top: 6px; }
+.dash-mb b { font-family: 'Space Grotesk', sans-serif; font-size: 1.45rem; color: var(--text); }
+.dash-ms { font-size: 0.7rem; color: var(--muted); }
+.dash-pb { height: 6px; border-radius: 4px; background: var(--border); margin-top: 8px; overflow: hidden; }
+.dash-pf { display: block; height: 100%; border-radius: 4px; background: #16a34a; }
+.dash-pf.blue { background: #2563eb; }
+.dash-avail { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px; text-align: center; }
+.dash-al { font-size: 0.72rem; color: var(--muted); font-weight: 700; }
+.dash-av { font-family: 'Space Grotesk', sans-serif; font-size: 1.4rem; font-weight: 800; color: var(--text); }
+.dash-as { font-size: 0.68rem; color: #16a34a; font-weight: 700; }
 .claus-val { display: flex; flex-direction: column; gap: 2px; font-size: 0.8rem; }
 .claus-val .claus-diff { color: var(--muted); font-size: 0.72rem; }
 .claus-status { display: inline-block; font-size: 0.68rem; font-weight: 800; padding: 1px 8px; border-radius: 6px; margin-top: 6px; color: #fff; background: #16a34a; }

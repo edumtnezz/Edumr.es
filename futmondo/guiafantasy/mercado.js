@@ -1016,6 +1016,73 @@
   const whenShort = (v) => { if (!v) return ""; try { return new Date(v).toLocaleString("es-ES", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }); } catch (e) { return ""; } };
   function shortRival(s) { const t = String(s || "").trim(); return t.length > 14 ? t.slice(0, 13) + "…" : t; }
 
+  function renderParticipacion(par, status) {
+    const box = el("div", "dash");
+    const card = el("div", "dash-card");
+    card.appendChild(el("div", "dash-kicker", "Participación"));
+    card.appendChild(el("h3", "dash-title", "Minutos y titularidades"));
+    const legend = el("div", "dash-legend");
+    const lg = (cls, txt) => { const s = el("span", "dash-lg"); s.appendChild(el("i", "dot " + cls)); s.appendChild(el("span", null, txt)); return s; };
+    legend.appendChild(lg("blue", "90' Completos"));
+    legend.appendChild(lg("green", "Titular sustituido"));
+    legend.appendChild(lg("yellow", "Desde banquillo"));
+    legend.appendChild(el("span", "dash-media", "— Media: " + (Number(par.avgMin) || 0).toFixed(1).replace(".", ",") + "'"));
+    card.appendChild(legend);
+    const chart = el("div", "dash-chart");
+    const byR = {}; (par.byJornada || []).forEach((x) => { byR[x.r] = x; });
+    const n = Number(par.jornada) || 0;
+    const avg = el("div", "dash-avg");
+    avg.style.bottom = Math.min(100, ((Number(par.avgMin) || 0) / 90) * 100) + "%";
+    avg.appendChild(el("span", "dash-avglab", "Media " + (Number(par.avgMin) || 0).toFixed(1).replace(".", ",") + "'"));
+    chart.appendChild(avg);
+    const bars = el("div", "dash-bars");
+    for (let j = 1; j <= n; j++) {
+      const c = byR[j];
+      const col = el("div", "dash-col");
+      const bw = el("div", "dash-barwrap");
+      if (c) {
+        const b = el("div", "dash-bar " + c.cat);
+        b.style.height = Math.max(5, Math.min(100, ((Number(c.mins) || 0) / 90) * 100)) + "%";
+        b.title = "J" + j + " · " + c.mins + "'";
+        bw.appendChild(b);
+      } else {
+        bw.appendChild(el("div", "dash-bar none"));
+      }
+      col.appendChild(bw);
+      col.appendChild(el("span", "dash-x", "J" + j));
+      bars.appendChild(col);
+    }
+    chart.appendChild(bars);
+    card.appendChild(chart);
+    box.appendChild(card);
+
+    box.appendChild(el("div", "dash-sect", "Estadísticas de interés"));
+    const grid = el("div", "dash-grid");
+    const mcard = (title, big, sub, bar, barcls, ico, icocls) => {
+      const c = el("div", "dash-m");
+      const hd = el("div", "dash-mh"); hd.appendChild(el("span", "dash-mt", title)); if (ico) hd.appendChild(el("span", "dash-ico " + icocls, ico)); c.appendChild(hd);
+      const b = el("div", "dash-mb"); b.appendChild(el("b", null, big)); if (sub) b.appendChild(el("span", "dash-ms", sub)); c.appendChild(b);
+      if (bar != null) { const pb = el("div", "dash-pb"); const f = el("span", "dash-pf" + (barcls ? " " + barcls : "")); f.style.width = Math.min(100, bar) + "%"; pb.appendChild(f); c.appendChild(pb); }
+      return c;
+    };
+    grid.appendChild(mcard("Titularidades", par.starts + "/" + par.played, par.pctStart + "%", par.pctStart, "green", "✓", "green"));
+    grid.appendChild(mcard("Participación", par.played + " de " + par.jornada, "encuentros", par.jornada ? (par.played / par.jornada) * 100 : 0, "blue", "+", "blue"));
+    grid.appendChild(mcard("Minutos Totales", par.totalMin + " min", "de " + par.maxMin + " min posibles (" + par.pctMin + "%)", null, null, "⏱", "purple"));
+    grid.appendChild(mcard("Minutos / Partido", (Number(par.avgMin) || 0).toFixed(2).replace(".", ",") + " min/partido", null, null, null, "📊", "orange"));
+    box.appendChild(grid);
+
+    box.appendChild(el("div", "dash-sect", "Disponibilidad & disciplina"));
+    const av = el("div", "dash-avail");
+    const acell = (lab, val, sub) => { const c = el("div", "dash-a"); c.appendChild(el("div", "dash-al", lab)); c.appendChild(el("div", "dash-av", String(val))); c.appendChild(el("div", "dash-as", sub)); return c; };
+    const inj = status && String(status).indexOf("injured") === 0;
+    const sanct = (Number(par.reds) || 0) + (status === "redcard" ? 1 : 0);
+    av.appendChild(acell("Banquillo", par.bench, "Entró " + par.bench + " " + (par.bench === 1 ? "vez" : "veces")));
+    av.appendChild(acell("Sanciones", sanct, sanct ? "Sancionado" : "Limpio"));
+    av.appendChild(acell("Lesiones", inj ? 1 : 0, inj ? "Lesionado" : "100% apto"));
+    box.appendChild(av);
+    return box;
+  }
+
   function renderFicha(d, p) {
     const root = el("div", "ficha");
     const head = el("div", "ficha-head-center");
@@ -1057,6 +1124,8 @@
       const pct = Math.round((cheaper / (peers.length - 1)) * 100);
       root.appendChild(el("div", "ficha-pct", "💶 Precio: más caro que el " + pct + "% de los " + (roleFull(d.role || p.role) || "jugadores") + " (" + peers.length + ")"));
     }
+
+    if (d.participacion) root.appendChild(renderParticipacion(d.participacion, d.status || p.status));
 
     const cols = el("div", "ficha-cols");
     const colL = el("div", "ficha-col");

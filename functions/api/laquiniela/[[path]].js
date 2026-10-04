@@ -1074,6 +1074,7 @@ async function playerFicha(env, id) {
   const matches = (a.matches || []).map((m) => {
     const po = (m.ps && m.ps.po) || [];
     const g = (mode) => { const z = po.find((k) => k.mode === mode); return z ? Number(z.p) || 0 : 0; };
+    const dta = (m.ps && m.ps.data) || {};
     const hn = (m.h && m.h.name) || "", an = (m.a && m.a.name) || "";
     const sc = smap[teamKey(hn) + "|" + teamKey(an)];
     return {
@@ -1083,6 +1084,10 @@ async function playerFicha(env, id) {
       score: sc ? sc.hs + "-" + sc.as : "",
       date: (m.info && m.info.date) || "",
       finished: m.st === "F",
+      mins: Number(dta.mins_played) || 0,
+      sub: dta.substituted === "True" || dta.substituted === true,
+      yellow: Number(dta.yellow_card) || 0,
+      red: Number(dta.red_card) || 0,
       stats: g("stats"), picas: g("picas"), ff: g("ff"), ss: g("ss"), as: g("as"), marca: g("marca"),
     };
   }).slice(0, 60);
@@ -1152,6 +1157,19 @@ async function playerFicha(env, id) {
     } catch (e) {}
   }
   const fitArr = (mp && mp.fitness && mp.fitness.length) ? mp.fitness : ((pl.average && pl.average.fitness) || []);
+  const cats = matches.map((m) => ({ r: m.r, mins: m.mins || 0, cat: (m.mins || 0) >= 85 ? "completo" : m.sub ? "sustituido" : "banquillo" }));
+  const starts = cats.filter((c) => c.cat !== "banquillo").length;
+  const bench = cats.filter((c) => c.cat === "banquillo").length;
+  const totalMin = matches.reduce((s, m) => s + (m.mins || 0), 0);
+  const maxMin = (Number(lJornada) || 0) * 90;
+  const participacion = {
+    jornada: Number(lJornada) || 0, played: matches.length, starts, bench,
+    totalMin, maxMin, pctMin: maxMin ? Math.round((totalMin / maxMin) * 100) : 0,
+    avgMin: matches.length ? Math.round((totalMin / matches.length) * 10) / 10 : 0,
+    pctStart: matches.length ? Math.round((starts / matches.length) * 100) : 0,
+    reds: matches.reduce((s, m) => s + (m.red ? 1 : 0), 0),
+    byJornada: cats,
+  };
   let fichaje = null;
   try { fichaje = await tmProfile(env, pl.name || "", (a.team && a.team.name) || pl.team || ""); } catch (e) {}
   return {
@@ -1176,6 +1194,7 @@ async function playerFicha(env, id) {
     temporada,
     temporadas,
     fichaje,
+    participacion,
   };
 }
 
@@ -2236,15 +2255,6 @@ export async function onRequestGet({ request, env, params }) {
   }
   if (path === "clausulas") {
     try { return json(await getClausulas(env)); } catch (e) { return json({ players: [], error: String(e) }); }
-  }
-  if (path === "dbgm") {
-    try {
-      const header = await futbolHeader(env);
-      const m = await futbolPost("/2/player/matches", header, { playerId: url.searchParams.get("id"), championshipId: FUTMONDO_CHAMPIONSHIP });
-      const a = m.answer || {};
-      const matches = a.matches || [];
-      return json({ playerKeys: a.player ? Object.keys(a.player) : [], player: a.player, mkeys: matches[0] ? Object.keys(matches[0]) : [], sample: matches.slice(0, 3) });
-    } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "noticias") {
     return json(await getNoticias(env));
