@@ -481,6 +481,7 @@
     document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
     const panel = $("tab-" + name);
     if (panel) panel.classList.remove("hidden");
+    try { localStorage.setItem("merc_tab", name); } catch (e) {}
   }
 
   function expOf(p) {
@@ -944,6 +945,11 @@
   }
 
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
+  (function restoreTab() {
+    let name = "";
+    try { name = localStorage.getItem("merc_tab") || ""; } catch (e) {}
+    if (name && $("tab-" + name)) switchTab(name);
+  })();
   document.querySelectorAll(".merc-segbtn").forEach((b) => b.addEventListener("click", () => {
     document.querySelectorAll(".merc-segbtn").forEach((x) => x.classList.remove("active"));
     b.classList.add("active");
