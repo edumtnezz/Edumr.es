@@ -770,15 +770,14 @@ async function getClausulas(env) {
     if (diag.length < 20) diag.push(p.name + ":" + (owner ? "OWN[" + owner + "]" : "free") + " cl=" + (cl.price ? 1 : 0));
     if (cl.price && owner) {
       ownC++;
-      if (!(myTeam && stripAccents(owner.toLowerCase()) === stripAccents(myTeam.toLowerCase()))) {
-        out.push({
-          id: p.id, name: p.name, role: p.role, role2: p.role2, team: p.team, logo: p.logo, photo: p.photo,
-          value: p.value, points: p.points, avg: p.avg, fitness: p.fitness, prob: p.prob, status: p.status,
-          clause: Number(cl.price) || 0, unlock: cl.date || "", owner,
-          exp: Math.round(expOfB(p) * 10) / 10,
-          chg1: p.chg1, chg7: p.chg7, chg14: p.chg14, chg30: p.chg30,
-        });
-      }
+      const mine = !!(myTeam && stripAccents(owner.toLowerCase()) === stripAccents(myTeam.toLowerCase()));
+      out.push({
+        id: p.id, name: p.name, role: p.role, role2: p.role2, team: p.team, logo: p.logo, photo: p.photo,
+        value: p.value, points: p.points, avg: p.avg, fitness: p.fitness, prob: p.prob, status: p.status,
+        clause: Number(cl.price) || 0, unlock: cl.date || "", owner, mine,
+        exp: Math.round(expOfB(p) * 10) / 10,
+        chg1: p.chg1, chg7: p.chg7, chg14: p.chg14, chg30: p.chg30,
+      });
     }
     await sleep(90);
   }

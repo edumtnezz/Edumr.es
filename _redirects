@@ -3,3 +3,5 @@
 /laquiniela /futmondo/quiniela/ 301
 /laporra/* /futmondo/porra/:splat 301
 /laporra /futmondo/porra/ 301
+/futmondo/pujas/* /futmondo/lapuja/:splat 301
+/futmondo/pujas /futmondo/lapuja/ 301

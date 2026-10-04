@@ -9,7 +9,7 @@
 .merc-row:hover .merc-row-name { color: var(--accent); }
 .merc-row-photo { position: relative; flex: 0 0 auto; width: 36px; height: 36px; }
 .merc-row-img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--bg-surface); }
-.merc-row-role { position: absolute; left: -2px; bottom: -2px; font-size: 0.32rem; font-weight: 800; padding: 0 3px; line-height: 1.35; border-radius: 3px; letter-spacing: 0.01em; }
+.merc-row-role { position: absolute; left: -2px; bottom: -2px; font-size: 0.42rem; font-weight: 800; padding: 0 4px; line-height: 1.45; border-radius: 4px; letter-spacing: 0.02em; }
 .merc-row-info { flex: 1 1 auto; min-width: 0; }
 .merc-row-name { display: block; color: var(--text); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .merc-row-meta { display: flex; align-items: center; gap: 4px; font-size: 0.72rem; color: #9fb0c4; }
@@ -488,6 +488,18 @@ html { overflow-anchor: none; }
 .claus-exp { font-size: 0.72rem; color: var(--text); font-weight: 700; }
 .claus-lock { font-size: 0.68rem; color: #f59e0b; font-weight: 700; margin-top: 3px; }
 .claus-free { font-size: 0.68rem; color: #16a34a; font-weight: 700; margin-top: 3px; }
+
+/* ---------- Analiza: subida de archivo ---------- */
+.an-desc { background: rgba(127, 127, 127, 0.06); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin: 8px 0 16px; }
+.an-desc b { display: block; margin-bottom: 6px; }
+.an-desc ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.an-desc li { font-size: 0.85rem; color: var(--text); }
+.an-drop { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; padding: 26px 18px; border: 2px dashed var(--border-hover, #22c55e); border-radius: 16px; background: rgba(34, 197, 94, 0.06); cursor: pointer; transition: all 0.2s ease; margin-bottom: 14px; }
+.an-drop:hover { border-color: var(--accent); background: rgba(34, 197, 94, 0.12); }
+.an-drop-ico { font-size: 1.8rem; }
+.an-drop-t { font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+.an-drop-s { font-size: 0.8rem; color: var(--muted); }
+.an-file { display: none !important; }
 
 
 

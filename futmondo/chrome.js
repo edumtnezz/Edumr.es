@@ -24,6 +24,13 @@
     var pv = document.getElementById("cxJPrev"), nx = document.getElementById("cxJNext");
     if (pv) pv.addEventListener("click", function () { loadJornada(jornada - 1); });
     if (nx) nx.addEventListener("click", function () { loadJornada(jornada + 1); });
+    var live = document.getElementById("cxLiveTrack");
+    if (live) live.addEventListener("click", function (e) {
+      var a = e.target && e.target.closest ? e.target.closest(".cx-live-item") : null;
+      if (!a) return;
+      e.preventDefault();
+      document.dispatchEvent(new CustomEvent("cx:news", { detail: { link: a.getAttribute("href"), title: a.getAttribute("data-title") } }));
+    });
     loadJornada(0);
     loadTeams();
     loadLive();
@@ -94,7 +101,7 @@
         box.innerHTML = items.map(function (x) {
           var img = x.thumb ? '<img src="' + esc(x.thumb) + '" alt="" loading="lazy" onerror="this.remove()">' : "";
           var tm = x.time ? '<b class="cx-live-time">' + esc((x.date ? x.date + " · " : "") + x.time) + '</b>' : "";
-          return '<a class="cx-live-item" href="' + esc(x.link) + '" target="_blank" rel="noopener">' + img +
+          return '<a class="cx-live-item" href="' + esc(x.link) + '" data-title="' + esc(x.title) + '">' + img +
             '<span class="cx-live-txt">' + esc(x.title) + '</span>' + tm + '</a>';
         }).join("");
         autoScroll();

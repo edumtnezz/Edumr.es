@@ -1453,6 +1453,12 @@
   const estadoSel = $("estadoSel"); if (estadoSel) estadoSel.addEventListener("change", renderEstado);
   const teamSel = $("mjTeam"); if (teamSel) teamSel.addEventListener("change", () => { syncClubActive(); shown = 18; renderGrid(); });
 
+  document.addEventListener("cx:news", (e) => {
+    const d = e.detail || {};
+    switchTab("noticias");
+    openNoticiaInline(d.link, d.title);
+  });
+
   loadNoticias();
   load();
   setInterval(load, 60000);

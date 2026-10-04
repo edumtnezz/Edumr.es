@@ -275,7 +275,7 @@ body {
   display: flex;
   align-items: stretch;
   overflow: hidden;
-  margin: 12px 0 16px;
+  margin: 0;
 }
 .cx-live-tag {
   flex: 0 0 auto;

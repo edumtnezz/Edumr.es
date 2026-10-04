@@ -166,7 +166,7 @@ function render() {
     intro.appendChild(el("p", "muted", "Con un nombre y un código de 4 o 6 números juegas a La Puja, La Porra y La Quiniela. Si aún no tienes cuenta, se crea sola. Después entra siempre con lo mismo."));
     panel.appendChild(intro);
     const go = el("a", "btn-primary big", "Crear cuenta o entrar");
-    go.href = "/futmondo/cuenta/?next=" + encodeURIComponent("/futmondo/pujas/");
+    go.href = "/futmondo/cuenta/?next=" + encodeURIComponent("/futmondo/lapuja/");
     panel.appendChild(go);
   }
 
@@ -480,7 +480,7 @@ function updateMarketTime() {
   upd.textContent = mins <= 0 ? "Actualizado ahora" : "Actualizado hace " + mins + " min";
 }
 
-let marketShown = 60;
+let marketShown = 18;
 
 function renderMarket() {
   const grid = $("marketGrid");
@@ -540,7 +540,7 @@ function renderMarket() {
   });
   if (all.length > players.length) {
     const more = el("button", "btn-ghost market-more", "Ver más jugadores (" + (all.length - players.length) + ")");
-    more.addEventListener("click", () => { marketShown += 60; renderMarket(); });
+    more.addEventListener("click", () => { marketShown += 18; renderMarket(); });
     grid.appendChild(more);
   }
 }
@@ -553,7 +553,7 @@ async function loadMarket(q) {
     const d = await res.json();
     if (!grid.isConnected) return;
     marketData = { players: d.players || [], updatedAt: d.updatedAt || null };
-    marketShown = 60;
+    marketShown = 18;
     renderMarket();
   } catch (e) {
     if (grid.isConnected) { grid.innerHTML = ""; grid.appendChild(el("p", "market-empty", "No se pudo cargar la lista.")); }
@@ -721,7 +721,7 @@ function toast(msg) {
 
 function shareWhatsApp(p) {
   if (!p) return;
-  const url = "https://edumr.es/futmondo/pujas/";
+  const url = "https://edumr.es/futmondo/lapuja/";
   let txt;
   if (p.status === "closed") {
     if (p.winner) txt = "🏆 Subasta finalizada en Futmondo MR\n\nJugador: " + p.player + "\nGanador: " + p.winner.user + "\nPuja ganadora: " + money(p.winner.amount) + " €";
