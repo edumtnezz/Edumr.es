@@ -1134,7 +1134,7 @@ function ffTvFind(map, home, away) {
 }
 async function ffTvMap(env) {
   try {
-    const c = await env.PORRA.get("ff:tv:v5", "json");
+    const c = await env.PORRA.get("ff:tv:v6", "json");
     if (c && c.list && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c;
   } catch (e) {}
   const byName = {}, list = [];
@@ -1161,6 +1161,7 @@ async function ffTvMap(env) {
         let d = (tag.match(/data-src="([^"]*)"/) || [])[1] || "";
         if (a && !BAD.test(a) && d) {
           if (d.indexOf("//") === 0) d = "https:" + d;
+          if (/dazn/i.test(a)) d = "/img/dazn.svg";
           tv.push({ name: a, logo: d });
         }
       }
@@ -1176,7 +1177,7 @@ async function ffTvMap(env) {
     }
   } catch (e) {}
   const out = { at: Date.now(), byName, list };
-  if (list.length > 10) { try { await env.PORRA.put("ff:tv:v5", JSON.stringify(out), { expirationTtl: 3600 }); } catch (e) {} }
+  if (list.length > 10) { try { await env.PORRA.put("ff:tv:v6", JSON.stringify(out), { expirationTtl: 3600 }); } catch (e) {} }
   return out;
 }
 async function getJornadaStrip(env, matchday) {

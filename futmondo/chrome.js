@@ -27,6 +27,7 @@
     loadJornada(0);
     loadTeams();
     loadLive();
+    setInterval(loadLive, 90000);
   }
   function loadJornada(n) {
     var grid = document.getElementById("cxJGrid");
@@ -79,7 +80,10 @@
       .then(function (r) { return r.json(); })
       .then(function (d) {
         var items = (d && d.items) || [];
-        if (!items.length) { box.innerHTML = '<span class="cx-live-load">Sin novedades ahora mismo.</span>'; return; }
+        if (!items.length) { if (!box.dataset.sig) box.innerHTML = '<span class="cx-live-load">Sin novedades ahora mismo.</span>'; return; }
+        var sig = (items[0].link || items[0].title || "") + "|" + items.length;
+        if (box.dataset.sig === sig) return;
+        box.dataset.sig = sig;
         box.innerHTML = items.map(function (x) {
           var img = x.thumb ? '<img src="' + esc(x.thumb) + '" alt="" loading="lazy" onerror="this.remove()">' : "";
           var tm = x.time ? '<b class="cx-live-time">' + esc((x.date ? x.date + " · " : "") + x.time) + '</b>' : "";
@@ -87,7 +91,7 @@
             '<span class="cx-live-txt">' + esc(x.title) + '</span>' + tm + '</a>';
         }).join("");
       })
-      .catch(function () { box.innerHTML = '<span class="cx-live-load">No disponible.</span>'; });
+      .catch(function () { if (!box.dataset.sig) box.innerHTML = '<span class="cx-live-load">No disponible.</span>'; });
   }
   if (document.readyState !== "loading") boot();
   else document.addEventListener("DOMContentLoaded", boot);
