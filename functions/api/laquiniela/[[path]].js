@@ -1133,7 +1133,7 @@ function ffTvFind(map, home, away) {
 }
 async function ffTvMap(env) {
   try {
-    const c = await env.PORRA.get("ff:tv:v2", "json");
+    const c = await env.PORRA.get("ff:tv:v3", "json");
     if (c && c.map && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.map;
   } catch (e) {}
   const map = {};
@@ -1153,11 +1153,12 @@ async function ffTvMap(env) {
       away = away.replace(/&amp;/g, "&").trim();
       if (!home || !away) continue;
       const tv = [];
+      const BAD = /comunio|sofascore|futmondo|prensa|fantasy|biwenger|mister|jornada|anal[ií]tica|^stats$|previa|picaroja|estrella/i;
       const imgs = r.match(/<img[^>]*class="canal[^"]*"[^>]*>/g) || [];
       for (const tag of imgs) {
         const a = (tag.match(/alt="([^"]*)"/) || [])[1] || "";
         let d = (tag.match(/data-src="([^"]*)"/) || [])[1] || "";
-        if (/dazn|movistar|gol|prime|vamos|liga|m\+/i.test(a)) {
+        if (a && !BAD.test(a) && d) {
           if (d.indexOf("//") === 0) d = "https:" + d;
           tv.push({ name: a, logo: d });
         }
@@ -1167,7 +1168,7 @@ async function ffTvMap(env) {
       if (!map[key]) map[key] = { tv };
     }
   } catch (e) {}
-  if (Object.keys(map).length > 10) { try { await env.PORRA.put("ff:tv:v2", JSON.stringify({ at: Date.now(), map }), { expirationTtl: 3600 }); } catch (e) {} }
+  if (Object.keys(map).length > 10) { try { await env.PORRA.put("ff:tv:v3", JSON.stringify({ at: Date.now(), map }), { expirationTtl: 3600 }); } catch (e) {} }
   return map;
 }
 async function getJornadaStrip(env) {
