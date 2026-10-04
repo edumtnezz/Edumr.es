@@ -56,7 +56,7 @@
       .observe(document.body, { childList: true, subtree: true });
   } catch (e) {}
   let all = [];
-  let shown = 60;
+  let shown = 18;
   let sortMode = "up";
   let quick = "";
   const QUICKS = [
@@ -71,7 +71,7 @@
     QUICKS.forEach(([k, label]) => {
       const b = el("button", "mchip" + (quick === k ? " active" : ""), label);
       b.type = "button";
-      b.addEventListener("click", () => { quick = k; shown = 60; renderChips(); renderGrid(); });
+      b.addEventListener("click", () => { quick = k; shown = 18; renderChips(); renderGrid(); });
       box.appendChild(b);
     });
   }
@@ -181,7 +181,7 @@
     [["1", "Hoy"], ["7", "7 días"], ["14", "14 días"], ["30", "30 días"]].forEach((pair) => {
       const b = el("button", "hl-btn" + (hlPeriod === pair[0] ? " active" : ""), pair[1]);
       b.type = "button";
-      b.addEventListener("click", () => { hlPeriod = pair[0]; renderHighlights(); });
+      b.addEventListener("click", () => { hlPeriod = pair[0]; renderHighlights(); renderRachas(); renderGrid(); });
       seg.appendChild(b);
     });
     const head = el("div", "hl-head");
@@ -283,7 +283,12 @@
         mw.appendChild(bar);
         stats.appendChild(mw);
         row.appendChild(stats);
-        row.appendChild(el("div", "racha-val", money(p.value) + " €"));
+        const ch = hlChange(p);
+        const per = hlPeriod === "1" ? "hoy" : hlPeriod + " días";
+        const rv = el("div", "racha-val " + (ch > 0 ? "up" : ch < 0 ? "down" : "flat"));
+        rv.appendChild(el("span", null, (ch > 0 ? "▲ +" : ch < 0 ? "▼ −" : "") + formatDots(Math.abs(ch)) + " €"));
+        rv.appendChild(el("small", null, per));
+        row.appendChild(rv);
         row.addEventListener("click", () => openFicha(p));
         table.appendChild(row);
       });
@@ -309,8 +314,8 @@
     else if (quick === "vuelven") list = list.filter((p) => { const f = p.fitness || []; return f.length >= 3 && Number(f[0]) <= 0 && Number(f[f.length - 1]) > 0; });
     else if (quick === "multipos") list = list.filter((p) => p.role2);
     if (q || quick) list = list.slice().sort((a, b) => b.value - a.value);
-    else if (sortMode === "up") list = list.filter((p) => (Number(p.change) || 0) > 0).sort((a, b) => b.change - a.change);
-    else if (sortMode === "down") list = list.filter((p) => (Number(p.change) || 0) < 0).sort((a, b) => a.change - b.change);
+    else if (sortMode === "up") list = list.filter((p) => hlChange(p) > 0).sort((a, b) => hlChange(b) - hlChange(a));
+    else if (sortMode === "down") list = list.filter((p) => hlChange(p) < 0).sort((a, b) => hlChange(a) - hlChange(b));
     else list = list.slice().sort((a, b) => b.value - a.value);
     return list;
   }
@@ -324,7 +329,7 @@
     list.slice(0, shown).forEach((p) => grid.appendChild(playerCard(p, openFicha)));
     if (list.length > shown) {
       const more = el("button", "btn-ghost market-more", "Ver más (" + (list.length - shown) + ")");
-      more.addEventListener("click", () => { shown += 60; renderGrid(); });
+      more.addEventListener("click", () => { shown += 18; renderGrid(); });
       grid.appendChild(more);
     }
   }
@@ -504,7 +509,7 @@
   function setTeam(t) {
     teamFilter = t || "";
     syncClubActive();
-    shown = 60;
+    shown = 18;
     renderGrid();
     const grid = $("marketGrid");
     if (grid && grid.scrollIntoView) grid.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -516,7 +521,7 @@
       x.classList.toggle("active", !!on);
     });
     document.querySelectorAll("#cxStrip .cx-team").forEach((x) => {
-      const on = x.dataset.team === teamFilter && !!teamFilter;
+      const on = x.classList.contains("cx-team-all") ? !teamFilter : (x.dataset.team === teamFilter);
       x.classList.toggle("active", !!on);
     });
   }
@@ -548,7 +553,7 @@
       rangeMin = Math.round(maxV * a / 100);
       rangeMax = Math.round(maxV * b / 100) || maxV;
       if (label) label.textContent = money(rangeMin) + " € – " + money(rangeMax) + " €";
-      shown = 60;
+      shown = 18;
       renderGrid();
     };
     min.addEventListener("input", apply);
@@ -560,6 +565,8 @@
     document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
     const panel = $("tab-" + name);
     if (panel) panel.classList.remove("hidden");
+    const ch = $("cxChrome");
+    if (ch) ch.classList.toggle("hidden", name !== "mercado");
     try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
   }
 
@@ -1041,7 +1048,7 @@
     document.querySelectorAll(".merc-segbtn").forEach((x) => x.classList.remove("active"));
     b.classList.add("active");
     sortMode = b.dataset.sort;
-    shown = 60;
+    shown = 18;
     renderGrid();
   }));
   let anImg = null;
@@ -1346,10 +1353,12 @@
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") { const ov = $("fichaOverlay"); if (ov && !ov.classList.contains("hidden")) closeModal(); } });
   const fov = $("fichaOverlay"); if (fov) fov.addEventListener("click", (e) => { if (e.target === fov) closeModal(); });
 
-  const bind = (id, ev) => { const e = $(id); if (e) e.addEventListener(ev, () => { shown = 60; renderGrid(); }); };
-  bind("mjSearch", "input"); bind("mjRole", "change");
+  const bind = (id, ev) => { const e = $(id); if (e) e.addEventListener(ev, () => { shown = 18; renderGrid(); }); };
+  const searchEl = $("mjSearch");
+  if (searchEl) searchEl.addEventListener("input", () => { const y = window.scrollY; shown = 18; renderGrid(); if (window.scrollY !== y) window.scrollTo(0, y); });
+  bind("mjRole", "change");
   const estadoSel = $("estadoSel"); if (estadoSel) estadoSel.addEventListener("change", renderEstado);
-  const teamSel = $("mjTeam"); if (teamSel) teamSel.addEventListener("change", () => { syncClubActive(); shown = 60; renderGrid(); });
+  const teamSel = $("mjTeam"); if (teamSel) teamSel.addEventListener("change", () => { syncClubActive(); shown = 18; renderGrid(); });
 
   loadNoticias();
   load();

@@ -13,8 +13,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="../theme.js?v=64"></script>
   <link rel="stylesheet" href="../quiniela/quiniela.css?v=127">
-  <link rel="stylesheet" href="../comuniate.css?v=6">
-  <link rel="stylesheet" href="mercado.css?v=62">
+  <link rel="stylesheet" href="../comuniate.css?v=7">
+  <link rel="stylesheet" href="mercado.css?v=63">
 </head>
 <body class="page-simple cx-page">
   <header class="appbar cx-header">
@@ -74,6 +74,7 @@
             <input type="range" id="mjMax" min="0" max="100" value="100" aria-label="Precio máximo">
           </div>
         <div class="merc-seg" id="mercSeg">
+          <button class="merc-segbtn" data-sort="all">Todos</button>
           <button class="merc-segbtn active" data-sort="up">▲ Mayores subidas</button>
           <button class="merc-segbtn" data-sort="down">▼ Mayores bajadas</button>
           <button class="merc-segbtn" data-sort="value">Valor</button>
@@ -100,7 +101,6 @@
       <section class="panel">
         <h2>Noticias</h2>
         <h3 class="estado-title">Noticias de LaLiga <span id="newsUpdated" class="news-updated"></span></h3>
-        <button class="mchip hidden" id="newsMine" type="button">🔎 Solo mis jugadores</button>
         <div id="newsAnuncios"><p class="muted small">Cargando…</p></div>
       </section>
     </section>
@@ -127,7 +127,7 @@
     </div>
   </div>
 
-  <script src="../chrome.js?v=3"></script>
-  <script src="mercado.js?v=66"></script>
+  <script src="../chrome.js?v=4"></script>
+  <script src="mercado.js?v=67"></script>
 </body>
 </html>

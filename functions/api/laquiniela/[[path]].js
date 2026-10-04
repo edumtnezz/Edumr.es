@@ -698,7 +698,7 @@ async function getRachas(env) {
   let players = cache.players || [];
   try {
     const map = await ffMap(env);
-    players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa } : p; });
+    players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, chg1: e.d1, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
   } catch (e) {}
   const rachas = [];
   for (const p of players) {
@@ -1178,28 +1178,26 @@ async function ffTvMap(env) {
   if (list.length > 10) { try { await env.PORRA.put("ff:tv:v5", JSON.stringify(out), { expirationTtl: 3600 }); } catch (e) {} }
   return out;
 }
-async function getJornadaStrip(env) {
+async function getJornadaStrip(env, matchday) {
   let jd = null;
-  try { jd = await getJornada(env, null); } catch (e) {}
+  try { jd = await getJornada(env, matchday || null); } catch (e) {}
   if (!jd || !jd.matches) return { matchday: 0, matches: [] };
   let tvmap = { byName: {}, list: [] };
   try { tvmap = await ffTvMap(env); } catch (e) {}
   const list = tvmap.list || [];
   const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
-  const dmF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "short" });
   const dtF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" });
   const tF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hour12: false });
-  const now = Date.now();
   const used = new Array(list.length).fill(false);
   const prep = (jd.matches || []).map((m) => {
     const d = new Date(m.utcDate);
     const home = (m.homeTeam && (m.homeTeam.shortName || m.homeTeam.name)) || "";
     const away = (m.awayTeam && (m.awayTeam.shortName || m.awayTeam.name)) || "";
-    let when = "", time = "";
+    let day = "", date = "", time = "";
     if (!isNaN(d.getTime())) {
-      const days = (d.getTime() - now) / 86400000;
-      if (days <= 6) { let w = wdF.format(d).replace(".", ""); when = w.charAt(0).toUpperCase() + w.slice(1); }
-      else { when = dmF.format(d).replace(".", "").toUpperCase(); }
+      let w = wdF.format(d).replace(".", "");
+      day = w.charAt(0).toUpperCase() + w.slice(1);
+      date = dtF.format(d);
       time = tF.format(d);
     }
     let bi = -1, bs = 0;
@@ -1207,7 +1205,7 @@ async function getJornadaStrip(env) {
       const s = teamScore(list[i].home, home) + teamScore(list[i].away, away);
       if (s > bs) { bs = s; bi = i; }
     }
-    return { home, away, homeCrest: (m.homeTeam && m.homeTeam.crest) || "", awayCrest: (m.awayTeam && m.awayTeam.crest) || "", when, time, dt: dtF.format(d) + "|" + time, bi, bs };
+    return { home, away, homeCrest: (m.homeTeam && m.homeTeam.crest) || "", awayCrest: (m.awayTeam && m.awayTeam.crest) || "", day, date, time, dt: date + "|" + time, bi, bs };
   });
   prep.forEach((p) => { if (p.bs >= 4 && p.bi >= 0) used[p.bi] = true; });
   const matches = prep.map((p) => {
@@ -1217,7 +1215,7 @@ async function getJornadaStrip(env) {
       const i = list.findIndex((e, idx) => !used[idx] && e.date && (e.date + "|" + e.time) === p.dt);
       if (i >= 0) { tv = list[i].tv; used[i] = true; }
     }
-    return { home: p.home, away: p.away, homeCrest: p.homeCrest, awayCrest: p.awayCrest, when: p.when, time: p.time, tv };
+    return { home: p.home, away: p.away, homeCrest: p.homeCrest, awayCrest: p.awayCrest, day: p.day, date: p.date, time: p.time, tv };
   });
   return { matchday: jd.matchday || 0, matches };
 }
@@ -2079,7 +2077,7 @@ export async function onRequestGet({ request, env, params }) {
     try { return json(await getRachas(env)); } catch (e) { return json({ players: [] }); }
   }
   if (path === "jornada") {
-    try { return json(await getJornadaStrip(env)); } catch (e) { return json({ matchday: 0, matches: [] }); }
+    try { return json(await getJornadaStrip(env, url.searchParams.get("jornada"))); } catch (e) { return json({ matchday: 0, matches: [] }); }
   }
   if (path === "noticias") {
     return json(await getNoticias(env));
