@@ -815,19 +815,25 @@ function waImg(src, cls) {
 function renderActividad(l, list0) {
   l.innerHTML = "";
   l.classList.add("wa-chat");
-  const list = (list0 || []).slice().sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
+  const list = (list0 || []).slice().sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
   const top = el("div", "wa-top");
-  top.appendChild(waImg("/img/avatar.svg", "wa-top-av"));
+  top.appendChild(el("span", "wa-back", "‹"));
+  const hanger = el("span", "wa-hanger");
+  hanger.innerHTML = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.2a1.8 1.8 0 1 0 0 3.6 1.8 1.8 0 0 0 0-3.6zM12 6.8c.6.6.6 1.2.2 1.7l7.4 5.1c.6.4.4 1.4-.4 1.4H4.8c-.8 0-1-.9-.4-1.4l7.4-5.1"/></svg>';
+  top.appendChild(hanger);
   const tt = el("div", "wa-top-txt");
-  tt.appendChild(el("b", "", "Actividad de tu liga"));
+  tt.appendChild(el("b", "", "Con Permiso"));
   tt.appendChild(el("span", "", "Vestuario"));
   top.appendChild(tt);
+  const logo = el("span", "wa-logo");
+  logo.innerHTML = '<img src="/img/balonmundial.png" alt="">';
+  top.appendChild(logo);
   l.appendChild(top);
 
   const body = el("div", "wa-body");
+  body.appendChild(el("div", "wa-pin-label", "Mensajes pineados"));
   const pin = el("div", "wa-pin");
-  pin.appendChild(el("div", "wa-pin-head", "📌 Mensajes pineados"));
   const pinb = el("div", "wa-pin-txt");
   pinb.innerHTML = "<b>FORMATO de subasta:</b><br>Saco a subasta a JUGADOR 🔸 DINERO 🔸 ⭐⭐⭐<br><br><b>FORMATO de puja</b><br>JUGADOR 🔸 DINERO 🔸 ⭐⭐⭐";
   pin.appendChild(pinb);
@@ -854,6 +860,11 @@ function renderActividad(l, list0) {
     msg.appendChild(bub);
     body.appendChild(msg);
   });
+
+  const bot = el("div", "wa-bottom");
+  bot.innerHTML = '<span class="wa-bottom-logo"><img src="/img/balonmundial.png" alt=""></span>';
+  body.appendChild(bot);
+
   l.appendChild(body);
 }
 async function loadActividad() {
