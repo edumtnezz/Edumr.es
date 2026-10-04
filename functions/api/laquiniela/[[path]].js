@@ -802,7 +802,7 @@ async function searchMercado(env, q) {
   try { await snapshotMarket(env, players); } catch (e) {}
   try {
     const map = await ffMap(env);
-    players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, chg1: e.d1, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
+    players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, jornadaFf: e.jornada, chg1: e.d1, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
   } catch (e) {}
   const query = stripAccents(String(q || "").toLowerCase().trim());
   let list = players;

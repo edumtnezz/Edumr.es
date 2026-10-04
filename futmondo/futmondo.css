@@ -30,8 +30,9 @@ body {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--bg);
   background-image:
-    radial-gradient(720px 380px at 10% -8%, rgba(34, 197, 94, 0.15), transparent 60%),
-    radial-gradient(760px 420px at 100% 2%, rgba(16, 185, 129, 0.17), transparent 62%);
+    radial-gradient(760px 420px at 12% -10%, rgba(34, 197, 94, 0.24), transparent 60%),
+    radial-gradient(820px 460px at 106% 0%, rgba(16, 185, 129, 0.22), transparent 62%),
+    linear-gradient(160deg, #06170f 0%, #0b0f14 46%, #071018 100%);
   background-attachment: fixed;
   color: var(--text);
   min-height: 100vh;
@@ -124,8 +125,24 @@ body {
 
 [data-theme="light"] body {
   background-image:
-    radial-gradient(720px 380px at 10% -8%, rgba(34, 197, 94, 0.12), transparent 60%),
-    radial-gradient(760px 420px at 100% 2%, rgba(16, 185, 129, 0.12), transparent 62%);
+    radial-gradient(760px 420px at 12% -10%, rgba(34, 197, 94, 0.20), transparent 60%),
+    radial-gradient(820px 460px at 106% 0%, rgba(16, 185, 129, 0.20), transparent 62%),
+    linear-gradient(160deg, #e9fff3 0%, #f1f5f9 52%, #eef2ff 100%);
+}
+
+@media (max-width: 640px) {
+  body { padding: 14px 12px 32px; }
+  .hub-header { margin: 4px auto 16px; }
+  .hub-ball { width: clamp(56px, 15vw, 84px); margin-bottom: 6px; }
+  .hub-header h1 { font-size: 1.6rem; }
+  .hub-sub { font-size: 0.9rem; }
+  .hub-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; max-width: 560px; }
+  .hub-card { padding: 18px 14px; gap: 7px; border-radius: 16px; }
+  .hub-card h2 { font-size: 1.12rem; }
+  .hub-card p { font-size: 0.8rem; line-height: 1.45; }
+  .hub-icon { font-size: 0.9rem; padding: 6px 10px; }
+  .hub-go { margin-top: 2px; font-size: 0.86rem; }
+  .hub-welcome { font-size: 0.95rem; padding: 11px 14px; }
 }
 
 .hub-top { max-width: 940px; margin: 0 auto; display: flex; align-items: center; justify-content: center; position: relative; }

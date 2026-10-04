@@ -372,9 +372,55 @@
     const grid = $("marketGrid");
     if (!grid) return;
     grid.innerHTML = "";
+    const title = el("div", "mkt-headline", "📋 Todos los jugadores");
+    grid.appendChild(title);
     const list = filteredList();
     if (!list.length) { grid.appendChild(el("p", "market-empty", "Sin resultados.")); return; }
-    list.slice(0, shown).forEach((p) => grid.appendChild(playerCard(p, openFicha)));
+    const wrap = el("div", "mkt-wrap");
+    const tbl = el("div", "mkt-table");
+    const head = el("div", "mkt-row mkt-head");
+    ["Jugador", "Diferencia", "% Dif", "Acel.", "Tend.", "Próx. rival", "Valor", "Valor ant."].forEach((h) => head.appendChild(el("span", "mkt-h", h)));
+    tbl.appendChild(head);
+    list.slice(0, shown).forEach((p) => {
+      const row = el("button", "mkt-row"); row.type = "button";
+      const ch = hlChange(p);
+      const prev = (Number(p.value) || 0) - ch;
+      const j = el("div", "mkt-jug");
+      const ph = el("div", "mkt-photo"); ph.appendChild(photoImg(p.photo, "mkt-img")); j.appendChild(ph);
+      const jj = el("div", "mkt-jname");
+      jj.appendChild(el("b", null, p.name));
+      const tm = el("span", "mkt-jteam");
+      if (p.logo) { const lg = el("img"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; tm.appendChild(lg); }
+      if (p.team) tm.appendChild(el("span", null, p.team));
+      jj.appendChild(tm);
+      j.appendChild(jj);
+      const rb = roleBadge(p.role);
+      if (rb) j.appendChild(el("span", "posb posb-" + posCls(p.role), rb + (roleBadge(p.role2) ? " · " + roleBadge(p.role2) : "")));
+      row.appendChild(j);
+      const dif = el("div", "mkt-dif " + (ch > 0 ? "up" : ch < 0 ? "down" : "flat"));
+      dif.appendChild(el("span", "mkt-lens", "🔍"));
+      dif.appendChild(el("span", null, (ch > 0 ? "+" : ch < 0 ? "−" : "") + formatDots(Math.abs(ch)) + " €"));
+      row.appendChild(dif);
+      const pctv = prev > 0 ? (ch / prev) * 100 : 0;
+      row.appendChild(el("div", "mkt-pct " + (ch > 0 ? "up" : ch < 0 ? "down" : "flat"), (pctv >= 0 ? "+" : "−") + Math.abs(pctv).toFixed(2).replace(".", ",") + "%"));
+      const accel = (Number(p.change) || 0) - (Number(p.chg7) || 0) / 7;
+      row.appendChild(el("div", "mkt-acel", accel > 0.01 ? "▲" : accel < -0.01 ? "▼" : "—"));
+      let tend = "—", tc = "flat";
+      if (Number(p.chg30) > 0) { tend = "▲ 30d"; tc = "up"; } else if (Number(p.chg14) > 0) { tend = "▲ 14d"; tc = "up"; } else if (Number(p.chg7) > 0) { tend = "▲ 7d"; tc = "up"; } else if (Number(p.chg30) < 0) { tend = "▼ 30d"; tc = "down"; }
+      row.appendChild(el("div", "mkt-tend " + tc, tend));
+      const rv = el("div", "mkt-rival");
+      if (p.jornadaFf) rv.appendChild(el("b", null, "J" + p.jornadaFf));
+      if (p.casaFf != null) rv.appendChild(el("span", null, p.casaFf ? "🏠" : "✈️"));
+      if (p.rivalFf) rv.appendChild(el("span", "mkt-rv", shortRival(p.rivalFf)));
+      if (p.prob != null) rv.appendChild(el("span", "mkt-prob", p.prob + "%"));
+      row.appendChild(rv);
+      row.appendChild(el("div", "mkt-val", money(p.value) + " €"));
+      row.appendChild(el("div", "mkt-vant", money(prev) + " €"));
+      row.addEventListener("click", () => openFicha(p));
+      tbl.appendChild(row);
+    });
+    wrap.appendChild(tbl);
+    grid.appendChild(wrap);
     if (list.length > shown) {
       const more = el("button", "btn-ghost market-more", "Ver más (" + (list.length - shown) + ")");
       more.addEventListener("click", () => { shown += 18; renderGrid(); });
