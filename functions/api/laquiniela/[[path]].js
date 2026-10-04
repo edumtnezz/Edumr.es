@@ -712,6 +712,7 @@ async function getRachas(env) {
       id: p.id, name: p.name, role: p.role, role2: p.role2, team: p.team, logo: p.logo, photo: p.photo,
       value: p.value, change: p.change, points: p.points, matches: p.matches, avg: p.avg,
       status: p.status, prob: p.prob, rivalFf: p.rivalFf, casaFf: p.casaFf,
+      chg1: p.chg1, chg7: p.chg7, chg14: p.chg14, chg30: p.chg30,
       streak, fit,
     });
   }
