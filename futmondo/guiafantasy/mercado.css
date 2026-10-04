@@ -519,7 +519,7 @@ html { overflow-anchor: none; }
 
 /* ---------- Analiza: subida de archivo ---------- */
 .an-desc { background: rgba(127, 127, 127, 0.06); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin: 8px 0 16px; }
-.an-desc b { display: block; margin-bottom: 6px; }
+.an-desc > b { display: block; margin-bottom: 6px; }
 .an-desc ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
 .an-desc li { font-size: 0.85rem; color: var(--text); }
 .an-drop { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; padding: 26px 18px; border: 2px dashed var(--border-hover, #22c55e); border-radius: 16px; background: rgba(34, 197, 94, 0.06); cursor: pointer; transition: all 0.2s ease; margin-bottom: 14px; }
