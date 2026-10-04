@@ -733,7 +733,7 @@ function expOfB(p) {
 }
 
 async function getClausulas(env) {
-  try { const c = await env.PORRA.get("clausulas:v6", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
+  try { const c = await env.PORRA.get("clausulas:v7", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
   let cache;
   try { cache = await getMarketPlayers(env); } catch (e) { return { players: [], updatedAt: null }; }
   let players = cache.players || [];
@@ -764,7 +764,9 @@ async function getClausulas(env) {
     okC++;
     const ans = s.answer || {};
     const cl = (ans.championship && ans.championship.clause) || {};
-    const owner = (ans.owners && ans.owners.n) || "";
+    let ow = ans.owners;
+    if (Array.isArray(ow)) ow = ow.length ? ow[ow.length - 1] : null;
+    const owner = (ow && ow.n) || "";
     if (diag.length < 20) diag.push(p.name + ":" + (owner ? "OWN[" + owner + "]" : "free") + " cl=" + (cl.price ? 1 : 0));
     if (cl.price && owner) {
       ownC++;
@@ -782,7 +784,7 @@ async function getClausulas(env) {
   }
   out.sort((a, b) => b.exp - a.exp || b.clause - a.clause);
   const data = { updatedAt: Date.now(), me: myTeam, debug: { own: top.length, ok: okC, owned: ownC, err: errC }, diag, players: out.slice(0, 15) };
-  try { await env.PORRA.put("clausulas:v6", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
+  try { await env.PORRA.put("clausulas:v7", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
   return data;
 }
 
