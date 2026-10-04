@@ -733,7 +733,7 @@ function expOfB(p) {
 }
 
 async function getClausulas(env) {
-  try { const c = await env.PORRA.get("clausulas:v4", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
+  try { const c = await env.PORRA.get("clausulas:v5", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
   let cache;
   try { cache = await getMarketPlayers(env); } catch (e) { return { players: [], updatedAt: null }; }
   let players = cache.players || [];
@@ -749,37 +749,38 @@ async function getClausulas(env) {
   const header = await futbolHeader(env);
   const out = [];
   let okC = 0, ownC = 0, errC = 0;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const fetchSum = async (id) => {
-    for (let a = 0; a < 3; a++) {
+    for (let a = 0; a < 4; a++) {
       try { return await futbolPost("/1/player/summary", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP }); }
-      catch (e) { await new Promise((r) => setTimeout(r, 250)); }
+      catch (e) { await sleep(400); }
     }
     return null;
   };
-  for (let i = 0; i < top.length; i += 3) {
-    await Promise.all(top.slice(i, i + 3).map(async (p) => {
-      const s = await fetchSum(p.id);
-      if (!s) { errC++; return; }
-      okC++;
-      const ans = s.answer || {};
-      const cl = (ans.championship && ans.championship.clause) || {};
-      const owner = (ans.owners && ans.owners.n) || "";
-      if (!cl.price) return;
-      if (!owner) return;
+  for (const p of top) {
+    const s = await fetchSum(p.id);
+    if (!s) { errC++; continue; }
+    okC++;
+    const ans = s.answer || {};
+    const cl = (ans.championship && ans.championship.clause) || {};
+    const owner = (ans.owners && ans.owners.n) || "";
+    if (cl.price && owner) {
       ownC++;
-      if (myTeam && stripAccents(owner.toLowerCase()) === stripAccents(myTeam.toLowerCase())) return;
-      out.push({
-        id: p.id, name: p.name, role: p.role, role2: p.role2, team: p.team, logo: p.logo, photo: p.photo,
-        value: p.value, points: p.points, avg: p.avg, fitness: p.fitness, prob: p.prob, status: p.status,
-        clause: Number(cl.price) || 0, unlock: cl.date || "", owner,
-        exp: Math.round(expOfB(p) * 10) / 10,
-        chg1: p.chg1, chg7: p.chg7, chg14: p.chg14, chg30: p.chg30,
-      });
-    }));
+      if (!(myTeam && stripAccents(owner.toLowerCase()) === stripAccents(myTeam.toLowerCase()))) {
+        out.push({
+          id: p.id, name: p.name, role: p.role, role2: p.role2, team: p.team, logo: p.logo, photo: p.photo,
+          value: p.value, points: p.points, avg: p.avg, fitness: p.fitness, prob: p.prob, status: p.status,
+          clause: Number(cl.price) || 0, unlock: cl.date || "", owner,
+          exp: Math.round(expOfB(p) * 10) / 10,
+          chg1: p.chg1, chg7: p.chg7, chg14: p.chg14, chg30: p.chg30,
+        });
+      }
+    }
+    await sleep(90);
   }
   out.sort((a, b) => b.exp - a.exp || b.clause - a.clause);
   const data = { updatedAt: Date.now(), me: myTeam, debug: { own: top.length, ok: okC, owned: ownC, err: errC }, players: out.slice(0, 15) };
-  try { await env.PORRA.put("clausulas:v4", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
+  try { await env.PORRA.put("clausulas:v5", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
   return data;
 }
 
