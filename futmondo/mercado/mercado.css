@@ -277,6 +277,10 @@
 .mstat b { font-family: 'Space Grotesk', sans-serif; font-size: 0.84rem; font-weight: 700; color: var(--text); line-height: 1; }
 .mstat small { font-size: 0.55rem; font-weight: 700; letter-spacing: 0.03em; color: var(--muted); text-transform: uppercase; }
 .mstat.pts b { color: var(--accent); }
+.ficha-head-center { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 3px; margin-bottom: 16px; }
+.ficha-head-center .mcard-photo { margin: 4px auto 8px; }
+.ficha-team { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); font-size: 0.9rem; }
+.ficha-team img { width: 18px; height: 18px; object-fit: contain; }
 .hl-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 24px 0 10px; padding-top: 16px; border-top: 1px solid var(--border); }
 .hl-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.02rem; }
 .hl-seg { display: flex; gap: 6px; margin: 0; flex-wrap: wrap; }

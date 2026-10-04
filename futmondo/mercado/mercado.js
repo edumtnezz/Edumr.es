@@ -774,22 +774,27 @@
 
   function renderFicha(d, p) {
     const root = el("div", "ficha");
-    const head = el("div", "ficha-head");
+    const head = el("div", "ficha-head-center");
     const ph = el("div", "mcard-photo");
     ph.appendChild(posRing(photoImg(d.photo || p.photo, "mcard-img"), d.role || p.role, d.role2 || p.role2));
     const rb = roleBadge(d.role || p.role), rb2 = roleBadge(d.role2 || p.role2);
     if (rb) ph.appendChild(el("span", "mcard-role" + (rb2 ? " multi" : "") + " posb posb-" + posCls(p.role), rb + (rb2 ? " · " + rb2 : "")));
     head.appendChild(ph);
-    const info = el("div", "ficha-info");
-    info.appendChild(el("h2", "ficha-name", d.name || p.name || ""));
-    if (d.team || p.team) info.appendChild(el("div", "muted small", d.team || p.team));
-    info.appendChild(el("div", "ficha-val", money(d.value || p.value) + " €"));
+    head.appendChild(el("h2", "ficha-name", d.name || p.name || ""));
+    const teamName = d.team || p.team || "";
+    const teamLogo = d.logo || p.logo || "";
+    if (teamName || teamLogo) {
+      const tt = el("div", "ficha-team");
+      if (teamLogo) { const lg = el("img"); lg.src = teamLogo; lg.alt = ""; lg.loading = "lazy"; tt.appendChild(lg); }
+      tt.appendChild(el("span", null, teamName));
+      head.appendChild(tt);
+    }
+    head.appendChild(el("div", "ficha-val", money(d.value || p.value) + " €"));
     const chg = Number(d.change != null ? d.change : p.change) || 0;
-    info.appendChild(el("div", "cmp-trend " + (chg > 0 ? "up" : chg < 0 ? "down" : "flat"),
+    head.appendChild(el("div", "cmp-trend " + (chg > 0 ? "up" : chg < 0 ? "down" : "flat"),
       chg > 0 ? "▲ " + formatDots(chg) + " €" + pct(d.value || p.value, chg) : chg < 0 ? "▼ " + formatDots(-chg) + " €" + pct(d.value || p.value, chg) : "—"));
-    info.appendChild(el("div", "cmp-status", statusLabel(d.status || p.status)));
-    if (d.pronostico) info.appendChild(el("div", "ficha-pron", "Pronóstico: " + d.pronostico));
-    head.appendChild(info);
+    head.appendChild(el("div", "cmp-status", statusLabel(d.status || p.status)));
+    if (d.pronostico) head.appendChild(el("div", "ficha-pron", "Pronóstico: " + d.pronostico));
     root.appendChild(head);
 
     const stats = el("div", "ficha-stats");
