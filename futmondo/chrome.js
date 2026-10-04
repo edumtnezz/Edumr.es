@@ -11,6 +11,8 @@
     var host = document.getElementById("cxChrome");
     if (!host) return;
     host.innerHTML =
+      '<div class="cx-strip"><div class="cx-strip-track" id="cxStrip"><span class="cx-strip-load">Cargando equipos…</span></div></div>' +
+      '<div class="cx-live"><span class="cx-live-tag">Última hora</span><div class="cx-live-track" id="cxLiveTrack"><span class="cx-live-load">Cargando última hora…</span></div></div>' +
       '<div class="cx-jornada">' +
         '<div class="cx-jn-head">' +
           '<button class="cx-jn-nav" id="cxJPrev" aria-label="Jornada anterior">◀</button>' +
@@ -18,9 +20,7 @@
           '<button class="cx-jn-nav" id="cxJNext" aria-label="Jornada siguiente">▶</button>' +
         '</div>' +
         '<div class="cx-jn-grid" id="cxJGrid"><span class="cx-strip-load">Cargando jornada…</span></div>' +
-      '</div>' +
-      '<div class="cx-strip"><div class="cx-strip-track" id="cxStrip"><span class="cx-strip-load">Cargando equipos…</span></div></div>' +
-      '<div class="cx-live"><span class="cx-live-tag">Última hora</span><div class="cx-live-track" id="cxLiveTrack"><span class="cx-live-load">Cargando última hora…</span></div></div>';
+      '</div>';
     var pv = document.getElementById("cxJPrev"), nx = document.getElementById("cxJNext");
     if (pv) pv.addEventListener("click", function () { loadJornada(jornada - 1); });
     if (nx) nx.addEventListener("click", function () { loadJornada(jornada + 1); });
@@ -44,7 +44,7 @@
         if (title) title.textContent = jornada ? ("Jornada " + jornada) : "Jornada";
         if (!ms.length) { grid.innerHTML = '<span class="cx-strip-load">Sin jornada.</span>'; return; }
         grid.innerHTML = ms.map(function (m) {
-          var tv = (m.tv && m.tv[0]) ? '<img class="cx-jn-tv" src="' + esc(m.tv[0].logo) + '" alt="' + esc(m.tv[0].name) + '" title="' + esc(m.tv[0].name) + '" loading="lazy" onerror="this.remove()">' : '<span class="cx-jn-tv-ph"></span>';
+          var tv = (m.tv && m.tv[0]) ? '<img class="cx-jn-tv" src="' + esc(m.tv[0].logo) + '" alt="' + esc(m.tv[0].name) + '" title="' + esc(m.tv[0].name) + '" loading="lazy" onerror="this.remove()">' : '<span class="cx-jn-tv-ph" title="Canal por confirmar">por confirmar</span>';
           return '<div class="cx-jn">' +
             '<img class="cx-jn-crest" src="' + esc(m.homeCrest) + '" alt="' + esc(m.home) + '" title="' + esc(m.home) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
             '<div class="cx-jn-mid">' + tv + '<span class="cx-jn-time">' + esc(((m.day || "") + " " + (m.date || "")).trim()) + '</span><span class="cx-jn-hora">' + esc(m.time || "") + '</span></div>' +
@@ -90,8 +90,25 @@
           return '<a class="cx-live-item" href="' + esc(x.link) + '" target="_blank" rel="noopener">' + img +
             '<span class="cx-live-txt">' + esc(x.title) + '</span>' + tm + '</a>';
         }).join("");
+        autoScroll();
       })
       .catch(function () { if (!box.dataset.sig) box.innerHTML = '<span class="cx-live-load">No disponible.</span>'; });
+  }
+  function autoScroll() {
+    var box = document.getElementById("cxLiveTrack");
+    if (!box || box.dataset.scroll) return;
+    box.dataset.scroll = "1";
+    var paused = false;
+    box.addEventListener("mouseenter", function () { paused = true; });
+    box.addEventListener("mouseleave", function () { paused = false; });
+    box.addEventListener("touchstart", function () { paused = true; }, { passive: true });
+    box.addEventListener("touchend", function () { paused = false; }, { passive: true });
+    setInterval(function () {
+      if (paused || document.hidden) return;
+      if (box.scrollWidth - box.clientWidth < 12) return;
+      if (box.scrollLeft + box.clientWidth >= box.scrollWidth - 1) box.scrollLeft = 0;
+      else box.scrollLeft += 1;
+    }, 40);
   }
   if (document.readyState !== "loading") boot();
   else document.addEventListener("DOMContentLoaded", boot);

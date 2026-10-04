@@ -260,7 +260,7 @@ body {
 .cx-jn-crest { width: 26px; height: 26px; object-fit: contain; justify-self: center; }
 .cx-jn-mid { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
 .cx-jn-tv { height: 13px; width: auto; max-width: 52px; object-fit: contain; }
-.cx-jn-tv-ph { height: 13px; }
+.cx-jn-tv-ph { font-size: 0.5rem; font-weight: 700; color: var(--cx-muted); line-height: 1; }
 .cx-jn-time { font-size: 0.62rem; font-weight: 800; color: var(--cx-text); white-space: nowrap; }
 .cx-jn-hora { font-size: 0.62rem; font-weight: 700; color: var(--cx-muted); white-space: nowrap; }
 @media (max-width: 900px) { .cx-jn-grid { grid-template-columns: repeat(3, 1fr); } }
