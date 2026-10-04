@@ -1040,7 +1040,7 @@
       const c = byR[j];
       const col = el("div", "dash-col");
       const bw = el("div", "dash-barwrap");
-      if (c) {
+      if (c && c.cat && c.cat !== "none") {
         const b = el("div", "dash-bar " + c.cat);
         b.style.height = Math.max(5, Math.min(100, ((Number(c.mins) || 0) / 90) * 100)) + "%";
         b.title = "J" + j + " · " + c.mins + "'";

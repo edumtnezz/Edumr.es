@@ -1157,16 +1157,21 @@ async function playerFicha(env, id) {
     } catch (e) {}
   }
   const fitArr = (mp && mp.fitness && mp.fitness.length) ? mp.fitness : ((pl.average && pl.average.fitness) || []);
-  const cats = matches.map((m) => ({ r: m.r, mins: m.mins || 0, cat: (m.mins || 0) >= 85 ? "completo" : m.sub ? "sustituido" : "banquillo" }));
-  const starts = cats.filter((c) => c.cat !== "banquillo").length;
+  const cats = matches.map((m) => {
+    const mn = m.mins || 0;
+    const cat = mn <= 0 ? "none" : m.sub ? "banquillo" : (mn >= 85 ? "completo" : "sustituido");
+    return { r: m.r, mins: mn, cat };
+  });
+  const parPlayed = cats.filter((c) => c.mins > 0).length;
+  const starts = cats.filter((c) => c.cat === "completo" || c.cat === "sustituido").length;
   const bench = cats.filter((c) => c.cat === "banquillo").length;
   const totalMin = matches.reduce((s, m) => s + (m.mins || 0), 0);
   const maxMin = (Number(lJornada) || 0) * 90;
   const participacion = {
-    jornada: Number(lJornada) || 0, played: matches.length, starts, bench,
+    jornada: Number(lJornada) || 0, played: parPlayed, starts, bench,
     totalMin, maxMin, pctMin: maxMin ? Math.round((totalMin / maxMin) * 100) : 0,
-    avgMin: matches.length ? Math.round((totalMin / matches.length) * 10) / 10 : 0,
-    pctStart: matches.length ? Math.round((starts / matches.length) * 100) : 0,
+    avgMin: parPlayed ? Math.round((totalMin / parPlayed) * 10) / 10 : 0,
+    pctStart: parPlayed ? Math.round((starts / parPlayed) * 100) : 0,
     reds: matches.reduce((s, m) => s + (m.red ? 1 : 0), 0),
     byJornada: cats,
   };
