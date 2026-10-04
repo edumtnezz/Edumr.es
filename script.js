@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ===== Modos (pestañas) y sub-pestañas de demos ===== */
 (function () {
-  var VALID = ["inicio", "proyectos", "demos", "fantasy"];
+  var VALID = ["inicio", "proyectos", "demos"];
   var modeTabs = Array.prototype.slice.call(document.querySelectorAll(".mode-tab"));
   var views = Array.prototype.slice.call(document.querySelectorAll(".view"));
 
