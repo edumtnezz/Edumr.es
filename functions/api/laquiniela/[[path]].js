@@ -1886,6 +1886,16 @@ export async function onRequestGet({ request, env, params }) {
   if (path === "jugador") {
     return json(await playerFicha(env, url.searchParams.get("id")));
   }
+  if (path === "rawp") {
+    try {
+      const header = await futbolHeader(env);
+      const r = await futbolPost("/5/league/championshipplayers", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
+      const arr = (r.answer && r.answer.players) || (Array.isArray(r.answer) ? r.answer : []);
+      const q = String(url.searchParams.get("q") || "boy").toLowerCase();
+      const ex = arr.find((x) => String(x.name || "").toLowerCase().includes(q)) || arr[0] || {};
+      return json({ n: arr.length, keys: Object.keys(ex), avg: ex.average, avgKeys: ex.average ? Object.keys(ex.average) : [], sample: ex });
+    } catch (e) { return json({ error: String((e && e.message) || e) }, 500); }
+  }
   return json({ error: "not found" }, 404);
 }
 
