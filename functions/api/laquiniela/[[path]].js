@@ -899,8 +899,10 @@ async function tmProfile(env, name, club) {
     for (const lk of links) {
       try {
         const p = await (await fetch("https://www.transfermarkt.es" + lk, { headers: UA })).text();
-        const nm = (p.match(/data-header__headline-wrapper[^>]*>\s*([^<]+)/) || [])[1] || "";
-        const cl = (p.match(/data-header__club[^>]*>[\s\S]{0,90}?>\s*([^<]+)/) || [])[1] || "";
+        const h1m = p.match(/data-header__headline-wrapper[^>]*>([\s\S]*?)<\/h1>/);
+        const nm = h1m ? h1m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").replace(/^#?\d*\s*/, "").trim() : "";
+        const clm = p.match(/data-header__club[^>]*>([\s\S]{0,140}?)<\/span>/);
+        const cl = clm ? clm[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "";
         const fd = p.match(/Fichado:<\/span>\s*<span[^>]*>([\s\S]{0,60}?)<\/span>/);
         const date = fd ? fd[1].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim() : "";
         if (!date) continue;
@@ -1109,7 +1111,7 @@ async function playerFicha(env, id) {
   } catch (e) {}
   try {
     const tms = await getTeams(env);
-    const findLogo = (nm) => { let best = null, bs = 0; for (const t of tms) { const s = teamScore(t.name, nm); if (s > bs) { bs = s; best = t; } } return bs >= 2 && best ? (best.logo || "") : ""; };
+    const findLogo = (nm) => { const k = teamKey(nm); if (!k) return ""; let loose = ""; for (const t of tms) { const tk = teamKey(t.name); if (!tk) continue; if (tk === k) return t.logo || ""; if (tk.indexOf(k) >= 0 || k.indexOf(tk) >= 0) loose = loose || (t.logo || ""); } return loose; };
     temporadas.forEach((x) => { if (!x.logo && x.team) x.logo = findLogo(x.team); });
   } catch (e) {}
   const ptsSum = matches.reduce((s, m) => s + (Number(m.stats) || 0), 0);
@@ -2232,16 +2234,6 @@ export async function onRequestGet({ request, env, params }) {
   }
   if (path === "clausulas") {
     try { return json(await getClausulas(env)); } catch (e) { return json({ players: [], error: String(e) }); }
-  }
-  if (path === "tmtest") {
-    try {
-      const name = url.searchParams.get("name") || "Robert Navarro";
-      const UA = { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36", "accept-language": "es-ES,es" };
-      const r = await fetch("https://www.transfermarkt.es/schnellsuche/ergebnis/schnellsuche?query=" + encodeURIComponent(name), { headers: UA });
-      const s = await r.text();
-      const links = [...new Set([...s.matchAll(/href="(\/[^"]+\/profil\/spieler\/\d+)"/g)].map((m) => m[1]))].slice(0, 3);
-      return json({ status: r.status, len: s.length, links });
-    } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "noticias") {
     return json(await getNoticias(env));
