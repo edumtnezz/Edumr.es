@@ -1045,7 +1045,7 @@ async function playerFicha(env, id) {
       });
     } catch (e) {}
   }
-  const fitArr = (pl.average && pl.average.fitness) || [];
+  const fitArr = (mp && mp.fitness && mp.fitness.length) ? mp.fitness : ((pl.average && pl.average.fitness) || []);
   return {
     id,
     name: pl.name || "",
