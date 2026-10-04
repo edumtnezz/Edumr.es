@@ -1168,7 +1168,7 @@ async function handleAnaliza(request, env, user) {
   let market = { players: [] };
   try { market = await getMarketPlayers(env); } catch (e) {}
   const nameList = (market.players || []).map((p) => p.name).filter(Boolean);
-  const nameHint = nameList.length ? ("\n\nLista de nombres EXACTOS de los jugadores de la liga. Si un nombre leído coincide por apellido o inicial con uno de esta lista, escribe el de la lista TAL CUAL (así acierto el jugador): " + nameList.join(", ") + ".") : "";
+  const nameHint = nameList.length ? ("\n\nLista de nombres EXACTOS de los jugadores de la liga. IMPORTANTE: para CADA nombre que leas, elige de esta lista el MÁS PARECIDO y escribe el de la lista TAL CUAL (aunque lo leído no exista, coge el de la lista que más se le parezca; nunca inventes uno que no esté en la lista): " + nameList.join(", ") + ".") : "";
   if (Array.isArray(body.jugadores) && body.jugadores.length) {
     const tit = [], sup = [];
     for (const j of body.jugadores) {

@@ -481,7 +481,7 @@
     document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
     const panel = $("tab-" + name);
     if (panel) panel.classList.remove("hidden");
-    try { localStorage.setItem("merc_tab", name); } catch (e) {}
+    try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
   }
 
   function expOf(p) {
@@ -948,7 +948,7 @@
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
   (function restoreTab() {
     let name = "";
-    try { name = localStorage.getItem("merc_tab") || ""; } catch (e) {}
+    try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {}
     if (name && $("tab-" + name)) switchTab(name);
   })();
   document.querySelectorAll(".merc-segbtn").forEach((b) => b.addEventListener("click", () => {
@@ -1095,7 +1095,7 @@
           const c = el("div", "an-clause-card");
           const ph = el("div", "an-clause-photo");
           ph.appendChild(photoImg(p.photo));
-          posRingCls(ph, p.pos, p.pos2);
+          posRingCls(ph, p.pos);
           c.appendChild(ph);
           c.appendChild(el("div", "an-clause-name", p.nombre || ""));
           c.appendChild(el("div", "an-clause-cl", "🔓 " + money(p.clause) + " €"));
@@ -1134,7 +1134,7 @@
       const list = el("div", "pick-list");
       others.forEach((o) => {
         const row = el("button", "cmp-sugrow"); row.type = "button";
-        const ph = el("span", "cmp-sugphoto"); ph.appendChild(photoImg(o.photo)); posRingCls(ph, o.pos, o.pos2); row.appendChild(ph);
+        const ph = el("span", "cmp-sugphoto"); ph.appendChild(photoImg(o.photo)); posRingCls(ph, o.pos); row.appendChild(ph);
         const bb = el("span", "cmp-sugbody");
         bb.appendChild(el("span", "cmp-sugname", o.nombre || ""));
         bb.appendChild(el("span", "cmp-sugteam", (o.pos || "") + (o.prob != null ? " · juega " + o.prob + "%" : "")));
@@ -1149,7 +1149,7 @@
       const card = el("div", "pitch-player" + (isBench ? " bench" : ""));
       const ph = el("div", "pitch-photo");
       ph.appendChild(photoImg(p.photo));
-      posRingCls(ph, p.pos, p.pos2);
+      posRingCls(ph, p.pos);
       card.appendChild(ph);
       card.appendChild(el("div", "pitch-name", p.nombre || ""));
       const info = el("div", "pitch-info");
