@@ -137,7 +137,7 @@
 .section-sub { color: var(--muted); font-size: 1rem; }
 
 /* ---------- Proyectos ---------- */
-.projects-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(410px, 1fr)); gap: 20px; }
+.projects-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(410px, 1fr)); gap: 20px; margin-top: 34px; }
 .project-card {
   background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg);
   padding: 26px 24px; backdrop-filter: blur(12px);
@@ -281,13 +281,9 @@
 .site-cta:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
 #porque, #sec-proyectos, #metodo, #sec-demos { scroll-margin-top: 84px; }
 
-/* ===== Corte de stats (separador, tono de la web) ===== */
-.why {
+/* ===== Proyectos (unificado con el cuadro de stats) ===== */
+.projects-section {
   background: linear-gradient(180deg, rgba(34, 197, 94, 0.10), rgba(34, 197, 94, 0.015));
-  color: var(--text);
-  padding: 46px 0 50px;
-  position: relative;
-  z-index: 1;
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
 }
