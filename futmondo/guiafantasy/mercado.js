@@ -245,6 +245,8 @@
         const im = el("img", ""); im.loading = "lazy"; im.alt = ""; im.src = p.photo || "/img/avatar.svg";
         im.addEventListener("error", () => { if (im.getAttribute("src") !== "/img/avatar.svg") im.src = "/img/avatar.svg"; }, { once: true });
         ph.appendChild(im);
+        const rst = statusInfo(p.status);
+        if (rst) ph.appendChild(el("span", "mcard-badge " + rst.cls, rst.label));
         row.appendChild(ph);
         const info = el("div", "racha-info");
         info.appendChild(el("span", "racha-name", p.name));
@@ -254,10 +256,6 @@
         const rb = roleBadge(p.role);
         if (rb) meta.appendChild(el("span", "racha-role posb posb-" + posCls(p.role), rb));
         info.appendChild(meta);
-        if (p.status) {
-          const sc = p.status === "redcard" ? "red" : String(p.status).indexOf("injured") === 0 ? "inj" : p.status === "doubt" ? "doubt" : "ok";
-          info.appendChild(el("span", "racha-status " + sc, statusLabel(p.status)));
-        }
         row.appendChild(info);
         const scores = el("div", "racha-scores");
         const fit = (p.fit || []).map((x) => Number(x) || 0);
@@ -331,7 +329,10 @@
       const grid = el("div", "claus-grid");
       list.forEach((p) => {
         const card = el("div", "claus-card2");
-        const ph = el("div", "claus-photo2"); ph.appendChild(photoImg(p.photo, "claus-img")); card.appendChild(ph);
+        const ph = el("div", "claus-photo2"); ph.appendChild(photoImg(p.photo, "claus-img"));
+        const cst = statusInfo(p.status);
+        if (cst) ph.appendChild(el("span", "mcard-badge " + cst.cls, cst.label));
+        card.appendChild(ph);
         const body = el("div", "claus-body2");
         const nm = el("div", "claus-name2", p.name || "");
         const rb = roleBadge(p.role);
@@ -1031,6 +1032,8 @@
     ph.appendChild(posRing(photoImg(d.photo || p.photo, "mcard-img"), d.role || p.role, d.role2 || p.role2));
     const rb = roleBadge(d.role || p.role), rb2 = roleBadge(d.role2 || p.role2);
     if (rb) ph.appendChild(el("span", "mcard-role" + (rb2 ? " multi" : "") + " posb posb-" + posCls(p.role), rb + (rb2 ? " · " + rb2 : "")));
+    const fst = statusInfo(d.status || p.status);
+    if (fst) ph.appendChild(el("span", "mcard-badge " + fst.cls, fst.label));
     head.appendChild(ph);
     head.appendChild(el("h2", "ficha-name", d.name || p.name || ""));
     const teamName = d.team || p.team || "";
