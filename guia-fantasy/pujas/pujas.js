@@ -166,7 +166,7 @@ function render() {
     intro.appendChild(el("p", "muted", "Con un nombre y un código de 4 o 6 números juegas a La Puja, La Porra y La Quiniela. Si aún no tienes cuenta, se crea sola. Después entra siempre con lo mismo."));
     panel.appendChild(intro);
     const go = el("a", "btn-primary big", "Crear cuenta o entrar");
-    go.href = "/futmondo/cuenta/?next=" + encodeURIComponent("/futmondo/pujas/");
+    go.href = "/guia-fantasy/cuenta/?next=" + encodeURIComponent("/guia-fantasy/pujas/");
     panel.appendChild(go);
   }
 
@@ -721,7 +721,7 @@ function toast(msg) {
 
 function shareWhatsApp(p) {
   if (!p) return;
-  const url = "https://edumr.es/futmondo/pujas/";
+  const url = "https://edumr.es/guia-fantasy/pujas/";
   let txt;
   if (p.status === "closed") {
     if (p.winner) txt = "🏆 Subasta finalizada en Futmondo MR\n\nJugador: " + p.player + "\nGanador: " + p.winner.user + "\nPuja ganadora: " + money(p.winner.amount) + " €";

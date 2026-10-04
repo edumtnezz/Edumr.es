@@ -10,8 +10,8 @@ function initials(name) {
 }
 function nextUrl() {
   const n = new URLSearchParams(location.search).get("next");
-  if (n && /^\/futmondo(\/|$)/.test(n)) return n;
-  return "/futmondo/";
+  if (n && /^\/guia-fantasy(\/|$)/.test(n)) return n;
+  return "/guia-fantasy/";
 }
 
 function renderUser(name) {

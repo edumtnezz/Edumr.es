@@ -1,5 +1,6 @@
-/futmondo /futmondo/ 301
-/laquiniela/* /futmondo/quiniela/:splat 301
-/laquiniela /futmondo/quiniela/ 301
-/laporra/* /futmondo/porra/:splat 301
-/laporra /futmondo/porra/ 301
+/futmondo/* /guia-fantasy/:splat 301
+/futmondo /guia-fantasy/ 301
+/laquiniela/* /guia-fantasy/quiniela/:splat 301
+/laquiniela /guia-fantasy/quiniela/ 301
+/laporra/* /guia-fantasy/porra/:splat 301
+/laporra /guia-fantasy/porra/ 301
