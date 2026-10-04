@@ -120,9 +120,10 @@
 .an-preview { max-width: 100%; max-height: 340px; border-radius: 12px; border: 1px solid var(--border); margin: 10px auto; display: block; }
 .an-form { font-weight: 800; margin: 8px 0; }
 .an-leido { font-size: 0.78rem; color: #9fb0c4; margin-bottom: 8px; line-height: 1.5; }
-.an-list { display: grid; gap: 2px; margin-bottom: 8px; }
-.an-row { display: grid; grid-template-columns: 34px minmax(0,1fr) 74px 52px 42px 44px; gap: 6px; align-items: center; padding: 6px 0; border-top: 1px solid var(--border); font-size: 0.82rem; }
-.an-row:first-child { border-top: none; }
+.an-list { display: grid; gap: 4px; margin: 0 auto 8px; max-width: 620px; }
+.an-row { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 0.82rem; }
+.an-row:first-child { border-top: 1px solid var(--border); }
+.an-main { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
 .an-pos { font-weight: 800; color: var(--muted); }
 .an-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .an-team { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -182,7 +183,7 @@
 .cmp-sugval { font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
 
 /* Corrección del equipo + histórico + pronóstico */
-.an-row { grid-template-columns: 34px minmax(0,1fr) 58px 38px 46px 22px; }
+.an-row { gap: 8px; }
 .an-main { display: flex; flex-direction: column; overflow: hidden; }
 .an-sub { font-size: 0.66rem; color: #9fb0c4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .an-edit { cursor: pointer; text-align: center; font-size: 0.9rem; }
@@ -374,8 +375,8 @@
 .merc-club.merc-club-all { width: auto; padding: 0 12px; border-radius: 999px; font-size: 0.82rem; font-weight: 700; color: var(--text); }
 
 /* Campo de fútbol (analiza) */
-.pitch { position: relative; background: linear-gradient(#1f7a3a, #17612e); border-radius: 14px; padding: 20px 10px; margin: 12px 0; display: flex; flex-direction: column; gap: 14px; border: 2px solid rgba(255,255,255,0.25); box-shadow: inset 0 0 60px rgba(0,0,0,0.25); }
-.pitch::before { content: ""; position: absolute; inset: 8px; border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; pointer-events: none; }
+.pitch { position: relative; background: url('/img/campo.png') center / contain no-repeat; border-radius: 0; padding: 5% 7%; margin: 12px auto; max-width: 860px; display: flex; flex-direction: column; justify-content: space-between; gap: 6px; aspect-ratio: 16 / 9; }
+.pitch::before { content: none; }
 .pitch-row { display: flex; justify-content: space-around; gap: 6px; position: relative; z-index: 1; }
 .pitch-player { display: flex; flex-direction: column; align-items: center; width: 64px; }
 .pitch-photo { width: 46px; height: 46px; border-radius: 50%; overflow: hidden; background: rgba(0,0,0,0.35); border: 2px solid rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; color: #fff; }

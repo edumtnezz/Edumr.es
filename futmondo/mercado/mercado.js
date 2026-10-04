@@ -1095,7 +1095,6 @@
           const c = el("div", "an-clause-card");
           const ph = el("div", "an-clause-photo");
           ph.appendChild(photoImg(p.photo));
-          posRingCls(ph, p.pos);
           c.appendChild(ph);
           c.appendChild(el("div", "an-clause-name", p.nombre || ""));
           c.appendChild(el("div", "an-clause-cl", "🔓 " + money(p.clause) + " €"));
@@ -1134,7 +1133,7 @@
       const list = el("div", "pick-list");
       others.forEach((o) => {
         const row = el("button", "cmp-sugrow"); row.type = "button";
-        const ph = el("span", "cmp-sugphoto"); ph.appendChild(photoImg(o.photo)); posRingCls(ph, o.pos); row.appendChild(ph);
+        const ph = el("span", "cmp-sugphoto"); ph.appendChild(photoImg(o.photo)); row.appendChild(ph);
         const bb = el("span", "cmp-sugbody");
         bb.appendChild(el("span", "cmp-sugname", o.nombre || ""));
         bb.appendChild(el("span", "cmp-sugteam", (o.pos || "") + (o.prob != null ? " · juega " + o.prob + "%" : "")));
@@ -1149,7 +1148,6 @@
       const card = el("div", "pitch-player" + (isBench ? " bench" : ""));
       const ph = el("div", "pitch-photo");
       ph.appendChild(photoImg(p.photo));
-      posRingCls(ph, p.pos);
       card.appendChild(ph);
       card.appendChild(el("div", "pitch-name", p.nombre || ""));
       const info = el("div", "pitch-info");
