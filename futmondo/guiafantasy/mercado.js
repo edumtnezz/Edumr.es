@@ -174,55 +174,6 @@
     const v = p["chg" + hlPeriod];
     return v != null ? Number(v) : (Number(p.change) || 0);
   }
-  function renderHighlights() {
-    const box = $("mercHighlights");
-    if (!box) return;
-    box.innerHTML = "";
-    const seg = el("div", "hl-seg");
-    [["1", "Hoy"], ["7", "7 días"], ["14", "14 días"], ["30", "30 días"]].forEach((pair) => {
-      const b = el("button", "hl-btn" + (hlPeriod === pair[0] ? " active" : ""), pair[1]);
-      b.type = "button";
-      b.addEventListener("click", () => { hlPeriod = pair[0]; renderHighlights(); renderRachas(); renderGrid(); });
-      seg.appendChild(b);
-    });
-    const head = el("div", "hl-head");
-    head.appendChild(el("span", "hl-title", "📊 Movimiento del mercado"));
-    head.appendChild(seg);
-    box.appendChild(head);
-    const up = all.filter((p) => hlChange(p) > 0).sort((a, b) => hlChange(b) - hlChange(a)).slice(0, 5);
-    const down = all.filter((p) => hlChange(p) < 0).sort((a, b) => hlChange(a) - hlChange(b)).slice(0, 5);
-    if (!up.length && !down.length) return;
-    const wrap = el("div", "merc-cols");
-    const col = (title, list, cls) => {
-      const c = el("div", "merc-col");
-      c.appendChild(el("div", "merc-col-title " + cls, title));
-      list.forEach((p) => {
-        const row = el("button", "merc-row"); row.type = "button";
-        const ph = el("div", "merc-row-photo");
-        const im = el("img", "merc-row-img"); im.loading = "lazy"; im.alt = ""; im.src = p.photo || "/img/avatar.svg";
-        im.addEventListener("error", () => { if (im.getAttribute("src") !== "/img/avatar.svg") im.src = "/img/avatar.svg"; }, { once: true });
-        ph.appendChild(im);
-        const rb = roleBadge(p.role);
-        if (rb) ph.appendChild(el("span", "merc-row-role posb posb-" + posCls(p.role), rb));
-        row.appendChild(ph);
-        const info = el("div", "merc-row-info");
-        info.appendChild(el("span", "merc-row-name", p.name));
-        const meta = el("div", "merc-row-meta");
-        if (p.logo) { const lg = el("img", "merc-row-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; meta.appendChild(lg); }
-        if (p.team) meta.appendChild(el("span", null, p.team));
-        info.appendChild(meta);
-        row.appendChild(info);
-        row.appendChild(el("span", "merc-row-val " + cls, (cls === "up" ? "▲ " : "▼ ") + formatDots(Math.abs(hlChange(p))) + " €"));
-        row.addEventListener("click", () => openFicha(p));
-        c.appendChild(row);
-      });
-      return c;
-    };
-    wrap.appendChild(col("Más suben", up, "up"));
-    wrap.appendChild(col("Más bajan", down, "down"));
-    box.appendChild(wrap);
-  }
-
   async function renderRachas() {
     const box = $("mercRachas");
     if (!box) return;
@@ -406,8 +357,17 @@
     const grid = $("marketGrid");
     if (!grid) return;
     grid.innerHTML = "";
-    const title = el("div", "mkt-headline", "📋 Todos los jugadores");
-    grid.appendChild(title);
+    const top = el("div", "mkt-top");
+    top.appendChild(el("div", "mkt-headline", "📋 Todos los jugadores"));
+    const seg = el("div", "hl-seg");
+    [["1", "Hoy"], ["7", "7 días"], ["14", "14 días"], ["30", "30 días"]].forEach(([k, lab]) => {
+      const b = el("button", "hl-btn" + (hlPeriod === k ? " active" : ""), lab);
+      b.type = "button";
+      b.addEventListener("click", () => { hlPeriod = k; renderGrid(); renderRachas(); });
+      seg.appendChild(b);
+    });
+    top.appendChild(seg);
+    grid.appendChild(top);
     const list0 = filteredList();
     const pctOf = (p) => { const ch = hlChange(p); const prev = (Number(p.value) || 0) - ch; return prev > 0 ? (ch / prev) * 100 : 0; };
     const vantOf = (p) => (Number(p.value) || 0) - hlChange(p);
@@ -791,7 +751,6 @@
       if (Array.isArray(d.players)) all = d.players;
       updateTime(d.updatedAt);
       const _y = window.scrollY;
-      renderHighlights();
       renderRachas();
       renderGrid();
       renderEstado();

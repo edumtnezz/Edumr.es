@@ -550,6 +550,8 @@ html { overflow-anchor: none; }
 
 /* ---------- Tabla de jugadores (mercado) ---------- */
 .mkt-headline { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.05rem; margin: 18px 0 10px; }
+.mkt-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 18px 0 10px; }
+.mkt-top .mkt-headline { margin: 0; }
 .mkt-wrap { overflow-x: auto; }
 .mkt-table { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
 .mkt-row { display: grid; grid-template-columns: minmax(170px, 2.4fr) 0.85fr 0.7fr 1.3fr 1fr 1fr 1.1fr; align-items: center; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--border); background: transparent; color: var(--text); text-align: left; cursor: pointer; font-family: inherit; font-size: 0.82rem; width: 100%; border-left: 0; border-right: 0; border-bottom: 0; }
