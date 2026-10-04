@@ -224,7 +224,7 @@
 .demo-step small { color: var(--muted); font-size: 0.82rem; }
 
 /* Demo PC (EduDownloader) */
-.pc-wrap { grid-template-columns: 1fr; gap: 22px; }
+.pc-wrap { grid-template-columns: 1fr; gap: 20px; max-width: 680px; margin-left: auto; margin-right: auto; }
 .pc-wrap .demo-steps { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 .pc { width: 100%; border-radius: 16px; overflow: hidden; border: 1px solid var(--border); background: var(--card-solid); box-shadow: var(--shadow); }
 .pc-bar { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--bg-surface); border-bottom: 1px solid var(--border); }
