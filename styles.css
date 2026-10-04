@@ -298,7 +298,7 @@
 .why-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px; }
 .why-item { display: flex; flex-direction: column; }
 .why-num {
-  font-family: 'Bodoni Moda', Georgia, serif;
+  font-family: var(--font-display);
   font-weight: 500; font-size: clamp(2.8rem, 6vw, 5rem);
   line-height: 1; letter-spacing: -0.02em; color: var(--text);
 }
