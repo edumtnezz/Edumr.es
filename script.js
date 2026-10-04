@@ -214,3 +214,41 @@ document.addEventListener('DOMContentLoaded', () => {
     steps.forEach(function (s) { s.addEventListener("click", function () { show(s); }); });
   });
 })();
+
+/* ===== Modos (pestañas) y sub-pestañas de demos ===== */
+(function () {
+  var VALID = ["inicio", "proyectos", "demos", "fantasy"];
+  var modeTabs = Array.prototype.slice.call(document.querySelectorAll(".mode-tab"));
+  var views = Array.prototype.slice.call(document.querySelectorAll(".view"));
+
+  function showMode(name, scroll) {
+    if (VALID.indexOf(name) < 0) name = "inicio";
+    views.forEach(function (v) { v.classList.toggle("hidden", v.id !== "view-" + name); });
+    modeTabs.forEach(function (t) { t.classList.toggle("active", t.dataset.view === name); });
+    if (scroll !== false) window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function go(name) {
+    if (history.replaceState) history.replaceState(null, "", "#" + name);
+    showMode(name);
+  }
+
+  modeTabs.forEach(function (t) { t.addEventListener("click", function () { go(t.dataset.view); }); });
+  document.querySelectorAll("[data-goto]").forEach(function (b) {
+    b.addEventListener("click", function () { go(b.dataset.goto); });
+  });
+  window.addEventListener("hashchange", function () {
+    showMode((location.hash || "").replace("#", ""), true);
+  });
+
+  showMode((location.hash || "").replace("#", ""), false);
+
+  var demoTabs = Array.prototype.slice.call(document.querySelectorAll(".demo-tab"));
+  var demoPanels = Array.prototype.slice.call(document.querySelectorAll(".demo-panel"));
+  demoTabs.forEach(function (t) {
+    t.addEventListener("click", function () {
+      demoTabs.forEach(function (x) { x.classList.toggle("active", x === t); });
+      demoPanels.forEach(function (p) { p.classList.toggle("hidden", p.dataset.demo !== t.dataset.demo); });
+    });
+  });
+})();
