@@ -887,6 +887,34 @@ async function ffSeason(env, name) {
   return pts.length >= 2 ? pts : null;
 }
 
+async function tmProfile(env, name, club) {
+  const k = "tm:date:" + normKey(String(name || "").toLowerCase());
+  try { const c = await env.PORRA.get(k, "json"); if (c) return c; } catch (e) {}
+  const out = { date: "", club: "", url: "" };
+  try {
+    const UA = { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36", "accept-language": "es-ES,es" };
+    const s = await (await fetch("https://www.transfermarkt.es/schnellsuche/ergebnis/schnellsuche?query=" + encodeURIComponent(name), { headers: UA })).text();
+    const links = [...new Set([...s.matchAll(/href="(\/[^"]+\/profil\/spieler\/\d+)"/g)].map((m) => m[1]))].slice(0, 4);
+    const nk = normKey(String(name || "").toLowerCase());
+    for (const lk of links) {
+      try {
+        const p = await (await fetch("https://www.transfermarkt.es" + lk, { headers: UA })).text();
+        const nm = (p.match(/data-header__headline-wrapper[^>]*>\s*([^<]+)/) || [])[1] || "";
+        const cl = (p.match(/data-header__club[^>]*>[\s\S]{0,90}?>\s*([^<]+)/) || [])[1] || "";
+        const fd = p.match(/Fichado:<\/span>\s*<span[^>]*>([\s\S]{0,60}?)<\/span>/);
+        const date = fd ? fd[1].replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim() : "";
+        if (!date) continue;
+        const nmk = normKey(nm.toLowerCase());
+        const nameOk = nmk && (nmk === nk || nk.indexOf(nmk) >= 0 || nmk.indexOf(nk) >= 0);
+        const teamOk = !club || teamScore(cl, club) >= 2;
+        if (nameOk && teamOk) { out.date = date; out.club = cl; out.url = "https://www.transfermarkt.es" + lk; break; }
+      } catch (e) {}
+    }
+  } catch (e) {}
+  try { await env.PORRA.put(k, JSON.stringify(out), { expirationTtl: 30 * 24 * 3600 }); } catch (e) {}
+  return out;
+}
+
 function stripHtml(s) {
   return String(s || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
 }
@@ -1067,10 +1095,12 @@ async function playerFicha(env, id) {
       const t = (pick && pick.t) || {};
       const tot = Number(t.p) || 0;
       const games = t.games != null ? Number(t.games) : (Number((pick && pick.h && pick.h.games) || 0) + Number((pick && pick.a && pick.a.games) || 0));
+      const t0 = (x.teams && x.teams[0]) || {};
       return {
         season: lg.season || "",
         league: lg.name || "",
-        team: (x.teams && x.teams[0] && x.teams[0].name) || "",
+        team: t0.name || "",
+        logo: t0.logo ? (String(t0.logo).indexOf("http") === 0 ? t0.logo : LOGO_BASE + t0.logo) : "",
         points: tot,
         games,
         media: games ? Math.round((tot / games) * 10) / 10 : 0,
@@ -1113,6 +1143,8 @@ async function playerFicha(env, id) {
     } catch (e) {}
   }
   const fitArr = (mp && mp.fitness && mp.fitness.length) ? mp.fitness : ((pl.average && pl.average.fitness) || []);
+  let fichaje = null;
+  try { fichaje = await tmProfile(env, pl.name || "", (a.team && a.team.name) || pl.team || ""); } catch (e) {}
   return {
     id,
     name: pl.name || "",
@@ -1134,6 +1166,7 @@ async function playerFicha(env, id) {
     valores,
     temporada,
     temporadas,
+    fichaje,
   };
 }
 

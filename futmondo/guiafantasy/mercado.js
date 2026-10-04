@@ -1051,6 +1051,7 @@
       chg > 0 ? "▲ " + formatDots(chg) + " €" + pct(d.value || p.value, chg) : chg < 0 ? "▼ " + formatDots(-chg) + " €" + pct(d.value || p.value, chg) : "—"));
     head.appendChild(el("div", "cmp-status", statusLabel(d.status || p.status)));
     if (d.pronostico) head.appendChild(el("div", "ficha-pron", "Pronóstico: " + d.pronostico));
+    if (d.fichaje && d.fichaje.date) head.appendChild(el("div", "ficha-fichaje", "🖊️ Fichado: " + d.fichaje.date + (d.fichaje.club ? " · " + d.fichaje.club : "")));
     root.appendChild(head);
 
     const stats = el("div", "ficha-stats");
@@ -1074,18 +1075,17 @@
     if (fit.length) {
       colL.appendChild(el("div", "estado-title", "Puntos por jornada (Futmondo Social)"));
       const tbl = el("div", "ficha-matches");
-      const byR = {};
-      (d.matches || []).forEach((m) => { if (byR[m.r] == null) byR[m.r] = m; });
+      const ms = d.matches || [];
       const j0 = Number(d.jornada) || 0;
       for (let k = 0; k < fit.length; k++) {
         const v = Math.round(fit[fit.length - 1 - k]);
-        const j = j0 ? j0 - k : 0;
-        const m = byR[j] || {};
+        const m = ms[k] || {};
+        const j = m.r || (j0 ? j0 - k : 0);
         const row = el("div", "fm-row");
         row.appendChild(el("span", "fm-j", j ? "J" + j : ""));
         const rival = (m.home === d.team) ? m.away : (m.away === d.team ? m.home : (m.away || m.home || ""));
         const casa = m.home === d.team;
-        row.appendChild(el("span", "fm-match", rival ? ((casa ? "🏠 " : "✈️ ") + rival) : ""));
+        row.appendChild(el("span", "fm-match", (rival || m.r) ? ((rival && casa ? "🏠 " : rival ? "✈️ " : "") + (rival || "")) : ""));
         row.appendChild(el("span", "fm-pts pt-" + ptClass(v), String(v)));
         tbl.appendChild(row);
       }
@@ -1196,7 +1196,10 @@
         const r = el("div", "fv-row");
         r.appendChild(el("span", "fv-label", x.season));
         r.appendChild(el("span", "fv-diff", x.points + " pts" + (x.games ? " · " + x.games + " part." : "")));
-        r.appendChild(el("span", "fv-val", x.team || ""));
+        const tv = el("span", "fv-val");
+        if (x.logo) { const lg = el("img", "fv-crest"); lg.src = x.logo; lg.alt = ""; lg.loading = "lazy"; tv.appendChild(lg); }
+        if (x.team) tv.appendChild(el("span", null, x.team));
+        r.appendChild(tv);
         t.appendChild(r);
       });
       colR.appendChild(t);
