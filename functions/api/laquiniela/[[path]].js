@@ -1228,10 +1228,10 @@ async function getJornadaStrip(env, matchday) {
   let jd = null;
   try { jd = await getJornada(env, matchday || null); } catch (e) {}
   if (!jd || !jd.matches) return { matchday: 0, matches: [] };
-  let tvmap = { byName: {}, list: [] };
-  try { tvmap = await fltvMap(env); } catch (e) {}
-  if (!(tvmap.list || []).length) { try { tvmap = await ffTvMap(env); } catch (e) {} }
-  const list = tvmap.list || [];
+  let fl = { byName: {}, list: [] }, ffc = { byName: {}, list: [] };
+  try { fl = await fltvMap(env); } catch (e) {}
+  try { ffc = await ffTvMap(env); } catch (e) {}
+  const list = (fl.list || []).concat(ffc.list || []);
   const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
   const dtF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" });
   const tF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hour12: false });
@@ -2125,6 +2125,22 @@ export async function onRequestGet({ request, env, params }) {
   }
   if (path === "jornada") {
     try { return json(await getJornadaStrip(env, url.searchParams.get("jornada"))); } catch (e) { return json({ matchday: 0, matches: [] }); }
+  }
+  if (path === "dbgplayers") {
+    try {
+      const header = await futbolHeader(env);
+      const plRes = await futbolPost("/5/league/championshipplayers", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
+      const arr = (plRes.answer && plRes.answer.players) || (Array.isArray(plRes.answer) ? plRes.answer : []);
+      const withOwner = arr.filter((p) => p.owner || p.user || p.teamUser || p.manager).slice(0, 2);
+      return json({ answerKeys: (plRes.answer && !Array.isArray(plRes.answer)) ? Object.keys(plRes.answer) : null, count: arr.length, sampleKeys: arr[0] ? Object.keys(arr[0]) : [], sample: arr.slice(0, 2), withOwner });
+    } catch (e) { return json({ error: String(e) }); }
+  }
+  if (path === "dbgsum") {
+    try {
+      const header = await futbolHeader(env);
+      const s = await futbolPost("/1/player/summary", header, { playerId: url.searchParams.get("id"), championshipId: FUTMONDO_CHAMPIONSHIP });
+      return json(s);
+    } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "noticias") {
     return json(await getNoticias(env));
