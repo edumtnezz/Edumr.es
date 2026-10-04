@@ -353,7 +353,7 @@
         const st = el("div", "claus-stats");
         const sbox = (val, lab, cls) => { const b = el("div", "claus-stat" + (cls ? " " + cls : "")); b.appendChild(el("b", null, String(val))); b.appendChild(el("small", null, lab)); return b; };
         st.appendChild(sbox(Number(p.points) || 0, "PTS"));
-        st.appendChild(sbox((Number(p.avg) || 0).toFixed(1).replace(".", ","), "Media"));
+        st.appendChild(sbox((Number(p.avg) || 0).toFixed(1).replace(".", ","), "Media", "media"));
         st.appendChild(sbox((Number(p.clause) / 1e6).toFixed(1).replace(".", ",") + " M", "Cláusula", "clause"));
         body.appendChild(st);
         const diff = (Number(p.clause) || 0) - (Number(p.value) || 0);
