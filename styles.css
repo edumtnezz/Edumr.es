@@ -246,3 +246,91 @@
   .project-logo-wrap { width: 64px; height: 64px; }
   .footer-content { flex-direction: column; text-align: center; }
 }
+
+/* ===== Barra superior tipo Aureum ===== */
+.site-nav {
+  position: sticky; top: 0; z-index: 70;
+  background: rgba(7, 9, 14, 0.82);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+}
+[data-theme="light"] .site-nav { background: rgba(255, 255, 255, 0.85); }
+.site-nav-in {
+  max-width: 1120px; margin: 0 auto; padding: 13px 20px;
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+}
+.site-links { display: flex; gap: 34px; }
+.site-links a {
+  font-family: var(--font-display);
+  font-size: 0.8rem; font-weight: 600;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--muted); transition: color 0.2s;
+}
+.site-links a:hover { color: var(--text); }
+.site-nav-right { display: flex; align-items: center; gap: 12px; }
+.site-cta {
+  font-family: var(--font-display);
+  font-size: 0.8rem; font-weight: 600;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  padding: 10px 22px; border-radius: 999px;
+  border: 1px solid var(--border); color: var(--text);
+  transition: all 0.2s ease;
+}
+.site-cta:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-1px); }
+#porque, #sec-proyectos, #metodo, #sec-demos { scroll-margin-top: 84px; }
+
+/* ===== Corte de stats (estilo Aureum) ===== */
+.why {
+  background: #eee9df;
+  color: #151516;
+  padding: 86px 0 96px;
+  position: relative;
+  z-index: 1;
+}
+.why-eyebrow {
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 0.78rem; font-weight: 600;
+  letter-spacing: 0.34em; text-transform: uppercase;
+  color: #6b6255; margin-bottom: 24px;
+}
+.why-line { height: 1px; background: rgba(21, 21, 22, 0.18); margin-bottom: 48px; }
+.why-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px; }
+.why-item { display: flex; flex-direction: column; }
+.why-num {
+  font-family: 'Bodoni Moda', Georgia, serif;
+  font-weight: 500; font-size: clamp(2.8rem, 6vw, 5rem);
+  line-height: 1; letter-spacing: -0.02em;
+}
+.why-num .slash, .why-num .pct { font-style: normal; font-weight: 400; opacity: 0.5; padding: 0 2px; }
+.why-label {
+  margin-top: 12px;
+  font-family: var(--font-display);
+  font-size: 0.78rem; font-weight: 600;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: #6b6255;
+}
+
+/* ===== Método ===== */
+.method-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.method-step {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 24px 22px; display: flex; flex-direction: column; gap: 6px;
+  backdrop-filter: blur(12px); transition: all 0.25s ease;
+}
+.method-step:hover { transform: translateY(-4px); border-color: var(--border-hover); box-shadow: var(--shadow); }
+.method-n { font-family: var(--font-display); font-weight: 700; color: var(--accent); font-size: 0.95rem; }
+.method-step b { font-family: var(--font-display); font-size: 1.15rem; }
+.method-step small { color: var(--muted); font-size: 0.9rem; }
+
+@media (max-width: 860px) {
+  .site-links { display: none; }
+  .why-grid { grid-template-columns: 1fr 1fr; gap: 26px; }
+  .method-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 520px) {
+  .why { padding: 64px 0 70px; }
+  .why-grid { grid-template-columns: 1fr; }
+  .method-grid { grid-template-columns: 1fr; }
+}
+
