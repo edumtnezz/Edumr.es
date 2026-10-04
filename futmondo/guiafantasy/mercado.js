@@ -57,6 +57,7 @@
   } catch (e) {}
   let all = [];
   let shown = 18;
+  let mktSort = { key: "", dir: -1 };
   let sortMode = "up";
   let quick = "";
   const QUICKS = [
@@ -394,12 +395,31 @@
     grid.innerHTML = "";
     const title = el("div", "mkt-headline", "📋 Todos los jugadores");
     grid.appendChild(title);
-    const list = filteredList();
+    const list0 = filteredList();
+    const pctOf = (p) => { const ch = hlChange(p); const prev = (Number(p.value) || 0) - ch; return prev > 0 ? (ch / prev) * 100 : 0; };
+    const vantOf = (p) => (Number(p.value) || 0) - hlChange(p);
+    const sorters = {
+      jugador: (a, b) => String(a.name || "").localeCompare(String(b.name || "")),
+      pct: (a, b) => pctOf(a) - pctOf(b),
+      tend: (a, b) => (Number(a.tend) || 0) - (Number(b.tend) || 0),
+      rival: (a, b) => (Number(a.prob) || 0) - (Number(b.prob) || 0),
+      valor: (a, b) => (Number(a.value) || 0) - (Number(b.value) || 0),
+      vant: (a, b) => vantOf(a) - vantOf(b),
+      dif: (a, b) => hlChange(a) - hlChange(b),
+    };
+    let list = list0;
+    if (mktSort.key && sorters[mktSort.key]) list = list0.slice().sort((a, b) => mktSort.dir * sorters[mktSort.key](a, b));
     if (!list.length) { grid.appendChild(el("p", "market-empty", "Sin resultados.")); return; }
     const wrap = el("div", "mkt-wrap");
     const tbl = el("div", "mkt-table");
     const head = el("div", "mkt-row mkt-head");
-    ["Jugador", "Diferencia", "% Dif", "Acel.", "Tend.", "Próx. rival", "Valor", "Valor ant."].forEach((h) => head.appendChild(el("span", "mkt-h", h)));
+    const cols = [["jugador", "Jugador"], ["pct", "% Dif"], ["tend", "Tend."], ["rival", "Próx. rival"], ["valor", "Valor"], ["vant", "Valor ant."], ["dif", "Diferencia"]];
+    cols.forEach(([key, label]) => {
+      const h = el("span", "mkt-h" + (mktSort.key === key ? " active" : ""), label + (mktSort.key === key ? (mktSort.dir > 0 ? " ▲" : " ▼") : ""));
+      h.style.cursor = "pointer";
+      h.addEventListener("click", () => { if (mktSort.key === key) mktSort.dir = -mktSort.dir; else { mktSort.key = key; mktSort.dir = -1; } renderGrid(); });
+      head.appendChild(h);
+    });
     tbl.appendChild(head);
     list.slice(0, shown).forEach((p) => {
       const row = el("button", "mkt-row"); row.type = "button";
@@ -417,17 +437,10 @@
       const rb = roleBadge(p.role);
       if (rb) j.appendChild(el("span", "posb posb-" + posCls(p.role), rb + (roleBadge(p.role2) ? " · " + roleBadge(p.role2) : "")));
       row.appendChild(j);
-      const dif = el("div", "mkt-dif " + (ch > 0 ? "up" : ch < 0 ? "down" : "flat"));
-      dif.appendChild(el("span", "mkt-lens", "🔍"));
-      dif.appendChild(el("span", null, (ch > 0 ? "+" : ch < 0 ? "−" : "") + formatDots(Math.abs(ch)) + " €"));
-      row.appendChild(dif);
       const pctv = prev > 0 ? (ch / prev) * 100 : 0;
       row.appendChild(el("div", "mkt-pct " + (ch > 0 ? "up" : ch < 0 ? "down" : "flat"), (pctv >= 0 ? "+" : "−") + Math.abs(pctv).toFixed(2).replace(".", ",") + "%"));
-      const accel = (Number(p.change) || 0) - (Number(p.chg7) || 0) / 7;
-      row.appendChild(el("div", "mkt-acel", accel > 0.01 ? "▲" : accel < -0.01 ? "▼" : "—"));
-      let tend = "—", tc = "flat";
-      if (Number(p.chg30) > 0) { tend = "▲ 30d"; tc = "up"; } else if (Number(p.chg14) > 0) { tend = "▲ 14d"; tc = "up"; } else if (Number(p.chg7) > 0) { tend = "▲ 7d"; tc = "up"; } else if (Number(p.chg30) < 0) { tend = "▼ 30d"; tc = "down"; }
-      row.appendChild(el("div", "mkt-tend " + tc, tend));
+      const t = Number(p.tend) || 0;
+      row.appendChild(el("div", "mkt-tend " + (t > 0 ? "up" : t < 0 ? "down" : "flat"), t ? ((t > 0 ? "▲ " : "▼ ") + Math.abs(t) + "d") : "—"));
       const rv = el("div", "mkt-rival");
       if (p.jornadaFf) rv.appendChild(el("b", null, "J" + p.jornadaFf));
       if (p.casaFf != null) rv.appendChild(el("span", null, p.casaFf ? "🏠" : "✈️"));
@@ -436,6 +449,10 @@
       row.appendChild(rv);
       row.appendChild(el("div", "mkt-val", money(p.value) + " €"));
       row.appendChild(el("div", "mkt-vant", money(prev) + " €"));
+      const dif = el("div", "mkt-dif " + (ch > 0 ? "up" : ch < 0 ? "down" : "flat"));
+      dif.appendChild(el("span", "mkt-lens", "💹"));
+      dif.appendChild(el("span", null, (ch > 0 ? "+" : ch < 0 ? "−" : "") + formatDots(Math.abs(ch)) + " €"));
+      row.appendChild(dif);
       row.addEventListener("click", () => openFicha(p));
       tbl.appendChild(row);
     });
@@ -1543,5 +1560,4 @@
 
   loadNoticias();
   load();
-  setInterval(load, 60000);
 })();
