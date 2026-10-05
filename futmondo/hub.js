@@ -16,7 +16,8 @@
   if (box) box.textContent = "Con permiso, ¡" + saludo() + (name ? ", " + name : "") + "!";
   const ub = document.getElementById("userBox");
   if (ub && name) {
-    const ini = name.trim().split(/\s+/).map(function (w) { return w[0]; }).join("").slice(0, 2).toUpperCase();
+    const parts = String(name).trim().split(/\s+/).filter(Boolean);
+    const ini = (parts.length <= 1 ? parts[0].slice(0, 2) : parts[0][0] + parts[1][0]).toUpperCase();
     ub.hidden = false;
     const chip = document.createElement("button"); chip.type = "button"; chip.className = "user-chip";
     chip.innerHTML = '<span class="user-avatar">' + ini + '</span><span class="user-name">' + name + '</span><span class="user-caret">▾</span>';
