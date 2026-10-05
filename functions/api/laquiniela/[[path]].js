@@ -605,7 +605,7 @@ const FUTMONDO_CHAMPIONSHIP = "6a5f4b833633f9d0e371f838";
 const FUTMONDO_USERTEAM = "6ab314563a9cf632cef6291c";
 const FACE_BASE = "https://static01.mondocore.com/futmondo/img/faces/64/";
 const LOGO_BASE = "https://static02.mondocore.com/futmondo/img/teams/64/";
-const MARKET_KEY = "fm:market:v3";
+const MARKET_KEY = "fm:market:v4";
 const MARKET_TTL_MS = 10 * 60 * 1000;
 let fmToken = null;
 
