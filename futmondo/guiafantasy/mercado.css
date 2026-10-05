@@ -617,7 +617,7 @@ html { overflow-anchor: none; }
 .mkt-table { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 12px; min-width: 820px; }
 .mkt-row > :first-child { position: sticky; left: 0; z-index: 1; background: var(--cx-surface, #fff); box-shadow: 6px 0 8px -7px rgba(0, 0, 0, 0.25); }
 .mkt-head > :first-child { z-index: 3; background: #0b0e13; }
-.mkt-row { display: grid; grid-template-columns: minmax(138px, 1.6fr) 0.8fr 0.65fr 1.15fr 0.95fr 0.95fr 1.05fr; align-items: center; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--border); background: transparent; color: var(--text); text-align: left; cursor: pointer; font-family: inherit; font-size: 0.82rem; width: 100%; border-left: 0; border-right: 0; border-bottom: 0; }
+.mkt-row { display: grid; grid-template-columns: minmax(140px, 1.5fr) 0.72fr 0.58fr 1.9fr 0.9fr 0.9fr 1fr; align-items: center; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--border); background: transparent; color: var(--text); text-align: left; cursor: pointer; font-family: inherit; font-size: 0.82rem; width: 100%; border-left: 0; border-right: 0; border-bottom: 0; }
 .mkt-row:not(.mkt-head):hover { background: rgba(127, 127, 127, 0.06); }
 .mkt-head { background: #0b0e13; color: #fff; font-weight: 800; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; border-top: none; cursor: default; border-radius: 12px 12px 0 0; }
 .mkt-head .mkt-h:nth-child(2), .mkt-head .mkt-h:nth-child(3) { text-align: center; }
@@ -640,9 +640,9 @@ html { overflow-anchor: none; }
 .mkt-dif.down, .mkt-pct.down, .mkt-tend.down { color: #dc2626; }
 .mkt-pct, .mkt-acel { text-align: center; font-weight: 700; }
 .mkt-tend { font-weight: 700; text-align: center; }
-.mkt-rival { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; font-size: 0.72rem; overflow: hidden; }
+.mkt-rival { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 0.72rem; overflow: visible; }
 .mkt-rival b { background: var(--card-solid); border: 1px solid var(--border); border-radius: 6px; padding: 0 5px; font-size: 0.64rem; }
-.mkt-rv { color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
+.mkt-rv { color: var(--muted); white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.15; }
 .mkt-prob { background: var(--accent); color: #05130a; border-radius: 6px; padding: 0 5px; font-weight: 800; font-size: 0.64rem; }
 .mkt-val { font-family: 'Space Grotesk', sans-serif; font-weight: 700; text-align: right; white-space: nowrap; }
 .mkt-vant { color: var(--muted); font-weight: 600; text-align: right; white-space: nowrap; }

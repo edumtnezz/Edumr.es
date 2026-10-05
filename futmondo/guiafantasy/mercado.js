@@ -1049,7 +1049,7 @@
 
   function ptClass(p) { p = Number(p) || 0; return p < 0 ? "lo" : p < 6 ? "mid" : "hi"; }
   const whenShort = (v) => { if (!v) return ""; try { return new Date(v).toLocaleString("es-ES", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }); } catch (e) { return ""; } };
-  function shortRival(s) { const t = String(s || "").trim(); return t.length > 14 ? t.slice(0, 13) + "…" : t; }
+  function shortRival(s) { return String(s || "").trim(); }
 
   function renderParticipacion(par, status) {
     const box = el("div", "dash");

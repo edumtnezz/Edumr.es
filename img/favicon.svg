@@ -1,38 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
   <defs>
-    <linearGradient id="bgG" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0a1024"/>
-      <stop offset="100%" stop-color="#04060d"/>
+    <linearGradient id="logoG" x1="30" y1="30" x2="98" y2="98" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#22c55e"/>
+      <stop offset="1" stop-color="#10b981"/>
     </linearGradient>
-    <linearGradient id="neonG" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#00f2fe"/>
-      <stop offset="50%" stop-color="#38bdf8"/>
-      <stop offset="100%" stop-color="#8b5cf6"/>
-    </linearGradient>
-    <filter id="glowF">
-      <feGaussianBlur stdDeviation="3" result="b"/>
-      <feMerge>
-        <feMergeNode in="b"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
   </defs>
-
-  <!-- Base Icon -->
-  <rect x="4" y="4" width="120" height="120" rx="32" fill="url(#bgG)"/>
-  <rect x="4" y="4" width="120" height="120" rx="32" fill="none" stroke="url(#neonG)" stroke-width="5"/>
-
-  <!-- Stylized Geometric "E" -->
-  <g filter="url(#glowF)" fill="url(#neonG)">
-    <!-- Vertical Spine -->
-    <rect x="36" y="32" width="16" height="64" rx="8"/>
-    <!-- Top Bar -->
-    <rect x="44" y="32" width="48" height="14" rx="7"/>
-    <!-- Middle Bar (Stylized & Shorter) -->
-    <rect x="44" y="57" width="36" height="14" rx="7"/>
-    <!-- Bottom Bar -->
-    <rect x="44" y="82" width="48" height="14" rx="7"/>
-    <!-- Small Cyber Sparkle Accent -->
-    <circle cx="92" cy="64" r="5" fill="#00f2fe"/>
-  </g>
+  <rect x="5" y="5" width="118" height="118" rx="33" fill="#ffffff" stroke="#c6f1cf" stroke-width="4"/>
+  <rect x="30" y="30" width="68" height="68" rx="20" fill="url(#logoG)"/>
+  <path d="M51.25 48.06H76.75M51.25 64H69.31M51.25 79.94H76.75" stroke="#ffffff" stroke-width="6.8" stroke-linecap="round" fill="none"/>
 </svg>
