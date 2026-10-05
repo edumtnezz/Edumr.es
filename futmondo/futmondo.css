@@ -135,7 +135,10 @@ body {
 }
 
 @media (max-width: 640px) {
-  body { padding: 14px 12px 32px; }
+  body { padding: 14px 12px 32px; overflow-x: hidden; }
+  .hub-grid { width: 100%; }
+  .hub-card { min-width: 0; overflow: hidden; }
+  .hub-card p { overflow-wrap: anywhere; }
   .hub-header { margin: 4px auto 16px; }
   .hub-ball { width: clamp(56px, 15vw, 84px); margin-bottom: 6px; }
   .hub-header h1 { font-size: 1.6rem; }
