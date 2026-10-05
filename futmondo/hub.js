@@ -14,6 +14,8 @@
   } catch (e) {}
   const box = document.getElementById("hubGreeting");
   if (box) box.textContent = "Con permiso, ¡" + saludo() + (name ? ", " + name : "") + "!";
+  const ub = document.getElementById("hubUser");
+  if (ub && name) { ub.textContent = "👤 " + name; ub.hidden = false; }
   const cta = document.getElementById("hubCta");
   if (cta) cta.hidden = loggedIn;
   document.documentElement.classList.remove("auth-loading");

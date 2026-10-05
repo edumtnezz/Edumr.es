@@ -378,7 +378,10 @@
     if (!grid) return;
     grid.innerHTML = "";
     const top = el("div", "mkt-top");
-    top.appendChild(el("div", "mkt-headline", "📋 Todos los jugadores"));
+    const tl = el("div", "mkt-tl");
+    tl.appendChild(el("div", "mkt-headline", "📋 Todos los jugadores"));
+    tl.appendChild(el("div", "mkt-hint", "↔ Desliza la tabla para ver más columnas"));
+    top.appendChild(tl);
     const seg = el("div", "hl-seg");
     [["1", "Hoy"], ["7", "7 días"], ["14", "14 días"], ["30", "30 días"], ["all", "Siempre"]].forEach(([k, lab]) => {
       const b = el("button", "hl-btn" + (hlPeriod === k ? " active" : ""), lab);

@@ -54,6 +54,9 @@ body {
 .hub-ball { width: clamp(78px, 18vw, 120px); height: auto; filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.45)); animation: bob 3.6s ease-in-out infinite; margin-bottom: 10px; }
 @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 .hub-header h1 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(1.7rem, 6vw, 2.6rem); letter-spacing: 0.05em; text-transform: uppercase; }
+.hub-title { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.hub-title img { height: 1.1em; width: auto; }
+.hub-user { font-size: 0.85rem; font-weight: 700; color: var(--text); background: var(--card-solid); border: 1px solid var(--border); padding: 7px 13px; border-radius: 999px; margin-left: 12px; }
 .grad { background: linear-gradient(135deg, #22c55e, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .hub-sub { color: var(--muted); font-size: 1rem; margin-top: 4px; }
 .hub-welcome { max-width: 720px; margin: 0 auto 28px; padding: 14px 20px; text-align: center; border-radius: 16px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.05rem; }
