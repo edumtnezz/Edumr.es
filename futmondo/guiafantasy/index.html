@@ -13,14 +13,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="/futmondo/theme.js?v=64"></script>
   <link rel="stylesheet" href="/futmondo/quiniela/quiniela.css?v=127">
-  <link rel="stylesheet" href="/futmondo/comuniate.css?v=17">
-  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=82">
+  <link rel="stylesheet" href="/futmondo/comuniate.css?v=18">
+  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=83">
 </head>
 <body class="page-simple cx-page">
   <header class="appbar cx-header">
     <div class="cx-top">
       <div class="cx-top-inner">
-        <a class="cx-logo" href="/futmondo/"><img src="/img/balonmundial.png" alt=""><span>Futmondo</span><i class="cx-page-name">Guía Fantasy</i></a>
+        <a class="cx-logo" href="/futmondo/" title="Inicio"><img src="/img/balonmundial.png" alt="Futmondo"></a>
         <nav class="cx-nav">
           <a href="/futmondo/lapuja/">La Puja</a>
           <a href="/futmondo/quiniela/">La Quiniela</a>
@@ -37,7 +37,6 @@
       <div class="cx-sub-inner">
         <nav class="tabs" id="tabsNav">
           <button class="tab active" data-tab="mercado">Mercado</button>
-          <button class="tab" data-tab="estado">Estado</button>
           <button class="tab" data-tab="noticias">Noticias</button>
           <button class="tab" data-tab="analiza">Analiza tu equipo</button>
           <button class="tab" data-tab="clausulazos">Clausulazo Jugoso</button>
@@ -79,20 +78,6 @@
           <button class="merc-segbtn" data-sort="value">Valor</button>
         </div>
         <div id="marketGrid"></div>
-      </section>
-    </section>
-
-    <section class="tab-panel hidden" id="tab-estado">
-      <section class="panel">
-        <h2>Estado jugadores</h2>
-        <p class="muted small">Lesionados, sancionados y dudas de tu liga de Futmondo Social.</p>
-        <select id="estadoSel" class="merc-select" style="max-width:280px;margin-bottom:12px;">
-          <option value="">Todos los estados</option>
-          <option value="injured">🤕 Lesionados</option>
-          <option value="redcard">🟥 Sancionados</option>
-          <option value="doubt">🟠 Dudas</option>
-        </select>
-        <div id="estadoBox"></div>
       </section>
     </section>
 
@@ -150,6 +135,6 @@
   </div>
 
   <script src="/futmondo/chrome.js?v=9"></script>
-  <script src="/futmondo/guiafantasy/mercado.js?v=87"></script>
+  <script src="/futmondo/guiafantasy/mercado.js?v=88"></script>
 </body>
 </html>

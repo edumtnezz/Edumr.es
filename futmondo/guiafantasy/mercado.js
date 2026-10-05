@@ -272,62 +272,70 @@
     return parts.join(" · ") || "buen momento de forma";
   }
 
+  function renderClausGrid(box, list, j0) {
+    box.innerHTML = "";
+    if (!list.length) { box.appendChild(el("p", "market-empty", "Sin clausulazos jugosos ahora mismo.")); return; }
+    const grid = el("div", "claus-grid");
+    list.forEach((p) => {
+      const card = el("div", "claus-card2");
+      const ph = el("div", "claus-photo2"); ph.appendChild(photoImg(p.photo, "claus-img"));
+      const cst = statusInfo(p.status);
+      if (cst) ph.appendChild(el("span", "mcard-badge " + cst.cls, cst.label));
+      card.appendChild(ph);
+      const body = el("div", "claus-body2");
+      body.appendChild(el("div", "claus-name2", p.name || ""));
+      const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
+      if (rb) {
+        const pros = el("div", "claus-pos");
+        pros.appendChild(el("span", "posb posb-" + posCls(p.role), rb));
+        if (rb2) pros.appendChild(el("span", "posb posb-" + posCls(p.role2), rb2));
+        body.appendChild(pros);
+      }
+      const tm = el("div", "claus-team");
+      if (p.logo) { const lg = el("img", "racha-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; tm.appendChild(lg); }
+      if (p.team) tm.appendChild(el("span", null, p.team));
+      body.appendChild(tm);
+      body.appendChild(el("div", "claus-owner", "👤 de " + (p.owner || "?")));
+      const st = el("div", "claus-stats");
+      const sbox = (val, lab, cls) => { const b = el("div", "claus-stat" + (cls ? " " + cls : "")); b.appendChild(el("b", null, String(val))); b.appendChild(el("small", null, lab)); return b; };
+      st.appendChild(sbox(Number(p.points) || 0, "PTS"));
+      st.appendChild(sbox((Number(p.avg) || 0).toFixed(1).replace(".", ","), "Media", "media"));
+      st.appendChild(sbox((Number(p.clause) / 1e6).toFixed(1).replace(".", ",") + " M", "Cláusula", "clause"));
+      body.appendChild(st);
+      const diff = (Number(p.clause) || 0) - (Number(p.value) || 0);
+      const vrow = el("div", "claus-val");
+      vrow.appendChild(el("b", null, "Valor " + money(p.value) + " €"));
+      vrow.appendChild(el("span", "claus-above", "+" + (diff / 1e6).toFixed(1).replace(".", ",") + " M por encima de su valor"));
+      body.appendChild(vrow);
+      const playedPct = j0 ? Math.round(((Number(p.matches) || 0) / j0) * 100) : 0;
+      body.appendChild(el("div", "claus-played", "Jugados: " + playedPct + "% de los partidos"));
+      const sl = statusLabel(p.status);
+      const sc = p.status === "redcard" ? "red" : String(p.status || "").indexOf("injured") === 0 ? "inj" : p.status === "doubt" ? "doubt" : "ok";
+      body.appendChild(el("div", "claus-status " + sc, sl));
+      const blocked = p.unlock && new Date(p.unlock).getTime() > Date.now();
+      if (blocked) body.appendChild(el("div", "claus-lock", "🔒 se libera el " + fmtDiaLargo(p.unlock)));
+      card.appendChild(body);
+      card.addEventListener("click", () => openFicha(p));
+      grid.appendChild(card);
+    });
+    box.appendChild(grid);
+  }
+
   async function renderClausulas() {
     const box = $("clausOut");
     if (!box || box.dataset.loaded === "1") return;
-    box.innerHTML = '<p class="muted small">Analizando tu liga… puede tardar un poco la primera vez.</p>';
+    box.dataset.loaded = "1";
+    let cached = null;
+    try { cached = JSON.parse(localStorage.getItem("claus_cache") || "null"); } catch (e) {}
+    if (cached && cached.players && cached.players.length) renderClausGrid(box, cached.players, Number(cached.jornada) || 0);
+    else box.innerHTML = '<p class="muted small">Analizando tu liga… la primera vez puede tardar un poco.</p>';
     try {
       const d = await (await fetch(API + "/clausulas")).json();
       const list = (d && d.players) || [];
-      box.dataset.loaded = "1";
-      box.innerHTML = "";
-      if (!list.length) { box.appendChild(el("p", "market-empty", "Sin clausulazos jugosos ahora mismo.")); return; }
-      const grid = el("div", "claus-grid");
-      list.forEach((p) => {
-        const card = el("div", "claus-card2");
-        const ph = el("div", "claus-photo2"); ph.appendChild(photoImg(p.photo, "claus-img"));
-        const cst = statusInfo(p.status);
-        if (cst) ph.appendChild(el("span", "mcard-badge " + cst.cls, cst.label));
-        card.appendChild(ph);
-        const body = el("div", "claus-body2");
-        body.appendChild(el("div", "claus-name2", p.name || ""));
-        const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
-        if (rb) {
-          const pros = el("div", "claus-pos");
-          pros.appendChild(el("span", "posb posb-" + posCls(p.role), rb));
-          if (rb2) pros.appendChild(el("span", "posb posb-" + posCls(p.role2), rb2));
-          body.appendChild(pros);
-        }
-        const tm = el("div", "claus-team");
-        if (p.logo) { const lg = el("img", "racha-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; tm.appendChild(lg); }
-        if (p.team) tm.appendChild(el("span", null, p.team));
-        body.appendChild(tm);
-        body.appendChild(el("div", "claus-owner", "👤 de " + (p.owner || "?")));
-        const st = el("div", "claus-stats");
-        const sbox = (val, lab, cls) => { const b = el("div", "claus-stat" + (cls ? " " + cls : "")); b.appendChild(el("b", null, String(val))); b.appendChild(el("small", null, lab)); return b; };
-        st.appendChild(sbox(Number(p.points) || 0, "PTS"));
-        st.appendChild(sbox((Number(p.avg) || 0).toFixed(1).replace(".", ","), "Media", "media"));
-        st.appendChild(sbox((Number(p.clause) / 1e6).toFixed(1).replace(".", ",") + " M", "Cláusula", "clause"));
-        body.appendChild(st);
-        const diff = (Number(p.clause) || 0) - (Number(p.value) || 0);
-        const vrow = el("div", "claus-val");
-        vrow.appendChild(el("b", null, "Valor " + money(p.value) + " €"));
-        vrow.appendChild(el("span", "claus-above", "+" + (diff / 1e6).toFixed(1).replace(".", ",") + " M por encima de su valor"));
-        body.appendChild(vrow);
-        const j0 = Number(d && d.jornada) || 0;
-        const playedPct = j0 ? Math.round(((Number(p.matches) || 0) / j0) * 100) : 0;
-        body.appendChild(el("div", "claus-played", "Jugados: " + playedPct + "% de los partidos"));
-        const sl = statusLabel(p.status);
-        const sc = p.status === "redcard" ? "red" : String(p.status || "").indexOf("injured") === 0 ? "inj" : p.status === "doubt" ? "doubt" : "ok";
-        body.appendChild(el("div", "claus-status " + sc, sl));
-        const blocked = p.unlock && new Date(p.unlock).getTime() > Date.now();
-        if (blocked) body.appendChild(el("div", "claus-lock", "🔒 se libera el " + fmtDiaLargo(p.unlock)));
-        card.appendChild(body);
-        card.addEventListener("click", () => openFicha(p));
-        grid.appendChild(card);
-      });
-      box.appendChild(grid);
-    } catch (e) { box.innerHTML = '<p class="market-empty">No se pudo cargar.</p>'; }
+      const j0 = Number(d && d.jornada) || 0;
+      renderClausGrid(box, list, j0);
+      try { localStorage.setItem("claus_cache", JSON.stringify({ at: Date.now(), jornada: j0, players: list })); } catch (e) {}
+    } catch (e) { if (!(cached && cached.players)) box.innerHTML = '<p class="market-empty">No se pudo cargar.</p>'; }
   }
 
   function filteredList() {
@@ -404,7 +412,11 @@
       const ch = hlChange(p);
       const prev = (Number(p.value) || 0) - ch;
       const j = el("div", "mkt-jug");
-      const ph = el("div", "mkt-photo"); ph.appendChild(photoImg(p.photo, "mkt-img")); j.appendChild(ph);
+      const ph = el("div", "mkt-photo");
+      ph.appendChild(photoImg(p.photo, "mkt-img"));
+      const rb = roleBadge(p.role);
+      if (rb) ph.appendChild(el("span", "mkt-pos posb posb-" + posCls(p.role), rb + (roleBadge(p.role2) ? "·" + roleBadge(p.role2) : "")));
+      j.appendChild(ph);
       const jj = el("div", "mkt-jname");
       jj.appendChild(el("b", null, p.name));
       const tm = el("span", "mkt-jteam");
@@ -412,8 +424,6 @@
       if (p.team) tm.appendChild(el("span", null, p.team));
       jj.appendChild(tm);
       j.appendChild(jj);
-      const rb = roleBadge(p.role);
-      if (rb) j.appendChild(el("span", "posb posb-" + posCls(p.role), rb + (roleBadge(p.role2) ? " · " + roleBadge(p.role2) : "")));
       row.appendChild(j);
       const pctv = prev > 0 ? (ch / prev) * 100 : 0;
       row.appendChild(el("div", "mkt-pct " + (ch > 0 ? "up" : ch < 0 ? "down" : "flat"), (pctv >= 0 ? "+" : "−") + Math.abs(pctv).toFixed(2).replace(".", ",") + "%"));
@@ -930,6 +940,7 @@
     if (ov) ov.classList.remove("hidden");
   }
   function closeModal() {
+    try { if (history.state && history.state.ficha) { history.back(); return; } } catch (e) {}
     const ov = $("fichaOverlay");
     if (ov) ov.classList.add("hidden");
   }
@@ -1009,11 +1020,13 @@
     const w = el("div");
     w.appendChild(el("p", "muted small", "Cargando ficha…"));
     showModal(w);
+    try { history.pushState({ ficha: 1 }, "", location.href); } catch (e) {}
     fetch(API + "/jugador?id=" + encodeURIComponent(p.id || ""))
       .then((r) => r.json())
       .then((d) => showModal(renderFicha(d, p)))
       .catch(() => { const c = el("div"); c.appendChild(el("p", "muted small", "No se pudo cargar la ficha.")); showModal(c); });
   }
+  window.addEventListener("popstate", () => { const ov = $("fichaOverlay"); if (ov) ov.classList.add("hidden"); });
 
   function ptClass(p) { p = Number(p) || 0; return p < 0 ? "lo" : p < 6 ? "mid" : "hi"; }
   const whenShort = (v) => { if (!v) return ""; try { return new Date(v).toLocaleString("es-ES", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }); } catch (e) { return ""; } };
@@ -1076,7 +1089,6 @@
     grid.appendChild(mcard("Titularidades", par.starts + "/" + par.played, par.pctStart + "%", par.pctStart, "green", "✓", "green"));
     grid.appendChild(mcard("Participación", par.played + " de " + par.jornada, "encuentros", par.jornada ? (par.played / par.jornada) * 100 : 0, "blue", "+", "blue"));
     grid.appendChild(mcard("Minutos Totales", par.totalMin + " min", "de " + par.maxMin + " min posibles (" + par.pctMin + "%)", null, null, "⏱", "purple"));
-    grid.appendChild(mcard("Minutos / Partido", (Number(par.avgMin) || 0).toFixed(2).replace(".", ",") + " min/partido", null, null, null, "📊", "orange"));
     box.appendChild(grid);
 
     box.appendChild(el("div", "dash-sect", "Disponibilidad & disciplina"));
@@ -1157,7 +1169,12 @@
           const casa = m.home === d.team;
           row.appendChild(el("span", "fm-match", rival ? ((casa ? "🏠 " : "✈️ ") + rival) : ""));
           const v = valByR[j] != null ? valByR[j] : null;
-          row.appendChild(el("span", "fm-pts " + (v != null ? "pt-" + ptClass(v) : ""), v != null ? String(v) : "—"));
+          if (v != null) row.appendChild(el("span", "fm-pts pt-" + ptClass(v), String(v)));
+          else {
+            const mn = Number(m.mins) || 0;
+            const tag = mn <= 0 ? "—" : mn + "' " + (m.sub ? "supl." : "tit.");
+            row.appendChild(el("span", "fm-pts fm-pts-info", tag));
+          }
         } else {
           row.appendChild(el("span", "fm-match fm-nojugo", "No jugó"));
           row.appendChild(el("span", "fm-pts", "—"));
@@ -1288,7 +1305,7 @@
   (function restoreTab() {
     let name = "";
     try {
-      const m = location.pathname.match(/\/guiafantasy\/(mercado|estado|noticias|analiza|clausulazos)/);
+      const m = location.pathname.match(/\/guiafantasy\/(mercado|noticias|analiza|clausulazos)/);
       if (m) name = m[1];
     } catch (e) {}
     if (!name) { try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {} }
@@ -1615,6 +1632,26 @@
     switchTab("noticias");
     openNoticiaInline(d.link, d.title);
   });
+
+  (function initSwipe() {
+    const order = ["mercado", "noticias", "analiza", "clausulazos"];
+    const main = document.querySelector(".quiniela-main") || document.body;
+    let sx = 0, sy = 0, st = 0;
+    main.addEventListener("touchstart", (e) => { const t = e.changedTouches[0]; sx = t.clientX; sy = t.clientY; st = Date.now(); }, { passive: true });
+    main.addEventListener("touchend", (e) => {
+      const t = e.changedTouches[0];
+      const dx = t.clientX - sx, dy = t.clientY - sy;
+      if (Date.now() - st > 900) return;
+      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+      const hit = document.elementFromPoint(sx, sy);
+      if (hit && hit.closest("button, a, input, select, .mkt-wrap, .racha-scores")) return;
+      const active = document.querySelector(".tab.active");
+      let i = order.indexOf(active ? active.dataset.tab : "mercado");
+      if (i < 0) i = 0;
+      if (dx < 0) i = Math.min(order.length - 1, i + 1); else i = Math.max(0, i - 1);
+      switchTab(order[i]);
+    }, { passive: true });
+  })();
 
   loadNoticias();
   load();
