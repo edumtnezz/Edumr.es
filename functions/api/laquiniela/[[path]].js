@@ -733,7 +733,7 @@ function expOfB(p) {
 }
 
 async function getClausulas(env) {
-  try { const c = await env.PORRA.get("clausulas:v10", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
+  try { const c = await env.PORRA.get("clausulas:v11", "json"); if (c && c.data && Date.now() - (c.at || 0) < 2 * 60 * 60 * 1000) return c.data; } catch (e) {}
   let cache;
   try { cache = await getMarketPlayers(env); } catch (e) { return { players: [], updatedAt: null }; }
   let players = cache.players || [];
@@ -752,39 +752,43 @@ async function getClausulas(env) {
   const diag = [];
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const fetchSum = async (id) => {
-    for (let a = 0; a < 4; a++) {
+    for (let a = 0; a < 2; a++) {
       try { return await futbolPost("/1/player/summary", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP }); }
-      catch (e) { await sleep(400); }
+      catch (e) { await sleep(150); }
     }
     return null;
   };
-  for (const p of top) {
-    const s = await fetchSum(p.id);
-    if (!s) { errC++; if (diag.length < 20) diag.push(p.name + ":ERR"); continue; }
-    okC++;
-    const ans = s.answer || {};
-    const cl = (ans.championship && ans.championship.clause) || {};
-    let ow = ans.owners;
-    if (Array.isArray(ow)) ow = ow.length ? ow[ow.length - 1] : null;
-    const owner = (ow && ow.n) || "";
-    if (diag.length < 20) diag.push(p.name + ":" + (owner ? "OWN[" + owner + "]" : "free") + " cl=" + (cl.price ? 1 : 0));
-    if (cl.price && owner) {
-      ownC++;
-      const mine = !!(myTeam && stripAccents(owner.toLowerCase()) === stripAccents(myTeam.toLowerCase()));
-      out.push({
-        id: p.id, name: p.name, role: p.role, role2: p.role2, team: p.team, logo: p.logo, photo: p.photo,
-        value: p.value, points: p.points, avg: p.avg, matches: p.matches, fitness: p.fitness, prob: p.prob, status: p.status,
-        clause: Number(cl.price) || 0, unlock: cl.date || "", owner, mine,
-        exp: Math.round(expOfB(p) * 10) / 10,
-        chg1: p.chg1, chg7: p.chg7, chg14: p.chg14, chg30: p.chg30,
-      });
+  const chunks = [];
+  for (let i = 0; i < top.length; i += 8) chunks.push(top.slice(i, i + 8));
+  for (const ch of chunks) {
+    const results = await Promise.all(ch.map((p) => fetchSum(p.id).then((s) => ({ p, s })).catch(() => ({ p, s: null }))));
+    for (const r of results) {
+      const p = r.p, s = r.s;
+      if (!s) { errC++; if (diag.length < 20) diag.push(p.name + ":ERR"); continue; }
+      okC++;
+      const ans = s.answer || {};
+      const cl = (ans.championship && ans.championship.clause) || {};
+      let ow = ans.owners;
+      if (Array.isArray(ow)) ow = ow.length ? ow[ow.length - 1] : null;
+      const owner = (ow && ow.n) || "";
+      if (diag.length < 20) diag.push(p.name + ":" + (owner ? "OWN[" + owner + "]" : "free") + " cl=" + (cl.price ? 1 : 0));
+      if (cl.price && owner) {
+        ownC++;
+        const mine = !!(myTeam && stripAccents(owner.toLowerCase()) === stripAccents(myTeam.toLowerCase()));
+        out.push({
+          id: p.id, name: p.name, role: p.role, role2: p.role2, team: p.team, logo: p.logo, photo: p.photo,
+          value: p.value, points: p.points, avg: p.avg, matches: p.matches, fitness: p.fitness, prob: p.prob, status: p.status,
+          clause: Number(cl.price) || 0, unlock: cl.date || "", owner, mine,
+          exp: Math.round(expOfB(p) * 10) / 10,
+          chg1: p.chg1, chg7: p.chg7, chg14: p.chg14, chg30: p.chg30,
+        });
+      }
     }
-    await sleep(90);
   }
   out.sort((a, b) => b.exp - a.exp || b.clause - a.clause);
   const jornada = players.reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0);
   const data = { updatedAt: Date.now(), me: myTeam, jornada, players: out.slice(0, 15) };
-  try { await env.PORRA.put("clausulas:v10", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
+  try { await env.PORRA.put("clausulas:v11", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 7200 }); } catch (e) {}
   return data;
 }
 

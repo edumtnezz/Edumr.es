@@ -327,15 +327,24 @@
     box.dataset.loaded = "1";
     let cached = null;
     try { cached = JSON.parse(localStorage.getItem("claus_cache") || "null"); } catch (e) {}
+    let timer = null;
     if (cached && cached.players && cached.players.length) renderClausGrid(box, cached.players, Number(cached.jornada) || 0);
-    else box.innerHTML = '<p class="muted small">Analizando tu liga… la primera vez puede tardar un poco.</p>';
+    else {
+      box.innerHTML = '<p class="muted small" id="clausMsg">Analizando tu liga…</p>';
+      const t0 = Date.now();
+      timer = setInterval(() => {
+        const m = box.querySelector("#clausMsg");
+        if (m) m.textContent = "Analizando tu liga… " + Math.round((Date.now() - t0) / 1000) + " s · suele tardar 10-20 s";
+      }, 1000);
+    }
     try {
       const d = await (await fetch(API + "/clausulas")).json();
+      if (timer) clearInterval(timer);
       const list = (d && d.players) || [];
       const j0 = Number(d && d.jornada) || 0;
       renderClausGrid(box, list, j0);
       try { localStorage.setItem("claus_cache", JSON.stringify({ at: Date.now(), jornada: j0, players: list })); } catch (e) {}
-    } catch (e) { if (!(cached && cached.players)) box.innerHTML = '<p class="market-empty">No se pudo cargar.</p>'; }
+    } catch (e) { if (timer) clearInterval(timer); if (!(cached && cached.players)) box.innerHTML = '<p class="market-empty">No se pudo cargar.</p>'; }
   }
 
   function filteredList() {
