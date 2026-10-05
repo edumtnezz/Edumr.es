@@ -374,7 +374,7 @@ body {
   .cx-page-name { display: none; }
   .cx-inicio { display: none; }
   .cx-nav { justify-content: flex-start; }
-  .cx-nav a { padding: 7px 11px; font-size: 0.84rem; }
+  .cx-nav a { padding: 6px 9px; font-size: 0.78rem; }
   .cx-sub-inner { justify-content: flex-start; }
   .cx-sub .tabs { width: 100%; justify-content: flex-start; }
   .cx-sub .tab { padding: 12px 9px; font-size: 0.78rem; }
