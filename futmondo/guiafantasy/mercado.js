@@ -727,6 +727,7 @@
     const head = el("div", "merc-besthead");
     head.appendChild(el("span", "mbh-t", "⭐ Mejor fichaje de la jornada"));
     head.appendChild(el("span", "mbh-sub", "por puntos probables"));
+    head.appendChild(el("span", "mbh-hint", "↔ desliza para ver más"));
     box.appendChild(head);
     const row = el("div", "merc-bestrow");
     top.forEach((p) => {
@@ -1061,7 +1062,6 @@
     const n = Number(par.jornada) || 0;
     const avg = el("div", "dash-avg");
     avg.style.bottom = Math.min(100, ((Number(par.avgMin) || 0) / 90) * 100) + "%";
-    avg.appendChild(el("span", "dash-avglab", "Media " + (Number(par.avgMin) || 0).toFixed(1).replace(".", ",") + "'"));
     chart.appendChild(avg);
     const bars = el("div", "dash-bars");
     for (let j = 1; j <= n; j++) {
@@ -1181,7 +1181,8 @@
           if (v != null) row.appendChild(el("span", "fm-pts pt-" + ptClass(v), String(v)));
           else {
             const mn = Number(m.mins) || 0;
-            const tag = mn <= 0 ? "—" : mn + "' " + (m.sub ? "supl." : "tit.");
+            let tag = "—";
+            if (mn > 0) tag = m.sub ? "Entró " + mn + "'" : (mn >= 85 ? "90' titular" : "Salió " + mn + "'");
             row.appendChild(el("span", "fm-pts fm-pts-info", tag));
           }
         } else {
@@ -1653,7 +1654,7 @@
       if (Date.now() - st > 900) return;
       if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
       const hit = document.elementFromPoint(sx, sy);
-      if (hit && hit.closest("button, a, input, select, .mkt-wrap, .racha-scores")) return;
+      if (hit && hit.closest("button, a, input, select, .mkt-wrap, .racha-scores, .merc-bestrow")) return;
       const active = document.querySelector(".tab.active");
       let i = order.indexOf(active ? active.dataset.tab : "mercado");
       if (i < 0) i = 0;

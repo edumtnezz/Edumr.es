@@ -213,7 +213,7 @@
 .merc-besthead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 14px 0 6px; }
 .mbh-t { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1rem; }
 .mbh-s { font-size: 0.72rem; color: #9fb0c4; }
-.merc-bestrow { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.merc-bestrow { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
 .mbc { flex: 0 0 auto; width: 122px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px; border-radius: 12px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); cursor: pointer; }
 .mbc:hover { border-color: var(--border-hover); }
 .mbc-img { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; background: var(--bg-surface); }
@@ -498,6 +498,7 @@ html { overflow-anchor: none; }
 .claus-body2 { width: 100%; }
 .claus-name2 { font-weight: 800; font-family: 'Space Grotesk', sans-serif; font-size: 1.08rem; }
 .mbh-sub { font-size: 0.72rem; color: var(--muted); font-weight: 600; margin-left: 8px; }
+.mbh-hint { font-size: 0.7rem; color: var(--muted); font-weight: 700; margin-left: auto; white-space: nowrap; }
 .claus-pos { display: flex; justify-content: center; gap: 4px; margin: 4px 0 2px; }
 .claus-team { display: flex; align-items: center; justify-content: center; gap: 5px; color: var(--muted); font-size: 0.76rem; }
 .claus-owner { color: var(--muted); font-size: 0.74rem; margin-top: 1px; }
