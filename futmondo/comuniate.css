@@ -370,11 +370,12 @@ body {
 }
 
 @media (max-width: 720px) {
-  .cx-top-inner { gap: 10px; padding: 8px 12px; }
+  .cx-top-inner { gap: 6px; padding: 6px 8px; }
   .cx-page-name { display: none; }
   .cx-inicio { display: none; }
-  .cx-nav { justify-content: flex-start; }
-  .cx-nav a { padding: 6px 9px; font-size: 0.78rem; }
+  .cx-nav { justify-content: flex-start; gap: 1px; }
+  .cx-nav a { padding: 5px 7px; font-size: 0.72rem; }
+  .cx-header .theme-toggle { width: 32px; height: 32px; }
   .cx-sub-inner { justify-content: flex-start; }
   .cx-sub .tabs { width: 100%; justify-content: flex-start; }
   .cx-sub .tab { padding: 12px 9px; font-size: 0.78rem; }
