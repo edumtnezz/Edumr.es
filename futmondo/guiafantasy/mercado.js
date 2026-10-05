@@ -1667,6 +1667,28 @@
     }, { passive: true });
   })();
 
+  (async function initUserChip() {
+    const ub = $("userBox");
+    if (!ub) return;
+    try {
+      const d = await (await fetch(API + "/me", { cache: "no-store" })).json();
+      const name = d && d.user && d.user.name;
+      if (!name) return;
+      const parts = String(name).trim().split(/\s+/).filter(Boolean);
+      const ini = (parts.length <= 1 ? parts[0].slice(0, 2) : parts[0][0] + parts[1][0]).toUpperCase();
+      ub.hidden = false;
+      const chip = el("button", "user-chip"); chip.type = "button";
+      chip.innerHTML = '<span class="user-avatar">' + ini + '</span><span class="user-name">' + name + '</span><span class="user-caret">▾</span>';
+      const menu = el("div", "user-menu");
+      const exit = el("button", "user-menu-exit", "Salir"); exit.type = "button";
+      exit.addEventListener("click", async () => { try { await fetch(API + "/logout", { method: "POST" }); } catch (e) {} location.reload(); });
+      menu.appendChild(exit);
+      ub.appendChild(chip); ub.appendChild(menu);
+      chip.addEventListener("click", (e) => { e.stopPropagation(); menu.classList.toggle("open"); });
+      document.addEventListener("click", (e) => { if (!ub.contains(e.target)) menu.classList.remove("open"); });
+    } catch (e) {}
+  })();
+
   loadNoticias();
   load();
 })();
