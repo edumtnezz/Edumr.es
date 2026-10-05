@@ -56,7 +56,12 @@ body {
 .hub-header h1 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(1.7rem, 6vw, 2.6rem); letter-spacing: 0.05em; text-transform: uppercase; }
 .hub-title { display: flex; align-items: center; justify-content: center; gap: 10px; }
 .hub-title img { height: 1.1em; width: auto; }
-.hub-user { font-size: 0.85rem; font-weight: 700; color: var(--text); background: var(--card-solid); border: 1px solid var(--border); padding: 7px 13px; border-radius: 999px; margin-left: 12px; }
+.hub-exit { padding: 9px 18px; border-radius: 999px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); font-weight: 700; font-size: 0.9rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+.hub-exit:hover { border-color: var(--border-hover); transform: translateY(-1px); }
+.hub-userrow { text-align: center; margin: 6px auto 2px; }
+.hub-user { display: inline-flex; align-items: center; gap: 8px; background: rgba(34, 197, 94, 0.14); border: 1px solid rgba(34, 197, 94, 0.4); border-radius: 999px; padding: 5px 14px 5px 5px; font-weight: 700; }
+.hu-av { width: 32px; height: 32px; border-radius: 50%; background: #16a34a; color: #fff; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.78rem; }
+.hu-name { color: var(--text); font-size: 0.9rem; }
 .grad { background: linear-gradient(135deg, #22c55e, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .hub-sub { color: var(--muted); font-size: 1rem; margin-top: 4px; }
 .hub-welcome { max-width: 720px; margin: 0 auto 28px; padding: 14px 20px; text-align: center; border-radius: 16px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.05rem; }
@@ -158,7 +163,7 @@ body {
   .hub-welcome { font-size: 0.95rem; padding: 11px 14px; }
 }
 
-.hub-top { max-width: 940px; margin: 0 auto; display: flex; align-items: center; justify-content: flex-start; position: relative; }
+.hub-top { max-width: 940px; margin: 0 auto; display: flex; align-items: center; gap: 10px; justify-content: flex-start; position: relative; }
 .hub-top .theme-toggle { position: absolute; right: 0; }
 .hub-home { display: inline-block; padding: 9px 20px; border-radius: 999px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); text-decoration: none; font-weight: 700; font-size: 0.9rem; transition: all 0.2s ease; }
 .hub-home:hover { border-color: var(--border-hover); transform: translateY(-1px); }
