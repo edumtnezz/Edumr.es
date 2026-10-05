@@ -133,24 +133,24 @@ function initials(name) {
 
 function renderUser() {
   const box = $("userBox");
-  const exit = $("exitBox");
-  if (box) box.innerHTML = "";
-  if (exit) { exit.hidden = true; exit.onclick = null; }
+  if (!box) return;
+  box.innerHTML = "";
   const u = data.user;
-  if (!u) return;
-  if (box) {
-    const chip = el("span", "user-chip");
-    chip.innerHTML = '<span class="user-avatar">' + escapeHtml(initials(u.name)) + "</span><span>" + escapeHtml(u.name) + "</span>";
-    box.appendChild(chip);
-  }
-  if (exit) {
-    exit.hidden = false;
-    exit.onclick = async () => {
-      try { await fetch(API + "/logout", { method: "POST" }); } catch (e) {}
-      lastErr = "";
-      await load(true);
-    };
-  }
+  if (!u) { box.hidden = true; return; }
+  box.hidden = false;
+  const chip = el("button", "user-chip"); chip.type = "button";
+  chip.innerHTML = '<span class="user-avatar">' + escapeHtml(initials(u.name)) + '</span><span class="user-name">' + escapeHtml(u.name) + '</span><span class="user-caret">▾</span>';
+  const menu = el("div", "user-menu");
+  const exit = el("button", "user-menu-exit", "Salir"); exit.type = "button";
+  exit.onclick = async () => {
+    try { await fetch(API + "/logout", { method: "POST" }); } catch (e) {}
+    lastErr = "";
+    await load(true);
+  };
+  menu.appendChild(exit);
+  box.appendChild(chip); box.appendChild(menu);
+  chip.onclick = (e) => { e.stopPropagation(); menu.classList.toggle("open"); };
+  if (!document.__umWired) { document.__umWired = 1; document.addEventListener("click", (e) => { document.querySelectorAll(".user-menu.open").forEach((m) => { if (!m.parentElement.contains(e.target)) m.classList.remove("open"); }); }); }
 }
 
 function render() {

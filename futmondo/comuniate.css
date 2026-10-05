@@ -382,3 +382,20 @@ body {
   .quiniela-main { padding: 16px 12px 50px; }
   .panel { padding: 20px 16px; border-radius: 14px; }
 }
+
+/* Chip de usuario en la barra superior */
+.cx-tools { position: relative; }
+.cx-tools .user-wrap { position: relative; display: flex; align-items: center; }
+.cx-tools .user-chip { display: inline-flex; align-items: center; gap: 7px; background: rgba(34, 197, 94, 0.16); border: 1px solid rgba(34, 197, 94, 0.5); border-radius: 999px; padding: 3px 11px 3px 3px; cursor: pointer; font-family: inherit; }
+.cx-tools .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: #16a34a; color: #fff; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.7rem; }
+.cx-tools .user-name { color: #fff; font-weight: 700; font-size: 0.85rem; }
+.cx-tools .user-caret { color: rgba(255, 255, 255, 0.7); font-size: 0.62rem; }
+.cx-tools .user-menu { position: absolute; right: 0; top: calc(100% + 8px); background: var(--cx-surface); border: 1px solid var(--cx-border); border-radius: 12px; box-shadow: 0 10px 26px rgba(0,0,0,.35); min-width: 150px; padding: 6px; display: none; z-index: 80; }
+.cx-tools .user-menu.open { display: block; }
+.cx-tools .user-menu-exit { width: 100%; text-align: left; padding: 9px 12px; border: none; background: transparent; color: var(--cx-text); font-weight: 700; font-size: 0.88rem; border-radius: 8px; cursor: pointer; font-family: inherit; }
+.cx-tools .user-menu-exit:hover { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+@media (max-width: 720px) {
+  .cx-tools .user-name, .cx-tools .user-caret { display: none; }
+  .cx-tools .user-chip { padding: 2px; border: none; background: transparent; }
+  .cx-tools .user-avatar { width: 30px; height: 30px; }
+}
