@@ -145,6 +145,9 @@ body {
 
 @media (max-width: 640px) {
   body { padding: 14px 12px 32px; overflow-x: hidden; }
+  .hub-top { margin: -14px -12px 14px; }
+  .hub-top .user-name, .hub-top .user-caret { display: none; }
+  .hub-top .user-chip { padding: 2px; border: none; background: transparent; }
   .hub-grid { width: 100%; }
   .hub-card { min-width: 0; overflow: hidden; }
   .hub-card p { overflow-wrap: anywhere; }
@@ -163,8 +166,21 @@ body {
   .hub-welcome { font-size: 0.95rem; padding: 11px 14px; }
 }
 
-.hub-top { max-width: 940px; margin: 0 auto; display: flex; align-items: center; gap: 10px; justify-content: flex-start; position: relative; }
-.hub-top .theme-toggle { position: absolute; right: 0; }
+.hub-top { background: var(--cx-black, #0b0e13); margin: -22px -18px 18px; }
+.hub-top-inner { max-width: 940px; margin: 0 auto; display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 9px 16px; min-height: 54px; }
+.hub-home { padding: 8px 16px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.18); color: #fff; font-weight: 700; font-size: 0.88rem; text-decoration: none; transition: all 0.2s ease; }
+.hub-home:hover { border-color: rgba(255, 255, 255, 0.45); }
+.hub-top .theme-toggle { background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.18); color: #fff; box-shadow: none; }
+.hub-top .theme-toggle:hover { border-color: #fff; box-shadow: none; }
+.hub-top .user-wrap { position: relative; display: flex; align-items: center; }
+.hub-top .user-chip { display: inline-flex; align-items: center; gap: 7px; background: rgba(34, 197, 94, 0.16); border: 1px solid rgba(34, 197, 94, 0.5); border-radius: 999px; padding: 3px 11px 3px 3px; cursor: pointer; font-family: inherit; }
+.hub-top .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: #16a34a; color: #fff; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.7rem; }
+.hub-top .user-name { color: #fff; font-weight: 700; font-size: 0.85rem; }
+.hub-top .user-caret { color: rgba(255, 255, 255, 0.7); font-size: 0.62rem; }
+.hub-top .user-menu { position: absolute; right: 0; top: calc(100% + 8px); background: #fff; border: 1px solid rgba(15, 23, 42, 0.1); border-radius: 12px; box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35); min-width: 150px; padding: 6px; display: none; z-index: 80; }
+.hub-top .user-menu.open { display: block; }
+.hub-top .user-menu-exit { width: 100%; text-align: left; padding: 9px 12px; border: none; background: transparent; color: #0f172a; font-weight: 700; font-size: 0.88rem; border-radius: 8px; cursor: pointer; font-family: inherit; }
+.hub-top .user-menu-exit:hover { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
 .hub-home { display: inline-block; padding: 9px 20px; border-radius: 999px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); text-decoration: none; font-weight: 700; font-size: 0.9rem; transition: all 0.2s ease; }
 .hub-home:hover { border-color: var(--border-hover); transform: translateY(-1px); }
 
