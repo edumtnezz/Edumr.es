@@ -84,6 +84,7 @@
 
   function $(id) { return document.getElementById(id); }
   function money(n) { return Number(n || 0).toLocaleString("es-ES"); }
+  function horaTxt(v) { try { return new Date(v).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }); } catch (e) { return ""; } }
   function el(tag, cls, txt) {
     const e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -184,7 +185,8 @@
     if (best) box.appendChild(best);
     const head = el("div", "hl-head");
     head.appendChild(el("span", "hl-title", "🔥 Jugadores en racha"));
-    head.appendChild(el("span", "rachas-sub", "Partidos seguidos puntuando · más reciente primero"));
+    const sub = el("span", "rachas-sub", "Partidos seguidos puntuando · más reciente primero");
+    head.appendChild(sub);
     box.appendChild(head);
     const table = el("div", "rachas-table");
     table.innerHTML = '<div class="rachas-empty">Cargando rachas…</div>';
@@ -192,6 +194,7 @@
     try {
       let d = rachasData;
       if (!d) { d = await (await fetch(API + "/rachas")).json(); rachasData = d; }
+      if (d && d.updatedAt) sub.textContent = "Partidos seguidos puntuando · más reciente primero · actualizado " + horaTxt(d.updatedAt);
       const list = (d && d.players) || [];
       const j0 = Number(d && d.jornada) || 0;
       if (!list.length) { table.innerHTML = '<div class="rachas-empty">Sin rachas ahora mismo.</div>'; return; }
@@ -343,6 +346,8 @@
       if (timer) clearInterval(timer);
       const list = (d && d.players) || [];
       const j0 = Number(d && d.jornada) || 0;
+      const upd = $("clausUpdated");
+      if (upd) upd.textContent = "Se actualiza cada 30 min" + (d && d.updatedAt ? " · última: " + horaTxt(d.updatedAt) : "");
       renderClausGrid(box, list, j0);
       try { localStorage.setItem("claus_cache", JSON.stringify({ at: Date.now(), jornada: j0, players: list })); } catch (e) {}
     } catch (e) { if (timer) clearInterval(timer); if (!(cached && cached.players)) box.innerHTML = '<p class="market-empty">No se pudo cargar.</p>'; }
