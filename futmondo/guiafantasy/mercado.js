@@ -171,6 +171,7 @@
   let hlPeriod = "1";
   function hlChange(p) {
     if (hlPeriod === "1") return Number(p.change) || 0;
+    if (hlPeriod === "all") return p.chgAll != null ? Number(p.chgAll) : (Number(p.chg30) || 0);
     const v = p["chg" + hlPeriod];
     return v != null ? Number(v) : (Number(p.change) || 0);
   }
@@ -242,7 +243,7 @@
         stats.appendChild(mw);
         row.appendChild(stats);
         const ch = hlChange(p);
-        const per = hlPeriod === "1" ? "hoy" : hlPeriod + " días";
+        const per = hlPeriod === "1" ? "hoy" : hlPeriod === "all" ? "siempre" : hlPeriod + " días";
         const rv = el("div", "racha-val " + (ch > 0 ? "up" : ch < 0 ? "down" : "flat"));
         rv.appendChild(el("span", null, (ch > 0 ? "▲ +" : ch < 0 ? "▼ −" : "") + formatDots(Math.abs(ch)) + " €"));
         rv.appendChild(el("small", null, per));
@@ -379,7 +380,7 @@
     const top = el("div", "mkt-top");
     top.appendChild(el("div", "mkt-headline", "📋 Todos los jugadores"));
     const seg = el("div", "hl-seg");
-    [["1", "Hoy"], ["7", "7 días"], ["14", "14 días"], ["30", "30 días"]].forEach(([k, lab]) => {
+    [["1", "Hoy"], ["7", "7 días"], ["14", "14 días"], ["30", "30 días"], ["all", "Siempre"]].forEach(([k, lab]) => {
       const b = el("button", "hl-btn" + (hlPeriod === k ? " active" : ""), lab);
       b.type = "button";
       b.addEventListener("click", () => { const y = window.scrollY; hlPeriod = k; renderGrid(); renderRachas(); window.scrollTo(0, y); });
@@ -1177,16 +1178,16 @@
           const rival = (m.home === d.team) ? m.away : (m.away === d.team ? m.home : (m.away || m.home || ""));
           const casa = m.home === d.team;
           row.appendChild(el("span", "fm-match", rival ? ((casa ? "🏠 " : "✈️ ") + rival) : ""));
+          const mn = Number(m.mins) || 0;
+          const tg = mn <= 0 ? "" : (m.sub ? "entró " + mn + "'" : (mn >= 85 ? "90'" : "salió " + mn + "'"));
+          row.appendChild(el("span", "fm-tag", tg));
           const v = valByR[j] != null ? valByR[j] : null;
-          if (v != null) row.appendChild(el("span", "fm-pts pt-" + ptClass(v), String(v)));
-          else {
-            const mn = Number(m.mins) || 0;
-            let tag = "—";
-            if (mn > 0) tag = m.sub ? "Entró " + mn + "'" : (mn >= 85 ? "90' titular" : "Salió " + mn + "'");
-            row.appendChild(el("span", "fm-pts fm-pts-info", tag));
-          }
+          const stPts = Number(m.stats) || 0;
+          const pts = v != null ? String(v) : (stPts !== 0 ? String(stPts) : "—");
+          row.appendChild(el("span", "fm-pts " + (v != null ? "pt-" + ptClass(v) : "pt-st"), pts));
         } else {
           row.appendChild(el("span", "fm-match fm-nojugo", "No jugó"));
+          row.appendChild(el("span", "fm-tag", ""));
           row.appendChild(el("span", "fm-pts", "—"));
         }
         tbl.appendChild(row);

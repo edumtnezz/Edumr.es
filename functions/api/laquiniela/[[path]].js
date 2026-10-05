@@ -809,6 +809,14 @@ async function searchMercado(env, q) {
     const map = await ffMap(env);
     players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, jornadaFf: e.jornada, tend: e.tend, chg1: e.d1, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
   } catch (e) {}
+  try {
+    const hist = await env.PORRA.get("fmhist", "json");
+    const days = (hist && hist.days) || [];
+    if (days.length) {
+      const first = days[0].v || {};
+      players = players.map((p) => ({ ...p, chgAll: first[p.name] != null ? (Number(p.value) || 0) - Number(first[p.name]) : null }));
+    }
+  } catch (e) {}
   const query = stripAccents(String(q || "").toLowerCase().trim());
   let list = players;
   if (query) list = players.filter((p) => stripAccents(p.name.toLowerCase()).includes(query));

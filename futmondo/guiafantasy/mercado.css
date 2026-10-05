@@ -104,10 +104,11 @@
 .ficha-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
 .ficha-chip { background: rgba(34,197,94,0.16); color: #22c55e; font-weight: 700; padding: 4px 12px; border-radius: 8px; font-size: 0.85rem; }
 .ficha-matches { display: grid; gap: 2px; }
-.fm-row { display: grid; grid-template-columns: 42px 1fr auto; gap: 8px; padding: 7px 0; border-top: 1px solid var(--border); font-size: 0.88rem; }
+.fm-row { display: grid; grid-template-columns: 42px minmax(0, 1fr) auto auto; gap: 8px; padding: 7px 0; border-top: 1px solid var(--border); font-size: 0.88rem; }
 .fm-row:first-child { border-top: none; }
 .fm-j { color: var(--muted); font-weight: 700; }
 .fm-match { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fm-tag { color: var(--muted); font-weight: 700; font-size: 0.7rem; white-space: nowrap; }
 .fm-pts { font-weight: 800; min-width: 34px; padding: 3px 8px; border-radius: 8px; text-align: center; display: inline-block; color: #ffffff !important; }
 .art-lead { font-size: 1.02rem; font-weight: 600; margin: 6px 0 12px; }
 .art-body { line-height: 1.7; }
@@ -339,6 +340,7 @@
 .fm-pts.pt-mid { background: #f59e0b !important; }
 .fm-pts.pt-lo { background: #dc2626 !important; }
 .fm-pts-info { background: transparent !important; color: var(--muted) !important; font-weight: 700; font-size: 0.72rem; }
+.fm-pts.pt-st { background: rgba(127, 127, 127, 0.18) !important; color: var(--muted) !important; font-weight: 800; }
 
 /* Comparador v2 */
 .cmp2 { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin: 10px 0 14px; }
