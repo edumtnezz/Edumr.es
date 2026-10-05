@@ -870,23 +870,31 @@ function ffPick(name, map) {
   if (!n) return null;
   if (map[n]) return map[n];
   const keys = Object.keys(map);
-  const ends = keys.filter((k) => k.endsWith(" " + n));
-  if (ends.length === 1) return map[ends[0]];
   const words = n.split(" ");
   const last = words[words.length - 1];
+  const hint = words.length > 1 && words[0].length === 1 ? words[0] : "";
+  const uniq = (arr) => {
+    if (arr.length > 1 && hint) {
+      const f = arr.filter((k) => k[0] === hint);
+      if (f.length === 1) return f;
+    }
+    return arr;
+  };
+  const ends = keys.filter((k) => k.endsWith(" " + n));
+  if (ends.length === 1) return map[ends[0]];
   if (last.length >= 4) {
-    const byLast = keys.filter((k) => k.split(" ").pop() === last);
+    const byLast = uniq(keys.filter((k) => k.split(" ").pop() === last));
     if (byLast.length === 1) return map[byLast[0]];
   }
   const cont = keys.filter((k) => k.split(" ").indexOf(n) >= 0 || k.includes(" " + n + " "));
   if (cont.length === 1) return map[cont[0]];
   const toks = words.filter((t) => t.length >= 3);
   if (toks.length) {
-    const cands = keys.filter((k) => { const kt = k.split(" "); return toks.every((t) => kt.some((x) => x === t || x.startsWith(t) || t.startsWith(x))); });
+    const cands = uniq(keys.filter((k) => { const kt = k.split(" "); return toks.every((t) => kt.some((x) => x === t || x.startsWith(t) || t.startsWith(x))); }));
     if (cands.length === 1) return map[cands[0]];
   }
   if (last.length >= 4) {
-    const byLast2 = keys.filter((k) => k.split(" ").some((x) => x === last || x.startsWith(last)));
+    const byLast2 = uniq(keys.filter((k) => k.split(" ").some((x) => x === last || x.startsWith(last))));
     if (byLast2.length === 1) return map[byLast2[0]];
   }
   return null;

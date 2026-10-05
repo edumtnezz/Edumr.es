@@ -249,25 +249,25 @@ body {
 .cx-strip-load { color: var(--cx-muted); font-size: 0.82rem; padding: 6px 2px; }
 
 /* ---------- Franja de jornada ---------- */
-.cx-jornada { background: var(--cx-surface); border-bottom: 1px solid var(--cx-border); padding: 12px 16px; }
-.cx-jn-head { display: flex; align-items: center; justify-content: center; gap: 12px; max-width: 1140px; margin: 0 auto 10px; }
-.cx-jn-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.95rem; color: var(--cx-text); }
-.cx-jn-nav { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--cx-border); background: var(--cx-surface); color: var(--cx-text); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; transition: all 0.15s ease; }
+.cx-jornada { background: var(--cx-surface); border-bottom: 1px solid var(--cx-border); padding: 8px 14px; }
+.cx-jn-head { display: flex; align-items: center; justify-content: center; gap: 10px; max-width: 1140px; margin: 0 auto 7px; }
+.cx-jn-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.84rem; color: var(--cx-text); }
+.cx-jn-nav { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--cx-border); background: var(--cx-surface); color: var(--cx-text); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.64rem; transition: all 0.15s ease; }
 .cx-jn-nav:hover:not(:disabled) { border-color: var(--cx-green); color: var(--cx-green); }
 .cx-jn-nav:disabled { opacity: 0.3; cursor: default; }
-.cx-jn-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; max-width: 1140px; margin: 0 auto; }
-.cx-jn { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid var(--cx-border); border-radius: 10px; background: var(--cx-surface); box-shadow: var(--cx-shadow-sm); }
-.cx-jn-crest { width: 26px; height: 26px; object-fit: contain; justify-self: center; }
-.cx-jn-mid { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
-.cx-jn-tv { height: 15px; width: auto; max-width: 60px; object-fit: contain; }
-.cx-jn-tv-sq { height: 24px; max-width: 46px; filter: invert(1) brightness(1.6); }
+.cx-jn-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; max-width: 1140px; margin: 0 auto; }
+.cx-jn { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 6px; padding: 4px 8px; border: 1px solid var(--cx-border); border-radius: 8px; background: var(--cx-surface); box-shadow: var(--cx-shadow-sm); }
+.cx-jn-crest { width: 21px; height: 21px; object-fit: contain; justify-self: center; }
+.cx-jn-mid { display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; }
+.cx-jn-tv { height: 12px; width: auto; max-width: 50px; object-fit: contain; }
+.cx-jn-tv-sq { height: 19px; max-width: 38px; filter: invert(1) brightness(1.6); }
 [data-theme="light"] .cx-jn-tv-sq { filter: none; }
-.cx-jn-tv-ph { font-size: 0.5rem; font-weight: 700; color: var(--cx-muted); line-height: 1; }
-.cx-jn-tv-name { font-size: 0.56rem; font-weight: 800; color: var(--cx-text); line-height: 1.1; text-align: center; }
-.cx-jn-time { font-size: 0.62rem; font-weight: 800; color: var(--cx-text); white-space: nowrap; }
-.cx-jn-hora { font-size: 0.62rem; font-weight: 700; color: var(--cx-muted); white-space: nowrap; }
+.cx-jn-tv-ph { font-size: 0.46rem; font-weight: 700; color: var(--cx-muted); line-height: 1; }
+.cx-jn-tv-name { font-size: 0.5rem; font-weight: 800; color: var(--cx-text); line-height: 1.1; text-align: center; }
+.cx-jn-time { font-size: 0.56rem; font-weight: 800; color: var(--cx-text); white-space: nowrap; }
+.cx-jn-hora { font-size: 0.56rem; font-weight: 700; color: var(--cx-muted); white-space: nowrap; }
 @media (max-width: 900px) { .cx-jn-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 560px) { .cx-jn-grid { grid-template-columns: repeat(2, 1fr); } .cx-jn-time, .cx-jn-hora { font-size: 0.58rem; } }
+@media (max-width: 560px) { .cx-jn-grid { grid-template-columns: repeat(2, 1fr); } .cx-jn-time, .cx-jn-hora { font-size: 0.54rem; } }
 
 /* ---------- Última hora (ticker) ---------- */
 .cx-live {

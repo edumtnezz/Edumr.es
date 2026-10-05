@@ -1215,20 +1215,20 @@
         srow.appendChild(el("span", "fvs-range", tt.desde + " → " + tt.hasta));
         colR.appendChild(srow);
       }
-      const updown = vals.filter((x) => x.v != null && x.diff != null);
+      const serie = (d.temporada && d.temporada.serie) || [];
       let streak = 0, ssign = 0;
-      for (const x of updown) {
-        if (!x.diff) break;
-        const s = x.diff > 0 ? 1 : -1;
+      for (let i = serie.length - 1; i > 0; i--) {
+        const dd = Number(serie[i].v) - Number(serie[i - 1].v);
+        if (dd === 0) break;
+        const s = dd > 0 ? 1 : -1;
         if (ssign === 0) ssign = s;
         if (s !== ssign) break;
-        streak = x.days || 0;
+        streak++;
       }
       if (streak > 0) {
         colR.appendChild(el("div", "fv-streak " + (ssign > 0 ? "up" : "down"),
           (ssign > 0 ? "📈 Lleva " : "📉 Lleva ") + streak + " día" + (streak === 1 ? "" : "s") + (ssign > 0 ? " subiendo" : " bajando")));
       }
-      const serie = (d.temporada && d.temporada.serie) || [];
       const valsSeries = serie.length >= 2 ? serie.map((x) => x.v) : vals.filter((x) => x.v != null).reverse().map((x) => x.v);
       if (valsSeries.length >= 2) {
         const W = 520, H = 220, pl = 48, pr = 10, pt = 12, pb = 26;
