@@ -5,10 +5,13 @@ export default {
   async scheduled(event, env, ctx) {
     const urls = [
       "https://edumr.es/api/laquiniela/noticias?warm=1",
+      "https://edumr.es/api/laquiniela/clausulas",
+      "https://edumr.es/api/laquiniela/equipos",
     ];
     await Promise.all(urls.map(async (u) => {
       try {
-        const r = await fetch(u + "&t=" + Date.now(), { headers: { "user-agent": "edumr-cron" } });
+        const url = u + (u.indexOf("?") >= 0 ? "&" : "?") + "t=" + Date.now();
+        const r = await fetch(url, { headers: { "user-agent": "edumr-cron" } });
         await r.text();
       } catch (e) {}
     }));
