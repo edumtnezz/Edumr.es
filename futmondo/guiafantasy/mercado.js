@@ -1232,10 +1232,10 @@
     lockScroll(true);
   }
   function closeModal() {
-    try { if (history.state && history.state.ficha) { history.back(); return; } } catch (e) {}
     const ov = $("fichaOverlay");
     if (ov) ov.classList.add("hidden");
     lockScroll(false);
+    try { if (history.state && history.state.ficha) history.back(); } catch (e) {}
   }
 
   function openNoticia(url, title) {
