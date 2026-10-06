@@ -435,7 +435,7 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 .alin-mvs { color: var(--muted); font-weight: 700; font-size: 0.8rem; }
 .alin-mwhen { font-size: 0.72rem; color: var(--muted); }
 .alin-pitches { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
-.alin-pitch { position: relative; aspect-ratio: 1148 / 1038; border-radius: 12px; overflow: hidden; background: url('/img/campo.png') center/100% 100% no-repeat; }
+.alin-pitch { position: relative; aspect-ratio: 1148 / 1038; border-radius: 12px; overflow: hidden; background-color: #3c8a24; background-image: url('/img/campo.png'); background-size: 100% 100%; background-repeat: no-repeat; }
 .alin-pteam { position: absolute; top: 3px; left: 50%; transform: translateX(-50%); z-index: 3; display: flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; background: rgba(0,0,0,0.55); color: #fff; font-weight: 800; font-size: 0.66rem; white-space: nowrap; }
 .alin-pteam img { width: 16px; height: 16px; object-fit: contain; }
 .alin-line { position: absolute; left: 2%; right: 2%; display: flex; justify-content: center; gap: 2px; }
