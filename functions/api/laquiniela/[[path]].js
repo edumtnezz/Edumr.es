@@ -1371,7 +1371,7 @@ async function getUltimaHora(env) {
 
 /* ---------- Mercado de fichajes (FutbolFantasy) ---------- */
 const FICHAJES_URL = "https://www.futbolfantasy.com/laliga/mercado-fichajes/verano-2026";
-const FICHAJES_KEY = "fm:fichajes:v2";
+const FICHAJES_KEY = "fm:fichajes:v3";
 
 function ffCard(c) {
   const raw = (re) => { const m = c.match(re); return m ? stripHtml(m[1]) : ""; };
@@ -1384,7 +1384,9 @@ function ffCard(c) {
   const link = (c.match(/class="mercado-card-noticia[^"]*"[^>]*href="([^"]+)"/) || [])[1] || (c.match(/href="([^"]+)"[^>]*class="mercado-card-noticia/) || [])[1] || "";
   const photo = (c.match(/mercado-card-foto[\s\S]*?data-src="([^"]+)"/) || c.match(/mercado-card-foto[\s\S]*?src="([^"]+)"/) || [])[1] || "";
   const thumb = (c.match(/mercado-card-noticia-thumb[^>]*background-image:\s*url\(['"]?([^'")]+)/) || [])[1] || "";
-  return { time, title, badge, clubs, extract, link, photo, thumb };
+  const club = c.match(/mercado-equipo-link[\s\S]*?<img[^>]*src="([^"]+)"/);
+  const clubCrest = club ? club[1].replace(/^\/\//, "https://") : "";
+  return { time, title, badge, clubs, extract, link, photo, thumb, clubCrest };
 }
 
 function parseFichajes(html) {

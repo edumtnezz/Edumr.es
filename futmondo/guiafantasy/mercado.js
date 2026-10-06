@@ -394,6 +394,17 @@
     if (s.indexOf("rumor") >= 0) return "rum";
     return "ot";
   }
+  function fichImg(urls, cls) {
+    const list = (urls || []).filter(Boolean);
+    if (!list.length) return null;
+    const wrap = el("div", cls);
+    const im = el("img"); im.alt = ""; im.loading = "lazy";
+    let i = 0;
+    im.addEventListener("error", () => { i++; if (i < list.length) im.src = list[i]; else wrap.remove(); });
+    im.src = list[0];
+    wrap.appendChild(im);
+    return wrap;
+  }
   let fichLoaded = false;
   async function renderFichajes() {
     const box = $("fichOut");
@@ -411,13 +422,8 @@
         if (g.date) box.appendChild(el("div", "fich-day", "🗓️ " + g.date));
         g.items.forEach((x) => {
           const card = el("div", "fich-card");
-          if (x.photo) {
-            const ph = el("div", "fich-photo");
-            const im = el("img"); im.src = x.photo; im.alt = ""; im.loading = "lazy";
-            let tried = false;
-            im.addEventListener("error", () => { if (!tried && x.thumb && im.src !== x.thumb) { tried = true; im.src = x.thumb; } else { ph.remove(); } });
-            ph.appendChild(im); card.appendChild(ph);
-          }
+          const main = fichImg([x.photo, x.clubCrest], "fich-photo");
+          if (main) card.appendChild(main);
           const body = el("div", "fich-body");
           body.appendChild(el("div", "fich-title", x.title || ""));
           const meta = el("div", "fich-meta");
@@ -432,7 +438,8 @@
           if (x.extract) body.appendChild(el("div", "fich-extract", x.extract));
           if (x.link) { const a = el("button", "fich-link", "Ver noticia →"); a.type = "button"; a.addEventListener("click", () => openNoticia(x.link, x.title)); body.appendChild(a); }
           card.appendChild(body);
-          if (x.thumb) { const th = el("div", "fich-thumb"); const im2 = el("img"); im2.src = x.thumb; im2.alt = ""; im2.loading = "lazy"; im2.addEventListener("error", () => th.remove()); th.appendChild(im2); card.appendChild(th); }
+          const th = fichImg([x.thumb], "fich-thumb");
+          if (th) card.appendChild(th);
           box.appendChild(card);
         });
       });
