@@ -947,11 +947,12 @@ async function ffSeason(env, name) {
   return pts.length >= 2 ? pts : null;
 }
 
-async function getSeasonMap(env, allowBuild) {
+async function getSeasonMap(env, allowBuild, reset) {
   let c = null;
   try { c = await env.PORRA.get(SEASON_KEY, "json"); } catch (e) {}
   if (!c || typeof c !== "object") c = {};
   if (!c.map) c.map = {};
+  if (reset && allowBuild) { c.idx = 0; c.doneAt = 0; c.map = {}; }
   if (c.doneAt && Date.now() - c.doneAt < 24 * 3600 * 1000) return c.map;
   if (!allowBuild) return c.map;
   try {
@@ -978,9 +979,12 @@ async function getSeasonMap(env, allowBuild) {
       } catch (e) {}
     };
     const names = players.map((p) => p.name).filter(Boolean);
-    const BATCH = 40;
+    const BATCH = 44;
     const start = Number(c.idx) || 0;
-    await Promise.all(names.slice(start, start + BATCH).map(fetchOne));
+    const slice = names.slice(start, start + BATCH);
+    for (let i = 0; i < slice.length; i += 8) {
+      await Promise.all(slice.slice(i, i + 8).map(fetchOne));
+    }
     c.idx = start + BATCH;
     if (c.idx >= names.length) { c.idx = 0; c.doneAt = Date.now(); }
     c.at = Date.now();
@@ -2347,7 +2351,7 @@ export async function onRequestGet({ request, env, params }) {
     return searchMercado(env, url.searchParams.get("q"));
   }
   if (path === "temporada") {
-    try { const map = await getSeasonMap(env, true); return json({ n: Object.keys(map).length, map }); } catch (e) { return json({ n: 0, map: {}, error: String(e) }); }
+    try { const map = await getSeasonMap(env, true, url.searchParams.has("reset")); return json({ n: Object.keys(map).length, map }); } catch (e) { return json({ n: 0, map: {}, error: String(e) }); }
   }
   if (path === "equipos") {
     try { return json({ teams: await getTeams(env) }); } catch (e) { return json({ teams: [] }); }
