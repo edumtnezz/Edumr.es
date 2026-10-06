@@ -2452,6 +2452,21 @@ export async function onRequestGet({ request, env, params }) {
   if (path === "once") {
     try { return json(await getOnce(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "", url.searchParams.get("jornada") || "")); } catch (e) { return json({ error: String(e) }); }
   }
+  if (path === "dbgprobe") {
+    try {
+      const header = await futbolHeader(env);
+      const cands = ["/1/league/championship", "/5/league/championship", "/1/league/championshipusers", "/5/league/championshipusers", "/1/league/ranking", "/5/league/ranking", "/1/league/classification", "/5/league/classification", "/1/league/championshipranking", "/1/league/championshipclassification", "/5/league/users", "/1/league/users", "/5/league/championshipmembers", "/1/league/standings", "/5/league/standings"];
+      const res = {};
+      for (const c of cands) {
+        try {
+          const r = await futbolPost(c, header, { championshipId: FUTMONDO_CHAMPIONSHIP });
+          const a = r.answer;
+          res[c] = Array.isArray(a) ? { arr: a.length, first: a[0] } : { keys: a && typeof a === "object" ? Object.keys(a).slice(0, 20) : String(a).slice(0, 80) };
+        } catch (e) { res[c] = "ERR"; }
+      }
+      return json(res);
+    } catch (e) { return json({ error: String(e) }); }
+  }
   if (path === "dbgowner") {
     try {
       const nm = url.searchParams.get("name") || "";
