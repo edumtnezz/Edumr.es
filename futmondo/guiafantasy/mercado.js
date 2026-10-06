@@ -991,6 +991,13 @@
     }
   }
 
+  function lockScroll(on) {
+    try {
+      const root = document.documentElement, b = document.body;
+      if (on) { root.classList.add("no-scroll"); b.classList.add("no-scroll"); }
+      else { root.classList.remove("no-scroll"); b.classList.remove("no-scroll"); }
+    } catch (e) {}
+  }
   function showModal(node) {
     const body = $("fichaBody");
     if (!body) return;
@@ -998,11 +1005,13 @@
     body.appendChild(node);
     const ov = $("fichaOverlay");
     if (ov) ov.classList.remove("hidden");
+    lockScroll(true);
   }
   function closeModal() {
     try { if (history.state && history.state.ficha) { history.back(); return; } } catch (e) {}
     const ov = $("fichaOverlay");
     if (ov) ov.classList.add("hidden");
+    lockScroll(false);
   }
 
   function openNoticia(url, title) {
@@ -1086,7 +1095,7 @@
       .then((d) => showModal(renderFicha(d, p)))
       .catch(() => { const c = el("div"); c.appendChild(el("p", "muted small", "No se pudo cargar la ficha.")); showModal(c); });
   }
-  window.addEventListener("popstate", () => { const ov = $("fichaOverlay"); if (ov) ov.classList.add("hidden"); });
+  window.addEventListener("popstate", () => { const ov = $("fichaOverlay"); if (ov) ov.classList.add("hidden"); lockScroll(false); });
 
   function ptClass(p) { p = Number(p) || 0; return p < 0 ? "lo" : p < 6 ? "mid" : "hi"; }
   const whenShort = (v) => { if (!v) return ""; try { return new Date(v).toLocaleString("es-ES", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }); } catch (e) { return ""; } };
@@ -1228,8 +1237,13 @@
           const casa = m.home === d.team;
           row.appendChild(el("span", "fm-match", rival ? ((casa ? "🏠 " : "✈️ ") + rival) : ""));
           const mn = Number(m.mins) || 0;
-          const tg = mn <= 0 ? "" : (m.sub ? "entró " + mn + "'" : (mn >= 85 ? "90'" : "salió " + mn + "'"));
-          row.appendChild(el("span", "fm-tag", tg));
+          let tg = "", tgCls = "";
+          if (mn > 0) {
+            if (m.sub) { tg = "▲ entró " + mn + "'"; tgCls = "fm-in"; }
+            else if (mn >= 85) { tg = "90'"; }
+            else { tg = "▼ salió " + mn + "'"; tgCls = "fm-out"; }
+          }
+          row.appendChild(el("span", "fm-tag " + tgCls, tg));
           const v = valByR[j] != null ? valByR[j] : null;
           const stPts = Number(m.stats) || 0;
           const pts = v != null ? String(v) : (stPts !== 0 ? String(stPts) : "—");

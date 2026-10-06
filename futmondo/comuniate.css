@@ -3,6 +3,10 @@
    Se carga DESPUÉS de quiniela.css y sobreescribe el chrome.
    ============================================================ */
 
+html { scroll-behavior: smooth; }
+body { -webkit-overflow-scrolling: touch; }
+.cx-strip-track, .cx-live-track, .mkt-wrap, .merc-bestrow, .rachas-table, .ficha-overlay, .ficha-modal { -webkit-overflow-scrolling: touch; }
+
 :root {
   --cx-bg: #0a0d12;
   --cx-surface: #12161d;
@@ -239,7 +243,7 @@ body {
 .cx-team-all { justify-content: center; }
 .cx-team-all-txt { font-size: 0.68rem; font-weight: 800; color: var(--cx-text); }
 .cx-team-all.active .cx-team-all-txt { color: var(--cx-green); }
-.cx-team img { width: 30px; height: 30px; object-fit: contain; }
+.cx-team img { width: 38px; height: 38px; object-fit: contain; }
 .cx-team span {
   font-size: 0.6rem;
   color: var(--cx-muted);
@@ -262,7 +266,7 @@ body {
 .cx-jn-nav:disabled { opacity: 0.3; cursor: default; }
 .cx-jn-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; max-width: 1140px; margin: 0 auto; }
 .cx-jn { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 4px; padding: 2px 6px; border: 1px solid var(--cx-border); border-radius: 7px; background: var(--cx-surface); box-shadow: var(--cx-shadow-sm); }
-.cx-jn-crest { width: 17px; height: 17px; object-fit: contain; justify-self: center; }
+.cx-jn-crest { width: 24px; height: 24px; object-fit: contain; justify-self: center; }
 .cx-jn-mid { display: flex; flex-direction: column; align-items: center; gap: 0; min-width: 0; }
 .cx-jn-tv { height: 10px; width: auto; max-width: 42px; object-fit: contain; }
 .cx-jn-tv-sq { height: 15px; max-width: 32px; filter: invert(1) brightness(1.6); }
