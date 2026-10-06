@@ -1445,36 +1445,38 @@ async function cmPct(id) {
 }
 async function getFFTeam(env, name) {
   const slug = normKey(String(name || "").toLowerCase()).replace(/ /g, "-");
-  const key = "ffteam:v1:" + slug;
+  const key = "ffteam:v2:" + slug;
   try { const c = await env.PORRA.get(key, "json"); if (c && c.data && Date.now() - (c.at || 0) < 3 * 3600 * 1000) return c.data; } catch (e) {}
   const data = { starters: [], bench: [] };
   try {
     const h = await (await fetch("https://www.futbolfantasy.com/laliga/equipos/" + slug, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text();
-    const items = h.split('class="jugador_').slice(1);
-    for (const it of items) {
+    const iTit = h.indexOf("jugadores-titulares-");
+    const iSup = h.indexOf("jugadores-suplentes-");
+    const hTit = iTit >= 0 ? h.slice(iTit, iSup > iTit ? iSup : h.length) : "";
+    const hSup = iSup >= 0 ? h.slice(iSup, h.indexOf("</section>", iSup) > iSup ? h.indexOf("</section>", iSup) : h.length) : "";
+    const parse = (s) => s.split('class="jugador_').slice(1).map((it) => {
       const nm = (it.match(/class="truncate-name mx-auto">([^<]+)</) || [])[1];
-      if (!nm) continue;
+      if (!nm) return null;
       const full = (it.match(/<img alt="([^"]+)"[^>]*data-src="[^"]*jugadores\/ficha/) || [])[1] || nm;
       const photo = (it.match(/data-src="([^"]*jugadores\/ficha[^"]*)"/) || [])[1] || "";
       const pos = (it.match(/data-posicion="([^"]+)"/) || [])[1] || "";
       const prob = (it.match(/data-probabilidad="(\d+)%"/) || [])[1];
-      const once = (it.match(/data-onceFF="([^"]+)"/) || [])[1] || "";
       const x = (it.match(/data-onceFF-x="([\d.]+)%"/) || [])[1];
       const y = (it.match(/data-onceFF-y="([\d.]+)%"/) || [])[1];
       const nat = (it.match(/data-nacionalidad="([^"]+)"/) || [])[1] || "";
       const inj = Number((it.match(/data-lesion="(\d+)"/) || [])[1] || 0) === 1;
       const san = Number((it.match(/data-sancionado="(\d+)"/) || [])[1] || 0) === 1;
-      const p = { name: stripHtml(nm), full: stripHtml(full), photo, pos, prob: prob != null ? Number(prob) : null, x: x ? parseFloat(x) : null, y: y ? parseFloat(y) : null, nat, inj, san };
-      if (once === "titular" && p.y != null) data.starters.push(p);
-      else if (p.prob != null || p.pos) data.bench.push(p);
-    }
+      return { name: stripHtml(nm), full: stripHtml(full), photo, pos, prob: prob != null ? Number(prob) : null, x: x ? parseFloat(x) : null, y: y ? parseFloat(y) : null, nat, inj, san };
+    }).filter(Boolean);
+    data.starters = parse(hTit);
+    data.bench = parse(hSup);
   } catch (e) {}
   try { if (data.starters.length) await env.PORRA.put(key, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 6 * 3600 }); } catch (e) {}
   return data;
 }
 async function getOnce(env, home, away, jornada) {
   const j = Number(jornada) || 0;
-  const key = "once:v5:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
+  const key = "once:v6:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
   try { const c = await env.PORRA.get(key, "json"); if (c && c.at && Date.now() - c.at < 30 * 60 * 1000) return c.data; } catch (e) {}
   let stadium = "", kickoff = "", referee = "";
   try {
