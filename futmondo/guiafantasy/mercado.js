@@ -474,11 +474,15 @@
   }
   function renderPitch(t, crest) {
     const col = el("div", "alin-teamcol");
+    const th = el("div", "alin-tcolhead");
+    if (crest) { const im = el("img"); im.src = crest; im.alt = ""; im.loading = "lazy"; th.appendChild(im); }
+    th.appendChild(el("span", null, t.name || ""));
+    col.appendChild(th);
     const box = el("div", "alin-pitch");
     (t.starters || []).forEach((p) => {
       const pl = el("div", "alin-pl");
-      const cx = Math.max(9, Math.min(91, p.x != null ? p.x : 50));
-      const cy = Math.max(9, Math.min(91, p.y != null ? p.y : 50));
+      const cx = Math.max(14, Math.min(86, p.x != null ? p.x : 50));
+      const cy = Math.max(11, Math.min(89, p.y != null ? p.y : 50));
       pl.style.left = cx + "%";
       pl.style.top = cy + "%";
       if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; pl.appendChild(im); }
@@ -487,10 +491,6 @@
       pl.addEventListener("click", () => openPlayerByName(p.full || p.name));
       box.appendChild(pl);
     });
-    const tag = el("div", "alin-pteam");
-    if (crest) { const im = el("img"); im.src = crest; im.alt = ""; im.loading = "lazy"; tag.appendChild(im); }
-    tag.appendChild(el("span", null, t.name || ""));
-    box.appendChild(tag);
     col.appendChild(box);
     if (t.bench && t.bench.length) col.appendChild(renderBench(t.bench));
     return col;
