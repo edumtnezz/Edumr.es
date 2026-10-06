@@ -606,6 +606,7 @@ const FUTMONDO_USERTEAM = "6ab314563a9cf632cef6291c";
 const FACE_BASE = "https://static01.mondocore.com/futmondo/img/faces/64/";
 const LOGO_BASE = "https://static02.mondocore.com/futmondo/img/teams/64/";
 const MARKET_KEY = "fm:market:v4";
+const SEASON_KEY = "fm:season:v1";
 const MARKET_TTL_MS = 10 * 60 * 1000;
 let fmToken = null;
 
@@ -832,20 +833,25 @@ async function searchMercado(env, q) {
     const map = await ffMap(env);
     players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, jornadaFf: e.jornada, tend: e.tend, chg1: e.d1, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
   } catch (e) {}
+  let season = {};
+  try { season = await getSeasonMap(env, false); } catch (e) {}
   try {
     const hist = await env.PORRA.get("fmhist", "json");
     const days = (hist && hist.days) || [];
-    if (days.length) {
-      const first = days[0].v || {};
-      players = players.map((p) => ({ ...p, chgAll: first[p.name] != null ? (Number(p.value) || 0) - Number(first[p.name]) : null }));
-    }
+    const first = days.length ? (days[0].v || {}) : {};
+    players = players.map((p) => {
+      const val = Number(p.value) || 0;
+      const sv = season[p.name];
+      if (sv != null) return { ...p, chgAll: val - Number(sv), seasonOk: true };
+      return { ...p, chgAll: first[p.name] != null ? val - Number(first[p.name]) : null };
+    });
   } catch (e) {}
   const query = stripAccents(String(q || "").toLowerCase().trim());
   let list = players;
   if (query) list = players.filter((p) => stripAccents(p.name.toLowerCase()).includes(query));
   list = list.slice().sort((a, b) => b.value - a.value);
   const limit = query ? 80 : 700;
-  return json({ players: list.slice(0, limit), updatedAt: cache.at || null });
+  return json({ players: list.slice(0, limit), updatedAt: cache.at || null, seasonOk: Object.keys(season).length > 30 });
 }
 
 const FF_MARKET_URL = "https://www.futbolfantasy.com/analytics/futmondo/mercado/social";
@@ -939,6 +945,44 @@ async function ffSeason(env, name) {
     if (pts[i - 1].v > 0 && pts[i].v < pts[i - 1].v * 0.7) { pts.splice(0, i); break; }
   }
   return pts.length >= 2 ? pts : null;
+}
+
+async function getSeasonMap(env, allowBuild) {
+  let cached = null;
+  try { cached = await env.PORRA.get(SEASON_KEY, "json"); } catch (e) {}
+  if (cached && cached.map && Date.now() - (cached.at || 0) < 24 * 3600 * 1000) return cached.map;
+  if (!allowBuild) return (cached && cached.map) || {};
+  const map = (cached && cached.map) || {};
+  try {
+    const players = (await getMarketPlayers(env)).players || [];
+    const ffm = await ffMap(env);
+    const fetchOne = async (name) => {
+      const e = ffPick(name, ffm);
+      if (!e || !e.id) return;
+      try {
+        const res = await fetch("https://www.futbolfantasy.com/analytics/futmondo/mercado/detalle/" + e.id + "/social", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+        const html = await res.text();
+        const re = /player_chartjs\.push\(\{date:\s*"([^"]+)",\s*value:\s*(\d+)\}\)/g;
+        const vals = [];
+        let m;
+        while ((m = re.exec(html))) vals.push(Number(m[2]));
+        if (vals.length < 1) return;
+        vals.reverse();
+        let k = 0;
+        while (k < vals.length && vals[k] <= 0) k++;
+        for (let i = k + 1; i < vals.length; i++) {
+          if (vals[i - 1] > 0 && vals[i] < vals[i - 1] * 0.7) { k = i; break; }
+        }
+        if (vals[k] > 0) map[name] = vals[k];
+      } catch (e) {}
+    };
+    const names = players.map((p) => p.name).filter(Boolean);
+    const chunks = [];
+    for (let i = 0; i < names.length; i += 12) chunks.push(names.slice(i, i + 12));
+    for (const ch of chunks) await Promise.all(ch.map(fetchOne));
+  } catch (e) {}
+  try { await env.PORRA.put(SEASON_KEY, JSON.stringify({ at: Date.now(), map })); } catch (e) {}
+  return map;
 }
 
 async function tmProfile(env, name, club) {
@@ -2298,16 +2342,8 @@ export async function onRequestGet({ request, env, params }) {
   if (path === "mercado") {
     return searchMercado(env, url.searchParams.get("q"));
   }
-  if (path === "dbgfields") {
-    try {
-      const header = await futbolHeader(env);
-      const res = await futbolPost("/5/league/championshipplayers", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
-      const arr = (res.answer && res.answer.players) || (Array.isArray(res.answer) ? res.answer : []);
-      const s = arr[0] || {};
-      let hist = null;
-      try { const h = await env.PORRA.get("fmhist", "json"); if (h && h.days) hist = { n: h.days.length, first: h.days[0] && h.days[0].d, last: h.days[h.days.length - 1] && h.days[h.days.length - 1].d }; } catch (e) {}
-      return json({ n: arr.length, keys: Object.keys(s), average: Object.keys(s.average || {}), hist, sample: s });
-    } catch (e) { return json({ error: String(e) }); }
+  if (path === "temporada") {
+    try { const map = await getSeasonMap(env, true); return json({ n: Object.keys(map).length, map }); } catch (e) { return json({ n: 0, map: {}, error: String(e) }); }
   }
   if (path === "equipos") {
     try { return json({ teams: await getTeams(env) }); } catch (e) { return json({ teams: [] }); }

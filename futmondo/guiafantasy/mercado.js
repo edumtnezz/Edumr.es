@@ -246,7 +246,7 @@
         stats.appendChild(mw);
         row.appendChild(stats);
         const ch = hlChange(p);
-        const per = hlPeriod === "1" ? "hoy" : hlPeriod === "all" ? "siempre" : hlPeriod + " días";
+        const per = hlPeriod === "1" ? "hoy" : hlPeriod === "all" ? "temporada" : hlPeriod + " días";
         const rv = el("div", "racha-val " + (ch > 0 ? "up" : ch < 0 ? "down" : "flat"));
         rv.appendChild(el("span", null, (ch > 0 ? "▲ +" : ch < 0 ? "▼ −" : "") + formatDots(Math.abs(ch)) + " €"));
         rv.appendChild(el("small", null, per));
@@ -429,7 +429,7 @@
     tl.appendChild(el("div", "mkt-hint", "↔ Desliza la tabla para ver más columnas"));
     top.appendChild(tl);
     const seg = el("div", "hl-seg");
-    [["1", "Hoy"], ["7", "7 días"], ["14", "14 días"], ["30", "30 días"], ["all", "Siempre"]].forEach(([k, lab]) => {
+    [["1", "Hoy"], ["7", "7 días"], ["14", "14 días"], ["30", "30 días"], ["all", "Temporada"]].forEach(([k, lab]) => {
       const b = el("button", "hl-btn" + (hlPeriod === k ? " active" : ""), lab);
       b.type = "button";
       b.addEventListener("click", () => { const y = window.scrollY; hlPeriod = k; renderGrid(); renderRachas(); window.scrollTo(0, y); });
