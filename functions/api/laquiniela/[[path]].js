@@ -1445,7 +1445,7 @@ async function cmPct(id) {
 }
 async function getOnce(env, home, away, jornada) {
   const j = Number(jornada) || 0;
-  const key = "once:v2:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
+  const key = "once:v3:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
   try { const c = await env.PORRA.get(key, "json"); if (c && c.at && Date.now() - c.at < 30 * 60 * 1000) return c.data; } catch (e) {}
   let data = null;
   try {
@@ -1463,6 +1463,7 @@ async function getOnce(env, home, away, jornada) {
       for (const m of ph.matchAll(/pintar_alineacion\('(local|visitante)',\s*(\d+)/g)) { if (m[1] === "local") idL = m[2]; else idV = m[2]; }
       const stadium = (ph.match(/"location":\{"@type":"Place","name":"([^"]+)"/) || [])[1] || "";
       const kickoff = (ph.match(/"startDate":"([^"]+)"/) || [])[1] || "";
+      const referee = (ph.match(/cronista\.png[^>]*>[\s\S]*?<span>([^<]+)<\/span>/) || [])[1] || "";
       const fetchLine = async (id) => {
         if (!id) return {};
         const b = "local=local&modo=clasico&id_equipo=" + id + "&confirmado=0";
@@ -1473,11 +1474,11 @@ async function getOnce(env, home, away, jornada) {
       const all = [];
       ["delanteros", "medios", "defensas", "portero"].forEach((k) => { (hL[k] || []).concat(aL[k] || []).forEach((p) => { if (p.pid) all.push(p); }); });
       for (let i = 0; i < all.length; i += 6) { await Promise.all(all.slice(i, i + 6).map(async (p) => { const v = await cmPct(p.pid); if (v != null) p.pct = v; })); }
-      data = { home: { name: home, lines: hL }, away: { name: away, lines: aL }, stadium, kickoff };
+      data = { home: { name: home, lines: hL }, away: { name: away, lines: aL }, stadium, kickoff, referee };
     }
   } catch (e) {}
   if (data) { try { await env.PORRA.put(key, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {} }
-  return data || { home: { name: home, lines: {} }, away: { name: away, lines: {} }, stadium: "", kickoff: "" };
+  return data || { home: { name: home, lines: {} }, away: { name: away, lines: {} }, stadium: "", kickoff: "", referee: "" };
 }
 
 /* ---------- Franja de jornada (escudos, día/hora y TV) ---------- */

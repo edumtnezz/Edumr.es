@@ -449,29 +449,34 @@
   }
 
   const akey = (s) => stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9]/g, "");
+  function openPlayerByName(name) {
+    const q = stripAccents(String(name || "").toLowerCase());
+    if (!q || !all || !all.length) return;
+    const p = all.find((x) => stripAccents(x.name).toLowerCase() === q) || all.find((x) => stripAccents(x.name).toLowerCase().indexOf(q) >= 0 || q.indexOf(stripAccents(x.name).toLowerCase()) >= 0);
+    if (p) openFicha(p);
+  }
   function renderPitch(t, crest) {
     const box = el("div", "alin-pitch");
-    const head = el("div", "alin-pbar");
-    if (crest) { const im = el("img"); im.src = crest; im.alt = ""; im.loading = "lazy"; head.appendChild(im); }
-    head.appendChild(el("span", null, t.name || ""));
-    box.appendChild(head);
-    const field = el("div", "alin-field");
-    ["delanteros", "medios", "defensas", "portero"].forEach((ln) => {
-      const arr = (t.lines || {})[ln];
+    [["delanteros", "fwd"], ["medios", "mid"], ["defensas", "def"], ["portero", "gk"]].forEach((pair) => {
+      const arr = (t.lines || {})[pair[0]];
       if (!arr || !arr.length) return;
-      const row = el("div", "alin-line");
+      const row = el("div", "alin-line alin-line-" + pair[1]);
       arr.forEach((p) => {
         const pl = el("div", "alin-p");
         const ph = el("div", "alin-pimg");
         if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; ph.appendChild(im); }
-        if (p.pct != null && p.pct < 100) { ph.appendChild(el("span", "alin-pct", p.pct + "%")); pl.classList.add("is-doubt"); }
         pl.appendChild(ph);
+        if (p.pct != null && p.pct < 100) pl.appendChild(el("span", "alin-pct", p.pct + "%"));
         pl.appendChild(el("div", "alin-pname", p.name));
+        pl.addEventListener("click", () => openPlayerByName(p.name));
         row.appendChild(pl);
       });
-      field.appendChild(row);
+      box.appendChild(row);
     });
-    box.appendChild(field);
+    const tag = el("div", "alin-pteam");
+    if (crest) { const im = el("img"); im.src = crest; im.alt = ""; im.loading = "lazy"; tag.appendChild(im); }
+    tag.appendChild(el("span", null, t.name || ""));
+    box.appendChild(tag);
     return box;
   }
   let alinInit = false, alinJornada = 0, alinSel = "";
@@ -490,19 +495,26 @@
     detail.innerHTML = "";
     if (!r) { detail.innerHTML = '<p class="muted small">No se pudieron cargar las alineaciones.</p>'; return; }
     const card = el("div", "alin-card");
-    const head = el("div", "alin-head");
-    const t1 = el("div", "alin-team");
-    if (m.homeCrest) { const im = el("img"); im.src = m.homeCrest; im.alt = ""; im.loading = "lazy"; t1.appendChild(im); }
-    t1.appendChild(el("span", null, m.home));
-    const mid = el("div", "alin-mid");
-    mid.appendChild(el("b", "alin-vs", "VS"));
-    mid.appendChild(el("span", "alin-time", ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim()));
-    const t2 = el("div", "alin-team alin-team-r");
-    if (m.awayCrest) { const im = el("img"); im.src = m.awayCrest; im.alt = ""; im.loading = "lazy"; t2.appendChild(im); }
-    t2.appendChild(el("span", null, m.away));
-    head.appendChild(t1); head.appendChild(mid); head.appendChild(t2);
+    const head = el("div", "alin-mhead");
+    head.appendChild(el("div", "alin-mtitle", "Jornada " + jn + " · LaLiga" + (r.stadium ? " · " + r.stadium : "")));
+    if (m.tv && m.tv.length) {
+      const tv = el("div", "alin-mtv");
+      m.tv.forEach((c) => { if (!c || !c.logo) return; const im = el("img"); im.src = c.logo; im.alt = c.name || ""; im.title = c.name || ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); tv.appendChild(im); });
+      head.appendChild(tv);
+    }
+    const teams = el("div", "alin-mteams");
+    const hb = el("div", "alin-mteam");
+    if (m.homeCrest) { const im = el("img"); im.src = m.homeCrest; im.alt = ""; hb.appendChild(im); }
+    hb.appendChild(el("span", null, m.home));
+    teams.appendChild(hb);
+    teams.appendChild(el("span", "alin-mvs", "vs"));
+    const ab = el("div", "alin-mteam");
+    if (m.awayCrest) { const im = el("img"); im.src = m.awayCrest; im.alt = ""; ab.appendChild(im); }
+    ab.appendChild(el("span", null, m.away));
+    teams.appendChild(ab);
+    head.appendChild(teams);
+    head.appendChild(el("div", "alin-mwhen", ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim() + (r.referee ? " · Colegiado: " + r.referee : "")));
     card.appendChild(head);
-    if (r.stadium) card.appendChild(el("div", "alin-stadium", "🏟️ " + r.stadium));
     const pitches = el("div", "alin-pitches");
     pitches.appendChild(renderPitch(r.home || {}, m.homeCrest));
     pitches.appendChild(renderPitch(r.away || {}, m.awayCrest));
