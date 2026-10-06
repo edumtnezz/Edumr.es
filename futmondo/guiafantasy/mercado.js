@@ -492,9 +492,10 @@
       const step = n > 1 ? 56 / (n - 1) : 0;
       arr.forEach((p, i) => {
         const x = n > 1 ? (22 + i * step) : 50;
+        const stag = n >= 5 ? (i % 2 ? 5 : -5) : 0;
         const pl = el("div", "alin-pl");
         pl.style.left = x + "%";
-        pl.style.top = band[1] + "%";
+        pl.style.top = (band[1] + stag) + "%";
         const ph = el("div", "alin-pimg");
         if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; ph.appendChild(im); }
         if (p.prob != null && p.prob < 100) ph.appendChild(el("span", "alin-pct", p.prob + "%"));
