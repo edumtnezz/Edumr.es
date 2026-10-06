@@ -979,11 +979,13 @@ async function getSeasonMap(env, allowBuild, reset) {
       } catch (e) {}
     };
     const names = players.map((p) => p.name).filter(Boolean);
-    const BATCH = 44;
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    const BATCH = 30;
     const start = Number(c.idx) || 0;
     const slice = names.slice(start, start + BATCH);
-    for (let i = 0; i < slice.length; i += 8) {
-      await Promise.all(slice.slice(i, i + 8).map(fetchOne));
+    for (let i = 0; i < slice.length; i += 6) {
+      await Promise.all(slice.slice(i, i + 6).map(fetchOne));
+      await sleep(180);
     }
     c.idx = start + BATCH;
     if (c.idx >= names.length) { c.idx = 0; c.doneAt = Date.now(); }
