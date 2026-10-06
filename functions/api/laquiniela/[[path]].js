@@ -1444,8 +1444,9 @@ async function cmPct(id) {
   } catch (e) { return null; }
 }
 async function getFFTeam(env, name) {
-  const slug = normKey(String(name || "").toLowerCase()).replace(/ /g, "-");
-  const key = "ffteam:v2:" + slug;
+  let slug = normKey(String(name || "").toLowerCase()).replace(/ /g, "-");
+  if (slug === "real-betis") slug = "betis";
+  const key = "ffteam:v3:" + slug;
   try { const c = await env.PORRA.get(key, "json"); if (c && c.data && Date.now() - (c.at || 0) < 3 * 3600 * 1000) return c.data; } catch (e) {}
   const data = { starters: [], bench: [] };
   try {
@@ -1457,7 +1458,9 @@ async function getFFTeam(env, name) {
     const parse = (s) => s.split('class="jugador_').slice(1).map((it) => {
       const nm = (it.match(/class="truncate-name mx-auto">([^<]+)</) || [])[1];
       if (!nm) return null;
-      const full = (it.match(/<img alt="([^"]+)"[^>]*data-src="[^"]*jugadores\/ficha/) || [])[1] || nm;
+      const fi = it.indexOf("jugadores/ficha");
+      let full = nm;
+      if (fi >= 0) { const bef = it.slice(Math.max(0, fi - 600), fi); const ams = [...bef.matchAll(/alt="([^"]+)"/g)]; if (ams.length) full = ams[ams.length - 1][1]; }
       const photo = (it.match(/data-src="([^"]*jugadores\/ficha[^"]*)"/) || [])[1] || "";
       const pos = (it.match(/data-posicion="([^"]+)"/) || [])[1] || "";
       const prob = (it.match(/data-probabilidad="(\d+)%"/) || [])[1];
@@ -1476,7 +1479,7 @@ async function getFFTeam(env, name) {
 }
 async function getOnce(env, home, away, jornada) {
   const j = Number(jornada) || 0;
-  const key = "once:v6:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
+  const key = "once:v7:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
   try { const c = await env.PORRA.get(key, "json"); if (c && c.at && Date.now() - c.at < 30 * 60 * 1000) return c.data; } catch (e) {}
   let stadium = "", kickoff = "", referee = "";
   try {

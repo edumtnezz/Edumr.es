@@ -465,7 +465,7 @@
       if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; ph.appendChild(im); }
       c.appendChild(ph);
       if (p.prob != null) c.appendChild(el("span", "alin-bprob", p.prob + "%"));
-      c.appendChild(el("span", "alin-bname", p.name));
+      c.appendChild(el("span", "alin-bname", p.full || p.name));
       c.addEventListener("click", () => openPlayerByName(p.full || p.name));
       grid.appendChild(c);
     });
@@ -477,10 +477,12 @@
     const box = el("div", "alin-pitch");
     (t.starters || []).forEach((p) => {
       const pl = el("div", "alin-pl");
-      pl.style.left = (p.x != null ? p.x : 50) + "%";
-      pl.style.top = (p.y != null ? p.y : 50) + "%";
+      const cx = Math.max(9, Math.min(91, p.x != null ? p.x : 50));
+      const cy = Math.max(9, Math.min(91, p.y != null ? p.y : 50));
+      pl.style.left = cx + "%";
+      pl.style.top = cy + "%";
       if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; pl.appendChild(im); }
-      pl.appendChild(el("div", "alin-pname", p.name));
+      pl.appendChild(el("div", "alin-pname", p.full || p.name));
       if (p.prob != null && p.prob < 100) pl.appendChild(el("span", "alin-pct", p.prob + "%"));
       pl.addEventListener("click", () => openPlayerByName(p.full || p.name));
       box.appendChild(pl);

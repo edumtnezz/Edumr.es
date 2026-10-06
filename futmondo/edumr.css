@@ -196,9 +196,10 @@ body {
   transition: all 0.16s ease;
 }
 @media (max-width: 640px) {
-  .cx-sub .cx-sub-inner { padding: 0 6px; }
-  .cx-sub .tabs { flex-wrap: wrap; justify-content: center; overflow: visible; gap: 0; }
-  .cx-sub .tab { padding: 10px 9px; font-size: 0.8rem; }
+  .cx-sub .cx-sub-inner { padding: 8px 10px; }
+  .cx-sub .tabs { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; gap: 8px; }
+  .cx-sub .tab { padding: 7px 14px; font-size: 0.8rem; border: 1px solid var(--cx-border); border-radius: 999px; background: var(--cx-surface); }
+  .cx-sub .tab.active { background: var(--cx-green); color: #fff; border-color: var(--cx-green); }
 }
 .cx-sub .tab:hover { color: var(--cx-text); }
 .cx-sub .tab.active {
