@@ -468,15 +468,21 @@
     const body = card.querySelector(".alin-body");
     if (!body || body.dataset.done === "1") return;
     body.dataset.done = "1";
-    try {
-      const r = await (await fetch(API + "/once?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json();
-      if (r && r.stadium) { const st = card.querySelector(".alin-stadium"); if (st) st.innerHTML = "🏟️ " + escapeHtml(r.stadium); }
-      body.innerHTML = "";
-      const pitches = el("div", "alin-pitches");
-      pitches.appendChild(renderPitch(r.home || {}, m.homeCrest));
-      pitches.appendChild(renderPitch(r.away || {}, m.awayCrest));
-      body.appendChild(pitches);
-    } catch (e) { body.innerHTML = '<p class="muted small">No se pudieron cargar las alineaciones.</p>'; }
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const r = await (await fetch(API + "/once?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json();
+        const ok = r && ((r.home && r.home.lines && Object.keys(r.home.lines).length) || (r.away && r.away.lines && Object.keys(r.away.lines).length));
+        if (!ok) { if (attempt === 0) { await new Promise((x) => setTimeout(x, 1500)); continue; } }
+        if (r && r.stadium) { const st = card.querySelector(".alin-stadium"); if (st) st.innerHTML = "🏟️ " + escapeHtml(r.stadium); }
+        body.innerHTML = "";
+        const pitches = el("div", "alin-pitches");
+        pitches.appendChild(renderPitch(r.home || {}, m.homeCrest));
+        pitches.appendChild(renderPitch(r.away || {}, m.awayCrest));
+        body.appendChild(pitches);
+        return;
+      } catch (e) { await new Promise((x) => setTimeout(x, 1200)); }
+    }
+    body.innerHTML = '<p class="muted small">No se pudieron cargar las alineaciones.</p>';
   }
   let alinLoaded = false, alinCards = {};
   async function renderAlineaciones() {
@@ -515,16 +521,19 @@
       box.appendChild(card);
       alinCards[card.dataset.key] = body;
     });
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((en) => {
-        if (!en.isIntersecting) return;
-        io.unobserve(en.target);
-        const card = en.target;
-        const m = ms.find((x) => akey(x.home + x.away) === card.dataset.key);
-        if (m) loadAlinCard(card, m, jn);
-      });
-    }, { rootMargin: "300px" });
-    Array.from(box.children).forEach((c) => io.observe(c));
+    const queue = ms.slice();
+    let busy = false;
+    const pump = async () => {
+      if (busy) return;
+      const m = queue.shift();
+      if (!m) return;
+      busy = true;
+      const card = Array.from(box.children).find((c) => c.dataset.key === akey(m.home + m.away));
+      if (card) await loadAlinCard(card, m, jn);
+      busy = false;
+      setTimeout(pump, 250);
+    };
+    pump();
   }
 
   function filteredList() {
