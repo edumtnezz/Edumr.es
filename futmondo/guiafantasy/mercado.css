@@ -487,6 +487,15 @@ html { overflow-anchor: none; }
 .market-grid { overflow-anchor: none; }
 
 /* ---------- Clausulazo jugoso ---------- */
+.claus-filters { display: flex; flex-direction: column; gap: 6px; margin: 12px 0 2px; }
+.claus-frow { display: flex; flex-wrap: wrap; gap: 6px; }
+.claus-chip { font: inherit; font-size: 0.72rem; font-weight: 700; padding: 4px 11px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--muted); cursor: pointer; transition: all 0.14s ease; }
+.claus-chip:hover { border-color: var(--accent); color: var(--text); }
+.claus-chip.active { background: var(--accent); border-color: var(--accent); color: #05130a; }
+.claus-trend { font-size: 0.68rem; font-weight: 800; margin-top: 5px; }
+.claus-trend.down { color: #16a34a; }
+.claus-trend.up { color: #dc2626; }
+.claus-newowner { font-size: 0.62rem; font-weight: 800; color: #2563eb; margin-top: 4px; }
 .claus-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin-top: 12px; }
 .claus-card { display: flex; gap: 10px; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; cursor: pointer; transition: all 0.16s ease; }
 .claus-card:hover { border-color: var(--accent); transform: translateY(-1px); }

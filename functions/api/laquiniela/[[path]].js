@@ -733,7 +733,7 @@ function expOfB(p) {
 }
 
 async function getClausulas(env) {
-  try { const c = await env.PORRA.get("clausulas:v12", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
+  try { const c = await env.PORRA.get("clausulas:v13", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
   let cache;
   try { cache = await getMarketPlayers(env); } catch (e) { return { players: [], updatedAt: null }; }
   let players = cache.players || [];
@@ -787,8 +787,31 @@ async function getClausulas(env) {
   }
   out.sort((a, b) => b.exp - a.exp || b.clause - a.clause);
   const jornada = players.reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0);
-  const data = { updatedAt: Date.now(), me: myTeam, jornada, players: out.slice(0, 15) };
-  try { await env.PORRA.put("clausulas:v12", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
+
+  try {
+    const today = new Date(Date.now() + 2 * 3600 * 1000).toISOString().slice(0, 10);
+    let hist = (await env.PORRA.get("claushist", "json")) || { days: [] };
+    if (!Array.isArray(hist.days)) hist = { days: [] };
+    const cMap = {}, oMap = {};
+    for (const p of out) { cMap[p.name] = p.clause; oMap[p.name] = p.owner || ""; }
+    const last = hist.days[hist.days.length - 1];
+    if (!last || last.d !== today) hist.days.push({ d: today, c: cMap, o: oMap });
+    else { last.c = cMap; last.o = oMap; }
+    while (hist.days.length > 90) hist.days.shift();
+    try { await env.PORRA.put("claushist", JSON.stringify(hist)); } catch (e) {}
+    const first = (hist.days[0] && hist.days[0].c) || {};
+    const pd = hist.days.length > 1 ? hist.days[hist.days.length - 2] : null;
+    const prevC = (pd && pd.c) || {};
+    const prevO = (pd && pd.o) || {};
+    for (const p of out) {
+      if (first[p.name] != null) { p.clChg = p.clause - Number(first[p.name]); p.clSince = hist.days[0].d; }
+      if (prevC[p.name] != null) p.clPrev = p.clause - Number(prevC[p.name]);
+      if (prevO[p.name] && prevO[p.name] !== (p.owner || "")) p.clNewOwner = true;
+    }
+  } catch (e) {}
+
+  const data = { updatedAt: Date.now(), me: myTeam, jornada, players: out.slice(0, 40) };
+  try { await env.PORRA.put("clausulas:v13", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
   return data;
 }
 

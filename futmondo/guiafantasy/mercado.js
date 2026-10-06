@@ -306,6 +306,13 @@
       st.appendChild(sbox((Number(p.avg) || 0).toFixed(1).replace(".", ","), "Media", "media"));
       st.appendChild(sbox((Number(p.clause) / 1e6).toFixed(1).replace(".", ",") + " M", "Cláusula", "clause"));
       body.appendChild(st);
+      const clchg = Number(p.clChg);
+      if (p.clChg != null && !isNaN(clchg) && Math.round(clchg) !== 0) {
+        const down = clchg < 0;
+        body.appendChild(el("div", "claus-trend " + (down ? "down" : "up"),
+          (down ? "▼ bajó " : "▲ subió ") + (Math.abs(clchg) / 1e6).toFixed(1).replace(".", ",") + " M" + (p.clSince ? " desde " + p.clSince : "")));
+      }
+      if (p.clNewOwner) body.appendChild(el("div", "claus-newowner", "🆕 nuevo dueño"));
       const diff = (Number(p.clause) || 0) - (Number(p.value) || 0);
       const vrow = el("div", "claus-val");
       vrow.appendChild(el("b", null, "Valor " + money(p.value) + " €"));
@@ -325,14 +332,48 @@
     box.appendChild(grid);
   }
 
+  let clausAll = [], clausJ0 = 0, clausPos = "", clausVal = "";
+  function clausValMatch(cl) {
+    const m = Number(cl) || 0;
+    if (!clausVal) return true;
+    if (clausVal === "0-5") return m < 5e6;
+    if (clausVal === "5-10") return m >= 5e6 && m < 10e6;
+    if (clausVal === "10-20") return m >= 10e6 && m < 20e6;
+    if (clausVal === "20-") return m >= 20e6;
+    return true;
+  }
+  function clausApply() {
+    const box = $("clausOut");
+    if (!box) return;
+    const list = clausAll.filter((p) => {
+      if (clausPos && p.role !== clausPos && p.role2 !== clausPos) return false;
+      return clausValMatch(p.clause);
+    });
+    renderClausGrid(box, list, clausJ0);
+  }
+  function bindClausFilters() {
+    const bind = (id, set) => {
+      const row = $(id);
+      if (!row || row.dataset.bound) return;
+      row.dataset.bound = "1";
+      row.querySelectorAll(".claus-chip").forEach((b) => b.addEventListener("click", () => {
+        row.querySelectorAll(".claus-chip").forEach((x) => x.classList.remove("active"));
+        b.classList.add("active");
+        set(b.dataset.pos != null ? b.dataset.pos : b.dataset.val, b);
+      }));
+    };
+    bind("clausPos", (v) => { clausPos = v || ""; clausApply(); });
+    bind("clausVal", (v) => { clausVal = v || ""; clausApply(); });
+  }
   async function renderClausulas() {
     const box = $("clausOut");
     if (!box || box.dataset.loaded === "1") return;
     box.dataset.loaded = "1";
+    bindClausFilters();
     let cached = null;
     try { cached = JSON.parse(localStorage.getItem("claus_cache") || "null"); } catch (e) {}
     let timer = null;
-    if (cached && cached.players && cached.players.length) renderClausGrid(box, cached.players, Number(cached.jornada) || 0);
+    if (cached && cached.players && cached.players.length) { clausAll = cached.players; clausJ0 = Number(cached.jornada) || 0; clausApply(); }
     else {
       box.innerHTML = '<p class="muted small" id="clausMsg">Analizando tu liga…</p>';
       const t0 = Date.now();
@@ -348,7 +389,7 @@
       const j0 = Number(d && d.jornada) || 0;
       const upd = $("clausUpdated");
       if (upd) upd.textContent = "Se actualiza cada 30 min" + (d && d.updatedAt ? " · última: " + horaTxt(d.updatedAt) : "");
-      renderClausGrid(box, list, j0);
+      clausAll = list; clausJ0 = j0; clausApply();
       try { localStorage.setItem("claus_cache", JSON.stringify({ at: Date.now(), jornada: j0, players: list })); } catch (e) {}
     } catch (e) { if (timer) clearInterval(timer); if (!(cached && cached.players)) box.innerHTML = '<p class="market-empty">No se pudo cargar.</p>'; }
   }

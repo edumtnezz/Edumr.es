@@ -14,7 +14,7 @@
   <script src="/futmondo/theme.js?v=65"></script>
   <link rel="stylesheet" href="/futmondo/quiniela/quiniela.css?v=127">
   <link rel="stylesheet" href="/futmondo/comuniate.css?v=24">
-  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=88">
+  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=89">
 </head>
 <body class="page-simple cx-page">
   <header class="appbar cx-header">
@@ -122,6 +122,22 @@
         <h2>Clausulazo jugoso</h2>
         <p class="muted small">Jugadores de otros a los que merece la pena pagar la cláusula para robárselos.</p>
         <p class="muted small" id="clausUpdated">Se actualiza cada 30 min.</p>
+        <div class="claus-filters">
+          <div class="claus-frow" id="clausPos">
+            <button type="button" class="claus-chip active" data-pos="">Todas</button>
+            <button type="button" class="claus-chip" data-pos="portero">POR</button>
+            <button type="button" class="claus-chip" data-pos="defensa">DEF</button>
+            <button type="button" class="claus-chip" data-pos="centrocampista">MED</button>
+            <button type="button" class="claus-chip" data-pos="delantero">DEL</button>
+          </div>
+          <div class="claus-frow" id="clausVal">
+            <button type="button" class="claus-chip active" data-val="">Cualquier cláusula</button>
+            <button type="button" class="claus-chip" data-val="0-5">&lt; 5 M</button>
+            <button type="button" class="claus-chip" data-val="5-10">5–10 M</button>
+            <button type="button" class="claus-chip" data-val="10-20">10–20 M</button>
+            <button type="button" class="claus-chip" data-val="20-">+ 20 M</button>
+          </div>
+        </div>
         <div id="clausOut"></div>
       </section>
     </section>
@@ -137,6 +153,6 @@
   </div>
 
   <script src="/futmondo/chrome.js?v=9"></script>
-  <script src="/futmondo/guiafantasy/mercado.js?v=95"></script>
+  <script src="/futmondo/guiafantasy/mercado.js?v=96"></script>
 </body>
 </html>
