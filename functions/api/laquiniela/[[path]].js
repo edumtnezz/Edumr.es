@@ -1371,7 +1371,7 @@ async function getUltimaHora(env) {
 
 /* ---------- Mercado de fichajes (FutbolFantasy) ---------- */
 const FICHAJES_URL = "https://www.futbolfantasy.com/laliga/mercado-fichajes/verano-2026";
-const FICHAJES_KEY = "fm:fichajes:v1";
+const FICHAJES_KEY = "fm:fichajes:v2";
 
 function ffCard(c) {
   const raw = (re) => { const m = c.match(re); return m ? stripHtml(m[1]) : ""; };
