@@ -2461,7 +2461,7 @@ export async function onRequestGet({ request, env, params }) {
       if (!found) return json({ error: "no player", q });
       const header = await futbolHeader(env);
       const s = await futbolPost("/1/player/summary", header, { playerId: found.id, championshipId: FUTMONDO_CHAMPIONSHIP });
-      return json({ name: found.name, owners: (s.answer && s.answer.owners) || null, clause: (s.answer && s.answer.championship && s.answer.championship.clause) || null });
+      return json({ name: found.name, answer: s.answer || null });
     } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "equipos") {
