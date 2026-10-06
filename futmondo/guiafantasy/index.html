@@ -13,8 +13,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="/futmondo/theme.js?v=65"></script>
   <link rel="stylesheet" href="/futmondo/quiniela/quiniela.css?v=127">
-  <link rel="stylesheet" href="/futmondo/comuniate.css?v=26">
-  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=90">
+  <link rel="stylesheet" href="/futmondo/edumr.css?v=27">
+  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=91">
 </head>
 <body class="page-simple cx-page">
   <header class="appbar cx-header">
@@ -130,12 +130,9 @@
             <button type="button" class="claus-chip" data-pos="centrocampista">MED</button>
             <button type="button" class="claus-chip" data-pos="delantero">DEL</button>
           </div>
-          <div class="claus-frow" id="clausVal">
-            <button type="button" class="claus-chip active" data-val="">Cualquier cláusula</button>
-            <button type="button" class="claus-chip" data-val="0-5">&lt; 5 M</button>
-            <button type="button" class="claus-chip" data-val="5-10">5–10 M</button>
-            <button type="button" class="claus-chip" data-val="10-20">10–20 M</button>
-            <button type="button" class="claus-chip" data-val="20-">+ 20 M</button>
+          <div class="claus-frow" id="clausSort">
+            <button type="button" class="claus-chip active" data-sort="clause">Cláusula ↓</button>
+            <button type="button" class="claus-chip" data-sort="exp">Más puntos</button>
           </div>
         </div>
         <div id="clausOut"></div>
@@ -153,6 +150,6 @@
   </div>
 
   <script src="/futmondo/chrome.js?v=9"></script>
-  <script src="/futmondo/guiafantasy/mercado.js?v=98"></script>
+  <script src="/futmondo/guiafantasy/mercado.js?v=99"></script>
 </body>
 </html>

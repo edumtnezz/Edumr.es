@@ -332,38 +332,28 @@
     box.appendChild(grid);
   }
 
-  let clausAll = [], clausJ0 = 0, clausPos = "", clausVal = "";
-  function clausValMatch(cl) {
-    const m = Number(cl) || 0;
-    if (!clausVal) return true;
-    if (clausVal === "0-5") return m < 5e6;
-    if (clausVal === "5-10") return m >= 5e6 && m < 10e6;
-    if (clausVal === "10-20") return m >= 10e6 && m < 20e6;
-    if (clausVal === "20-") return m >= 20e6;
-    return true;
-  }
+  let clausAll = [], clausJ0 = 0, clausPos = "", clausSort = "clause";
   function clausApply() {
     const box = $("clausOut");
     if (!box) return;
-    const list = clausAll.filter((p) => {
-      if (clausPos && p.role !== clausPos && p.role2 !== clausPos) return false;
-      return clausValMatch(p.clause);
-    });
+    let list = clausAll.filter((p) => !(clausPos && p.role !== clausPos && p.role2 !== clausPos));
+    if (clausSort === "clause") list = list.slice().sort((a, b) => (Number(b.clause) || 0) - (Number(a.clause) || 0));
+    else list = list.slice().sort((a, b) => (Number(b.exp) || 0) - (Number(a.exp) || 0));
     renderClausGrid(box, list, clausJ0);
   }
   function bindClausFilters() {
-    const bind = (id, set) => {
+    const bind = (id, attr, set) => {
       const row = $(id);
       if (!row || row.dataset.bound) return;
       row.dataset.bound = "1";
       row.querySelectorAll(".claus-chip").forEach((b) => b.addEventListener("click", () => {
         row.querySelectorAll(".claus-chip").forEach((x) => x.classList.remove("active"));
         b.classList.add("active");
-        set(b.dataset.pos != null ? b.dataset.pos : b.dataset.val, b);
+        set(b.dataset[attr] || "");
       }));
     };
-    bind("clausPos", (v) => { clausPos = v || ""; clausApply(); });
-    bind("clausVal", (v) => { clausVal = v || ""; clausApply(); });
+    bind("clausPos", "pos", (v) => { clausPos = v || ""; clausApply(); });
+    bind("clausSort", "sort", (v) => { clausSort = v || "clause"; clausApply(); });
   }
   async function renderClausulas() {
     const box = $("clausOut");
@@ -740,8 +730,10 @@
     max.addEventListener("input", apply);
   }
 
-  function switchTab(name) {
+  let currentTab = "mercado";
+  function switchTab(name, fromPop) {
     closeNoticiaInline();
+    currentTab = name;
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
     document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
     const panel = $("tab-" + name);
@@ -750,7 +742,11 @@
     if (ch) ch.classList.toggle("hidden", name !== "mercado");
     if (name === "clausulazos") renderClausulas();
     try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
-    try { history.replaceState(null, "", "/futmondo/guiafantasy/" + name); } catch (e) {}
+    try {
+      const url = "/futmondo/guiafantasy/" + name;
+      if (fromPop) history.replaceState({ tab: name }, "", url);
+      else history.pushState({ tab: name }, "", url);
+    } catch (e) {}
   }
 
   function expOf(p) {
@@ -913,7 +909,14 @@
         if (!list.length) a.appendChild(el("p", "muted small", "Ninguna noticia de tus jugadores ahora mismo."));
       }
       if (!list.length && !(newsMineOnly && myTeam.length)) a.appendChild(el("p", "muted small", "Sin noticias ahora mismo."));
+      let lastDate = "";
       list.forEach((x) => {
+        if (x.date && x.date !== lastDate) {
+          lastDate = x.date;
+          const dh = el("div", "news-day");
+          dh.appendChild(el("span", "news-day-txt", "📅 " + x.date));
+          a.appendChild(dh);
+        }
         const it = el("div", "newscard news-link");
         it.addEventListener("click", () => openNoticiaInline(x.link, x.title));
         const th = el("div", "newscard-thumb" + (x.thumb ? "" : " ball"));
@@ -1089,13 +1092,18 @@
     const w = el("div");
     w.appendChild(el("p", "muted small", "Cargando ficha…"));
     showModal(w);
-    try { history.pushState({ ficha: 1 }, "", location.href); } catch (e) {}
+    try { history.pushState({ tab: currentTab, ficha: 1 }, "", location.href); } catch (e) {}
     fetch(API + "/jugador?id=" + encodeURIComponent(p.id || ""))
       .then((r) => r.json())
       .then((d) => showModal(renderFicha(d, p)))
       .catch(() => { const c = el("div"); c.appendChild(el("p", "muted small", "No se pudo cargar la ficha.")); showModal(c); });
   }
-  window.addEventListener("popstate", () => { const ov = $("fichaOverlay"); if (ov) ov.classList.add("hidden"); lockScroll(false); });
+  window.addEventListener("popstate", () => {
+    const ov = $("fichaOverlay"); if (ov) ov.classList.add("hidden");
+    lockScroll(false);
+    const st = history.state;
+    if (st && st.tab && !st.ficha && st.tab !== currentTab) switchTab(st.tab, true);
+  });
 
   function ptClass(p) { p = Number(p) || 0; return p < 0 ? "lo" : p < 6 ? "mid" : "hi"; }
   const whenShort = (v) => { if (!v) return ""; try { return new Date(v).toLocaleString("es-ES", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }); } catch (e) { return ""; } };
@@ -1383,7 +1391,8 @@
       if (m) name = m[1];
     } catch (e) {}
     if (!name) { try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {} }
-    if (name && $("tab-" + name)) switchTab(name);
+    if (!name || !$("tab-" + name)) name = "mercado";
+    switchTab(name, true);
   })();
   document.querySelectorAll(".merc-segbtn").forEach((b) => b.addEventListener("click", () => {
     document.querySelectorAll(".merc-segbtn").forEach((x) => x.classList.remove("active"));

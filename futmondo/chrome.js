@@ -1,4 +1,4 @@
-/* Comuniate chrome: franja de jornada + tira de escudos + última hora. Rellena #cxChrome. */
+/* EduMR chrome: franja de jornada + tira de escudos + última hora. Rellena #cxChrome. */
 (function () {
   var API = "/api/laquiniela";
   var jornada = 0;
