@@ -1443,11 +1443,40 @@ async function cmPct(id) {
     return null;
   } catch (e) { return null; }
 }
+async function getFFTeam(env, name) {
+  const slug = normKey(String(name || "").toLowerCase()).replace(/ /g, "-");
+  const key = "ffteam:v1:" + slug;
+  try { const c = await env.PORRA.get(key, "json"); if (c && c.data && Date.now() - (c.at || 0) < 3 * 3600 * 1000) return c.data; } catch (e) {}
+  const data = { starters: [], bench: [] };
+  try {
+    const h = await (await fetch("https://www.futbolfantasy.com/laliga/equipos/" + slug, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text();
+    const items = h.split('class="jugador_').slice(1);
+    for (const it of items) {
+      const nm = (it.match(/class="name mx-auto">([^<]+)</) || [])[1];
+      if (!nm) continue;
+      const full = (it.match(/<img alt="([^"]+)"[^>]*data-src="[^"]*jugadores\/ficha/) || [])[1] || nm;
+      const photo = (it.match(/data-src="([^"]*jugadores\/ficha[^"]*)"/) || [])[1] || "";
+      const pos = (it.match(/data-posicion="([^"]+)"/) || [])[1] || "";
+      const prob = (it.match(/data-probabilidad="(\d+)%"/) || [])[1];
+      const once = (it.match(/data-onceFF="([^"]+)"/) || [])[1] || "";
+      const x = (it.match(/data-onceFF-x="([\d.]+)%"/) || [])[1];
+      const y = (it.match(/data-onceFF-y="([\d.]+)%"/) || [])[1];
+      const nat = (it.match(/data-nacionalidad="([^"]+)"/) || [])[1] || "";
+      const inj = Number((it.match(/data-lesion="(\d+)"/) || [])[1] || 0) === 1;
+      const san = Number((it.match(/data-sancionado="(\d+)"/) || [])[1] || 0) === 1;
+      const p = { name: stripHtml(nm), full: stripHtml(full), photo, pos, prob: prob != null ? Number(prob) : null, x: x ? parseFloat(x) : null, y: y ? parseFloat(y) : null, nat, inj, san };
+      if (once === "titular" && p.y != null) data.starters.push(p);
+      else if (p.prob != null || p.pos) data.bench.push(p);
+    }
+  } catch (e) {}
+  try { if (data.starters.length) await env.PORRA.put(key, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 6 * 3600 }); } catch (e) {}
+  return data;
+}
 async function getOnce(env, home, away, jornada) {
   const j = Number(jornada) || 0;
-  const key = "once:v3:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
+  const key = "once:v4:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
   try { const c = await env.PORRA.get(key, "json"); if (c && c.at && Date.now() - c.at < 30 * 60 * 1000) return c.data; } catch (e) {}
-  let data = null;
+  let stadium = "", kickoff = "", referee = "";
   try {
     const body = "id_jornada=" + encodeURIComponent(j) + "&modo_alineaciones=jornada_actual";
     const mh = await (await fetch("https://www.comuniate.com/ajax/partidos_jornada.php", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded" }), body })).text();
@@ -1459,26 +1488,18 @@ async function getOnce(env, home, away, jornada) {
     if (!href) for (const l of links) { const slug = stripAccents(l.split("/").pop().toLowerCase()); if ((sHome && slug.indexOf(sHome) >= 0) || (sAway && slug.indexOf(sAway) >= 0)) { href = l; break; } }
     if (href) {
       const ph = await (await fetch("https://www.comuniate.com" + href, { headers: cmHeaders() })).text();
-      let idL = "", idV = "";
-      for (const m of ph.matchAll(/pintar_alineacion\('(local|visitante)',\s*(\d+)/g)) { if (m[1] === "local") idL = m[2]; else idV = m[2]; }
-      const stadium = (ph.match(/"location":\{"@type":"Place","name":"([^"]+)"/) || [])[1] || "";
-      const kickoff = (ph.match(/"startDate":"([^"]+)"/) || [])[1] || "";
-      const referee = (ph.match(/cronista\.png[^>]*>[\s\S]*?<span>([^<]+)<\/span>/) || [])[1] || "";
-      const fetchLine = async (id) => {
-        if (!id) return {};
-        const b = "local=local&modo=clasico&id_equipo=" + id + "&confirmado=0";
-        const r = await (await fetch("https://www.comuniate.com/ajax/pintar_jugadores_campo.php", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded", referer: "https://www.comuniate.com" + href }), body: b })).text();
-        return parseOnceLines(r);
-      };
-      const hL = await fetchLine(idL), aL = await fetchLine(idV);
-      const all = [];
-      ["delanteros", "medios", "defensas", "portero"].forEach((k) => { (hL[k] || []).concat(aL[k] || []).forEach((p) => { if (p.pid) all.push(p); }); });
-      for (let i = 0; i < all.length; i += 6) { await Promise.all(all.slice(i, i + 6).map(async (p) => { const v = await cmPct(p.pid); if (v != null) p.pct = v; })); }
-      data = { home: { name: home, lines: hL }, away: { name: away, lines: aL }, stadium, kickoff, referee };
+      stadium = (ph.match(/"location":\{"@type":"Place","name":"([^"]+)"/) || [])[1] || "";
+      kickoff = (ph.match(/"startDate":"([^"]+)"/) || [])[1] || "";
+      referee = (ph.match(/cronista\.png[^>]*>[\s\S]*?<span>([^<]+)<\/span>/) || [])[1] || "";
     }
   } catch (e) {}
+  let data = null;
+  try {
+    const [hT, aT] = await Promise.all([getFFTeam(env, home), getFFTeam(env, away)]);
+    data = { home: { name: home, starters: hT.starters, bench: hT.bench }, away: { name: away, starters: aT.starters, bench: aT.bench }, stadium, kickoff, referee };
+  } catch (e) {}
   if (data) { try { await env.PORRA.put(key, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {} }
-  return data || { home: { name: home, lines: {} }, away: { name: away, lines: {} }, stadium: "", kickoff: "", referee: "" };
+  return data || { home: { name: home, starters: [], bench: [] }, away: { name: away, starters: [], bench: [] }, stadium, kickoff, referee };
 }
 
 /* ---------- Franja de jornada (escudos, día/hora y TV) ---------- */

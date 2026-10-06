@@ -455,29 +455,43 @@
     const p = all.find((x) => stripAccents(x.name).toLowerCase() === q) || all.find((x) => stripAccents(x.name).toLowerCase().indexOf(q) >= 0 || q.indexOf(stripAccents(x.name).toLowerCase()) >= 0);
     if (p) openFicha(p);
   }
+  function renderBench(list) {
+    const box = el("div", "alin-bench");
+    box.appendChild(el("div", "alin-bench-h", "Alternativas al once"));
+    const grid = el("div", "alin-bench-grid");
+    list.forEach((p) => {
+      const c = el("div", "alin-bp");
+      const ph = el("div", "alin-bimg");
+      if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; ph.appendChild(im); }
+      c.appendChild(ph);
+      if (p.prob != null) c.appendChild(el("span", "alin-bprob", p.prob + "%"));
+      c.appendChild(el("span", "alin-bname", p.name));
+      c.addEventListener("click", () => openPlayerByName(p.full || p.name));
+      grid.appendChild(c);
+    });
+    box.appendChild(grid);
+    return box;
+  }
   function renderPitch(t, crest) {
+    const col = el("div", "alin-teamcol");
     const box = el("div", "alin-pitch");
-    [["delanteros", "fwd"], ["medios", "mid"], ["defensas", "def"], ["portero", "gk"]].forEach((pair) => {
-      const arr = (t.lines || {})[pair[0]];
-      if (!arr || !arr.length) return;
-      const row = el("div", "alin-line alin-line-" + pair[1]);
-      arr.forEach((p) => {
-        const pl = el("div", "alin-p");
-        const ph = el("div", "alin-pimg");
-        if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; ph.appendChild(im); }
-        pl.appendChild(ph);
-        pl.appendChild(el("div", "alin-pname", p.name));
-        if (p.pct != null && p.pct < 100) pl.appendChild(el("span", "alin-pct", p.pct + "%"));
-        pl.addEventListener("click", () => openPlayerByName(p.name));
-        row.appendChild(pl);
-      });
-      box.appendChild(row);
+    (t.starters || []).forEach((p) => {
+      const pl = el("div", "alin-pl");
+      pl.style.left = (p.x != null ? p.x : 50) + "%";
+      pl.style.top = (p.y != null ? p.y : 50) + "%";
+      if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; pl.appendChild(im); }
+      pl.appendChild(el("div", "alin-pname", p.name));
+      if (p.prob != null && p.prob < 100) pl.appendChild(el("span", "alin-pct", p.prob + "%"));
+      pl.addEventListener("click", () => openPlayerByName(p.full || p.name));
+      box.appendChild(pl);
     });
     const tag = el("div", "alin-pteam");
     if (crest) { const im = el("img"); im.src = crest; im.alt = ""; im.loading = "lazy"; tag.appendChild(im); }
     tag.appendChild(el("span", null, t.name || ""));
     box.appendChild(tag);
-    return box;
+    col.appendChild(box);
+    if (t.bench && t.bench.length) col.appendChild(renderBench(t.bench));
+    return col;
   }
   let alinInit = false, alinJornada = 0, alinSel = "";
   async function showAlinDetail(m, jn) {
@@ -488,7 +502,7 @@
     for (let a = 0; a < 2 && !r; a++) {
       try {
         const j = await (await fetch(API + "/once?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json();
-        if (j && ((j.home && j.home.lines && Object.keys(j.home.lines).length) || (j.away && j.away.lines && Object.keys(j.away.lines).length))) r = j;
+        if (j && ((j.home && j.home.starters && j.home.starters.length) || (j.away && j.away.starters && j.away.starters.length))) r = j;
       } catch (e) {}
       if (!r && a === 0) await new Promise((x) => setTimeout(x, 1500));
     }
