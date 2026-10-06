@@ -754,7 +754,7 @@ async function getAvatars(env) {
 }
 
 async function getClausulas(env) {
-  try { const c = await env.PORRA.get("clausulas:v13", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
+  try { const c = await env.PORRA.get("clausulas:v14", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
   let cache;
   try { cache = await getMarketPlayers(env); } catch (e) { return { players: [], updatedAt: null }; }
   let players = cache.players || [];
@@ -836,7 +836,7 @@ async function getClausulas(env) {
   } catch (e) {}
 
   const data = { updatedAt: Date.now(), me: myTeam, jornada, players: out.slice(0, 40) };
-  try { await env.PORRA.put("clausulas:v13", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
+  try { await env.PORRA.put("clausulas:v14", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
   return data;
 }
 
