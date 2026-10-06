@@ -1474,7 +1474,7 @@ async function getFFTeam(env, name) {
 }
 async function getOnce(env, home, away, jornada) {
   const j = Number(jornada) || 0;
-  const key = "once:v4:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
+  const key = "once:v5:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
   try { const c = await env.PORRA.get(key, "json"); if (c && c.at && Date.now() - c.at < 30 * 60 * 1000) return c.data; } catch (e) {}
   let stadium = "", kickoff = "", referee = "";
   try {
