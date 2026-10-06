@@ -474,76 +474,91 @@
     box.appendChild(field);
     return box;
   }
-  async function loadAlinCard(card, m, jn) {
-    const body = card.querySelector(".alin-body");
-    if (!body || body.dataset.done === "1") return;
-    body.dataset.done = "1";
-    for (let attempt = 0; attempt < 2; attempt++) {
+  let alinInit = false, alinJornada = 0, alinSel = "";
+  async function showAlinDetail(m, jn) {
+    const detail = $("alinDetail");
+    if (!detail) return;
+    detail.innerHTML = '<p class="muted small">Cargando alineaciones…</p>';
+    let r = null;
+    for (let a = 0; a < 2 && !r; a++) {
       try {
-        const r = await (await fetch(API + "/once?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json();
-        const ok = r && ((r.home && r.home.lines && Object.keys(r.home.lines).length) || (r.away && r.away.lines && Object.keys(r.away.lines).length));
-        if (!ok) { if (attempt === 0) { await new Promise((x) => setTimeout(x, 1500)); continue; } }
-        if (r && r.stadium) { const st = card.querySelector(".alin-stadium"); if (st) st.textContent = "🏟️ " + r.stadium; }
-        body.innerHTML = "";
-        const pitches = el("div", "alin-pitches");
-        pitches.appendChild(renderPitch(r.home || {}, m.homeCrest));
-        pitches.appendChild(renderPitch(r.away || {}, m.awayCrest));
-        body.appendChild(pitches);
-        return;
-      } catch (e) { await new Promise((x) => setTimeout(x, 1200)); }
+        const j = await (await fetch(API + "/once?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json();
+        if (j && ((j.home && j.home.lines && Object.keys(j.home.lines).length) || (j.away && j.away.lines && Object.keys(j.away.lines).length))) r = j;
+      } catch (e) {}
+      if (!r && a === 0) await new Promise((x) => setTimeout(x, 1500));
     }
-    body.innerHTML = '<p class="muted small">No se pudieron cargar las alineaciones.</p>';
+    detail.innerHTML = "";
+    if (!r) { detail.innerHTML = '<p class="muted small">No se pudieron cargar las alineaciones.</p>'; return; }
+    const card = el("div", "alin-card");
+    const head = el("div", "alin-head");
+    const t1 = el("div", "alin-team");
+    if (m.homeCrest) { const im = el("img"); im.src = m.homeCrest; im.alt = ""; im.loading = "lazy"; t1.appendChild(im); }
+    t1.appendChild(el("span", null, m.home));
+    const mid = el("div", "alin-mid");
+    mid.appendChild(el("b", "alin-vs", "VS"));
+    mid.appendChild(el("span", "alin-time", ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim()));
+    const t2 = el("div", "alin-team alin-team-r");
+    if (m.awayCrest) { const im = el("img"); im.src = m.awayCrest; im.alt = ""; im.loading = "lazy"; t2.appendChild(im); }
+    t2.appendChild(el("span", null, m.away));
+    head.appendChild(t1); head.appendChild(mid); head.appendChild(t2);
+    card.appendChild(head);
+    if (r.stadium) card.appendChild(el("div", "alin-stadium", "🏟️ " + r.stadium));
+    const pitches = el("div", "alin-pitches");
+    pitches.appendChild(renderPitch(r.home || {}, m.homeCrest));
+    pitches.appendChild(renderPitch(r.away || {}, m.awayCrest));
+    card.appendChild(pitches);
+    detail.appendChild(card);
   }
-  let alinLoaded = false, alinCards = {};
-  async function renderAlineaciones() {
+  async function renderAlineaciones(force) {
     const box = $("alinOut");
-    if (!box || alinLoaded) return;
-    alinLoaded = true;
-    box.innerHTML = '<p class="muted small">Cargando partidos…</p>';
+    if (!box) return;
+    if (alinInit && !force) return;
+    alinInit = true;
+    box.innerHTML = '<p class="muted small">Cargando jornada…</p>';
     let d;
-    try { d = await (await fetch(API + "/jornada", { cache: "no-store" })).json(); } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar.</p>'; return; }
+    try { d = await (await fetch(API + "/jornada" + (alinJornada ? "?jornada=" + alinJornada : ""), { cache: "no-store" })).json(); } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar.</p>'; return; }
     const ms = (d && d.matches) || [];
     const jn = Number(d && d.matchday) || 0;
+    alinJornada = jn;
     const upd = $("alinUpdated");
     if (upd) upd.textContent = jn ? "Jornada " + jn : "";
     box.innerHTML = "";
-    alinCards = {};
     if (!ms.length) { box.innerHTML = '<p class="muted small">Sin jornada.</p>'; return; }
+    const bar = el("div", "alin-jbar");
+    const pv = el("button", "alin-nav", "◀"); pv.type = "button"; pv.disabled = jn <= 1;
+    pv.addEventListener("click", () => { alinJornada = Math.max(1, jn - 1); alinSel = ""; renderAlineaciones(true); });
+    const nx = el("button", "alin-nav", "▶"); nx.type = "button"; nx.disabled = jn >= 38;
+    nx.addEventListener("click", () => { alinJornada = Math.min(38, jn + 1); alinSel = ""; renderAlineaciones(true); });
+    bar.appendChild(pv); bar.appendChild(el("span", "alin-jtitle", "Jornada " + jn)); bar.appendChild(nx);
+    box.appendChild(bar);
+    const grid = el("div", "alin-jgrid");
     ms.forEach((m) => {
-      const card = el("div", "alin-card");
-      card.dataset.key = akey(m.home + m.away);
-      const head = el("div", "alin-head");
-      const t1 = el("div", "alin-team");
+      const key = akey(m.home + m.away);
+      const card = el("button", "alin-jcard" + (key === alinSel ? " active" : ""));
+      card.type = "button";
+      const t1 = el("span", "alin-jteam");
       if (m.homeCrest) { const im = el("img"); im.src = m.homeCrest; im.alt = ""; im.loading = "lazy"; t1.appendChild(im); }
-      t1.appendChild(el("span", null, m.home));
-      const mid = el("div", "alin-mid");
-      mid.appendChild(el("b", "alin-vs", "VS"));
-      mid.appendChild(el("span", "alin-time", ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim()));
-      const t2 = el("div", "alin-team alin-team-r");
+      const mid = el("span", "alin-jmid");
+      mid.appendChild(el("b", null, ((m.day || "") + " " + (m.date || "")).trim()));
+      mid.appendChild(el("span", "alin-jtime", m.time || ""));
+      const t2 = el("span", "alin-jteam alin-jteam-r");
       if (m.awayCrest) { const im = el("img"); im.src = m.awayCrest; im.alt = ""; im.loading = "lazy"; t2.appendChild(im); }
-      t2.appendChild(el("span", null, m.away));
-      head.appendChild(t1); head.appendChild(mid); head.appendChild(t2);
-      card.appendChild(head);
-      card.appendChild(el("div", "alin-stadium", ""));
-      const body = el("div", "alin-body");
-      body.innerHTML = '<p class="muted small">Cargando alineaciones…</p>';
-      card.appendChild(body);
-      box.appendChild(card);
-      alinCards[card.dataset.key] = body;
+      card.appendChild(t1); card.appendChild(mid); card.appendChild(t2);
+      card.addEventListener("click", () => {
+        alinSel = key;
+        grid.querySelectorAll(".alin-jcard").forEach((x) => x.classList.remove("active"));
+        card.classList.add("active");
+        showAlinDetail(m, jn);
+      });
+      grid.appendChild(card);
     });
-    const queue = ms.slice();
-    let busy = false;
-    const pump = async () => {
-      if (busy) return;
-      const m = queue.shift();
-      if (!m) return;
-      busy = true;
-      const card = Array.from(box.children).find((c) => c.dataset.key === akey(m.home + m.away));
-      if (card) await loadAlinCard(card, m, jn);
-      busy = false;
-      setTimeout(pump, 250);
-    };
-    pump();
+    box.appendChild(grid);
+    const detail = el("div", "alin-detail");
+    detail.id = "alinDetail";
+    box.appendChild(detail);
+    const sel = ms.find((x) => akey(x.home + x.away) === alinSel);
+    if (sel) showAlinDetail(sel, jn);
+    else detail.innerHTML = '<p class="muted small">Elige un partido para ver la alineación probable.</p>';
   }
 
   function filteredList() {
@@ -1882,16 +1897,11 @@
 
   document.addEventListener("cx:once", (e) => {
     const d = e.detail || {};
-    const key = akey(d.home + d.away);
+    alinSel = akey(d.home + d.away);
+    if (d.jornada) alinJornada = Number(d.jornada) || alinJornada;
     switchTab("alineaciones");
-    let tries = 0;
-    const go = () => {
-      const box = $("alinOut");
-      const card = box ? Array.from(box.children).find((c) => c.dataset.key === key) : null;
-      if (card) { card.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
-      if (tries++ < 14) setTimeout(go, 400);
-    };
-    setTimeout(go, 400);
+    renderAlineaciones(true);
+    setTimeout(() => { const box = $("alinOut"); if (box) box.scrollIntoView({ behavior: "smooth", block: "start" }); }, 900);
   });
 
   (function initSwipe() {
