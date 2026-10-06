@@ -195,6 +195,11 @@ body {
   border-bottom: 3px solid transparent;
   transition: all 0.16s ease;
 }
+@media (max-width: 640px) {
+  .cx-sub .cx-sub-inner { padding: 0 6px; }
+  .cx-sub .tabs { flex-wrap: wrap; justify-content: center; overflow: visible; gap: 0; }
+  .cx-sub .tab { padding: 10px 9px; font-size: 0.8rem; }
+}
 .cx-sub .tab:hover { color: var(--cx-text); }
 .cx-sub .tab.active {
   color: var(--cx-green);

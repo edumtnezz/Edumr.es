@@ -527,7 +527,7 @@
     ab.appendChild(el("span", null, m.away));
     teams.appendChild(ab);
     head.appendChild(teams);
-    head.appendChild(el("div", "alin-mwhen", ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim() + (r.referee ? " · Cronista: " + r.referee : "")));
+    head.appendChild(el("div", "alin-mwhen", ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim()));
     card.appendChild(head);
     const pitches = el("div", "alin-pitches");
     pitches.appendChild(renderPitch(r.home || {}, m.homeCrest));
@@ -1932,7 +1932,7 @@
   });
 
   (function initSwipe() {
-    const order = ["mercado", "fichajes", "noticias", "alineaciones", "analiza", "clausulazos"];
+    const order = ["mercado", "fichajes", "noticias", "alineaciones", "clausulazos", "analiza"];
     const main = document.querySelector(".quiniela-main") || document.body;
     let sx = 0, sy = 0, st = 0;
     main.addEventListener("touchstart", (e) => { const t = e.changedTouches[0]; sx = t.clientX; sy = t.clientY; st = Date.now(); }, { passive: true });
