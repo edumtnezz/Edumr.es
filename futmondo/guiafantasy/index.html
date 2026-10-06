@@ -14,7 +14,7 @@
   <script src="/futmondo/theme.js?v=65"></script>
   <link rel="stylesheet" href="/futmondo/quiniela/quiniela.css?v=127">
   <link rel="stylesheet" href="/futmondo/edumr.css?v=27">
-  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=94">
+  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=95">
 </head>
 <body class="page-simple cx-page">
   <header class="appbar cx-header">
@@ -40,6 +40,7 @@
           <button class="tab" data-tab="mercado">Mercado</button>
           <button class="tab" data-tab="fichajes">Fichajes</button>
           <button class="tab" data-tab="noticias">Noticias</button>
+          <button class="tab" data-tab="alineaciones">Alineaciones</button>
           <button class="tab" data-tab="analiza">Analiza tu equipo</button>
           <button class="tab" data-tab="clausulazos">Clausulazo Jugoso</button>
         </nav>
@@ -118,6 +119,17 @@
       </section>
     </section>
 
+    <section class="tab-panel hidden" id="tab-alineaciones">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Alineaciones probables</h2>
+          <span class="muted small" id="alinUpdated"></span>
+        </div>
+        <p class="muted small">Once probable de cada equipo con el % de opciones de ser titular. Toca un partido de la jornada para venir aquí.</p>
+        <div id="alinOut"></div>
+      </section>
+    </section>
+
     <section class="tab-panel hidden" id="tab-clausulazos">
       <section class="panel">
         <h2>Clausulazo jugoso</h2>
@@ -132,8 +144,8 @@
             <button type="button" class="claus-chip" data-pos="delantero">DEL</button>
           </div>
           <div class="claus-frow" id="clausSort">
-            <button type="button" class="claus-chip active" data-sort="clause">Cláusula ↓</button>
-            <button type="button" class="claus-chip" data-sort="exp">Más puntos</button>
+            <button type="button" class="claus-chip active" data-sort="desc">Mayor cláusula ↓</button>
+            <button type="button" class="claus-chip" data-sort="asc">Menor cláusula ↑</button>
           </div>
         </div>
         <div id="clausOut"></div>
@@ -162,6 +174,6 @@
   </div>
 
   <script src="/futmondo/chrome.js?v=10"></script>
-  <script src="/futmondo/guiafantasy/mercado.js?v=102"></script>
+  <script src="/futmondo/guiafantasy/mercado.js?v=103"></script>
 </body>
 </html>

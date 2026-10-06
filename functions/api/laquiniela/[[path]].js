@@ -1383,7 +1383,8 @@ function ffCard(c) {
   const extract = raw(/mercado-card-extracto[^>]*>([\s\S]*?)<\/p>/);
   const link = (c.match(/class="mercado-card-noticia[^"]*"[^>]*href="([^"]+)"/) || [])[1] || (c.match(/href="([^"]+)"[^>]*class="mercado-card-noticia/) || [])[1] || "";
   const photo = (c.match(/mercado-card-foto[\s\S]*?data-src="([^"]+)"/) || c.match(/mercado-card-foto[\s\S]*?src="([^"]+)"/) || [])[1] || "";
-  return { time, title, badge, clubs, extract, link, photo };
+  const thumb = (c.match(/mercado-card-noticia-thumb[^>]*background-image:\s*url\(['"]?([^'")]+)/) || [])[1] || "";
+  return { time, title, badge, clubs, extract, link, photo, thumb };
 }
 
 function parseFichajes(html) {
@@ -1423,15 +1424,26 @@ function parseOnceLines(r) {
     for (const b of blocks) {
       const nm = (b.match(/nombre_jugador">\s*([^<]+?)\s*</) || [])[1] || "";
       const ph = (b.match(/caras3\/(\d+)\.png/) || [])[1] || "";
-      if (nm) players.push({ name: stripHtml(nm), photo: ph ? "https://www.comuniate.com/caras3/" + ph + ".png" : "" });
+      const pid = (b.match(/ver_observaciones\('(\d+)'\)/) || [])[1] || ph;
+      if (nm) players.push({ name: stripHtml(nm), photo: ph ? "https://www.comuniate.com/caras3/" + ph + ".png" : "", pid });
     }
     if (players.length) out[parts[i] === "centrocampistas" ? "medios" : parts[i]] = players;
   }
   return out;
 }
+async function cmPct(id) {
+  if (!id) return null;
+  try {
+    const r = await (await fetch("https://www.comuniate.com/ajax/observaciones_jugador.php", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded" }), body: "id_jugador=" + encodeURIComponent(id) })).text();
+    const m = r.match(/player-start-meter__value">(\d{1,3})%/);
+    if (m) return Number(m[1]);
+    if (/player-start-card is-success/.test(r)) return 100;
+    return null;
+  } catch (e) { return null; }
+}
 async function getOnce(env, home, away, jornada) {
   const j = Number(jornada) || 0;
-  const key = "once:v1:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
+  const key = "once:v2:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
   try { const c = await env.PORRA.get(key, "json"); if (c && c.at && Date.now() - c.at < 30 * 60 * 1000) return c.data; } catch (e) {}
   let data = null;
   try {
@@ -1447,17 +1459,23 @@ async function getOnce(env, home, away, jornada) {
       const ph = await (await fetch("https://www.comuniate.com" + href, { headers: cmHeaders() })).text();
       let idL = "", idV = "";
       for (const m of ph.matchAll(/pintar_alineacion\('(local|visitante)',\s*(\d+)/g)) { if (m[1] === "local") idL = m[2]; else idV = m[2]; }
+      const stadium = (ph.match(/"location":\{"@type":"Place","name":"([^"]+)"/) || [])[1] || "";
+      const kickoff = (ph.match(/"startDate":"([^"]+)"/) || [])[1] || "";
       const fetchLine = async (id) => {
         if (!id) return {};
         const b = "local=local&modo=clasico&id_equipo=" + id + "&confirmado=0";
         const r = await (await fetch("https://www.comuniate.com/ajax/pintar_jugadores_campo.php", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded", referer: "https://www.comuniate.com" + href }), body: b })).text();
         return parseOnceLines(r);
       };
-      data = { home: { name: home, lines: await fetchLine(idL) }, away: { name: away, lines: await fetchLine(idV) } };
+      const hL = await fetchLine(idL), aL = await fetchLine(idV);
+      const all = [];
+      ["delanteros", "medios", "defensas", "portero"].forEach((k) => { (hL[k] || []).concat(aL[k] || []).forEach((p) => { if (p.pid) all.push(p); }); });
+      for (let i = 0; i < all.length; i += 6) { await Promise.all(all.slice(i, i + 6).map(async (p) => { const v = await cmPct(p.pid); if (v != null) p.pct = v; })); }
+      data = { home: { name: home, lines: hL }, away: { name: away, lines: aL }, stadium, kickoff };
     }
   } catch (e) {}
   if (data) { try { await env.PORRA.put(key, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {} }
-  return data || { home: { name: home, lines: {} }, away: { name: away, lines: {} } };
+  return data || { home: { name: home, lines: {} }, away: { name: away, lines: {} }, stadium: "", kickoff: "" };
 }
 
 /* ---------- Franja de jornada (escudos, día/hora y TV) ---------- */

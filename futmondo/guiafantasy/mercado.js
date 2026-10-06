@@ -335,13 +335,13 @@
     box.appendChild(grid);
   }
 
-  let clausAll = [], clausJ0 = 0, clausPos = "", clausSort = "clause";
+  let clausAll = [], clausJ0 = 0, clausPos = "", clausSort = "desc";
   function clausApply() {
     const box = $("clausOut");
     if (!box) return;
     let list = clausAll.filter((p) => !(clausPos && p.role !== clausPos && p.role2 !== clausPos));
-    if (clausSort === "clause") list = list.slice().sort((a, b) => (Number(b.clause) || 0) - (Number(a.clause) || 0));
-    else list = list.slice().sort((a, b) => (Number(b.exp) || 0) - (Number(a.exp) || 0));
+    if (clausSort === "asc") list = list.slice().sort((a, b) => (Number(a.clause) || 0) - (Number(b.clause) || 0));
+    else list = list.slice().sort((a, b) => (Number(b.clause) || 0) - (Number(a.clause) || 0));
     renderClausGrid(box, list, clausJ0);
   }
   function bindClausFilters() {
@@ -356,7 +356,7 @@
       }));
     };
     bind("clausPos", "pos", (v) => { clausPos = v || ""; clausApply(); });
-    bind("clausSort", "sort", (v) => { clausSort = v || "clause"; clausApply(); });
+    bind("clausSort", "sort", (v) => { clausSort = v || "desc"; clausApply(); });
   }
   async function renderClausulas() {
     const box = $("clausOut");
@@ -411,7 +411,13 @@
         if (g.date) box.appendChild(el("div", "fich-day", "🗓️ " + g.date));
         g.items.forEach((x) => {
           const card = el("div", "fich-card");
-          if (x.photo) { const ph = el("div", "fich-photo"); const im = el("img"); im.src = x.photo; im.alt = ""; im.loading = "lazy"; ph.appendChild(im); card.appendChild(ph); }
+          if (x.photo) {
+            const ph = el("div", "fich-photo");
+            const im = el("img"); im.src = x.photo; im.alt = ""; im.loading = "lazy";
+            let tried = false;
+            im.addEventListener("error", () => { if (!tried && x.thumb && im.src !== x.thumb) { tried = true; im.src = x.thumb; } else { ph.remove(); } });
+            ph.appendChild(im); card.appendChild(ph);
+          }
           const body = el("div", "fich-body");
           body.appendChild(el("div", "fich-title", x.title || ""));
           const meta = el("div", "fich-meta");
@@ -426,10 +432,99 @@
           if (x.extract) body.appendChild(el("div", "fich-extract", x.extract));
           if (x.link) { const a = el("button", "fich-link", "Ver noticia →"); a.type = "button"; a.addEventListener("click", () => openNoticia(x.link, x.title)); body.appendChild(a); }
           card.appendChild(body);
+          if (x.thumb) { const th = el("div", "fich-thumb"); const im2 = el("img"); im2.src = x.thumb; im2.alt = ""; im2.loading = "lazy"; im2.addEventListener("error", () => th.remove()); th.appendChild(im2); card.appendChild(th); }
           box.appendChild(card);
         });
       });
     } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar.</p>'; }
+  }
+
+  const akey = (s) => stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9]/g, "");
+  function renderPitch(t, crest) {
+    const box = el("div", "alin-pitch");
+    const head = el("div", "alin-phead");
+    if (crest) { const im = el("img", "alin-pcrest"); im.src = crest; im.alt = ""; im.loading = "lazy"; head.appendChild(im); }
+    head.appendChild(el("span", null, t.name || ""));
+    box.appendChild(head);
+    const lines = t.lines || {};
+    ["delanteros", "medios", "defensas", "portero"].forEach((ln) => {
+      const arr = lines[ln];
+      if (!arr || !arr.length) return;
+      const row = el("div", "alin-line");
+      arr.forEach((p) => {
+        const pl = el("div", "alin-p");
+        const ph = el("div", "alin-pimg");
+        if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; ph.appendChild(im); }
+        if (p.pct != null && p.pct < 100) ph.appendChild(el("span", "alin-pct", p.pct + "%"));
+        pl.appendChild(ph);
+        pl.appendChild(el("span", "alin-pname", p.name));
+        row.appendChild(pl);
+      });
+      box.appendChild(row);
+    });
+    return box;
+  }
+  async function loadAlinCard(card, m, jn) {
+    const body = card.querySelector(".alin-body");
+    if (!body || body.dataset.done === "1") return;
+    body.dataset.done = "1";
+    try {
+      const r = await (await fetch(API + "/once?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json();
+      if (r && r.stadium) { const st = card.querySelector(".alin-stadium"); if (st) st.innerHTML = "🏟️ " + escapeHtml(r.stadium); }
+      body.innerHTML = "";
+      const pitches = el("div", "alin-pitches");
+      pitches.appendChild(renderPitch(r.home || {}, m.homeCrest));
+      pitches.appendChild(renderPitch(r.away || {}, m.awayCrest));
+      body.appendChild(pitches);
+    } catch (e) { body.innerHTML = '<p class="muted small">No se pudieron cargar las alineaciones.</p>'; }
+  }
+  let alinLoaded = false, alinCards = {};
+  async function renderAlineaciones() {
+    const box = $("alinOut");
+    if (!box || alinLoaded) return;
+    alinLoaded = true;
+    box.innerHTML = '<p class="muted small">Cargando partidos…</p>';
+    let d;
+    try { d = await (await fetch(API + "/jornada", { cache: "no-store" })).json(); } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar.</p>'; return; }
+    const ms = (d && d.matches) || [];
+    const jn = Number(d && d.matchday) || 0;
+    const upd = $("alinUpdated");
+    if (upd) upd.textContent = jn ? "Jornada " + jn : "";
+    box.innerHTML = "";
+    alinCards = {};
+    if (!ms.length) { box.innerHTML = '<p class="muted small">Sin jornada.</p>'; return; }
+    ms.forEach((m) => {
+      const card = el("div", "alin-card");
+      card.dataset.key = akey(m.home + m.away);
+      const head = el("div", "alin-head");
+      const t1 = el("div", "alin-team");
+      if (m.homeCrest) { const im = el("img"); im.src = m.homeCrest; im.alt = ""; im.loading = "lazy"; t1.appendChild(im); }
+      t1.appendChild(el("span", null, m.home));
+      const mid = el("div", "alin-mid");
+      mid.appendChild(el("b", "alin-vs", "VS"));
+      mid.appendChild(el("span", "alin-time", ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim()));
+      const t2 = el("div", "alin-team alin-team-r");
+      if (m.awayCrest) { const im = el("img"); im.src = m.awayCrest; im.alt = ""; im.loading = "lazy"; t2.appendChild(im); }
+      t2.appendChild(el("span", null, m.away));
+      head.appendChild(t1); head.appendChild(mid); head.appendChild(t2);
+      card.appendChild(head);
+      card.appendChild(el("div", "alin-stadium", ""));
+      const body = el("div", "alin-body");
+      body.innerHTML = '<p class="muted small">Cargando alineaciones…</p>';
+      card.appendChild(body);
+      box.appendChild(card);
+      alinCards[card.dataset.key] = body;
+    });
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (!en.isIntersecting) return;
+        io.unobserve(en.target);
+        const card = en.target;
+        const m = ms.find((x) => akey(x.home + x.away) === card.dataset.key);
+        if (m) loadAlinCard(card, m, jn);
+      });
+    }, { rootMargin: "300px" });
+    Array.from(box.children).forEach((c) => io.observe(c));
   }
 
   function filteredList() {
@@ -790,6 +885,7 @@
     if (ch) ch.classList.toggle("hidden", name !== "mercado");
     if (name === "clausulazos") renderClausulas();
     if (name === "fichajes") renderFichajes();
+    if (name === "alineaciones") renderAlineaciones();
     try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
     try {
       const url = "/futmondo/guiafantasy/" + name;
@@ -1436,7 +1532,7 @@
   (function restoreTab() {
     let name = "";
     try {
-      const m = location.pathname.match(/\/guiafantasy\/(mercado|fichajes|noticias|analiza|clausulazos)/);
+      const m = location.pathname.match(/\/guiafantasy\/(mercado|fichajes|noticias|alineaciones|analiza|clausulazos)/);
       if (m) name = m[1];
     } catch (e) {}
     if (!name) { try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {} }
@@ -1765,50 +1861,22 @@
     openNoticiaInline(d.link, d.title);
   });
 
-  function renderOnce(res, d) {
-    const root = el("div");
-    root.appendChild(el("h2", "ficha-name", "Alineaciones probables"));
-    root.appendChild(el("p", "muted small", "Jornada " + (d.jornada || "") + " · once probable"));
-    const wrap = el("div", "once-wrap");
-    [["home", d.homeCrest], ["away", d.awayCrest]].forEach((pair) => {
-      const side = pair[0], crest = pair[1];
-      const t = (res && res[side]) || {};
-      const box = el("div", "once-team");
-      const head = el("div", "once-head");
-      if (crest) { const im = el("img", "once-crest"); im.src = crest; im.alt = ""; im.loading = "lazy"; head.appendChild(im); }
-      head.appendChild(el("span", null, t.name || ""));
-      box.appendChild(head);
-      const lines = t.lines || {};
-      ["delanteros", "medios", "defensas", "portero"].forEach((ln) => {
-        const arr = lines[ln];
-        if (!arr || !arr.length) return;
-        const row = el("div", "once-line" + (ln === "portero" ? " once-gk" : ""));
-        arr.forEach((p) => {
-          const pl = el("div", "once-p");
-          if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; pl.appendChild(im); }
-          pl.appendChild(el("span", null, p.name));
-          row.appendChild(pl);
-        });
-        box.appendChild(row);
-      });
-      wrap.appendChild(box);
-    });
-    root.appendChild(wrap);
-    return root;
-  }
   document.addEventListener("cx:once", (e) => {
     const d = e.detail || {};
-    const w = el("div");
-    w.appendChild(el("p", "muted small", "Cargando alineaciones probables…"));
-    showModal(w);
-    fetch(API + "/once?home=" + encodeURIComponent(d.home || "") + "&away=" + encodeURIComponent(d.away || "") + "&jornada=" + encodeURIComponent(d.jornada || ""))
-      .then((r) => r.json())
-      .then((res) => showModal(renderOnce(res, d)))
-      .catch(() => { const c = el("div"); c.appendChild(el("p", "muted small", "No se pudieron cargar las alineaciones.")); showModal(c); });
+    const key = akey(d.home + d.away);
+    switchTab("alineaciones");
+    let tries = 0;
+    const go = () => {
+      const box = $("alinOut");
+      const card = box ? Array.from(box.children).find((c) => c.dataset.key === key) : null;
+      if (card) { card.scrollIntoView({ behavior: "smooth", block: "start" }); return; }
+      if (tries++ < 14) setTimeout(go, 400);
+    };
+    setTimeout(go, 400);
   });
 
   (function initSwipe() {
-    const order = ["mercado", "fichajes", "noticias", "analiza", "clausulazos"];
+    const order = ["mercado", "fichajes", "noticias", "alineaciones", "analiza", "clausulazos"];
     const main = document.querySelector(".quiniela-main") || document.body;
     let sx = 0, sy = 0, st = 0;
     main.addEventListener("touchstart", (e) => { const t = e.changedTouches[0]; sx = t.clientX; sy = t.clientY; st = Date.now(); }, { passive: true });
