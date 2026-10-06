@@ -261,7 +261,7 @@
     if (!v) return "";
     const d = new Date(v);
     if (isNaN(d.getTime())) return "";
-    return d.toLocaleString("es-ES", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" });
+    return d.toLocaleString("es-ES", { weekday: "long", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" });
   }
 
   function reasonOf(p) {
@@ -300,8 +300,10 @@
       if (p.team) tm.appendChild(el("span", null, p.team));
       body.appendChild(tm);
       const ow = el("div", "claus-owner");
-      if (p.ownerPhoto) { const av = el("img", "claus-ownav"); av.src = p.ownerPhoto; av.alt = ""; av.loading = "lazy"; ow.appendChild(av); }
-      ow.appendChild(el("span", null, "👤 de " + (p.owner || "?")));
+      const av = el("img", "claus-ownav"); av.src = p.ownerPhoto || "/img/avatar.svg"; av.alt = ""; av.loading = "lazy";
+      av.addEventListener("error", () => { av.style.visibility = "hidden"; });
+      ow.appendChild(av);
+      ow.appendChild(el("span", null, "de " + (p.owner || "?")));
       body.appendChild(ow);
       const st = el("div", "claus-stats");
       const sbox = (val, lab, cls) => { const b = el("div", "claus-stat" + (cls ? " " + cls : "")); b.appendChild(el("b", null, String(val))); b.appendChild(el("small", null, lab)); return b; };
@@ -449,26 +451,27 @@
   const akey = (s) => stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9]/g, "");
   function renderPitch(t, crest) {
     const box = el("div", "alin-pitch");
-    const head = el("div", "alin-phead");
-    if (crest) { const im = el("img", "alin-pcrest"); im.src = crest; im.alt = ""; im.loading = "lazy"; head.appendChild(im); }
+    const head = el("div", "alin-pbar");
+    if (crest) { const im = el("img"); im.src = crest; im.alt = ""; im.loading = "lazy"; head.appendChild(im); }
     head.appendChild(el("span", null, t.name || ""));
     box.appendChild(head);
-    const lines = t.lines || {};
+    const field = el("div", "alin-field");
     ["delanteros", "medios", "defensas", "portero"].forEach((ln) => {
-      const arr = lines[ln];
+      const arr = (t.lines || {})[ln];
       if (!arr || !arr.length) return;
       const row = el("div", "alin-line");
       arr.forEach((p) => {
         const pl = el("div", "alin-p");
         const ph = el("div", "alin-pimg");
         if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; ph.appendChild(im); }
-        if (p.pct != null && p.pct < 100) ph.appendChild(el("span", "alin-pct", p.pct + "%"));
+        if (p.pct != null && p.pct < 100) { ph.appendChild(el("span", "alin-pct", p.pct + "%")); pl.classList.add("is-doubt"); }
         pl.appendChild(ph);
-        pl.appendChild(el("span", "alin-pname", p.name));
+        pl.appendChild(el("div", "alin-pname", p.name));
         row.appendChild(pl);
       });
-      box.appendChild(row);
+      field.appendChild(row);
     });
+    box.appendChild(field);
     return box;
   }
   async function loadAlinCard(card, m, jn) {

@@ -409,25 +409,27 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 /* ---------- Pestaña Alineaciones (campo moderno) ---------- */
 .alin-card { border: 1px solid var(--border); border-radius: 16px; background: var(--card); padding: 12px; margin-bottom: 14px; }
 .alin-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; }
-.alin-team { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 0.95rem; min-width: 0; }
-.alin-team img { width: 28px; height: 28px; object-fit: contain; flex: 0 0 auto; }
+.alin-team { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 0.98rem; min-width: 0; }
+.alin-team img { width: 30px; height: 30px; object-fit: contain; flex: 0 0 auto; }
 .alin-team-r { justify-content: flex-end; }
 .alin-mid { display: flex; flex-direction: column; align-items: center; }
-.alin-vs { font-weight: 900; color: var(--muted); font-size: 0.78rem; }
+.alin-vs { font-weight: 900; color: var(--muted); font-size: 0.8rem; }
 .alin-time { font-size: 0.66rem; color: var(--muted); white-space: nowrap; }
 .alin-stadium { text-align: center; font-size: 0.72rem; color: var(--muted); margin-top: 3px; }
 .alin-pitches { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
-.alin-pitch { position: relative; border-radius: 14px; padding: 10px 8px 14px; background: linear-gradient(180deg, #219653 0%, #167a45 55%, #0d5a32 100%); color: #fff; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
-.alin-pitch::before { content: ""; position: absolute; inset: 7px; border: 2px solid rgba(255,255,255,0.22); border-radius: 8px; pointer-events: none; }
-.alin-pitch::after { content: ""; position: absolute; left: 50%; top: 52%; width: 72px; height: 72px; transform: translate(-50%,-50%); border: 2px solid rgba(255,255,255,0.2); border-radius: 50%; pointer-events: none; }
-.alin-phead { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 0.9rem; margin-bottom: 4px; }
-.alin-pcrest { width: 24px; height: 24px; object-fit: contain; }
-.alin-line { position: relative; z-index: 1; display: flex; justify-content: center; gap: 6px; margin: 14px 0; flex-wrap: wrap; }
-.alin-p { display: flex; flex-direction: column; align-items: center; width: 60px; }
+.alin-pitch { position: relative; border-radius: 14px; overflow: hidden; background: #0e5a32; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08), 0 4px 14px rgba(0,0,0,0.12); }
+.alin-pbar { position: relative; z-index: 2; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 6px 10px; font-weight: 800; font-size: 0.82rem; color: #fff; background: linear-gradient(90deg, #0a4f2a, #17a35c 50%, #0a4f2a); box-shadow: 0 1px 0 rgba(0,0,0,0.15); }
+.alin-pbar img { width: 22px; height: 22px; object-fit: contain; }
+.alin-field { position: relative; padding: 12px 6px 18px; background: radial-gradient(130% 90% at 50% 0%, #1c9455 0%, #147347 48%, #0c5834 100%); }
+.alin-field::before { content: ""; position: absolute; inset: 7px; border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; pointer-events: none; }
+.alin-field::after { content: ""; position: absolute; left: 50%; top: 52%; width: 76px; height: 76px; transform: translate(-50%,-50%); border: 2px solid rgba(255,255,255,0.18); border-radius: 50%; pointer-events: none; }
+.alin-line { position: relative; z-index: 1; display: flex; justify-content: center; gap: 8px; margin: 14px 0; flex-wrap: wrap; }
+.alin-p { position: relative; display: flex; flex-direction: column; align-items: center; width: 66px; }
 .alin-pimg { position: relative; }
-.alin-pimg img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: #fff; border: 2px solid rgba(255,255,255,0.6); }
-.alin-pct { position: absolute; bottom: -5px; left: 50%; transform: translateX(-50%); background: #0b3d22; color: #fff; font-size: 0.56rem; font-weight: 800; padding: 1px 6px; border-radius: 7px; border: 1px solid rgba(255,255,255,0.35); }
-.alin-pname { font-size: 0.6rem; text-align: center; margin-top: 5px; line-height: 1.1; font-weight: 700; }
+.alin-pimg img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #fff; border: 2px solid rgba(255,255,255,0.7); box-shadow: 0 2px 6px rgba(0,0,0,0.28); }
+.alin-pct { position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); background: #0a3d22; color: #fff; font-size: 0.58rem; font-weight: 800; padding: 1px 7px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.45); white-space: nowrap; }
+.alin-p.is-doubt .alin-pimg::after { content: "?"; position: absolute; top: -5px; right: -5px; width: 17px; height: 17px; background: #fff; color: #0a3d22; border-radius: 50%; font-size: 0.66rem; font-weight: 900; display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+.alin-pname { font-size: 0.62rem; text-align: center; margin-top: 7px; line-height: 1.12; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.45); }
 @media (max-width: 680px) { .alin-pitches { grid-template-columns: 1fr; } }
 .newscard { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--cx-surface, #fff); cursor: pointer; transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 14px rgba(15, 23, 42, 0.05); }
 .newscard:hover { border-color: var(--border-hover, #22c55e); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12); }
