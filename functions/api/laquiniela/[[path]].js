@@ -1446,7 +1446,7 @@ async function cmPct(id) {
 async function getFFTeam(env, name) {
   let slug = normKey(String(name || "").toLowerCase()).replace(/ /g, "-");
   if (slug === "real-betis") slug = "betis";
-  const key = "ffteam:v5:" + slug;
+  const key = "ffteam:v6:" + slug;
   try { const c = await env.PORRA.get(key, "json"); if (c && c.data && Date.now() - (c.at || 0) < 3 * 3600 * 1000) return c.data; } catch (e) {}
   const data = { starters: [], bench: [] };
   try {
@@ -1469,7 +1469,9 @@ async function getFFTeam(env, name) {
       const nat = (it.match(/data-nacionalidad="([^"]+)"/) || [])[1] || "";
       const inj = Number((it.match(/data-lesion="(\d+)"/) || [])[1] || 0) === 1;
       const san = Number((it.match(/data-sancionado="(\d+)"/) || [])[1] || 0) === 1;
-      return { name: stripHtml(nm), full: stripHtml(full), photo, pos, prob: prob != null ? Number(prob) : null, x: x ? parseFloat(x) : null, y: y ? parseFloat(y) : null, nat, inj, san };
+      const fullName = stripHtml(full);
+      const last = (fullName || stripHtml(nm)).split(/\s+/).pop();
+      return { name: stripHtml(nm), full: fullName, last, photo, pos, prob: prob != null ? Number(prob) : null, x: x ? parseFloat(x) : null, y: y ? parseFloat(y) : null, nat, inj, san };
     }).filter(Boolean);
     data.starters = parse(hTit);
     data.bench = parse(hSup);
@@ -1484,7 +1486,7 @@ async function getFFTeam(env, name) {
 }
 async function getOnce(env, home, away, jornada) {
   const j = Number(jornada) || 0;
-  const key = "once:v10:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
+  const key = "once:v11:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
   try { const c = await env.PORRA.get(key, "json"); if (c && c.at && Date.now() - c.at < 30 * 60 * 1000) return c.data; } catch (e) {}
   let stadium = "", kickoff = "", referee = "";
   try {
