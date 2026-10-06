@@ -8,6 +8,7 @@ export default {
       "https://edumr.es/api/laquiniela/clausulas",
       "https://edumr.es/api/laquiniela/equipos",
       "https://edumr.es/api/laquiniela/temporada",
+      "https://edumr.es/api/laquiniela/fichajes",
     ];
     await Promise.all(urls.map(async (u) => {
       try {

@@ -369,6 +369,28 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 .news-day-txt { white-space: nowrap; }
 .newscard { animation: newsIn 0.3s ease both; }
 @keyframes newsIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ---------- Mercado de fichajes ---------- */
+.fich-day { display: flex; align-items: center; gap: 10px; margin: 16px 0 8px; color: var(--muted); font-size: 0.74rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; }
+.fich-day:first-child { margin-top: 4px; }
+.fich-day::before, .fich-day::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.fich-card { display: flex; gap: 12px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 10px; animation: newsIn 0.3s ease both; }
+.fich-photo { flex: 0 0 auto; width: 56px; height: 56px; border-radius: 10px; overflow: hidden; background: var(--bg-surface, #e2e8f0); }
+.fich-photo img { width: 100%; height: 100%; object-fit: cover; }
+.fich-body { min-width: 0; flex: 1; }
+.fich-title { font-weight: 800; font-size: 0.96rem; margin-bottom: 5px; }
+.fich-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.fich-badge { font-size: 0.64rem; font-weight: 800; padding: 2px 9px; border-radius: 999px; color: #fff; }
+.fich-badge.of { background: #16a34a; }
+.fich-badge.neg { background: #f59e0b; }
+.fich-badge.rum, .fich-badge.ot { background: #64748b; }
+.fich-ruta { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; font-weight: 700; }
+.fich-arrow { color: var(--muted); }
+.fich-time { font-size: 0.68rem; color: var(--muted); margin-left: auto; }
+.fich-extract { font-size: 0.82rem; color: var(--muted); line-height: 1.4; }
+.fich-link { margin-top: 8px; background: none; border: none; color: var(--accent, #16a34a); font: inherit; font-weight: 800; font-size: 0.8rem; cursor: pointer; padding: 0; }
+.fich-link:hover { text-decoration: underline; }
+@media (max-width: 560px) { .fich-card { gap: 10px; padding: 10px; } .fich-photo { width: 46px; height: 46px; } .fich-title { font-size: 0.88rem; } }
 .newscard { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--cx-surface, #fff); cursor: pointer; transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 14px rgba(15, 23, 42, 0.05); }
 .newscard:hover { border-color: var(--border-hover, #22c55e); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12); }
 .newscard-thumb { width: 100%; aspect-ratio: 16 / 9; background: rgba(127, 127, 127, 0.12); overflow: hidden; }

@@ -1345,6 +1345,46 @@ async function getUltimaHora(env) {
   return data;
 }
 
+/* ---------- Mercado de fichajes (FutbolFantasy) ---------- */
+const FICHAJES_URL = "https://www.futbolfantasy.com/laliga/mercado-fichajes/verano-2026";
+const FICHAJES_KEY = "fm:fichajes:v1";
+
+function ffCard(c) {
+  const raw = (re) => { const m = c.match(re); return m ? stripHtml(m[1]) : ""; };
+  const title = raw(/mercado-card-titular[^>]*>([^<]*)/);
+  if (!title) return null;
+  const time = (c.match(/mercado-card-hora[^>]*>[\s\S]*?(\d{1,2}:\d{2})/) || [])[1] || "";
+  const badge = raw(/class="te-lbl">([\s\S]*?)<\/span>/);
+  const clubs = [...c.matchAll(/mercado-equipo-nombre">([\s\S]*?)<\/span>/g)].map((m) => stripHtml(m[1]));
+  const extract = raw(/mercado-card-extracto[^>]*>([\s\S]*?)<\/p>/);
+  const link = (c.match(/class="mercado-card-noticia[^"]*"[^>]*href="([^"]+)"/) || [])[1] || (c.match(/href="([^"]+)"[^>]*class="mercado-card-noticia/) || [])[1] || "";
+  const photo = (c.match(/mercado-card-foto[\s\S]*?data-src="([^"]+)"/) || c.match(/mercado-card-foto[\s\S]*?src="([^"]+)"/) || [])[1] || "";
+  return { time, title, badge, clubs, extract, link, photo };
+}
+
+function parseFichajes(html) {
+  const groups = [];
+  const parts = html.split(/<h2[^>]*title-container[^>]*>\s*<span>([\s\S]*?)<\/span><\/h2>/);
+  for (let i = 1; i < parts.length; i += 2) {
+    const date = stripHtml(parts[i]).replace(/[^\dA-Za-záéíóúÁÉÍÓÚüÜ\/ ]/g, "").replace(/\s+/g, " ").trim();
+    const chunk = parts[i + 1] || "";
+    const items = chunk.split('<div class="mercado-card">').slice(1).map(ffCard).filter(Boolean);
+    if (items.length) groups.push({ date, items });
+  }
+  return groups;
+}
+
+async function getFichajes(env) {
+  try { const c = await env.PORRA.get(FICHAJES_KEY, "json"); if (c && c.data && Date.now() - (c.at || 0) < 2 * 3600 * 1000) return c.data; } catch (e) {}
+  let data = { updatedAt: Date.now(), groups: [] };
+  try {
+    const html = await (await fetch(FICHAJES_URL, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text();
+    data = { updatedAt: Date.now(), groups: parseFichajes(html) };
+  } catch (e) {}
+  try { if (data.groups.length) await env.PORRA.put(FICHAJES_KEY, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 3 * 3600 }); } catch (e) {}
+  return data;
+}
+
 /* ---------- Franja de jornada (escudos, día/hora y TV) ---------- */
 function wkey(s) {
   return stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").split(/\s+/)
@@ -2354,6 +2394,9 @@ export async function onRequestGet({ request, env, params }) {
   }
   if (path === "temporada") {
     try { const map = await getSeasonMap(env, true, url.searchParams.has("reset")); return json({ n: Object.keys(map).length, map }); } catch (e) { return json({ n: 0, map: {}, error: String(e) }); }
+  }
+  if (path === "fichajes") {
+    try { return json(await getFichajes(env)); } catch (e) { return json({ groups: [], error: String(e) }); }
   }
   if (path === "equipos") {
     try { return json({ teams: await getTeams(env) }); } catch (e) { return json({ teams: [] }); }

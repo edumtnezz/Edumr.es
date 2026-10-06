@@ -384,6 +384,51 @@
     } catch (e) { if (timer) clearInterval(timer); if (!(cached && cached.players)) box.innerHTML = '<p class="market-empty">No se pudo cargar.</p>'; }
   }
 
+  function badgeCls(b) {
+    const s = stripAccents(String(b || "").toLowerCase());
+    if (s.indexOf("oficial") >= 0) return "of";
+    if (s.indexOf("negociac") >= 0) return "neg";
+    if (s.indexOf("rumor") >= 0) return "rum";
+    return "ot";
+  }
+  let fichLoaded = false;
+  async function renderFichajes() {
+    const box = $("fichOut");
+    if (!box || fichLoaded) return;
+    fichLoaded = true;
+    box.innerHTML = '<p class="muted small">Cargando mercado de fichajes…</p>';
+    try {
+      const d = await (await fetch(API + "/fichajes")).json();
+      const groups = (d && d.groups) || [];
+      const upd = $("fichUpdated");
+      if (upd) upd.textContent = d && d.updatedAt ? "· actualizado " + haceTxt(d.updatedAt) : "";
+      box.innerHTML = "";
+      if (!groups.length) { box.innerHTML = '<p class="muted small">Sin movimientos ahora mismo.</p>'; return; }
+      groups.forEach((g) => {
+        if (g.date) box.appendChild(el("div", "fich-day", "🗓️ " + g.date));
+        g.items.forEach((x) => {
+          const card = el("div", "fich-card");
+          if (x.photo) { const ph = el("div", "fich-photo"); const im = el("img"); im.src = x.photo; im.alt = ""; im.loading = "lazy"; ph.appendChild(im); card.appendChild(ph); }
+          const body = el("div", "fich-body");
+          body.appendChild(el("div", "fich-title", x.title || ""));
+          const meta = el("div", "fich-meta");
+          if (x.badge) meta.appendChild(el("span", "fich-badge " + badgeCls(x.badge), x.badge));
+          if (x.clubs && x.clubs.length) {
+            const rt = el("div", "fich-ruta");
+            x.clubs.forEach((c, i) => { if (i) rt.appendChild(el("span", "fich-arrow", "→")); rt.appendChild(el("span", "fich-club", c)); });
+            meta.appendChild(rt);
+          }
+          if (x.time) meta.appendChild(el("span", "fich-time", x.time));
+          body.appendChild(meta);
+          if (x.extract) body.appendChild(el("div", "fich-extract", x.extract));
+          if (x.link) { const a = el("button", "fich-link", "Ver noticia →"); a.type = "button"; a.addEventListener("click", () => openNoticia(x.link, x.title)); body.appendChild(a); }
+          card.appendChild(body);
+          box.appendChild(card);
+        });
+      });
+    } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar.</p>'; }
+  }
+
   function filteredList() {
     const q = stripAccents($("mjSearch") ? $("mjSearch").value.trim() : "");
     const team = teamFilter;
@@ -741,6 +786,7 @@
     const ch = $("cxChrome");
     if (ch) ch.classList.toggle("hidden", name !== "mercado");
     if (name === "clausulazos") renderClausulas();
+    if (name === "fichajes") renderFichajes();
     try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
     try {
       const url = "/futmondo/guiafantasy/" + name;
@@ -1387,7 +1433,7 @@
   (function restoreTab() {
     let name = "";
     try {
-      const m = location.pathname.match(/\/guiafantasy\/(mercado|noticias|analiza|clausulazos)/);
+      const m = location.pathname.match(/\/guiafantasy\/(mercado|fichajes|noticias|analiza|clausulazos)/);
       if (m) name = m[1];
     } catch (e) {}
     if (!name) { try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {} }
@@ -1717,7 +1763,7 @@
   });
 
   (function initSwipe() {
-    const order = ["mercado", "noticias", "analiza", "clausulazos"];
+    const order = ["mercado", "fichajes", "noticias", "analiza", "clausulazos"];
     const main = document.querySelector(".quiniela-main") || document.body;
     let sx = 0, sy = 0, st = 0;
     main.addEventListener("touchstart", (e) => { const t = e.changedTouches[0]; sx = t.clientX; sy = t.clientY; st = Date.now(); }, { passive: true });
