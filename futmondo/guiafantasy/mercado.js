@@ -480,17 +480,29 @@
     if (t.formation) th.appendChild(el("span", "alin-form", t.formation));
     col.appendChild(th);
     const box = el("div", "alin-pitch");
+    const groups = { Portero: [], Defensa: [], Mediocampista: [], Delantero: [] };
     (t.starters || []).forEach((p) => {
-      const pl = el("div", "alin-pl");
-      const cx = Math.max(19, Math.min(81, p.x != null ? p.x : 50));
-      const cy = Math.max(14, Math.min(86, p.y != null ? p.y : 50));
-      pl.style.left = cx + "%";
-      pl.style.top = cy + "%";
-      if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; pl.appendChild(im); }
-      pl.appendChild(el("div", "alin-pname", p.last || p.name));
-      if (p.prob != null && p.prob < 100) pl.appendChild(el("span", "alin-pct", p.prob + "%"));
-      pl.addEventListener("click", () => openPlayerByName(p.full || p.name));
-      box.appendChild(pl);
+      const k = /portero/i.test(p.pos) ? "Portero" : /defensa/i.test(p.pos) ? "Defensa" : /delantero/i.test(p.pos) ? "Delantero" : "Mediocampista";
+      groups[k].push(p);
+    });
+    [["Delantero", 16], ["Mediocampista", 42], ["Defensa", 68], ["Portero", 88]].forEach((band) => {
+      const arr = groups[band[0]];
+      if (!arr.length) return;
+      const n = arr.length;
+      const step = n > 1 ? 56 / (n - 1) : 0;
+      arr.forEach((p, i) => {
+        const x = n > 1 ? (22 + i * step) : 50;
+        const pl = el("div", "alin-pl");
+        pl.style.left = x + "%";
+        pl.style.top = band[1] + "%";
+        const ph = el("div", "alin-pimg");
+        if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; ph.appendChild(im); }
+        if (p.prob != null && p.prob < 100) ph.appendChild(el("span", "alin-pct", p.prob + "%"));
+        pl.appendChild(ph);
+        pl.appendChild(el("div", "alin-pname", p.last || p.name));
+        pl.addEventListener("click", () => openPlayerByName(p.full || p.name));
+        box.appendChild(pl);
+      });
     });
     col.appendChild(box);
     if (t.bench && t.bench.length) col.appendChild(renderBench(t.bench));
