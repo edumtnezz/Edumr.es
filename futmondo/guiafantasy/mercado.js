@@ -299,7 +299,10 @@
       if (p.logo) { const lg = el("img", "racha-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; tm.appendChild(lg); }
       if (p.team) tm.appendChild(el("span", null, p.team));
       body.appendChild(tm);
-      body.appendChild(el("div", "claus-owner", "👤 de " + (p.owner || "?")));
+      const ow = el("div", "claus-owner");
+      if (p.ownerPhoto) { const av = el("img", "claus-ownav"); av.src = p.ownerPhoto; av.alt = ""; av.loading = "lazy"; ow.appendChild(av); }
+      ow.appendChild(el("span", null, "👤 de " + (p.owner || "?")));
+      body.appendChild(ow);
       const st = el("div", "claus-stats");
       const sbox = (val, lab, cls) => { const b = el("div", "claus-stat" + (cls ? " " + cls : "")); b.appendChild(el("b", null, String(val))); b.appendChild(el("small", null, lab)); return b; };
       st.appendChild(sbox(Number(p.points) || 0, "PTS"));

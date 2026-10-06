@@ -239,6 +239,16 @@ function render() {
       baseTxt.innerHTML = "Precio de salida: <b>" + money(p.base) + " €</b> · la saca <b>" + escapeHtml(p.creator) + "</b>";
       panel.appendChild(baseTxt);
     }
+    if (data.admin && p) {
+      const adm = el("div", "puja-admin");
+      adm.appendChild(el("div", "puja-admin-t", "🛠️ Panel de administrador"));
+      const be = el("button", "btn-ghost", "✏️ Editar jugador / precio"); be.type = "button";
+      be.addEventListener("click", () => adminEdit(p));
+      const bd = el("button", "btn-ghost", "🗑️ Borrar subasta"); bd.type = "button";
+      bd.addEventListener("click", adminReset);
+      adm.appendChild(be); adm.appendChild(bd);
+      panel.appendChild(adm);
+    }
   } else {
     panel.appendChild(el("div", "puja-player", "Sin subasta activa"));
   }
@@ -710,6 +720,29 @@ async function crear() {
 }
 
 let toastTimer = null;
+async function adminReset() {
+  if (!confirm("¿Borrar la subasta actual y todas sus pujas? Esto no se puede deshacer.")) return;
+  try {
+    const res = await fetch(API + "/puja/reset", { method: "POST", headers: { "content-type": "application/json" }, body: "{}" });
+    const d = await res.json();
+    if (!res.ok) { toast(d.error || "Error"); return; }
+    lastJson = ""; toast("Subasta borrada ✅"); load(true);
+  } catch (e) { toast("No se pudo borrar"); }
+}
+
+async function adminEdit(p) {
+  const np = prompt("Jugador (tal cual en el mercado):", p.player || "");
+  if (np === null) return;
+  const nb = prompt("Precio de salida (€):", String(p.base || ""));
+  if (nb === null) return;
+  try {
+    const res = await fetch(API + "/puja/edit", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ player: np.trim(), base: parseDots(nb) }) });
+    const d = await res.json();
+    if (!res.ok) { toast(d.error || "Error"); return; }
+    lastJson = ""; toast("Subasta actualizada ✅"); load(true);
+  } catch (e) { toast("No se pudo editar"); }
+}
+
 function toast(msg) {
   let t = document.getElementById("toast");
   if (!t) { t = document.createElement("div"); t.id = "toast"; document.body.appendChild(t); }

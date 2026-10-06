@@ -55,3 +55,8 @@
 [data-theme="light"] .wa-text { color: #111b21; }
 .wa-text b, .wa-text strong { font-weight: 800; color: #ffffff; }
 [data-theme="light"] .wa-text b, [data-theme="light"] .wa-text strong { color: #111b21; }
+
+/* Panel de administrador (La Puja) */
+.puja-admin { margin-top: 10px; padding: 10px 12px; border: 1px dashed var(--border, #d7dde6); border-radius: 12px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.puja-admin-t { flex: 1 0 100%; font-size: 0.72rem; font-weight: 800; color: var(--muted, #69727d); text-transform: uppercase; letter-spacing: 0.03em; }
+.puja-admin .btn-ghost { font-size: 0.8rem; }

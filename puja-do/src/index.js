@@ -135,6 +135,29 @@ export class PujaRoom {
       return Response.json(out);
     }
 
+    if (request.method === "POST" && action === "editar") {
+      const body = await request.json();
+      let out;
+      await this.state.blockConcurrencyWhile(async () => {
+        const p = await this.state.storage.get("puja");
+        if (!p) { out = { error: "No hay subasta abierta.", status: 404 }; return; }
+        p.player = body.player || p.player;
+        if (body.base) p.base = body.base;
+        if (body.value) p.value = body.value;
+        if (body.team) p.team = body.team;
+        if (body.logo) p.logo = body.logo;
+        if (body.photo) p.photo = body.photo;
+        p.change = body.change || 0;
+        p.pstatus = body.pstatus || "";
+        if (body.role) p.role = body.role;
+        if (body.role2 != null) p.role2 = body.role2;
+        await this.state.storage.put("puja", p);
+        out = { ok: true, puja: p };
+      });
+      if (out.error) return Response.json({ error: out.error }, { status: out.status });
+      return Response.json(out);
+    }
+
     if (request.method === "POST" && action === "seed") {
       const body = await request.json();
       await this.state.blockConcurrencyWhile(async () => {

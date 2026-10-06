@@ -733,6 +733,26 @@ function expOfB(p) {
   return avg * (prob / 100) * casa * fit;
 }
 
+function isAdmin(env, user) {
+  if (!user || !user.name) return false;
+  const list = String(env.ADMIN_NAMES || "eduardo,edumr,edu").split(",").map((s) => stripAccents(s.trim().toLowerCase())).filter(Boolean);
+  const n = stripAccents(String(user.name).toLowerCase());
+  return list.some((x) => n === x || n.indexOf(x) >= 0);
+}
+async function getAvatars(env) {
+  try { const c = await env.PORRA.get("fm:avatars:v1", "json"); if (c && c.map && Date.now() - (c.at || 0) < 6 * 3600 * 1000) return c.map; } catch (e) {}
+  const map = {};
+  try {
+    const header = await futbolHeader(env);
+    const l = await futbolPost("/2/locker/news", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
+    for (const x of (l.answer && l.answer.news) || []) {
+      if (x.u && x.u.n && x.u.p) map[stripAccents(String(x.u.n).toLowerCase())] = x.u.p;
+    }
+  } catch (e) {}
+  try { if (Object.keys(map).length) await env.PORRA.put("fm:avatars:v1", JSON.stringify({ at: Date.now(), map })); } catch (e) {}
+  return map;
+}
+
 async function getClausulas(env) {
   try { const c = await env.PORRA.get("clausulas:v13", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
   let cache;
@@ -748,6 +768,8 @@ async function getClausulas(env) {
   own.sort((a, b) => expOfB(b) - expOfB(a));
   const top = own;
   const header = await futbolHeader(env);
+  let avatars = {};
+  try { avatars = await getAvatars(env); } catch (e) {}
   const out = [];
   let okC = 0, ownC = 0, errC = 0;
   const diag = [];
@@ -768,18 +790,20 @@ async function getClausulas(env) {
       if (!s) { errC++; if (diag.length < 20) diag.push(p.name + ":ERR"); continue; }
       okC++;
       const ans = s.answer || {};
-      const cl = (ans.championship && ans.championship.clause) || {};
-      let ow = ans.owners;
-      if (Array.isArray(ow)) ow = ow.length ? ow[ow.length - 1] : null;
-      const owner = (ow && ow.n) || "";
+      const ch = ans.championship || {};
+      const cl = ch.clause || {};
+      const ownerObj = ch.owner || null;
+      const owner = (ownerObj && ownerObj.name) || "";
+      const ownerComputer = !!(ownerObj && ownerObj.computer);
       if (diag.length < 20) diag.push(p.name + ":" + (owner ? "OWN[" + owner + "]" : "free") + " cl=" + (cl.price ? 1 : 0));
-      if (cl.price && owner) {
+      if (cl.price && owner && !ownerComputer) {
         ownC++;
         const mine = !!(myTeam && stripAccents(owner.toLowerCase()) === stripAccents(myTeam.toLowerCase()));
         out.push({
           id: p.id, name: p.name, role: p.role, role2: p.role2, team: p.team, logo: p.logo, photo: p.photo,
           value: p.value, points: p.points, avg: p.avg, matches: p.matches, fitness: p.fitness, prob: p.prob, status: p.status,
           clause: Number(cl.price) || 0, unlock: cl.date || "", owner, mine,
+          ownerPhoto: avatars[stripAccents(owner.toLowerCase())] || "",
           exp: Math.round(expOfB(p) * 10) / 10,
           chg1: p.chg1, chg7: p.chg7, chg14: p.chg14, chg30: p.chg30,
         });
@@ -2429,13 +2453,13 @@ export async function onRequestGet({ request, env, params }) {
           };
           const pj = fill(d.puja);
           const hist = (d.history || []).map(fill);
-          return json({ puja: pj || null, user: user ? { name: user.name } : null, nextTuesday: nextTuesday2200Utc(new Date()), nextWindow: nextWindowOpenUtc(new Date()), inWindow: inPujaWindow(new Date()), history: hist });
+          return json({ puja: pj || null, user: user ? { name: user.name } : null, admin: isAdmin(env, user), nextTuesday: nextTuesday2200Utc(new Date()), nextWindow: nextWindowOpenUtc(new Date()), inWindow: inPujaWindow(new Date()), history: hist });
         }
       } catch (e) {}
     }
     const p = await getPuja(env);
     const history = await getPujaHistory(env);
-    return json({ puja: p, user: user ? { name: user.name } : null, nextTuesday: nextTuesday2200Utc(new Date()), nextWindow: nextWindowOpenUtc(new Date()), inWindow: inPujaWindow(new Date()), history });
+    return json({ puja: p, user: user ? { name: user.name } : null, admin: isAdmin(env, user), nextTuesday: nextTuesday2200Utc(new Date()), nextWindow: nextWindowOpenUtc(new Date()), inWindow: inPujaWindow(new Date()), history });
   }
   if (path === "me") {
     return json({ user: user ? { name: user.name } : null });
@@ -2451,33 +2475,6 @@ export async function onRequestGet({ request, env, params }) {
   }
   if (path === "once") {
     try { return json(await getOnce(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "", url.searchParams.get("jornada") || "")); } catch (e) { return json({ error: String(e) }); }
-  }
-  if (path === "dbgprobe") {
-    try {
-      const header = await futbolHeader(env);
-      const cands = ["/1/league/championship", "/5/league/championship", "/1/league/championshipusers", "/5/league/championshipusers", "/1/league/ranking", "/5/league/ranking", "/1/league/classification", "/5/league/classification", "/1/league/championshipranking", "/1/league/championshipclassification", "/5/league/users", "/1/league/users", "/5/league/championshipmembers", "/1/league/standings", "/5/league/standings"];
-      const res = {};
-      for (const c of cands) {
-        try {
-          const r = await futbolPost(c, header, { championshipId: FUTMONDO_CHAMPIONSHIP });
-          const a = r.answer;
-          res[c] = Array.isArray(a) ? { arr: a.length, first: a[0] } : { keys: a && typeof a === "object" ? Object.keys(a).slice(0, 20) : String(a).slice(0, 80) };
-        } catch (e) { res[c] = "ERR"; }
-      }
-      return json(res);
-    } catch (e) { return json({ error: String(e) }); }
-  }
-  if (path === "dbgowner") {
-    try {
-      const nm = url.searchParams.get("name") || "";
-      const cache = await getMarketPlayers(env);
-      const q = stripAccents(nm.toLowerCase());
-      const found = (cache.players || []).find((x) => stripAccents(x.name.toLowerCase()) === q) || (cache.players || []).find((x) => stripAccents(x.name.toLowerCase()).includes(q));
-      if (!found) return json({ error: "no player", q });
-      const header = await futbolHeader(env);
-      const s = await futbolPost("/1/player/summary", header, { playerId: found.id, championshipId: FUTMONDO_CHAMPIONSHIP });
-      return json({ name: found.name, answer: s.answer || null });
-    } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "equipos") {
     try { return json({ teams: await getTeams(env) }); } catch (e) { return json({ teams: [] }); }
@@ -2529,16 +2526,46 @@ export async function onRequestPost({ request, env, params }) {
   }
   if (path === "puja/reset") {
     const user = await getSessionUser(env, request);
-    if (!user) return json({ error: "Inicia sesion." }, 401);
+    if (!isAdmin(env, user)) return json({ error: "No autorizado." }, 403);
     const stub = pujaStub(env);
     if (stub) {
-      try {
-        const r = await stub.fetch("https://do/reset", { method: "POST" });
-        return json(await r.json());
-      } catch (e) {}
+      try { await stub.fetch("https://do/reset", { method: "POST" }); } catch (e) {}
     }
     await env.PORRA.delete(PUJA_KEY);
-    return json({ ok: true });
+    return json({ ok: true, puja: null });
+  }
+  if (path === "puja/edit") {
+    const user = await getSessionUser(env, request);
+    if (!isAdmin(env, user)) return json({ error: "No autorizado." }, 403);
+    let body; try { body = await request.json(); } catch { return json({ error: "Datos invalidos" }, 400); }
+    const player = String(body.player || "").trim().slice(0, 40);
+    const baseN = Math.floor(Number(body.base));
+    if (!player) return json({ error: "Escribe el jugador." }, 400);
+    let value = 0, team = "", logo = "", photo = "", change = 0, pstatus = "", role = "", role2 = "";
+    try {
+      const cache = await getMarketPlayers(env);
+      const q = stripAccents(player.toLowerCase());
+      const found = (cache.players || []).find((x) => stripAccents(x.name.toLowerCase()) === q) || (cache.players || []).find((x) => stripAccents(x.name.toLowerCase()).includes(q));
+      if (found) { value = found.value; team = found.team || ""; logo = found.logo || ""; photo = found.photo || ""; change = Number(found.change) || 0; pstatus = found.status || ""; role = found.role || ""; role2 = found.role2 || ""; }
+    } catch (e) {}
+    if (Number.isFinite(baseN) && value && baseN < value) return json({ error: `El precio no puede ser menor que el valor (${fmtEur(value)} €).` }, 400);
+    const payload = { player, base: Number.isFinite(baseN) ? baseN : 0, value, team, logo, photo, change, pstatus, role, role2 };
+    const stubE = pujaStub(env);
+    if (stubE) {
+      try {
+        const r = await stubE.fetch("https://do/editar", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+        const d = await r.json();
+        if (!r.ok) return json({ error: d.error || "Error" }, r.status);
+        return json({ ok: true, puja: d.puja });
+      } catch (e) {}
+    }
+    const p = await env.PORRA.get(PUJA_KEY, "json");
+    if (!p) return json({ error: "No hay subasta abierta." }, 404);
+    p.player = player;
+    if (payload.base) p.base = payload.base;
+    if (value) { p.value = value; p.team = team; p.logo = logo; p.photo = photo; p.change = change; p.pstatus = pstatus; p.role = role; p.role2 = role2; }
+    await env.PORRA.put(PUJA_KEY, JSON.stringify(p));
+    return json({ ok: true, puja: await getPuja(env) });
   }
   if (path === "porra/predecir") {
     const user = await getSessionUser(env, request);
