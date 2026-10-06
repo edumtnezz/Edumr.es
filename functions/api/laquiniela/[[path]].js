@@ -1452,7 +1452,7 @@ async function getFFTeam(env, name) {
     const h = await (await fetch("https://www.futbolfantasy.com/laliga/equipos/" + slug, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text();
     const items = h.split('class="jugador_').slice(1);
     for (const it of items) {
-      const nm = (it.match(/class="name mx-auto">([^<]+)</) || [])[1];
+      const nm = (it.match(/class="truncate-name mx-auto">([^<]+)</) || [])[1];
       if (!nm) continue;
       const full = (it.match(/<img alt="([^"]+)"[^>]*data-src="[^"]*jugadores\/ficha/) || [])[1] || nm;
       const photo = (it.match(/data-src="([^"]*jugadores\/ficha[^"]*)"/) || [])[1] || "";
