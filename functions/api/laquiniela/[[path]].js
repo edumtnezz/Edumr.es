@@ -2304,7 +2304,9 @@ export async function onRequestGet({ request, env, params }) {
       const res = await futbolPost("/5/league/championshipplayers", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
       const arr = (res.answer && res.answer.players) || (Array.isArray(res.answer) ? res.answer : []);
       const s = arr[0] || {};
-      return json({ n: arr.length, keys: Object.keys(s), average: Object.keys(s.average || {}), sample: s });
+      let hist = null;
+      try { const h = await env.PORRA.get("fmhist", "json"); if (h && h.days) hist = { n: h.days.length, first: h.days[0] && h.days[0].d, last: h.days[h.days.length - 1] && h.days[h.days.length - 1].d }; } catch (e) {}
+      return json({ n: arr.length, keys: Object.keys(s), average: Object.keys(s.average || {}), hist, sample: s });
     } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "equipos") {
