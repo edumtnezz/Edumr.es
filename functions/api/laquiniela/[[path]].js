@@ -2452,6 +2452,18 @@ export async function onRequestGet({ request, env, params }) {
   if (path === "once") {
     try { return json(await getOnce(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "", url.searchParams.get("jornada") || "")); } catch (e) { return json({ error: String(e) }); }
   }
+  if (path === "dbgowner") {
+    try {
+      const nm = url.searchParams.get("name") || "";
+      const cache = await getMarketPlayers(env);
+      const q = stripAccents(nm.toLowerCase());
+      const found = (cache.players || []).find((x) => stripAccents(x.name.toLowerCase()) === q) || (cache.players || []).find((x) => stripAccents(x.name.toLowerCase()).includes(q));
+      if (!found) return json({ error: "no player", q });
+      const header = await futbolHeader(env);
+      const s = await futbolPost("/1/player/summary", header, { playerId: found.id, championshipId: FUTMONDO_CHAMPIONSHIP });
+      return json({ name: found.name, owners: (s.answer && s.answer.owners) || null, clause: (s.answer && s.answer.championship && s.answer.championship.clause) || null });
+    } catch (e) { return json({ error: String(e) }); }
+  }
   if (path === "equipos") {
     try { return json({ teams: await getTeams(env) }); } catch (e) { return json({ teams: [] }); }
   }
