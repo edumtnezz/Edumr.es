@@ -539,6 +539,7 @@
       const t1 = el("span", "alin-jteam");
       if (m.homeCrest) { const im = el("img"); im.src = m.homeCrest; im.alt = ""; im.loading = "lazy"; t1.appendChild(im); }
       const mid = el("span", "alin-jmid");
+      if (m.tv && m.tv[0] && m.tv[0].logo) { const tv = el("img", "alin-jtv"); tv.src = m.tv[0].logo; tv.alt = m.tv[0].name || ""; tv.loading = "lazy"; tv.addEventListener("error", () => tv.remove()); mid.appendChild(tv); }
       mid.appendChild(el("b", null, ((m.day || "") + " " + (m.date || "")).trim()));
       mid.appendChild(el("span", "alin-jtime", m.time || ""));
       const t2 = el("span", "alin-jteam alin-jteam-r");

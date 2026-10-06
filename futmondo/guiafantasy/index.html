@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Guía Fantasy · Futmondo EduMR</title>
+  <title>GuÃ­a Fantasy Â· Futmondo EduMR</title>
   <meta name="description" content="Valores, subidas y bajadas y estado de los jugadores de tu liga de Futmondo Social.">
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#07090e">
@@ -14,7 +14,7 @@
   <script src="/futmondo/theme.js?v=65"></script>
   <link rel="stylesheet" href="/futmondo/quiniela/quiniela.css?v=127">
   <link rel="stylesheet" href="/futmondo/edumr.css?v=27">
-  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=97">
+  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=98">
 </head>
 <body class="page-simple cx-page">
   <header class="appbar cx-header">
@@ -25,7 +25,7 @@
           <a href="/futmondo/lapuja/">La Puja</a>
           <a href="/futmondo/quiniela/">La Quiniela</a>
           <a href="/futmondo/porra/">La Porra</a>
-          <a class="active" href="/futmondo/guiafantasy/mercado">Guía Fantasy</a>
+          <a class="active" href="/futmondo/guiafantasy/mercado">GuÃ­a Fantasy</a>
         </nav>
         <div class="cx-tools">
           <a class="cx-inicio" href="/">Inicio web</a>
@@ -56,11 +56,11 @@
           <h2>Mercado</h2>
           <span class="muted small" id="mercadoUpdated"></span>
         </div>
-        <p class="muted small">Valores de <b>Futmondo Social</b> y su tendencia del día.</p>
+        <p class="muted small">Valores de <b>Futmondo Social</b> y su tendencia del dÃ­a.</p>
         <p class="muted small">Organizado por <b>puntos probables</b>.</p>
         <div id="mercRachas"></div>
         <div class="merc-filters">
-          <input id="mjSearch" class="market-search" type="text" placeholder="Buscar jugador por nombre…" autocomplete="off">
+          <input id="mjSearch" class="market-search" type="text" placeholder="Buscar jugador por nombreâ€¦" autocomplete="off">
           <select id="mjRole" class="merc-select">
             <option value="">Todas las posiciones</option>
             <option value="portero">Porteros</option>
@@ -70,14 +70,14 @@
           </select>
         </div>
           <div class="merc-range">
-            <span class="muted small">Rango de precio: <b id="mjRangeLabel">—</b></span>
-            <input type="range" id="mjMin" min="0" max="100" value="0" aria-label="Precio mínimo">
-            <input type="range" id="mjMax" min="0" max="100" value="100" aria-label="Precio máximo">
+            <span class="muted small">Rango de precio: <b id="mjRangeLabel">â€”</b></span>
+            <input type="range" id="mjMin" min="0" max="100" value="0" aria-label="Precio mÃ­nimo">
+            <input type="range" id="mjMax" min="0" max="100" value="100" aria-label="Precio mÃ¡ximo">
           </div>
         <div class="merc-seg" id="mercSeg">
           <button class="merc-segbtn" data-sort="all">Todos</button>
-          <button class="merc-segbtn active" data-sort="up">▲ Mayores subidas</button>
-          <button class="merc-segbtn" data-sort="down">▼ Mayores bajadas</button>
+          <button class="merc-segbtn active" data-sort="up">â–² Mayores subidas</button>
+          <button class="merc-segbtn" data-sort="down">â–¼ Mayores bajadas</button>
           <button class="merc-segbtn" data-sort="value">Valor</button>
         </div>
         <div id="marketGrid"></div>
@@ -88,7 +88,7 @@
       <section class="panel">
         <h2>Noticias</h2>
         <h3 class="estado-title">Noticias de LaLiga <span id="newsUpdated" class="news-updated"></span></h3>
-        <div id="newsAnuncios"><p class="muted small">Cargando…</p></div>
+        <div id="newsAnuncios"><p class="muted small">Cargandoâ€¦</p></div>
         <div id="noticiaView" class="hidden"></div>
       </section>
     </section>
@@ -97,19 +97,19 @@
       <section class="panel">
         <h2>Analiza tu equipo</h2>
         <div class="an-desc">
-          <b>¿Qué analiza la IA?</b>
+          <b>Â¿QuÃ© analiza la IA?</b>
           <ul>
-            <li>🔎 <b>Quién juega</b> (probabilidad de ser titular).</li>
-            <li>📈 <b>Forma y puntos</b> de cada jugador.</li>
-            <li>🏠 <b>Casa o fuera</b> y el rival.</li>
-            <li>🧩 La <b>formación</b> y la <b>multiposición</b>.</li>
-            <li>🔁 Los <b>mejores cambios</b> según los horarios.</li>
+            <li>ðŸ”Ž <b>QuiÃ©n juega</b> (probabilidad de ser titular).</li>
+            <li>ðŸ“ˆ <b>Forma y puntos</b> de cada jugador.</li>
+            <li>ðŸ  <b>Casa o fuera</b> y el rival.</li>
+            <li>ðŸ§© La <b>formaciÃ³n</b> y la <b>multiposiciÃ³n</b>.</li>
+            <li>ðŸ” Los <b>mejores cambios</b> segÃºn los horarios.</li>
           </ul>
         </div>
         <label class="an-drop" for="anFile">
-          <span class="an-drop-ico">📷</span>
+          <span class="an-drop-ico">ðŸ“·</span>
           <span class="an-drop-t">Sube una captura de tu equipo de Futmondo</span>
-          <span class="an-drop-s">PNG o JPG · toca aquí para elegir la imagen</span>
+          <span class="an-drop-s">PNG o JPG Â· toca aquÃ­ para elegir la imagen</span>
         </label>
         <input type="file" id="anFile" accept="image/*" class="an-file">
         <img id="anPreview" class="an-preview hidden" alt="">
@@ -125,7 +125,7 @@
           <h2>Alineaciones probables</h2>
           <span class="muted small" id="alinUpdated"></span>
         </div>
-        <p class="muted small">Once probable de cada equipo con el % de opciones de ser titular. Toca un partido de la jornada para venir aquí.</p>
+        <p class="muted small">Once probable de cada equipo con el % de opciones de ser titular. Toca un partido de la jornada para venir aquÃ­.</p>
         <div id="alinOut"></div>
       </section>
     </section>
@@ -133,7 +133,7 @@
     <section class="tab-panel hidden" id="tab-clausulazos">
       <section class="panel">
         <h2>Clausulazo jugoso</h2>
-        <p class="muted small">Jugadores de otros a los que merece la pena pagar la cláusula para robárselos.</p>
+        <p class="muted small">Jugadores de otros a los que merece la pena pagar la clÃ¡usula para robÃ¡rselos.</p>
         <p class="muted small" id="clausUpdated">Se actualiza cada 30 min.</p>
         <div class="claus-filters">
           <div class="claus-frow" id="clausPos">
@@ -144,8 +144,8 @@
             <button type="button" class="claus-chip" data-pos="delantero">DEL</button>
           </div>
           <div class="claus-frow" id="clausSort">
-            <button type="button" class="claus-chip active" data-sort="desc">Mayor cláusula ↓</button>
-            <button type="button" class="claus-chip" data-sort="asc">Menor cláusula ↑</button>
+            <button type="button" class="claus-chip active" data-sort="desc">Mayor clÃ¡usula â†“</button>
+            <button type="button" class="claus-chip" data-sort="asc">Menor clÃ¡usula â†‘</button>
           </div>
         </div>
         <div id="clausOut"></div>
@@ -158,7 +158,7 @@
           <h2>Mercado de fichajes</h2>
           <span class="muted small" id="fichUpdated"></span>
         </div>
-        <p class="muted small">Última hora de fichajes y rumores de LaLiga, agrupados por día.</p>
+        <p class="muted small">Ãšltima hora de fichajes y rumores de LaLiga, agrupados por dÃ­a.</p>
         <div id="fichOut"></div>
       </section>
     </section>
@@ -168,12 +168,12 @@
 
   <div class="ficha-overlay hidden" id="fichaOverlay">
     <div class="ficha-modal">
-      <button class="ficha-close" id="fichaClose" aria-label="Cerrar">✕</button>
+      <button class="ficha-close" id="fichaClose" aria-label="Cerrar">âœ•</button>
       <div id="fichaBody"></div>
     </div>
   </div>
 
   <script src="/futmondo/chrome.js?v=10"></script>
-  <script src="/futmondo/guiafantasy/mercado.js?v=108"></script>
+  <script src="/futmondo/guiafantasy/mercado.js?v=109"></script>
 </body>
 </html>
