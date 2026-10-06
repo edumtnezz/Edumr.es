@@ -444,11 +444,11 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 .alin-tcolhead { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 1rem; margin-bottom: 8px; }
 .alin-tcolhead img { width: 26px; height: 26px; object-fit: contain; }
 .alin-form { font-size: 0.72rem; font-weight: 800; color: var(--muted); background: var(--bg-surface, #eef2f7); border-radius: 7px; padding: 1px 7px; }
-.alin-pl { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; width: 58px; cursor: pointer; z-index: 2; }
-.alin-pimg { position: relative; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; }
+.alin-pl { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; width: 76px; cursor: pointer; z-index: 2; }
+.alin-pimg { position: relative; width: 72px; height: 72px; display: flex; align-items: center; justify-content: center; }
 .alin-pl img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.45)); }
-.alin-pl .alin-pname { font-size: 0.62rem; font-weight: 800; text-transform: uppercase; color: #fff; text-align: center; line-height: 1.05; margin-top: 2px; text-shadow: 0 1px 3px rgba(0,0,0,0.9); white-space: nowrap; max-width: 80px; }
-.alin-pct { position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.82); color: #fff; font-weight: 900; font-size: 0.56rem; padding: 0 6px; border-radius: 7px; border: 2px solid #2f9be0; white-space: nowrap; line-height: 1.25; }
+.alin-pl .alin-pname { font-size: 0.64rem; font-weight: 800; text-transform: uppercase; color: #fff; text-align: center; line-height: 1.05; margin-top: 2px; text-shadow: 0 1px 3px rgba(0,0,0,0.9); white-space: nowrap; max-width: 88px; }
+.alin-pct { position: absolute; top: 50%; right: -20px; transform: translateY(-50%); background: #0a0e13; color: #fff; font-weight: 900; font-size: 0.66rem; padding: 1px 7px; border-radius: 8px; border: 2px solid #22c55e; white-space: nowrap; line-height: 1.3; z-index: 3; }
 .alin-bench { margin-top: 10px; }
 .alin-bench-h { font-weight: 800; font-size: 0.8rem; margin-bottom: 6px; }
 .alin-bench-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 6px; }
@@ -459,9 +459,10 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 @media (max-width: 680px) {
   .alin-pitches { grid-template-columns: 1fr; gap: 26px; }
   .alin-teamcol + .alin-teamcol { border-top: 2px solid var(--border); padding-top: 22px; }
-  .alin-pimg { width: 54px; height: 54px; }
-  .alin-pl { width: 58px; }
-  .alin-pl .alin-pname { font-size: 0.56rem; max-width: 72px; }
+  .alin-pimg { width: 62px; height: 62px; }
+  .alin-pl { width: 66px; }
+  .alin-pl .alin-pname { font-size: 0.58rem; max-width: 74px; }
+  .alin-pct { right: -16px; font-size: 0.6rem; }
 }
 .newscard { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--cx-surface, #fff); cursor: pointer; transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 14px rgba(15, 23, 42, 0.05); }
 .newscard:hover { border-color: var(--border-hover, #22c55e); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12); }
