@@ -443,10 +443,11 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 .alin-teamcol { display: flex; flex-direction: column; }
 .alin-tcolhead { display: flex; align-items: center; justify-content: center; gap: 8px; font-weight: 800; font-size: 1rem; margin-bottom: 8px; }
 .alin-tcolhead img { width: 26px; height: 26px; object-fit: contain; }
-.alin-pl { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; width: 62px; cursor: pointer; z-index: 2; }
-.alin-pl img { width: 46px; height: auto; object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); }
-.alin-pl .alin-pname { font-size: 0.56rem; font-weight: 800; text-transform: uppercase; color: #fff; text-align: center; line-height: 1.05; margin-top: 1px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); white-space: nowrap; }
-.alin-pct { display: inline-block; margin-top: 1px; background: rgba(0,0,0,0.78); color: #fff; font-weight: 900; font-size: 0.58rem; padding: 0 6px; border-radius: 8px; border: 2px solid #2f9be0; white-space: nowrap; line-height: 1.3; }
+.alin-form { font-size: 0.72rem; font-weight: 800; color: var(--muted); background: var(--bg-surface, #eef2f7); border-radius: 7px; padding: 1px 7px; }
+.alin-pl { position: absolute; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; width: 56px; cursor: pointer; z-index: 2; }
+.alin-pl img { width: 42px; height: auto; object-fit: contain; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4)); }
+.alin-pl .alin-pname { font-size: 0.54rem; font-weight: 800; text-transform: uppercase; color: #fff; text-align: center; line-height: 1.05; margin-top: 1px; text-shadow: 0 1px 2px rgba(0,0,0,0.8); white-space: nowrap; }
+.alin-pct { display: inline-block; margin-top: 1px; background: rgba(0,0,0,0.8); color: #fff; font-weight: 900; font-size: 0.52rem; padding: 0 5px; border-radius: 7px; border: 2px solid #2f9be0; white-space: nowrap; line-height: 1.25; }
 .alin-bench { margin-top: 10px; }
 .alin-bench-h { font-weight: 800; font-size: 0.8rem; margin-bottom: 6px; }
 .alin-bench-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 6px; }

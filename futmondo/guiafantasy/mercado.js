@@ -477,12 +477,13 @@
     const th = el("div", "alin-tcolhead");
     if (crest) { const im = el("img"); im.src = crest; im.alt = ""; im.loading = "lazy"; th.appendChild(im); }
     th.appendChild(el("span", null, t.name || ""));
+    if (t.formation) th.appendChild(el("span", "alin-form", t.formation));
     col.appendChild(th);
     const box = el("div", "alin-pitch");
     (t.starters || []).forEach((p) => {
       const pl = el("div", "alin-pl");
-      const cx = Math.max(14, Math.min(86, p.x != null ? p.x : 50));
-      const cy = Math.max(11, Math.min(89, p.y != null ? p.y : 50));
+      const cx = Math.max(17, Math.min(83, p.x != null ? p.x : 50));
+      const cy = Math.max(12, Math.min(88, p.y != null ? p.y : 50));
       pl.style.left = cx + "%";
       pl.style.top = cy + "%";
       if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; pl.appendChild(im); }

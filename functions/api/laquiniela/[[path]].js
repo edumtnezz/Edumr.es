@@ -1446,7 +1446,7 @@ async function cmPct(id) {
 async function getFFTeam(env, name) {
   let slug = normKey(String(name || "").toLowerCase()).replace(/ /g, "-");
   if (slug === "real-betis") slug = "betis";
-  const key = "ffteam:v4:" + slug;
+  const key = "ffteam:v5:" + slug;
   try { const c = await env.PORRA.get(key, "json"); if (c && c.data && Date.now() - (c.at || 0) < 3 * 3600 * 1000) return c.data; } catch (e) {}
   const data = { starters: [], bench: [] };
   try {
@@ -1473,13 +1473,18 @@ async function getFFTeam(env, name) {
     }).filter(Boolean);
     data.starters = parse(hTit);
     data.bench = parse(hSup);
+    const S = data.starters;
+    const def = S.filter((p) => /defensa/i.test(p.pos)).length;
+    const mid = S.filter((p) => /mediocampista|centrocampista|medio/i.test(p.pos)).length;
+    const fwd = S.filter((p) => /delantero/i.test(p.pos)).length;
+    data.formation = (def || mid || fwd) ? (def + "-" + mid + "-" + fwd) : "";
   } catch (e) {}
   try { if (data.starters.length) await env.PORRA.put(key, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 6 * 3600 }); } catch (e) {}
   return data;
 }
 async function getOnce(env, home, away, jornada) {
   const j = Number(jornada) || 0;
-  const key = "once:v8:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
+  const key = "once:v9:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
   try { const c = await env.PORRA.get(key, "json"); if (c && c.at && Date.now() - c.at < 30 * 60 * 1000) return c.data; } catch (e) {}
   let stadium = "", kickoff = "", referee = "";
   try {

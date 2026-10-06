@@ -11,7 +11,7 @@
     var host = document.getElementById("cxChrome");
     if (!host) return;
     host.innerHTML =
-      '<div class="cx-strip"><div class="cx-strip-track" id="cxStrip"><span class="cx-strip-load">Cargando equipos…</span></div></div>' +
+      '<div class="cx-strip"><div class="cx-strip-track" id="cxStrip"><span class="cx-strip-load">Cargando equipos…</span></div><div class="cx-strip-hint"><span class="cx-strip-hint-txt">‹ desliza ›</span></div></div>' +
       '<div class="cx-live"><span class="cx-live-tag">Última hora</span><div class="cx-live-track" id="cxLiveTrack"><span class="cx-live-load">Cargando última hora…</span></div></div>' +
       '<div class="cx-jornada">' +
         '<div class="cx-jn-head">' +
