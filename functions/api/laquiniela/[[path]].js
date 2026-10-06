@@ -2298,6 +2298,15 @@ export async function onRequestGet({ request, env, params }) {
   if (path === "mercado") {
     return searchMercado(env, url.searchParams.get("q"));
   }
+  if (path === "dbgfields") {
+    try {
+      const header = await futbolHeader(env);
+      const res = await futbolPost("/5/league/championshipplayers", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
+      const arr = (res.answer && res.answer.players) || (Array.isArray(res.answer) ? res.answer : []);
+      const s = arr[0] || {};
+      return json({ n: arr.length, keys: Object.keys(s), average: Object.keys(s.average || {}), sample: s });
+    } catch (e) { return json({ error: String(e) }); }
+  }
   if (path === "equipos") {
     try { return json({ teams: await getTeams(env) }); } catch (e) { return json({ teams: [] }); }
   }
