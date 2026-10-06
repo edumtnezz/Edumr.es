@@ -466,8 +466,8 @@
         const ph = el("div", "alin-pimg");
         if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; ph.appendChild(im); }
         pl.appendChild(ph);
-        if (p.pct != null && p.pct < 100) pl.appendChild(el("span", "alin-pct", p.pct + "%"));
         pl.appendChild(el("div", "alin-pname", p.name));
+        if (p.pct != null && p.pct < 100) pl.appendChild(el("span", "alin-pct", p.pct + "%"));
         pl.addEventListener("click", () => openPlayerByName(p.name));
         row.appendChild(pl);
       });
@@ -513,7 +513,7 @@
     ab.appendChild(el("span", null, m.away));
     teams.appendChild(ab);
     head.appendChild(teams);
-    head.appendChild(el("div", "alin-mwhen", ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim() + (r.referee ? " · Colegiado: " + r.referee : "")));
+    head.appendChild(el("div", "alin-mwhen", ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim() + (r.referee ? " · Cronista: " + r.referee : "")));
     card.appendChild(head);
     const pitches = el("div", "alin-pitches");
     pitches.appendChild(renderPitch(r.home || {}, m.homeCrest));
