@@ -1385,6 +1385,57 @@ async function getFichajes(env) {
   return data;
 }
 
+/* ---------- Alineaciones probables (Comuniate) ---------- */
+function cmHeaders(extra) {
+  return Object.assign({ "user-agent": "Mozilla/5.0 (compatible; edumr)", "x-requested-with": "XMLHttpRequest" }, extra || {});
+}
+function parseOnceLines(r) {
+  const out = {};
+  const parts = r.split(/<div id="(delanteros|medios|centrocampistas|defensas|portero|entrenador)"/);
+  for (let i = 1; i < parts.length; i += 2) {
+    const seg = parts[i + 1] || "";
+    const blocks = seg.split(/class="[^"]*\bjugador\b[^"]*"/).slice(1);
+    const players = [];
+    for (const b of blocks) {
+      const nm = (b.match(/nombre_jugador">\s*([^<]+?)\s*</) || [])[1] || "";
+      const ph = (b.match(/caras3\/(\d+)\.png/) || [])[1] || "";
+      if (nm) players.push({ name: stripHtml(nm), photo: ph ? "https://www.comuniate.com/caras3/" + ph + ".png" : "" });
+    }
+    if (players.length) out[parts[i] === "centrocampistas" ? "medios" : parts[i]] = players;
+  }
+  return out;
+}
+async function getOnce(env, home, away, jornada) {
+  const j = Number(jornada) || 0;
+  const key = "once:v1:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
+  try { const c = await env.PORRA.get(key, "json"); if (c && c.at && Date.now() - c.at < 30 * 60 * 1000) return c.data; } catch (e) {}
+  let data = null;
+  try {
+    const body = "id_jornada=" + encodeURIComponent(j) + "&modo_alineaciones=jornada_actual";
+    const mh = await (await fetch("https://www.comuniate.com/ajax/partidos_jornada.php", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded" }), body })).text();
+    const links = [...mh.matchAll(/href="(\/partido\/[^"]+)"/g)].map((m) => m[1]);
+    const sHome = (normKey(String(home).toLowerCase()).split(" ")[0]) || "";
+    const sAway = (normKey(String(away).toLowerCase()).split(" ")[0]) || "";
+    let href = "";
+    for (const l of links) { const slug = stripAccents(l.split("/").pop().toLowerCase()); if (sHome && sAway && slug.indexOf(sHome) >= 0 && slug.indexOf(sAway) >= 0) { href = l; break; } }
+    if (!href) for (const l of links) { const slug = stripAccents(l.split("/").pop().toLowerCase()); if ((sHome && slug.indexOf(sHome) >= 0) || (sAway && slug.indexOf(sAway) >= 0)) { href = l; break; } }
+    if (href) {
+      const ph = await (await fetch("https://www.comuniate.com" + href, { headers: cmHeaders() })).text();
+      let idL = "", idV = "";
+      for (const m of ph.matchAll(/pintar_alineacion\('(local|visitante)',\s*(\d+)/g)) { if (m[1] === "local") idL = m[2]; else idV = m[2]; }
+      const fetchLine = async (id) => {
+        if (!id) return {};
+        const b = "local=local&modo=clasico&id_equipo=" + id + "&confirmado=0";
+        const r = await (await fetch("https://www.comuniate.com/ajax/pintar_jugadores_campo.php", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded", referer: "https://www.comuniate.com" + href }), body: b })).text();
+        return parseOnceLines(r);
+      };
+      data = { home: { name: home, lines: await fetchLine(idL) }, away: { name: away, lines: await fetchLine(idV) } };
+    }
+  } catch (e) {}
+  if (data) { try { await env.PORRA.put(key, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {} }
+  return data || { home: { name: home, lines: {} }, away: { name: away, lines: {} } };
+}
+
 /* ---------- Franja de jornada (escudos, día/hora y TV) ---------- */
 function wkey(s) {
   return stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").split(/\s+/)
@@ -2397,6 +2448,9 @@ export async function onRequestGet({ request, env, params }) {
   }
   if (path === "fichajes") {
     try { return json(await getFichajes(env)); } catch (e) { return json({ groups: [], error: String(e) }); }
+  }
+  if (path === "once") {
+    try { return json(await getOnce(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "", url.searchParams.get("jornada") || "")); } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "equipos") {
     try { return json({ teams: await getTeams(env) }); } catch (e) { return json({ teams: [] }); }

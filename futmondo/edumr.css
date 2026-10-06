@@ -266,6 +266,8 @@ body {
 .cx-jn-nav:disabled { opacity: 0.3; cursor: default; }
 .cx-jn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 5px; max-width: 1140px; margin: 0 auto; }
 .cx-jn { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 2px; padding: 2px 5px; border: 1px solid var(--cx-border); border-radius: 7px; background: var(--cx-surface); box-shadow: var(--cx-shadow-sm); }
+.cx-jn-click { cursor: pointer; transition: border-color 0.14s ease, transform 0.14s ease; }
+.cx-jn-click:hover { border-color: var(--cx-green); transform: translateY(-1px); }
 .cx-jn-crest { width: 30px; height: 30px; object-fit: contain; justify-self: center; }
 .cx-jn-mid { display: flex; flex-direction: column; align-items: center; gap: 0; min-width: 0; }
 .cx-jn-tv { height: 13px; width: auto; max-width: 52px; object-fit: contain; }

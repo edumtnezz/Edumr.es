@@ -1762,6 +1762,48 @@
     openNoticiaInline(d.link, d.title);
   });
 
+  function renderOnce(res, d) {
+    const root = el("div");
+    root.appendChild(el("h2", "ficha-name", "Alineaciones probables"));
+    root.appendChild(el("p", "muted small", "Jornada " + (d.jornada || "") + " · once probable"));
+    const wrap = el("div", "once-wrap");
+    [["home", d.homeCrest], ["away", d.awayCrest]].forEach((pair) => {
+      const side = pair[0], crest = pair[1];
+      const t = (res && res[side]) || {};
+      const box = el("div", "once-team");
+      const head = el("div", "once-head");
+      if (crest) { const im = el("img", "once-crest"); im.src = crest; im.alt = ""; im.loading = "lazy"; head.appendChild(im); }
+      head.appendChild(el("span", null, t.name || ""));
+      box.appendChild(head);
+      const lines = t.lines || {};
+      ["delanteros", "medios", "defensas", "portero"].forEach((ln) => {
+        const arr = lines[ln];
+        if (!arr || !arr.length) return;
+        const row = el("div", "once-line" + (ln === "portero" ? " once-gk" : ""));
+        arr.forEach((p) => {
+          const pl = el("div", "once-p");
+          if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; pl.appendChild(im); }
+          pl.appendChild(el("span", null, p.name));
+          row.appendChild(pl);
+        });
+        box.appendChild(row);
+      });
+      wrap.appendChild(box);
+    });
+    root.appendChild(wrap);
+    return root;
+  }
+  document.addEventListener("cx:once", (e) => {
+    const d = e.detail || {};
+    const w = el("div");
+    w.appendChild(el("p", "muted small", "Cargando alineaciones probables…"));
+    showModal(w);
+    fetch(API + "/once?home=" + encodeURIComponent(d.home || "") + "&away=" + encodeURIComponent(d.away || "") + "&jornada=" + encodeURIComponent(d.jornada || ""))
+      .then((r) => r.json())
+      .then((res) => showModal(renderOnce(res, d)))
+      .catch(() => { const c = el("div"); c.appendChild(el("p", "muted small", "No se pudieron cargar las alineaciones.")); showModal(c); });
+  });
+
   (function initSwipe() {
     const order = ["mercado", "fichajes", "noticias", "analiza", "clausulazos"];
     const main = document.querySelector(".quiniela-main") || document.body;

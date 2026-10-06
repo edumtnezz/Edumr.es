@@ -59,7 +59,7 @@
           } else {
             tv = '<span class="cx-jn-tv-ph" title="Canal por confirmar">por confirmar</span>';
           }
-          return '<div class="cx-jn">' +
+          return '<div class="cx-jn cx-jn-click" data-home="' + esc(m.home) + '" data-away="' + esc(m.away) + '" data-hcrest="' + esc(m.homeCrest) + '" data-acrest="' + esc(m.awayCrest) + '">' +
             '<img class="cx-jn-crest" src="' + esc(m.homeCrest) + '" alt="' + esc(m.home) + '" title="' + esc(m.home) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
             '<div class="cx-jn-mid">' + tv + '<span class="cx-jn-time">' + esc(((m.day || "") + " " + (m.date || "")).trim()) + '</span><span class="cx-jn-hora">' + esc(m.time || "") + '</span></div>' +
             '<img class="cx-jn-crest" src="' + esc(m.awayCrest) + '" alt="' + esc(m.away) + '" title="' + esc(m.away) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
@@ -68,6 +68,14 @@
         var pv = document.getElementById("cxJPrev"), nx = document.getElementById("cxJNext");
         if (pv) pv.disabled = jornada <= 1;
         if (nx) nx.disabled = jornada >= 38;
+        grid.querySelectorAll(".cx-jn").forEach(function (el) {
+          el.addEventListener("click", function () {
+            document.dispatchEvent(new CustomEvent("cx:once", { detail: {
+              home: el.getAttribute("data-home"), away: el.getAttribute("data-away"),
+              homeCrest: el.getAttribute("data-hcrest"), awayCrest: el.getAttribute("data-acrest"), jornada: jornada
+            } }));
+          });
+        });
       })
       .catch(function () { grid.innerHTML = '<span class="cx-strip-load">No disponible.</span>'; });
   }
