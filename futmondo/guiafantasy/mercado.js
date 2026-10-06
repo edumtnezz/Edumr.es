@@ -473,7 +473,7 @@
         const r = await (await fetch(API + "/once?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json();
         const ok = r && ((r.home && r.home.lines && Object.keys(r.home.lines).length) || (r.away && r.away.lines && Object.keys(r.away.lines).length));
         if (!ok) { if (attempt === 0) { await new Promise((x) => setTimeout(x, 1500)); continue; } }
-        if (r && r.stadium) { const st = card.querySelector(".alin-stadium"); if (st) st.innerHTML = "🏟️ " + escapeHtml(r.stadium); }
+        if (r && r.stadium) { const st = card.querySelector(".alin-stadium"); if (st) st.textContent = "🏟️ " + r.stadium; }
         body.innerHTML = "";
         const pitches = el("div", "alin-pitches");
         pitches.appendChild(renderPitch(r.home || {}, m.homeCrest));
