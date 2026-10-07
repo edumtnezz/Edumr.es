@@ -330,6 +330,19 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 .an-nota-num { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 1.6rem; color: #22c55e; }
 .an-nota-txt { font-size: 0.82rem; color: #9fb0c4; }
 .an-nota-info { flex-basis: 100%; font-size: 0.72rem; color: var(--muted); line-height: 1.4; }
+.an-capitan { padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(250,204,21,0.45); background: rgba(250,204,21,0.08); margin-bottom: 10px; }
+.an-capitan-t { font-weight: 800; font-size: 0.88rem; margin-bottom: 8px; }
+.an-cap-pick { display: flex; align-items: center; gap: 10px; }
+.an-cap-photo { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; background: var(--card-solid); border: 2px solid rgba(250,204,21,0.6); flex: 0 0 auto; }
+.an-cap-photo img { width: 100%; height: 100%; object-fit: cover; }
+.an-cap-body { flex: 1 1 auto; min-width: 0; }
+.an-cap-name { font-weight: 800; font-size: 0.95rem; }
+.an-cap-why { font-size: 0.74rem; color: var(--muted); margin-top: 2px; }
+.an-cap-warn { font-size: 0.72rem; color: #d97706; margin-top: 4px; }
+.an-cap-score { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 1.1rem; color: #f59e0b; flex: 0 0 auto; }
+.an-cap-alts { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 0.74rem; }
+.an-cap-altslabel { color: var(--muted); }
+.an-cap-altchip { background: var(--card-solid); border: 1px solid var(--border); border-radius: 999px; padding: 3px 9px; font-weight: 700; }
 .an-clauses { padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(245,158,11,0.4); background: rgba(245,158,11,0.06); margin-bottom: 4px; }
 .an-clauses-t { font-weight: 800; font-size: 0.88rem; margin-bottom: 4px; }
 .an-clauses-info { font-size: 0.72rem; color: var(--muted); margin-bottom: 6px; line-height: 1.4; }

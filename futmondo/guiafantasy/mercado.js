@@ -1851,6 +1851,40 @@
       box.appendChild(el("div", "an-nota-txt", "Nota de tu once · " + parts.join(" · ")));
       box.appendChild(el("div", "an-nota-info", "Cada posición se puntúa sobre 100 con: su forma en los últimos partidos, su probabilidad de ser titular, +4 si juega en casa / -2 si juega fuera, y +2 si tiene doble posición. Si está lesionado, se queda en 5."));
       out.appendChild(box);
+      // Capitán: en el modo Full Mundo dobla los puntos que haga, así que lo
+      // que de verdad importa no es solo su forma, sino la combinación de
+      // forma + que tenga muchas opciones de SALIR DE TITULAR (un capitán
+      // que no juega no dobla nada). Usamos la misma nota de arriba (ya
+      // combina forma, prob. de jugar, casa/fuera y doble posición) y
+      // avisamos aparte si su plaza está en duda.
+      const capList = tits.slice().sort((a, b) => scoreOf(b) - scoreOf(a));
+      if (capList.length) {
+        const top = capList[0];
+        const cap = el("div", "an-capitan");
+        cap.appendChild(el("div", "an-capitan-t", "👑 Capitán recomendado"));
+        const row = el("div", "an-cap-pick");
+        const ph = el("div", "an-cap-photo"); ph.appendChild(photoImg(top.photo)); row.appendChild(ph);
+        const body = el("div", "an-cap-body");
+        body.appendChild(el("div", "an-cap-name", top.nombre || ""));
+        const why = [];
+        const favg = (top.fitness || []).length ? (top.fitness.reduce((a, b) => a + (Number(b) || 0), 0) / top.fitness.length).toFixed(1).replace(".", ",") : null;
+        if (favg) why.push("forma " + favg + "/10");
+        if (top.prob != null) why.push(top.prob + "% de jugar");
+        if (top.casa === true) why.push("juega en casa"); else if (top.casa === false) why.push("juega fuera");
+        if (top.pos2) why.push("doble posición");
+        body.appendChild(el("div", "an-cap-why", why.join(" · ") || "sin datos suficientes"));
+        if (top.prob != null && top.prob < 70) body.appendChild(el("div", "an-cap-warn", "⚠️ su plaza de titular no está asegurada (" + top.prob + "%) — si al final no juega, el capitán no dobla nada"));
+        row.appendChild(body);
+        row.appendChild(el("div", "an-cap-score", scoreOf(top) + "/100"));
+        cap.appendChild(row);
+        if (capList.length > 1) {
+          const alts = el("div", "an-cap-alts");
+          alts.appendChild(el("span", "an-cap-altslabel", "Alternativas:"));
+          capList.slice(1, 3).forEach((p) => alts.appendChild(el("span", "an-cap-altchip", (p.last || p.nombre || "") + " · " + scoreOf(p))));
+          cap.appendChild(alts);
+        }
+        out.appendChild(cap);
+      }
       const cla = tits.filter((p) => p.clause && p.valor && p.clause < p.valor * 1.6).sort((a, b) => scoreOf(b) - scoreOf(a));
       if (cla.length) {
         const cb = el("div", "an-clauses");
