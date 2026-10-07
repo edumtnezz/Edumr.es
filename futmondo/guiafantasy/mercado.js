@@ -504,16 +504,17 @@
       const n = arr.length;
       // Margen interior: el badge de probabilidad sobresale hacia la izquierda
       // de cada jugador, así que necesitan hueco de sobra para no quedar
-      // cortados por el borde del campo. En líneas de 5 o más, las fotos se
-      // reducen un poco (y por tanto necesitan menos margen) para que quepan
-      // separadas en vez de pegadas unas a otras.
-      const tight = n >= 5;
-      const inset = tight ? 13 : 20;
+      // cortados por el borde del campo. Con 4 jugadores en línea (ej. un
+      // 4-4-2) o con 5 o más (ej. un 4-5-1), las fotos a tamaño normal quedan
+      // pegadas unas a otras, así que se reducen progresivamente (y por tanto
+      // necesitan menos margen) para que quepan separadas.
+      const sizeClass = n >= 5 ? "tight" : n === 4 ? "semi" : "";
+      const inset = n >= 5 ? 13 : n === 4 ? 16 : 20;
       const span = 100 - inset * 2;
       const step = n > 1 ? span / (n - 1) : 0;
       arr.forEach((p, i) => {
         const x = n > 1 ? (inset + i * step) : 50;
-        const pl = el("div", "alin-pl" + (tight ? " alin-pl-tight" : ""));
+        const pl = el("div", "alin-pl" + (sizeClass ? " alin-pl-" + sizeClass : ""));
         pl.style.left = x + "%";
         pl.style.top = band[1] + "%";
         const ph = el("div", "alin-pimg");
