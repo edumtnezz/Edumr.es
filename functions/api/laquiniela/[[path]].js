@@ -2001,9 +2001,18 @@ async function handleAnaliza(request, env, user) {
     await Promise.all(equipos.map(async (t) => {
       try { const d = await getFFTeam(env, t); rosterByTeam[t] = [].concat(d.starters || [], d.bench || []); } catch (e) { rosterByTeam[t] = []; }
     }));
+    // El nombre corto que se muestra bajo la foto en el campo se calcula
+    // SIEMPRE a partir de "nombre" (el que ha leído la IA o ha escrito el
+    // usuario), nunca del "last" que trae el scraping de futbolfantasy.com:
+    // ese "last" es la ÚLTIMA PALABRA DEL NOMBRE LEGAL COMPLETO, que para
+    // jugadores conocidos por un solo nombre da un resultado confuso (p.ej.
+    // a Vinícius, cuyo nombre legal termina en "Júnior", se le etiquetaba
+    // como "JUNIOR" en vez de "VINÍCIUS", aunque la foto sí fuera la suya).
+    const shortName = (nm) => { const w = String(nm || "").trim().split(/\s+/).filter(Boolean); return w.length > 1 ? w[w.length - 1] : (w[0] || ""); };
     [].concat(titulares, suplentes).forEach((p) => {
       const m = matchFFPlayer(p.nombre, rosterByTeam[p.equipo] || []);
-      if (m) { if (m.photo) p.photo = m.photo; if (m.last) p.last = m.last; }
+      if (m && m.photo) p.photo = m.photo;
+      p.last = shortName(p.nombre);
     });
   } catch (e) {}
   try {
@@ -2029,7 +2038,7 @@ async function handleAnaliza(request, env, user) {
   // pasa cerrada: "estos N y solo estos N".
   const multiList = [].concat(titulares, suplentes).filter((p) => p.pos2 && p.pos2 !== p.pos);
   const multiHint = multiList.length
-    ? "Tiene doble posición EXACTAMENTE esta lista de " + multiList.length + " jugador(es), ni uno más ni uno menos: " + multiList.map((p) => p.nombre + " (" + p.pos + "/" + p.pos2 + ")").join(", ") + ". Escribe una línea por CADA UNO de ellos, formato \"Nombre: colócalo en X porque...\"."
+    ? "Tiene doble posición EXACTAMENTE esta lista de " + multiList.length + " jugador(es), ni uno más ni uno menos: " + multiList.map((p) => p.nombre + " (" + p.pos + "/" + p.pos2 + ")").join(", ") + ". Escribe una línea por CADA UNO de ellos explicando en cuál de sus DOS posiciones conviene más alinearlo para sacarle más puntos (por su rol en el campo, su forma y su rival), NUNCA uses como motivo la probabilidad de ser titular ni si va a jugar o no (eso ya se decide aparte, aquí solo importa EN QUÉ POSICIÓN rinde mejor si juega). Formato \"Nombre: en X porque...\"."
     : "Ninguno de tus jugadores tiene doble posición esta jornada.";
   const kick = (v) => { if (!v) return "?"; try { return new Date(v).toLocaleString("es-ES", { weekday: "short", day: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }); } catch (e) { return "?"; } };
   const line = (p) => `- ${p.pos}${p.pos2 ? "/" + p.pos2 : ""} ${p.nombre} (${p.equipo || "?"}) · ${p.estado} · prob.jugar ${p.prob != null ? p.prob : "?"}%${p.probFf != null ? " (FutbolFantasy)" : ""} · ${p.puntos != null ? p.puntos + " pts" : "sin datos"} · últ5 ${(p.fitness || []).join("-")} · rival ${p.rival || "desconocido"} ${p.casa === true ? "(CASA)" : p.casa === false ? "(FUERA)" : ""} · juega ${kick(p.fecha)}`;

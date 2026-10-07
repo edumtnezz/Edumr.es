@@ -1932,13 +1932,15 @@
     const field = el("div", "alin-pitch");
     field.style.maxWidth = "520px";
     field.style.margin = "12px auto";
-    // Recambio probable debajo de cada titular con la plaza en duda (<=60%,
-    // o siempre en portería), igual que en "Alineaciones probables" — pero
-    // aquí tomado de TU banquillo (los suplentes de tu captura), no del
-    // mercado general.
-    const benchPool = { DEL: [], CEN: [], DEF: [], POR: [] };
-    sups.forEach((p) => { if (benchPool[p.pos]) benchPool[p.pos].push(p); });
-    Object.keys(benchPool).forEach((k) => benchPool[k].sort((a, b) => (b.prob == null ? -1 : b.prob) - (a.prob == null ? -1 : a.prob)));
+    // Antes se mostraba debajo de cada titular con la plaza en duda un
+    // "recambio" tomado del banquillo de la MISMA posición (como en
+    // "Alineaciones probables"). Se quita: con pocos jugadores por posición
+    // en un equipo de Futmondo, el banquillo de esa posición se agotaba con
+    // el primer titular dudoso y los siguientes se quedaban sin recambio
+    // aunque estuvieran igual o peor (p.ej. Lemar sí lo mostraba y Vinícius
+    // o Amatucci no), dando una sensación inconsistente/con fallos. El
+    // banquillo completo ya se ve debajo del campo y sigue sirviendo para
+    // tocar y meter a cualquiera.
     [["DEL", 15], ["CEN", 41], ["DEF", 67], ["POR", 88]].forEach((band) => {
       const arr = tits.filter((p) => p.pos === band[0]);
       const n = arr.length;
@@ -1949,18 +1951,7 @@
       const step = n > 1 ? span / (n - 1) : 0;
       arr.forEach((p, i) => {
         const x = n > 1 ? (inset + i * step) : 50;
-        const node = pitchCard(p, x, band[1], sizeClass);
-        if (p.prob != null && (band[0] === "POR" || p.prob <= 60)) {
-          const alts = [];
-          for (let k = 0; k < 2; k++) { const a = benchPool[band[0]].shift(); if (a) alts.push(a); }
-          alts.forEach((alt) => {
-            const altEl = el("div", "alin-palt", alt.last || alt.nombre || "");
-            altEl.title = "Recambio en tu banquillo: " + (alt.nombre || "");
-            altEl.addEventListener("click", (ev) => { ev.stopPropagation(); swapPicker(p); });
-            node.appendChild(altEl);
-          });
-        }
-        field.appendChild(node);
+        field.appendChild(pitchCard(p, x, band[1], sizeClass));
       });
     });
     if (field.children.length) out.appendChild(field);
@@ -1997,11 +1988,14 @@
       out.appendChild(bsec);
     }
 
-    // Plan de cambios por horario: en Futmondo puedes sacar hasta 3 jugadores
-    // del banquillo mientras no hayan jugado todavía, así que conviene
-    // alinear primero a los que juegan antes y dejar en el banco, como
-    // "segunda bala", a un jugador de la misma posición que juegue más
-    // tarde (por si el titular lo hace mal). Esto se calcula aquí con las
+    // Plan de cambios por horario: en Futmondo puedes cambiar a un jugador
+    // mientras NO haya jugado todavía (las veces que haga falta), pero en
+    // cuanto haya puntuado algún titular, ya solo queda UN cambio de
+    // emergencia para el resto de la jornada (no uno por posición). Por eso
+    // conviene alinear primero a los que juegan antes y dejar en el banco,
+    // como "segunda bala", a alguien de la misma posición que juegue más
+    // tarde — así, si un titular lo hace mal, ese cambio de emergencia se
+    // gasta en el que de verdad lo necesita. Esto se calcula aquí con las
     // fechas reales de cada partido, en vez de depender de que la IA lo
     // acierte en el texto libre.
     function buildSwapPlan() {
@@ -2022,7 +2016,7 @@
     if (swapPairs.length) {
       const sec = el("div", "estado-sec");
       sec.appendChild(el("div", "estado-title", "🔁 Plan de cambios por horario"));
-      sec.appendChild(el("p", "muted small", "Juegan primero los de arriba. Si alguno lo hace mal, aún no habrá jugado el suplente sugerido y podrás meterlo (máx. 3 cambios de banquillo mientras no hayan jugado)."));
+      sec.appendChild(el("p", "muted small", "Mientras un titular NO haya jugado, puedes cambiarlo las veces que quieras. Pero en cuanto UNO de tu equipo ya haya puntuado, solo te queda UN cambio de emergencia para el resto de la jornada — resérvalo para el que peor lo haga. Por eso conviene alinear primero a los de arriba (juegan antes) y dejar atrás, como segunda bala, al del banquillo que juegue más tarde."));
       const box = el("div", "an-list");
       swapPairs.forEach(({ pos, tit, sub }) => {
         const row = el("div", "an-row clickable");
