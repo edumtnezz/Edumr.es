@@ -1857,7 +1857,7 @@
       // que no juega no dobla nada). Usamos la misma nota de arriba (ya
       // combina forma, prob. de jugar, casa/fuera y doble posición) y
       // avisamos aparte si su plaza está en duda.
-      const capList = tits.slice().sort((a, b) => scoreOf(b) - scoreOf(a));
+      const capList = tits.filter((p) => p.pos !== "POR").slice().sort((a, b) => scoreOf(b) - scoreOf(a));
       if (capList.length) {
         const top = capList[0];
         const cap = el("div", "an-capitan");
