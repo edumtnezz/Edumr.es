@@ -489,9 +489,9 @@
       const arr = groups[band[0]];
       if (!arr.length) return;
       const n = arr.length;
-      const step = n > 1 ? 56 / (n - 1) : 0;
+      const step = n > 1 ? 68 / (n - 1) : 0;
       arr.forEach((p, i) => {
-        const x = n > 1 ? (22 + i * step) : 50;
+        const x = n > 1 ? (16 + i * step) : 50;
         const stag = n >= 5 ? (i % 2 ? 5 : -5) : 0;
         const pl = el("div", "alin-pl");
         pl.style.left = x + "%";

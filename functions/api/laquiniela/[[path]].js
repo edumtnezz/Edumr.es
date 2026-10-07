@@ -1445,8 +1445,9 @@ async function cmPct(id) {
 }
 async function getFFTeam(env, name) {
   let slug = normKey(String(name || "").toLowerCase()).replace(/ /g, "-");
-  if (slug === "real-betis") slug = "betis";
-  const key = "ffteam:v6:" + slug;
+  const SLUG_FIX = { "atleti": "atletico", "barca": "barcelona", "santander": "racing", "real-betis": "betis" };
+  if (SLUG_FIX[slug]) slug = SLUG_FIX[slug];
+  const key = "ffteam:v7:" + slug;
   try { const c = await env.PORRA.get(key, "json"); if (c && c.data && Date.now() - (c.at || 0) < 3 * 3600 * 1000) return c.data; } catch (e) {}
   const data = { starters: [], bench: [] };
   try {
@@ -1486,7 +1487,7 @@ async function getFFTeam(env, name) {
 }
 async function getOnce(env, home, away, jornada) {
   const j = Number(jornada) || 0;
-  const key = "once:v11:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
+  const key = "once:v12:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
   try { const c = await env.PORRA.get(key, "json"); if (c && c.at && Date.now() - c.at < 30 * 60 * 1000) return c.data; } catch (e) {}
   let stadium = "", kickoff = "", referee = "";
   try {
