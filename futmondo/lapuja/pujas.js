@@ -279,8 +279,13 @@ function render() {
 
   if (user) {
     const open = p && p.status === "open";
-    if (!open && data.inWindow) {
+    // El admin puede abrir una puja aunque no sea la hora habitual (lunes
+    // 23:59 a martes 22:00); el resto de usuarios solo ven el formulario
+    // dentro de esa ventana.
+    const canOpen = data.inWindow || data.admin;
+    if (!open && canOpen) {
     panel.appendChild(el("p", "muted", "Elige el jugador a subasta y el precio de salida. El resto verá la subasta y podrá pujar."));
+    if (!data.inWindow && data.admin) panel.appendChild(el("p", "puja-admin-note", "🛠️ Fuera del horario habitual — solo tú puedes abrirla ahora (modo admin)."));
     const f = el("div", "auth-form");
     const pl = el("input"); pl.id = "pjPlayer"; pl.placeholder = "Escribe el jugador (ej. Diomande)"; pl.autocomplete = "off";
     const sug = el("div", "pj-suggest hidden"); sug.id = "pjSuggest";

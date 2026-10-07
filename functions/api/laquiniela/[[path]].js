@@ -2013,7 +2013,9 @@ async function getPuja(env) {
 
 async function createPuja(request, env, user) {
   if (!user) return json({ error: "Inicia sesion." }, 401);
-  if (!inPujaWindow(new Date())) {
+  // El admin puede abrir una puja fuera del horario habitual (lunes 23:59 a
+  // martes 22:00); para el resto de usuarios se mantiene la ventana normal.
+  if (!inPujaWindow(new Date()) && !isAdmin(env, user)) {
     return json({ error: "La subasta solo se puede abrir de lunes 23:59 a martes 22:00 (hora de Madrid)." }, 403);
   }
   let body;
