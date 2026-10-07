@@ -1020,9 +1020,16 @@ $("sortSelect").addEventListener("change", (e) => {
   let sx = 0;
   let sy = 0;
   let st = 0;
+  let multi = false;
+  // Con dos dedos (pellizco para hacer zoom) no queremos interpretarlo como
+  // un deslizamiento para cambiar de pestaña: se marca "multi" y se ignora
+  // ese gesto por completo, aunque el dedo que suelta en último lugar se
+  // mueva mucho en horizontal.
   main.addEventListener(
     "touchstart",
     (e) => {
+      if (e.touches.length > 1) { multi = true; return; }
+      multi = false;
       const t = e.changedTouches[0];
       sx = t.clientX;
       sy = t.clientY;
@@ -1031,8 +1038,16 @@ $("sortSelect").addEventListener("change", (e) => {
     { passive: true }
   );
   main.addEventListener(
+    "touchmove",
+    (e) => { if (e.touches.length > 1) multi = true; },
+    { passive: true }
+  );
+  main.addEventListener(
     "touchend",
     (e) => {
+      const wasMulti = multi;
+      if (e.touches.length === 0) multi = false;
+      if (wasMulti || e.touches.length > 0) return;
       const t = e.changedTouches[0];
       const dx = t.clientX - sx;
       const dy = t.clientY - sy;

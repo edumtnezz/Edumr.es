@@ -255,12 +255,22 @@ document.querySelectorAll(".tab").forEach((t) => {
 (function initSwipe() {
   const order = ["porra", "historial", "participantes", "instrucciones"];
   const main = document.querySelector(".quiniela-main") || document.body;
-  let sx = 0, sy = 0, st = 0;
+  let sx = 0, sy = 0, st = 0, multi = false;
+  // Con dos dedos (pellizco para hacer zoom) no queremos interpretarlo como
+  // un deslizamiento para cambiar de pestaña: se marca "multi" y se ignora
+  // ese gesto por completo, aunque el dedo que suelta en último lugar se
+  // mueva mucho en horizontal.
   main.addEventListener("touchstart", (e) => {
+    if (e.touches.length > 1) { multi = true; return; }
+    multi = false;
     const t = e.changedTouches[0];
     sx = t.clientX; sy = t.clientY; st = Date.now();
   }, { passive: true });
+  main.addEventListener("touchmove", (e) => { if (e.touches.length > 1) multi = true; }, { passive: true });
   main.addEventListener("touchend", (e) => {
+    const wasMulti = multi;
+    if (e.touches.length === 0) multi = false;
+    if (wasMulti || e.touches.length > 0) return;
     const t = e.changedTouches[0];
     const dx = t.clientX - sx;
     const dy = t.clientY - sy;
