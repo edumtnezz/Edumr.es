@@ -451,6 +451,11 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 .alin-pl .alin-pname { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; color: #fff; text-align: center; line-height: 1.05; margin-top: 3px; text-shadow: 0 1px 3px rgba(0,0,0,0.9); white-space: nowrap; max-width: 122px; }
 .alin-palt { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; color: rgba(255,255,255,0.72); text-align: center; line-height: 1.05; margin-top: 1px; text-shadow: 0 1px 3px rgba(0,0,0,0.9); white-space: nowrap; max-width: 122px; overflow: hidden; text-overflow: ellipsis; }
 .alin-pct { position: absolute; top: 58%; left: -14%; transform: translateY(-50%); background: #0a0e13; color: #fff; font-weight: 900; font-size: 0.7rem; padding: 1px 7px; border-radius: 8px; border: 2px solid #22c55e; white-space: nowrap; line-height: 1.3; z-index: 3; }
+.alin-pl-tight { width: 92px; }
+.alin-pl-tight .alin-pimg { width: 88px; height: 88px; }
+.alin-pl-tight .alin-pname { font-size: 0.68rem; max-width: 100px; }
+.alin-pl-tight .alin-palt { font-size: 0.52rem; max-width: 100px; }
+.alin-pl-tight .alin-pct { font-size: 0.6rem; padding: 1px 6px; }
 .alin-bench { margin-top: 10px; }
 .alin-bench-h { font-weight: 800; font-size: 0.8rem; margin-bottom: 6px; }
 .alin-bench-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 6px; }
@@ -464,6 +469,11 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
   .alin-pl .alin-pname { font-size: 0.68rem; max-width: 104px; }
   .alin-palt { font-size: 0.54rem; max-width: 104px; }
   .alin-pct { font-size: 0.6rem; padding: 1px 6px; }
+  .alin-pl-tight { width: 72px; }
+  .alin-pl-tight .alin-pimg { width: 68px; height: 68px; }
+  .alin-pl-tight .alin-pname { font-size: 0.58rem; max-width: 80px; }
+  .alin-pl-tight .alin-palt { font-size: 0.46rem; max-width: 80px; }
+  .alin-pl-tight .alin-pct { font-size: 0.52rem; padding: 1px 5px; }
 }
 .newscard { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--cx-surface, #fff); cursor: pointer; transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 14px rgba(15, 23, 42, 0.05); }
 .newscard:hover { border-color: var(--border-hover, #22c55e); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12); }

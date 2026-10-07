@@ -502,13 +502,18 @@
       const arr = groups[band[0]];
       if (!arr.length) return;
       const n = arr.length;
-      // Margen interior amplio: el badge de probabilidad sobresale hacia la
-      // izquierda de cada jugador, así que los de la columna izquierda
-      // necesitan hueco de sobra para no quedar cortados por el borde del campo.
-      const step = n > 1 ? 60 / (n - 1) : 0;
+      // Margen interior: el badge de probabilidad sobresale hacia la izquierda
+      // de cada jugador, así que necesitan hueco de sobra para no quedar
+      // cortados por el borde del campo. En líneas de 5 o más, las fotos se
+      // reducen un poco (y por tanto necesitan menos margen) para que quepan
+      // separadas en vez de pegadas unas a otras.
+      const tight = n >= 5;
+      const inset = tight ? 13 : 20;
+      const span = 100 - inset * 2;
+      const step = n > 1 ? span / (n - 1) : 0;
       arr.forEach((p, i) => {
-        const x = n > 1 ? (20 + i * step) : 50;
-        const pl = el("div", "alin-pl");
+        const x = n > 1 ? (inset + i * step) : 50;
+        const pl = el("div", "alin-pl" + (tight ? " alin-pl-tight" : ""));
         pl.style.left = x + "%";
         pl.style.top = band[1] + "%";
         const ph = el("div", "alin-pimg");
