@@ -1960,7 +1960,7 @@ async function handleAnaliza(request, env, user) {
   // el campo de "Analiza tu equipo" se vea igual que "Alineaciones probables"
   // (recorte de cuerpo entero de futbolfantasy.com) buscamos la foto de cada
   // jugador en el roster de su equipo (misma fuente y caché que Alineaciones).
-  const matchFFPlayer = (nombre, roster) => {
+  const matchFFPlayer = (nombre, roster, minScore) => {
     const nk = normKey(String(nombre || "").toLowerCase());
     if (!nk || !roster || !roster.length) return null;
     const words = nk.split(" ").filter(Boolean);
@@ -1993,7 +1993,7 @@ async function handleAnaliza(request, env, user) {
       });
       if (s > bestScore) { bestScore = s; best = r; }
     });
-    return bestScore >= 50 ? best : null;
+    return bestScore >= (minScore || 50) ? best : null;
   };
   try {
     const equipos = [...new Set([].concat(titulares, suplentes).map((p) => p.equipo).filter(Boolean))];
@@ -2009,8 +2009,16 @@ async function handleAnaliza(request, env, user) {
     // a Vinícius, cuyo nombre legal termina en "Júnior", se le etiquetaba
     // como "JUNIOR" en vez de "VINÍCIUS", aunque la foto sí fuera la suya).
     const shortName = (nm) => { const w = String(nm || "").trim().split(/\s+/).filter(Boolean); return w.length > 1 ? w[w.length - 1] : (w[0] || ""); };
+    const allRoster = Object.values(rosterByTeam).flat();
     [].concat(titulares, suplentes).forEach((p) => {
-      const m = matchFFPlayer(p.nombre, rosterByTeam[p.equipo] || []);
+      let m = matchFFPlayer(p.nombre, rosterByTeam[p.equipo] || []);
+      // Red de seguridad: si no aparece en el roster de SU equipo (según
+      // Futmondo), puede que futbolfantasy.com lo tenga adscrito a otro
+      // equipo (cesión/traspaso reciente que una fuente refleja y la otra
+      // no). Probamos en el resto de equipos ya descargados, pero exigiendo
+      // una coincidencia casi exacta (90) para no acabar poniendo la foto
+      // de otro jugador distinto con nombre parecido en otro equipo.
+      if (!m) m = matchFFPlayer(p.nombre, allRoster, 90);
       if (m && m.photo) p.photo = m.photo;
       p.last = shortName(p.nombre);
     });
