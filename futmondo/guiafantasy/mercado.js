@@ -472,6 +472,9 @@
     box.appendChild(grid);
     return box;
   }
+  function posGroup(pos) {
+    return /portero/i.test(pos) ? "Portero" : /defensa/i.test(pos) ? "Defensa" : /delantero/i.test(pos) ? "Delantero" : "Mediocampista";
+  }
   function renderPitch(t, crest) {
     const col = el("div", "alin-teamcol");
     const th = el("div", "alin-tcolhead");
@@ -481,17 +484,19 @@
     col.appendChild(th);
     const box = el("div", "alin-pitch");
     const groups = { Portero: [], Defensa: [], Mediocampista: [], Delantero: [] };
-    (t.starters || []).forEach((p) => {
-      const k = /portero/i.test(p.pos) ? "Portero" : /defensa/i.test(p.pos) ? "Defensa" : /delantero/i.test(p.pos) ? "Delantero" : "Mediocampista";
-      groups[k].push(p);
-    });
-    [["Delantero", 16], ["Mediocampista", 42], ["Defensa", 68], ["Portero", 88]].forEach((band) => {
+    (t.starters || []).forEach((p) => { groups[posGroup(p.pos)].push(p); });
+    // Banquillo agrupado por posición y ordenado por probabilidad, para sugerir
+    // el "jugador probable" (recambio) de cada titular dentro de su misma línea.
+    const benchPool = { Portero: [], Defensa: [], Mediocampista: [], Delantero: [] };
+    (t.bench || []).forEach((p) => { benchPool[posGroup(p.pos)].push(p); });
+    Object.keys(benchPool).forEach((k) => benchPool[k].sort((a, b) => (b.prob == null ? -1 : b.prob) - (a.prob == null ? -1 : a.prob)));
+    [["Delantero", 15], ["Mediocampista", 41], ["Defensa", 67], ["Portero", 88]].forEach((band) => {
       const arr = groups[band[0]];
       if (!arr.length) return;
       const n = arr.length;
-      const step = n > 1 ? 68 / (n - 1) : 0;
+      const step = n > 1 ? 80 / (n - 1) : 0;
       arr.forEach((p, i) => {
-        const x = n > 1 ? (16 + i * step) : 50;
+        const x = n > 1 ? (10 + i * step) : 50;
         const stag = n >= 5 ? (i % 2 ? 5 : -5) : 0;
         const pl = el("div", "alin-pl");
         pl.style.left = x + "%";
@@ -501,6 +506,13 @@
         if (p.prob != null && p.prob < 100) ph.appendChild(el("span", "alin-pct", p.prob + "%"));
         pl.appendChild(ph);
         pl.appendChild(el("div", "alin-pname", p.last || p.name));
+        const alt = benchPool[band[0]].shift();
+        if (alt) {
+          const altEl = el("div", "alin-palt", alt.last || alt.name);
+          altEl.title = "Probable recambio: " + (alt.full || alt.name);
+          altEl.addEventListener("click", (ev) => { ev.stopPropagation(); openPlayerByName(alt.full || alt.name); });
+          pl.appendChild(altEl);
+        }
         pl.addEventListener("click", () => openPlayerByName(p.full || p.name));
         box.appendChild(pl);
       });
