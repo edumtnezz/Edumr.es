@@ -475,6 +475,14 @@
   function posGroup(pos) {
     return /portero/i.test(pos) ? "Portero" : /defensa/i.test(pos) ? "Defensa" : /delantero/i.test(pos) ? "Delantero" : "Mediocampista";
   }
+  // Mismos tramos de color que FutbolFantasy para el badge de probabilidad.
+  function pctColor(prob) {
+    if (prob >= 90) return "#4184ab";
+    if (prob >= 80) return "#41ab58";
+    if (prob >= 60) return "#ebcc34";
+    if (prob >= 40) return "#cf8236";
+    return "#808080";
+  }
   function renderPitch(t, crest) {
     const col = el("div", "alin-teamcol");
     const th = el("div", "alin-tcolhead");
@@ -502,7 +510,11 @@
         pl.style.top = band[1] + "%";
         const ph = el("div", "alin-pimg");
         if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; ph.appendChild(im); }
-        if (p.prob != null && p.prob < 100) ph.appendChild(el("span", "alin-pct", p.prob + "%"));
+        if (p.prob != null && p.prob < 100) {
+          const pct = el("span", "alin-pct", p.prob + "%");
+          pct.style.borderColor = pctColor(p.prob);
+          ph.appendChild(pct);
+        }
         pl.appendChild(ph);
         pl.appendChild(el("div", "alin-pname", p.last || p.name));
         // Solo se muestra el recambio cuando el titular no tiene la plaza asegurada
