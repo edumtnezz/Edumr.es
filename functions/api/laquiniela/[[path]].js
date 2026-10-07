@@ -1816,10 +1816,14 @@ async function handleAnaliza(request, env, user) {
   const nameHint = nameList.length ? ("\n\nLista de nombres EXACTOS de los jugadores de la liga. IMPORTANTE: para CADA nombre que leas, elige de esta lista el MÁS PARECIDO y escribe el de la lista TAL CUAL (aunque lo leído no exista, coge el de la lista que más se le parezca; nunca inventes uno que no esté en la lista): " + nameList.join(", ") + ".") : "";
   if (Array.isArray(body.jugadores) && body.jugadores.length) {
     const tit = [], sup = [];
+    // j.pos llega aquí como código corto (POR/DEF/CEN/DEL) cuando viene de
+    // "Reanalizar" (ya pasó antes por enrich()), o como palabra larga si
+    // viniera de otro sitio: aceptamos ambos en vez de asumir solo uno.
+    const normPos = (v) => { const s = String(v || "").toUpperCase(); return ["POR", "DEF", "CEN", "DEL"].includes(s) ? s : roleShort(v); };
     for (const j of body.jugadores) {
       const nombre = String(j.nombre || "").trim();
       if (!nombre) continue;
-      const o = { nombre, pos: roleShort(j.pos) };
+      const o = { nombre, pos: normPos(j.pos) };
       if (j.tipo === "suplente") sup.push(o); else tit.push(o);
     }
     if (!tit.length && !sup.length) return json({ error: "Sin jugadores." }, 400);
@@ -1886,6 +1890,15 @@ async function handleAnaliza(request, env, user) {
     const k = keys.find((x) => teamKey(x) === q) || keys.find((x) => { const kk = teamKey(x); return kk && (kk.includes(q) || q.includes(kk)); });
     return k ? next[k] : null;
   };
+  // pl.pos ya viene normalizado a código corto (POR/DEF/CEN/DEL) desde la
+  // fila detectada en la imagen o desde el formulario manual (ver arriba),
+  // así que NO hay que volver a pasarlo por roleShort (que espera la
+  // palabra larga en español y con un código corto siempre devuelve "").
+  // Antes se hacía roleShort(pl.pos) aquí, que daba "" siempre y acababa
+  // usando la posición NATURAL del jugador en el mercado — por eso un
+  // multiposición colocado en el campo como centrocampista (ej. Vinícius)
+  // se mostraba como delantero, ignorando dónde lo había puesto el usuario.
+  const VALID_POS = ["POR", "DEF", "CEN", "DEL"];
   const enrich = (list) => (list || []).map((pl) => {
     const nm = String(pl.nombre || pl.name || "").trim();
     const p = findP(nm);
@@ -1894,7 +1907,7 @@ async function handleAnaliza(request, env, user) {
     const probFf = ffe && ffe.prob != null ? ffe.prob : null;
     return {
       nombre: nm,
-      pos: roleShort(pl.pos) || (p ? roleShort(p.role) : ""),
+      pos: (VALID_POS.includes(pl.pos) ? pl.pos : "") || (p ? roleShort(p.role) : ""),
       pos2: p ? roleShort(p.role2) : "",
       equipo: p ? p.team : "",
       estado: p ? statusLabelEs(p.status) : "?",

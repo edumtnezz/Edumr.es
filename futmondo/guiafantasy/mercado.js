@@ -1881,8 +1881,49 @@
       root.appendChild(list);
       showModal(root);
     }
-    const pcard = (p, isBench) => {
-      const card = el("div", "pitch-player" + (isBench ? " bench" : ""));
+    // Campo: mismo motor visual que "Alineaciones probables" (posicionamiento
+    // en % con fotos que se encogen progresivamente si hay 4 o 5+ jugadores
+    // en la línea), para que no queden pegados/descuadrados como antes.
+    const pitchCard = (p, x, y, sizeClass) => {
+      const pl = el("div", "alin-pl" + (sizeClass ? " alin-pl-" + sizeClass : ""));
+      pl.style.left = x + "%";
+      pl.style.top = y + "%";
+      const ph = el("div", "alin-pimg");
+      ph.appendChild(photoImg(p.photo));
+      if (p.prob != null) {
+        const pct = el("span", "alin-pct", p.prob + "%");
+        pct.style.borderColor = pctColor(p.prob);
+        ph.appendChild(pct);
+      }
+      pl.appendChild(ph);
+      pl.appendChild(el("div", "alin-pname", p.nombre || ""));
+      const sub = [];
+      if (p.puntos != null) sub.push(p.puntos + " pts");
+      if (p.estado && p.estado !== "OK" && p.estado !== "?") sub.push(p.estado);
+      if (sub.length) pl.appendChild(el("div", "alin-palt", sub.join(" · ")));
+      pl.addEventListener("click", () => swapPicker(p));
+      return pl;
+    };
+    const field = el("div", "alin-pitch");
+    field.style.maxWidth = "520px";
+    field.style.margin = "12px auto";
+    [["DEL", 15], ["CEN", 41], ["DEF", 67], ["POR", 88]].forEach((band) => {
+      const arr = tits.filter((p) => p.pos === band[0]);
+      const n = arr.length;
+      if (!n) return;
+      const sizeClass = n >= 5 ? "tight" : n === 4 ? "semi" : "";
+      const inset = n >= 5 ? 13 : n === 4 ? 16 : 20;
+      const span = 100 - inset * 2;
+      const step = n > 1 ? span / (n - 1) : 0;
+      arr.forEach((p, i) => {
+        const x = n > 1 ? (inset + i * step) : 50;
+        field.appendChild(pitchCard(p, x, band[1], sizeClass));
+      });
+    });
+    if (field.children.length) out.appendChild(field);
+
+    const benchCard = (p) => {
+      const card = el("div", "pitch-player bench");
       const ph = el("div", "pitch-photo");
       ph.appendChild(photoImg(p.photo));
       card.appendChild(ph);
@@ -1897,51 +1938,53 @@
       card.addEventListener("click", () => swapPicker(p));
       return card;
     };
-    const field = el("div", "pitch");
-    ["DEL", "CEN", "DEF", "POR"].forEach((pos) => {
-      const ps = tits.filter((p) => p.pos === pos);
-      if (!ps.length) return;
-      const row = el("div", "pitch-row");
-      ps.forEach((p) => row.appendChild(pcard(p, false)));
-      field.appendChild(row);
-    });
-    if (field.children.length) out.appendChild(field);
-
     if (sups.length) {
       const bsec = el("div", "estado-sec");
       bsec.appendChild(el("div", "estado-title", "Banquillo (toca para meterlo en el once)"));
       const bench = el("div", "pitch-bench");
-      sups.forEach((p) => bench.appendChild(pcard(p, true)));
+      sups.forEach((p) => bench.appendChild(benchCard(p)));
       bsec.appendChild(bench);
       out.appendChild(bsec);
     }
 
-
-
-    if (tits.length) {
+    // Plan de cambios por horario: en Futmondo puedes sacar hasta 3 jugadores
+    // del banquillo mientras no hayan jugado todavía, así que conviene
+    // alinear primero a los que juegan antes y dejar en el banco, como
+    // "segunda bala", a un jugador de la misma posición que juegue más
+    // tarde (por si el titular lo hace mal). Esto se calcula aquí con las
+    // fechas reales de cada partido, en vez de depender de que la IA lo
+    // acierte en el texto libre.
+    function buildSwapPlan() {
+      const pairs = [];
+      ["POR", "DEF", "CEN", "DEL"].forEach((pos) => {
+        const t = tits.filter((p) => p.pos === pos).slice().sort((a, b) => (a.fecha ? new Date(a.fecha) : Infinity) - (b.fecha ? new Date(b.fecha) : Infinity));
+        const s = sups.filter((p) => p.pos === pos).slice().sort((a, b) => (a.fecha ? new Date(a.fecha) : Infinity) - (b.fecha ? new Date(b.fecha) : Infinity));
+        const used = new Set();
+        t.forEach((tit) => {
+          const titTime = tit.fecha ? new Date(tit.fecha).getTime() : null;
+          const cand = s.find((sub) => !used.has(sub) && sub.fecha && (titTime == null || new Date(sub.fecha).getTime() > titTime));
+          if (cand) { used.add(cand); pairs.push({ pos, tit, sub: cand }); }
+        });
+      });
+      return pairs;
+    }
+    const swapPairs = buildSwapPlan();
+    if (swapPairs.length) {
       const sec = el("div", "estado-sec");
-      sec.appendChild(el("div", "estado-title", "Titulares"));
+      sec.appendChild(el("div", "estado-title", "🔁 Plan de cambios por horario"));
+      sec.appendChild(el("p", "muted small", "Juegan primero los de arriba. Si alguno lo hace mal, aún no habrá jugado el suplente sugerido y podrás meterlo (máx. 3 cambios de banquillo mientras no hayan jugado)."));
       const box = el("div", "an-list");
-      tits.forEach((p) => {
+      swapPairs.forEach(({ pos, tit, sub }) => {
         const row = el("div", "an-row clickable");
-        row.appendChild(el("span", "an-pos", p.pos || ""));
+        row.appendChild(el("span", "an-pos", pos));
         const main = el("div", "an-main");
         const nameRow = el("div", "an-name-row");
-        if (p.logo) { const lg = el("img", "an-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; nameRow.appendChild(lg); }
-        nameRow.appendChild(el("span", "an-name", p.nombre || ""));
+        nameRow.appendChild(el("span", "an-name", tit.nombre || ""));
+        nameRow.appendChild(el("span", "an-sub", tit.fecha ? "juega " + whenShort(tit.fecha) : "sin hora"));
         main.appendChild(nameRow);
-        const sub = [];
-        sub.push(p.prob != null ? "Juega " + p.prob + "%" : (p.pronostico || "—"));
-        if (p.puntos != null) sub.push(p.puntos + " pts");
-        main.appendChild(el("span", "an-sub", sub.filter(Boolean).join("  ·  ")));
+        main.appendChild(el("span", "an-sub", "🔁 si falla: " + (sub.nombre || "") + " (" + (sub.fecha ? "juega " + whenShort(sub.fecha) : "sin hora") + ")"));
         row.appendChild(main);
-        if (p.estado && p.estado !== "OK" && p.estado !== "?") {
-          const cls = p.estado === "LESIÓN" ? "inj" : p.estado === "SANCIÓN" ? "red" : "doubt";
-          row.appendChild(el("span", "an-st st-" + cls, p.estado));
-        }
-        if (p.rival) row.appendChild(el("span", "an-ha", (p.casa === true ? "🏠 " : p.casa === false ? "✈️ " : "") + p.rival));
-        row.appendChild(el("span", "an-edit", "✏️"));
-        row.addEventListener("click", () => openPicker("Cambiar jugador", (pl) => applyPlayer(p, pl)));
+        row.addEventListener("click", () => swapPicker(tit));
         box.appendChild(row);
       });
       sec.appendChild(box);
