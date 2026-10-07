@@ -531,7 +531,11 @@
         // y dejamos ese hueco del banquillo disponible para otro titular con duda.
         // (<=60 y no <60: hay titulares justo al 60% exacto, como Adeyemi en el
         // Barça con Gordon de recambio al 50%, que también deben mostrar recambio).
-        if (p.prob != null && p.prob <= 60) {
+        // El portero es la excepción: solo suele haber un suplente claro (el
+        // segundo portero), así que interesa verlo siempre debajo del titular
+        // aunque este tenga la titularidad prácticamente asegurada (ej. Dituro
+        // 70% en el Elche con Diturbe 30% como único recambio).
+        if (p.prob != null && (band[0] === "Portero" || p.prob <= 60)) {
           const alt = benchPool[band[0]].shift();
           if (alt) {
             const altEl = el("div", "alin-palt", alt.last || alt.name);
