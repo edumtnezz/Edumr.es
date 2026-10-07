@@ -1792,6 +1792,21 @@ async function dsChat(env, messages, model, think) {
 
 async function handleAnaliza(request, env, user) {
   if (!user) return json({ error: "Inicia sesión para analizar tu equipo." }, 401);
+  // Cada llamada puede hacer hasta 2 peticiones a la IA (vision), así que se
+  // limita a 1 análisis cada 20s por persona para evitar que alguien lo
+  // dispare en bucle y dispare el coste de la API. Se guarda la hora del
+  // último intento (no un TTL de KV, que tiene un mínimo de 60s) y se
+  // compara, igual que el cooldown de 5s al pujar.
+  const COOLDOWN_MS = 20000;
+  const cdKey = `cd:analiza:${user.key}`;
+  try {
+    const last = Number(await env.PORRA.get(cdKey)) || 0;
+    const wait = COOLDOWN_MS - (Date.now() - last);
+    if (wait > 0) {
+      return json({ error: "Espera " + Math.ceil(wait / 1000) + "s antes de analizar de nuevo." }, 429);
+    }
+    await env.PORRA.put(cdKey, String(Date.now()), { expirationTtl: 60 });
+  } catch (e) {}
   let body;
   try { body = await request.json(); } catch (e) { return json({ error: "Datos inválidos." }, 400); }
   let team = null, leido = [];
