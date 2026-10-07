@@ -502,9 +502,12 @@
       const arr = groups[band[0]];
       if (!arr.length) return;
       const n = arr.length;
-      const step = n > 1 ? 86 / (n - 1) : 0;
+      // Margen interior amplio: el badge de probabilidad sobresale hacia la
+      // izquierda de cada jugador, así que los de la columna izquierda
+      // necesitan hueco de sobra para no quedar cortados por el borde del campo.
+      const step = n > 1 ? 60 / (n - 1) : 0;
       arr.forEach((p, i) => {
-        const x = n > 1 ? (7 + i * step) : 50;
+        const x = n > 1 ? (20 + i * step) : 50;
         const pl = el("div", "alin-pl");
         pl.style.left = x + "%";
         pl.style.top = band[1] + "%";
