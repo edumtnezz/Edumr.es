@@ -536,13 +536,20 @@
         // aunque este tenga la titularidad prácticamente asegurada (ej. Dituro
         // 70% en el Elche con Diturbe 30% como único recambio).
         if (p.prob != null && (band[0] === "Portero" || p.prob <= 60)) {
-          const alt = benchPool[band[0]].shift();
-          if (alt) {
+          // En una misma posición puede haber más de un suplente con opciones
+          // reales (no siempre uno solo), así que se cogen hasta 2 del
+          // banquillo de esa posición en vez de uno único.
+          const alts = [];
+          for (let k = 0; k < 2; k++) {
+            const a = benchPool[band[0]].shift();
+            if (a) alts.push(a);
+          }
+          alts.forEach((alt) => {
             const altEl = el("div", "alin-palt", alt.last || alt.name);
             altEl.title = "Probable recambio: " + (alt.full || alt.name);
             altEl.addEventListener("click", (ev) => { ev.stopPropagation(); openPlayerByName(alt.full || alt.name); });
             pl.appendChild(altEl);
-          }
+          });
         }
         pl.addEventListener("click", () => openPlayerByName(p.full || p.name));
         box.appendChild(pl);
