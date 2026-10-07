@@ -2040,7 +2040,9 @@
       const ini = (parts.length <= 1 ? parts[0].slice(0, 2) : parts[0][0] + parts[1][0]).toUpperCase();
       ub.hidden = false;
       const chip = el("button", "user-chip"); chip.type = "button";
-      chip.innerHTML = '<span class="user-avatar">' + ini + '</span><span class="user-name">' + name + '</span><span class="user-caret">▾</span>';
+      chip.appendChild(el("span", "user-avatar", ini));
+      chip.appendChild(el("span", "user-name", name));
+      chip.appendChild(el("span", "user-caret", "▾"));
       const menu = el("div", "user-menu");
       const exit = el("button", "user-menu-exit", "Salir"); exit.type = "button";
       exit.addEventListener("click", async () => { try { await fetch(API + "/logout", { method: "POST" }); } catch (e) {} location.reload(); });

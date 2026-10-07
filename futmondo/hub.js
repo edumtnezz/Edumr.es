@@ -20,7 +20,10 @@
     const ini = (parts.length <= 1 ? parts[0].slice(0, 2) : parts[0][0] + parts[1][0]).toUpperCase();
     ub.hidden = false;
     const chip = document.createElement("button"); chip.type = "button"; chip.className = "user-chip";
-    chip.innerHTML = '<span class="user-avatar">' + ini + '</span><span class="user-name">' + name + '</span><span class="user-caret">▾</span>';
+    const avSp = document.createElement("span"); avSp.className = "user-avatar"; avSp.textContent = ini;
+    const nmSp = document.createElement("span"); nmSp.className = "user-name"; nmSp.textContent = name;
+    const crSp = document.createElement("span"); crSp.className = "user-caret"; crSp.textContent = "▾";
+    chip.appendChild(avSp); chip.appendChild(nmSp); chip.appendChild(crSp);
     const menu = document.createElement("div"); menu.className = "user-menu";
     const exit = document.createElement("button"); exit.type = "button"; exit.className = "user-menu-exit"; exit.textContent = "Salir";
     exit.addEventListener("click", async function () {
