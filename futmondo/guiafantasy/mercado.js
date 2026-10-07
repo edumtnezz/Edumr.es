@@ -497,12 +497,12 @@
       const step = n > 1 ? 86 / (n - 1) : 0;
       arr.forEach((p, i) => {
         const x = n > 1 ? (7 + i * step) : 50;
-        const pl = el("div", "alin-pl" + (n >= 5 ? " alin-pl-tight" : ""));
+        const pl = el("div", "alin-pl");
         pl.style.left = x + "%";
         pl.style.top = band[1] + "%";
-        if (p.prob != null && p.prob < 100) pl.appendChild(el("span", "alin-pct", p.prob + "%"));
         const ph = el("div", "alin-pimg");
         if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; ph.appendChild(im); }
+        if (p.prob != null && p.prob < 100) ph.appendChild(el("span", "alin-pct", p.prob + "%"));
         pl.appendChild(ph);
         pl.appendChild(el("div", "alin-pname", p.last || p.name));
         // Solo se muestra el recambio cuando el titular no tiene la plaza asegurada
