@@ -311,12 +311,6 @@
       st.appendChild(sbox((Number(p.avg) || 0).toFixed(1).replace(".", ","), "Media", "media"));
       st.appendChild(sbox((Number(p.clause) / 1e6).toFixed(1).replace(".", ",") + " M", "Cláusula", "clause"));
       body.appendChild(st);
-      const clchg = Number(p.clChg);
-      if (p.clChg != null && !isNaN(clchg) && Math.round(clchg) !== 0) {
-        const down = clchg < 0;
-        body.appendChild(el("div", "claus-trend " + (down ? "down" : "up"),
-          (down ? "▼ bajó " : "▲ subió ") + (Math.abs(clchg) / 1e6).toFixed(1).replace(".", ",") + " M" + (p.clSince ? " desde " + p.clSince : "")));
-      }
       if (p.clNewOwner) body.appendChild(el("div", "claus-newowner", "🆕 nuevo dueño"));
       const diff = (Number(p.clause) || 0) - (Number(p.value) || 0);
       const vrow = el("div", "claus-val");
@@ -1762,11 +1756,40 @@
   function miniLine(s) {
     return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
   }
-  function renderAiText(t) {
+  // Busca, entre los jugadores reales que el usuario capturó (titulares +
+  // banquillo), aquel al que se refiere un nombre suelto que ha escrito la
+  // IA en su texto (p.ej. "Vinícius" o "R. Fernández"), para poder mostrar
+  // su foto/escudo en vez de un simple texto. Tolera tildes y nombres
+  // parciales, igual que el resto del buscador de jugadores de la web.
+  function findRosterPlayer(name, roster) {
+    const nk = stripAccents(String(name || "").trim().toLowerCase()).replace(/[^a-z0-9 ]/g, "");
+    if (!nk || !roster || !roster.length) return null;
+    const words = nk.split(/\s+/).filter(Boolean);
+    let best = null, bestScore = 0;
+    roster.forEach((p) => {
+      const pk = stripAccents(String(p.nombre || "").trim().toLowerCase()).replace(/[^a-z0-9 ]/g, "");
+      if (!pk) return;
+      const pw = pk.split(/\s+/).filter(Boolean);
+      let s = 0;
+      if (pk === nk) s = 100;
+      else if (pk.indexOf(nk) >= 0 || nk.indexOf(pk) >= 0) s = 60;
+      else if (words.some((w) => w.length >= 3 && pw.indexOf(w) >= 0)) s = 40;
+      if (s > bestScore) { bestScore = s; best = p; }
+    });
+    return bestScore >= 40 ? best : null;
+  }
+  function renderAiText(t, roster) {
     const box = el("div", "an-ai");
     const ICONS = [["ONCE", "⭐"], ["PORTERO", "🧤"], ["DEFENSA", "🛡️"], ["MEDIO", "🎯"], ["DELANTERO", "⚽"], ["CAMBIOS", "🔄"], ["MULTIPOSICI", "↔️"], ["AVISO", "⏰"]];
     const iconOf = (title) => { const u = title.toUpperCase(); const f = ICONS.find((x) => u.indexOf(x[0]) === 0); return f ? f[1] : "•"; };
     const isLineup = (title) => /PORTERO|DEFENSA|MEDIO|DELANTERO/i.test(title);
+    const photoChip = (p) => {
+      const c = el("div", "an-pchip");
+      const ph = el("div", "an-pchip-photo"); ph.appendChild(photoImg(p.photo));
+      c.appendChild(ph);
+      c.appendChild(el("div", "an-pchip-name", p.last || p.nombre || ""));
+      return c;
+    };
     let body = null, lineup = false;
     String(t || "").split(/\n+/).forEach((ln) => {
       const s = ln.trim();
@@ -1785,7 +1808,11 @@
         box.appendChild(sec);
       } else if (body) {
         if (lineup && s.indexOf(",") >= 0) {
-          s.split(",").map((x) => x.trim()).filter(Boolean).forEach((nm) => { const c = el("span", "an-chip"); c.innerHTML = miniLine(nm); body.appendChild(c); });
+          s.split(",").map((x) => x.trim()).filter(Boolean).forEach((nm) => {
+            const pl = roster && roster.length ? findRosterPlayer(nm, roster) : null;
+            if (pl) body.appendChild(photoChip(pl));
+            else { const c = el("span", "an-chip"); c.innerHTML = miniLine(nm); body.appendChild(c); }
+          });
         } else {
           const line = el("div", "an-ai-line"); line.innerHTML = miniLine(s); body.appendChild(line);
         }
@@ -1822,11 +1849,13 @@
       const box = el("div", "an-nota");
       box.appendChild(el("div", "an-nota-num", nota + "/100"));
       box.appendChild(el("div", "an-nota-txt", "Nota de tu once · " + parts.join(" · ")));
+      box.appendChild(el("div", "an-nota-info", "Cada posición se puntúa sobre 100 con: su forma en los últimos partidos, su probabilidad de ser titular, +4 si juega en casa / -2 si juega fuera, y +2 si tiene doble posición. Si está lesionado, se queda en 5."));
       out.appendChild(box);
       const cla = tits.filter((p) => p.clause && p.valor && p.clause < p.valor * 1.6).sort((a, b) => scoreOf(b) - scoreOf(a));
       if (cla.length) {
         const cb = el("div", "an-clauses");
         cb.appendChild(el("div", "an-clauses-t", "🔒 Cláusulas bajas · súbeles la cláusula para no perderlos"));
+        cb.appendChild(el("div", "an-clauses-info", "Se consideran bajas las que están por debajo de 1,6 veces el valor de mercado del jugador: si alguien te la paga, la pierdes barata."));
         const grid = el("div", "an-clause-grid");
         cla.slice(0, 8).forEach((p) => {
           const c = el("div", "an-clause-card");
@@ -1942,6 +1971,13 @@
       ph.appendChild(photoImg(p.photo));
       card.appendChild(ph);
       card.appendChild(el("div", "pitch-name", p.nombre || ""));
+      if (p.logo) {
+        const tm = el("div", "pitch-team");
+        const lg = el("img", "pitch-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy";
+        tm.appendChild(lg);
+        if (p.equipo) tm.appendChild(el("span", null, p.equipo));
+        card.appendChild(tm);
+      }
       const info = el("div", "pitch-info");
       info.appendChild(el("span", "pc-prob", (p.prob != null ? p.prob : "?") + "%"));
       if (p.estado && p.estado !== "OK" && p.estado !== "?") info.appendChild(el("span", "pc-bad", p.estado));
@@ -2007,7 +2043,7 @@
     if (d.analisis) {
       const sec = el("div", "estado-sec");
       sec.appendChild(el("div", "estado-title", "Recomendaciones de la IA"));
-      sec.appendChild(renderAiText(d.analisis));
+      sec.appendChild(renderAiText(d.analisis, [].concat(tits, sups)));
       out.appendChild(sec);
     }
   }

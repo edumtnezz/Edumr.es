@@ -1807,6 +1807,21 @@ async function handleAnaliza(request, env, user) {
     }
     await env.PORRA.put(cdKey, String(Date.now()), { expirationTtl: 60 });
   } catch (e) {}
+  // Tope de análisis por día: la cooldown de arriba solo espacia las
+  // llamadas, pero no impide que alguien la machaque todo el día y dispare
+  // el coste de la IA (cada análisis hace hasta 2 llamadas de visión + 1 de
+  // texto). 15/día es de sobra para revisar el equipo varias veces por
+  // jornada (titulares, cambios de última hora, repasar tras una lesión…)
+  // sin dejar la puerta abierta a un abuso.
+  const DAY_LIMIT = 15;
+  const dayKey = `cd:analiza:day:${user.key}:${dstrMadrid(0)}`;
+  try {
+    const used = Number(await env.PORRA.get(dayKey)) || 0;
+    if (used >= DAY_LIMIT) {
+      return json({ error: `Has llegado al límite de ${DAY_LIMIT} análisis de hoy. Vuelve a probar mañana.` }, 429);
+    }
+    await env.PORRA.put(dayKey, String(used + 1), { expirationTtl: 86400 });
+  } catch (e) {}
   let body;
   try { body = await request.json(); } catch (e) { return json({ error: "Datos inválidos." }, 400); }
   let team = null, leido = [];
@@ -1887,7 +1902,22 @@ async function handleAnaliza(request, env, user) {
     const q = teamKey(t);
     if (!q) return null;
     const keys = Object.keys(next);
-    const k = keys.find((x) => teamKey(x) === q) || keys.find((x) => { const kk = teamKey(x); return kk && (kk.includes(q) || q.includes(kk)); });
+    let k = keys.find((x) => teamKey(x) === q) || keys.find((x) => { const kk = teamKey(x); return kk && (kk.includes(q) || q.includes(kk)); });
+    if (!k) {
+      // Última red: si el nombre del equipo no coincide ni exacto ni por
+      // subcadena (p. ej. abreviaturas distintas entre Futmondo y la fuente
+      // del calendario), probamos por similitud de texto. Sin esto, algún
+      // equipo se quedaba sin fecha/hora de su próximo partido aunque sí
+      // tuviera rival y casa/fuera (esos datos vienen de otra fuente).
+      let best = null, bestScore = 0;
+      keys.forEach((x) => {
+        const kk = teamKey(x);
+        if (!kk) return;
+        const score = 1 - lev(q, kk) / Math.max(q.length, kk.length);
+        if (score > bestScore) { bestScore = score; best = x; }
+      });
+      if (best && bestScore >= 0.6) k = best;
+    }
     return k ? next[k] : null;
   };
   // pl.pos ya viene normalizado a código corto (POR/DEF/CEN/DEL) desde la
@@ -1933,22 +1963,34 @@ async function handleAnaliza(request, env, user) {
   const matchFFPlayer = (nombre, roster) => {
     const nk = normKey(String(nombre || "").toLowerCase());
     if (!nk || !roster || !roster.length) return null;
-    const words = nk.split(" ");
+    const words = nk.split(" ").filter(Boolean);
     const last = words[words.length - 1];
     const hint = words.length > 1 && words[0].length === 1 ? words[0] : "";
     let best = null, bestScore = 0;
     roster.forEach((r) => {
-      const rk = normKey(String(r.full || r.name || "").toLowerCase());
-      if (!rk) return;
-      const rw = rk.split(" ");
-      const rlast = rw[rw.length - 1];
+      // Comparamos contra el nombre CORTO mostrado en la ficha (r.name,
+      // p.ej. "Vinícius") Y el nombre completo (r.full). Antes solo se
+      // miraba r.full y se puntuaba por la ÚLTIMA palabra (el apellido);
+      // eso fallaba con jugadores que se conocen por un solo nombre
+      // (Vinícius, Amatucci…) porque su "apellido" real en el nombre
+      // completo no es la palabra con la que juega el usuario, así que
+      // nunca llegaban al umbral y se quedaban con la foto antigua.
+      const candidates = [normKey(String(r.name || "").toLowerCase()), normKey(String(r.full || "").toLowerCase())].filter(Boolean);
       let s = 0;
-      if (rk === nk) s = 100;
-      else {
-        if (rlast && rlast === last) s += 50;
-        if (hint && rw[0] && rw[0][0] === hint) s += 10;
-        if (rk.indexOf(nk) >= 0 || nk.indexOf(rk) >= 0) s += 20;
-      }
+      candidates.forEach((rk) => {
+        if (!rk) return;
+        const rw = rk.split(" ").filter(Boolean);
+        const rlast = rw[rw.length - 1];
+        let sc = 0;
+        if (rk === nk) sc = 100;
+        else {
+          if (rlast && rlast === last) sc += 50;
+          if (hint && rw[0] && rw[0][0] === hint) sc += 10;
+          if (rk.indexOf(nk) >= 0 || nk.indexOf(rk) >= 0) sc += 30;
+          if (words.some((w) => w.length >= 4 && rw.indexOf(w) >= 0)) sc += 30;
+        }
+        if (sc > s) s = sc;
+      });
       if (s > bestScore) { bestScore = s; best = r; }
     });
     return bestScore >= 50 ? best : null;
@@ -1979,6 +2021,16 @@ async function handleAnaliza(request, env, user) {
   } catch (e) {}
   const cnt = (pos) => titulares.filter((p) => p.pos === pos).length;
   const formacion = (cnt("DEF") + cnt("CEN") + cnt("DEL")) ? [cnt("DEF"), cnt("CEN"), cnt("DEL")].join("-") : (team.formacion || "");
+  // Antes se le pedía a la IA que "detectara" ella misma quién tenía doble
+  // posición, y en la práctica se le olvidaban jugadores (p.ej. avisaba de
+  // Lemar pero no de Vinícius o Amatucci, que también tenían pos2). Para no
+  // depender de que la IA se acuerde de mirar a los 15-18 jugadores, aquí
+  // calculamos la lista EXACTA de multiposición con datos reales y se le
+  // pasa cerrada: "estos N y solo estos N".
+  const multiList = [].concat(titulares, suplentes).filter((p) => p.pos2 && p.pos2 !== p.pos);
+  const multiHint = multiList.length
+    ? "Tiene doble posición EXACTAMENTE esta lista de " + multiList.length + " jugador(es), ni uno más ni uno menos: " + multiList.map((p) => p.nombre + " (" + p.pos + "/" + p.pos2 + ")").join(", ") + ". Escribe una línea por CADA UNO de ellos, formato \"Nombre: colócalo en X porque...\"."
+    : "Ninguno de tus jugadores tiene doble posición esta jornada.";
   const kick = (v) => { if (!v) return "?"; try { return new Date(v).toLocaleString("es-ES", { weekday: "short", day: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }); } catch (e) { return "?"; } };
   const line = (p) => `- ${p.pos}${p.pos2 ? "/" + p.pos2 : ""} ${p.nombre} (${p.equipo || "?"}) · ${p.estado} · prob.jugar ${p.prob != null ? p.prob : "?"}%${p.probFf != null ? " (FutbolFantasy)" : ""} · ${p.puntos != null ? p.puntos + " pts" : "sin datos"} · últ5 ${(p.fitness || []).join("-")} · rival ${p.rival || "desconocido"} ${p.casa === true ? "(CASA)" : p.casa === false ? "(FUERA)" : ""} · juega ${kick(p.fecha)}`;
   const ctx = "FORMACIÓN: " + formacion + "\nTITULARES:\n" + titulares.map(line).join("\n") + "\nBANQUILLO:\n" + suplentes.map(line).join("\n");
@@ -1989,7 +2041,7 @@ async function handleAnaliza(request, env, user) {
   // regla real, p.ej. recomendando meter de inicio a alguien que juega el
   // último día, dejando sin margen de reacción). Solo se le pide el once
   // ideal (con el número real de líneas, no uno fijo) y multiposición.
-  const prompt = "Eres un analista experto de fútbol fantasy (Futmondo Social). Analiza la PRÓXIMA jornada del equipo del usuario. Cada jugador trae posición(es), estado, probabilidad de ser titular, forma, puntos, si juega en CASA/FUERA y la FECHA/HORA de su partido.\n\n" + ctx + "\n\nResponde en español, BREVE, con emojis y **negrita** (prohibido #, tablas o listas con guiones). Usa EXACTAMENTE estos títulos cada uno en su propia línea, sin nada más en esa línea:\n**ONCE IDEAL**\n**PORTERO:**\n(el portero)\n**DEFENSA DE " + (cnt("DEF") || 0) + " CON:**\n(los " + (cnt("DEF") || 0) + " defensas, en su mejor posición, separados por comas)\n**MEDIOCENTROS:**\n(los centrocampistas)\n**DELANTEROS:**\n(los delanteros)\n**MULTIPOSICIÓN**\n(si hay algún jugador con dos posiciones, ej. DEL/CEN: UNA línea por jugador, formato \"Nombre: colócalo en X porque...\". Si ningún jugador tiene doble posición, escribe solo \"Ninguno de tus jugadores tiene doble posición esta jornada.\")";
+  const prompt = "Eres un analista experto de fútbol fantasy (Futmondo Social). Analiza la PRÓXIMA jornada del equipo del usuario. Cada jugador trae posición(es), estado, probabilidad de ser titular, forma, puntos, si juega en CASA/FUERA y la FECHA/HORA de su partido.\n\n" + ctx + "\n\nResponde en español, BREVE, con emojis y **negrita** (prohibido #, tablas o listas con guiones). Usa EXACTAMENTE estos títulos cada uno en su propia línea, sin nada más en esa línea:\n**ONCE IDEAL**\n**PORTERO:**\n(el portero)\n**DEFENSA DE " + (cnt("DEF") || 0) + " CON:**\n(los " + (cnt("DEF") || 0) + " defensas, en su mejor posición, separados por comas)\n**MEDIOCENTROS:**\n(los centrocampistas)\n**DELANTEROS:**\n(los delanteros)\n**MULTIPOSICIÓN**\n(" + multiHint + ")";
   const analisis = await dsChat(env, [{ role: "user", content: prompt }], "deepseek-flash");
   return json({ formacion, titulares, suplentes, analisis, leido });
 }
