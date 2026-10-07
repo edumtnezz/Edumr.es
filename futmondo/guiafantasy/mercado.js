@@ -527,9 +527,11 @@
         pl.appendChild(ph);
         pl.appendChild(el("div", "alin-pname", p.last || p.name));
         // Solo se muestra el recambio cuando el titular no tiene la plaza asegurada
-        // (probabilidad por debajo del 60%); si está prácticamente fijo, no aporta,
+        // (probabilidad del 60% o menos); si está prácticamente fijo, no aporta,
         // y dejamos ese hueco del banquillo disponible para otro titular con duda.
-        if (p.prob != null && p.prob < 60) {
+        // (<=60 y no <60: hay titulares justo al 60% exacto, como Adeyemi en el
+        // Barça con Gordon de recambio al 50%, que también deben mostrar recambio).
+        if (p.prob != null && p.prob <= 60) {
           const alt = benchPool[band[0]].shift();
           if (alt) {
             const altEl = el("div", "alin-palt", alt.last || alt.name);
