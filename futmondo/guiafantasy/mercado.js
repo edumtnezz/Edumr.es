@@ -506,12 +506,17 @@
         if (p.prob != null && p.prob < 100) ph.appendChild(el("span", "alin-pct", p.prob + "%"));
         pl.appendChild(ph);
         pl.appendChild(el("div", "alin-pname", p.last || p.name));
-        const alt = benchPool[band[0]].shift();
-        if (alt) {
-          const altEl = el("div", "alin-palt", alt.last || alt.name);
-          altEl.title = "Probable recambio: " + (alt.full || alt.name);
-          altEl.addEventListener("click", (ev) => { ev.stopPropagation(); openPlayerByName(alt.full || alt.name); });
-          pl.appendChild(altEl);
+        // Solo se muestra el recambio cuando el titular no tiene la plaza asegurada
+        // (probabilidad por debajo del 60%); si está prácticamente fijo, no aporta,
+        // y dejamos ese hueco del banquillo disponible para otro titular con duda.
+        if (p.prob != null && p.prob < 60) {
+          const alt = benchPool[band[0]].shift();
+          if (alt) {
+            const altEl = el("div", "alin-palt", alt.last || alt.name);
+            altEl.title = "Probable recambio: " + (alt.full || alt.name);
+            altEl.addEventListener("click", (ev) => { ev.stopPropagation(); openPlayerByName(alt.full || alt.name); });
+            pl.appendChild(altEl);
+          }
         }
         pl.addEventListener("click", () => openPlayerByName(p.full || p.name));
         box.appendChild(pl);
