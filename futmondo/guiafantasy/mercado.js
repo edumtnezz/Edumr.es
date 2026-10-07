@@ -494,13 +494,12 @@
       const arr = groups[band[0]];
       if (!arr.length) return;
       const n = arr.length;
-      const step = n > 1 ? 80 / (n - 1) : 0;
+      const step = n > 1 ? 86 / (n - 1) : 0;
       arr.forEach((p, i) => {
-        const x = n > 1 ? (10 + i * step) : 50;
-        const stag = n >= 5 ? (i % 2 ? 5 : -5) : 0;
-        const pl = el("div", "alin-pl");
+        const x = n > 1 ? (7 + i * step) : 50;
+        const pl = el("div", "alin-pl" + (n >= 5 ? " alin-pl-tight" : ""));
         pl.style.left = x + "%";
-        pl.style.top = (band[1] + stag) + "%";
+        pl.style.top = band[1] + "%";
         const ph = el("div", "alin-pimg");
         if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; ph.appendChild(im); }
         if (p.prob != null && p.prob < 100) ph.appendChild(el("span", "alin-pct", p.prob + "%"));
