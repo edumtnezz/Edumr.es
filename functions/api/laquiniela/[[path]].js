@@ -1444,8 +1444,32 @@ async function cmPct(id) {
   } catch (e) { return null; }
 }
 async function getFFTeam(env, name) {
-  let slug = normKey(String(name || "").toLowerCase()).replace(/ /g, "-");
-  const SLUG_FIX = { "atleti": "atletico", "barca": "barcelona", "santander": "racing", "real-betis": "betis" };
+  // El slug de la URL de futbolfantasy.com no siempre coincide con el
+  // nombre que usa Futmondo para el equipo: p.ej. "RC Deportivo" (o
+  // "Deportivo de La Coruña") hay que convertirlo en solo "deportivo". Se
+  // quitan las mismas palabras de relleno que ya se usaban para emparejar
+  // equipos en otros sitios de la web (teamKey) MÁS "rc" (antes solo se
+  // quitaba "rcd", y con "RC Deportivo" sin esa palabra el slug quedaba mal
+  // y la página de ese equipo no cargaba NINGÚN jugador: por eso a TODOS
+  // los jugadores del Deportivo —Amatucci, Giménez, Mario Soriano...— les
+  // fallaban a la vez tanto la foto como el nombre corto).
+  const FF_FILLER = ["de", "del", "la", "cf", "fc", "club", "sad", "sd", "ud", "rcd", "rc", "balompie"];
+  const slugFrom = (s) => stripAccents(String(s || "")).toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w && FF_FILLER.indexOf(w) < 0).join("-");
+  let slug = slugFrom(name);
+  // Lista comprobada contra el índice real de equipos de futbolfantasy.com
+  // (son estos 20 slugs: alaves, athletic, atletico, barcelona, betis,
+  // celta, deportivo, elche, espanyol, getafe, levante, malaga, osasuna,
+  // racing, rayo-vallecano, real-madrid, real-sociedad, sevilla, valencia,
+  // villarreal). Las entradas de abajo cubren los nombres largos que usa
+  // Futmondo para equipos cuyo slug real es más corto.
+  const SLUG_FIX = {
+    "atleti": "atletico", "atletico-madrid": "atletico",
+    "barca": "barcelona",
+    "santander": "racing",
+    "real-betis": "betis",
+    "deportivo-coruna": "deportivo", "deportivo-de-coruna": "deportivo", "coruna": "deportivo", "rcdeportivo": "deportivo",
+    "espanyol-barcelona": "espanyol",
+  };
   if (SLUG_FIX[slug]) slug = SLUG_FIX[slug];
   const key = "ffteam:v7:" + slug;
   try { const c = await env.PORRA.get(key, "json"); if (c && c.data && Date.now() - (c.at || 0) < 3 * 3600 * 1000) return c.data; } catch (e) {}
@@ -1518,7 +1542,7 @@ async function getOnce(env, home, away, jornada) {
 /* ---------- Franja de jornada (escudos, día/hora y TV) ---------- */
 function wkey(s) {
   return stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").split(/\s+/)
-    .filter((w) => w && ["de", "del", "cf", "fc", "club", "sad", "sd", "ud", "rcd", "balompie", "c", "f"].indexOf(w) < 0);
+    .filter((w) => w && ["de", "del", "la", "cf", "fc", "club", "sad", "sd", "ud", "rcd", "rc", "balompie", "c", "f"].indexOf(w) < 0);
 }
 function teamScore(a, b) {
   const A = wkey(a), B = wkey(b);
@@ -1718,7 +1742,12 @@ function pronosticoFor(p) {
 
 function normKey(s) { return stripAccents(s).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim(); }
 function teamKey(s) {
-  return stripAccents(s).replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w && ["de", "del", "cf", "fc", "club", "sad", "sd", "ud", "rcd", "balompie"].indexOf(w) < 0).join("");
+  // "rc" (p.ej. "RC Deportivo") se añade a la lista de relleno junto con
+  // "rcd" (Espanyol): sin ella, "RC Deportivo" no empareja con el nombre
+  // que usa la fuente del calendario y ese equipo se queda sin la fecha de
+  // su próximo partido aunque sí tenga rival/casa-fuera (ver getFFTeam,
+  // mismo tipo de fallo con el mismo equipo).
+  return stripAccents(s).replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w && ["de", "del", "la", "cf", "fc", "club", "sad", "sd", "ud", "rcd", "rc", "balompie"].indexOf(w) < 0).join("");
 }
 function lev(a, b) {
   const m = a.length, n = b.length;
