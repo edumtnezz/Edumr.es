@@ -1896,17 +1896,20 @@
         ph.appendChild(pct);
       }
       pl.appendChild(ph);
-      pl.appendChild(el("div", "alin-pname", p.nombre || ""));
-      const sub = [];
-      if (p.puntos != null) sub.push(p.puntos + " pts");
-      if (p.estado && p.estado !== "OK" && p.estado !== "?") sub.push(p.estado);
-      if (sub.length) pl.appendChild(el("div", "alin-palt", sub.join(" · ")));
+      pl.appendChild(el("div", "alin-pname", p.last || p.nombre || ""));
       pl.addEventListener("click", () => swapPicker(p));
       return pl;
     };
     const field = el("div", "alin-pitch");
     field.style.maxWidth = "520px";
     field.style.margin = "12px auto";
+    // Recambio probable debajo de cada titular con la plaza en duda (<=60%,
+    // o siempre en portería), igual que en "Alineaciones probables" — pero
+    // aquí tomado de TU banquillo (los suplentes de tu captura), no del
+    // mercado general.
+    const benchPool = { DEL: [], CEN: [], DEF: [], POR: [] };
+    sups.forEach((p) => { if (benchPool[p.pos]) benchPool[p.pos].push(p); });
+    Object.keys(benchPool).forEach((k) => benchPool[k].sort((a, b) => (b.prob == null ? -1 : b.prob) - (a.prob == null ? -1 : a.prob)));
     [["DEL", 15], ["CEN", 41], ["DEF", 67], ["POR", 88]].forEach((band) => {
       const arr = tits.filter((p) => p.pos === band[0]);
       const n = arr.length;
@@ -1917,7 +1920,18 @@
       const step = n > 1 ? span / (n - 1) : 0;
       arr.forEach((p, i) => {
         const x = n > 1 ? (inset + i * step) : 50;
-        field.appendChild(pitchCard(p, x, band[1], sizeClass));
+        const node = pitchCard(p, x, band[1], sizeClass);
+        if (p.prob != null && (band[0] === "POR" || p.prob <= 60)) {
+          const alts = [];
+          for (let k = 0; k < 2; k++) { const a = benchPool[band[0]].shift(); if (a) alts.push(a); }
+          alts.forEach((alt) => {
+            const altEl = el("div", "alin-palt", alt.last || alt.nombre || "");
+            altEl.title = "Recambio en tu banquillo: " + (alt.nombre || "");
+            altEl.addEventListener("click", (ev) => { ev.stopPropagation(); swapPicker(p); });
+            node.appendChild(altEl);
+          });
+        }
+        field.appendChild(node);
       });
     });
     if (field.children.length) out.appendChild(field);

@@ -286,10 +286,18 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 .ficha-head-center .mcard-photo { margin: 4px auto 8px; }
 .ficha-team { display: flex; align-items: center; justify-content: center; gap: 6px; color: var(--muted); font-size: 0.9rem; }
 .ficha-team img { width: 18px; height: 18px; object-fit: contain; }
-.pitch-bench { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; padding: 12px; border: 1px dashed var(--border); border-radius: 14px; }
-.pitch-bench .pitch-player { width: 78px; }
+/* Las tarjetas del banquillo van sobre el fondo normal de la página (no
+   sobre el verde del campo), así que NO pueden heredar los textos en
+   blanco con sombra de .pitch-player (en tema claro quedaban invisibles,
+   "blanco sobre blanco"). Cada tarjeta lleva su propio fondo (var(--card))
+   y colores de tema para que se lea siempre. */
+.pitch-bench { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 12px; border: 1px dashed var(--border); border-radius: 14px; }
+.pitch-bench .pitch-player { width: 84px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 8px 6px 7px; }
 .pitch-bench .pitch-photo { width: 44px; height: 44px; }
-.pitch-bench .pitch-name { max-width: 78px; }
+.pitch-bench .pitch-name { max-width: 76px; color: var(--text); text-shadow: none; }
+.pitch-bench .pitch-ha { color: var(--muted); text-shadow: none; max-width: 76px; }
+.pitch-bench .pitch-when { color: var(--muted); text-shadow: none; }
+.pitch-bench .pitch-pts { color: var(--text); text-shadow: none; }
 .an-name-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .an-crest { width: 15px; height: 15px; object-fit: contain; flex: 0 0 auto; }
 .pitch-when { font-size: 0.56rem; color: rgba(255,255,255,0.85); }
