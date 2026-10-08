@@ -737,7 +737,47 @@ function isAdmin(env, user) {
   if (!user || !user.name) return false;
   const list = String(env.ADMIN_NAMES || "eduardo,edumr,edu").split(",").map((s) => stripAccents(s.trim().toLowerCase())).filter(Boolean);
   const n = stripAccents(String(user.name).toLowerCase());
-  return list.some((x) => n === x || n.indexOf(x) >= 0);
+  // Coincidencia EXACTA. Antes era "n.indexOf(x) >= 0" (si el nombre
+  // CONTIENE la palabra admin), lo que daba admin a cualquiera cuyo nombre
+  // incluyera, p.ej., "edu" (Edurne, Eduarda...). Con exacta, solo quien se
+  // llame tal cual una de las entradas de ADMIN_NAMES es admin.
+  return list.includes(n);
+}
+
+// Avisos para Edu (admin) sobre cosas que convendría revisar: cuentas
+// nuevas (para detectar si alguien se registra con el nombre de un amigo
+// antes de que ese amigo entre, "ocupándolo") y fallos de scraping en las
+// webs de terceros de las que sacamos datos (Comuniate, futbolfantasy.com
+// aparte de las 20 fichas de equipo que ya vigila checkFFHealth). No se
+// hacen peticiones nuevas para esto: se aprovechan las que YA se hacen por
+// el cron de cada 15 min, para no darle más tráfico a esas webs.
+const NEWACC_KEY = "acct:new:v1";
+async function logNewAccount(env, name) {
+  try {
+    const list = (await env.PORRA.get(NEWACC_KEY, "json")) || [];
+    list.unshift({ name, at: Date.now() });
+    await env.PORRA.put(NEWACC_KEY, JSON.stringify(list.slice(0, 30)));
+  } catch (e) {}
+}
+const SCRAPE_ISSUES_KEY = "scrape:issues:v1";
+async function flagScrape(env, source, detail) {
+  try {
+    const list = (await env.PORRA.get(SCRAPE_ISSUES_KEY, "json")) || [];
+    const now = Date.now();
+    const recent = list.find((x) => x.source === source);
+    // No repetir el mismo aviso constantemente mientras el fallo persiste:
+    // se actualiza la hora pero no se duplica la entrada.
+    if (recent) { recent.at = now; recent.detail = detail; }
+    else list.unshift({ source, detail, at: now });
+    await env.PORRA.put(SCRAPE_ISSUES_KEY, JSON.stringify(list.slice(0, 20)));
+  } catch (e) {}
+}
+async function clearScrape(env, source) {
+  try {
+    const list = (await env.PORRA.get(SCRAPE_ISSUES_KEY, "json")) || [];
+    const next = list.filter((x) => x.source !== source);
+    if (next.length !== list.length) await env.PORRA.put(SCRAPE_ISSUES_KEY, JSON.stringify(next));
+  } catch (e) {}
 }
 async function getAvatars(env) {
   try { const c = await env.PORRA.get("fm:avatars:v1", "json"); if (c && c.map && Date.now() - (c.at || 0) < 6 * 3600 * 1000) return c.map; } catch (e) {}
@@ -882,40 +922,54 @@ const FF_MARKET_URL = "https://www.futbolfantasy.com/analytics/futmondo/mercado/
 const FF_MAP_KEY = "ff:map4";
 
 async function ffMap(env) {
+  let cached = null;
   try {
-    const c = await env.PORRA.get(FF_MAP_KEY, "json");
-    if (c && c.map && Date.now() - (c.at || 0) < 6 * 3600 * 1000) return c.map;
+    cached = await env.PORRA.get(FF_MAP_KEY, "json");
+    if (cached && cached.map && Date.now() - (cached.at || 0) < 6 * 3600 * 1000) return cached.map;
   } catch (e) {}
-  const res = await fetch(FF_MARKET_URL, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
-  const html = await res.text();
-  const map = {};
-  const rows = html.split('class="elemento_jugador');
-  for (let i = 1; i < rows.length; i++) {
-    const r = rows[i];
-    const idm = r.match(/data-id="(\d+)"/);
-    const nm = r.match(/data-nombre="([^"]+)"/);
-    if (!idm || !nm) continue;
-    const key = normKey(nm[1].toLowerCase());
-    if (!key || map[key]) continue;
-    const pm = r.match(/class="prob-[^"]*"[^>]*>\s*(\d+)%/);
-    const tb = r.match(/class="rival-probability[^"]*"[^>]*title="([^"]*)"/);
-    let rival = "", casa = null, jornada = "";
-    if (tb && /rival/i.test(tb[1])) {
-      const t = tb[1];
-      const rr = t.match(/rival:\s*([^()]+)/i);
-      if (rr) rival = rr[1].trim();
-      if (/\(Casa\)/i.test(t)) casa = true; else if (/\(Fuera\)/i.test(t)) casa = false;
-      const jm = t.match(/jornada\s*(\d+)/i);
-      if (jm) jornada = jm[1];
+  // Si la petición o el parseo fallan, en vez de devolver {} (que deja a
+  // TODA la web sin prob/rival/casa-fuera de golpe) se reutiliza el último
+  // mapa guardado aunque esté caducado, y se avisa a Edu (admin) de que esta
+  // fuente ha dejado de funcionar — igual que pasó sin darse cuenta con el
+  // slug del Deportivo.
+  try {
+    const res = await fetch(FF_MARKET_URL, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+    const html = await res.text();
+    const map = {};
+    const rows = html.split('class="elemento_jugador');
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      const idm = r.match(/data-id="(\d+)"/);
+      const nm = r.match(/data-nombre="([^"]+)"/);
+      if (!idm || !nm) continue;
+      const key = normKey(nm[1].toLowerCase());
+      if (!key || map[key]) continue;
+      const pm = r.match(/class="prob-[^"]*"[^>]*>\s*(\d+)%/);
+      const tb = r.match(/class="rival-probability[^"]*"[^>]*title="([^"]*)"/);
+      let rival = "", casa = null, jornada = "";
+      if (tb && /rival/i.test(tb[1])) {
+        const t = tb[1];
+        const rr = t.match(/rival:\s*([^()]+)/i);
+        if (rr) rival = rr[1].trim();
+        if (/\(Casa\)/i.test(t)) casa = true; else if (/\(Fuera\)/i.test(t)) casa = false;
+        const jm = t.match(/jornada\s*(\d+)/i);
+        if (jm) jornada = jm[1];
+      }
+      const dif = (n) => { const m = r.match(new RegExp('data-diferencia' + n + '="(-?\\d+)"')); return m ? Number(m[1]) : null; };
+      const tnd = r.match(/data-tendencia="(-?\d+)"/);
+      map[key] = { id: idm[1], prob: pm ? Number(pm[1]) : null, rival, casa, jornada, tend: tnd ? Number(tnd[1]) : null, d1: dif(1), d2: dif(2), d3: dif(3), d7: dif(7), d14: dif(14), d30: dif(30) };
     }
-    const dif = (n) => { const m = r.match(new RegExp('data-diferencia' + n + '="(-?\\d+)"')); return m ? Number(m[1]) : null; };
-    const tnd = r.match(/data-tendencia="(-?\d+)"/);
-    map[key] = { id: idm[1], prob: pm ? Number(pm[1]) : null, rival, casa, jornada, tend: tnd ? Number(tnd[1]) : null, d1: dif(1), d2: dif(2), d3: dif(3), d7: dif(7), d14: dif(14), d30: dif(30) };
+    if (Object.keys(map).length > 50) {
+      try { await env.PORRA.put(FF_MAP_KEY, JSON.stringify({ at: Date.now(), map })); } catch (e) {}
+      await clearScrape(env, "ff-mercado");
+      return map;
+    }
+    await flagScrape(env, "ff-mercado", "La página de mercado de futbolfantasy.com solo dio " + Object.keys(map).length + " jugadores (se esperan >50). Puede haber cambiado el HTML de la página.");
+    return (cached && cached.map) || map;
+  } catch (e) {
+    await flagScrape(env, "ff-mercado", "No se pudo cargar la página de mercado de futbolfantasy.com.");
+    return (cached && cached.map) || {};
   }
-  if (Object.keys(map).length > 50) {
-    try { await env.PORRA.put(FF_MAP_KEY, JSON.stringify({ at: Date.now(), map })); } catch (e) {}
-  }
-  return map;
 }
 
 function ffPick(name, map) {
@@ -1556,7 +1610,10 @@ async function getOnce(env, home, away, jornada) {
       kickoff = (ph.match(/"startDate":"([^"]+)"/) || [])[1] || "";
       referee = (ph.match(/cronista\.png[^>]*>[\s\S]*?<span>([^<]+)<\/span>/) || [])[1] || "";
     }
-  } catch (e) {}
+    await clearScrape(env, "comuniate");
+  } catch (e) {
+    await flagScrape(env, "comuniate", "No se pudo consultar comuniate.com para el estadio/hora/árbitro del partido.");
+  }
   let data = null;
   try {
     const [hT, aT] = await Promise.all([getFFTeam(env, home), getFFTeam(env, away)]);
@@ -2629,6 +2686,7 @@ async function handleRegistro(request, env) {
     JSON.stringify({ name, salt, hash, iter: PBKDF2_ITER, createdAt: new Date().toISOString() })
   );
   await migrateLegacy(env, key, name);
+  await logNewAccount(env, name);
   const token = await createSession(env, key);
   const state = await buildState(env, null, { key, name });
   return json({ ok: true, user: { name }, state }, 200, {
@@ -2658,6 +2716,7 @@ async function handleLogin(request, env) {
       JSON.stringify({ name, salt, hash, iter: PBKDF2_ITER, createdAt: new Date().toISOString() })
     );
     await migrateLegacy(env, key, name);
+    await logNewAccount(env, name);
     const token = await createSession(env, key);
     const state = await buildState(env, null, { key, name });
     return json({ ok: true, user: { name }, state, created: true }, 200, {
@@ -2831,11 +2890,24 @@ export async function onRequestGet({ request, env, params }) {
     try { return json(await getClausulas(env)); } catch (e) { return json({ players: [], error: String(e) }); }
   }
   if (path === "ff-health") {
-    // El cron semanal llama con ?run=1 para forzar una comprobación fresca
+    // El cron diario llama con ?run=1 para forzar una comprobación fresca
     // de las 20 páginas; la web (solo si eres admin) llama sin ?run para
     // leer el último resultado guardado, sin disparar 20 peticiones cada
     // vez que alguien abre la Guía Fantasy.
-    try { return json(await checkFFHealth(env, url.searchParams.has("run"))); } catch (e) { return json({ at: 0, total: 0, broken: [], error: String(e) }); }
+    try {
+      const health = await checkFFHealth(env, url.searchParams.has("run"));
+      // issues/newAccounts solo se añaden para el admin: son datos sobre
+      // otros usuarios (nombres) o sobre fallos internos, no algo que deba
+      // ver cualquiera que llame a este endpoint directamente.
+      if (isAdmin(env, user)) {
+        try { health.issues = (await env.PORRA.get(SCRAPE_ISSUES_KEY, "json")) || []; } catch (e) { health.issues = []; }
+        try {
+          const accs = (await env.PORRA.get(NEWACC_KEY, "json")) || [];
+          health.newAccounts = accs.filter((x) => Date.now() - (x.at || 0) < 3 * 24 * 3600 * 1000);
+        } catch (e) { health.newAccounts = []; }
+      }
+      return json(health);
+    } catch (e) { return json({ at: 0, total: 0, broken: [], error: String(e) }); }
   }
   if (path === "capitan-historial") {
     if (!user) return json({ error: "Inicia sesión para ver tu histórico." }, 401);

@@ -2228,11 +2228,22 @@
       if (d.admin) {
         try {
           const h = await (await fetch(API + "/ff-health", { cache: "no-store" })).json();
+          const lines = [];
           if (h && h.broken && h.broken.length) {
+            lines.push("⚠️ futbolfantasy.com no está cargando jugadores para: " + h.broken.join(", ") + " — puede que hayan cambiado de slug (revisar getFFTeam).");
+          }
+          if (h && h.issues && h.issues.length) {
+            h.issues.forEach((it) => lines.push("⚠️ " + (it.detail || ("Fallo en " + it.source))));
+          }
+          if (h && h.newAccounts && h.newAccounts.length) {
+            const names = h.newAccounts.map((a) => a.name).join(", ");
+            lines.push("🆕 Cuenta(s) nueva(s) estos días: " + names + ". Revisa que no sea nadie ocupando el nombre de otro.");
+          }
+          if (lines.length) {
             const main = document.querySelector(".quiniela-main");
             if (main) {
               const bar = el("div", "ff-health-warn");
-              bar.appendChild(el("span", null, "⚠️ futbolfantasy.com no está cargando jugadores para: " + h.broken.join(", ") + " — puede que hayan cambiado de slug (revisar getFFTeam)."));
+              lines.forEach((t, i) => { if (i) bar.appendChild(el("br")); bar.appendChild(el("span", null, t)); });
               const x = el("button", "ff-health-x", "✕"); x.type = "button";
               x.addEventListener("click", () => bar.remove());
               bar.appendChild(x);
