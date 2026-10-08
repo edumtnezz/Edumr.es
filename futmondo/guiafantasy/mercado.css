@@ -676,10 +676,10 @@ html { overflow-anchor: none; }
    las tres igual de peso visual → se veía recargado. Ahora solo la Media
    (el número por el que se ordena el ranking) lleva una píldora de color;
    PTS y Cláusula son texto plano, discreto, en la misma línea. */
-.claus-stats { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 9px 0; }
-.claus-stat { background: none; border: none; padding: 0; display: flex; flex-direction: row; align-items: baseline; gap: 4px; }
-.claus-stat b { font-family: 'Space Grotesk', sans-serif; font-size: 0.86rem; font-weight: 700; color: var(--text); }
-.claus-stat small { font-size: 0.66rem; color: var(--muted); text-transform: none; font-weight: 600; }
+.claus-stats { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; row-gap: 4px; column-gap: 10px; margin: 9px 0; max-width: 100%; }
+.claus-stat { background: none; border: none; padding: 0; display: flex; flex-direction: row; align-items: baseline; gap: 4px; min-width: 0; }
+.claus-stat b { font-family: 'Space Grotesk', sans-serif; font-size: 0.86rem; font-weight: 700; color: var(--text); white-space: nowrap; }
+.claus-stat small { font-size: 0.66rem; color: var(--muted); text-transform: none; font-weight: 600; white-space: nowrap; }
 .claus-stat.clause b { color: var(--accent); font-size: 0.86rem; white-space: nowrap; }
 .claus-stat.media { background: var(--primary); border-radius: 999px; padding: 4px 12px; }
 .claus-stat.media b { color: #fff; font-size: 0.98rem; line-height: 1; }
