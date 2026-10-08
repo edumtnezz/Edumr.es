@@ -1279,17 +1279,15 @@
     box.appendChild(h);
     const sub = el("div", "feat-sub");
     list.slice(1, 4).forEach((x) => {
-      const it = el("div", "newscard news-link");
+      const it = el("div", "feat-card-sm");
       it.addEventListener("click", () => open(x));
-      const th = el("div", "newscard-thumb" + (x.thumb ? "" : " ball"));
       const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = x.thumb || "/img/balon.svg";
-      im.addEventListener("error", () => { im.src = "/img/balon.svg"; it.querySelector(".newscard-thumb").classList.add("ball"); }, { once: true });
-      th.appendChild(im);
-      it.appendChild(th);
-      const bd = el("div", "newscard-body");
-      bd.appendChild(el("div", "news-title", x.title));
-      bd.appendChild(el("div", "news-date", (x.date || "") + (x.time ? " · " + x.time : "")));
-      it.appendChild(bd);
+      im.addEventListener("error", () => { im.src = "/img/balon.svg"; }, { once: true });
+      it.appendChild(im);
+      const ov = el("div", "feat-card-sm-overlay");
+      ov.appendChild(el("div", "feat-card-sm-title", x.title));
+      ov.appendChild(el("div", "feat-card-sm-date", (x.date || "") + (x.time ? " · " + x.time : "")));
+      it.appendChild(ov);
       sub.appendChild(it);
     });
     box.appendChild(sub);
