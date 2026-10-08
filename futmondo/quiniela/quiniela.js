@@ -181,11 +181,14 @@ function dayLabel(d) {
 function teamEl(side, match, team) {
   const span = document.createElement("span");
   span.className = "team " + side;
-  span.appendChild(crestEl(team.crest, team.tla || team.name));
+  const main = document.createElement("span");
+  main.className = "team-main";
+  main.appendChild(crestEl(team.crest, team.tla || team.name));
   const t = document.createElement("span");
   t.className = "tname";
   t.textContent = team.name;
-  span.appendChild(t);
+  main.appendChild(t);
+  span.appendChild(main);
   span.appendChild(formEl(side === "home" ? match.homeForm : match.awayForm));
   return span;
 }

@@ -432,16 +432,18 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 }
 .team {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 4px;
   min-width: 0;
-  flex-wrap: wrap;
   max-width: 100%;
 }
-.team-main { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.team.away { flex-direction: row-reverse; }
+/* Nombre del equipo siempre en su propia línea, encima de la forma: así
+   todas las filas tienen la misma altura, tenga el equipo un nombre
+   corto (Celta) o largo (Real Sociedad). */
+.team-main { display: flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; max-width: 100%; }
+.team.away .team-main { flex-direction: row-reverse; }
 .tname {
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 600;
@@ -469,7 +471,7 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
   background: rgba(16, 185, 129, 0.12);
   flex-shrink: 0;
 }
-.form { display: flex; gap: 3px; }
+.form { display: flex; gap: 3px; justify-content: center; flex-wrap: wrap; }
 .f {
   position: relative;
   width: 20px; height: 20px; border-radius: 5px;
