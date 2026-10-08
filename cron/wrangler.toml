@@ -4,5 +4,8 @@ compatibility_date = "2025-09-01"
 
 [triggers]
 # El primero (cada 15 min) refresca cachés de noticias/mercado/etc.
-# El segundo (lunes 8:00 UTC) es el vigilante semanal de futbolfantasy.com.
-crons = ["*/15 * * * *", "0 8 * * 1"]
+# El segundo (todos los días a las 8:00 UTC) es el vigilante de
+# futbolfantasy.com — antes era solo los lunes, pero un equipo puede
+# romperse cualquier día de la semana (fichajes, ascensos...) y no tiene
+# sentido tardar hasta 6 días en enterarse.
+crons = ["*/15 * * * *", "0 8 * * *"]

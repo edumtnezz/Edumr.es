@@ -1007,6 +1007,7 @@
     if (name === "clausulazos") renderClausulas();
     if (name === "fichajes") renderFichajes();
     if (name === "alineaciones") renderAlineaciones();
+    if (name === "analiza") renderCapHistorial();
     try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
     try {
       const url = "/futmondo/guiafantasy/" + name;
@@ -2074,6 +2075,56 @@
       sec.appendChild(renderAiText(d.analisis, [].concat(tits, sups)));
       out.appendChild(sec);
     }
+  }
+
+  // Histórico de capitán: cada vez que analizas tu equipo se guarda a quién
+  // recomendamos de capitán esa jornada; aquí se compara con los puntos
+  // reales en cuanto termina el partido (fuente: puntos por jornada de
+  // Futmondo), para poder ver si merece la pena fiarse del consejo.
+  let capHistLoaded = false;
+  async function renderCapHistorial() {
+    const box = $("anCapHist");
+    if (!box || capHistLoaded) return;
+    capHistLoaded = true;
+    box.innerHTML = '<p class="muted small">Cargando histórico…</p>';
+    try {
+      const d = await (await fetch(API + "/capitan-historial", { cache: "no-store" })).json();
+      const hist = (d && d.historial) || [];
+      if (!hist.length) { box.innerHTML = ""; return; }
+      box.innerHTML = "";
+      const sec = el("div", "estado-sec an-caphist");
+      sec.appendChild(el("div", "estado-title", "📊 Histórico de capitán"));
+      sec.appendChild(el("p", "muted small", "A quién recomendamos de capitán cada jornada y los puntos que hizo de verdad (en cuanto termina su partido)."));
+      let wins = 0, resolved = 0;
+      hist.forEach((h) => {
+        const results = h.results || [];
+        const cap = results[0];
+        if (!cap) return;
+        const row = el("div", "cap-hist-row");
+        row.appendChild(el("div", "cap-hist-j", "J" + h.jornada));
+        const ph = el("div", "cap-hist-photo"); ph.appendChild(photoImg(cap.photo)); row.appendChild(ph);
+        const body = el("div", "cap-hist-body");
+        body.appendChild(el("div", "cap-hist-name", cap.nombre || ""));
+        if (h.resolved) {
+          resolved++;
+          const best = results.reduce((m, r) => (r.points != null && (m == null || r.points > m)) ? r.points : m, null);
+          const fue = cap.points != null && best != null && cap.points >= best;
+          if (fue) wins++;
+          const alts = results.slice(1).map((r) => (r.nombre || "") + " " + (r.points != null ? r.points : "?")).join(" · ");
+          body.appendChild(el("div", "cap-hist-alts", alts ? "Alternativas: " + alts : ""));
+          const pts = el("span", "cap-hist-pts" + (fue ? " win" : ""), (cap.points != null ? cap.points : "?") + " pts" + (fue ? " 👑 mejor opción" : ""));
+          row.appendChild(body);
+          row.appendChild(pts);
+        } else {
+          body.appendChild(el("div", "cap-hist-alts", "pendiente de que termine su partido"));
+          row.appendChild(body);
+          row.appendChild(el("span", "cap-hist-pts pending", "…"));
+        }
+        sec.appendChild(row);
+      });
+      if (resolved) sec.insertBefore(el("div", "cap-hist-summary", "Acertó la mejor opción de las 3 en " + wins + " de " + resolved + " jornadas resueltas."), sec.children[2] || null);
+      box.appendChild(sec);
+    } catch (e) { box.innerHTML = ""; }
   }
 
   const anFile = $("anFile");

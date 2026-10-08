@@ -1522,7 +1522,7 @@ const FF_TEAMS = ["alaves", "athletic", "atletico", "barcelona", "betis", "celta
 async function checkFFHealth(env, force) {
   const key = "ff:health:v1";
   if (!force) {
-    try { const c = await env.PORRA.get(key, "json"); if (c && Date.now() - (c.at || 0) < 6 * 24 * 3600 * 1000) return c; } catch (e) {}
+    try { const c = await env.PORRA.get(key, "json"); if (c && Date.now() - (c.at || 0) < 20 * 3600 * 1000) return c; } catch (e) {}
   }
   const broken = [];
   await Promise.all(FF_TEAMS.map(async (slug) => {
@@ -1993,6 +1993,7 @@ async function handleAnaliza(request, env, user) {
     const probFf = ffe && ffe.prob != null ? ffe.prob : null;
     return {
       nombre: nm,
+      id: p ? p.id : "",
       pos: (VALID_POS.includes(pl.pos) ? pl.pos : "") || (p ? roleShort(p.role) : ""),
       pos2: p ? roleShort(p.role2) : "",
       equipo: p ? p.team : "",
@@ -2116,7 +2117,90 @@ async function handleAnaliza(request, env, user) {
   // ideal (con el número real de líneas, no uno fijo) y multiposición.
   const prompt = "Eres un analista experto de fútbol fantasy (Futmondo Social). Analiza la PRÓXIMA jornada del equipo del usuario. Cada jugador trae posición(es), estado, probabilidad de ser titular, forma, puntos, si juega en CASA/FUERA y la FECHA/HORA de su partido.\n\n" + ctx + "\n\nResponde en español, BREVE, con emojis y **negrita** (prohibido #, tablas o listas con guiones). Usa EXACTAMENTE estos títulos cada uno en su propia línea, sin nada más en esa línea:\n**ONCE IDEAL**\n**PORTERO:**\n(el portero)\n**DEFENSA DE " + (cnt("DEF") || 0) + " CON:**\n(los " + (cnt("DEF") || 0) + " defensas, en su mejor posición, separados por comas)\n**MEDIOCENTROS:**\n(los centrocampistas)\n**DELANTEROS:**\n(los delanteros)\n**MULTIPOSICIÓN**\n(" + multiHint + ")";
   const analisis = await dsChat(env, [{ role: "user", content: prompt }], "deepseek-flash");
+  // Guarda la recomendación de capitán de ESTA jornada (misma fórmula que
+  // usa el frontend para pintar "Capitán recomendado") para poder comparar
+  // luego, cuando la jornada haya terminado, cuántos puntos hizo de verdad.
+  // No bloquea la respuesta si falla.
+  try {
+    const jornadaPred = (market.players || []).reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0) + 1;
+    const capScore = (p) => {
+      if (String(p.estado || "").toUpperCase().indexOf("LESI") >= 0) return 5;
+      const f = p.fitness || [];
+      const avg = f.length ? f.reduce((a, b) => a + (Number(b) || 0), 0) / f.length : 0;
+      const prob = p.prob != null ? p.prob : 60;
+      let s = avg * 9 + (prob - 50) * 0.5;
+      if (p.casa === true) s += 4; else if (p.casa === false) s -= 2;
+      if (p.pos2) s += 2;
+      return Math.max(5, Math.min(99, Math.round(s)));
+    };
+    const capList = titulares.filter((p) => p.pos !== "POR" && p.id).slice().sort((a, b) => capScore(b) - capScore(a));
+    if (capList.length) {
+      const alts = capList.slice(0, 3).map((p) => ({ id: p.id, nombre: p.nombre, pos: p.pos, photo: p.photo }));
+      await saveCapitanPrediction(env, user, jornadaPred, alts);
+    }
+  } catch (e) {}
   return json({ formacion, titulares, suplentes, analisis, leido });
+}
+
+async function saveCapitanPrediction(env, user, jornada, alts) {
+  if (!user || !user.key || !jornada || !alts || !alts.length) return;
+  const key = "cap:hist:" + user.key;
+  let hist = [];
+  try { hist = (await env.PORRA.get(key, "json")) || []; } catch (e) {}
+  if (!Array.isArray(hist)) hist = [];
+  const idx = hist.findIndex((h) => h.jornada === jornada);
+  // Si ya habías analizado esta misma jornada antes (p.ej. tras un cambio
+  // de última hora), se sustituye la predicción por la más reciente en vez
+  // de guardar las dos — lo que cuenta es a quién le dijimos que pusiera
+  // de capitán la ÚLTIMA vez.
+  const entry = { jornada, at: Date.now(), alts, resolved: false, results: null };
+  if (idx >= 0) hist[idx] = entry; else hist.push(entry);
+  hist.sort((a, b) => b.jornada - a.jornada);
+  hist = hist.slice(0, 25);
+  try { await env.PORRA.put(key, JSON.stringify(hist)); } catch (e) {}
+}
+
+async function getPlayerJornadaPoints(env, playerId, jornada) {
+  if (!playerId) return null;
+  try {
+    const header = await futbolHeader(env);
+    const r = await futbolPost("/2/player/matches", header, { playerId, championshipId: FUTMONDO_CHAMPIONSHIP });
+    const matches = (r.answer && r.answer.matches) || [];
+    const m = matches.find((x) => Number(x.r) === Number(jornada));
+    if (!m) return null;
+    if (m.st !== "F") return { finished: false, points: null };
+    const po = (m.ps && m.ps.po) || [];
+    const z = po.find((k) => k.mode === "stats");
+    return { finished: true, points: z ? Number(z.p) || 0 : 0 };
+  } catch (e) { return null; }
+}
+
+// Histórico de "a quién recomendamos de capitán": se resuelve bajo demanda
+// (cuando Edu abre la pestaña) comprobando, para cada jornada todavía sin
+// resolver, si YA ha terminado el partido de las 3 opciones que se le
+// mostraron. En cuanto las 3 han acabado, se guarda el resultado en KV para
+// no volver a pedirlo nunca más (los puntos de una jornada pasada no
+// cambian).
+async function getCapitanHistorial(env, user) {
+  if (!user || !user.key) return [];
+  const key = "cap:hist:" + user.key;
+  let hist = [];
+  try { hist = (await env.PORRA.get(key, "json")) || []; } catch (e) {}
+  if (!Array.isArray(hist)) return [];
+  let changed = false;
+  for (const h of hist) {
+    if (h.resolved) continue;
+    try {
+      const results = await Promise.all((h.alts || []).map(async (a) => {
+        const r = await getPlayerJornadaPoints(env, a.id, h.jornada);
+        return { ...a, points: r ? r.points : null, finished: !!(r && r.finished) };
+      }));
+      h.results = results;
+      if (results.length && results.every((r) => r.finished)) { h.resolved = true; changed = true; }
+    } catch (e) {}
+  }
+  if (changed) { try { await env.PORRA.put(key, JSON.stringify(hist)); } catch (e) {} }
+  return hist;
 }
 
 function dstrMadrid(off) {
@@ -2752,6 +2836,10 @@ export async function onRequestGet({ request, env, params }) {
     // leer el último resultado guardado, sin disparar 20 peticiones cada
     // vez que alguien abre la Guía Fantasy.
     try { return json(await checkFFHealth(env, url.searchParams.has("run"))); } catch (e) { return json({ at: 0, total: 0, broken: [], error: String(e) }); }
+  }
+  if (path === "capitan-historial") {
+    if (!user) return json({ error: "Inicia sesión para ver tu histórico." }, 401);
+    try { return json({ historial: await getCapitanHistorial(env, user) }); } catch (e) { return json({ historial: [], error: String(e) }); }
   }
   if (path === "noticias") {
     return json(await getNoticias(env));
