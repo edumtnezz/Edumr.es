@@ -378,9 +378,10 @@ body {
 
 /* ---------- Barrita visible de scroll horizontal ---------- */
 .cx-scrollbar {
-  height: 4px;
-  max-width: 260px;
-  margin: 0 auto 8px;
+  height: 6px;
+  max-width: 340px;
+  width: 90%;
+  margin: 2px auto 10px;
   background: var(--cx-border);
   border-radius: 999px;
   overflow: hidden;
@@ -392,7 +393,6 @@ body {
   border-radius: 999px;
   transition: transform 0.05s linear, width 0.05s linear;
 }
-.cx-scrollbar-tabs { margin: 0 auto 6px; }
 
 /* ---------- Tarjetas / paneles (claro, sombras suaves) ---------- */
 .panel {

@@ -177,7 +177,7 @@
     return v != null ? Number(v) : (Number(p.change) || 0);
   }
   let rachasData = null;
-  async function renderRachas() {
+  function renderMejorFichaje() {
     const box = $("mercRachas");
     if (!box) return;
     box.innerHTML = "";
@@ -186,6 +186,12 @@
       box.appendChild(best);
       mountScrollBar($("mercBestRow"), $("mercBestBar"));
     }
+  }
+  async function renderRachas() {
+    renderMejorFichaje();
+    const box = $("rachasOut");
+    if (!box) return;
+    box.innerHTML = "";
     const head = el("div", "hl-head");
     head.appendChild(el("span", "hl-title", "🔥 Jugadores en racha"));
     const sub = el("span", "rachas-sub", "Partidos seguidos puntuando · más reciente primero");
