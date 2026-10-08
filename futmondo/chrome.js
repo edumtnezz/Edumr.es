@@ -89,11 +89,12 @@
         var pv = document.getElementById("cxJPrev"), nx = document.getElementById("cxJNext");
         if (pv) pv.disabled = jornada <= 1;
         if (nx) nx.disabled = jornada >= 38;
-        grid.querySelectorAll(".cx-jn").forEach(function (el) {
+        grid.querySelectorAll(".cx-jn").forEach(function (el, idx) {
           el.addEventListener("click", function () {
+            var m = ms[idx] || {};
             document.dispatchEvent(new CustomEvent("cx:once", { detail: {
-              home: el.getAttribute("data-home"), away: el.getAttribute("data-away"),
-              homeCrest: el.getAttribute("data-hcrest"), awayCrest: el.getAttribute("data-acrest"), jornada: jornada
+              home: m.home, away: m.away, homeCrest: m.homeCrest, awayCrest: m.awayCrest,
+              day: m.day, date: m.date, time: m.time, tv: m.tv, jornada: jornada
             } }));
           });
         });

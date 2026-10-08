@@ -556,99 +556,56 @@
     if (t.bench && t.bench.length) col.appendChild(renderBench(t.bench));
     return col;
   }
-  let alinInit = false, alinJornada = 0, alinSel = "";
-  async function showAlinDetail(m, jn) {
-    const detail = $("alinDetail");
-    if (!detail) return;
-    detail.innerHTML = '<p class="muted small">Cargando alineaciones…</p>';
-    let r = null;
-    for (let a = 0; a < 2 && !r; a++) {
-      try {
-        const j = await (await fetch(API + "/once?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json();
-        if (j && ((j.home && j.home.starters && j.home.starters.length) || (j.away && j.away.starters && j.away.starters.length))) r = j;
-      } catch (e) {}
-      if (!r && a === 0) await new Promise((x) => setTimeout(x, 1500));
-    }
-    detail.innerHTML = "";
-    if (!r) { detail.innerHTML = '<p class="muted small">No se pudieron cargar las alineaciones.</p>'; return; }
-    const card = el("div", "alin-card");
-    const head = el("div", "alin-mhead");
-    head.appendChild(el("div", "alin-mtitle", "Jornada " + jn + " · LaLiga" + (r.stadium ? " · " + r.stadium : "")));
-    if (m.tv && m.tv.length) {
-      const tv = el("div", "alin-mtv");
-      m.tv.forEach((c) => { if (!c || !c.logo) return; const im = el("img"); im.src = c.logo; im.alt = c.name || ""; im.title = c.name || ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); tv.appendChild(im); });
-      head.appendChild(tv);
-    }
-    const teams = el("div", "alin-mteams");
-    const hb = el("div", "alin-mteam");
-    if (m.homeCrest) { const im = el("img"); im.src = m.homeCrest; im.alt = ""; hb.appendChild(im); }
-    hb.appendChild(el("span", null, m.home));
-    teams.appendChild(hb);
-    teams.appendChild(el("span", "alin-mvs", "vs"));
-    const ab = el("div", "alin-mteam");
-    if (m.awayCrest) { const im = el("img"); im.src = m.awayCrest; im.alt = ""; ab.appendChild(im); }
-    ab.appendChild(el("span", null, m.away));
-    teams.appendChild(ab);
-    head.appendChild(teams);
-    head.appendChild(el("div", "alin-mwhen", ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim()));
-    card.appendChild(head);
-    const pitches = el("div", "alin-pitches");
-    pitches.appendChild(renderPitch(r.home || {}, m.homeCrest));
-    pitches.appendChild(renderPitch(r.away || {}, m.awayCrest));
-    card.appendChild(pitches);
-    detail.appendChild(card);
-  }
-  async function renderAlineaciones(force) {
-    const box = $("alinOut");
-    if (!box) return;
-    if (alinInit && !force) return;
-    alinInit = true;
-    box.innerHTML = '<p class="muted small">Cargando jornada…</p>';
-    let d;
-    try { d = await (await fetch(API + "/jornada" + (alinJornada ? "?jornada=" + alinJornada : ""), { cache: "no-store" })).json(); } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar.</p>'; return; }
-    const ms = (d && d.matches) || [];
-    const jn = Number(d && d.matchday) || 0;
-    alinJornada = jn;
-    const upd = $("alinUpdated");
-    if (upd) upd.textContent = jn ? "Jornada " + jn : "";
-    box.innerHTML = "";
-    if (!ms.length) { box.innerHTML = '<p class="muted small">Sin jornada.</p>'; return; }
-    const bar = el("div", "alin-jbar");
-    const pv = el("button", "alin-nav", "◀"); pv.type = "button"; pv.disabled = jn <= 1;
-    pv.addEventListener("click", () => { alinJornada = Math.max(1, jn - 1); alinSel = ""; renderAlineaciones(true); });
-    const nx = el("button", "alin-nav", "▶"); nx.type = "button"; nx.disabled = jn >= 38;
-    nx.addEventListener("click", () => { alinJornada = Math.min(38, jn + 1); alinSel = ""; renderAlineaciones(true); });
-    bar.appendChild(pv); bar.appendChild(el("span", "alin-jtitle", "Jornada " + jn)); bar.appendChild(nx);
-    box.appendChild(bar);
-    const grid = el("div", "alin-jgrid");
-    ms.forEach((m) => {
-      const key = akey(m.home + m.away);
-      const card = el("button", "alin-jcard" + (key === alinSel ? " active" : ""));
-      card.type = "button";
-      const t1 = el("span", "alin-jteam");
-      if (m.homeCrest) { const im = el("img"); im.src = m.homeCrest; im.alt = ""; im.loading = "lazy"; t1.appendChild(im); }
-      const mid = el("span", "alin-jmid");
-      if (m.tv && m.tv[0] && m.tv[0].logo) { const tv = el("img", "alin-jtv"); tv.src = m.tv[0].logo; tv.alt = m.tv[0].name || ""; tv.loading = "lazy"; tv.addEventListener("error", () => tv.remove()); mid.appendChild(tv); }
-      mid.appendChild(el("b", null, ((m.day || "") + " " + (m.date || "")).trim()));
-      mid.appendChild(el("span", "alin-jtime", m.time || ""));
-      const t2 = el("span", "alin-jteam alin-jteam-r");
-      if (m.awayCrest) { const im = el("img"); im.src = m.awayCrest; im.alt = ""; im.loading = "lazy"; t2.appendChild(im); }
-      card.appendChild(t1); card.appendChild(mid); card.appendChild(t2);
-      card.addEventListener("click", () => {
-        alinSel = key;
-        grid.querySelectorAll(".alin-jcard").forEach((x) => x.classList.remove("active"));
-        card.classList.add("active");
-        showAlinDetail(m, jn);
-      });
-      grid.appendChild(card);
-    });
-    box.appendChild(grid);
-    const detail = el("div", "alin-detail");
-    detail.id = "alinDetail";
-    box.appendChild(detail);
-    const sel = ms.find((x) => akey(x.home + x.away) === alinSel);
-    if (sel) showAlinDetail(sel, jn);
-    else detail.innerHTML = '<p class="muted small">Elige un partido para ver la alineación probable.</p>';
+  // La "alineación probable" de un partido ya no vive en una pestaña propia:
+  // se abre como una ficha modal (igual que la ficha de un jugador) al pinchar
+  // el partido en la franja de jornada, tanto desde Inicio como desde Mercado.
+  function openMatchFicha(m, jn) {
+    const w = el("div");
+    w.appendChild(el("p", "muted small", "Cargando alineaciones…"));
+    showModal(w);
+    try { history.pushState({ tab: currentTab, ficha: 1 }, "", location.href); } catch (e) {}
+    (async () => {
+      let r = null;
+      for (let a = 0; a < 2 && !r; a++) {
+        try {
+          const j = await (await fetch(API + "/once?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json();
+          if (j && ((j.home && j.home.starters && j.home.starters.length) || (j.away && j.away.starters && j.away.starters.length))) r = j;
+        } catch (e) {}
+        if (!r && a === 0) await new Promise((x) => setTimeout(x, 1500));
+      }
+      if (!r) {
+        const c = el("div");
+        c.appendChild(el("p", "muted small", "No se pudieron cargar las alineaciones."));
+        showModal(c);
+        return;
+      }
+      const card = el("div", "alin-card");
+      const head = el("div", "alin-mhead");
+      head.appendChild(el("div", "alin-mtitle", "Jornada " + jn + " · LaLiga" + (r.stadium ? " · " + r.stadium : "")));
+      if (m.tv && m.tv.length) {
+        const tv = el("div", "alin-mtv");
+        m.tv.forEach((c2) => { if (!c2 || !c2.logo) return; const im = el("img"); im.src = c2.logo; im.alt = c2.name || ""; im.title = c2.name || ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); tv.appendChild(im); });
+        head.appendChild(tv);
+      }
+      const teams = el("div", "alin-mteams");
+      const hb = el("div", "alin-mteam");
+      if (m.homeCrest) { const im = el("img"); im.src = m.homeCrest; im.alt = ""; hb.appendChild(im); }
+      hb.appendChild(el("span", null, m.home));
+      teams.appendChild(hb);
+      teams.appendChild(el("span", "alin-mvs", "vs"));
+      const ab = el("div", "alin-mteam");
+      if (m.awayCrest) { const im = el("img"); im.src = m.awayCrest; im.alt = ""; ab.appendChild(im); }
+      ab.appendChild(el("span", null, m.away));
+      teams.appendChild(ab);
+      head.appendChild(teams);
+      head.appendChild(el("div", "alin-mwhen", ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim()));
+      card.appendChild(head);
+      const pitches = el("div", "alin-pitches");
+      pitches.appendChild(renderPitch(r.home || {}, m.homeCrest));
+      pitches.appendChild(renderPitch(r.away || {}, m.awayCrest));
+      card.appendChild(pitches);
+      showModal(card);
+    })();
   }
 
   function filteredList() {
@@ -1012,17 +969,16 @@
     const ch = $("cxChrome");
     if (ch) {
       ch.classList.toggle("hidden", name !== "mercado" && name !== "noticias" && name !== "inicio");
-      // El ticker de "última hora" solo se ve en Noticias; en Inicio y
-      // Mercado se queda solo la tira de escudos + la franja de jornada.
+      // El ticker de "última hora" solo se ve en Noticias.
       ch.classList.toggle("hide-live", name !== "noticias");
-      // En Noticias quitamos la franja de jornada (ya está en Inicio) y
-      // dejamos solo la tira de escudos, para no duplicar tanta cabecera.
+      // En Noticias no se repiten los escudos ni la franja de jornada
+      // (ya están en Inicio): solo se queda la última hora.
+      ch.classList.toggle("hide-strip", name === "noticias");
       ch.classList.toggle("hide-jornada", name === "noticias");
     }
     if (name === "inicio") renderInicioFeatured();
     if (name === "clausulazos") renderClausulas();
     if (name === "fichajes") renderFichajes();
-    if (name === "alineaciones") renderAlineaciones();
     if (name === "analiza") renderCapHistorial();
     try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
     try {
@@ -1731,7 +1687,7 @@
   (function restoreTab() {
     let name = "";
     try {
-      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|noticias|alineaciones|analiza|clausulazos)/);
+      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|noticias|analiza|clausulazos)/);
       if (m) name = m[1];
     } catch (e) {}
     if (!name) { try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {} }
@@ -2239,44 +2195,16 @@
 
   document.addEventListener("cx:once", (e) => {
     const d = e.detail || {};
-    alinSel = akey(d.home + d.away);
-    if (d.jornada) alinJornada = Number(d.jornada) || alinJornada;
-    switchTab("alineaciones");
-    renderAlineaciones(true);
-    setTimeout(() => { const box = $("alinOut"); if (box) box.scrollIntoView({ behavior: "smooth", block: "start" }); }, 900);
+    openMatchFicha({
+      home: d.home, away: d.away, homeCrest: d.homeCrest, awayCrest: d.awayCrest,
+      day: d.day, date: d.date, time: d.time, tv: d.tv
+    }, Number(d.jornada) || 0);
   });
 
-  (function initSwipe() {
-    const order = ["mercado", "fichajes", "noticias", "alineaciones", "clausulazos", "analiza"];
-    const main = document.querySelector(".quiniela-main") || document.body;
-    let sx = 0, sy = 0, st = 0, multi = false;
-    // Con dos dedos (pellizco para hacer zoom) no queremos interpretarlo como
-    // un deslizamiento para cambiar de pestaña: se marca "multi" y se ignora
-    // ese gesto por completo, aunque el dedo que suelta en último lugar se
-    // mueva mucho en horizontal.
-    main.addEventListener("touchstart", (e) => {
-      if (e.touches.length > 1) { multi = true; return; }
-      multi = false;
-      const t = e.changedTouches[0]; sx = t.clientX; sy = t.clientY; st = Date.now();
-    }, { passive: true });
-    main.addEventListener("touchmove", (e) => { if (e.touches.length > 1) multi = true; }, { passive: true });
-    main.addEventListener("touchend", (e) => {
-      const wasMulti = multi;
-      if (e.touches.length === 0) multi = false;
-      if (wasMulti || e.touches.length > 0) return;
-      const t = e.changedTouches[0];
-      const dx = t.clientX - sx, dy = t.clientY - sy;
-      if (Date.now() - st > 900) return;
-      if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
-      const hit = document.elementFromPoint(sx, sy);
-      if (hit && hit.closest("button, a, input, select, .mkt-wrap, .racha-scores, .merc-bestrow")) return;
-      const active = document.querySelector(".tab.active");
-      let i = order.indexOf(active ? active.dataset.tab : "mercado");
-      if (i < 0) i = 0;
-      if (dx < 0) i = Math.min(order.length - 1, i + 1); else i = Math.max(0, i - 1);
-      switchTab(order[i]);
-    }, { passive: true });
-  })();
+  // (Se ha quitado el cambio de pestaña deslizando con el dedo: un scroll
+  // vertical con algo de componente horizontal cambiaba de pestaña sin
+  // querer, por ejemplo aterrizando en Alineaciones. Las pestañas se
+  // cambian solo tocando su botón.)
 
   (async function initUserChip() {
     const ub = $("userBox");

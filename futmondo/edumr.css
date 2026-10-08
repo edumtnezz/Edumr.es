@@ -374,6 +374,7 @@ body {
 }
 #cxChrome.hide-live .cx-live { display: none; }
 #cxChrome.hide-jornada .cx-jornada { display: none; }
+#cxChrome.hide-strip .cx-strip { display: none; }
 
 /* ---------- Barrita visible de scroll horizontal ---------- */
 .cx-scrollbar {
