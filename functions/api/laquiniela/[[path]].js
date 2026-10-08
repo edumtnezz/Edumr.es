@@ -2946,7 +2946,8 @@ export async function onRequestGet({ request, env, params }) {
       const res = await fetch(target, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
       const html = await res.text();
       const ci = html.search(/class="cuerpo"/i);
-      const fi = html.indexOf(needle);
+      const atp = url.searchParams.get("at");
+      const fi = atp != null ? Number(atp) : html.indexOf(needle);
       const w1 = fi >= 0 ? html.slice(Math.max(0, fi - before), fi + after) : "(not found)";
       return json({ status: res.status, len: html.length, cuerpoIdx: ci, findIdx: fi, around: w1 });
     } catch (e) { return json({ error: String(e) }); }
