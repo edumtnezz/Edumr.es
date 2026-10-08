@@ -2934,6 +2934,16 @@ export async function onRequestGet({ request, env, params }) {
   if (path === "noticias") {
     return json(await getNoticias(env));
   }
+  if (path === "debug-raw") {
+    const slug = url.searchParams.get("slug") || "";
+    try {
+      const res = await fetch("https://www.futbolfantasy.com/laliga/noticias/" + slug, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+      const html = await res.text();
+      const ci = html.search(/class="cuerpo"/i);
+      const start = ci >= 0 ? html.indexOf(">", ci) + 1 : 0;
+      return json({ raw: html.slice(start, start + 6000) });
+    } catch (e) { return json({ error: String(e) }); }
+  }
   if (path === "noticia") {
     return json(await getNoticia(url.searchParams.get("u")));
   }
