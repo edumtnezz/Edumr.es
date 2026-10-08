@@ -1698,11 +1698,11 @@ async function ffTvMap(env) {
 }
 async function fltvMap(env) {
   try {
-    const c = await env.PORRA.get("fltv:v3", "json");
+    const c = await env.PORRA.get("fltv:v4", "json");
     if (c && c.list && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c;
   } catch (e) {}
   const list = [], byName = {};
-  const MOV = "/img/movistar.png?v=1";
+  const MOV = "/img/movistar.png?v=2";
   try {
     const res = await fetch("https://www.futbolenlatv.es/competicion/la-liga", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
     const html = await res.text();
@@ -1737,7 +1737,7 @@ async function fltvMap(env) {
     }
   } catch (e) {}
   const out = { at: Date.now(), list, byName };
-  if (list.length > 10) { try { await env.PORRA.put("fltv:v3", JSON.stringify(out), { expirationTtl: 3600 }); } catch (e) {} }
+  if (list.length > 10) { try { await env.PORRA.put("fltv:v4", JSON.stringify(out), { expirationTtl: 3600 }); } catch (e) {} }
   return out;
 }
 async function getJornadaStrip(env, matchday) {
