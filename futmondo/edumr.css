@@ -372,6 +372,7 @@ body {
   .cx-live-item img { width: 24px; height: 17px; }
   .cx-live-time { font-size: 0.6rem; }
 }
+#cxChrome.hide-live .cx-live { display: none; }
 
 /* ---------- Tarjetas / paneles (claro, sombras suaves) ---------- */
 .panel {

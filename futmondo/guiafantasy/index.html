@@ -13,8 +13,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="/futmondo/theme.js?v=65"></script>
   <link rel="stylesheet" href="/futmondo/quiniela/quiniela.css?v=128">
-  <link rel="stylesheet" href="/futmondo/edumr.css?v=31">
-  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=133">
+  <link rel="stylesheet" href="/futmondo/edumr.css?v=32">
+  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=134">
 </head>
 <body class="page-simple cx-page">
   <header class="appbar cx-header">
@@ -25,7 +25,7 @@
           <a href="/futmondo/lapuja/">La Puja</a>
           <a href="/futmondo/quiniela/">La Quiniela</a>
           <a href="/futmondo/porra/">La Porra</a>
-          <a class="active" href="/futmondo/guiafantasy/noticias">Guía Fantasy</a>
+          <a class="active" href="/futmondo/guiafantasy/inicio">Guía Fantasy</a>
         </nav>
         <div class="cx-tools">
           <a class="cx-inicio" href="/">Inicio web</a>
@@ -37,6 +37,7 @@
     <div class="cx-sub">
       <div class="cx-sub-inner">
         <nav class="tabs" id="tabsNav">
+          <button class="tab" data-tab="inicio">Inicio</button>
           <button class="tab" data-tab="noticias">Noticias</button>
           <button class="tab" data-tab="mercado">Mercado</button>
           <button class="tab" data-tab="fichajes">Fichajes</button>
@@ -51,6 +52,13 @@
   <div id="cxChrome"></div>
 
   <main class="quiniela-main">
+    <section class="tab-panel" id="tab-inicio">
+      <section class="panel">
+        <div id="inicioFeatured"></div>
+        <div id="mercRachas"></div>
+      </section>
+    </section>
+
     <section class="tab-panel hidden" id="tab-mercado">
       <section class="panel">
         <div class="panel-head">
@@ -84,10 +92,9 @@
       </section>
     </section>
 
-    <section class="tab-panel" id="tab-noticias">
+    <section class="tab-panel hidden" id="tab-noticias">
       <section class="panel">
         <h2>Noticias</h2>
-        <div id="mercRachas"></div>
         <h3 class="estado-title">Noticias de LaLiga <span id="newsUpdated" class="news-updated"></span></h3>
         <div id="newsAnuncios"><p class="muted small">Cargando…</p></div>
         <div id="noticiaView" class="hidden"></div>
@@ -177,6 +184,6 @@
   </div>
 
   <script src="/futmondo/chrome.js?v=11"></script>
-  <script src="/futmondo/guiafantasy/mercado.js?v=145"></script>
+  <script src="/futmondo/guiafantasy/mercado.js?v=146"></script>
 </body>
 </html>

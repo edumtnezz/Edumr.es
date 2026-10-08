@@ -529,6 +529,17 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 .newscard .news-date { color: var(--muted); font-size: 0.68rem; margin-top: 5px; }
 .newscard:hover .news-title { color: var(--accent); }
 
+/* ---------- Inicio: noticia destacada + sub-noticias ---------- */
+.feat-hero { position: relative; border-radius: 16px; overflow: hidden; cursor: pointer; aspect-ratio: 16 / 8; background: rgba(127, 127, 127, 0.12); margin-bottom: 10px; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 14px rgba(15, 23, 42, 0.08); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.feat-hero:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16); }
+.feat-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.feat-hero-overlay { position: absolute; left: 0; right: 0; bottom: 0; padding: 36px 16px 14px; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.78) 100%); color: #fff; }
+.feat-hero-title { font-weight: 800; font-size: 1.1rem; line-height: 1.25; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
+.feat-hero-date { font-size: 0.72rem; color: rgba(255,255,255,0.78); margin-top: 6px; font-weight: 600; }
+.feat-sub { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+@media (max-width: 720px) { .feat-sub { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .feat-sub { grid-template-columns: 1fr; } .feat-hero { aspect-ratio: 16 / 10; } .feat-hero-title { font-size: 0.95rem; } }
+
 /* Scrollbars visibles en los deslizables */
 .mkt-wrap, .merc-bestrow, .cx-strip-track { scrollbar-width: thin; scrollbar-color: rgba(34, 197, 94, 0.55) transparent; }
 .mkt-wrap::-webkit-scrollbar, .merc-bestrow::-webkit-scrollbar, .cx-strip-track::-webkit-scrollbar { height: 9px; }

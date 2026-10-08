@@ -998,7 +998,7 @@
     max.addEventListener("input", apply);
   }
 
-  let currentTab = "noticias";
+  let currentTab = "inicio";
   function switchTab(name, fromPop) {
     closeNoticiaInline();
     currentTab = name;
@@ -1007,7 +1007,13 @@
     const panel = $("tab-" + name);
     if (panel) panel.classList.remove("hidden");
     const ch = $("cxChrome");
-    if (ch) ch.classList.toggle("hidden", name !== "mercado" && name !== "noticias");
+    if (ch) {
+      ch.classList.toggle("hidden", name !== "mercado" && name !== "noticias" && name !== "inicio");
+      // El ticker de "última hora" solo se ve en Noticias; en Inicio y
+      // Mercado se queda solo la tira de escudos + la franja de jornada.
+      ch.classList.toggle("hide-live", name !== "noticias");
+    }
+    if (name === "inicio") renderInicioFeatured();
     if (name === "clausulazos") renderClausulas();
     if (name === "fichajes") renderFichajes();
     if (name === "alineaciones") renderAlineaciones();
@@ -1250,6 +1256,43 @@
       });
       l.appendChild(body);
     }
+    renderInicioFeatured();
+  }
+
+  function renderInicioFeatured() {
+    const box = $("inicioFeatured");
+    if (!box) return;
+    const list = (lastNews && lastNews.noticias) || [];
+    if (!list.length) { box.innerHTML = '<p class="muted small">Cargando noticias…</p>'; return; }
+    box.innerHTML = "";
+    const open = (x) => { switchTab("noticias"); openNoticiaInline(x.link, x.title); };
+    const hero = list[0];
+    const h = el("div", "feat-hero");
+    h.addEventListener("click", () => open(hero));
+    const him = el("img"); him.alt = ""; him.loading = "lazy"; him.src = hero.thumb || "/img/balon.svg";
+    him.addEventListener("error", () => { him.src = "/img/balon.svg"; }, { once: true });
+    h.appendChild(him);
+    const hov = el("div", "feat-hero-overlay");
+    hov.appendChild(el("div", "feat-hero-title", hero.title));
+    hov.appendChild(el("div", "feat-hero-date", (hero.date || "") + (hero.time ? " · " + hero.time : "")));
+    h.appendChild(hov);
+    box.appendChild(h);
+    const sub = el("div", "feat-sub");
+    list.slice(1, 4).forEach((x) => {
+      const it = el("div", "newscard news-link");
+      it.addEventListener("click", () => open(x));
+      const th = el("div", "newscard-thumb" + (x.thumb ? "" : " ball"));
+      const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = x.thumb || "/img/balon.svg";
+      im.addEventListener("error", () => { im.src = "/img/balon.svg"; it.querySelector(".newscard-thumb").classList.add("ball"); }, { once: true });
+      th.appendChild(im);
+      it.appendChild(th);
+      const bd = el("div", "newscard-body");
+      bd.appendChild(el("div", "news-title", x.title));
+      bd.appendChild(el("div", "news-date", (x.date || "") + (x.time ? " · " + x.time : "")));
+      it.appendChild(bd);
+      sub.appendChild(it);
+    });
+    box.appendChild(sub);
   }
 
   async function loadNoticias() {
@@ -1658,11 +1701,11 @@
   (function restoreTab() {
     let name = "";
     try {
-      const m = location.pathname.match(/\/guiafantasy\/(mercado|fichajes|noticias|alineaciones|analiza|clausulazos)/);
+      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|noticias|alineaciones|analiza|clausulazos)/);
       if (m) name = m[1];
     } catch (e) {}
     if (!name) { try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {} }
-    if (!name || !$("tab-" + name)) name = "noticias";
+    if (!name || !$("tab-" + name)) name = "inicio";
     switchTab(name, true);
   })();
   document.querySelectorAll(".merc-segbtn").forEach((b) => b.addEventListener("click", () => {
