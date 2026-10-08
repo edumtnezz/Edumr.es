@@ -11,7 +11,7 @@
     var host = document.getElementById("cxChrome");
     if (!host) return;
     host.innerHTML =
-      '<div class="cx-strip"><div class="cx-strip-track" id="cxStrip"><span class="cx-strip-load">Cargando equipos…</span></div><div class="cx-strip-hint"><span class="cx-strip-hint-txt">‹ desliza ›</span></div></div>' +
+      '<div class="cx-strip"><div class="cx-strip-track" id="cxStrip"><span class="cx-strip-load">Cargando equipos…</span></div><div class="cx-strip-hint"><span class="cx-strip-hint-txt">‹ desliza ›</span></div><div class="cx-scrollbar" id="cxStripBar"><div class="cx-scrollbar-thumb"></div></div></div>' +
       '<div class="cx-live"><span class="cx-live-tag">Última hora</span><div class="cx-live-track" id="cxLiveTrack"><span class="cx-live-load">Cargando última hora…</span></div></div>' +
       '<div class="cx-jornada">' +
         '<div class="cx-jn-head">' +
@@ -35,6 +35,27 @@
     loadTeams();
     loadLive();
     setInterval(loadLive, 90000);
+  }
+  function mountScrollBar(scrollEl, barEl) {
+    if (!scrollEl || !barEl) return;
+    var thumb = barEl.firstElementChild;
+    if (!thumb) return;
+    function update() {
+      var max = scrollEl.scrollWidth - scrollEl.clientWidth;
+      if (max <= 4) { barEl.style.display = "none"; return; }
+      barEl.style.display = "";
+      var trackW = barEl.clientWidth || 1;
+      var ratio = scrollEl.clientWidth / scrollEl.scrollWidth;
+      var thumbW = Math.max(trackW * ratio, 28);
+      var pos = scrollEl.scrollLeft / max;
+      thumb.style.width = thumbW + "px";
+      thumb.style.transform = "translateX(" + (pos * (trackW - thumbW)) + "px)";
+    }
+    scrollEl.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    scrollEl.dataset.barUpdate = "1";
+    scrollEl._cxBarUpdate = update;
+    update();
   }
   function loadJornada(n) {
     var grid = document.getElementById("cxJGrid");
@@ -92,6 +113,7 @@
           var img = t.logo ? '<img src="' + esc(t.logo) + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'">' : "";
           return '<div class="cx-team" data-team="' + esc(t.name) + '" title="' + esc(t.name) + '">' + img + '<span>' + esc(t.name) + '</span></div>';
         }).join("");
+        mountScrollBar(box, document.getElementById("cxStripBar"));
       })
       .catch(function () { box.innerHTML = '<span class="cx-strip-load">No disponible.</span>'; });
   }

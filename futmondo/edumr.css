@@ -373,6 +373,25 @@ body {
   .cx-live-time { font-size: 0.6rem; }
 }
 #cxChrome.hide-live .cx-live { display: none; }
+#cxChrome.hide-jornada .cx-jornada { display: none; }
+
+/* ---------- Barrita visible de scroll horizontal ---------- */
+.cx-scrollbar {
+  height: 4px;
+  max-width: 260px;
+  margin: 0 auto 8px;
+  background: var(--cx-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.cx-scrollbar-thumb {
+  height: 100%;
+  width: 40%;
+  background: var(--cx-green);
+  border-radius: 999px;
+  transition: transform 0.05s linear, width 0.05s linear;
+}
+.cx-scrollbar-tabs { margin: 0 auto 6px; }
 
 /* ---------- Tarjetas / paneles (claro, sombras suaves) ---------- */
 .panel {

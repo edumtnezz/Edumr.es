@@ -182,7 +182,10 @@
     if (!box) return;
     box.innerHTML = "";
     const best = buildBest();
-    if (best) box.appendChild(best);
+    if (best) {
+      box.appendChild(best);
+      mountScrollBar($("mercBestRow"), $("mercBestBar"));
+    }
     const head = el("div", "hl-head");
     head.appendChild(el("span", "hl-title", "🔥 Jugadores en racha"));
     const sub = el("span", "rachas-sub", "Partidos seguidos puntuando · más reciente primero");
@@ -1012,6 +1015,9 @@
       // El ticker de "última hora" solo se ve en Noticias; en Inicio y
       // Mercado se queda solo la tira de escudos + la franja de jornada.
       ch.classList.toggle("hide-live", name !== "noticias");
+      // En Noticias quitamos la franja de jornada (ya está en Inicio) y
+      // dejamos solo la tira de escudos, para no duplicar tanta cabecera.
+      ch.classList.toggle("hide-jornada", name === "noticias");
     }
     if (name === "inicio") renderInicioFeatured();
     if (name === "clausulazos") renderClausulas();
@@ -1053,6 +1059,7 @@
     head.appendChild(el("span", "mbh-hint", "↔ desliza para ver más"));
     box.appendChild(head);
     const row = el("div", "merc-bestrow");
+    row.id = "mercBestRow";
     top.forEach((p) => {
       const c = el("button", "mbc"); c.type = "button";
       const ph = el("div", "mbc-photo");
@@ -1084,7 +1091,32 @@
       row.appendChild(c);
     });
     box.appendChild(row);
+    const bar = el("div", "cx-scrollbar");
+    bar.id = "mercBestBar";
+    bar.appendChild(el("div", "cx-scrollbar-thumb"));
+    box.appendChild(bar);
     return box;
+  }
+
+  function mountScrollBar(scrollEl, barEl) {
+    if (!scrollEl || !barEl) return;
+    const thumb = barEl.firstElementChild;
+    if (!thumb) return;
+    function update() {
+      const max = scrollEl.scrollWidth - scrollEl.clientWidth;
+      if (max <= 4) { barEl.style.display = "none"; return; }
+      barEl.style.display = "";
+      const trackW = barEl.clientWidth || 1;
+      const ratio = scrollEl.clientWidth / scrollEl.scrollWidth;
+      const thumbW = Math.max(trackW * ratio, 28);
+      const pos = scrollEl.scrollLeft / max;
+      thumb.style.width = thumbW + "px";
+      thumb.style.transform = "translateX(" + (pos * (trackW - thumbW)) + "px)";
+    }
+    scrollEl.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    update();
+    setTimeout(update, 300);
   }
 
   let lastMarketAt = 0;
@@ -1278,7 +1310,7 @@
     h.appendChild(hov);
     box.appendChild(h);
     const sub = el("div", "feat-sub");
-    list.slice(1, 4).forEach((x) => {
+    list.slice(1, 3).forEach((x) => {
       const it = el("div", "feat-card-sm");
       it.addEventListener("click", () => open(x));
       const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = x.thumb || "/img/balon.svg";
