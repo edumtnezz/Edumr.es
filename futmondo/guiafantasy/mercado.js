@@ -2208,10 +2208,53 @@
     }, Number(d.jornada) || 0);
   });
 
-  // (Se ha quitado el cambio de pestaña deslizando con el dedo: un scroll
-  // vertical con algo de componente horizontal cambiaba de pestaña sin
-  // querer, por ejemplo aterrizando en Alineaciones. Las pestañas se
-  // cambian solo tocando su botón.)
+  // Cambiar de pestaña deslizando con el dedo (swipe). La vez anterior esto
+  // cambiaba de pestaña sin querer en cualquier scroll vertical con algo de
+  // deriva horizontal; ahora el gesto se "bloquea" en horizontal o vertical
+  // nada más despegar el dedo y, si se bloquea en vertical, ya no se vuelve
+  // a evaluar aunque el dedo derive luego hacia un lado.
+  (function initSwipe() {
+    const order = ["inicio", "noticias", "mercado", "fichajes", "clausulazos", "analiza"];
+    const main = document.querySelector(".quiniela-main");
+    if (!main) return;
+    // Nada de swipe si el gesto empieza dentro de algo que ya tiene su
+    // propio scroll horizontal (tabla de mercado, tira de escudos, última
+    // hora, selectores de periodo/filtros, etc).
+    const SKIP_SEL = ".mkt-wrap, .merc-clubs, .merc-bestrow, .hl-seg, .merc-seg, .claus-frow, .claus-chip, .mjRole, select, input, .merc-range";
+    let sx = 0, sy = 0, tracking = false, lock = null;
+    main.addEventListener("touchstart", (e) => {
+      if (e.touches.length !== 1) { tracking = false; return; }
+      const ov = $("fichaOverlay");
+      if (ov && !ov.classList.contains("hidden")) { tracking = false; return; }
+      const t = e.touches[0];
+      if (t.target.closest && t.target.closest(SKIP_SEL)) { tracking = false; return; }
+      sx = t.clientX; sy = t.clientY; tracking = true; lock = null;
+    }, { passive: true });
+    main.addEventListener("touchmove", (e) => {
+      if (!tracking || lock || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      const dx = t.clientX - sx, dy = t.clientY - sy;
+      if (Math.abs(dx) < 14 && Math.abs(dy) < 14) return;
+      // El gesto decide su dirección en cuanto se mueve lo suficiente, y ya
+      // no cambia: evita que un scroll vertical "normal" acabe deslizando
+      // de pestaña si en algún momento deriva un poco hacia un lado.
+      lock = Math.abs(dx) > Math.abs(dy) * 2 ? "h" : "v";
+    }, { passive: true });
+    main.addEventListener("touchend", (e) => {
+      if (!tracking) return;
+      tracking = false;
+      if (lock !== "h") return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - sx, dy = t.clientY - sy;
+      if (Math.abs(dx) < 80 || Math.abs(dx) < Math.abs(dy) * 2) return;
+      const idx = order.indexOf(currentTab);
+      if (idx < 0) return;
+      const next = dx < 0 ? idx + 1 : idx - 1;
+      if (next < 0 || next >= order.length) return;
+      switchTab(order[next]);
+    }, { passive: true });
+    main.addEventListener("touchcancel", () => { tracking = false; lock = null; }, { passive: true });
+  })();
 
   (async function initUserChip() {
     const ub = $("userBox");
