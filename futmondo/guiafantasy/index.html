@@ -25,7 +25,7 @@
           <a href="/futmondo/lapuja/">La Puja</a>
           <a href="/futmondo/quiniela/">La Quiniela</a>
           <a href="/futmondo/porra/">La Porra</a>
-          <a class="active" href="/futmondo/guiafantasy/mercado">Guía Fantasy</a>
+          <a class="active" href="/futmondo/guiafantasy/noticias">Guía Fantasy</a>
         </nav>
         <div class="cx-tools">
           <a class="cx-inicio" href="/">Inicio web</a>
@@ -37,9 +37,9 @@
     <div class="cx-sub">
       <div class="cx-sub-inner">
         <nav class="tabs" id="tabsNav">
+          <button class="tab" data-tab="noticias">Noticias</button>
           <button class="tab" data-tab="mercado">Mercado</button>
           <button class="tab" data-tab="fichajes">Fichajes</button>
-          <button class="tab" data-tab="noticias">Noticias</button>
           <button class="tab" data-tab="alineaciones">Alineaciones</button>
           <button class="tab" data-tab="clausulazos">Clausulazo Jugoso</button>
           <button class="tab" data-tab="analiza">Analiza tu equipo</button>
@@ -51,7 +51,7 @@
   <div id="cxChrome"></div>
 
   <main class="quiniela-main">
-    <section class="tab-panel" id="tab-mercado">
+    <section class="tab-panel hidden" id="tab-mercado">
       <section class="panel">
         <div class="panel-head">
           <h2>Mercado</h2>
@@ -59,7 +59,6 @@
         </div>
         <p class="muted small">Valores de <b>Futmondo Social</b> y su tendencia del día.</p>
         <p class="muted small">Organizado por <b>puntos probables</b>.</p>
-        <div id="mercRachas"></div>
         <div class="merc-filters">
           <input id="mjSearch" class="market-search" type="text" placeholder="Buscar jugador por nombre…" autocomplete="off">
           <select id="mjRole" class="merc-select">
@@ -85,9 +84,10 @@
       </section>
     </section>
 
-    <section class="tab-panel hidden" id="tab-noticias">
+    <section class="tab-panel" id="tab-noticias">
       <section class="panel">
         <h2>Noticias</h2>
+        <div id="mercRachas"></div>
         <h3 class="estado-title">Noticias de LaLiga <span id="newsUpdated" class="news-updated"></span></h3>
         <div id="newsAnuncios"><p class="muted small">Cargando…</p></div>
         <div id="noticiaView" class="hidden"></div>
@@ -177,6 +177,6 @@
   </div>
 
   <script src="/futmondo/chrome.js?v=11"></script>
-  <script src="/futmondo/guiafantasy/mercado.js?v=144"></script>
+  <script src="/futmondo/guiafantasy/mercado.js?v=145"></script>
 </body>
 </html>

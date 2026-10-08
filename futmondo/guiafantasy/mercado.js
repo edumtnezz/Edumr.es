@@ -944,6 +944,10 @@
     sortMode = "all";
     document.querySelectorAll(".merc-segbtn").forEach((x) => x.classList.toggle("active", x.dataset.sort === "all"));
     shown = 18;
+    // La tira de escudos ahora también se ve desde Noticias; si no estamos ya
+    // en Mercado hay que llevar ahí al usuario, si no el filtro "funciona"
+    // pero no se ve nada (el grid queda oculto en la pestaña Noticias).
+    if (currentTab !== "mercado") switchTab("mercado");
     renderGrid();
     const grid = $("marketGrid");
     if (grid && grid.scrollIntoView) grid.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -994,7 +998,7 @@
     max.addEventListener("input", apply);
   }
 
-  let currentTab = "mercado";
+  let currentTab = "noticias";
   function switchTab(name, fromPop) {
     closeNoticiaInline();
     currentTab = name;
@@ -1003,7 +1007,7 @@
     const panel = $("tab-" + name);
     if (panel) panel.classList.remove("hidden");
     const ch = $("cxChrome");
-    if (ch) ch.classList.toggle("hidden", name !== "mercado");
+    if (ch) ch.classList.toggle("hidden", name !== "mercado" && name !== "noticias");
     if (name === "clausulazos") renderClausulas();
     if (name === "fichajes") renderFichajes();
     if (name === "alineaciones") renderAlineaciones();
@@ -1658,7 +1662,7 @@
       if (m) name = m[1];
     } catch (e) {}
     if (!name) { try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {} }
-    if (!name || !$("tab-" + name)) name = "mercado";
+    if (!name || !$("tab-" + name)) name = "noticias";
     switchTab(name, true);
   })();
   document.querySelectorAll(".merc-segbtn").forEach((b) => b.addEventListener("click", () => {
