@@ -1107,8 +1107,37 @@ function stripHtml(s) {
   return String(s || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
 }
 
+// Quita <div ...>...</div> contando aperturas/cierres de verdad, para los
+// casos en los que dentro puede haber cualquier cosa (incluida otra "p" o
+// un "div" anidado) y un regex perezoso hasta la siguiente etiqueta se
+// come de más, se come de menos, o directamente no encuentra nada que
+// recortar (p. ej. si no hay ningún <p> después, como pasaba con las
+// fichas de jugador "block-new": al no encontrar un <p> futuro al que
+// pararse, el regex antiguo no recortaba nada en absoluto).
+function stripBalancedDiv(html, openTagRe) {
+  const re = new RegExp(openTagRe.source, "gi");
+  let out = "";
+  let cursor = 0;
+  let m;
+  while ((m = re.exec(html))) {
+    if (m.index < cursor) continue;
+    out += html.slice(cursor, m.index);
+    const tagRe = /<div\b[^>]*>|<\/div\s*>/gi;
+    tagRe.lastIndex = re.lastIndex;
+    let depth = 1, end = html.length, tm;
+    while ((tm = tagRe.exec(html))) {
+      if (tm[0][1] === "/") { depth--; if (depth === 0) { end = tagRe.lastIndex; break; } }
+      else depth++;
+    }
+    cursor = end;
+    re.lastIndex = end;
+  }
+  out += html.slice(cursor);
+  return out;
+}
+
 function cleanArticle(s) {
-  return String(s || "")
+  let out = String(s || "")
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
     .replace(/<iframe[\s\S]*?<\/iframe>/gi, "")
@@ -1116,14 +1145,17 @@ function cleanArticle(s) {
     .replace(/ on\w+="[^"]*"/gi, "")
     .replace(/ on\w+='[^']*'/gi, "")
     .replace(/ style="[^"]*"/gi, "")
-    .replace(/<div class="[^"]*(btn-|share|whatsapp|twitter|facebook|autor|cargo|fecha|header-author)[^"]*"[\s\S]*?<\/div>/gi, "")
-    .trim();
+    .replace(/<div class="[^"]*(btn-|share|whatsapp|twitter|facebook|autor|cargo|fecha|header-author)[^"]*"[\s\S]*?<\/div>/gi, "");
+  // Fichas de "jugadores mencionados" (foto, posición, escudo, bandera,
+  // edad y enlace a "Perfil") que la propia futbolfantasy mete en medio
+  // del cuerpo: no son parte de la noticia, se quitan enteras.
+  out = stripBalancedDiv(out, /<div class="block-new">/i);
+  return out.trim();
 }
 
 function cleanBrand(s) {
   return String(s || "")
     .replace(/<a\b[^>]*>([\s\S]*?)<\/a>/gi, "$1")
-    .replace(/<div class="block-new">[\s\S]*?(?=<p)/gi, "")
     .replace(/<[^>]*frpg[^>]*>/gi, "")
     .replace(/<div class="d-flex my-4">[\s\S]*?<\/div>\s*<\/div>/gi, "")
     .replace(/<span[^>]*class="[^"]*(autor|cargo|fecha)[^"]*"[^>]*>[\s\S]*?<\/span>/gi, "")
@@ -2933,24 +2965,6 @@ export async function onRequestGet({ request, env, params }) {
   }
   if (path === "noticias") {
     return json(await getNoticias(env));
-  }
-  if (path === "debug-raw") {
-    const mode = url.searchParams.get("mode") || "article";
-    const needle = url.searchParams.get("find") || "Perfil";
-    const before = Number(url.searchParams.get("before") || 300);
-    const after = Number(url.searchParams.get("after") || 300);
-    try {
-      const target = mode === "home"
-        ? "https://www.futbolfantasy.com/laliga/home"
-        : "https://www.futbolfantasy.com/laliga/noticias/" + (url.searchParams.get("slug") || "");
-      const res = await fetch(target, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
-      const html = await res.text();
-      const ci = html.search(/class="cuerpo"/i);
-      const atp = url.searchParams.get("at");
-      const fi = atp != null ? Number(atp) : html.indexOf(needle);
-      const w1 = fi >= 0 ? html.slice(Math.max(0, fi - before), fi + after) : "(not found)";
-      return json({ status: res.status, len: html.length, cuerpoIdx: ci, findIdx: fi, around: w1 });
-    } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "noticia") {
     return json(await getNoticia(url.searchParams.get("u")));
