@@ -1393,7 +1393,25 @@ async function getNoticias(env) {
     if (c && c.at && Date.now() - c.at < 15 * 60 * 1000) { c.data.updatedAt = c.at; return c.data; }
   } catch (e) {}
   const out = { noticias: [], locker: [] };
-  out.noticias = await getFfNoticias(env);
+  const fresh = await getFfNoticias(env);
+  // La home de futbolfantasy solo enseña las noticias más recientes: si nos
+  // quedáramos solo con eso, las de días anteriores desaparecerían en cuanto
+  // dejan de salir ahí. Las acumulamos en un archivo aparte para no perderlas.
+  let archive = [];
+  try { archive = (await env.PORRA.get("ff:news:archive", "json")) || []; } catch (e) {}
+  // Las frescas van primero (son las más nuevas, en el mismo orden en que
+  // salen en la home); detrás, las del archivo que ya no salen ahí pero no
+  // queremos perder, en el orden en que las teníamos.
+  const seenLinks = {};
+  const merged = [];
+  fresh.concat(archive).forEach((x) => {
+    if (!x || !x.link || seenLinks[x.link]) return;
+    seenLinks[x.link] = 1;
+    merged.push(x);
+  });
+  const trimmed = merged.slice(0, 80);
+  try { await env.PORRA.put("ff:news:archive", JSON.stringify(trimmed), { expirationTtl: 20 * 24 * 3600 }); } catch (e) {}
+  out.noticias = trimmed;
   try {
     const header = await futbolHeader(env);
     const l = await futbolPost("/2/locker/news", header, { championshipId: FUTMONDO_CHAMPIONSHIP });

@@ -802,11 +802,11 @@ html { overflow-anchor: none; }
 .mkt-table { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 12px; min-width: 820px; }
 .mkt-row > :first-child { position: sticky; left: 0; z-index: 1; background: var(--cx-surface, #fff); box-shadow: 6px 0 8px -7px rgba(0, 0, 0, 0.25); }
 .mkt-head > :first-child { z-index: 3; background: #0b0e13; }
-.mkt-row { display: grid; grid-template-columns: minmax(140px, 1.5fr) 0.72fr 0.58fr 1.9fr 0.9fr 0.9fr 1fr; align-items: center; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--border); background: transparent; color: var(--text); text-align: left; cursor: pointer; font-family: inherit; font-size: 0.82rem; width: 100%; border-left: 0; border-right: 0; border-bottom: 0; transition: background 0.15s ease; }
+.mkt-row { display: grid; grid-template-columns: minmax(140px, 1.5fr) 0.9fr 0.9fr 1fr 0.72fr 0.58fr 1.9fr; align-items: center; gap: 8px; padding: 8px 12px; border-top: 1px solid var(--border); background: transparent; color: var(--text); text-align: left; cursor: pointer; font-family: inherit; font-size: 0.82rem; width: 100%; border-left: 0; border-right: 0; border-bottom: 0; transition: background 0.15s ease; }
 .mkt-row:not(.mkt-head):hover { background: rgba(127, 127, 127, 0.06); }
 .mkt-head { background: #0b0e13; color: #fff; font-weight: 800; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; border-top: none; cursor: default; border-radius: 12px 12px 0 0; }
-.mkt-head .mkt-h:nth-child(2), .mkt-head .mkt-h:nth-child(3) { text-align: center; }
-.mkt-head .mkt-h:nth-child(5), .mkt-head .mkt-h:nth-child(6), .mkt-head .mkt-h:nth-child(7) { text-align: right; }
+.mkt-head .mkt-h:nth-child(2), .mkt-head .mkt-h:nth-child(3), .mkt-head .mkt-h:nth-child(4) { text-align: right; }
+.mkt-head .mkt-h:nth-child(5), .mkt-head .mkt-h:nth-child(6) { text-align: center; }
 .mkt-head .mkt-h.active { color: var(--accent); }
 .mkt-h { white-space: nowrap; }
 .mkt-arrow { font-size: 0.72rem; opacity: 0.55; }
@@ -814,7 +814,7 @@ html { overflow-anchor: none; }
 .mkt-jug { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .mkt-photo { position: relative; width: 30px; height: 30px; flex: 0 0 auto; }
 .mkt-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; background: var(--bg-surface, #e2e8f0); }
-.mkt-pos { position: absolute; left: -3px; bottom: -3px; font-size: 0.38rem; padding: 0 2px; line-height: 1.3; border-radius: 4px; letter-spacing: 0; }
+.mkt-pos { position: absolute; left: 50%; transform: translateX(-50%); bottom: -5px; font-size: 0.38rem; padding: 0 2px; line-height: 1.3; border-radius: 4px; letter-spacing: 0; white-space: nowrap; }
 .mkt-jname { display: flex; flex-direction: column; min-width: 0; }
 .mkt-jname b { font-weight: 700; font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mkt-jteam { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 0.7rem; }

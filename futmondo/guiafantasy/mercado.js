@@ -675,7 +675,7 @@
     const wrap = el("div", "mkt-wrap");
     const tbl = el("div", "mkt-table");
     const head = el("div", "mkt-row mkt-head");
-    const cols = [["jugador", "Jugador", false], ["pct", "% Dif", true], ["tend", "Tend.", true], ["rival", "Próx. rival", false], ["valor", "Valor", true], ["vant", "Valor ant.", true], ["dif", "Diferencia", true]];
+    const cols = [["jugador", "Jugador", false], ["valor", "Valor", true], ["vant", "Valor ant.", true], ["dif", "Diferencia", true], ["pct", "% Dif", true], ["tend", "Tend.", true], ["rival", "Próx. rival", false]];
     cols.forEach(([key, label, sortable]) => {
       const h = el("span", "mkt-h" + (mktSort.key === key ? " active" : ""), label);
       if (sortable) {
@@ -704,6 +704,12 @@
       jj.appendChild(tm);
       j.appendChild(jj);
       row.appendChild(j);
+      row.appendChild(el("div", "mkt-val", money(p.value) + " €"));
+      row.appendChild(el("div", "mkt-vant", money(prev) + " €"));
+      const dif = el("div", "mkt-dif " + (ch > 0 ? "up" : ch < 0 ? "down" : "flat"));
+      dif.appendChild(el("span", "mkt-lens", "💹"));
+      dif.appendChild(el("span", null, (ch > 0 ? "+" : ch < 0 ? "−" : "") + formatDots(Math.abs(ch)) + " €"));
+      row.appendChild(dif);
       const pctv = prev > 0 ? (ch / prev) * 100 : 0;
       row.appendChild(el("div", "mkt-pct " + (ch > 0 ? "up" : ch < 0 ? "down" : "flat"), (pctv >= 0 ? "+" : "−") + Math.abs(pctv).toFixed(2).replace(".", ",") + "%"));
       const t = Number(p.tend) || 0;
@@ -714,12 +720,6 @@
       if (p.rivalFf) rv.appendChild(el("span", "mkt-rv", shortRival(p.rivalFf)));
       if (p.prob != null) rv.appendChild(el("span", "mkt-prob", p.prob + "%"));
       row.appendChild(rv);
-      row.appendChild(el("div", "mkt-val", money(p.value) + " €"));
-      row.appendChild(el("div", "mkt-vant", money(prev) + " €"));
-      const dif = el("div", "mkt-dif " + (ch > 0 ? "up" : ch < 0 ? "down" : "flat"));
-      dif.appendChild(el("span", "mkt-lens", "💹"));
-      dif.appendChild(el("span", null, (ch > 0 ? "+" : ch < 0 ? "−" : "") + formatDots(Math.abs(ch)) + " €"));
-      row.appendChild(dif);
       row.addEventListener("click", () => openFicha(p));
       tbl.appendChild(row);
     });
@@ -980,7 +980,8 @@
       // En Noticias no se repiten los escudos ni la franja de jornada
       // (ya están en Inicio): solo se queda la última hora.
       ch.classList.toggle("hide-strip", name === "noticias");
-      ch.classList.toggle("hide-jornada", name === "noticias");
+      // Los partidos de la jornada solo se ven en Inicio.
+      ch.classList.toggle("hide-jornada", name !== "inicio");
     }
     if (name === "inicio") renderInicioFeatured();
     if (name === "clausulazos") renderClausulas();
