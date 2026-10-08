@@ -8,6 +8,7 @@
 /futmondo/mercado/* /futmondo/guiafantasy/:splat 301
 /futmondo/mercado /futmondo/guiafantasy/ 301
 /futmondo/guiafantasy /futmondo/guiafantasy/ 301
+/futmondo/guiafantasy/inicio /futmondo/guiafantasy/ 200
 /futmondo/guiafantasy/mercado /futmondo/guiafantasy/ 200
 /futmondo/guiafantasy/fichajes /futmondo/guiafantasy/ 200
 /futmondo/guiafantasy/alineaciones /futmondo/guiafantasy/ 200
