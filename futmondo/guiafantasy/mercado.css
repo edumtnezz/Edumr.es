@@ -278,10 +278,13 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 .mcard-photo > .posring, .mbc-photo > .posring { position: absolute; inset: -2.5px; }
 .mcard-photo > .posring > img, .mbc-photo > .posring > img { width: 100%; height: 100%; }
 .mcard-roles { justify-content: center; }
-.mcard-stats { display: flex; gap: 5px; width: 100%; margin-top: 6px; }
-.mstat { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 5px 2px; border-radius: 9px; border: 1px solid var(--border); background: var(--bg-surface); }
-.mstat b { font-family: 'Space Grotesk', sans-serif; font-size: 0.84rem; font-weight: 700; color: var(--text); line-height: 1; }
-.mstat small { font-size: 0.55rem; font-weight: 700; letter-spacing: 0.03em; color: var(--muted); text-transform: uppercase; }
+/* Mismo criterio que en Clausulazo: nada de 3 cajas con borde iguales,
+   los datos van en línea y solo PTS (el dato por el que se ordena) destaca
+   en color. */
+.mcard-stats { display: flex; justify-content: center; flex-wrap: wrap; row-gap: 2px; column-gap: 13px; width: 100%; margin-top: 6px; }
+.mstat { flex: none; display: flex; flex-direction: row; align-items: baseline; gap: 4px; padding: 0; border: none; background: none; }
+.mstat b { font-family: 'Space Grotesk', sans-serif; font-size: 0.86rem; font-weight: 700; color: var(--text); line-height: 1; white-space: nowrap; }
+.mstat small { font-size: 0.64rem; font-weight: 600; letter-spacing: 0; color: var(--muted); text-transform: none; white-space: nowrap; }
 .mstat.pts b { color: var(--accent); }
 .ficha-head-center { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 3px; margin-bottom: 16px; }
 .ficha-head-center .mcard-photo { margin: 4px auto 8px; }
