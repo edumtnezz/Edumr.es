@@ -2935,14 +2935,19 @@ export async function onRequestGet({ request, env, params }) {
     return json(await getNoticias(env));
   }
   if (path === "debug-raw") {
-    const slug = url.searchParams.get("slug") || "";
+    const mode = url.searchParams.get("mode") || "article";
     const needle = url.searchParams.get("find") || "Perfil";
+    const before = Number(url.searchParams.get("before") || 300);
+    const after = Number(url.searchParams.get("after") || 300);
     try {
-      const res = await fetch("https://www.futbolfantasy.com/laliga/noticias/" + slug, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+      const target = mode === "home"
+        ? "https://www.futbolfantasy.com/laliga/home"
+        : "https://www.futbolfantasy.com/laliga/noticias/" + (url.searchParams.get("slug") || "");
+      const res = await fetch(target, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
       const html = await res.text();
       const ci = html.search(/class="cuerpo"/i);
       const fi = html.indexOf(needle);
-      const w1 = fi >= 0 ? html.slice(Math.max(0, fi - 900), fi + 200) : "(not found)";
+      const w1 = fi >= 0 ? html.slice(Math.max(0, fi - before), fi + after) : "(not found)";
       return json({ status: res.status, len: html.length, cuerpoIdx: ci, findIdx: fi, around: w1 });
     } catch (e) { return json({ error: String(e) }); }
   }
