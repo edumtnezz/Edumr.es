@@ -3,6 +3,19 @@
 // el resultado cacheado en KV, para que la web lo sirva al instante.
 export default {
   async scheduled(event, env, ctx) {
+    // "0 8 * * 1" = vigilante semanal: comprueba que las 20 páginas de
+    // equipo de futbolfantasy.com (de donde sacamos fotos tipo
+    // Alineaciones probables) siguen cargando jugadores. Si una se rompe
+    // (p.ej. un equipo asciende y cambia de slug, como pasó con el
+    // Deportivo) queda guardado y se avisa a Edu en la propia web, sin
+    // esperar a que falle un jugador concreto.
+    if (event.cron === "0 8 * * 1") {
+      try {
+        const r = await fetch("https://edumr.es/api/laquiniela/ff-health?run=1", { headers: { "user-agent": "edumr-cron" } });
+        await r.text();
+      } catch (e) {}
+      return;
+    }
     const urls = [
       "https://edumr.es/api/laquiniela/noticias?warm=1",
       "https://edumr.es/api/laquiniela/clausulas",

@@ -1509,6 +1509,33 @@ async function getFFTeam(env, name) {
   try { if (data.starters.length) await env.PORRA.put(key, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 6 * 3600 }); } catch (e) {}
   return data;
 }
+
+// Vigilante de futbolfantasy.com: comprueba que las páginas de equipo de
+// las que sacamos fotos (Alineaciones probables, Analiza tu equipo) siguen
+// cargando jugadores. Si un equipo cambia de nombre/sube de categoría (como
+// pasó con el Deportivo) y su slug deja de coincidir, esa página se queda a
+// 0 jugadores SIN dar ningún error — así que si no la comprobamos a propósito,
+// nadie se entera hasta que un jugador concreto "falla". Solo lo ve Edu
+// (admin) como aviso en la propia web; no hay acceso al bot de Telegram
+// desde aquí.
+const FF_TEAMS = ["alaves", "athletic", "atletico", "barcelona", "betis", "celta", "deportivo", "elche", "espanyol", "getafe", "levante", "malaga", "osasuna", "racing", "rayo-vallecano", "real-madrid", "real-sociedad", "sevilla", "valencia", "villarreal"];
+async function checkFFHealth(env, force) {
+  const key = "ff:health:v1";
+  if (!force) {
+    try { const c = await env.PORRA.get(key, "json"); if (c && Date.now() - (c.at || 0) < 6 * 24 * 3600 * 1000) return c; } catch (e) {}
+  }
+  const broken = [];
+  await Promise.all(FF_TEAMS.map(async (slug) => {
+    try {
+      const d = await getFFTeam(env, slug);
+      if (!d || !d.starters || !d.starters.length) broken.push(slug);
+    } catch (e) { broken.push(slug); }
+  }));
+  const result = { at: Date.now(), total: FF_TEAMS.length, broken };
+  try { await env.PORRA.put(key, JSON.stringify(result)); } catch (e) {}
+  return result;
+}
+
 async function getOnce(env, home, away, jornada) {
   const j = Number(jornada) || 0;
   const key = "once:v12:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
@@ -2690,7 +2717,7 @@ export async function onRequestGet({ request, env, params }) {
     return json({ puja: p, user: user ? { name: user.name } : null, admin: isAdmin(env, user), nextTuesday: nextTuesday2200Utc(new Date()), nextWindow: nextWindowOpenUtc(new Date()), inWindow: inPujaWindow(new Date()), history });
   }
   if (path === "me") {
-    return json({ user: user ? { name: user.name } : null });
+    return json({ user: user ? { name: user.name } : null, admin: isAdmin(env, user) });
   }
   if (path === "mercado") {
     return searchMercado(env, url.searchParams.get("q"));
@@ -2718,6 +2745,13 @@ export async function onRequestGet({ request, env, params }) {
   }
   if (path === "clausulas") {
     try { return json(await getClausulas(env)); } catch (e) { return json({ players: [], error: String(e) }); }
+  }
+  if (path === "ff-health") {
+    // El cron semanal llama con ?run=1 para forzar una comprobación fresca
+    // de las 20 páginas; la web (solo si eres admin) llama sin ?run para
+    // leer el último resultado guardado, sin disparar 20 peticiones cada
+    // vez que alguien abre la Guía Fantasy.
+    try { return json(await checkFFHealth(env, url.searchParams.has("run"))); } catch (e) { return json({ at: 0, total: 0, broken: [], error: String(e) }); }
   }
   if (path === "noticias") {
     return json(await getNoticias(env));

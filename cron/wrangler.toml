@@ -3,4 +3,6 @@ main = "src/index.js"
 compatibility_date = "2025-09-01"
 
 [triggers]
-crons = ["*/15 * * * *"]
+# El primero (cada 15 min) refresca cachés de noticias/mercado/etc.
+# El segundo (lunes 8:00 UTC) es el vigilante semanal de futbolfantasy.com.
+crons = ["*/15 * * * *", "0 8 * * 1"]

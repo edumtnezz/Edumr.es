@@ -2171,6 +2171,25 @@
       ub.appendChild(chip); ub.appendChild(menu);
       chip.addEventListener("click", (e) => { e.stopPropagation(); menu.classList.toggle("open"); });
       document.addEventListener("click", (e) => { if (!ub.contains(e.target)) menu.classList.remove("open"); });
+      // Aviso del vigilante de futbolfantasy.com: solo para Edu (admin), y
+      // solo lee el último resultado guardado (no dispara las 20
+      // comprobaciones al vuelo) — eso lo hace el cron semanal.
+      if (d.admin) {
+        try {
+          const h = await (await fetch(API + "/ff-health", { cache: "no-store" })).json();
+          if (h && h.broken && h.broken.length) {
+            const main = document.querySelector(".quiniela-main");
+            if (main) {
+              const bar = el("div", "ff-health-warn");
+              bar.appendChild(el("span", null, "⚠️ futbolfantasy.com no está cargando jugadores para: " + h.broken.join(", ") + " — puede que hayan cambiado de slug (revisar getFFTeam)."));
+              const x = el("button", "ff-health-x", "✕"); x.type = "button";
+              x.addEventListener("click", () => bar.remove());
+              bar.appendChild(x);
+              main.insertBefore(bar, main.firstChild);
+            }
+          }
+        } catch (e) {}
+      }
     } catch (e) {}
   })();
 

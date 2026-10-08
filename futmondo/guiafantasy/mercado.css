@@ -807,6 +807,9 @@ html { overflow-anchor: none; }
 .mkt-vant { color: var(--muted); font-weight: 600; text-align: right; white-space: nowrap; }
 @media (max-width: 820px) { .mkt-table { min-width: 820px; } }
 
+.ff-health-warn { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 10px 0; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(220,38,38,0.4); background: rgba(220,38,38,0.1); color: #dc2626; font-size: 0.82rem; font-weight: 600; }
+.ff-health-x { background: none; border: none; color: inherit; font-size: 1rem; cursor: pointer; padding: 0 2px; line-height: 1; flex: 0 0 auto; }
+
 
 
 
