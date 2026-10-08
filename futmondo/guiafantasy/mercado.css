@@ -547,12 +547,17 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 
 @media (max-width: 480px) { .feat-hero { aspect-ratio: 4 / 3.4; } .feat-hero-title { font-size: 1.1rem; } .feat-card-sm { aspect-ratio: 16 / 8; } }
 
-/* Scrollbars visibles en los deslizables */
-.mkt-wrap, .merc-bestrow, .cx-strip-track { scrollbar-width: thin; scrollbar-color: rgba(34, 197, 94, 0.55) transparent; }
-.mkt-wrap::-webkit-scrollbar, .merc-bestrow::-webkit-scrollbar, .cx-strip-track::-webkit-scrollbar { height: 9px; }
-.mkt-wrap::-webkit-scrollbar-thumb, .merc-bestrow::-webkit-scrollbar-thumb, .cx-strip-track::-webkit-scrollbar-thumb { background: rgba(34, 197, 94, 0.5); border-radius: 9px; }
-.mkt-wrap::-webkit-scrollbar-track, .merc-bestrow::-webkit-scrollbar-track, .cx-strip-track::-webkit-scrollbar-track { background: rgba(127, 127, 127, 0.12); border-radius: 9px; }
-[data-theme="light"] .mkt-wrap::-webkit-scrollbar-thumb, [data-theme="light"] .merc-bestrow::-webkit-scrollbar-thumb, [data-theme="light"] .cx-strip-track::-webkit-scrollbar-thumb { background: rgba(22, 163, 74, 0.6); }
+/* Scrollbar visible en la tabla de mercado (la única que no tiene ya su
+   propia barrita dibujada aparte). */
+.mkt-wrap { scrollbar-width: thin; scrollbar-color: rgba(34, 197, 94, 0.55) transparent; }
+.mkt-wrap::-webkit-scrollbar { height: 9px; }
+.mkt-wrap::-webkit-scrollbar-thumb { background: rgba(34, 197, 94, 0.5); border-radius: 9px; }
+.mkt-wrap::-webkit-scrollbar-track { background: rgba(127, 127, 127, 0.12); border-radius: 9px; }
+[data-theme="light"] .mkt-wrap::-webkit-scrollbar-thumb { background: rgba(22, 163, 74, 0.6); }
+/* .merc-bestrow y .cx-strip-track ya tienen su propia barrita (.cx-scrollbar)
+   dibujada debajo: se oculta su scrollbar nativo para no tener dos. */
+.merc-bestrow, .cx-strip-track { scrollbar-width: none; -ms-overflow-style: none; }
+.merc-bestrow::-webkit-scrollbar, .cx-strip-track::-webkit-scrollbar { display: none; height: 0; }
 .mkt-hint { font-size: 0.72rem; color: var(--muted); font-weight: 600; margin-top: 3px; }
 @media (max-width: 560px) { .news-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; } .newscard .news-title { font-size: 0.74rem; } }
 .noti-back { margin-bottom: 16px; }
