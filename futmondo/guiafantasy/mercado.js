@@ -1824,6 +1824,7 @@
     const ICONS = [["ONCE", "⭐"], ["PORTERO", "🧤"], ["DEFENSA", "🛡️"], ["MEDIO", "🎯"], ["DELANTERO", "⚽"], ["CAMBIOS", "🔄"], ["MULTIPOSICI", "↔️"], ["AVISO", "⏰"]];
     const iconOf = (title) => { const u = title.toUpperCase(); const f = ICONS.find((x) => u.indexOf(x[0]) === 0); return f ? f[1] : "•"; };
     const isLineup = (title) => /PORTERO|DEFENSA|MEDIO|DELANTERO/i.test(title);
+    const isMulti = (title) => /MULTIPOSICI/i.test(title);
     const photoChip = (p) => {
       const c = el("div", "an-pchip");
       const ph = el("div", "an-pchip-photo"); ph.appendChild(photoImg(p.photo));
@@ -1831,7 +1832,27 @@
       c.appendChild(el("div", "an-pchip-name", p.last || p.nombre || ""));
       return c;
     };
-    let body = null, lineup = false;
+    // Fila para "MULTIPOSICIÓN": antes era un párrafo suelto por jugador
+    // ("Nombre: en X porque..."); ahora se saca el nombre al principio y se
+    // pinta como una fila con foto, igual de "chula" que el resto de
+    // secciones, en vez de solo texto corrido.
+    const multiRow = (s) => {
+      const mm = s.match(/^([^:]+):\s*(.+)$/);
+      const row = el("div", "an-mp-row");
+      if (mm) {
+        const pl = roster && roster.length ? findRosterPlayer(mm[1], roster) : null;
+        const ph = el("div", "an-mp-photo"); if (pl) ph.appendChild(photoImg(pl.photo)); else ph.textContent = "↔️";
+        row.appendChild(ph);
+        const txt = el("div", "an-mp-text");
+        txt.appendChild(el("div", "an-mp-name", (pl && (pl.last || pl.nombre)) || mm[1].trim()));
+        const reason = el("div", "an-mp-reason"); reason.innerHTML = miniLine(mm[2]); txt.appendChild(reason);
+        row.appendChild(txt);
+      } else {
+        const txt = el("div", "an-mp-text"); txt.innerHTML = miniLine(s); row.appendChild(txt);
+      }
+      return row;
+    };
+    let body = null, lineup = false, multi = false;
     String(t || "").split(/\n+/).forEach((ln) => {
       const s = ln.trim();
       if (!s) return;
@@ -1843,17 +1864,23 @@
         hd.appendChild(el("span", "an-sec-ic", iconOf(title)));
         hd.appendChild(el("span", "an-sec-t", title));
         sec.appendChild(hd);
-        body = el("div", "an-sec-body");
-        sec.appendChild(body);
         lineup = isLineup(title);
+        multi = isMulti(title);
+        body = el("div", "an-sec-body" + (multi ? " an-sec-body-col" : ""));
+        sec.appendChild(body);
         box.appendChild(sec);
       } else if (body) {
-        if (lineup && s.indexOf(",") >= 0) {
+        if (lineup) {
+          // Siempre en chips con foto, aunque sea UN solo nombre sin comas
+          // (p. ej. el portero) — antes solo se activaba con coma y el
+          // portero se quedaba como texto plano sin foto.
           s.split(",").map((x) => x.trim()).filter(Boolean).forEach((nm) => {
             const pl = roster && roster.length ? findRosterPlayer(nm, roster) : null;
             if (pl) body.appendChild(photoChip(pl));
             else { const c = el("span", "an-chip"); c.innerHTML = miniLine(nm); body.appendChild(c); }
           });
+        } else if (multi) {
+          body.appendChild(multiRow(s));
         } else {
           const line = el("div", "an-ai-line"); line.innerHTML = miniLine(s); body.appendChild(line);
         }
@@ -2130,25 +2157,30 @@
     if (swapPairs.length) {
       const sec = el("div", "estado-sec");
       sec.appendChild(el("div", "estado-title", "🔁 Plan de cambios por horario"));
-      sec.appendChild(el("p", "muted small", "Mientras un titular NO haya jugado, puedes cambiarlo las veces que quieras. Pero en cuanto UNO de tu equipo ya haya puntuado, solo te queda UN cambio de emergencia para el resto de la jornada — resérvalo para el que peor lo haga. Por eso conviene alinear primero a los de arriba (juegan antes) y dejar atrás, como segunda bala, al del banquillo que juegue más tarde."));
-      sec.appendChild(el("p", "muted small", "📋 Revisa la alineación OFICIAL justo antes de que empiece cada partido para confirmar si tu jugador sale de titular — abajo tienes una hora ESTIMADA de cuándo suele salir (normalmente ~1h antes, puede variar según el partido)."));
-      const box = el("div", "an-list");
+      sec.appendChild(el("p", "muted small", "Cambia las veces que quieras mientras nadie de tu equipo haya puntuado todavía — después solo te queda UN cambio de emergencia para el resto de la jornada. Alinea antes a los que juegan primero y guarda de \"segunda bala\" a quien juegue más tarde. Revisa la alineación OFICIAL justo antes de cada partido (hora ⏱️ estimada en cada tarjeta)."));
+      const grid = el("div", "swap-grid");
+      const posIcon = { POR: "🧤", DEF: "🛡️", CEN: "🎯", DEL: "⚽" };
       swapPairs.forEach(({ pos, tit, sub }) => {
-        const row = el("div", "an-row clickable");
-        row.appendChild(el("span", "an-pos", pos));
-        const main = el("div", "an-main");
-        const nameRow = el("div", "an-name-row");
-        nameRow.appendChild(el("span", "an-name", tit.nombre || ""));
-        nameRow.appendChild(el("span", "an-sub", tit.fecha ? "juega " + whenShort(tit.fecha) : "sin hora"));
-        main.appendChild(nameRow);
+        const card = el("div", "swap-card clickable");
+        card.appendChild(el("span", "swap-pos", (posIcon[pos] || "") + " " + pos));
+        const side = (p, cls) => {
+          const s = el("div", "swap-side " + cls);
+          const ph = el("div", "swap-photo"); ph.appendChild(photoImg(p.photo)); s.appendChild(ph);
+          s.appendChild(el("div", "swap-name", p.last || p.nombre || ""));
+          s.appendChild(el("div", "swap-time", p.fecha ? whenShort(p.fecha) : "sin hora"));
+          return s;
+        };
+        const row = el("div", "swap-row");
+        row.appendChild(side(tit, "swap-tit"));
+        row.appendChild(el("div", "swap-arrow", "🔁"));
+        row.appendChild(side(sub, "swap-sub"));
+        card.appendChild(row);
         const estTxt = estAlineacion(tit.fecha);
-        if (estTxt) main.appendChild(el("span", "an-sub", "📋 alineación estimada ~" + estTxt));
-        main.appendChild(el("span", "an-sub", "🔁 si falla: " + (sub.nombre || "") + " (" + (sub.fecha ? "juega " + whenShort(sub.fecha) : "sin hora") + ")"));
-        row.appendChild(main);
-        row.addEventListener("click", () => swapPicker(tit));
-        box.appendChild(row);
+        if (estTxt) card.appendChild(el("div", "swap-est", "⏱️ alineación estimada ~" + estTxt));
+        card.addEventListener("click", () => swapPicker(tit));
+        grid.appendChild(card);
       });
-      sec.appendChild(box);
+      sec.appendChild(grid);
       out.appendChild(sec);
     }
     if (d.analisis) {

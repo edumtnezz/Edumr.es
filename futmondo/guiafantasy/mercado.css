@@ -313,15 +313,23 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 .an-clause-cl { font-size: 0.8rem; font-weight: 800; color: #fbbf24; }
 .an-clause-vl { font-size: 0.68rem; color: var(--muted); }
 .an-ai { display: flex; flex-direction: column; gap: 12px; }
-.an-sec { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
-.an-sec-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.an-sec-ic { font-size: 1.05rem; }
+.an-sec { background: linear-gradient(180deg, var(--card) 0%, var(--card-solid) 100%); border: 1px solid var(--border); border-radius: 16px; padding: 14px 14px 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.10); }
+.an-sec-head { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px dashed var(--border); }
+.an-sec-ic { font-size: 1.25rem; line-height: 1; }
 .an-sec-t { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.82rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text); }
-.an-sec-body { display: flex; flex-wrap: wrap; gap: 6px; }
-.an-chip { background: var(--card-solid); border: 1px solid var(--border); border-radius: 999px; padding: 4px 11px; font-size: 0.83rem; color: var(--text); }
+.an-sec-body { display: flex; flex-wrap: wrap; gap: 8px; }
+.an-sec-body-col { flex-direction: column; gap: 8px; }
+.an-chip { background: var(--card-solid); border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px; font-size: 0.83rem; color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
 .an-chip b { color: var(--accent); }
 .an-ai-line { color: var(--muted); font-size: 0.9rem; line-height: 1.5; width: 100%; }
 .an-ai-line b { color: var(--accent); }
+.an-mp-row { display: flex; align-items: flex-start; gap: 10px; background: var(--card-solid); border: 1px solid var(--border); border-radius: 12px; padding: 9px 11px; width: 100%; }
+.an-mp-photo { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background: var(--card); border: 2px solid rgba(96,165,250,0.5); flex: 0 0 auto; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+.an-mp-photo img { width: 100%; height: 100%; object-fit: cover; }
+.an-mp-text { flex: 1 1 auto; min-width: 0; }
+.an-mp-name { font-weight: 800; font-size: 0.82rem; margin-bottom: 2px; }
+.an-mp-reason { font-size: 0.78rem; color: var(--muted); line-height: 1.45; }
+.an-mp-reason b { color: var(--accent); }
 .hl-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 24px 0 10px; padding-top: 16px; border-top: 1px solid var(--border); }
 .hl-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.02rem; }
 .hl-seg { display: flex; gap: 6px; margin: 0; flex-wrap: wrap; }
@@ -352,10 +360,26 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 .an-clauses-t { font-weight: 800; font-size: 0.88rem; margin-bottom: 4px; }
 .an-clauses-info { font-size: 0.72rem; color: var(--muted); margin-bottom: 6px; line-height: 1.4; }
 .an-clause { font-size: 0.84rem; }
-.an-pchip { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 56px; text-align: center; }
-.an-pchip-photo { width: 36px; height: 36px; border-radius: 50%; overflow: hidden; background: var(--card-solid); border: 1px solid var(--border); }
+.an-pchip { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 62px; text-align: center; }
+.an-pchip-photo { width: 42px; height: 42px; border-radius: 50%; overflow: hidden; background: var(--card-solid); border: 2px solid rgba(250,204,21,0.45); box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
 .an-pchip-photo img { width: 100%; height: 100%; object-fit: cover; }
-.an-pchip-name { font-size: 0.66rem; font-weight: 700; color: var(--text); max-width: 56px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.an-pchip-name { font-size: 0.66rem; font-weight: 700; color: var(--text); max-width: 62px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Plan de cambios por horario: tarjetas gráficas titular -> recambio */
+.swap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.swap-card { position: relative; display: flex; flex-direction: column; gap: 8px; background: linear-gradient(180deg, var(--card) 0%, var(--card-solid) 100%); border: 1px solid var(--border); border-radius: 16px; padding: 14px 10px 10px; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.08); transition: border-color .15s, transform .15s; }
+.swap-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.swap-pos { position: absolute; top: 8px; left: 10px; font-size: 0.64rem; font-weight: 800; color: var(--muted); letter-spacing: 0.04em; }
+.swap-row { display: flex; align-items: flex-start; justify-content: center; gap: 10px; margin-top: 8px; }
+.swap-side { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1 1 0; min-width: 0; }
+.swap-photo { width: 48px; height: 48px; border-radius: 50%; overflow: hidden; background: var(--card-solid); border: 2px solid var(--border); box-shadow: 0 2px 6px rgba(0,0,0,0.15); }
+.swap-tit .swap-photo { border-color: rgba(250,204,21,0.55); }
+.swap-sub .swap-photo { border-color: rgba(34,197,94,0.55); }
+.swap-photo img { width: 100%; height: 100%; object-fit: cover; }
+.swap-name { font-size: 0.72rem; font-weight: 700; max-width: 84px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; }
+.swap-time { font-size: 0.62rem; color: var(--muted); }
+.swap-arrow { font-size: 1.15rem; flex: 0 0 auto; margin-top: 12px; }
+.swap-est { text-align: center; font-size: 0.64rem; color: var(--muted); border-top: 1px dashed var(--border); padding-top: 7px; }
 .pitch-team { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 0.6rem; color: var(--muted); text-shadow: none; max-width: 76px; margin-top: 1px; }
 .pitch-team .pitch-crest { width: 12px; height: 12px; object-fit: contain; }
 .pitch-team span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
