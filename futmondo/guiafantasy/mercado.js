@@ -314,6 +314,27 @@
       ow.appendChild(av);
       ow.appendChild(el("span", null, "de " + (p.owner || "?")));
       body.appendChild(ow);
+      // Últimos partidos: para saber de un vistazo si merece la pena pagar
+      // la cláusula (en racha de verdad) o si los puntos/la media vienen de
+      // partidazos ya lejanos, con el mismo formato que "Jugadores en racha".
+      const fit = (p.fitness || []).map((x) => Number(x) || 0);
+      if (fit.length) {
+        const fitWrap = el("div", "claus-fitwrap");
+        fitWrap.appendChild(el("div", "claus-fitlabel", "Últimos partidos"));
+        const scores = el("div", "racha-scores claus-fit-scores");
+        const n = Math.min(5, fit.length);
+        for (let k = 0; k < n; k++) {
+          const v = Math.round(fit[fit.length - 1 - k]);
+          const j = j0 ? j0 - k : 0;
+          const cls = v >= 6 ? " hi" : v >= 4 ? " mid" : v > 0 ? " lo" : " zero";
+          const cell = el("span", "racha-chip" + cls);
+          if (j > 0) cell.appendChild(el("i", null, "J" + j));
+          cell.appendChild(el("b", null, v > 0 ? String(v) : "–"));
+          scores.appendChild(cell);
+        }
+        fitWrap.appendChild(scores);
+        body.appendChild(fitWrap);
+      }
       const st = el("div", "claus-stats");
       const sbox = (val, lab, cls) => { const b = el("div", "claus-stat" + (cls ? " " + cls : "")); b.appendChild(el("b", null, String(val))); b.appendChild(el("small", null, lab)); return b; };
       st.appendChild(sbox(Number(p.points) || 0, "PTS"));

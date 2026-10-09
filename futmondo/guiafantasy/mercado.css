@@ -723,6 +723,9 @@ html { overflow-anchor: none; }
 .claus-pos { display: flex; justify-content: center; gap: 4px; margin: 4px 0 2px; }
 .claus-team { display: flex; align-items: center; justify-content: center; gap: 5px; color: var(--muted); font-size: 0.76rem; }
 .claus-owner { color: var(--muted); font-size: 0.74rem; margin-top: 1px; }
+.claus-fitwrap { margin-top: 8px; width: 100%; }
+.claus-fitlabel { font-size: 0.62rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+.claus-fit-scores { justify-content: center; flex-wrap: wrap; }
 /* Antes cada dato (PTS/Media/Cláusula) iba en su propia caja con borde,
    las tres igual de peso visual → se veía recargado. Ahora solo la Media
    (el número por el que se ordena el ranking) lleva una píldora de color;
