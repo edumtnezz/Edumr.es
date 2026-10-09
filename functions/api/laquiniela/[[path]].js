@@ -1724,7 +1724,7 @@ function ffTvFind(map, home, away) {
 }
 async function ffTvMap(env) {
   try {
-    const c = await env.PORRA.get("ff:tv:v8", "json");
+    const c = await env.PORRA.get("ff:tv:v9", "json");
     if (c && c.list && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c;
   } catch (e) {}
   const byName = {}, list = [];
@@ -1751,7 +1751,14 @@ async function ffTvMap(env) {
         let d = (tag.match(/data-src="([^"]*)"/) || [])[1] || "";
         if (a && !BAD.test(a) && d) {
           if (d.indexOf("//") === 0) d = "https:" + d;
+          // El logo de Movistar que trae futbolfantasy.com en su propio <img>
+          // es un icono antiguo/distinto al que usamos en el resto de la
+          // web (p.ej. en los partidos que solo sale aquí y no en
+          // futbolenlatv.es, que es de donde viene el logo bueno). Para que
+          // el mismo canal se vea SIEMPRE igual, se fuerza aquí también al
+          // mismo archivo que usa fltvMap().
           if (/dazn/i.test(a)) d = "/img/dazn.svg?v=3";
+          else if (/movistar|^m\+/i.test(a)) d = "/img/movistar.png?v=2";
           tv.push({ name: a, logo: d });
         }
       }
@@ -1767,7 +1774,7 @@ async function ffTvMap(env) {
     }
   } catch (e) {}
   const out = { at: Date.now(), byName, list };
-  if (list.length > 10) { try { await env.PORRA.put("ff:tv:v8", JSON.stringify(out), { expirationTtl: 3600 }); } catch (e) {} }
+  if (list.length > 10) { try { await env.PORRA.put("ff:tv:v9", JSON.stringify(out), { expirationTtl: 3600 }); } catch (e) {} }
   return out;
 }
 async function fltvMap(env) {
