@@ -1103,8 +1103,28 @@ async function tmProfile(env, name, club) {
   return out;
 }
 
+// Entidades HTML (&#039; &amp; &aacute; ...) que llegan tal cual en textos
+// scrapeados (títulos, extractos) y que, al meterlos como texto plano (no
+// como HTML) en la web, se veían literalmente como "&#039;" en vez de un
+// apóstrofe.
+const HTML_ENTITIES = {
+  amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ",
+  aacute: "á", eacute: "é", iacute: "í", oacute: "ó", uacute: "ú",
+  Aacute: "Á", Eacute: "É", Iacute: "Í", Oacute: "Ó", Uacute: "Ú",
+  ntilde: "ñ", Ntilde: "Ñ", uuml: "ü", Uuml: "Ü",
+  iexcl: "¡", iquest: "¿", ordf: "ª", ordm: "º", deg: "°",
+  euro: "€", hellip: "…", ndash: "–", mdash: "—",
+  lsquo: "'", rsquo: "'", ldquo: "“", rdquo: "”", laquo: "«", raquo: "»",
+};
+function decodeEntities(s) {
+  return String(s || "")
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => { try { return String.fromCodePoint(parseInt(h, 16)); } catch (e) { return ""; } })
+    .replace(/&#(\d+);/g, (_, d) => { try { return String.fromCodePoint(parseInt(d, 10)); } catch (e) { return ""; } })
+    .replace(/&([a-zA-Z]+);/g, (full, name) => (name in HTML_ENTITIES ? HTML_ENTITIES[name] : full));
+}
+
 function stripHtml(s) {
-  return String(s || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+  return decodeEntities(String(s || "").replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
 }
 
 // Quita <div ...>...</div> contando aperturas/cierres de verdad, para los
@@ -1195,7 +1215,7 @@ async function getFfNoticias(env) {
       const link = m[1];
       if (seen[link]) continue;
       const inner = m[2].slice(0, 1600);
-      const title = ((inner.match(/<h2[^>]*class="[^"]*titular[^"]*"[^>]*>([\s\S]*?)<\/h2>/) || [])[1] || (inner.match(/alt="([^"]+)"/) || [])[1] || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+      const title = stripHtml((inner.match(/<h2[^>]*class="[^"]*titular[^"]*"[^>]*>([\s\S]*?)<\/h2>/) || [])[1] || (inner.match(/alt="([^"]+)"/) || [])[1] || "");
       const thumb = (inner.match(/data-src="([^"]*fotos_noticias[^"]+)"/) || inner.match(/<img[^>]+src="([^"]*fotos_noticias[^"]+)"/) || [])[1] || "";
       const day = ((inner.match(/class="day">([^<]+)</) || [])[1] || "").trim();
       const time = ((inner.match(/class="time">([^<]+)</) || [])[1] || "").trim();
@@ -1215,8 +1235,8 @@ async function getNoticia(url) {
   if (!/^https:\/\/www\.futbolfantasy\.com\//.test(String(url || ""))) return { error: "no permitido" };
   const res = await fetch(url, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
   const html = await res.text();
-  const title = ((html.match(/<h1[^>]*class="[^"]*titulo[^"]*"[^>]*>([\s\S]*?)<\/h1>/i) || [])[1] || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
-  const lead = ((html.match(/<p[^>]*class="[^"]*entradilla[^"]*"[^>]*>([\s\S]*?)<\/p>/i) || [])[1] || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  const title = stripHtml((html.match(/<h1[^>]*class="[^"]*titulo[^"]*"[^>]*>([\s\S]*?)<\/h1>/i) || [])[1] || "");
+  const lead = stripHtml((html.match(/<p[^>]*class="[^"]*entradilla[^"]*"[^>]*>([\s\S]*?)<\/p>/i) || [])[1] || "");
   let body = "";
   const ci = html.search(/class="cuerpo"/i);
   if (ci >= 0) {
