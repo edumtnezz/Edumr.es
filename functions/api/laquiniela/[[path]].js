@@ -2254,17 +2254,25 @@ async function handleAnaliza(request, env, user) {
   // No bloquea la respuesta si falla.
   try {
     const jornadaPred = (market.players || []).reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0) + 1;
+    // Misma fórmula que el frontend (capScoreOf en mercado.js): nunca un
+    // defensa ni el portero de capitán, prima el pico de forma reciente
+    // ("racha") sobre la media y el nivel de puntos de la temporada (techo
+    // de puntos), no solo "de media va bien".
     const capScore = (p) => {
       if (String(p.estado || "").toUpperCase().indexOf("LESI") >= 0) return 5;
       const f = p.fitness || [];
       const avg = f.length ? f.reduce((a, b) => a + (Number(b) || 0), 0) / f.length : 0;
+      const max = f.length ? Math.max(...f.map((x) => Number(x) || 0)) : 0;
+      const racha = avg * 0.5 + max * 0.5;
       const prob = p.prob != null ? p.prob : 60;
-      let s = avg * 9 + (prob - 50) * 0.5;
-      if (p.casa === true) s += 4; else if (p.casa === false) s -= 2;
+      let s = racha * 8.5 + (prob - 50) * 0.4;
+      if (p.casa === true) s += 3; else if (p.casa === false) s -= 1.5;
       if (p.pos2) s += 2;
+      if (p.puntos != null) s += Math.min(12, p.puntos / 40);
       return Math.max(5, Math.min(99, Math.round(s)));
     };
-    const capList = titulares.filter((p) => p.pos !== "POR" && p.id).slice().sort((a, b) => capScore(b) - capScore(a));
+    let capList = titulares.filter((p) => (p.pos === "CEN" || p.pos === "DEL") && p.id).slice().sort((a, b) => capScore(b) - capScore(a));
+    if (!capList.length) capList = titulares.filter((p) => p.pos !== "POR" && p.id).slice().sort((a, b) => capScore(b) - capScore(a));
     if (capList.length) {
       const alts = capList.slice(0, 3).map((p) => ({ id: p.id, nombre: p.nombre, pos: p.pos, photo: p.photo }));
       await saveCapitanPrediction(env, user, jornadaPred, alts);

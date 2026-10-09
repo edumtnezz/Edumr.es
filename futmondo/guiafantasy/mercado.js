@@ -1893,12 +1893,28 @@
       box.appendChild(el("div", "an-nota-info", "Cada posición se puntúa sobre 100 con: su forma en los últimos partidos, su probabilidad de ser titular, +4 si juega en casa / -2 si juega fuera, y +2 si tiene doble posición. Si está lesionado, se queda en 5."));
       out.appendChild(box);
       // Capitán: en el modo Full Mundo dobla los puntos que haga, así que lo
-      // que de verdad importa no es solo su forma, sino la combinación de
-      // forma + que tenga muchas opciones de SALIR DE TITULAR (un capitán
-      // que no juega no dobla nada). Usamos la misma nota de arriba (ya
-      // combina forma, prob. de jugar, casa/fuera y doble posición) y
-      // avisamos aparte si su plaza está en duda.
-      const capList = tits.filter((p) => p.pos !== "POR").slice().sort((a, b) => scoreOf(b) - scoreOf(a));
+      // que de verdad importa no es la nota genérica del once (esa vale para
+      // defensas y porteros, que rara vez interesan de capitán), sino quién
+      // tiene más TECHO de puntos: un centrocampista o delantero (nunca un
+      // defensa ni el portero) que además esté EN RACHA ahora mismo, no solo
+      // "de media bueno". Por eso aquí se usa una nota aparte (capScoreOf)
+      // que pesa el pico reciente de forma (no solo la media) y el nivel de
+      // puntos de la temporada, y se filtra a CEN/DEL.
+      const capScoreOf = (p) => {
+        if (String(p.estado || "").toUpperCase().indexOf("LESI") >= 0) return 5;
+        const f = p.fitness || [];
+        const avg = f.length ? f.reduce((a, b) => a + (Number(b) || 0), 0) / f.length : 0;
+        const max = f.length ? Math.max(...f.map((x) => Number(x) || 0)) : 0;
+        const racha = avg * 0.5 + max * 0.5; // premia el partidazo reciente (la "racha"), no solo la media
+        const prob = p.prob != null ? p.prob : 60;
+        let s = racha * 8.5 + (prob - 50) * 0.4;
+        if (p.casa === true) s += 3; else if (p.casa === false) s -= 1.5;
+        if (p.pos2) s += 2;
+        if (p.puntos != null) s += Math.min(12, p.puntos / 40); // techo de puntos: prima al que más lleva en la temporada
+        return Math.max(5, Math.min(99, Math.round(s)));
+      };
+      let capList = tits.filter((p) => p.pos === "CEN" || p.pos === "DEL").slice().sort((a, b) => capScoreOf(b) - capScoreOf(a));
+      if (!capList.length) capList = tits.filter((p) => p.pos !== "POR").slice().sort((a, b) => capScoreOf(b) - capScoreOf(a));
       if (capList.length) {
         const top = capList[0];
         const cap = el("div", "an-capitan");
@@ -1908,20 +1924,21 @@
         const body = el("div", "an-cap-body");
         body.appendChild(el("div", "an-cap-name", top.nombre || ""));
         const why = [];
-        const favg = (top.fitness || []).length ? (top.fitness.reduce((a, b) => a + (Number(b) || 0), 0) / top.fitness.length).toFixed(1).replace(".", ",") : null;
-        if (favg) why.push("forma " + favg + "/10");
+        const fmax = (top.fitness || []).length ? Math.max(...top.fitness.map((x) => Number(x) || 0)).toFixed(1).replace(".", ",") : null;
+        if (fmax) why.push("en racha (pico " + fmax + "/10)");
+        if (top.puntos != null) why.push(top.puntos + " pts esta temporada");
         if (top.prob != null) why.push(top.prob + "% de jugar");
         if (top.casa === true) why.push("juega en casa"); else if (top.casa === false) why.push("juega fuera");
         if (top.pos2) why.push("doble posición");
         body.appendChild(el("div", "an-cap-why", why.join(" · ") || "sin datos suficientes"));
         if (top.prob != null && top.prob < 70) body.appendChild(el("div", "an-cap-warn", "⚠️ su plaza de titular no está asegurada (" + top.prob + "%) — si al final no juega, el capitán no dobla nada"));
         row.appendChild(body);
-        row.appendChild(el("div", "an-cap-score", scoreOf(top) + "/100"));
+        row.appendChild(el("div", "an-cap-score", capScoreOf(top) + "/100"));
         cap.appendChild(row);
         if (capList.length > 1) {
           const alts = el("div", "an-cap-alts");
           alts.appendChild(el("span", "an-cap-altslabel", "Alternativas:"));
-          capList.slice(1, 3).forEach((p) => alts.appendChild(el("span", "an-cap-altchip", (p.last || p.nombre || "") + " · " + scoreOf(p))));
+          capList.slice(1, 3).forEach((p) => alts.appendChild(el("span", "an-cap-altchip", (p.last || p.nombre || "") + " · " + capScoreOf(p))));
           cap.appendChild(alts);
         }
         out.appendChild(cap);
@@ -2088,10 +2105,22 @@
       return pairs;
     }
     const swapPairs = buildSwapPlan();
+    // La alineación OFICIAL de cada equipo no se confirma hasta poco antes
+    // del partido (normalmente ~1h antes, aunque puede variar), así que la
+    // probabilidad de "titular" que manejamos hasta entonces es solo una
+    // estimación. Por eso, además del plan de cambios, se avisa de revisar
+    // la alineación oficial justo antes de que arranque cada partido (con
+    // una hora ESTIMADA de cuándo debería salir) para decidir si hace falta
+    // el cambio de verdad, en vez de fiarse solo del % de antes.
+    const estAlineacion = (fecha) => {
+      if (!fecha) return "";
+      try { return new Date(new Date(fecha).getTime() - 60 * 60000).toLocaleString("es-ES", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }); } catch (e) { return ""; }
+    };
     if (swapPairs.length) {
       const sec = el("div", "estado-sec");
       sec.appendChild(el("div", "estado-title", "🔁 Plan de cambios por horario"));
       sec.appendChild(el("p", "muted small", "Mientras un titular NO haya jugado, puedes cambiarlo las veces que quieras. Pero en cuanto UNO de tu equipo ya haya puntuado, solo te queda UN cambio de emergencia para el resto de la jornada — resérvalo para el que peor lo haga. Por eso conviene alinear primero a los de arriba (juegan antes) y dejar atrás, como segunda bala, al del banquillo que juegue más tarde."));
+      sec.appendChild(el("p", "muted small", "📋 Revisa la alineación OFICIAL justo antes de que empiece cada partido para confirmar si tu jugador sale de titular — abajo tienes una hora ESTIMADA de cuándo suele salir (normalmente ~1h antes, puede variar según el partido)."));
       const box = el("div", "an-list");
       swapPairs.forEach(({ pos, tit, sub }) => {
         const row = el("div", "an-row clickable");
@@ -2101,6 +2130,8 @@
         nameRow.appendChild(el("span", "an-name", tit.nombre || ""));
         nameRow.appendChild(el("span", "an-sub", tit.fecha ? "juega " + whenShort(tit.fecha) : "sin hora"));
         main.appendChild(nameRow);
+        const estTxt = estAlineacion(tit.fecha);
+        if (estTxt) main.appendChild(el("span", "an-sub", "📋 alineación estimada ~" + estTxt));
         main.appendChild(el("span", "an-sub", "🔁 si falla: " + (sub.nombre || "") + " (" + (sub.fecha ? "juega " + whenShort(sub.fecha) : "sin hora") + ")"));
         row.appendChild(main);
         row.addEventListener("click", () => swapPicker(tit));
