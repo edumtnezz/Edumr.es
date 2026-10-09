@@ -1459,6 +1459,10 @@ async function getNoticias(env) {
   fresh.concat(archive).forEach((x) => {
     if (!x || !x.link || seenLinks[x.link]) return;
     seenLinks[x.link] = 1;
+    // Los títulos ya archivados antes de decodificar entidades (&#039; etc.)
+    // se corrigen también aquí, de paso (decodeEntities no hace nada sobre
+    // texto que ya está limpio).
+    if (x.title) x.title = decodeEntities(x.title);
     merged.push(x);
   });
   const trimmed = merged.slice(0, 80);
