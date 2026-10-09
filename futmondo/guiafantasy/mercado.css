@@ -343,6 +343,7 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 .an-cap-name { font-weight: 800; font-size: 0.95rem; }
 .an-cap-why { font-size: 0.74rem; color: var(--muted); margin-top: 2px; }
 .an-cap-warn { font-size: 0.72rem; color: #d97706; margin-top: 4px; }
+.an-cap-info { font-size: 0.72rem; color: #16a34a; margin-top: 4px; }
 .an-cap-score { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--amber); flex: 0 0 auto; }
 .an-cap-alts { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 0.74rem; }
 .an-cap-altslabel { color: var(--muted); }

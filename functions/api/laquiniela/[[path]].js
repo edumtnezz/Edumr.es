@@ -2278,7 +2278,13 @@ async function handleAnaliza(request, env, user) {
       if (p.puntos != null) s += Math.min(12, p.puntos / 40);
       return Math.max(5, Math.min(99, Math.round(s)));
     };
-    let capList = titulares.filter((p) => (p.pos === "CEN" || p.pos === "DEL") && p.id).slice().sort((a, b) => capScore(b) - capScore(a));
+    // Igual que en el frontend: primero solo candidatos con titularidad
+    // prácticamente asegurada (>=85%), y solo si no queda ninguno se mira
+    // al resto de CEN/DEL (un capitán que no juega no dobla nada).
+    const SAFE_PROB = 85;
+    const isSafe = (p) => p.prob != null && p.prob >= SAFE_PROB && String(p.estado || "").toUpperCase().indexOf("LESI") < 0;
+    let capList = titulares.filter((p) => (p.pos === "CEN" || p.pos === "DEL") && p.id && isSafe(p)).slice().sort((a, b) => capScore(b) - capScore(a));
+    if (!capList.length) capList = titulares.filter((p) => (p.pos === "CEN" || p.pos === "DEL") && p.id).slice().sort((a, b) => capScore(b) - capScore(a));
     if (!capList.length) capList = titulares.filter((p) => p.pos !== "POR" && p.id).slice().sort((a, b) => capScore(b) - capScore(a));
     if (capList.length) {
       const alts = capList.slice(0, 3).map((p) => ({ id: p.id, nombre: p.nombre, pos: p.pos, photo: p.photo }));

@@ -1913,8 +1913,18 @@
         if (p.puntos != null) s += Math.min(12, p.puntos / 40); // techo de puntos: prima al que más lleva en la temporada
         return Math.max(5, Math.min(99, Math.round(s)));
       };
-      let capList = tits.filter((p) => p.pos === "CEN" || p.pos === "DEL").slice().sort((a, b) => capScoreOf(b) - capScoreOf(a));
-      if (!capList.length) capList = tits.filter((p) => p.pos !== "POR").slice().sort((a, b) => capScoreOf(b) - capScoreOf(a));
+      // El capitán dobla puntos si juega, pero no dobla NADA si se queda en
+      // el banco — así que antes de mirar quién está más en racha hay que
+      // descartar a quien no tenga la titularidad prácticamente asegurada
+      // (como le pasó a Lemar: buena forma pero sin sitio fijo). Solo se
+      // entra en el "banco" de candidatos arriesgados (prob < 85%) si NO
+      // queda nadie seguro entre los CEN/DEL.
+      const SAFE_PROB = 85;
+      const isSafe = (p) => p.prob != null && p.prob >= SAFE_PROB && String(p.estado || "").toUpperCase().indexOf("LESI") < 0;
+      let capList = tits.filter((p) => (p.pos === "CEN" || p.pos === "DEL") && isSafe(p)).slice().sort((a, b) => capScoreOf(b) - capScoreOf(a));
+      let capRisky = false;
+      if (!capList.length) { capList = tits.filter((p) => p.pos === "CEN" || p.pos === "DEL").slice().sort((a, b) => capScoreOf(b) - capScoreOf(a)); capRisky = true; }
+      if (!capList.length) { capList = tits.filter((p) => p.pos !== "POR").slice().sort((a, b) => capScoreOf(b) - capScoreOf(a)); capRisky = true; }
       if (capList.length) {
         const top = capList[0];
         const cap = el("div", "an-capitan");
@@ -1931,7 +1941,8 @@
         if (top.casa === true) why.push("juega en casa"); else if (top.casa === false) why.push("juega fuera");
         if (top.pos2) why.push("doble posición");
         body.appendChild(el("div", "an-cap-why", why.join(" · ") || "sin datos suficientes"));
-        if (top.prob != null && top.prob < 70) body.appendChild(el("div", "an-cap-warn", "⚠️ su plaza de titular no está asegurada (" + top.prob + "%) — si al final no juega, el capitán no dobla nada"));
+        if (capRisky) body.appendChild(el("div", "an-cap-warn", "⚠️ ninguno de tus CEN/DEL tiene la titularidad asegurada esta jornada — este es el que más opciones tiene (" + (top.prob != null ? top.prob + "%" : "sin dato") + "), pero si al final no juega, el capitán no dobla nada"));
+        else if (top.prob != null && top.prob < 95) body.appendChild(el("div", "an-cap-info", "✅ titularidad prácticamente asegurada (" + top.prob + "%)"));
         row.appendChild(body);
         row.appendChild(el("div", "an-cap-score", capScoreOf(top) + "/100"));
         cap.appendChild(row);
