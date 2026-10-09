@@ -272,6 +272,11 @@
     if (isNaN(d.getTime())) return "";
     return d.toLocaleString("es-ES", { weekday: "long", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" });
   }
+  // "2026-10-09" -> "09/10" (clSince, guardado como fecha simple sin hora).
+  function fmtDiaCorto(v) {
+    const m = String(v || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? m[3] + "/" + m[2] : "";
+  }
 
   function reasonOf(p) {
     const parts = [];
@@ -347,6 +352,25 @@
       vrow.appendChild(el("b", null, "Valor " + money(p.value) + " €"));
       vrow.appendChild(el("span", "claus-above", "+" + (diff / 1e6).toFixed(1).replace(".", ",") + " M por encima de su valor"));
       body.appendChild(vrow);
+      // Historial de la cláusula: sin tener que entrar en la ficha, para
+      // ver de un vistazo si se la han ido subiendo (la están "defendiendo")
+      // o lleva igual, directamente en la tarjeta.
+      if (p.clPrev != null || (p.clChg != null && p.clSince)) {
+        const histChip = (val, label) => {
+          const v = Number(val) || 0;
+          const cls = v > 0 ? "up" : v < 0 ? "down" : "flat";
+          const arrow = v > 0 ? "▲" : v < 0 ? "▼" : "•";
+          const amt = v === 0 ? "sin cambios" : (v > 0 ? "+" : "−") + formatDots(Math.abs(v)) + " €";
+          const chip = el("span", "claus-hist " + cls);
+          chip.appendChild(el("b", null, arrow + " " + amt));
+          chip.appendChild(el("small", null, label));
+          return chip;
+        };
+        const hrow = el("div", "claus-histrow");
+        if (p.clPrev != null) hrow.appendChild(histChip(p.clPrev, "desde ayer"));
+        if (p.clChg != null && p.clSince) hrow.appendChild(histChip(p.clChg, "desde " + fmtDiaCorto(p.clSince)));
+        body.appendChild(hrow);
+      }
       const playedPct = j0 ? Math.round(((Number(p.matches) || 0) / j0) * 100) : 0;
       body.appendChild(el("div", "claus-played", "Jugados: " + playedPct + "% de los partidos"));
       const sl = statusLabel(p.status);

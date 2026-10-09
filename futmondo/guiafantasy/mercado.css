@@ -740,6 +740,13 @@ html { overflow-anchor: none; }
 .claus-stat.media small { color: rgba(255, 255, 255, 0.85); text-transform: uppercase; font-size: 0.58rem; font-weight: 700; }
 .claus-val b { font-weight: 800; }
 .claus-above { color: #dc2626; font-size: 0.72rem; font-weight: 800; }
+.claus-histrow { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.claus-hist { display: flex; flex-direction: column; align-items: center; gap: 1px; background: var(--card-solid); border: 1px solid var(--border); border-radius: 10px; padding: 3px 9px; line-height: 1.2; }
+.claus-hist b { font-family: 'Space Grotesk', sans-serif; font-size: 0.74rem; font-weight: 800; }
+.claus-hist small { font-size: 0.6rem; color: var(--muted); font-weight: 600; }
+.claus-hist.up b { color: var(--accent); }
+.claus-hist.down b { color: var(--red); }
+.claus-hist.flat b { color: var(--muted); }
 .claus-played { font-size: 0.74rem; color: var(--muted); margin-top: 3px; }
 .fm-nojugo { color: var(--muted); font-style: italic; }
 
