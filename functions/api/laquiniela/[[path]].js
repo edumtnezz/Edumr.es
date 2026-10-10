@@ -1,7 +1,11 @@
 const COMPETITION = "PD";
 const CACHE_TTL_MS = 60 * 1000;
 const FORM_TTL_MS = 10 * 60 * 1000;
-const SESSION_TTL = 60 * 60 * 24 * 400;
+// Cuánto dura la sesión sin tener que volver a poner el nombre/código: 3
+// años (antes 400 días). Controla a la vez la cookie del navegador
+// (Max-Age) y cuánto vive la sesión guardada en el servidor (KV), así que
+// hay que subir los dos a la vez o uno caducaría antes que el otro.
+const SESSION_TTL = 60 * 60 * 24 * 1095;
 const COOKIE_NAME = "porra_session";
 const PBKDF2_ITER = 100000;
 const MAX_LOGIN_FAILS = 3;
