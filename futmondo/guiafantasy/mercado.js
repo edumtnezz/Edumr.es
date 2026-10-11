@@ -716,7 +716,7 @@
         const mi = marketInfo(p.name);
         const r = el("div", "mpage-row");
         const face = el("span", "mpage-face");
-        if (mi && mi.photo) { const im = el("img"); im.src = mi.photo; im.alt = ""; im.loading = "lazy"; face.appendChild(im); }
+        if (mi && mi.photo) { const im = el("img"); im.src = mi.photo; im.alt = ""; im.loading = "lazy"; face.appendChild(im); } else { face.classList.add("empty"); }
         r.appendChild(face);
         const pp = mpPos((mi && mi.role) || p.pos);
         if (pp[0]) r.appendChild(el("span", "mpage-pos " + pp[1], pp[0]));

@@ -936,6 +936,7 @@ html { overflow-anchor: none; }
 .mpage-col { display: flex; flex-direction: column; }
 .mpage-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid var(--border); }
 .mpage-face { width: 24px; height: 24px; border-radius: 50%; overflow: hidden; background: var(--bg-surface, #e2e8f0); flex: 0 0 auto; }
+.mpage-face.empty { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21c0-4 4-6 8-6s8 2 8 6z'/%3E%3C/svg%3E"); background-size: 66%; background-position: center 62%; background-repeat: no-repeat; }
 .mpage-face img { width: 100%; height: 100%; object-fit: cover; }
 .mpage-pos { flex: 0 0 auto; width: 22px; text-align: center; font-size: 0.56rem; font-weight: 800; color: #fff; border-radius: 4px; padding: 1px 0; }
 .mpage-pos.pt { background: #16a34a; } .mpage-pos.df { background: #2563eb; } .mpage-pos.md { background: #ca8a04; } .mpage-pos.dl { background: #dc2626; } .mpage-pos.x { background: transparent; }
