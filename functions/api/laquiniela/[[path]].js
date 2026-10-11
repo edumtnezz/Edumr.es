@@ -1818,6 +1818,68 @@ async function getAlineacionesConfirmadas(env, matchdayParam) {
   return out;
 }
 
+function ffNameFromSlug(slug) {
+  return String(slug || "").split("-").map((w) => (w ? w[0].toUpperCase() + w.slice(1) : "")).join(" ");
+}
+function parseMatchSide(seg) {
+  const out = [];
+  const blocks = seg.split(/class="jugador_\d+/).slice(1);
+  for (const b of blocks) {
+    const slug = (b.match(/\/jugadores\/([a-z0-9-]+)\/laliga/) || [])[1];
+    if (!slug) continue;
+    const pts = (b.match(/data-juego="futmondo-mixto"[\s\S]{0,500}?>\s*(-?\d+)\s*</) || [])[1];
+    const pos = (b.match(/data-posicion="([^"]+)"/) || [])[1] || "";
+    out.push({ name: ffNameFromSlug(slug), pts: pts != null ? Number(pts) : null, pos });
+  }
+  return out;
+}
+function parsePartido(h, home, away) {
+  const sc = (h.match(/local score">\s*(\d+)/) || [])[1];
+  const scA = (h.match(/visitante score">\s*(\d+)/) || [])[1];
+  const stRaw = (h.match(/partido-container\s+partido-tipo-([a-z-]+)/) || [])[1] || "";
+  let state = "previa";
+  if (/finaliz/.test(stRaw)) state = "final";
+  else if (/siguiendo|directo|live|jugando|descanso/.test(stRaw)) state = "live";
+  const dateTxt = (h.match(/class="fecha">\s*([^<]+)</) || [])[1] || "";
+  const minM = h.match(/partido-header[\s\S]{0,4000}?>\s*(\d{1,3})'\s*</);
+  const gH = (h.match(/goleadores local">([\s\S]*?)(?:class="goleadores visitante"|<\/header>|class="partido-container")/) || [])[1] || "";
+  const gA = (h.match(/goleadores visitante">([\s\S]*?)(?:<\/header>|class="partido-container")/) || [])[1] || "";
+  const parseGoals = (s) => [...s.matchAll(/class="jugador"[^>]*>([^<]+)<\/a>\s*\((\d+)'\)/g)].map((m) => ({ name: m[1].trim(), min: Number(m[2]) }));
+  const iL = h.indexOf("alineacion_superwrapper");
+  const iV = h.indexOf("alineacion_superwrapper", iL + 20);
+  const segL = iL >= 0 ? h.slice(iL, iV > iL ? iV : iL + 60000) : "";
+  const segV = iV >= 0 ? h.slice(iV, iV + 60000) : "";
+  return {
+    home, away,
+    score: sc != null ? Number(sc) : null,
+    scoreAway: scA != null ? Number(scA) : null,
+    state, date: dateTxt.trim(), minute: minM ? minM[1] : "",
+    goalsHome: parseGoals(gH), goalsAway: parseGoals(gA),
+    homePlayers: parseMatchSide(segL), awayPlayers: parseMatchSide(segV),
+  };
+}
+async function getPartido(env, home, away) {
+  const key = "partido:v1:" + normKey(String(home || "").toLowerCase()) + "-" + normKey(String(away || "").toLowerCase());
+  try { const c = await env.PORRA.get(key, "json"); if (c && c.data && Date.now() - (c.at || 0) < 10 * 60 * 1000) return c.data; } catch (e) {}
+  let data = null;
+  try {
+    let cal = "";
+    try { const ch = await env.PORRA.get("ffcal:v1", "json"); if (ch && Date.now() - (ch.at || 0) < 6 * 3600 * 1000) cal = ch.html || ""; } catch (e) {}
+    if (!cal) { cal = await (await fetch("https://www.futbolfantasy.com/laliga/calendario", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text(); try { await env.PORRA.put("ffcal:v1", JSON.stringify({ at: Date.now(), html: cal })); } catch (e) {} }
+    const links = [...new Set([...cal.matchAll(/https:\/\/www\.futbolfantasy\.com\/partidos\/\d+-[a-z0-9-]+/g)].map((m) => m[0]))];
+    const wH = wkey(home), wA = wkey(away);
+    let href = "";
+    for (const l of links) { const slug = stripAccents(l.split("/").pop().toLowerCase()); if (wH.length && wA.length && wH.every((w) => slug.indexOf(w) >= 0) && wA.every((w) => slug.indexOf(w) >= 0)) { href = l; break; } }
+    if (href) {
+      const h = await (await fetch(href, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text();
+      data = parsePartido(h, home, away);
+      data.url = href;
+    }
+  } catch (e) {}
+  if (data) { try { await env.PORRA.put(key, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 600 }); } catch (e) {} }
+  return data || { error: "No se encontró el partido." };
+}
+
 /* ---------- Franja de jornada (escudos, día/hora y TV) ---------- */
 // Apodos que no comparten ni una palabra con el nombre "normal" del equipo
 // (p.ej. "Barça" → "barca", que no es ni empieza igual que "barcelona"), así
@@ -3230,6 +3292,9 @@ export async function onRequestGet({ request, env, params }) {
   }
   if (path === "once") {
     try { return json(await getOnce(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "", url.searchParams.get("jornada") || "")); } catch (e) { return json({ error: String(e) }); }
+  }
+  if (path === "partido") {
+    try { return json(await getPartido(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "")); } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "alineaciones-confirmadas") {
     try { return json(await getAlineacionesConfirmadas(env, url.searchParams.get("jornada") || null)); } catch (e) { return json({ matchday: 0, matches: [], error: String(e) }); }
