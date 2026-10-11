@@ -773,6 +773,7 @@
       const m = ms.find((x) => matchSlug(x.home, x.away) === slug);
       if (!m) { box.innerHTML = '<p class="muted small">No se encontró el partido.</p>'; return; }
       const d = await (await fetch(API + "/detallepartido?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json();
+      if (!all || !all.length) { try { await load(); } catch (e) {} }
       renderMatchDetail(box, m, d, jn);
     } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar el partido.</p>'; }
   }
