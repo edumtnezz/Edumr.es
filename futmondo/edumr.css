@@ -513,3 +513,7 @@ body {
   .cx-tools .user-chip { padding: 2px; border: none; background: transparent; }
   .cx-tools .user-avatar { width: 30px; height: 30px; }
 }
+/* --- Ajustes EduMR --- */
+.cx-nav-caret { display: none !important; }
+.cx-team-dot { display: none !important; }
+.tab .tab-ico, .cx-more-item .tab-ico { width: 15px; height: 15px; vertical-align: -2px; margin-right: 6px; flex: 0 0 auto; }
