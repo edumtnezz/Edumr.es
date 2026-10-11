@@ -2714,7 +2714,7 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
   // cambian (se guardan 30 días); mientras el partido no ha acabado se
   // guardan solo 2 minutos para no machacar la API de Futmondo desde la
   // página de cada partido.
-  const ck = "pjp:v1:" + playerId + ":" + (Number(jornada) || 0);
+  const ck = "pjp:v2:" + playerId + ":" + (Number(jornada) || 0);
   try {
     const c = await env.PORRA.get(ck, "json");
     if (c && (c.finished || Date.now() - (c.at || 0) < 120000)) return { finished: !!c.finished, points: c.finished ? c.points : null };
@@ -2723,13 +2723,30 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
     const header = await futbolHeader(env);
     const r = await futbolPost("/2/player/matches", header, { playerId, championshipId: FUTMONDO_CHAMPIONSHIP });
     const matches = (r.answer && r.answer.matches) || [];
-    const m = matches.find((x) => Number(x.r) === Number(jornada));
-    if (!m) return null;
+    const idx = matches.findIndex((x) => Number(x.r) === Number(jornada));
+    if (idx < 0) return null;
+    const m = matches[idx];
     const out = { finished: m.st === "F", points: null };
     if (out.finished) {
-      const po = (m.ps && m.ps.po) || [];
-      const z = po.find((k) => k.mode === "stats");
-      out.points = z ? Number(z.p) || 0 : 0;
+      // Puntos de MI liga Futmondo Social: son los mismos que enseña la
+      // ficha (array "fitness" del jugador en el mercado, con el último
+      // valor = partido más reciente). Los modos de /2/player/matches
+      // (stats, picas...) NO son la puntuación de la liga: p.ej. Lamine
+      // J8 tenía stats=9 y en la liga 10.
+      let pts = null;
+      try {
+        const mk = await getMarketPlayers(env);
+        const mp = (mk.players || []).find((x) => String(x.id) === String(playerId));
+        const fit = (mp && mp.fitness) || [];
+        const k = fit.length - 1 - idx;
+        if (k >= 0 && k < fit.length && fit[k] != null) pts = Math.round(Number(fit[k]) || 0);
+      } catch (e) {}
+      if (pts == null) {
+        const po = (m.ps && m.ps.po) || [];
+        const z = po.find((k) => k.mode === "stats");
+        pts = z ? Number(z.p) || 0 : 0;
+      }
+      out.points = pts;
     }
     try {
       await env.PORRA.put(ck, JSON.stringify({ at: Date.now(), finished: out.finished, points: out.points }), {
