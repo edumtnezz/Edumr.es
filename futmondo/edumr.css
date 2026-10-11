@@ -153,10 +153,10 @@ body {
 }
 .cx-header .theme-toggle:hover { border-color: #fff; box-shadow: none; }
 
-/* ---------- Submenú claro ---------- */
+/* ---------- Submenú verde (estilo jornadaperfecta) ---------- */
 .cx-sub {
-  background: var(--cx-surface);
-  border-bottom: 1px solid var(--cx-border);
+  background: var(--cx-green);
+  border-bottom: 1px solid var(--cx-green);
 }
 .cx-sub-inner {
   max-width: 1140px;
@@ -187,7 +187,7 @@ body {
 .cx-sub .tab {
   flex: 0 0 auto;
   min-width: auto;
-  color: var(--cx-muted);
+  color: rgba(255, 255, 255, 0.78);
   background: transparent;
   border-radius: 0;
   padding: 16px 15px;
@@ -200,10 +200,10 @@ body {
 @media (max-width: 640px) {
   .cx-sub .cx-sub-inner { padding: 8px 10px; }
   .cx-sub .tabs { flex-wrap: wrap; justify-content: flex-start; gap: 8px; }
-  .cx-sub .tab { padding: 7px 14px; font-size: 0.8rem; border: 1px solid var(--cx-border); border-radius: 999px; background: var(--cx-surface); }
-  .cx-sub .tab.active { background: var(--cx-green); color: #fff; border-color: var(--cx-green); }
+  .cx-sub .tab { padding: 7px 14px; font-size: 0.8rem; border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 999px; background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.85); }
+  .cx-sub .tab.active { background: #fff; color: var(--cx-green); border-color: #fff; }
 }
-.cx-sub .tab:hover { color: var(--cx-text); }
+.cx-sub .tab:hover { color: #fff; }
 /* Menú "☰ Más": lo que no cabe en la barra principal de pestañas se mete
    aquí dentro en vez de obligar a deslizar o a poner flechas. Si la
    pestaña activa es una de las del menú, el propio botón se pone verde y
@@ -211,12 +211,12 @@ body {
 .cx-more-wrap { position: relative; flex: 0 0 auto; }
 .cx-more-btn {
   display: flex; align-items: center; gap: 6px;
-  border: 1px solid var(--cx-border); background: var(--cx-surface); color: var(--cx-text);
+  border: 1px solid rgba(255, 255, 255, 0.35); background: rgba(255, 255, 255, 0.1); color: #fff;
   border-radius: 999px; padding: 7px 14px; font-size: 0.8rem; font-weight: 700;
   cursor: pointer; transition: all 0.15s ease; font-family: inherit;
 }
-.cx-more-btn:hover { border-color: var(--cx-green); color: var(--cx-green); }
-.cx-more-btn.active { background: var(--cx-green); color: #fff; border-color: var(--cx-green); }
+.cx-more-btn:hover { border-color: #fff; color: #fff; background: rgba(255, 255, 255, 0.18); }
+.cx-more-btn.active { background: #fff; color: var(--cx-green); border-color: #fff; }
 .cx-more-ico { font-size: 0.8rem; line-height: 1; }
 .cx-more-label { white-space: nowrap; }
 .cx-more-menu {
@@ -235,10 +235,10 @@ body {
 .cx-more-item:hover { background: var(--cx-surface-2); }
 .cx-more-item.active { color: var(--cx-green); background: var(--cx-surface-2); }
 .cx-sub .tab.active {
-  color: var(--cx-green);
+  color: #fff;
   background: transparent;
   box-shadow: none;
-  border-bottom-color: var(--cx-green);
+  border-bottom-color: #fff;
 }
 .cx-sub .tab.active::after { display: none !important; }
 .cx-sub .user-box { position: absolute; right: 16px; }
