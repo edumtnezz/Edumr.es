@@ -202,11 +202,22 @@ body {
   .cx-sub .tab.active { background: var(--cx-green); color: #fff; border-color: var(--cx-green); }
 }
 .cx-sub .tab:hover { color: var(--cx-text); }
-.cx-sub-hint { display: none; }
-@media (max-width: 640px) {
-  .cx-sub-hint { display: flex; justify-content: center; padding: 0 0 6px; }
-  .cx-sub-hint span { font-size: 0.6rem; font-weight: 700; color: var(--cx-muted); background: var(--cx-surface-2); border: 1px solid var(--cx-border); border-radius: 999px; padding: 2px 12px; letter-spacing: 0.05em; animation: cxHint 1.6s ease-in-out infinite; }
+/* Flechas para pasar de pestaña cuando no caben todas (sustituyen al aviso
+   de "‹ desliza ›": el deslizado con el dedo no siempre se notaba bien en
+   esta barra, así que ahora hay un botón de verdad a cada lado). Empiezan
+   ocultas (.hidden) y el JS las muestra solo si de verdad hace falta
+   desplazar (si todas las pestañas caben, no aparecen). */
+.cx-tabs-nav {
+  flex: 0 0 auto;
+  width: 26px; height: 26px; border-radius: 50%;
+  border: 1px solid var(--cx-border); background: var(--cx-surface); color: var(--cx-text);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: all 0.15s ease;
+  padding: 0;
 }
+.cx-tabs-nav:hover:not(:disabled) { border-color: var(--cx-green); color: var(--cx-green); }
+.cx-tabs-nav:disabled { opacity: 0.25; cursor: default; }
+.cx-tabs-nav.hidden { display: none; }
 .cx-sub .tab.active {
   color: var(--cx-green);
   background: transparent;

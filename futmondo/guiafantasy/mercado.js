@@ -1111,11 +1111,47 @@
     max.addEventListener("input", apply);
   }
 
+  // Flechas ‹ › de la barra de pestañas: sustituyen al aviso de "‹ desliza ›"
+  // (el deslizado con el dedo no siempre se notaba bien en esta barra, así
+  // que ahora hay botones de verdad a cada lado, como ya tienen los
+  // partidos de la jornada). Las flechas se ocultan solas si todas las
+  // pestañas caben sin tener que desplazar nada.
+  function scrollActiveTabIntoView() {
+    const track = $("tabsNav");
+    const activeBtn = track && track.querySelector(".tab.active");
+    if (!track || !activeBtn) return;
+    const trackRect = track.getBoundingClientRect();
+    const btnRect = activeBtn.getBoundingClientRect();
+    if (btnRect.left < trackRect.left) track.scrollBy({ left: btnRect.left - trackRect.left - 10, behavior: "smooth" });
+    else if (btnRect.right > trackRect.right) track.scrollBy({ left: btnRect.right - trackRect.right + 10, behavior: "smooth" });
+  }
+  function setupTabsNav() {
+    const track = $("tabsNav");
+    const prev = $("cxTabsPrev"), next = $("cxTabsNext");
+    if (!track || !prev || !next) return;
+    const amount = () => Math.max(120, track.clientWidth * 0.7);
+    prev.addEventListener("click", () => track.scrollBy({ left: -amount(), behavior: "smooth" }));
+    next.addEventListener("click", () => track.scrollBy({ left: amount(), behavior: "smooth" }));
+    const update = () => {
+      const max = track.scrollWidth - track.clientWidth;
+      const needed = max > 4;
+      prev.classList.toggle("hidden", !needed);
+      next.classList.toggle("hidden", !needed);
+      if (!needed) return;
+      prev.disabled = track.scrollLeft <= 2;
+      next.disabled = track.scrollLeft >= max - 2;
+    };
+    track.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    update();
+  }
+
   let currentTab = "inicio";
   function switchTab(name, fromPop) {
     closeNoticiaInline();
     currentTab = name;
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
+    scrollActiveTabIntoView();
     document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
     const panel = $("tab-" + name);
     if (panel) panel.classList.remove("hidden");
@@ -1839,6 +1875,7 @@
   }
 
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
+  setupTabsNav();
   (function restoreTab() {
     let name = "";
     try {
