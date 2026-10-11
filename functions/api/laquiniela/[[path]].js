@@ -1871,8 +1871,16 @@ async function getPartidoFF(env, home, away) {
     if (!cal) { cal = await (await fetch("https://www.futbolfantasy.com/laliga/calendario", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text(); try { await env.PORRA.put("ffcal:v1", JSON.stringify({ at: Date.now(), html: cal })); } catch (e) {} }
     const links = [...new Set([...cal.matchAll(/https:\/\/www\.futbolfantasy\.com\/partidos\/\d+-[a-z0-9-]+/g)].map((m) => m[0]))];
     const wH = wkey(home), wA = wkey(away);
-    let href = "";
-    for (const l of links) { const slug = stripAccents(l.split("/").pop().toLowerCase()); if (wH.length && wA.length && wH.every((w) => slug.indexOf(w) >= 0) && wA.every((w) => slug.indexOf(w) >= 0)) { href = l; break; } }
+    let href = "", best = 0;
+    for (const l of links) {
+      const slug = stripAccents(l.split("/").pop().toLowerCase());
+      let s = 0;
+      wH.forEach((w) => { if (slug.indexOf(w) >= 0) s++; });
+      wA.forEach((w) => { if (slug.indexOf(w) >= 0) s++; });
+      const hasH = wH.some((w) => slug.indexOf(w) >= 0);
+      const hasA = wA.some((w) => slug.indexOf(w) >= 0);
+      if (hasH && hasA && s > best) { best = s; href = l; }
+    }
     if (href) {
       const h = await (await fetch(href, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text();
       data = parsePartidoFF(h, home, away);
