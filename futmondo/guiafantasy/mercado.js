@@ -673,7 +673,10 @@
     const q = stripAccents(String(name).toLowerCase());
     if (!all || !all.length || !q) return null;
     const last = q.split(/\s+/).pop();
-    return all.find((x) => stripAccents(x.name).toLowerCase() === q) || all.find((x) => stripAccents(x.name).toLowerCase().split(/\s+/).pop() === last) || all.find((x) => stripAccents(x.name).toLowerCase().indexOf(last) >= 0) || null;
+    return all.find((x) => stripAccents(x.name).toLowerCase() === q)
+      || all.find((x) => { const xn = stripAccents(x.name).toLowerCase(); return xn.length >= 3 && q.indexOf(xn) >= 0; })
+      || all.find((x) => stripAccents(x.name).toLowerCase().split(/\s+/).pop() === last)
+      || null;
   }
   function renderMatchDetail(box, m, d, jn) {
     box.innerHTML = "";
