@@ -3480,7 +3480,7 @@ export async function onRequestGet({ request, env, params }) {
     try {
       const j = Number(url.searchParams.get("jornada")) || 0;
       const ids = String(url.searchParams.get("ids") || "")
-        .split(",").map((x) => x.trim()).filter((x) => /^\d{1,12}$/.test(x))
+        .split(",").map((x) => x.trim()).filter((x) => /^[a-z0-9]{6,40}$/i.test(x))
         .filter((x, i, a) => a.indexOf(x) === i).slice(0, 60);
       const out = {};
       await Promise.all(ids.map(async (id) => {
