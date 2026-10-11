@@ -1111,39 +1111,37 @@
     max.addEventListener("input", apply);
   }
 
-  // Flechas ‹ › de la barra de pestañas: sustituyen al aviso de "‹ desliza ›"
-  // (el deslizado con el dedo no siempre se notaba bien en esta barra, así
-  // que ahora hay botones de verdad a cada lado, como ya tienen los
-  // partidos de la jornada). Las flechas se ocultan solas si todas las
-  // pestañas caben sin tener que desplazar nada.
-  function scrollActiveTabIntoView() {
-    const track = $("tabsNav");
-    const activeBtn = track && track.querySelector(".tab.active");
-    if (!track || !activeBtn) return;
-    const trackRect = track.getBoundingClientRect();
-    const btnRect = activeBtn.getBoundingClientRect();
-    if (btnRect.left < trackRect.left) track.scrollBy({ left: btnRect.left - trackRect.left - 10, behavior: "smooth" });
-    else if (btnRect.right > trackRect.right) track.scrollBy({ left: btnRect.right - trackRect.right + 10, behavior: "smooth" });
+  // Menú "☰ Más": pestañas que no entran en la barra principal (Clausulazo
+  // jugoso, Alineaciones confirmadas, Analiza tu equipo) viven aquí dentro
+  // en vez de obligar a deslizar o poner flechas. Si la pestaña activa es
+  // una de las del menú, el botón se pone verde y muestra su nombre en vez
+  // de "Más", para saber dónde estás sin tener que abrir el desplegable.
+  const MORE_TABS = { clausulazos: "Clausulazo jugoso", confirmadas: "Alineaciones confirmadas", analiza: "Analiza tu equipo" };
+  function closeMoreMenu() {
+    const menu = $("cxMoreMenu"), btn = $("cxMoreBtn");
+    if (menu) menu.classList.add("hidden");
+    if (btn) btn.setAttribute("aria-expanded", "false");
   }
-  function setupTabsNav() {
-    const track = $("tabsNav");
-    const prev = $("cxTabsPrev"), next = $("cxTabsNext");
-    if (!track || !prev || !next) return;
-    const amount = () => Math.max(120, track.clientWidth * 0.7);
-    prev.addEventListener("click", () => track.scrollBy({ left: -amount(), behavior: "smooth" }));
-    next.addEventListener("click", () => track.scrollBy({ left: amount(), behavior: "smooth" }));
-    const update = () => {
-      const max = track.scrollWidth - track.clientWidth;
-      const needed = max > 4;
-      prev.classList.toggle("hidden", !needed);
-      next.classList.toggle("hidden", !needed);
-      if (!needed) return;
-      prev.disabled = track.scrollLeft <= 2;
-      next.disabled = track.scrollLeft >= max - 2;
-    };
-    track.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    update();
+  function setupMoreMenu() {
+    const btn = $("cxMoreBtn"), menu = $("cxMoreMenu");
+    if (!btn || !menu) return;
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = menu.classList.contains("hidden");
+      menu.classList.toggle("hidden", !open);
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    document.addEventListener("click", (e) => {
+      if (!menu.classList.contains("hidden") && !menu.contains(e.target) && e.target !== btn && !btn.contains(e.target)) closeMoreMenu();
+    });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeMoreMenu(); });
+  }
+  function updateMoreBtn(name) {
+    const btn = $("cxMoreBtn"), label = $("cxMoreLabel");
+    if (!btn || !label) return;
+    const active = MORE_TABS[name];
+    btn.classList.toggle("active", !!active);
+    label.textContent = active || "Más";
   }
 
   let currentTab = "inicio";
@@ -1151,7 +1149,8 @@
     closeNoticiaInline();
     currentTab = name;
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
-    scrollActiveTabIntoView();
+    updateMoreBtn(name);
+    closeMoreMenu();
     document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
     const panel = $("tab-" + name);
     if (panel) panel.classList.remove("hidden");
@@ -1875,7 +1874,7 @@
   }
 
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
-  setupTabsNav();
+  setupMoreMenu();
   (function restoreTab() {
     let name = "";
     try {
