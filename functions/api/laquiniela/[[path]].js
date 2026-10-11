@@ -1776,7 +1776,7 @@ function parseConfirmedPitch(html) {
   return { home, away };
 }
 async function getAlineacionesConfirmadas(env, matchdayParam) {
-  const cacheKey = "cm:confirmadas:v2:" + (matchdayParam || "current");
+  const cacheKey = "cm:confirmadas:v3:" + (matchdayParam || "current");
   try { const c = await env.PORRA.get(cacheKey, "json"); if (c && Date.now() - (c.at || 0) < 10 * 60 * 1000) return c.data; } catch (e) {}
   let jd = null;
   try { jd = await getJornada(env, matchdayParam || null); } catch (e) {}
