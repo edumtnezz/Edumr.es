@@ -13,10 +13,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fira+Sans+Condensed:wght@400;600;700;900&family=Poppins:wght@400;600;700;900&display=swap" rel="stylesheet">
   <script src="/futmondo/theme.js?v=65"></script>
   <link rel="stylesheet" href="/futmondo/quiniela/quiniela.css?v=129">
-  <link rel="stylesheet" href="/futmondo/edumr.css?v=52">
-  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=148">
+  <link rel="stylesheet" href="/futmondo/edumr.css?v=53">
+  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=149">
 </head>
-<body class="page-simple cx-page">
+<body class="page-simple cx-page gf-page">
   <header class="appbar cx-header">
     <div class="cx-top">
       <div class="cx-top-inner">
@@ -40,22 +40,21 @@
           <button class="tab" data-tab="inicio"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>Inicio</button>
           <button class="tab" data-tab="noticias"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="13" x2="14" y2="13"/></svg>Noticias</button>
           <button class="tab" data-tab="mercado"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="15 7 21 7 21 13"/></svg>Mercado</button>
-          <button class="tab" data-tab="fichajes"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/></svg>Fichajes</button>
         </nav>
         <div class="cx-more-wrap">
           <button class="cx-more-btn" id="cxMoreBtn" type="button" aria-haspopup="true" aria-expanded="false">
             <span class="cx-more-ico">☰</span><span class="cx-more-label" id="cxMoreLabel">Más</span>
           </button>
           <div class="cx-more-menu hidden" id="cxMoreMenu">
+            <button class="cx-more-item tab" data-tab="fichajes"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/></svg>Fichajes</button>
             <button class="cx-more-item tab" data-tab="clausulazos"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11.5 11.5 3.5H19a1.5 1.5 0 0 1 1.5 1.5v7.5l-8 8z"/><circle cx="15.5" cy="8.5" r="1.3"/></svg>Clausulazo Jugoso</button>
-            <button class="cx-more-item tab" data-tab="confirmadas"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Alineaciones confirmadas</button>
             <button class="cx-more-item tab" data-tab="analiza"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>Analiza tu equipo</button>
           </div>
         </div>
       </div>
     </div>
   </header>
-  <div id="cxChrome"></div>
+  <div id="cxChrome" class="hide-ticker"></div>
 
   <main class="quiniela-main">
     <section class="tab-panel" id="tab-inicio">
@@ -158,17 +157,6 @@
       </section>
     </section>
 
-    <section class="tab-panel hidden" id="tab-confirmadas">
-      <section class="panel">
-        <div class="panel-head">
-          <h2>Alineaciones confirmadas</h2>
-          <span class="muted small" id="confirmUpdated"></span>
-        </div>
-        <p class="muted small">Onces YA CONFIRMADOS de los partidos de esta jornada, copiados tal cual de Comuniate (suelen publicarse sobre una hora antes de cada partido).</p>
-        <div id="confirmOut"></div>
-      </section>
-    </section>
-
     <section class="tab-panel hidden" id="tab-fichajes">
       <section class="panel">
         <div class="panel-head">
@@ -190,7 +178,7 @@
     </div>
   </div>
 
-  <script src="/futmondo/chrome.js?v=19"></script>
-  <script src="/futmondo/guiafantasy/mercado.js?v=169"></script>
+  <script src="/futmondo/chrome.js?v=20"></script>
+  <script src="/futmondo/guiafantasy/mercado.js?v=170"></script>
 </body>
 </html>

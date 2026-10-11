@@ -443,6 +443,104 @@ body {
 #cxChrome.hide-jornada .cx-jornada { display: none; }
 #cxChrome.hide-strip .cx-strip { display: none; }
 
+/* ---------- Cinta "Última hora" de la portada (Inicio de Guía Fantasy) ----------
+   Marquesina CSS continua: el carril lleva los items duplicados y la
+   animación lo mueve un -50% en bucle. Al pasar el ratón, se para. */
+.cx-ticker {
+  display: flex;
+  align-items: stretch;
+  background: var(--cx-black, #07090e);
+  color: #fff;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(34, 197, 94, 0.32);
+}
+.cx-ticker-tag {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #064e2b;
+  color: #2ee27a;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 800;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 9px 14px;
+  white-space: nowrap;
+  position: relative;
+  z-index: 2;
+}
+.cx-ticker-tag::before {
+  content: '';
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #2ee27a;
+  box-shadow: 0 0 7px rgba(46, 226, 122, 0.9);
+  animation: cxpulse 1.2s ease-in-out infinite;
+}
+.cx-ticker-view { flex: 1 1 auto; min-width: 0; overflow: hidden; display: flex; align-items: center; }
+.cx-ticker-track {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+  will-change: transform;
+  animation: cx-marquee linear infinite;
+}
+.cx-ticker-track.cx-ticker-empty { animation: none !important; padding: 9px 14px; }
+.cx-ticker:hover .cx-ticker-track { animation-play-state: paused; }
+@keyframes cx-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.cx-ticker-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #e9eef5;
+  text-decoration: none;
+  flex: 0 0 auto;
+  margin-right: 26px;
+  padding: 8px 0;
+}
+.cx-ticker-item:hover .cx-ticker-txt { color: #fff; }
+.cx-ticker-ico {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(255, 255, 255, 0.12);
+}
+.cx-ticker-ico img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cx-ticker-emoji { font-size: 0.82rem; line-height: 1; }
+.cx-ticker-txt {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.82rem;
+  font-weight: 700;
+  transition: color 0.15s;
+}
+.cx-ticker-when {
+  background: #064e2b;
+  color: #2ee27a;
+  font-weight: 800;
+  font-size: 0.62rem;
+  border-radius: 7px;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+.cx-ticker-load { color: rgba(255, 255, 255, 0.55); font-size: 0.78rem; }
+@media (max-width: 640px) {
+  .cx-ticker-tag { font-size: 0.6rem; padding: 7px 10px; gap: 5px; }
+  .cx-ticker-item { margin-right: 18px; padding: 6px 0; }
+  .cx-ticker-ico { width: 22px; height: 22px; }
+  .cx-ticker-txt { font-size: 0.74rem; max-width: 200px; }
+  .cx-ticker-when { font-size: 0.56rem; padding: 2px 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cx-ticker-track { animation: none !important; }
+}
+#cxChrome.hide-ticker .cx-ticker { display: none; }
+
 /* ---------- Barrita visible de scroll horizontal ---------- */
 .cx-scrollbar {
   height: 6px;
@@ -535,3 +633,18 @@ body {
 .cx-sub .tab:not(.active):not(.cx-more-item) { color: var(--cx-muted) !important; }
 .cx-sub .tab:not(.active):not(.cx-more-item):hover { color: var(--cx-text) !important; }
 .cx-sub .tab.active:not(.cx-more-item) { background: transparent !important; color: var(--cx-green) !important; border-bottom: 2px solid var(--cx-green) !important; }
+
+/* --- Guía Fantasy: pestañas en UNA sola línea y todo el grupo centrado ---
+   En la barra principal solo van Inicio · Noticias · Mercado + ☰ (Fichajes,
+   Clausulazo y Analiza viven dentro del menú ☰). */
+.gf-page .cx-sub-inner { justify-content: center; gap: 6px; }
+.gf-page .cx-sub .tabs { width: auto; flex-wrap: nowrap; justify-content: center; overflow: visible; }
+@media (max-width: 720px) {
+  .gf-page .cx-sub-inner { justify-content: center; }
+  .gf-page .cx-sub .tabs { width: auto; justify-content: center; }
+  .gf-page .cx-sub .tab { padding: 11px 9px; }
+}
+@media (max-width: 400px) {
+  .gf-page .cx-sub .tab { padding: 10px 6px; font-size: 0.74rem; }
+  .gf-page .cx-sub .tab .tab-ico { margin-right: 4px; }
+}

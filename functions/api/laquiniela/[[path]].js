@@ -1488,6 +1488,21 @@ async function getNoticias(env) {
   return out;
 }
 
+// Fecha/hora de una noticia de FutbolFantasy ("11/10" + "21:30") pasada a
+// milisegundos, para poder ordenar la cinta de "Última hora" junto con las
+// alineaciones confirmadas. España va en UTC+2 hasta finales de octubre; el
+// margen de una hora que pueda quedar en invierno no cambia el orden real.
+function ffWhenAt(date, time) {
+  const dm = String(date || "").match(/(\d{1,2})\/(\d{1,2})/);
+  if (!dm) return 0;
+  const tm = String(time || "").match(/(\d{1,2}):(\d{2})/);
+  const y = new Date().getUTCFullYear();
+  const iso = y + "-" + String(Number(dm[2])).padStart(2, "0") + "-" + String(Number(dm[1])).padStart(2, "0") +
+    "T" + String(tm ? Number(tm[1]) : 0).padStart(2, "0") + ":" + String(tm ? Number(tm[2]) : 0).padStart(2, "0") + ":00+02:00";
+  const t = Date.parse(iso);
+  return isNaN(t) ? 0 : t;
+}
+
 async function getUltimaHora(env) {
   try {
     const c = await env.PORRA.get("ff:ultima:v2", "json");
@@ -1813,6 +1828,18 @@ async function getAlineacionesConfirmadas(env, matchdayParam) {
       };
     }));
     out.matches = results.filter(Boolean);
+    // Hora en que se detectó por primera vez cada alineación confirmada.
+    // Se guarda fuera de la caché (que dura 10 min) para poder fechar los
+    // avisos de la cinta de "Última hora" de la portada: una vez fijada,
+    // no se vuelve a pisar.
+    await Promise.all(out.matches.map(async (mm) => {
+      const ck = "cm:confat:v1:" + (out.matchday || 0) + ":" + normKey(String((mm.home && mm.home.name) || "").toLowerCase()) + "-" + normKey(String((mm.away && mm.away.name) || "").toLowerCase());
+      try {
+        let at = await env.PORRA.get(ck);
+        if (!at) { at = String(Date.now()); await env.PORRA.put(ck, at, { expirationTtl: 14 * 24 * 3600 }); }
+        mm.confirmedAt = Number(at) || Date.now();
+      } catch (e) { mm.confirmedAt = Date.now(); }
+    }));
   }
   try { await env.PORRA.put(cacheKey, JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 600 }); } catch (e) {}
   return out;
@@ -3341,6 +3368,43 @@ export async function onRequestGet({ request, env, params }) {
   }
   if (path === "ultimahora") {
     return json(await getUltimaHora(env));
+  }
+  // Cinta de "Última hora" de la portada (Inicio de Guía Fantasy): mezcla
+  // las noticias más recientes con las alineaciones confirmadas detectadas
+  // (una entrada por equipo), todo ordenado de más nuevo a más viejo.
+  if (path === "portada") {
+    try {
+      const j = url.searchParams.get("jornada") || "";
+      const now = Date.now();
+      const [uh, cf] = await Promise.all([
+        getUltimaHora(env).catch(() => ({ items: [] })),
+        getAlineacionesConfirmadas(env, j || null).catch(() => ({ matches: [] })),
+      ]);
+      const items = [];
+      ((uh && uh.items) || []).forEach((x) => {
+        if (!x || !x.title) return;
+        items.push({ kind: "news", title: x.title, link: x.link || "", thumb: x.thumb || "", date: x.date || "", time: x.time || "", at: ffWhenAt(x.date, x.time) });
+      });
+      ((cf && cf.matches) || []).forEach((mm) => {
+        const at = mm.confirmedAt || cf.updatedAt || now;
+        [["home", "away"], ["away", "home"]].forEach((pair) => {
+          const t = mm[pair[0]] || {}, r = mm[pair[1]] || {};
+          if (!t.name || !r.name) return;
+          items.push({
+            kind: "match",
+            title: t.name + " confirma su alineación ante " + r.name,
+            home: (mm.home && mm.home.name) || "",
+            away: (mm.away && mm.away.name) || "",
+            crest: t.crest || "",
+            date: mm.date || "",
+            time: mm.time || "",
+            at,
+          });
+        });
+      });
+      items.sort((a, b) => (b.at || 0) - (a.at || 0));
+      return json({ updatedAt: now, jornada: (cf && cf.matchday) || 0, items: items.slice(0, 20) });
+    } catch (e) { return json({ updatedAt: Date.now(), items: [], error: String(e) }); }
   }
   if (path === "rachas") {
     try { return json(await getRachas(env)); } catch (e) { return json({ players: [] }); }

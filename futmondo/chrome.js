@@ -62,6 +62,12 @@
     var host = document.getElementById("cxChrome");
     if (!host) return;
     host.innerHTML =
+      '<div class="cx-ticker" id="cxTicker">' +
+        '<span class="cx-ticker-tag">Última hora</span>' +
+        '<div class="cx-ticker-view" id="cxTickerView">' +
+          '<div class="cx-ticker-track" id="cxTickerTrack"><span class="cx-ticker-load">Cargando…</span></div>' +
+        '</div>' +
+      '</div>' +
       '<div class="cx-strip"><div class="cx-strip-track" id="cxStrip"><span class="cx-strip-load">Cargando equipos…</span></div><div class="cx-scrollbar" id="cxStripBar"><div class="cx-scrollbar-thumb"></div></div></div>' +
       '<div class="cx-live"><span class="cx-live-tag">Última hora</span><div class="cx-live-track" id="cxLiveTrack"><span class="cx-live-load">Cargando última hora…</span></div></div>' +
       '<div class="cx-jornada">' +
@@ -82,10 +88,24 @@
       e.preventDefault();
       document.dispatchEvent(new CustomEvent("cx:news", { detail: { link: a.getAttribute("href"), title: a.getAttribute("data-title") } }));
     });
+    // La cinta de Última hora: las noticias abren la noticia (como el ticker
+    // de Noticias); las alineaciones confirmadas navegan a la página del
+    // partido (enlace normal).
+    var tview = document.getElementById("cxTickerView");
+    if (tview) tview.addEventListener("click", function (e) {
+      var a = e.target && e.target.closest ? e.target.closest(".cx-ticker-item") : null;
+      if (!a) return;
+      if (a.getAttribute("data-kind") === "match") return;
+      e.preventDefault();
+      document.dispatchEvent(new CustomEvent("cx:news", { detail: { link: a.getAttribute("data-link") || a.getAttribute("href"), title: a.getAttribute("data-title") } }));
+    });
     loadJornada(0);
     loadTeams();
     loadLive();
+    loadTicker();
     setInterval(loadLive, 90000);
+    // La cinta de la portada se refresca sola cada 5 minutos.
+    setInterval(loadTicker, 300000);
     // Refresca el marcador de la jornada en curso cada minuto: así los
     // partidos que están jugando ahora mismo van actualizando el resultado
     // sin tener que recargar la página.
@@ -227,6 +247,86 @@
         autoScroll();
       })
       .catch(function () { if (!box.dataset.sig) box.innerHTML = '<span class="cx-live-load">No disponible.</span>'; });
+  }
+  // ---------- Cinta de "Última hora" de la portada ----------
+  // Marquesina CSS continua: el carril lleva el contenido duplicado y la
+  // animación lo desplaza un -50%, así el bucle no tiene costuras. Se para
+  // al pasar el ratón por encima (y sigue al quitarlo). Se alimenta de
+  // /portada (noticias + alineaciones confirmadas, ya ordenadas).
+  function tickerSlug(home, away) {
+    return stripAccents(String(home + "-" + away).toLowerCase()).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  }
+  function tickerWhen(x) {
+    if (x.kind === "match" && x.at) {
+      try {
+        var dt = new Date(x.at);
+        var dd = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" }).format(dt);
+        var hh = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hour12: false }).format(dt);
+        return dd + " - " + hh;
+      } catch (e) {}
+    }
+    var ds = String(x.date || "").trim(), ts = String(x.time || "").trim();
+    if (ds && ts) return ds + " - " + ts;
+    return ts || ds;
+  }
+  function tickerIcon(x) {
+    var src = x.kind === "match" ? x.crest : x.thumb;
+    if (src) return '<img src="' + esc(src) + '" alt="" loading="lazy">';
+    return '<span class="cx-ticker-emoji">' + (x.kind === "match" ? "⚽" : "📰") + '</span>';
+  }
+  function tickerSyncDuration() {
+    var track = document.getElementById("cxTickerTrack");
+    if (!track || track.classList.contains("cx-ticker-empty")) return;
+    var half = track.scrollWidth / 2;
+    if (!half) return;
+    var dur = Math.max(24, Math.min(180, Math.round(half / 55)));
+    var cur = parseFloat(track.style.animationDuration) || 0;
+    if (Math.abs(cur - dur) > 2) track.style.animationDuration = dur + "s";
+  }
+  window.__cxTickerSync = tickerSyncDuration;
+  function renderTicker(items) {
+    var track = document.getElementById("cxTickerTrack");
+    if (!track) return;
+    if (!items.length) {
+      track.classList.add("cx-ticker-empty");
+      track.style.animationDuration = "";
+      track.innerHTML = '<span class="cx-ticker-load">Sin novedades ahora mismo.</span>';
+      return;
+    }
+    track.classList.remove("cx-ticker-empty");
+    var html = items.map(function (x) {
+      var href = x.kind === "match" ? ("/futmondo/guiafantasy/partido/" + tickerSlug(x.home, x.away)) : (x.link || "#");
+      var when = tickerWhen(x);
+      return '<a class="cx-ticker-item" href="' + esc(href) + '" data-kind="' + esc(x.kind || "news") + '" data-title="' + esc(x.title || "") + '" data-link="' + esc(x.link || "") + '">' +
+        '<span class="cx-ticker-ico">' + tickerIcon(x) + '</span>' +
+        '<span class="cx-ticker-txt">' + esc(x.title || "") + '</span>' +
+        (when ? '<span class="cx-ticker-when">' + esc(when) + '</span>' : '') +
+        '</a>';
+    }).join("");
+    // Dos copias idénticas (y separación por margin, no gap, para que cada
+    // copia mida exactamente lo mismo).
+    track.innerHTML = html + html;
+    track.querySelectorAll(".cx-ticker-ico img").forEach(function (im) {
+      im.addEventListener("error", function () {
+        var p = im.parentNode;
+        if (p) p.innerHTML = '<span class="cx-ticker-emoji">' + (im.closest('[data-kind="match"]') ? "⚽" : "📰") + '</span>';
+      });
+    });
+    tickerSyncDuration();
+  }
+  function loadTicker() {
+    var track = document.getElementById("cxTickerTrack");
+    if (!track) return;
+    fetch(API + "/portada", { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var items = (d && d.items) || [];
+        var sig = items.map(function (x) { return (x.kind || "") + "|" + (x.title || "") + "|" + (x.at || ""); }).join("~");
+        if (track.dataset.sig === sig) return;
+        track.dataset.sig = sig;
+        renderTicker(items);
+      })
+      .catch(function () {});
   }
   function autoScroll() {
     var box = document.getElementById("cxLiveTrack");

@@ -695,7 +695,117 @@
     });
     return wrap;
   }
-  function renderMatchDetail(box, m, d, jn) {
+  // ---------- Campo con la alineación (confirmada o probable) ----------
+  // En la página de partido el campo reutiliza las clases del campo de
+  // "alineaciones" (.alin-pitch, .alin-pl...) para verse igual que en el
+  // resto de la web; encima de cada jugador se pintan sus puntos Futmondo
+  // (prensa) y sus goles/asistencias/tarjetas, emparejando por apellido con
+  // los jugadores que devuelve /detallepartido (tabla PUNTOS de Comuniate).
+  const XI_FILLER = ["de", "del", "la", "cf", "fc", "club", "sad", "sd", "ud", "rcd", "rc", "balompie", "c", "f"];
+  function xiWords(s) {
+    return stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").split(/\s+/)
+      .filter((w) => w && XI_FILLER.indexOf(w) < 0)
+      .map((w) => ({ barca: "barcelona", atleti: "atletico" }[w] || w));
+  }
+  function xiScore(a, b) {
+    const A = xiWords(a), B = xiWords(b);
+    let s = 0;
+    A.forEach((w) => { if (B.indexOf(w) >= 0) s++; });
+    return s;
+  }
+  function findXiMatch(list, home, away) {
+    let best = null, bs = 0;
+    (list || []).forEach((it) => {
+      const s = xiScore(it.home && it.home.name, home) + xiScore(it.away && it.away.name, away);
+      if (s > bs) { bs = s; best = it; }
+    });
+    return bs >= 2 ? best : null;
+  }
+  function xiGroups(side) {
+    const g = { portero: [], defensas: [], medios: [], delanteros: [] };
+    if (side.portero || side.defensas || side.medios || side.delanteros) {
+      ["portero", "defensas", "medios", "delanteros"].forEach((k) => (side[k] || []).forEach((p) => g[k].push(p)));
+    } else {
+      (side.starters || []).forEach((p) => {
+        const q = stripAccents(String(p.pos || "").toLowerCase());
+        if (/porter/.test(q)) g.portero.push(p);
+        else if (/defens|central|lateral|carrilero/.test(q)) g.defensas.push(p);
+        else if (/medio|centro|pivote|interior/.test(q)) g.medios.push(p);
+        else if (/delant|extremo|punta/.test(q)) g.delanteros.push(p);
+        else g.medios.push(p);
+      });
+    }
+    return g;
+  }
+  function xiEvIndex(list) {
+    return (list || []).map((p) => {
+      const key = stripAccents(String(p.name || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").trim();
+      return { key, last: key.split(/\s+/).pop() || "", p };
+    });
+  }
+  function xiFindEv(idx, name) {
+    const q = stripAccents(String(name || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").trim();
+    if (!q) return null;
+    const last = q.split(/\s+/).pop();
+    const hit = idx.find((x) => x.key === q)
+      || idx.find((x) => last.length >= 3 && x.last === last)
+      || idx.find((x) => x.key.length >= 4 && (x.key.indexOf(q) >= 0 || q.indexOf(x.key) >= 0))
+      || idx.find((x) => last.length >= 4 && (x.key.indexOf(last) >= 0 || x.last.indexOf(last) >= 0));
+    return hit ? hit.p : null;
+  }
+  function mpXiTeam(side, crest, evIdx, maxP) {
+    const col = el("div", "alin-teamcol mpage-xi-team");
+    const th = el("div", "alin-tcolhead mpage-xi-head");
+    if (crest) { const im = el("img"); im.src = crest; im.alt = ""; im.loading = "lazy"; th.appendChild(im); }
+    th.appendChild(el("span", null, side.name || ""));
+    const g = xiGroups(side);
+    const form = side.formation || [g.defensas.length, g.medios.length, g.delanteros.length].join("-");
+    if (form && form !== "0-0-0") th.appendChild(el("span", "alin-form", form));
+    col.appendChild(th);
+    const pitch = el("div", "alin-pitch");
+    [["delanteros", 15], ["medios", 41], ["defensas", 67], ["portero", 88]].forEach((band) => {
+      const arr = g[band[0]];
+      if (!arr.length) return;
+      const n = arr.length;
+      const sizeClass = n >= 5 ? "tight" : n === 4 ? "semi" : "";
+      const inset = n >= 5 ? 13 : n === 4 ? 16 : 20;
+      const span = 100 - inset * 2;
+      const step = n > 1 ? span / (n - 1) : 0;
+      arr.forEach((p, i) => {
+        const ev = evIdx ? xiFindEv(evIdx, p.name) : null;
+        const pl = el("div", "alin-pl mpage-xipl" + (sizeClass ? " alin-pl-" + sizeClass : ""));
+        pl.style.left = (n > 1 ? (inset + i * step) : 50) + "%";
+        pl.style.top = band[1] + "%";
+        const ph = el("div", "alin-pimg mpage-xiimg");
+        if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); ph.appendChild(im); }
+        if (p.prob != null && p.prob < 100) {
+          const pct = el("span", "alin-pct", p.prob + "%");
+          pct.style.borderColor = pctColor(p.prob);
+          pct.title = probTitle(p.prob);
+          ph.appendChild(pct);
+        }
+        if (ev && ev.pts != null) {
+          const pts = el("span", "mpage-xpts", String(ev.pts));
+          if (ev.pts > 0 && ev.pts === maxP && maxP >= 6) pts.classList.add("top");
+          pts.title = "Puntos Futmondo (prensa)";
+          ph.appendChild(pts);
+        }
+        pl.appendChild(ph);
+        pl.appendChild(el("div", "alin-pname", p.last || p.name));
+        if (ev && ev.hl && ev.hl.length) {
+          const evs = mpEv(ev.hl, ev.min);
+          evs.classList.add("mpage-xev");
+          pl.appendChild(evs);
+          if (ev.min) pl.appendChild(el("span", "mpage-xmin", ev.min + "'"));
+        }
+        pl.addEventListener("click", () => openPlayerByName(p.full || p.name));
+        pitch.appendChild(pl);
+      });
+    });
+    col.appendChild(pitch);
+    return col;
+  }
+  function renderMatchDetail(box, m, d, jn, xi, xiKind) {
     box.innerHTML = "";
     const head = el("div", "mpage-top");
     const tl = el("div", "mpage-topline");
@@ -725,11 +835,25 @@
     const gh = d.goalsHome || [], ga = d.goalsAway || [];
     if (gh.length || ga.length) {
       const g = el("div", "mpage-goals");
-      const gc = (list) => { const c = el("div", "mpage-gcol"); (list || []).forEach((x) => c.appendChild(el("div", "mpage-grow", x.text || ""))); return c; };
-      g.appendChild(gc(gh));
-      g.appendChild(gc(ga));
+      const gc = (list, away) => { const c = el("div", "mpage-gcol" + (away ? " away" : "")); (list || []).forEach((x) => c.appendChild(el("div", "mpage-grow", x.text || ""))); return c; };
+      g.appendChild(gc(gh, false));
+      g.appendChild(gc(ga, true));
       box.appendChild(g);
     }
+    if (xi) {
+      const sec = el("section", "mpage-xi");
+      const hd = el("div", "mpage-xi-h");
+      hd.appendChild(el("span", "mpage-xi-title", xiKind === "confirmada" ? "Alineación confirmada" : "Alineación probable"));
+      if (xiKind !== "confirmada") hd.appendChild(probLegendBtn());
+      sec.appendChild(hd);
+      const maxP = Math.max.apply(null, [].concat((d.homePlayers || []).map((p) => p.pts || 0), (d.awayPlayers || []).map((p) => p.pts || 0), [0]));
+      const idxH = xiEvIndex(d.homePlayers), idxA = xiEvIndex(d.awayPlayers);
+      const pitches = el("div", "alin-pitches mpage-xipitches");
+      pitches.appendChild(mpXiTeam(xi.home || {}, (xi.home && xi.home.crest) || m.homeCrest, idxH, maxP));
+      pitches.appendChild(mpXiTeam(xi.away || {}, (xi.away && xi.away.crest) || m.awayCrest, idxA, maxP));
+      sec.appendChild(pitches);
+      box.appendChild(sec);
+    } else {
     const cols = el("div", "mpage-cols");
     const col = (list) => {
       const c = el("div", "mpage-col");
@@ -753,6 +877,7 @@
     cols.appendChild(col(d.homePlayers));
     cols.appendChild(col(d.awayPlayers));
     box.appendChild(cols);
+    }
     const lg = el("div", "mpage-legend");
     [["G", "goal", "Gol"], ["G", "goal", "Gol penalti"], ["P.P.", "own", "Gol propia"], ["A", "assist", "Asistencia"], ["Y", "yel", "Amarilla"], ["R", "red", "Roja"], ["IN", "in", "Entra"], ["OUT", "out", "Sale"]].forEach((x) => { const s = el("span", "mpage-lg"); s.appendChild(el("span", "mpage-evb " + x[1], x[0])); s.appendChild(el("span", null, x[2])); lg.appendChild(s); });
     box.appendChild(lg);
@@ -774,7 +899,22 @@
       if (!m) { box.innerHTML = '<p class="muted small">No se encontró el partido.</p>'; return; }
       const d = await (await fetch(API + "/detallepartido?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json();
       if (!all || !all.length) { try { await load(); } catch (e) {} }
-      renderMatchDetail(box, m, d, jn);
+      // Alineación para el campo: primero la confirmada (Comuniate, literal);
+      // si aún no está, la probable (FutbolFantasy con %). En los dos casos
+      // los eventos/puntos se cruzan con la tabla PUNTOS del partido.
+      let xi = null, xiKind = "";
+      try {
+        const c = await (await fetch(API + "/alineaciones-confirmadas?jornada=" + encodeURIComponent(jn), { cache: "no-store" })).json();
+        const cm = findXiMatch((c && c.matches) || [], m.home, m.away);
+        if (cm) { xi = cm; xiKind = "confirmada"; }
+      } catch (e) {}
+      if (!xi) {
+        try {
+          const o = await (await fetch(API + "/once?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn), { cache: "no-store" })).json();
+          if (o && o.home && (((o.home.starters || []).length) || ((o.away.starters || []).length))) { xi = o; xiKind = "probable"; }
+        } catch (e) {}
+      }
+      renderMatchDetail(box, m, d, jn, xi, xiKind);
     } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar el partido.</p>'; }
   }
 
@@ -826,59 +966,6 @@
       card.appendChild(pitches);
       showModal(card);
     })();
-  }
-
-  // "Alineaciones confirmadas": copia literal del once ya confirmado de
-  // comuniate.com (sin %, sin banquillo — esa página no los trae). Se
-  // reutiliza el mismo renderPitch() del modal de "alineaciones probables":
-  // al no tener p.prob ni t.bench, el propio renderPitch ya deja de pintar
-  // el badge de % y el banquillo solo, sin tocar nada de esa función.
-  function confirmTeamShape(side) {
-    const mk = (arr, pos) => (arr || []).map((p) => ({ name: p.name, last: p.name, full: p.name, photo: p.photo, pos }));
-    return {
-      name: side.name,
-      formation: side.formation,
-      starters: [].concat(mk(side.portero, "portero"), mk(side.defensas, "defensa"), mk(side.medios, "centrocampista"), mk(side.delanteros, "delantero")),
-      bench: [],
-    };
-  }
-  async function renderConfirmadas() {
-    const box = $("confirmOut");
-    if (!box) return;
-    box.innerHTML = '<p class="muted small">Cargando…</p>';
-    try {
-      const r = await (await fetch(API + "/alineaciones-confirmadas")).json();
-      box.innerHTML = "";
-      const upd = $("confirmUpdated");
-      if (upd) upd.textContent = r && r.updatedAt ? "Actualizado " + new Date(r.updatedAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "";
-      if (!r || !r.matches || !r.matches.length) {
-        box.innerHTML = '<p class="muted small">Todavía no hay ninguna alineación confirmada para esta jornada. Comuniate suele publicarlas sobre una hora antes de cada partido — vuelve a mirar más tarde.</p>';
-        return;
-      }
-      r.matches.forEach((m) => {
-        const card = el("div", "alin-card confirm-card");
-        const head = el("div", "alin-mhead");
-        head.appendChild(el("div", "alin-mtitle", "Jornada " + (r.matchday || "") + " · LaLiga" + (m.stadium ? " · " + m.stadium : "")));
-        const teams = el("div", "alin-mteams");
-        const hb = el("div", "alin-mteam");
-        if (m.home.crest) { const im = el("img"); im.src = m.home.crest; im.alt = ""; im.loading = "lazy"; hb.appendChild(im); }
-        hb.appendChild(el("span", null, m.home.name));
-        teams.appendChild(hb);
-        teams.appendChild(el("span", "alin-mvs", "vs"));
-        const ab = el("div", "alin-mteam");
-        if (m.away.crest) { const im = el("img"); im.src = m.away.crest; im.alt = ""; im.loading = "lazy"; ab.appendChild(im); }
-        ab.appendChild(el("span", null, m.away.name));
-        teams.appendChild(ab);
-        head.appendChild(teams);
-        head.appendChild(el("div", "alin-mwhen", ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim() + (m.referee ? " · Árbitro: " + m.referee : "")));
-        card.appendChild(head);
-        const pitches = el("div", "alin-pitches");
-        pitches.appendChild(renderPitch(confirmTeamShape(m.home), m.home.crest));
-        pitches.appendChild(renderPitch(confirmTeamShape(m.away), m.away.crest));
-        card.appendChild(pitches);
-        box.appendChild(card);
-      });
-    } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar.</p>'; }
   }
 
   function filteredList() {
@@ -1231,12 +1318,11 @@
     max.addEventListener("input", apply);
   }
 
-  // Menú "☰ Más": pestañas que no entran en la barra principal (Clausulazo
-  // jugoso, Alineaciones confirmadas, Analiza tu equipo) viven aquí dentro
-  // en vez de obligar a deslizar o poner flechas. Si la pestaña activa es
-  // una de las del menú, el botón se pone verde y muestra su nombre en vez
-  // de "Más", para saber dónde estás sin tener que abrir el desplegable.
-  const MORE_TABS = { clausulazos: "Clausulazo jugoso", confirmadas: "Alineaciones confirmadas", analiza: "Analiza tu equipo" };
+  // Menú "☰ Más": pestañas que no entran en la barra principal (Fichajes,
+  // Clausulazo jugoso, Analiza tu equipo) viven aquí dentro en vez de obligar
+  // a deslizar o poner flechas. Si la pestaña activa es una de las del menú,
+  // el botón se pone verde para saber dónde estás sin abrir el desplegable.
+  const MORE_TABS = { fichajes: "Fichajes", clausulazos: "Clausulazo jugoso", analiza: "Analiza tu equipo" };
   function closeMoreMenu() {
     const menu = $("cxMoreMenu"), btn = $("cxMoreBtn");
     if (menu) menu.classList.add("hidden");
@@ -1277,7 +1363,10 @@
     const ch = $("cxChrome");
     if (ch) {
       ch.classList.toggle("hidden", name !== "mercado" && name !== "noticias" && name !== "inicio");
-      // El ticker de "última hora" solo se ve en Noticias.
+      // La cinta de "Última hora" (chrome.js) es la primera cosa de la
+      // portada: solo se enseña en Inicio.
+      ch.classList.toggle("hide-ticker", name !== "inicio");
+      // El ticker de "última hora" clásico solo se ve en Noticias.
       ch.classList.toggle("hide-live", name !== "noticias");
       // En Noticias no se repiten los escudos ni la franja de jornada
       // (ya están en Inicio): solo se queda la última hora.
@@ -1285,9 +1374,11 @@
       // Los partidos de la jornada solo se ven en Inicio.
       ch.classList.toggle("hide-jornada", name !== "inicio");
     }
+    // La cinta de la portada se recalcula al volver a Inicio (al estar
+    // oculta su ancho era 0 y la duración de la animación quedaba corta).
+    if (name === "inicio") { try { if (window.__cxTickerSync) window.__cxTickerSync(); } catch (e) {} }
     if (name === "inicio") renderInicioFeatured();
     if (name === "clausulazos") renderClausulas();
-    if (name === "confirmadas") renderConfirmadas();
     if (name === "fichajes") renderFichajes();
     if (name === "analiza") renderCapHistorial();
     try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
@@ -1999,7 +2090,7 @@
     try { const pm = location.pathname.match(/\/guiafantasy\/partido\/([a-z0-9-]+)/); if (pm) { renderMatchPage(pm[1]); return; } } catch (e) {}
     let name = "";
     try {
-      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|noticias|analiza|clausulazos|confirmadas)/);
+      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|noticias|analiza|clausulazos)/);
       if (m) name = m[1];
     } catch (e) {}
     if (!name) { try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {} }

@@ -928,8 +928,10 @@ html { overflow-anchor: none; }
 .mpage-state { font-weight: 800; font-size: 0.72rem; color: #16a34a; text-transform: uppercase; letter-spacing: 0.04em; }
 .mpage-score { font-family: 'Fira Sans Condensed', 'Space Grotesk', sans-serif; font-size: 2.6rem; font-weight: 900; line-height: 1.05; }
 .mpage-goals { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 22px; margin: 10px 0 2px; font-size: 0.8rem; }
-.mpage-gcol { display: flex; flex-direction: column; }
+.mpage-gcol { display: flex; flex-direction: column; min-width: 0; }
+.mpage-gcol.away { text-align: right; }
 .mpage-grow { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
+.mpage-gcol.away .mpage-grow { justify-content: flex-end; }
 .mpage-gname { font-weight: 700; }
 .mpage-gmin { color: var(--muted); font-weight: 700; }
 .mpage-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; margin-top: 12px; }
@@ -960,3 +962,31 @@ html { overflow-anchor: none; }
 .mpage-evb.ideal { background: #f59e0b; color: #1a1a1a; }
 .mpage-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 16px; font-size: 0.66rem; color: var(--muted); }
 .mpage-lg { display: flex; align-items: center; gap: 4px; }
+
+/* ---------- Página de partido: campo con la alineación ---------- */
+.mpage-xi { margin-top: 14px; }
+.mpage-xi-h { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 0 8px; flex-wrap: wrap; }
+.mpage-xi-title { font-family: "Poppins", "Fira Sans Condensed", sans-serif; font-weight: 900; font-size: 0.95rem; letter-spacing: 0.04em; text-transform: uppercase; color: #078a55; }
+[data-theme="light"] .mpage-xi-title { color: #067a4b; }
+.mpage-xipitches { margin-top: 4px; }
+.mpage-xi-team { max-width: none; }
+.mpage-xi-head { font-family: "Poppins", "Fira Sans Condensed", sans-serif; }
+.mpage-xiimg { position: relative; }
+.mpage-xpts {
+  position: absolute; top: 3px; right: 2px; z-index: 3;
+  min-width: 20px; text-align: center;
+  background: #0b3d22; color: #fff;
+  font-weight: 900; font-size: 0.72rem; line-height: 1.5;
+  border-radius: 8px; padding: 0 5px;
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+}
+.mpage-xpts.top { background: #eab308; color: #111; }
+.mpage-xev { display: flex; justify-content: center; margin-top: 2px; }
+.mpage-xev .mpage-evb { font-size: 0.5rem; padding: 0 3px; }
+.mpage-xmin { color: #ff7b7b; font-weight: 900; font-size: 0.6rem; margin-top: 1px; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
+@media (max-width: 560px) {
+  .mpage-xi .alin-pname { font-size: 0.72rem; max-width: 96px; }
+  .mpage-xi .alin-pl-tight .alin-pname { font-size: 0.62rem; max-width: 84px; }
+  .mpage-xi .alin-pl-semi .alin-pname { font-size: 0.68rem; max-width: 92px; }
+}
