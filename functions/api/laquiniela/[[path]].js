@@ -1781,7 +1781,6 @@ async function getAlineacionesConfirmadas(env, matchdayParam) {
   let jd = null;
   try { jd = await getJornada(env, matchdayParam || null); } catch (e) {}
   const out = { matchday: (jd && jd.matchday) || 0, updatedAt: Date.now(), matches: [] };
-  const dbg = [];
   if (jd && jd.matches && jd.matches.length) {
     const links = await getComuniateMatches(env, out.matchday || matchdayParam || "");
     const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
@@ -1790,13 +1789,13 @@ async function getAlineacionesConfirmadas(env, matchdayParam) {
     const results = await Promise.all(jd.matches.map(async (m) => {
       const home = (m.homeTeam && (m.homeTeam.shortName || m.homeTeam.name)) || "";
       const away = (m.awayTeam && (m.awayTeam.shortName || m.awayTeam.name)) || "";
-      if (!home || !away) { dbg.push({ home, away, step: "no-name" }); return null; }
+      if (!home || !away) return null;
       const found = findComuniateMatch(links, home, away);
-      if (!found) { dbg.push({ home, away, step: "no-href", linksCount: links.length }); return null; }
+      if (!found) return null;
       let html = "";
-      try { html = await (await fetch("https://www.comuniate.com" + found.href, { headers: cmHeaders() })).text(); } catch (e) { dbg.push({ home, away, step: "fetch-fail", err: String(e) }); return null; }
+      try { html = await (await fetch("https://www.comuniate.com" + found.href, { headers: cmHeaders() })).text(); } catch (e) { return null; }
       const pitch = parseConfirmedPitch(html);
-      if (!pitch) { dbg.push({ home, away, step: "no-pitch", href: found.href, htmlLen: html.length }); return null; }
+      if (!pitch) return null;
       const stadium = (html.match(/"location":\{"@type":"Place","name":"([^"]+)"/) || [])[1] || "";
       const referee = (html.match(/cronista\.png[^>]*>[\s\S]*?<span>([^<]+)<\/span>/) || [])[1] || "";
       const d = new Date(m.utcDate);
@@ -1815,8 +1814,7 @@ async function getAlineacionesConfirmadas(env, matchdayParam) {
     }));
     out.matches = results.filter(Boolean);
   }
-  if (!out.matches.length) out._debug = dbg; // TEMPORAL: para diagnosticar por qué no sale nada; se quita en cuanto funcione.
-  try { if (out.matches.length) await env.PORRA.put(cacheKey, JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 600 }); } catch (e) {}
+  try { await env.PORRA.put(cacheKey, JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 600 }); } catch (e) {}
   return out;
 }
 
