@@ -322,7 +322,7 @@ body {
 .cx-jn-final { border-left: 3px solid var(--cx-green); }
 .cx-jn-live { border-left: 3px solid #2f8fe0; }
 .cx-jn-susp { border-left: 3px solid #e08a2f; }
-.cx-jn-score { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 0.72rem; color: var(--cx-text); line-height: 1.1; }
+.cx-jn-score { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 0.92rem; color: var(--cx-text); line-height: 1.1; }
 .cx-jn-status { font-size: 0.42rem; font-weight: 800; letter-spacing: 0.04em; line-height: 1; padding: 1px 6px; border-radius: 999px; margin-top: 1px; }
 .cx-jn-status-final { color: var(--cx-green); background: rgba(46, 160, 67, 0.14); }
 .cx-jn-status-live { color: #2f8fe0; background: rgba(47, 143, 224, 0.14); animation: cxLivePulse 1.4s ease-in-out infinite; }
