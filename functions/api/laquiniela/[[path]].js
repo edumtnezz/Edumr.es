@@ -1821,18 +1821,17 @@ async function getAlineacionesConfirmadas(env, matchdayParam) {
 function ffNameFromSlug(slug) {
   return String(slug || "").split("-").map((w) => (w ? w[0].toUpperCase() + w.slice(1) : "")).join(" ");
 }
-function parseMatchSide(seg) {
-  const out = [], seen = {};
-  const blocks = seg.split(/class="jugador_\d+/).slice(1);
+function parsePlayerBlocks(h) {
+  const out = [];
+  const blocks = h.split(/class="jugador_\d+/).slice(1);
   for (const b of blocks) {
-    if (!/data-onceFF="titular"/.test(b)) continue;
     const slug = (b.match(/\/jugadores\/([a-z0-9-]+)\/laliga/) || [])[1];
-    if (!slug || seen[slug]) continue;
-    seen[slug] = 1;
-    const pm = b.match(/data-juego="futmondo-mixto"[\s\S]{0,300}?>\s*(-?\d+(?:[.,]\d+)?)\s*</);
+    if (!slug) continue;
+    const pm = b.match(/data-juego="futmondo-prensa"[\s\S]{0,400}?>\s*(-?\d+(?:[.,]\d+)?)\s*</) || b.match(/data-juego="futmondo-mixto"[\s\S]{0,400}?>\s*(-?\d+(?:[.,]\d+)?)\s*</);
     const pts = pm ? Number(pm[1].replace(",", ".")) : null;
     const pos = (b.match(/data-posicion="([^"]+)"/) || [])[1] || "";
-    out.push({ name: ffNameFromSlug(slug), pts, pos });
+    const titular = /data-onceFF="titular"/.test(b);
+    out.push({ name: ffNameFromSlug(slug), pts, pos, titular });
   }
   return out;
 }
@@ -1848,16 +1847,18 @@ function parsePartidoFF(h, home, away) {
   const gH = (h.match(/goleadores local">([\s\S]*?)(?:class="goleadores visitante"|<\/header>|class="partido-container")/) || [])[1] || "";
   const gA = (h.match(/goleadores visitante">([\s\S]*?)(?:<\/header>|class="partido-container")/) || [])[1] || "";
   const parseGoals = (s) => [...s.matchAll(/class="jugador"[^>]*>([^<]+)<\/a>\s*\((\d+)'\)/g)].map((m) => ({ name: m[1].trim(), min: Number(m[2]) }));
-  const sw = [...h.matchAll(/alineacion_superwrapper/g)].map((m) => m.index);
-  const segL = sw.length >= 3 ? h.slice(sw[1], sw[2]) : "";
-  const segV = sw.length >= 5 ? h.slice(sw[4]) : "";
+  const players = parsePlayerBlocks(h);
+  const tit = players.filter((p) => p.titular);
+  const ben = players.filter((p) => !p.titular);
+  const h1 = Math.ceil(tit.length / 2), h2 = Math.ceil(ben.length / 2);
   return {
     home, away,
     score: sc != null ? Number(sc) : null,
     scoreAway: scA != null ? Number(scA) : null,
     state, date: dateTxt.trim(), minute: minM ? minM[1] : "",
     goalsHome: parseGoals(gH), goalsAway: parseGoals(gA),
-    homePlayers: parseMatchSide(segL), awayPlayers: parseMatchSide(segV),
+    homePlayers: tit.slice(0, h1).concat(ben.slice(0, h2)),
+    awayPlayers: tit.slice(h1).concat(ben.slice(h2)),
   };
 }
 async function getPartidoFF(env, home, away) {

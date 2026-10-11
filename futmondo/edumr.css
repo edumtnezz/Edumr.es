@@ -526,3 +526,7 @@ body {
 .cx-sub .cx-more-menu { background: var(--cx-surface); border-color: var(--cx-border); }
 .cx-sub .cx-more-item { color: var(--cx-text) !important; }
 .cx-sub .cx-more-item.active { color: var(--cx-green) !important; }
+/* --- Pestañas sin borde/círculo --- */
+.cx-sub .tab { border: none !important; background: transparent !important; border-radius: 0 !important; }
+.cx-sub .tab:not(.active) { color: rgba(255, 255, 255, 0.85) !important; }
+.cx-sub .tab.active { background: transparent !important; color: #fff !important; border-bottom: 2px solid #fff !important; }

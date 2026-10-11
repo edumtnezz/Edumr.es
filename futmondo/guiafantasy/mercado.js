@@ -657,6 +657,65 @@
   // La "alineación probable" de un partido ya no vive en una pestaña propia:
   // se abre como una ficha modal (igual que la ficha de un jugador) al pinchar
   // el partido en la franja de jornada, tanto desde Inicio como desde Mercado.
+  // ---------- Página de partido (/futmondo/guiafantasy/partido/<slug>) ----------
+  function matchSlug(home, away) {
+    return stripAccents(String(home + "-" + away).toLowerCase()).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  }
+  function mpPos(pos) {
+    const p = String(pos || "").toLowerCase();
+    if (p.indexOf("porter") >= 0) return ["PT", "pt"];
+    if (p.indexOf("defens") >= 0) return ["DF", "df"];
+    if (p.indexOf("delan") >= 0) return ["DL", "dl"];
+    if (p.indexOf("med") >= 0 || p.indexOf("centro") >= 0) return ["MD", "md"];
+    return ["", "x"];
+  }
+  function renderMatchDetail(box, m, d, jn) {
+    box.innerHTML = "";
+    const head = el("div", "mpage-head");
+    head.appendChild(el("div", "mpage-comp", "LaLiga" + (jn ? " · Jornada " + jn : "")));
+    const teams = el("div", "mpage-teams");
+    const mk = (name, crest) => { const t = el("div", "mpage-team"); if (crest) { const im = el("img"); im.src = crest; im.alt = ""; t.appendChild(im); } t.appendChild(el("span", null, name)); return t; };
+    teams.appendChild(mk(m.home, m.homeCrest));
+    const sc = (d.score != null && d.scoreAway != null) ? (d.score + " - " + d.scoreAway) : "vs";
+    teams.appendChild(el("div", "mpage-score", String(sc)));
+    teams.appendChild(mk(m.away, m.awayCrest));
+    head.appendChild(teams);
+    head.appendChild(el("div", "mpage-state", d.state === "final" ? "FINALIZADO" : d.state === "live" ? ("EN JUEGO " + (d.minute ? d.minute + "'" : "")) : ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim()));
+    box.appendChild(head);
+    const gh = d.goalsHome || [], ga = d.goalsAway || [];
+    if (gh.length || ga.length) {
+      const g = el("div", "mpage-goals");
+      gh.forEach((x) => g.appendChild(el("span", "mpage-goal", x.name + " " + x.min + "'")));
+      ga.forEach((x) => g.appendChild(el("span", "mpage-goal away", x.name + " " + x.min + "'")));
+      box.appendChild(g);
+    }
+    const cols = el("div", "mpage-cols");
+    const col = (list) => { const c = el("div", "mpage-col"); (list || []).forEach((p) => { const r = el("div", "mpage-row"); const pp = mpPos(p.pos); r.appendChild(el("span", "mpage-pos " + pp[1], pp[0])); r.appendChild(el("span", "mpage-name", p.name)); r.appendChild(el("span", "mpage-pts", p.pts != null ? String(p.pts) : "–")); c.appendChild(r); }); return c; };
+    cols.appendChild(col(d.homePlayers));
+    cols.appendChild(col(d.awayPlayers));
+    box.appendChild(cols);
+    box.appendChild(el("p", "muted small", "Puntos de tus jugadores (Futmondo). Se actualiza con el partido."));
+  }
+  async function renderMatchPage(slug) {
+    const main = document.querySelector(".quiniela-main");
+    if (!main) return;
+    document.querySelectorAll(".cx-sub").forEach((e) => e.classList.add("hidden"));
+    document.querySelectorAll(".tab-panel").forEach((e) => e.classList.add("hidden"));
+    const ch = $("cxChrome"); if (ch) ch.classList.add("hidden");
+    const box = el("section", "panel mpage");
+    box.innerHTML = '<p class="muted small">Cargando partido…</p>';
+    main.appendChild(box);
+    try {
+      const jr = await (await fetch(API + "/jornada", { cache: "no-store" })).json();
+      const ms = (jr && jr.matches) || [];
+      const jn = Number(jr && jr.matchday) || 0;
+      const m = ms.find((x) => matchSlug(x.home, x.away) === slug);
+      if (!m) { box.innerHTML = '<p class="muted small">No se encontró el partido.</p>'; return; }
+      const d = await (await fetch(API + "/detallepartido?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away))).json();
+      renderMatchDetail(box, m, d, jn);
+    } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar el partido.</p>'; }
+  }
+
   function openMatchFicha(m, jn) {
     const w = el("div");
     w.appendChild(el("p", "muted small", "Cargando alineaciones…"));
@@ -1875,6 +1934,7 @@
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
   setupMoreMenu();
   (function restoreTab() {
+    try { const pm = location.pathname.match(/\/guiafantasy\/partido\/([a-z0-9-]+)/); if (pm) { renderMatchPage(pm[1]); return; } } catch (e) {}
     let name = "";
     try {
       const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|noticias|analiza|clausulazos|confirmadas)/);
@@ -2460,10 +2520,8 @@
 
   document.addEventListener("cx:once", (e) => {
     const d = e.detail || {};
-    openMatchFicha({
-      home: d.home, away: d.away, homeCrest: d.homeCrest, awayCrest: d.awayCrest,
-      day: d.day, date: d.date, time: d.time, tv: d.tv
-    }, Number(d.jornada) || 0);
+    if (!d.home || !d.away) return;
+    location.href = "/futmondo/guiafantasy/partido/" + matchSlug(d.home, d.away);
   });
 
   // Cambiar de pestaña deslizando con el dedo (swipe). La vez anterior esto
