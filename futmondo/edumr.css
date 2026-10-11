@@ -127,6 +127,8 @@ body {
 }
 .cx-nav a:hover { color: #fff; background: rgba(255, 255, 255, 0.09); }
 .cx-nav a.active { color: #fff; background: var(--cx-green); }
+/* La flechita ▾ junto a cada pestaña de arriba, como en Comuniate. */
+.cx-nav-caret { font-size: 0.62em; margin-left: 4px; opacity: 0.7; display: inline-block; transform: translateY(-1px); }
 
 .cx-tools { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
 .cx-inicio {
