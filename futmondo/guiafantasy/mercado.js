@@ -2218,7 +2218,7 @@
   setupMoreMenu();
   (function restoreTab() {
     try { const pm = location.pathname.match(/\/guiafantasy\/partido\/([a-z0-9-]+)/); if (pm) { renderMatchPage(pm[1]); return; } } catch (e) {}
-    try { const pj = location.pathname.match(/\/guiafantasy\/jugadores\/(\d+)/); if (pj) { renderPlayerPage(pj[1]); return; } } catch (e) {}
+    try { const pj = location.pathname.match(/\/guiafantasy\/jugadores\/([a-z0-9]{6,40})/i); if (pj) { renderPlayerPage(pj[1]); return; } } catch (e) {}
     let name = "";
     try {
       const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|noticias|analiza|clausulazos)/);
