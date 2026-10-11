@@ -315,9 +315,10 @@ body {
 .cx-jn-nav:hover:not(:disabled) { border-color: var(--cx-green); color: var(--cx-green); }
 .cx-jn-nav:disabled { opacity: 0.3; cursor: default; }
 .cx-jn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 5px; max-width: 1140px; margin: 0 auto; }
-.cx-jn { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 2px; padding: 2px 5px; border: 1px solid var(--cx-border); border-radius: 7px; background: var(--cx-surface); box-shadow: var(--cx-shadow-sm); }
+.cx-jn { display: flex; flex-direction: column; gap: 1px; padding: 3px 5px 2px; border: 1px solid var(--cx-border); border-radius: 7px; background: var(--cx-surface); box-shadow: var(--cx-shadow-sm); }
 .cx-jn-click { cursor: pointer; transition: border-color 0.14s ease, transform 0.14s ease; }
 .cx-jn-click:hover { border-color: var(--cx-green); transform: translateY(-1px); }
+.cx-jn-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 2px; }
 .cx-jn-crest { width: 34px; height: 34px; object-fit: contain; justify-self: center; }
 .cx-jn-mid { display: flex; flex-direction: column; align-items: center; gap: 0; min-width: 0; }
 .cx-jn-tv { height: 13px; width: auto; max-width: 52px; object-fit: contain; }
@@ -331,16 +332,28 @@ body {
 @media (max-width: 560px) { .cx-jn-grid { grid-template-columns: repeat(2, 1fr); } .cx-jn-time, .cx-jn-hora { font-size: 0.5rem; } }
 /* Resultado/estado en directo (copiado de Comuniate): un borde de color a
    la izquierda según el estado, igual que en su propia franja. */
-.cx-jn-final { border-left: 3px solid var(--cx-green); }
-.cx-jn-live { border-left: 3px solid #2f8fe0; }
-.cx-jn-susp { border-left: 3px solid #e08a2f; }
-.cx-jn-score { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 0.92rem; color: var(--cx-text); line-height: 1.1; }
-.cx-jn-status { font-size: 0.42rem; font-weight: 800; letter-spacing: 0.04em; line-height: 1; padding: 1px 6px; border-radius: 999px; margin-top: 1px; }
-.cx-jn-status-final { color: var(--cx-green); background: rgba(46, 160, 67, 0.14); }
-.cx-jn-status-live { color: #2f8fe0; background: rgba(47, 143, 224, 0.14); animation: cxLivePulse 1.4s ease-in-out infinite; }
-.cx-jn-status-suspended { color: #e08a2f; background: rgba(224, 138, 47, 0.14); }
+.cx-jn-score { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 1.18rem; color: var(--cx-text); line-height: 1.1; letter-spacing: 0.01em; }
+/* Fila de estado a todo lo ancho, ENCIMA de los escudos (estilo
+   jornadaperfecta: etiqueta FINALIZADO/EN JUEGO con puntito, en vez del
+   borde de color que llevaba antes la tarjeta). */
+.cx-jn-statusrow {
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  font-size: 0.44rem; font-weight: 800; letter-spacing: 0.05em; line-height: 1;
+  padding-bottom: 2px;
+}
+.cx-jn-dot { width: 5px; height: 5px; border-radius: 50%; flex: 0 0 auto; }
+.cx-jn-statusrow-final { color: var(--cx-green); }
+.cx-jn-statusrow-final .cx-jn-dot { background: var(--cx-green); }
+.cx-jn-statusrow-live { color: #2f8fe0; }
+.cx-jn-statusrow-live .cx-jn-dot { background: #2f8fe0; animation: cxLivePulse 1.4s ease-in-out infinite; }
+.cx-jn-statusrow-suspended { color: #e08a2f; }
+.cx-jn-statusrow-suspended .cx-jn-dot { background: #e08a2f; }
 @keyframes cxLivePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
-.cx-jn-confirm { grid-column: 1 / -1; justify-self: center; font-size: 0.4rem; font-weight: 800; letter-spacing: 0.02em; color: #fff; background: var(--cx-green); border-radius: 999px; padding: 1px 7px; margin-bottom: 1px; white-space: nowrap; }
+.cx-jn-statusrow-confirm {
+  color: #fff; background: var(--cx-green); border-radius: 999px;
+  font-size: 0.4rem; letter-spacing: 0.02em; padding: 1px 7px; margin: 0 auto 1px;
+  width: fit-content; white-space: nowrap;
+}
 
 /* ---------- Última hora (ticker) ---------- */
 .cx-live {

@@ -140,28 +140,33 @@
             tv = '<span class="cx-jn-tv-ph" title="Canal por confirmar">por confirmar</span>';
           }
           // Marcador/estado en directo (copiado tal cual de Comuniate): si el
-          // partido ya se juega o ya acabó se enseña el resultado y el
-          // minuto/estado en vez del día y la hora; si no, se queda como antes.
+          // partido ya se juega o ya acabó, arriba del todo (ancho completo,
+          // estilo jornadaperfecta) se enseña la etiqueta de estado y debajo
+          // el marcador en grande; si no, se queda el día/hora de siempre.
+          // La tarjeta ya no lleva borde de color: fondo neutro siempre.
           var live = m.live || null;
+          var state = live ? live.state : null;
           var cardCls = "cx-jn cx-jn-click";
-          var bottom;
-          if (live && (live.state === "final" || live.state === "live")) {
-            cardCls += live.state === "final" ? " cx-jn-final" : " cx-jn-live";
-            var stLabel = live.state === "final" ? "FINAL" : (live.minute || "DIRECTO");
-            bottom = tv + '<span class="cx-jn-score">' + esc(live.score || "") + '</span>' +
-              '<span class="cx-jn-status cx-jn-status-' + live.state + '">' + esc(stLabel) + '</span>';
-          } else if (live && live.state === "suspended") {
-            cardCls += " cx-jn-susp";
-            bottom = tv + '<span class="cx-jn-status cx-jn-status-suspended">SUSPEND.</span>';
+          var statusRow = "";
+          var mid;
+          if (state === "final" || state === "live") {
+            var stLabel = state === "final" ? "FINALIZADO" : (live.minute || "EN JUEGO");
+            statusRow = '<div class="cx-jn-statusrow cx-jn-statusrow-' + state + '"><span class="cx-jn-dot"></span>' + esc(stLabel) + '</div>';
+            mid = '<span class="cx-jn-score">' + esc(live.score || "") + '</span>' + tv;
+          } else if (state === "suspended") {
+            statusRow = '<div class="cx-jn-statusrow cx-jn-statusrow-suspended"><span class="cx-jn-dot"></span>SUSPENDIDO</div>';
+            mid = tv;
           } else {
-            bottom = tv + '<span class="cx-jn-time">' + esc(((m.day || "") + " " + (m.date || "")).trim()) + '</span><span class="cx-jn-hora">' + esc(m.time || "") + '</span>';
+            if (m.confirmed) statusRow = '<div class="cx-jn-statusrow cx-jn-statusrow-confirm">✅ Once confirmado</div>';
+            mid = '<span class="cx-jn-time">' + esc(((m.day || "") + " " + (m.date || "")).trim()) + '</span><span class="cx-jn-hora">' + esc(m.time || "") + '</span>' + tv;
           }
-          var confirmBadge = m.confirmed ? '<span class="cx-jn-confirm" title="Once ya confirmado">✅ Once confirmado</span>' : "";
           return '<div class="' + cardCls + '" data-home="' + esc(m.home) + '" data-away="' + esc(m.away) + '" data-hcrest="' + esc(m.homeCrest) + '" data-acrest="' + esc(m.awayCrest) + '">' +
-            confirmBadge +
-            '<img class="cx-jn-crest" src="' + esc(m.homeCrest) + '" alt="' + esc(m.home) + '" title="' + esc(m.home) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
-            '<div class="cx-jn-mid">' + bottom + '</div>' +
-            '<img class="cx-jn-crest" src="' + esc(m.awayCrest) + '" alt="' + esc(m.away) + '" title="' + esc(m.away) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
+            statusRow +
+            '<div class="cx-jn-row">' +
+              '<img class="cx-jn-crest" src="' + esc(m.homeCrest) + '" alt="' + esc(m.home) + '" title="' + esc(m.home) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
+              '<div class="cx-jn-mid">' + mid + '</div>' +
+              '<img class="cx-jn-crest" src="' + esc(m.awayCrest) + '" alt="' + esc(m.away) + '" title="' + esc(m.away) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
+            '</div>' +
             '</div>';
         }).join("");
         grid.style.minHeight = "";
