@@ -678,6 +678,23 @@
       || all.find((x) => stripAccents(x.name).toLowerCase().split(/\s+/).pop() === last)
       || null;
   }
+  const MPC = { PT: "pt", DF: "df", MD: "md", DL: "dl" };
+  function mpEv(hl, min) {
+    const wrap = el("span", "mpage-ev");
+    (hl || []).forEach((h) => {
+      let t = "", cls = "";
+      if (/fa-circle/.test(h.ico)) { if (/danger/i.test(h.cls)) { t = "P.P."; cls = "own"; } else { t = "G"; cls = "goal"; } }
+      else if (/arrow-circle-up/.test(h.ico)) { t = "G"; cls = "goal"; }
+      else if (/arrow-circle-down/.test(h.ico)) { t = "F"; cls = "miss"; }
+      else if (/arrow-right/.test(h.ico)) { t = "A"; cls = "assist"; }
+      else if (/fa-square/.test(h.ico)) { if (/danger|red|ff0000/i.test(h.cls)) { t = "R"; cls = "red"; } else { t = "Y"; cls = "yel"; } }
+      else if (/sign-in/.test(h.ico)) { t = "IN"; cls = "in"; }
+      else if (/sign-out/.test(h.ico)) { t = "OUT"; cls = "out"; }
+      else if (/fa-star/.test(h.ico)) { t = "★"; cls = "ideal"; }
+      if (t) wrap.appendChild(el("span", "mpage-evb " + cls, t));
+    });
+    return wrap;
+  }
   function renderMatchDetail(box, m, d, jn) {
     box.innerHTML = "";
     const head = el("div", "mpage-top");
@@ -689,7 +706,7 @@
       tl.appendChild(t);
     }
     head.appendChild(tl);
-    const state = d.state === "final" ? "FINALIZADO" : d.state === "live" ? ("EN JUEGO " + (d.minute ? d.minute + "'" : "")) : ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim();
+    const state = d.state || ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim();
     const mkTeam = (name, crest) => { const t = el("div", "mpage-team"); if (crest) { const im = el("img"); im.src = crest; im.alt = ""; t.appendChild(im); } t.appendChild(el("span", null, name)); return t; };
     const teams = el("div", "mpage-teams");
     teams.appendChild(mkTeam(m.home, m.homeCrest));
@@ -699,13 +716,18 @@
     teams.appendChild(mid);
     teams.appendChild(mkTeam(m.away, m.awayCrest));
     head.appendChild(teams);
+    const meta = el("div", "mpage-meta");
+    if (d.stadium) meta.appendChild(el("span", "mpage-mi", "🏟️ " + d.stadium));
+    if (d.referee) meta.appendChild(el("span", "mpage-mi", "🔉 " + d.referee));
+    if (d.cronista) meta.appendChild(el("span", "mpage-mi", "✍️ " + d.cronista));
+    if (meta.children.length) head.appendChild(meta);
     box.appendChild(head);
     const gh = d.goalsHome || [], ga = d.goalsAway || [];
     if (gh.length || ga.length) {
       const g = el("div", "mpage-goals");
-      const gcol = (list) => { const c = el("div", "mpage-gcol"); (list || []).forEach((x) => { const r = el("div", "mpage-grow"); r.appendChild(el("span", "mpage-gname", x.name)); if (x.min) r.appendChild(el("span", "mpage-gmin", x.min + "'")); c.appendChild(r); }); return c; };
-      g.appendChild(gcol(gh));
-      g.appendChild(gcol(ga));
+      const gc = (list) => { const c = el("div", "mpage-gcol"); (list || []).forEach((x) => c.appendChild(el("div", "mpage-grow", x.text || ""))); return c; };
+      g.appendChild(gc(gh));
+      g.appendChild(gc(ga));
       box.appendChild(g);
     }
     const cols = el("div", "mpage-cols");
@@ -718,9 +740,9 @@
         const face = el("span", "mpage-face");
         if (mi && mi.photo) { const im = el("img"); im.src = mi.photo; im.alt = ""; im.loading = "lazy"; face.appendChild(im); } else { face.classList.add("empty"); }
         r.appendChild(face);
-        const pp = mpPos((mi && mi.role) || p.pos);
-        if (pp[0]) r.appendChild(el("span", "mpage-pos " + pp[1], pp[0]));
+        if (p.pos) r.appendChild(el("span", "mpage-pos " + (MPC[p.pos] || "x"), p.pos));
         r.appendChild(el("span", "mpage-name", p.name));
+        r.appendChild(mpEv(p.hl, p.min));
         const pts = el("span", "mpage-pts", p.pts != null ? String(p.pts) : "–");
         if (p.pts != null && p.pts > 0 && p.pts === maxP && maxP >= 6) pts.classList.add("top");
         r.appendChild(pts);
@@ -731,6 +753,9 @@
     cols.appendChild(col(d.homePlayers));
     cols.appendChild(col(d.awayPlayers));
     box.appendChild(cols);
+    const lg = el("div", "mpage-legend");
+    [["G", "goal", "Gol"], ["G", "goal", "Gol penalti"], ["P.P.", "own", "Gol propia"], ["A", "assist", "Asistencia"], ["Y", "yel", "Amarilla"], ["R", "red", "Roja"], ["IN", "in", "Entra"], ["OUT", "out", "Sale"]].forEach((x) => { const s = el("span", "mpage-lg"); s.appendChild(el("span", "mpage-evb " + x[1], x[0])); s.appendChild(el("span", null, x[2])); lg.appendChild(s); });
+    box.appendChild(lg);
   }
   async function renderMatchPage(slug) {
     const main = document.querySelector(".quiniela-main");
@@ -747,7 +772,7 @@
       const jn = Number(jr && jr.matchday) || 0;
       const m = ms.find((x) => matchSlug(x.home, x.away) === slug);
       if (!m) { box.innerHTML = '<p class="muted small">No se encontró el partido.</p>'; return; }
-      const d = await (await fetch(API + "/detallepartido?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away))).json();
+      const d = await (await fetch(API + "/detallepartido?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json();
       renderMatchDetail(box, m, d, jn);
     } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar el partido.</p>'; }
   }

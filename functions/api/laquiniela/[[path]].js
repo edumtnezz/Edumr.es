@@ -1818,83 +1818,72 @@ async function getAlineacionesConfirmadas(env, matchdayParam) {
   return out;
 }
 
-function ffNameFromSlug(slug) {
-  return String(slug || "").replace(/-\d+$/, "").split("-").map((w) => (w ? w[0].toUpperCase() + w.slice(1) : "")).join(" ");
-}
-function parsePlayerBlocks(h) {
-  const out = [];
-  const blocks = h.split(/class="jugador_\d+/).slice(1);
-  for (const b of blocks) {
-    const slug = (b.match(/\/jugadores\/([a-z0-9-]+)\/laliga/) || [])[1];
-    if (!slug) continue;
-    const pm = b.match(/data-juego="futmondo-prensa"[\s\S]{0,400}?>\s*(-?\d+(?:[.,]\d+)?)\s*</) || b.match(/data-juego="futmondo-mixto"[\s\S]{0,400}?>\s*(-?\d+(?:[.,]\d+)?)\s*</);
-    const pts = pm ? Number(pm[1].replace(",", ".")) : null;
-    const pos = (b.match(/data-posicion="([^"]+)"/) || [])[1] || "";
-    const titular = /data-onceFF="titular"/.test(b);
-    out.push({ name: ffNameFromSlug(slug), pts, pos, titular });
-  }
-  return out;
-}
-function parsePartidoFF(h, home, away) {
-  const sc = (h.match(/local score">\s*(\d+)/) || [])[1];
-  const scA = (h.match(/visitante score">\s*(\d+)/) || [])[1];
-  const stRaw = (h.match(/partido-container\s+partido-tipo-([a-z-]+)/) || [])[1] || "";
-  let state = "previa";
-  if (/finaliz/.test(stRaw)) state = "final";
-  else if (/siguiendo|directo|live|jugando|descanso/.test(stRaw)) state = "live";
-  const dateTxt = (h.match(/class="fecha">\s*([^<]+)</) || [])[1] || "";
-  const minM = h.match(/partido-header[\s\S]{0,4000}?>\s*(\d{1,3})'\s*</);
-  const gi = h.indexOf("goleadores_wrapper");
-  const gseg = gi >= 0 ? h.slice(gi, gi + 12000) : "";
-  const gVi = gseg.indexOf("goleadores visitante");
-  const gH = (gseg.match(/goleadores local">([\s\S]*?)(?:goleadores visitante|$)/) || [])[1] || "";
-  const gA = gVi >= 0 ? gseg.slice(gVi) : "";
-  const parseGoals = (s) => [...s.matchAll(/<div class="goleador">([\s\S]*?)<\/div>/g)].map((m) => {
-    const b = m[1];
-    const name = (b.match(/class="jugador"[^>]*>([^<]+)<\/a>/) || [])[1] || "";
-    if (!name) return null;
-    const min = (b.match(/\((\d+)'\)/) || [])[1] || "";
-    const pen = /\(p\.\)/i.test(b);
-    return { name: name.trim(), min: min ? Number(min) : 0, pen };
+function cmParseGoals(seg) {
+  return [...seg.matchAll(/<div>\s*([\s\S]*?)\s*<\/div>/g)].map((m) => {
+    const txt = m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    return txt ? { text: txt } : null;
   }).filter(Boolean);
-  const players = parsePlayerBlocks(h);
-  const tit = players.filter((p) => p.titular);
-  const ben = players.filter((p) => !p.titular);
-  const h1 = Math.ceil(tit.length / 2), h2 = Math.ceil(ben.length / 2);
+}
+function cmParseMatch(h) {
+  const sc = [...h.matchAll(/score-num[^>]*>\s*(\d+)\s*</g)].map((m) => Number(m[1]));
+  const state = ((h.match(/estado-bottom[^>]*>\s*([^<]*?)\s*</) || [])[1] || "").trim();
+  const stadium = ((h.match(/🏟️\s*([^<]+)</) || [])[1] || "").trim();
+  const referee = ((h.match(/arbitro_silbato\.svg"[^>]*>\s*<span>([^<]+)</) || [])[1] || "").trim();
+  const cronista = ((h.match(/cronista\.png"[^>]*>\s*<span>([^<]+)</) || [])[1] || "").trim();
+  const sofa = (h.match(/id_sofascore=(\d+)/) || [])[1] || "";
+  const gl = (h.match(/goleadores-col local">([\s\S]*?)(?:goleadores-icon|goleadores-col visit)/) || [])[1] || "";
+  const gv = (h.match(/goleadores-col visit">([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/) || [])[1] || "";
   return {
-    home, away,
-    score: sc != null ? Number(sc) : null,
-    scoreAway: scA != null ? Number(scA) : null,
-    state, date: dateTxt.trim(), minute: minM ? minM[1] : "",
-    goalsHome: parseGoals(gH), goalsAway: parseGoals(gA),
-    homePlayers: tit.slice(0, h1).concat(ben.slice(0, h2)),
-    awayPlayers: tit.slice(h1).concat(ben.slice(h2)),
+    score: sc.length >= 1 ? sc[0] : null, scoreAway: sc.length >= 2 ? sc[1] : null,
+    state, stadium, referee, cronista, sofa,
+    goalsHome: cmParseGoals(gl), goalsAway: cmParseGoals(gv),
   };
 }
-async function getPartidoFF(env, home, away) {
-  const key = "partido:v3:" + normKey(String(home || "").toLowerCase()) + "-" + normKey(String(away || "").toLowerCase());
+function cmParsePoints(h) {
+  const tables = h.split(/<table/i).slice(1);
+  const parse = (t) => {
+    const out = [];
+    const rows = (t || "").split('class="playerRow"').slice(1);
+    for (const r of rows) {
+      const seg = r.slice(0, 1500);
+      const pos = ((seg.match(/playerPosBig[^>]*>\s*([A-Z]{2})/) || [])[1] || "");
+      const name = ((seg.match(/playerName[^>]*>\s*([^<]+?)\s*</) || [])[1] || "").trim();
+      const pts = (seg.match(/playerPoints[^>]*>\s*(-?\d+)\s*</) || [])[1];
+      const hl = [...seg.matchAll(/<span class="hl ([^"]*)">\s*<i class="fa ([a-z-]+)/g)].map((m) => ({ cls: m[1], ico: m[2] }));
+      const hlMin = (seg.match(/hlMin">(\d+)'/) || [])[1] || "";
+      if (name) out.push({ pos, name, pts: pts != null ? Number(pts) : null, hl, min: hlMin });
+    }
+    return out;
+  };
+  return { home: parse(tables[0]), away: parse(tables[1]) };
+}
+async function getPartidoFF(env, home, away, jornada) {
+  const j = Number(jornada) || 0;
+  const key = "partido:v4:" + j + ":" + normKey(String(home || "").toLowerCase()) + "-" + normKey(String(away || "").toLowerCase());
   try { const c = await env.PORRA.get(key, "json"); if (c && c.data && Date.now() - (c.at || 0) < 10 * 60 * 1000) return c.data; } catch (e) {}
   let data = null;
   try {
-    let cal = "";
-    try { const ch = await env.PORRA.get("ffcal:v1", "json"); if (ch && Date.now() - (ch.at || 0) < 6 * 3600 * 1000) cal = ch.html || ""; } catch (e) {}
-    if (!cal) { cal = await (await fetch("https://www.futbolfantasy.com/laliga/calendario", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text(); try { await env.PORRA.put("ffcal:v1", JSON.stringify({ at: Date.now(), html: cal })); } catch (e) {} }
-    const links = [...new Set([...cal.matchAll(/https:\/\/www\.futbolfantasy\.com\/partidos\/\d+-[a-z0-9-]+/g)].map((m) => m[0]))];
-    const wH = wkey(home), wA = wkey(away);
-    let href = "", best = 0;
-    for (const l of links) {
-      const slug = stripAccents(l.split("/").pop().toLowerCase());
-      let s = 0;
-      wH.forEach((w) => { if (slug.indexOf(w) >= 0) s++; });
-      wA.forEach((w) => { if (slug.indexOf(w) >= 0) s++; });
-      const hasH = wH.some((w) => slug.indexOf(w) >= 0);
-      const hasA = wA.some((w) => slug.indexOf(w) >= 0);
-      if (hasH && hasA && s > best) { best = s; href = l; }
-    }
-    if (href) {
-      const h = await (await fetch(href, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text();
-      data = parsePartidoFF(h, home, away);
-      data.url = href;
+    let cmHref = "";
+    try {
+      const body = "id_jornada=" + encodeURIComponent(j) + "&modo_alineaciones=jornada_actual";
+      const mh = await (await fetch("https://www.comuniate.com/ajax/partidos_jornada.php", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded" }), body })).text();
+      const links = [...mh.matchAll(/href="(\/partido\/[^"]+)"/g)].map((m) => m[1]);
+      const wH = wkey(home), wA = wkey(away);
+      let best = 0;
+      for (const l of links) { const slug = stripAccents(l.split("/").pop().toLowerCase()); let s = 0; wH.forEach((w) => { if (slug.indexOf(w) >= 0) s++; }); wA.forEach((w) => { if (slug.indexOf(w) >= 0) s++; }); if (wH.some((w) => slug.indexOf(w) >= 0) && wA.some((w) => slug.indexOf(w) >= 0) && s > best) { best = s; cmHref = l; } }
+    } catch (e) {}
+    if (cmHref) {
+      const mh = await (await fetch("https://www.comuniate.com" + cmHref, { headers: cmHeaders() })).text();
+      const base = cmParseMatch(mh);
+      let hp = [], ap = [];
+      if (base.sofa) {
+        try {
+          const aj = await (await fetch("https://www.comuniate.com/ajax/partidos/carga_puntos_futmondo.php?modo=PRENSA", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded" }), body: "id_sofascore=" + base.sofa + "&temporada=26" })).text();
+          const pts = cmParsePoints(aj);
+          hp = pts.home; ap = pts.away;
+        } catch (e) {}
+      }
+      data = { home, away, ...base, homePlayers: hp, awayPlayers: ap, url: "https://www.comuniate.com" + cmHref };
     }
   } catch (e) {}
   if (data) { try { await env.PORRA.put(key, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 600 }); } catch (e) {} }
@@ -3315,7 +3304,7 @@ export async function onRequestGet({ request, env, params }) {
     try { return json(await getOnce(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "", url.searchParams.get("jornada") || "")); } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "detallepartido") {
-    try { return json(await getPartidoFF(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "")); } catch (e) { return json({ error: String(e) }); }
+    try { return json(await getPartidoFF(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "", url.searchParams.get("jornada") || "")); } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "alineaciones-confirmadas") {
     try { return json(await getAlineacionesConfirmadas(env, url.searchParams.get("jornada") || null)); } catch (e) { return json({ matchday: 0, matches: [], error: String(e) }); }

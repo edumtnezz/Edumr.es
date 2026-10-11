@@ -944,3 +944,19 @@ html { overflow-anchor: none; }
 .mpage-pts { flex: 0 0 auto; font-weight: 800; font-size: 0.9rem; }
 .mpage-pts.top { background: #eab308; color: #111; border-radius: 5px; padding: 1px 7px; }
 @media (max-width: 640px) { .mpage-cols { grid-template-columns: 1fr; gap: 0 0 18px; } }
+/* ---------- Página de partido: meta, eventos y leyenda ---------- */
+.mpage-meta { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; margin-top: 8px; font-size: 0.78rem; color: var(--muted); }
+.mpage-mi { white-space: nowrap; }
+.mpage-ev { display: flex; align-items: center; gap: 3px; margin-left: 6px; }
+.mpage-evb { font-size: 0.54rem; font-weight: 800; color: #fff; border-radius: 4px; padding: 0 4px; line-height: 1.55; }
+.mpage-evb.goal { background: #16a34a; }
+.mpage-evb.own { background: #dc2626; }
+.mpage-evb.miss { background: #b91c1c; }
+.mpage-evb.assist { background: #0891b2; }
+.mpage-evb.yel { background: #eab308; color: #1a1a1a; }
+.mpage-evb.red { background: #dc2626; }
+.mpage-evb.in { background: #16a34a; }
+.mpage-evb.out { background: #ef4444; }
+.mpage-evb.ideal { background: #f59e0b; color: #1a1a1a; }
+.mpage-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 16px; font-size: 0.66rem; color: var(--muted); }
+.mpage-lg { display: flex; align-items: center; gap: 4px; }
