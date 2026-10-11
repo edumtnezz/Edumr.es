@@ -512,7 +512,7 @@
       const ph = el("div", "alin-bimg");
       if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; ph.appendChild(im); }
       c.appendChild(ph);
-      if (p.prob != null) c.appendChild(el("span", "alin-bprob", p.prob + "%"));
+      if (p.prob != null) { const bp = el("span", "alin-bprob", p.prob + "%"); bp.title = probTitle(p.prob); c.appendChild(bp); }
       c.appendChild(el("span", "alin-bname", p.last || p.name));
       c.addEventListener("click", () => openPlayerByName(p.full || p.name));
       grid.appendChild(c);
@@ -530,6 +530,52 @@
     if (prob >= 60) return "#ebcc34";
     if (prob >= 40) return "#cf8236";
     return "#808080";
+  }
+  // Escala oficial de futbolfantasy.com para el % de probabilidad de jugar
+  // (de donde sacamos la mayoría de estos datos). Se usa como tooltip en
+  // cada badge de % para que se entienda qué significa de verdad el número,
+  // no solo el porcentaje suelto.
+  const PROB_SCALE = [
+    [99, "Titularidad confirmada por el entrenador"],
+    [95, "Titularísimo salvo lesión de última hora"],
+    [90, "Titularísimo. Una rotación de cada diez partidos"],
+    [80, "Titular: riesgo de 1 de 5 de rotar"],
+    [70, "Límite de la duda. Titular con miedo"],
+    [60, "En duda, pero con ligera ventaja"],
+    [50, "Duda en igualdad de condiciones con otros competidores"],
+    [40, "Suplente, pero entre los favoritos de ser titular"],
+    [30, "Suplente, con opciones de ser titular"],
+    [20, "Suplente con pocas opciones de ser titular"],
+    [10, "Suplente habitual, juega uno de cada diez"],
+    [0, "Lesionado, baja confirmada o suplencia segura"],
+  ];
+  function probLabel(prob) {
+    const v = Number(prob);
+    if (!isFinite(v)) return "";
+    for (const [th, label] of PROB_SCALE) if (v >= th) return label;
+    return PROB_SCALE[PROB_SCALE.length - 1][1];
+  }
+  function probTitle(prob) { return prob != null ? prob + "% · " + probLabel(prob) : ""; }
+  // Botón "?" compacto que despliega la escala completa — para poner junto
+  // a los badges de % en las secciones con más jugadores a la vista, ya que
+  // en móvil no hay hover que muestre el title="" de cada badge suelto.
+  function probLegendBtn() {
+    const wrap = el("div", "prob-legend-wrap");
+    const btn = el("button", "prob-legend-btn", "ℹ️ ¿Qué significa el %?");
+    btn.type = "button";
+    const panel = el("div", "prob-legend-panel hidden");
+    PROB_SCALE.forEach(([th, label]) => {
+      const row = el("div", "prob-legend-row");
+      const pct = el("span", "prob-legend-pct", th + "%");
+      pct.style.color = pctColor(th);
+      row.appendChild(pct);
+      row.appendChild(el("span", "prob-legend-txt", label));
+      panel.appendChild(row);
+    });
+    btn.addEventListener("click", () => panel.classList.toggle("hidden"));
+    wrap.appendChild(btn);
+    wrap.appendChild(panel);
+    return wrap;
   }
   function renderPitch(t, crest) {
     const col = el("div", "alin-teamcol");
@@ -570,6 +616,7 @@
         if (p.prob != null && p.prob < 100) {
           const pct = el("span", "alin-pct", p.prob + "%");
           pct.style.borderColor = pctColor(p.prob);
+          pct.title = probTitle(p.prob);
           ph.appendChild(pct);
         }
         pl.appendChild(ph);
@@ -650,6 +697,7 @@
       teams.appendChild(ab);
       head.appendChild(teams);
       head.appendChild(el("div", "alin-mwhen", ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim()));
+      head.appendChild(probLegendBtn());
       card.appendChild(head);
       const pitches = el("div", "alin-pitches");
       pitches.appendChild(renderPitch(r.home || {}, m.homeCrest));
@@ -692,6 +740,7 @@
     const tl = el("div", "mkt-tl");
     tl.appendChild(el("div", "mkt-headline", "📋 Todos los jugadores"));
     tl.appendChild(el("div", "mkt-hint", "↔ Desliza la tabla para ver más columnas"));
+    tl.appendChild(probLegendBtn());
     top.appendChild(tl);
     const seg = el("div", "hl-seg");
     [["1", "Hoy"], ["7", "7 días"], ["14", "14 días"], ["30", "30 días"], ["all", "Temporada"]].forEach(([k, lab]) => {
@@ -763,7 +812,7 @@
       if (p.jornadaFf) rv.appendChild(el("b", null, "J" + p.jornadaFf));
       if (p.casaFf != null) rv.appendChild(el("span", null, p.casaFf ? "🏠" : "✈️"));
       if (p.rivalFf) rv.appendChild(el("span", "mkt-rv", shortRival(p.rivalFf)));
-      if (p.prob != null) rv.appendChild(el("span", "mkt-prob", p.prob + "%"));
+      if (p.prob != null) { const mp = el("span", "mkt-prob", p.prob + "%"); mp.title = probTitle(p.prob); rv.appendChild(mp); }
       row.appendChild(rv);
       row.addEventListener("click", () => openFicha(p));
       tbl.appendChild(row);
@@ -2097,6 +2146,7 @@
       if (p.prob != null) {
         const pct = el("span", "alin-pct", p.prob + "%");
         pct.style.borderColor = pctColor(p.prob);
+        pct.title = probTitle(p.prob);
         ph.appendChild(pct);
       }
       pl.appendChild(ph);
@@ -2129,7 +2179,7 @@
         field.appendChild(pitchCard(p, x, band[1], sizeClass));
       });
     });
-    if (field.children.length) out.appendChild(field);
+    if (field.children.length) { out.appendChild(field); out.appendChild(probLegendBtn()); }
 
     const benchCard = (p) => {
       const card = el("div", "pitch-player bench");
@@ -2145,7 +2195,7 @@
         card.appendChild(tm);
       }
       const info = el("div", "pitch-info");
-      info.appendChild(el("span", "pc-prob", (p.prob != null ? p.prob : "?") + "%"));
+      const pcp = el("span", "pc-prob", (p.prob != null ? p.prob : "?") + "%"); if (p.prob != null) pcp.title = probTitle(p.prob); info.appendChild(pcp);
       if (p.estado && p.estado !== "OK" && p.estado !== "?") info.appendChild(el("span", "pc-bad", p.estado));
       card.appendChild(info);
       if (p.rival) card.appendChild(el("div", "pitch-ha", (p.casa === true ? "🏠 " : p.casa === false ? "✈️ " : "") + p.rival));
