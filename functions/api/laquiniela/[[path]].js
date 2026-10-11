@@ -1833,7 +1833,7 @@ function parseMatchSide(seg) {
   }
   return out;
 }
-function parsePartido(h, home, away) {
+function parsePartidoFF(h, home, away) {
   const sc = (h.match(/local score">\s*(\d+)/) || [])[1];
   const scA = (h.match(/visitante score">\s*(\d+)/) || [])[1];
   const stRaw = (h.match(/partido-container\s+partido-tipo-([a-z-]+)/) || [])[1] || "";
@@ -1858,7 +1858,7 @@ function parsePartido(h, home, away) {
     homePlayers: parseMatchSide(segL), awayPlayers: parseMatchSide(segV),
   };
 }
-async function getPartido(env, home, away) {
+async function getPartidoFF(env, home, away) {
   const key = "partido:v1:" + normKey(String(home || "").toLowerCase()) + "-" + normKey(String(away || "").toLowerCase());
   try { const c = await env.PORRA.get(key, "json"); if (c && c.data && Date.now() - (c.at || 0) < 10 * 60 * 1000) return c.data; } catch (e) {}
   let data = null;
@@ -1872,7 +1872,7 @@ async function getPartido(env, home, away) {
     for (const l of links) { const slug = stripAccents(l.split("/").pop().toLowerCase()); if (wH.length && wA.length && wH.every((w) => slug.indexOf(w) >= 0) && wA.every((w) => slug.indexOf(w) >= 0)) { href = l; break; } }
     if (href) {
       const h = await (await fetch(href, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text();
-      data = parsePartido(h, home, away);
+      data = parsePartidoFF(h, home, away);
       data.url = href;
     }
   } catch (e) {}
@@ -3294,7 +3294,7 @@ export async function onRequestGet({ request, env, params }) {
     try { return json(await getOnce(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "", url.searchParams.get("jornada") || "")); } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "detallepartido") {
-    try { return json(await getPartido(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "")); } catch (e) { return json({ error: String(e) }); }
+    try { return json(await getPartidoFF(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "")); } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "alineaciones-confirmadas") {
     try { return json(await getAlineacionesConfirmadas(env, url.searchParams.get("jornada") || null)); } catch (e) { return json({ matchday: 0, matches: [], error: String(e) }); }
