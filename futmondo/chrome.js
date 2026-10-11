@@ -63,6 +63,12 @@
     if (!grid) return;
     if (n && (n < 1 || n > 38)) return;
     var url = API + "/jornada" + (n && n > 0 ? ("?jornada=" + n) : "");
+    // Para que la página no "salte" (arrastrando hacia arriba lo que hay
+    // debajo, como las noticias) al cambiar de jornada: se fija la altura
+    // que ya tenía la rejilla mientras carga la siguiente, en vez de
+    // vaciarla primero y dejar que se desplome a una sola línea.
+    var prevH = grid.offsetHeight;
+    if (prevH) grid.style.minHeight = prevH + "px";
     grid.innerHTML = '<span class="cx-strip-load">Cargando jornada…</span>';
     fetch(url, { cache: "no-store" })
       .then(function (r) { return r.json(); })
@@ -70,7 +76,7 @@
         var ms = (d && d.matches) || [];
         jornada = Number(d && d.matchday) || 0;
         if (title) title.textContent = jornada ? ("Jornada " + jornada) : "Jornada";
-        if (!ms.length) { grid.innerHTML = '<span class="cx-strip-load">Sin jornada.</span>'; return; }
+        if (!ms.length) { grid.innerHTML = '<span class="cx-strip-load">Sin jornada.</span>'; grid.style.minHeight = ""; return; }
         grid.innerHTML = ms.map(function (m) {
           var tv;
           if (m.tv && m.tv[0]) {
@@ -105,6 +111,7 @@
             '<img class="cx-jn-crest" src="' + esc(m.awayCrest) + '" alt="' + esc(m.away) + '" title="' + esc(m.away) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
             '</div>';
         }).join("");
+        grid.style.minHeight = "";
         var pv = document.getElementById("cxJPrev"), nx = document.getElementById("cxJNext");
         if (pv) pv.disabled = jornada <= 1;
         if (nx) nx.disabled = jornada >= 38;
@@ -118,7 +125,7 @@
           });
         });
       })
-      .catch(function () { grid.innerHTML = '<span class="cx-strip-load">No disponible.</span>'; });
+      .catch(function () { grid.innerHTML = '<span class="cx-strip-load">No disponible.</span>'; grid.style.minHeight = ""; });
   }
   function loadTeams() {
     var box = document.getElementById("cxStrip");
