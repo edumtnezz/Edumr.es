@@ -69,7 +69,6 @@
         '</div>' +
       '</div>' +
       '<div class="cx-strip"><div class="cx-strip-track" id="cxStrip"><span class="cx-strip-load">Cargando equipos…</span></div><div class="cx-scrollbar" id="cxStripBar"><div class="cx-scrollbar-thumb"></div></div></div>' +
-      '<div class="cx-live"><span class="cx-live-tag">Última hora</span><div class="cx-live-track" id="cxLiveTrack"><span class="cx-live-load">Cargando última hora…</span></div></div>' +
       '<div class="cx-jornada">' +
         '<div class="cx-jn-head">' +
           '<button class="cx-jn-nav" id="cxJPrev" aria-label="Jornada anterior">◀</button>' +
@@ -81,16 +80,9 @@
     var pv = document.getElementById("cxJPrev"), nx = document.getElementById("cxJNext");
     if (pv) pv.addEventListener("click", function () { loadJornada(jornada - 1); });
     if (nx) nx.addEventListener("click", function () { loadJornada(jornada + 1); });
-    var live = document.getElementById("cxLiveTrack");
-    if (live) live.addEventListener("click", function (e) {
-      var a = e.target && e.target.closest ? e.target.closest(".cx-live-item") : null;
-      if (!a) return;
-      e.preventDefault();
-      document.dispatchEvent(new CustomEvent("cx:news", { detail: { link: a.getAttribute("href"), title: a.getAttribute("data-title") } }));
-    });
-    // La cinta de Última hora: las noticias abren la noticia (como el ticker
-    // de Noticias); las alineaciones confirmadas navegan a la página del
-    // partido (enlace normal).
+    // La cinta de Última hora: las noticias abren la noticia (en Noticias);
+    // las alineaciones confirmadas navegan a la página del partido (enlace
+    // normal).
     var tview = document.getElementById("cxTickerView");
     if (tview) tview.addEventListener("click", function (e) {
       var a = e.target && e.target.closest ? e.target.closest(".cx-ticker-item") : null;
@@ -101,9 +93,7 @@
     });
     loadJornada(0);
     loadTeams();
-    loadLive();
     loadTicker();
-    setInterval(loadLive, 90000);
     // La cinta de la portada se refresca sola cada 5 minutos.
     setInterval(loadTicker, 300000);
     // Refresca el marcador de la jornada en curso cada minuto: así los
@@ -227,27 +217,6 @@
       })
       .catch(function () { box.innerHTML = '<span class="cx-strip-load">No disponible.</span>'; });
   }
-  function loadLive() {
-    var box = document.getElementById("cxLiveTrack");
-    if (!box) return;
-    fetch(API + "/ultimahora", { cache: "no-store" })
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        var items = (d && d.items) || [];
-        if (!items.length) { if (!box.dataset.sig) box.innerHTML = '<span class="cx-live-load">Sin novedades ahora mismo.</span>'; return; }
-        var sig = (items[0].link || items[0].title || "") + "|" + items.length;
-        if (box.dataset.sig === sig) return;
-        box.dataset.sig = sig;
-        box.innerHTML = items.map(function (x) {
-          var img = x.thumb ? '<img src="' + esc(x.thumb) + '" alt="" loading="lazy" onerror="this.remove()">' : "";
-          var tm = x.time ? '<b class="cx-live-time">' + esc((x.date ? x.date + " · " : "") + x.time) + '</b>' : "";
-          return '<a class="cx-live-item" href="' + esc(x.link) + '" data-title="' + esc(x.title) + '">' + img +
-            '<span class="cx-live-txt">' + esc(x.title) + '</span>' + tm + '</a>';
-        }).join("");
-        autoScroll();
-      })
-      .catch(function () { if (!box.dataset.sig) box.innerHTML = '<span class="cx-live-load">No disponible.</span>'; });
-  }
   // ---------- Cinta de "Última hora" de la portada ----------
   // Marquesina CSS continua: el carril lleva el contenido duplicado y la
   // animación lo desplaza un -50%, así el bucle no tiene costuras. Se para
@@ -327,22 +296,6 @@
         renderTicker(items);
       })
       .catch(function () {});
-  }
-  function autoScroll() {
-    var box = document.getElementById("cxLiveTrack");
-    if (!box || box.dataset.scroll) return;
-    box.dataset.scroll = "1";
-    var paused = false;
-    box.addEventListener("mouseenter", function () { paused = true; });
-    box.addEventListener("mouseleave", function () { paused = false; });
-    box.addEventListener("touchstart", function () { paused = true; }, { passive: true });
-    box.addEventListener("touchend", function () { paused = false; }, { passive: true });
-    setInterval(function () {
-      if (paused || document.hidden) return;
-      if (box.scrollWidth - box.clientWidth < 12) return;
-      if (box.scrollLeft + box.clientWidth >= box.scrollWidth - 1) box.scrollLeft = 0;
-      else box.scrollLeft += 1;
-    }, 40);
   }
   if (document.readyState !== "loading") boot();
   else document.addEventListener("DOMContentLoaded", boot);

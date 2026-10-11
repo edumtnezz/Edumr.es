@@ -458,15 +458,15 @@ body {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   background: #064e2b;
   color: #2ee27a;
   font-family: 'Space Grotesk', sans-serif;
   font-weight: 800;
-  font-size: 0.72rem;
-  letter-spacing: 0.05em;
+  font-size: 0.66rem;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  padding: 9px 14px;
+  padding: 7px 12px;
   white-space: nowrap;
   position: relative;
   z-index: 2;
@@ -493,16 +493,16 @@ body {
 .cx-ticker-item {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   color: #e9eef5;
   text-decoration: none;
   flex: 0 0 auto;
-  margin-right: 26px;
-  padding: 8px 0;
+  margin-right: 22px;
+  padding: 6px 0;
 }
 .cx-ticker-item:hover .cx-ticker-txt { color: #fff; }
 .cx-ticker-ico {
-  width: 26px; height: 26px;
+  width: 24px; height: 24px;
   border-radius: 50%;
   overflow: hidden;
   flex: 0 0 auto;
@@ -510,12 +510,12 @@ body {
   background: rgba(255, 255, 255, 0.12);
 }
 .cx-ticker-ico img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.cx-ticker-emoji { font-size: 0.82rem; line-height: 1; }
+.cx-ticker-emoji { font-size: 0.78rem; line-height: 1; }
 .cx-ticker-txt {
-  max-width: 300px;
+  max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 700;
   transition: color 0.15s;
 }
@@ -523,18 +523,18 @@ body {
   background: #064e2b;
   color: #2ee27a;
   font-weight: 800;
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   border-radius: 7px;
-  padding: 2px 8px;
+  padding: 2px 7px;
   white-space: nowrap;
 }
-.cx-ticker-load { color: rgba(255, 255, 255, 0.55); font-size: 0.78rem; }
+.cx-ticker-load { color: rgba(255, 255, 255, 0.55); font-size: 0.74rem; }
 @media (max-width: 640px) {
-  .cx-ticker-tag { font-size: 0.6rem; padding: 7px 10px; gap: 5px; }
-  .cx-ticker-item { margin-right: 18px; padding: 6px 0; }
-  .cx-ticker-ico { width: 22px; height: 22px; }
-  .cx-ticker-txt { font-size: 0.74rem; max-width: 200px; }
-  .cx-ticker-when { font-size: 0.56rem; padding: 2px 6px; }
+  .cx-ticker-tag { font-size: 0.56rem; padding: 6px 9px; gap: 5px; }
+  .cx-ticker-item { margin-right: 16px; padding: 5px 0; }
+  .cx-ticker-ico { width: 20px; height: 20px; }
+  .cx-ticker-txt { font-size: 0.7rem; max-width: 180px; }
+  .cx-ticker-when { font-size: 0.54rem; padding: 2px 6px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .cx-ticker-track { animation: none !important; }
@@ -634,17 +634,18 @@ body {
 .cx-sub .tab:not(.active):not(.cx-more-item):hover { color: var(--cx-text) !important; }
 .cx-sub .tab.active:not(.cx-more-item) { background: transparent !important; color: var(--cx-green) !important; border-bottom: 2px solid var(--cx-green) !important; }
 
-/* --- Guía Fantasy: pestañas en UNA sola línea y todo el grupo centrado ---
-   En la barra principal solo van Inicio · Noticias · Mercado + ☰ (Fichajes,
-   Clausulazo y Analiza viven dentro del menú ☰). */
-.gf-page .cx-sub-inner { justify-content: center; gap: 6px; }
-.gf-page .cx-sub .tabs { width: auto; flex-wrap: nowrap; justify-content: center; overflow: visible; }
+/* --- Guía Fantasy: pestañas en UNA sola línea, a todo el ancho del móvil y
+   con el ☰ siempre a la derecha --- En la barra principal solo van
+   Inicio · Noticias · Mercado (Fichajes, Clausulazo y Analiza viven dentro
+   del menú ☰). */
+.gf-page .cx-sub-inner { justify-content: flex-start; gap: 4px; }
+.gf-page .cx-sub .tabs { flex: 1 1 auto; width: auto; flex-wrap: nowrap; justify-content: space-between; overflow: visible; gap: 0; }
+.gf-page .cx-sub .tab { flex: 1 1 0; display: flex; align-items: center; justify-content: center; text-align: center; }
 @media (max-width: 720px) {
-  .gf-page .cx-sub-inner { justify-content: center; }
-  .gf-page .cx-sub .tabs { width: auto; justify-content: center; }
-  .gf-page .cx-sub .tab { padding: 11px 9px; }
-}
-@media (max-width: 400px) {
-  .gf-page .cx-sub .tab { padding: 10px 6px; font-size: 0.74rem; }
-  .gf-page .cx-sub .tab .tab-ico { margin-right: 4px; }
+  .gf-page .cx-sub-inner { padding: 0 8px; gap: 0; }
+  .gf-page .cx-sub .tabs { width: auto; justify-content: space-between; }
+  .gf-page .cx-sub .tab { flex: 1 1 0; padding: 14px 4px; font-size: 0.86rem; }
+  .gf-page .cx-sub .tab .tab-ico { width: 18px; height: 18px; margin-right: 5px; }
+  .gf-page .cx-more-btn { padding: 6px 8px !important; }
+  .gf-page .cx-more-ico { font-size: 1.7rem !important; }
 }

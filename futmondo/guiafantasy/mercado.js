@@ -497,15 +497,25 @@
   }
 
   const akey = (s) => stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9]/g, "");
+  function nameSlug(s) { return stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9]/g, ""); }
+  // URL de la ficha de un jugador: /futmondo/guiafantasy/jugadores/<id>/<nombre>
+  // (el id es el de Futmondo; el nombre solo hace la URL legible).
+  function playerUrl(name) {
+    const p = marketInfo(name);
+    if (p && p.id) return "/futmondo/guiafantasy/jugadores/" + encodeURIComponent(p.id) + "/" + nameSlug(p.name);
+    return "";
+  }
   function openPlayerByName(name) {
+    const u = playerUrl(name);
+    if (u) { location.href = u; return; }
     const q = stripAccents(String(name || "").toLowerCase());
     if (!q || !all || !all.length) return;
     const p = all.find((x) => stripAccents(x.name).toLowerCase() === q) || all.find((x) => stripAccents(x.name).toLowerCase().indexOf(q) >= 0 || q.indexOf(stripAccents(x.name).toLowerCase()) >= 0);
     if (p) openFicha(p);
   }
-  function renderBench(list) {
+  function renderBench(list, title) {
     const box = el("div", "alin-bench");
-    box.appendChild(el("div", "alin-bench-h", "Alternativas al once"));
+    box.appendChild(el("div", "alin-bench-h", title || "Alternativas al once"));
     const grid = el("div", "alin-bench-grid");
     list.forEach((p) => {
       const c = el("div", "alin-bp");
@@ -727,11 +737,11 @@
       ["portero", "defensas", "medios", "delanteros"].forEach((k) => (side[k] || []).forEach((p) => g[k].push(p)));
     } else {
       (side.starters || []).forEach((p) => {
-        const q = stripAccents(String(p.pos || "").toLowerCase());
-        if (/porter/.test(q)) g.portero.push(p);
-        else if (/defens|central|lateral|carrilero/.test(q)) g.defensas.push(p);
-        else if (/medio|centro|pivote|interior/.test(q)) g.medios.push(p);
-        else if (/delant|extremo|punta/.test(q)) g.delanteros.push(p);
+        const q = stripAccents(String(p.pos || "").toLowerCase()).trim();
+        if (q === "pt" || /porter/.test(q)) g.portero.push(p);
+        else if (q === "df" || /defens|central|lateral|carrilero/.test(q)) g.defensas.push(p);
+        else if (q === "md" || q === "cen" || /medio|centro|pivote|interior/.test(q)) g.medios.push(p);
+        else if (q === "dl" || /delant|extremo|punta/.test(q)) g.delanteros.push(p);
         else g.medios.push(p);
       });
     }
@@ -753,7 +763,7 @@
       || idx.find((x) => last.length >= 4 && (x.key.indexOf(last) >= 0 || x.last.indexOf(last) >= 0));
     return hit ? hit.p : null;
   }
-  function mpXiTeam(side, crest, evIdx, maxP) {
+  function mpXiTeam(side, crest, evIdx, showPts) {
     const col = el("div", "alin-teamcol mpage-xi-team");
     const th = el("div", "alin-tcolhead mpage-xi-head");
     if (crest) { const im = el("img"); im.src = crest; im.alt = ""; im.loading = "lazy"; th.appendChild(im); }
@@ -778,16 +788,21 @@
         pl.style.top = band[1] + "%";
         const ph = el("div", "alin-pimg mpage-xiimg");
         if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); ph.appendChild(im); }
+        else ph.classList.add("empty");
         if (p.prob != null && p.prob < 100) {
           const pct = el("span", "alin-pct", p.prob + "%");
           pct.style.borderColor = pctColor(p.prob);
           pct.title = probTitle(p.prob);
           ph.appendChild(pct);
         }
-        if (ev && ev.pts != null) {
-          const pts = el("span", "mpage-xpts", String(ev.pts));
-          if (ev.pts > 0 && ev.pts === maxP && maxP >= 6) pts.classList.add("top");
-          pts.title = "Puntos Futmondo (prensa)";
+        // Puntos: en el partido ya jugado se pintan los de MI liga Futmondo
+        // (llegan después, en /puntos; el "–" es el hueco hasta entonces).
+        // Antes se pintaban los de la tabla PRENSA de Comuniate, que no
+        // cuadran con los de la liga (p.ej. Lamine 6 vs 10).
+        if (showPts) {
+          const pts = el("span", "mpage-xpts", "–");
+          pts.setAttribute("data-full", p.full || p.name || "");
+          pts.title = "Puntos de mi liga Futmondo";
           ph.appendChild(pts);
         }
         pl.appendChild(ph);
@@ -803,9 +818,72 @@
       });
     });
     col.appendChild(pitch);
+    if (side.bench && side.bench.length) col.appendChild(renderBench(side.bench, "Banquillo"));
     return col;
   }
-  function renderMatchDetail(box, m, d, jn, xi, xiKind) {
+  // Jugadores que acabaron jugando el partido (tabla PUNTOS de Comuniate):
+  // titulares = sin evento de entrada; suplentes que salieron = con "IN".
+  function xiFinishedSide(name, crest, list) {
+    const g = { name, crest, portero: [], defensas: [], medios: [], delanteros: [], subs: [] };
+    (list || []).forEach((p) => {
+      const q = stripAccents(String(p.pos || "").toLowerCase()).trim();
+      const isSub = (p.hl || []).some((h) => /sign-in/.test(h.ico || ""));
+      const mi = marketInfo(p.name);
+      const o = { name: p.name, full: p.name, last: String(p.name || "").split(/\s+/).pop(), photo: (mi && mi.photo) || "" };
+      if (isSub) { g.subs.push(o); return; }
+      if (q === "pt" || /porter/.test(q)) g.portero.push(o);
+      else if (q === "df" || /defens/.test(q)) g.defensas.push(o);
+      else if (q === "dl" || /delant/.test(q)) g.delanteros.push(o);
+      else g.medios.push(o);
+    });
+    g.formation = [g.defensas.length, g.medios.length, g.delanteros.length].join("-");
+    return g;
+  }
+  function mpSubsGrid(list, evIdx) {
+    const grid = el("div", "mpage-subs-grid");
+    (list || []).forEach((p) => {
+      const ev = evIdx ? xiFindEv(evIdx, p.name) : null;
+      const c = el("div", "alin-bp mpage-subp");
+      const ph = el("div", "alin-bimg mpage-xiimg");
+      if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); ph.appendChild(im); }
+      const pts = el("span", "mpage-xpts", "–");
+      pts.setAttribute("data-full", p.full || p.name || "");
+      pts.title = "Puntos de mi liga Futmondo";
+      ph.appendChild(pts);
+      c.appendChild(ph);
+      c.appendChild(el("span", "alin-bname", p.last || p.name));
+      if (ev && ev.hl && ev.hl.length) { const evs = mpEv(ev.hl, ev.min); evs.classList.add("mpage-xev"); c.appendChild(evs); }
+      c.addEventListener("click", () => openPlayerByName(p.full || p.name));
+      grid.appendChild(c);
+    });
+    return grid;
+  }
+  async function fillMpPoints(box, d, jn) {
+    const idByName = {};
+    [].concat(d.homePlayers || [], d.awayPlayers || []).forEach((p) => {
+      const nm = p.name || "";
+      if (!nm || idByName[nm] != null) return;
+      const mi = marketInfo(nm);
+      idByName[nm] = (mi && mi.id) || "";
+    });
+    const ids = Object.keys(idByName).map((k) => idByName[k]).filter((x, i, a) => x && a.indexOf(x) === i);
+    if (!ids.length) return;
+    let map = {};
+    try {
+      const r = await (await fetch(API + "/puntos?jornada=" + encodeURIComponent(jn) + "&ids=" + ids.join(","), { cache: "no-store" })).json();
+      map = (r && r.points) || {};
+    } catch (e) {}
+    box.querySelectorAll(".mpage-xpts[data-full]").forEach((el2) => {
+      const id = idByName[el2.getAttribute("data-full")];
+      const rec = id ? map[id] : null;
+      if (rec && rec.f === true && rec.p != null) { el2.textContent = String(rec.p); el2.classList.add("on"); }
+      else el2.remove();
+    });
+    let max = null;
+    box.querySelectorAll(".mpage-xpts.on").forEach((e2) => { const v = Number(e2.textContent) || 0; if (max == null || v > max) max = v; });
+    if (max != null && max >= 6) box.querySelectorAll(".mpage-xpts.on").forEach((e2) => { if ((Number(e2.textContent) || 0) === max) e2.classList.add("top"); });
+  }
+  function renderMatchDetail(box, m, d, jn, xi, xiKind, finished) {
     box.innerHTML = "";
     const head = el("div", "mpage-top");
     const tl = el("div", "mpage-topline");
@@ -840,17 +918,40 @@
       g.appendChild(gc(ga, true));
       box.appendChild(g);
     }
-    if (xi) {
+    if (finished) {
+      const sec = el("section", "mpage-xi mpage-xi-done");
+      const hd = el("div", "mpage-xi-h");
+      hd.appendChild(el("span", "mpage-xi-title", "Jugadores del partido"));
+      sec.appendChild(hd);
+      const idxH = xiEvIndex(d.homePlayers), idxA = xiEvIndex(d.awayPlayers);
+      const home = xiFinishedSide(m.home, m.homeCrest, d.homePlayers);
+      const away = xiFinishedSide(m.away, m.awayCrest, d.awayPlayers);
+      const pitches = el("div", "alin-pitches mpage-xipitches");
+      pitches.appendChild(mpXiTeam(home, m.homeCrest, idxH, true));
+      pitches.appendChild(mpXiTeam(away, m.awayCrest, idxA, true));
+      sec.appendChild(pitches);
+      if (home.subs.length || away.subs.length) {
+        const subs = el("div", "mpage-subs");
+        const cH = el("div", "mpage-subcol");
+        cH.appendChild(el("div", "mpage-subs-h", "Desde el banquillo · " + m.home));
+        cH.appendChild(mpSubsGrid(home.subs, idxH));
+        const cA = el("div", "mpage-subcol");
+        cA.appendChild(el("div", "mpage-subs-h", "Desde el banquillo · " + m.away));
+        cA.appendChild(mpSubsGrid(away.subs, idxA));
+        subs.appendChild(cH); subs.appendChild(cA);
+        sec.appendChild(subs);
+      }
+      box.appendChild(sec);
+    } else if (xi) {
       const sec = el("section", "mpage-xi");
       const hd = el("div", "mpage-xi-h");
       hd.appendChild(el("span", "mpage-xi-title", xiKind === "confirmada" ? "Alineación confirmada" : "Alineación probable"));
       if (xiKind !== "confirmada") hd.appendChild(probLegendBtn());
       sec.appendChild(hd);
-      const maxP = Math.max.apply(null, [].concat((d.homePlayers || []).map((p) => p.pts || 0), (d.awayPlayers || []).map((p) => p.pts || 0), [0]));
       const idxH = xiEvIndex(d.homePlayers), idxA = xiEvIndex(d.awayPlayers);
       const pitches = el("div", "alin-pitches mpage-xipitches");
-      pitches.appendChild(mpXiTeam(xi.home || {}, (xi.home && xi.home.crest) || m.homeCrest, idxH, maxP));
-      pitches.appendChild(mpXiTeam(xi.away || {}, (xi.away && xi.away.crest) || m.awayCrest, idxA, maxP));
+      pitches.appendChild(mpXiTeam(xi.home || {}, (xi.home && xi.home.crest) || m.homeCrest, idxH, false));
+      pitches.appendChild(mpXiTeam(xi.away || {}, (xi.away && xi.away.crest) || m.awayCrest, idxA, false));
       sec.appendChild(pitches);
       box.appendChild(sec);
     } else {
@@ -885,6 +986,7 @@
   async function renderMatchPage(slug) {
     const main = document.querySelector(".quiniela-main");
     if (!main) return;
+    main.classList.add("mpage-open");
     document.querySelectorAll(".cx-sub").forEach((e) => e.classList.add("hidden"));
     document.querySelectorAll(".tab-panel").forEach((e) => e.classList.add("hidden"));
     const ch = $("cxChrome"); if (ch) ch.classList.add("hidden");
@@ -899,23 +1001,53 @@
       if (!m) { box.innerHTML = '<p class="muted small">No se encontró el partido.</p>'; return; }
       const d = await (await fetch(API + "/detallepartido?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json();
       if (!all || !all.length) { try { await load(); } catch (e) {} }
-      // Alineación para el campo: primero la confirmada (Comuniate, literal);
-      // si aún no está, la probable (FutbolFantasy con %). En los dos casos
-      // los eventos/puntos se cruzan con la tabla PUNTOS del partido.
+      const finished = (m.live && m.live.state === "final") || /finaliz/i.test(String(d.state || ""));
+      // Alineación para el campo (solo si el partido NO ha acabado): primero
+      // la confirmada (Comuniate, literal); si aún no está, la probable
+      // (FutbolFantasy con % y banquillo). Si ya acabó, en su lugar se
+      // muestran los jugadores que jugaron de verdad (tabla PUNTOS).
       let xi = null, xiKind = "";
-      try {
-        const c = await (await fetch(API + "/alineaciones-confirmadas?jornada=" + encodeURIComponent(jn), { cache: "no-store" })).json();
-        const cm = findXiMatch((c && c.matches) || [], m.home, m.away);
-        if (cm) { xi = cm; xiKind = "confirmada"; }
-      } catch (e) {}
-      if (!xi) {
+      if (!finished) {
         try {
-          const o = await (await fetch(API + "/once?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn), { cache: "no-store" })).json();
-          if (o && o.home && (((o.home.starters || []).length) || ((o.away.starters || []).length))) { xi = o; xiKind = "probable"; }
+          const c = await (await fetch(API + "/alineaciones-confirmadas?jornada=" + encodeURIComponent(jn), { cache: "no-store" })).json();
+          const cm = findXiMatch((c && c.matches) || [], m.home, m.away);
+          if (cm) { xi = cm; xiKind = "confirmada"; }
         } catch (e) {}
+        if (!xi) {
+          try {
+            const o = await (await fetch(API + "/once?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn), { cache: "no-store" })).json();
+            if (o && o.home && (((o.home.starters || []).length) || ((o.away.starters || []).length))) { xi = o; xiKind = "probable"; }
+          } catch (e) {}
+        }
       }
-      renderMatchDetail(box, m, d, jn, xi, xiKind);
+      renderMatchDetail(box, m, d, jn, xi, xiKind, finished);
+      // Los puntos de MI liga Futmondo se piden aparte (por jugador y con
+      // caché en el backend) y se pintan encima en cuanto llegan.
+      if (finished) { try { await fillMpPoints(box, d, jn); } catch (e) {} }
     } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar el partido.</p>'; }
+  }
+  // Ficha de jugador como página propia:
+  // /futmondo/guiafantasy/jugadores/<id>/<nombre>
+  async function renderPlayerPage(id) {
+    const main = document.querySelector(".quiniela-main");
+    if (!main) return;
+    document.querySelectorAll(".cx-sub").forEach((e) => e.classList.add("hidden"));
+    document.querySelectorAll(".tab-panel").forEach((e) => e.classList.add("hidden"));
+    const ch = $("cxChrome"); if (ch) ch.classList.add("hidden");
+    const box = el("section", "panel playerpage");
+    box.innerHTML = '<p class="muted small">Cargando ficha…</p>';
+    main.appendChild(box);
+    if (!all || !all.length) { try { await load(); } catch (e) {} }
+    const p = (all || []).find((x) => String(x.id) === String(id)) || {};
+    try {
+      const d = await (await fetch(API + "/jugador?id=" + encodeURIComponent(id), { cache: "no-store" })).json();
+      box.innerHTML = "";
+      const back = el("button", "btn-ghost noti-back", "← Volver");
+      back.type = "button";
+      back.addEventListener("click", () => { if (history.length > 1) history.back(); else location.href = "/futmondo/guiafantasy/inicio"; });
+      box.appendChild(back);
+      box.appendChild(renderFicha(d, p));
+    } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar la ficha.</p>'; }
   }
 
   function openMatchFicha(m, jn) {
@@ -1366,10 +1498,8 @@
       // La cinta de "Última hora" (chrome.js) es la primera cosa de la
       // portada: solo se enseña en Inicio.
       ch.classList.toggle("hide-ticker", name !== "inicio");
-      // El ticker de "última hora" clásico solo se ve en Noticias.
-      ch.classList.toggle("hide-live", name !== "noticias");
       // En Noticias no se repiten los escudos ni la franja de jornada
-      // (ya están en Inicio): solo se queda la última hora.
+      // (ya están en Inicio).
       ch.classList.toggle("hide-strip", name === "noticias");
       // Los partidos de la jornada solo se ven en Inicio.
       ch.classList.toggle("hide-jornada", name !== "inicio");
@@ -2088,6 +2218,7 @@
   setupMoreMenu();
   (function restoreTab() {
     try { const pm = location.pathname.match(/\/guiafantasy\/partido\/([a-z0-9-]+)/); if (pm) { renderMatchPage(pm[1]); return; } } catch (e) {}
+    try { const pj = location.pathname.match(/\/guiafantasy\/jugadores\/(\d+)/); if (pj) { renderPlayerPage(pj[1]); return; } } catch (e) {}
     let name = "";
     try {
       const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|noticias|analiza|clausulazos)/);

@@ -1846,10 +1846,18 @@ async function getAlineacionesConfirmadas(env, matchdayParam) {
 }
 
 function cmParseGoals(seg) {
-  return [...seg.matchAll(/<div>\s*([\s\S]*?)\s*<\/div>/g)].map((m) => {
+  // El último gol de cada columna puede venir sin su </div> de cierre dentro
+  // del trozo capturado (el corte de la columna se come ese cierre), así que
+  // además de <div>...</div> se acepta un <div> final abierto hasta el final.
+  const out = [];
+  const re = /<div>\s*([\s\S]*?)(?:<\/div>|$)/g;
+  let m;
+  while ((m = re.exec(seg))) {
     const txt = m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-    return txt ? { text: txt } : null;
-  }).filter(Boolean);
+    if (txt) out.push({ text: txt });
+    if (re.lastIndex >= seg.length) break;
+  }
+  return out;
 }
 function cmParseMatch(h) {
   const sc = [...h.matchAll(/score-num[^>]*>\s*(\d+)\s*</g)].map((m) => Number(m[1]));
@@ -2702,16 +2710,33 @@ async function saveCapitanPrediction(env, user, jornada, alts) {
 
 async function getPlayerJornadaPoints(env, playerId, jornada) {
   if (!playerId) return null;
+  // Caché por jugador+jornada: los puntos de un partido terminado ya no
+  // cambian (se guardan 30 días); mientras el partido no ha acabado se
+  // guardan solo 2 minutos para no machacar la API de Futmondo desde la
+  // página de cada partido.
+  const ck = "pjp:v1:" + playerId + ":" + (Number(jornada) || 0);
+  try {
+    const c = await env.PORRA.get(ck, "json");
+    if (c && (c.finished || Date.now() - (c.at || 0) < 120000)) return { finished: !!c.finished, points: c.finished ? c.points : null };
+  } catch (e) {}
   try {
     const header = await futbolHeader(env);
     const r = await futbolPost("/2/player/matches", header, { playerId, championshipId: FUTMONDO_CHAMPIONSHIP });
     const matches = (r.answer && r.answer.matches) || [];
     const m = matches.find((x) => Number(x.r) === Number(jornada));
     if (!m) return null;
-    if (m.st !== "F") return { finished: false, points: null };
-    const po = (m.ps && m.ps.po) || [];
-    const z = po.find((k) => k.mode === "stats");
-    return { finished: true, points: z ? Number(z.p) || 0 : 0 };
+    const out = { finished: m.st === "F", points: null };
+    if (out.finished) {
+      const po = (m.ps && m.ps.po) || [];
+      const z = po.find((k) => k.mode === "stats");
+      out.points = z ? Number(z.p) || 0 : 0;
+    }
+    try {
+      await env.PORRA.put(ck, JSON.stringify({ at: Date.now(), finished: out.finished, points: out.points }), {
+        expirationTtl: out.finished ? 30 * 24 * 3600 : 120,
+      });
+    } catch (e) {}
+    return out;
   } catch (e) { return null; }
 }
 
@@ -3447,6 +3472,23 @@ export async function onRequestGet({ request, env, params }) {
   }
   if (path === "jugador") {
     return json(await playerFicha(env, url.searchParams.get("id")));
+  }
+  // Puntos de MI liga Futmondo (modo stats) para los jugadores de un partido
+  // y una jornada. La página de partido manda los ids resueltos y recibe
+  // { "<id>": { p: puntos|null, f: terminado } } para pintar el campo.
+  if (path === "puntos") {
+    try {
+      const j = Number(url.searchParams.get("jornada")) || 0;
+      const ids = String(url.searchParams.get("ids") || "")
+        .split(",").map((x) => x.trim()).filter((x) => /^\d{1,12}$/.test(x))
+        .filter((x, i, a) => a.indexOf(x) === i).slice(0, 60);
+      const out = {};
+      await Promise.all(ids.map(async (id) => {
+        const r = await getPlayerJornadaPoints(env, id, j);
+        out[id] = r ? { p: r.points, f: !!r.finished } : null;
+      }));
+      return json({ jornada: j, points: out });
+    } catch (e) { return json({ error: String(e) }); }
   }
   return json({ error: "not found" }, 404);
 }
