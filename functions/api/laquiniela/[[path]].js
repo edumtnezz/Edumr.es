@@ -1968,7 +1968,7 @@ function cmTvIcon(src, alt) {
   return { name: alt ? alt.toUpperCase() : "TV", logo: abs };
 }
 async function getComuniateExtras(env, jornada) {
-  const cacheKey = "cm:extras:v1:" + jornada;
+  const cacheKey = "cm:extras:v2:" + jornada;
   try { const c = await env.PORRA.get(cacheKey, "json"); if (c && Date.now() - (c.at || 0) < 10 * 60 * 1000) return c.data; } catch (e) {}
   let data = [];
   try {
