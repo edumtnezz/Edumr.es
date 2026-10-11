@@ -1822,14 +1822,17 @@ function ffNameFromSlug(slug) {
   return String(slug || "").split("-").map((w) => (w ? w[0].toUpperCase() + w.slice(1) : "")).join(" ");
 }
 function parseMatchSide(seg) {
-  const out = [];
+  const out = [], seen = {};
   const blocks = seg.split(/class="jugador_\d+/).slice(1);
   for (const b of blocks) {
+    if (!/data-onceFF="titular"/.test(b)) continue;
     const slug = (b.match(/\/jugadores\/([a-z0-9-]+)\/laliga/) || [])[1];
-    if (!slug) continue;
-    const pts = (b.match(/data-juego="futmondo-mixto"[\s\S]{0,500}?>\s*(-?\d+)\s*</) || [])[1];
+    if (!slug || seen[slug]) continue;
+    seen[slug] = 1;
+    const pm = b.match(/data-juego="futmondo-mixto"[\s\S]{0,300}?>\s*(-?\d+(?:[.,]\d+)?)\s*</);
+    const pts = pm ? Number(pm[1].replace(",", ".")) : null;
     const pos = (b.match(/data-posicion="([^"]+)"/) || [])[1] || "";
-    out.push({ name: ffNameFromSlug(slug), pts: pts != null ? Number(pts) : null, pos });
+    out.push({ name: ffNameFromSlug(slug), pts, pos });
   }
   return out;
 }
@@ -1845,10 +1848,9 @@ function parsePartidoFF(h, home, away) {
   const gH = (h.match(/goleadores local">([\s\S]*?)(?:class="goleadores visitante"|<\/header>|class="partido-container")/) || [])[1] || "";
   const gA = (h.match(/goleadores visitante">([\s\S]*?)(?:<\/header>|class="partido-container")/) || [])[1] || "";
   const parseGoals = (s) => [...s.matchAll(/class="jugador"[^>]*>([^<]+)<\/a>\s*\((\d+)'\)/g)].map((m) => ({ name: m[1].trim(), min: Number(m[2]) }));
-  const iL = h.indexOf("alineacion_superwrapper");
-  const iV = h.indexOf("alineacion_superwrapper", iL + 20);
-  const segL = iL >= 0 ? h.slice(iL, iV > iL ? iV : iL + 60000) : "";
-  const segV = iV >= 0 ? h.slice(iV, iV + 60000) : "";
+  const sw = [...h.matchAll(/alineacion_superwrapper/g)].map((m) => m.index);
+  const segL = sw.length >= 3 ? h.slice(sw[1], sw[2]) : "";
+  const segV = sw.length >= 5 ? h.slice(sw[4]) : "";
   return {
     home, away,
     score: sc != null ? Number(sc) : null,
