@@ -1819,9 +1819,15 @@ async function getAlineacionesConfirmadas(env, matchdayParam) {
 }
 
 /* ---------- Franja de jornada (escudos, día/hora y TV) ---------- */
+// Apodos que no comparten ni una palabra con el nombre "normal" del equipo
+// (p.ej. "Barça" → "barca", que no es ni empieza igual que "barcelona"), así
+// que sin esto teamScore() les daba 0 y no emparejaban con fuentes que usan
+// el nombre completo (como Comuniate).
+const TEAM_ALIASES = { barca: "barcelona", atleti: "atletico" };
 function wkey(s) {
   return stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").split(/\s+/)
-    .filter((w) => w && ["de", "del", "la", "cf", "fc", "club", "sad", "sd", "ud", "rcd", "rc", "balompie", "c", "f"].indexOf(w) < 0);
+    .filter((w) => w && ["de", "del", "la", "cf", "fc", "club", "sad", "sd", "ud", "rcd", "rc", "balompie", "c", "f"].indexOf(w) < 0)
+    .map((w) => TEAM_ALIASES[w] || w);
 }
 function teamScore(a, b) {
   const A = wkey(a), B = wkey(b);
@@ -1970,8 +1976,17 @@ async function getComuniateExtras(env, jornada) {
     data = await Promise.all(links.map(async (l) => {
       try {
         const html = await (await fetch("https://www.comuniate.com" + l.href, { headers: cmHeaders() })).text();
-        const m = html.match(/class="tv-compact">[\s\S]*?<img src="([^"]+)"[^>]*alt="([^"]*)"/);
-        const tv = m ? cmTvIcon(m[1], m[2]) : null;
+        // Comuniate no es consistente con las comillas del <img> (a veces
+        // comillas simples, a veces dobles), así que primero se acota el
+        // trocito del div "tv-compact" (hasta su propio cierre) y luego se
+        // sacan src/alt sueltos, sin asumir ni el orden ni el tipo de comilla.
+        const divM = html.match(/class="tv-compact">([\s\S]*?)<\/div>/);
+        let tv = null;
+        if (divM) {
+          const srcM = divM[1].match(/src=['"]([^'"]+)['"]/);
+          const altM = divM[1].match(/alt=['"]([^'"]*)['"]/);
+          if (srcM) tv = cmTvIcon(srcM[1], altM ? altM[1] : "");
+        }
         const confirmed = !!parseConfirmedPitch(html);
         return { home: l.home, away: l.away, tv, confirmed };
       } catch (e) { return { home: l.home, away: l.away, tv: null, confirmed: false }; }
