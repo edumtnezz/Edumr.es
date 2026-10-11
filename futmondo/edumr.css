@@ -279,7 +279,7 @@ body {
 .cx-team-all { justify-content: center; }
 .cx-team-all-txt { font-size: 0.68rem; font-weight: 800; color: var(--cx-text); }
 .cx-team-all.active .cx-team-all-txt { color: var(--cx-green); }
-.cx-team img { width: 38px; height: 38px; object-fit: contain; }
+.cx-team img { width: 42px; height: 42px; object-fit: contain; }
 .cx-team span {
   font-size: 0.6rem;
   color: var(--cx-muted);
@@ -304,7 +304,7 @@ body {
 .cx-jn { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 2px; padding: 2px 5px; border: 1px solid var(--cx-border); border-radius: 7px; background: var(--cx-surface); box-shadow: var(--cx-shadow-sm); }
 .cx-jn-click { cursor: pointer; transition: border-color 0.14s ease, transform 0.14s ease; }
 .cx-jn-click:hover { border-color: var(--cx-green); transform: translateY(-1px); }
-.cx-jn-crest { width: 30px; height: 30px; object-fit: contain; justify-self: center; }
+.cx-jn-crest { width: 34px; height: 34px; object-fit: contain; justify-self: center; }
 .cx-jn-mid { display: flex; flex-direction: column; align-items: center; gap: 0; min-width: 0; }
 .cx-jn-tv { height: 13px; width: auto; max-width: 52px; object-fit: contain; }
 .cx-jn-tv-sq { height: 18px; max-width: 40px; filter: invert(1) brightness(1.6); }

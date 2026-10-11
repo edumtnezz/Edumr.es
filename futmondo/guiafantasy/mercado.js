@@ -208,7 +208,7 @@
       const j0 = Number(d && d.jornada) || 0;
       if (!list.length) { table.innerHTML = '<div class="rachas-empty">Sin rachas ahora mismo.</div>'; return; }
       table.innerHTML = "";
-      list.slice(0, 12).forEach((p) => {
+      list.slice(0, 6).forEach((p) => {
         const row = el("button", "racha-row"); row.type = "button";
         const ph = el("div", "racha-photo");
         const im = el("img", ""); im.loading = "lazy"; im.alt = ""; im.src = p.photo || "/img/avatar.svg";
@@ -793,7 +793,6 @@
     const tl = el("div", "mkt-tl");
     tl.appendChild(el("div", "mkt-headline", "📋 Todos los jugadores"));
     tl.appendChild(el("div", "mkt-hint", "↔ Desliza la tabla para ver más columnas"));
-    tl.appendChild(probLegendBtn());
     top.appendChild(tl);
     const seg = el("div", "hl-seg");
     [["1", "Hoy"], ["7", "7 días"], ["14", "14 días"], ["30", "30 días"], ["all", "Temporada"]].forEach(([k, lab]) => {
