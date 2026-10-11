@@ -1942,6 +1942,91 @@ async function fltvMap(env) {
   if (list.length > 10) { try { await env.PORRA.put("fltv:v4", JSON.stringify(out), { expirationTtl: 3600 }); } catch (e) {} }
   return out;
 }
+
+/* ---------- Extras de Comuniate para la franja de jornada: canal de TV,
+   si el once ya está confirmado, y el marcador/estado en vivo ----------
+   futbolenlatv.es y futbolfantasy.com (arriba) solo enseñan partidos de
+   HOY en adelante: en cuanto un partido ya se ha jugado (aunque sea el
+   mismo día, unas horas antes) desaparece de su listado y la franja se
+   queda diciendo "Canal por confirmar" aunque el canal llevara anunciado
+   toda la semana (le pasó con Barcelona-Getafe y Real Madrid-Villarreal).
+   Comuniate, en cambio, enseña el canal en la ficha de cada partido pase
+   lo que pase (jugado o no), así que se usa como fuente principal y las
+   otras dos quedan de apoyo para cuando Comuniate aún no lo sepa. */
+function cmTvIcon(src, alt) {
+  const a = String(alt || "").toLowerCase();
+  if (/dazn/.test(a)) return { name: "DAZN", logo: "/img/dazn.svg?v=3" };
+  if (/movistar|^m\+/.test(a)) return { name: "Movistar LaLiga", logo: "/img/movistar.png?v=2" };
+  if (!src) return null;
+  const abs = src.indexOf("http") === 0 ? src : "https://www.comuniate.com" + src;
+  return { name: alt ? alt.toUpperCase() : "TV", logo: abs };
+}
+async function getComuniateExtras(env, jornada) {
+  const cacheKey = "cm:extras:v1:" + jornada;
+  try { const c = await env.PORRA.get(cacheKey, "json"); if (c && Date.now() - (c.at || 0) < 10 * 60 * 1000) return c.data; } catch (e) {}
+  let data = [];
+  try {
+    const links = await getComuniateMatches(env, jornada);
+    data = await Promise.all(links.map(async (l) => {
+      try {
+        const html = await (await fetch("https://www.comuniate.com" + l.href, { headers: cmHeaders() })).text();
+        const m = html.match(/class="tv-compact">[\s\S]*?<img src="([^"]+)"[^>]*alt="([^"]*)"/);
+        const tv = m ? cmTvIcon(m[1], m[2]) : null;
+        const confirmed = !!parseConfirmedPitch(html);
+        return { home: l.home, away: l.away, tv, confirmed };
+      } catch (e) { return { home: l.home, away: l.away, tv: null, confirmed: false }; }
+    }));
+  } catch (e) {}
+  try { if (data.length) await env.PORRA.put(cacheKey, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 600 }); } catch (e) {}
+  return data;
+}
+// La franja de "resultados en directo" (marcador, minuto, FINAL/DIRECTO/
+// PREVIA) que Comuniate pinta arriba de CADA ficha de partido enseña, en
+// realidad, TODOS los partidos de la jornada a la vez (es un carrusel), así
+// que basta con pedir UNA sola ficha para sacar el estado de los demás.
+function parseComuniateSwiper(html) {
+  const out = [];
+  const parts = html.split('class="partido-link"');
+  for (let i = 1; i < parts.length; i++) {
+    const seg = parts[i].slice(0, 1600);
+    const imgs = [...seg.matchAll(/team-logo__img"\s+src="([^"]+)"\s+alt="([^"]*)"/g)];
+    if (imgs.length < 2) continue;
+    const scoreM = seg.match(/partido-score">\s*([^<]*)</);
+    const clsM = seg.match(/class="(badge-esquina[^"]*)"/);
+    const badgeM = seg.match(/badge-esquina[^>]*>\s*([^<]*?)\s*</);
+    const subM = seg.match(/partido-sub">\s*([^<]*)</);
+    out.push({
+      home: stripHtml(imgs[0][2]).trim(), away: stripHtml(imgs[1][2]).trim(),
+      score: scoreM ? scoreM[1].trim() : "",
+      statusCls: clsM ? clsM[1] : "",
+      statusText: badgeM ? stripHtml(badgeM[1]).trim() : "",
+      sub: subM ? stripHtml(subM[1]).trim() : "",
+    });
+  }
+  return out;
+}
+async function getComuniateStrip(env, jornada) {
+  const cacheKey = "cm:strip:v1:" + jornada;
+  // Caché corta: es en vivo (marcador y minuto van cambiando).
+  try { const c = await env.PORRA.get(cacheKey, "json"); if (c && Date.now() - (c.at || 0) < 3 * 60 * 1000) return c.data; } catch (e) {}
+  let data = [];
+  try {
+    const links = await getComuniateMatches(env, jornada);
+    if (links.length) {
+      const html = await (await fetch("https://www.comuniate.com" + links[0].href, { headers: cmHeaders() })).text();
+      data = parseComuniateSwiper(html);
+    }
+  } catch (e) {}
+  try { if (data.length) await env.PORRA.put(cacheKey, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 180 }); } catch (e) {}
+  return data;
+}
+function cmLiveState(cls) {
+  if (/label-success/.test(cls)) return "final";
+  if (/label-info/.test(cls)) return "live";
+  if (/label-danger/.test(cls)) return "suspended";
+  return "previa";
+}
+
 async function getJornadaStrip(env, matchday) {
   let jd = null;
   try { jd = await getJornada(env, matchday || null); } catch (e) {}
@@ -1950,6 +2035,10 @@ async function getJornadaStrip(env, matchday) {
   try { fl = await fltvMap(env); } catch (e) {}
   try { ffc = await ffTvMap(env); } catch (e) {}
   const list = (fl.list || []).concat(ffc.list || []);
+  const jnum = jd.matchday || matchday || "";
+  let cmExtras = [], cmStrip = [];
+  try { cmExtras = await getComuniateExtras(env, jnum); } catch (e) {}
+  try { cmStrip = await getComuniateStrip(env, jnum); } catch (e) {}
   const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
   const dtF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" });
   const tF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hour12: false });
@@ -1973,15 +2062,52 @@ async function getJornadaStrip(env, matchday) {
     return { home, away, homeCrest: (m.homeTeam && m.homeTeam.crest) || "", awayCrest: (m.awayTeam && m.awayTeam.crest) || "", day, date, time, dt: date + "|" + time, bi, bs };
   });
   prep.forEach((p) => { if (p.bs >= 4 && p.bi >= 0) used[p.bi] = true; });
+
+  // Canal "memoria": una vez visto un canal para un partido de esta jornada
+  // se guarda aparte (con caducidad larga), porque las fuentes en vivo de
+  // más arriba dejan de listar un partido en cuanto se juega, y si no, se
+  // perdía el canal ya confirmado en cuanto expiraba su caché de 30 min.
+  const accumKey = "jtv:accum:" + (jnum || "x");
+  let accum = {};
+  try { accum = (await env.PORRA.get(accumKey, "json")) || {}; } catch (e) {}
+  let accumChanged = false;
+
   const matches = prep.map((p) => {
+    const key = wkey(p.home).join(" ") + "|" + wkey(p.away).join(" ");
     let tv = [];
-    if (p.bs >= 4 && p.bi >= 0) tv = list[p.bi].tv;
-    else {
-      const i = list.findIndex((e, idx) => !used[idx] && e.date && (e.date + "|" + e.time) === p.dt);
-      if (i >= 0) { tv = list[i].tv; used[i] = true; }
+    // 1) Canal: primero Comuniate, que lo enseña siempre (jugado o no).
+    const cmE = cmExtras.find((e) => teamScore(e.home, p.home) + teamScore(e.away, p.away) >= 4);
+    if (cmE && cmE.tv) tv = [cmE.tv];
+    // 2) si no, las fuentes de antes (futbolenlatv.es / futbolfantasy.com).
+    if (!tv.length) {
+      if (p.bs >= 4 && p.bi >= 0) tv = list[p.bi].tv;
+      else {
+        const i = list.findIndex((e, idx) => !used[idx] && e.date && (e.date + "|" + e.time) === p.dt);
+        if (i >= 0) { tv = list[i].tv; used[i] = true; }
+      }
     }
-    return { home: p.home, away: p.away, homeCrest: p.homeCrest, awayCrest: p.awayCrest, day: p.day, date: p.date, time: p.time, tv };
+    // 3) memoria: si ahora se sabe, se guarda; si no se sabe ahora mismo
+    // pero se supo antes, se usa lo último conocido en vez de "por confirmar".
+    if (tv.length) {
+      if (JSON.stringify(accum[key]) !== JSON.stringify(tv)) { accum[key] = tv; accumChanged = true; }
+    } else if (accum[key] && accum[key].length) {
+      tv = accum[key];
+    }
+
+    // Marcador y estado en directo, tal cual los enseña Comuniate.
+    const cmM = cmStrip.find((e) => teamScore(e.home, p.home) + teamScore(e.away, p.away) >= 4);
+    let live = null;
+    if (cmM && (cmM.score || cmM.statusCls)) {
+      const state = cmLiveState(cmM.statusCls);
+      if (cmM.score && (state === "final" || state === "live")) {
+        live = { state, label: cmM.statusText || "", minute: state === "live" ? cmM.sub : "", score: cmM.score };
+      }
+    }
+    const confirmed = !!(cmE && cmE.confirmed);
+
+    return { home: p.home, away: p.away, homeCrest: p.homeCrest, awayCrest: p.awayCrest, day: p.day, date: p.date, time: p.time, tv, live, confirmed };
   });
+  if (accumChanged) { try { await env.PORRA.put(accumKey, JSON.stringify(accum), { expirationTtl: 10 * 24 * 3600 }); } catch (e) {} }
   return { matchday: jd.matchday || 0, matches };
 }
 

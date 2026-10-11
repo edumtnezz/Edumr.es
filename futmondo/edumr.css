@@ -315,6 +315,18 @@ body {
 .cx-jn-hora { font-size: 0.56rem; font-weight: 700; color: var(--cx-muted); white-space: nowrap; }
 @media (max-width: 900px) { .cx-jn-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); } }
 @media (max-width: 560px) { .cx-jn-grid { grid-template-columns: repeat(2, 1fr); } .cx-jn-time, .cx-jn-hora { font-size: 0.5rem; } }
+/* Resultado/estado en directo (copiado de Comuniate): un borde de color a
+   la izquierda según el estado, igual que en su propia franja. */
+.cx-jn-final { border-left: 3px solid var(--cx-green); }
+.cx-jn-live { border-left: 3px solid #2f8fe0; }
+.cx-jn-susp { border-left: 3px solid #e08a2f; }
+.cx-jn-score { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 0.72rem; color: var(--cx-text); line-height: 1.1; }
+.cx-jn-status { font-size: 0.42rem; font-weight: 800; letter-spacing: 0.04em; line-height: 1; padding: 1px 6px; border-radius: 999px; margin-top: 1px; }
+.cx-jn-status-final { color: var(--cx-green); background: rgba(46, 160, 67, 0.14); }
+.cx-jn-status-live { color: #2f8fe0; background: rgba(47, 143, 224, 0.14); animation: cxLivePulse 1.4s ease-in-out infinite; }
+.cx-jn-status-suspended { color: #e08a2f; background: rgba(224, 138, 47, 0.14); }
+@keyframes cxLivePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+.cx-jn-confirm { grid-column: 1 / -1; justify-self: center; font-size: 0.4rem; font-weight: 800; letter-spacing: 0.02em; color: #fff; background: var(--cx-green); border-radius: 999px; padding: 1px 7px; margin-bottom: 1px; white-space: nowrap; }
 
 /* ---------- Última hora (ticker) ---------- */
 .cx-live {
