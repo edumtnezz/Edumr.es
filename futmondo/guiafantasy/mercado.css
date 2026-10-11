@@ -915,10 +915,10 @@ html { overflow-anchor: none; }
 .prob-legend-txt { color: var(--muted); line-height: 1.35; }
 
 /* ---------- Página de partido ---------- */
-.mpage { max-width: 860px; margin: 0 auto; }
+.mpage { max-width: 860px; margin: 0 auto; font-family: "Fira Sans Condensed", "Segoe UI", Arial, sans-serif; }
 .mpage-top { border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; background: var(--card); }
 .mpage-topline { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.mpage-comp { font-weight: 800; font-size: 0.78rem; letter-spacing: 0.03em; text-transform: uppercase; }
+.mpage-comp { font-family: "Poppins", "Fira Sans Condensed", sans-serif; font-weight: 900; font-size: 0.78rem; letter-spacing: 0.03em; text-transform: uppercase; color: #078a55; }
 .mpage-tv { display: flex; align-items: center; gap: 8px; }
 .mpage-tv img { height: 16px; width: auto; max-width: 60px; object-fit: contain; }
 .mpage-teams { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; margin: 12px 0 4px; }
@@ -926,7 +926,7 @@ html { overflow-anchor: none; }
 .mpage-team img { width: 48px; height: 48px; object-fit: contain; }
 .mpage-mid { text-align: center; }
 .mpage-state { font-weight: 800; font-size: 0.72rem; color: #16a34a; text-transform: uppercase; letter-spacing: 0.04em; }
-.mpage-score { font-family: 'Space Grotesk', sans-serif; font-size: 2.6rem; font-weight: 800; line-height: 1.05; }
+.mpage-score { font-family: 'Fira Sans Condensed', 'Space Grotesk', sans-serif; font-size: 2.6rem; font-weight: 900; line-height: 1.05; }
 .mpage-goals { display: grid; grid-template-columns: 1fr 1fr; gap: 2px 22px; margin: 10px 0 2px; font-size: 0.8rem; }
 .mpage-gcol { display: flex; flex-direction: column; }
 .mpage-grow { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; }
@@ -934,13 +934,13 @@ html { overflow-anchor: none; }
 .mpage-gmin { color: var(--muted); font-weight: 700; }
 .mpage-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; margin-top: 12px; }
 .mpage-col { display: flex; flex-direction: column; }
-.mpage-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-top: 1px solid var(--border); }
+.mpage-row { display: flex; align-items: center; gap: 8px; padding: 6px 9px; margin-top: 4px; border: 1px solid var(--border); border-radius: 10px; background: linear-gradient(135deg, rgba(7,138,85,0.06), rgba(7,138,85,0.015)); }
 .mpage-face { width: 24px; height: 24px; border-radius: 50%; overflow: hidden; background: var(--bg-surface, #e2e8f0); flex: 0 0 auto; }
 .mpage-face.empty { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21c0-4 4-6 8-6s8 2 8 6z'/%3E%3C/svg%3E"); background-size: 66%; background-position: center 62%; background-repeat: no-repeat; }
 .mpage-face img { width: 100%; height: 100%; object-fit: cover; }
-.mpage-pos { flex: 0 0 auto; width: 22px; text-align: center; font-size: 0.56rem; font-weight: 800; color: #fff; border-radius: 4px; padding: 1px 0; }
-.mpage-pos.pt { background: #16a34a; } .mpage-pos.df { background: #2563eb; } .mpage-pos.md { background: #ca8a04; } .mpage-pos.dl { background: #dc2626; } .mpage-pos.x { background: transparent; }
-.mpage-name { flex: 1 1 auto; min-width: 0; font-weight: 600; font-size: 0.86rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mpage-pos { flex: 0 0 auto; width: 24px; text-align: center; font-size: 0.6rem; font-weight: 800; color: #fff; border-radius: 6px; padding: 1.5px 0; }
+.mpage-pos.pt { background: #0ea958; } .mpage-pos.df { background: #2687e8; } .mpage-pos.md { background: #f39c12; } .mpage-pos.dl { background: #e94242; } .mpage-pos.x { background: transparent; }
+.mpage-name { flex: 1 1 auto; min-width: 0; font-family: "Poppins", "Fira Sans Condensed", sans-serif; font-weight: 600; font-size: 0.84rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mpage-pts { flex: 0 0 auto; font-weight: 800; font-size: 0.9rem; }
 .mpage-pts.top { background: #eab308; color: #111; border-radius: 5px; padding: 1px 7px; }
 @media (max-width: 640px) { .mpage-cols { grid-template-columns: 1fr; gap: 0 0 18px; } }
