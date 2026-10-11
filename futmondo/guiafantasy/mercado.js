@@ -669,12 +669,11 @@
     if (p.indexOf("med") >= 0 || p.indexOf("centro") >= 0) return ["MD", "md"];
     return ["", "x"];
   }
-  function roleForName(name) {
+  function marketInfo(name) {
     const q = stripAccents(String(name).toLowerCase());
-    if (!all || !all.length || !q) return "";
+    if (!all || !all.length || !q) return null;
     const last = q.split(/\s+/).pop();
-    const p = all.find((x) => stripAccents(x.name).toLowerCase() === q) || all.find((x) => stripAccents(x.name).toLowerCase().split(/\s+/).pop() === last) || all.find((x) => stripAccents(x.name).toLowerCase().indexOf(last) >= 0);
-    return p ? p.role : "";
+    return all.find((x) => stripAccents(x.name).toLowerCase() === q) || all.find((x) => stripAccents(x.name).toLowerCase().split(/\s+/).pop() === last) || all.find((x) => stripAccents(x.name).toLowerCase().indexOf(last) >= 0) || null;
   }
   function renderMatchDetail(box, m, d, jn) {
     box.innerHTML = "";
@@ -711,8 +710,12 @@
       const c = el("div", "mpage-col");
       const maxP = Math.max.apply(null, (list || []).map((p) => p.pts || 0).concat([0]));
       (list || []).forEach((p) => {
+        const mi = marketInfo(p.name);
         const r = el("div", "mpage-row");
-        const pp = mpPos(roleForName(p.name) || p.pos);
+        const face = el("span", "mpage-face");
+        if (mi && mi.photo) { const im = el("img"); im.src = mi.photo; im.alt = ""; im.loading = "lazy"; face.appendChild(im); }
+        r.appendChild(face);
+        const pp = mpPos((mi && mi.role) || p.pos);
         if (pp[0]) r.appendChild(el("span", "mpage-pos " + pp[1], pp[0]));
         r.appendChild(el("span", "mpage-name", p.name));
         const pts = el("span", "mpage-pts", p.pts != null ? String(p.pts) : "–");
