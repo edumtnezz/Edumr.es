@@ -153,10 +153,10 @@ body {
 }
 .cx-header .theme-toggle:hover { border-color: #fff; box-shadow: none; }
 
-/* ---------- Submenú verde (estilo jornadaperfecta) ---------- */
+/* ---------- Submenú (neutro; pestaña activa en verde) ---------- */
 .cx-sub {
-  background: var(--cx-green);
-  border-bottom: 1px solid var(--cx-green);
+  background: var(--cx-surface);
+  border-bottom: 1px solid var(--cx-border);
 }
 .cx-sub-inner {
   max-width: 1140px;
@@ -187,7 +187,7 @@ body {
 .cx-sub .tab {
   flex: 0 0 auto;
   min-width: auto;
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--cx-muted);
   background: transparent;
   border-radius: 0;
   padding: 16px 15px;
@@ -203,7 +203,7 @@ body {
   .cx-sub .tab { padding: 7px 14px; font-size: 0.8rem; border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 999px; background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.85); }
   .cx-sub .tab.active { background: #fff; color: var(--cx-green); border-color: #fff; }
 }
-.cx-sub .tab:hover { color: #fff; }
+.cx-sub .tab:hover { color: var(--cx-text); }
 /* Menú "☰ Más": lo que no cabe en la barra principal de pestañas se mete
    aquí dentro en vez de obligar a deslizar o a poner flechas. Si la
    pestaña activa es una de las del menú, el propio botón se pone verde y
@@ -520,8 +520,8 @@ body {
 
 /* --- Menú "Más": solo las 3 rayas, sin píldora, y items visibles --- */
 .cx-more-label { display: none !important; }
-.cx-more-btn { background: transparent !important; border: none !important; border-radius: 0 !important; padding: 4px 6px !important; color: #fff !important; }
-.cx-more-btn:hover, .cx-more-btn.active { background: transparent !important; color: #fff !important; }
+.cx-more-btn { background: transparent !important; border: none !important; border-radius: 0 !important; padding: 4px 6px !important; color: var(--cx-text) !important; }
+.cx-more-btn:hover, .cx-more-btn.active { background: transparent !important; color: var(--cx-green) !important; }
 .cx-more-ico { font-size: 1.5rem !important; line-height: 1; }
 .cx-sub .cx-more-menu { background: var(--cx-surface); border-color: var(--cx-border); }
 /* Los items del menú "Más" llevan también la clase ".tab", así que hay que
@@ -530,7 +530,8 @@ body {
 .cx-sub .cx-more-menu .cx-more-item { color: var(--cx-text) !important; background: transparent !important; border: none !important; }
 .cx-sub .cx-more-menu .cx-more-item:hover { background: var(--cx-surface-2) !important; }
 .cx-sub .cx-more-menu .cx-more-item.active { color: var(--cx-green) !important; background: var(--cx-surface-2) !important; }
-/* --- Pestañas sin borde/círculo --- */
+/* --- Pestañas sin borde/círculo (barra neutra, activa en verde) --- */
 .cx-sub .tab { border: none !important; background: transparent !important; border-radius: 0 !important; }
-.cx-sub .tab:not(.active):not(.cx-more-item) { color: rgba(255, 255, 255, 0.85) !important; }
-.cx-sub .tab.active:not(.cx-more-item) { background: transparent !important; color: #fff !important; border-bottom: 2px solid #fff !important; }
+.cx-sub .tab:not(.active):not(.cx-more-item) { color: var(--cx-muted) !important; }
+.cx-sub .tab:not(.active):not(.cx-more-item):hover { color: var(--cx-text) !important; }
+.cx-sub .tab.active:not(.cx-more-item) { background: transparent !important; color: var(--cx-green) !important; border-bottom: 2px solid var(--cx-green) !important; }
