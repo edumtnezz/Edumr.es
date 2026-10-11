@@ -2,9 +2,60 @@
 (function () {
   var API = "/api/laquiniela";
   var jornada = 0;
+  var lastJornadaMatches = [];
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  // Puntito de color bajo cada escudo de la tira de equipos: refleja el
+  // estado del partido de esa jornada para ese equipo (igual que en la
+  // tarjeta de la jornada), reutilizando los datos ya traídos por
+  // loadJornada() en vez de pedirlos otra vez. Los nombres de /equipos y
+  // los de /jornada no siempre coinciden letra a letra (p.ej. "Atleti" vs
+  // "Atletico Madrid"), así que se empareja por palabras en común, igual
+  // que hace el backend con teamScore()/wkey().
+  var TEAM_ALIASES = { barca: "barcelona", atleti: "atletico" };
+  var WORD_STOP = ["de", "del", "la", "cf", "fc", "club", "sad", "sd", "ud", "rcd", "rc", "balompie", "c", "f"];
+  function stripAccents(s) { return String(s == null ? "" : s).normalize("NFD").replace(/[̀-ͯ]/g, ""); }
+  function wkey(s) {
+    return stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").split(/\s+/)
+      .filter(function (w) { return w && WORD_STOP.indexOf(w) < 0; })
+      .map(function (w) { return TEAM_ALIASES[w] || w; });
+  }
+  function teamScore(a, b) {
+    var A = wkey(a), B = wkey(b);
+    if (!A.length || !B.length) return 0;
+    var s = 0;
+    A.forEach(function (w) { if (B.indexOf(w) >= 0) s++; });
+    return s;
+  }
+  function matchStateFor(teamName) {
+    var best = null, bs = 0;
+    lastJornadaMatches.forEach(function (m) {
+      var s = Math.max(teamScore(teamName, m.home), teamScore(teamName, m.away));
+      if (s > bs) { bs = s; best = m; }
+    });
+    if (!best || bs < 1) return null;
+    return (best.live && best.live.state) || "previa";
+  }
+  function renderTeamDots() {
+    var box = document.getElementById("cxStrip");
+    if (!box) return;
+    box.querySelectorAll(".cx-team[data-team]").forEach(function (el) {
+      var team = el.getAttribute("data-team");
+      var dot = el.querySelector(".cx-team-dot");
+      if (!team) { if (dot) dot.remove(); return; }
+      var state = matchStateFor(team);
+      if (!state) { if (dot) dot.remove(); return; }
+      if (!dot) {
+        dot = document.createElement("span");
+        dot.className = "cx-team-dot";
+        var img = el.querySelector("img");
+        if (img) el.insertBefore(dot, img.nextSibling); else el.appendChild(dot);
+      }
+      dot.className = "cx-team-dot cx-team-dot-" + state;
+      dot.title = state === "final" ? "Partido finalizado" : state === "live" ? "En directo" : state === "suspended" ? "Partido suspendido" : "Aún no jugado";
     });
   }
   function boot() {
@@ -75,6 +126,8 @@
       .then(function (d) {
         var ms = (d && d.matches) || [];
         jornada = Number(d && d.matchday) || 0;
+        lastJornadaMatches = ms;
+        renderTeamDots();
         if (title) title.textContent = jornada ? ("Jornada " + jornada) : "Jornada";
         if (!ms.length) { grid.innerHTML = '<span class="cx-strip-load">Sin jornada.</span>'; grid.style.minHeight = ""; return; }
         grid.innerHTML = ms.map(function (m) {
@@ -141,6 +194,7 @@
           return '<div class="cx-team" data-team="' + esc(t.name) + '" title="' + esc(t.name) + '">' + img + '<span>' + esc(t.name) + '</span></div>';
         }).join("");
         mountScrollBar(box, document.getElementById("cxStripBar"));
+        renderTeamDots();
       })
       .catch(function () { box.innerHTML = '<span class="cx-strip-load">No disponible.</span>'; });
   }

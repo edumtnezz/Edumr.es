@@ -294,6 +294,17 @@ body {
   white-space: nowrap;
 }
 .cx-strip-load { color: var(--cx-muted); font-size: 0.82rem; padding: 6px 2px; }
+.cx-team-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--cx-muted);
+  opacity: 0.45;
+  margin-top: -2px;
+}
+.cx-team-dot-final { background: var(--cx-green); opacity: 1; }
+.cx-team-dot-live { background: #2f8fe0; opacity: 1; animation: cxLivePulse 1.4s ease-in-out infinite; }
+.cx-team-dot-suspended { background: #e08a2f; opacity: 1; }
 
 /* ---------- Franja de jornada ---------- */
 .cx-jornada { background: var(--cx-surface); border-bottom: 1px solid var(--cx-border); padding: 6px 12px; }
