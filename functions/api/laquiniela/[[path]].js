@@ -3293,7 +3293,7 @@ export async function onRequestGet({ request, env, params }) {
   if (path === "once") {
     try { return json(await getOnce(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "", url.searchParams.get("jornada") || "")); } catch (e) { return json({ error: String(e) }); }
   }
-  if (path === "partido") {
+  if (path === "detallepartido") {
     try { return json(await getPartido(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "")); } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "alineaciones-confirmadas") {
