@@ -428,13 +428,16 @@ body {
   text-overflow: ellipsis;
   max-width: 300px;
 }
-.cx-live-time { font-size: 0.64rem; color: rgba(255, 255, 255, 0.5); font-weight: 600; flex: 0 0 auto; }
+.cx-live-time {
+  font-size: 0.62rem; font-weight: 800; flex: 0 0 auto; white-space: nowrap;
+  background: var(--cx-green); color: #fff; padding: 2px 9px; border-radius: 999px;
+}
 .cx-live-load { color: rgba(255, 255, 255, 0.55); font-size: 0.78rem; }
 @media (max-width: 640px) {
   .cx-live-tag { font-size: 0.58rem; padding: 5px 9px; }
   .cx-live-txt { font-size: 0.72rem; max-width: 210px; }
   .cx-live-item img { width: 24px; height: 17px; }
-  .cx-live-time { font-size: 0.6rem; }
+  .cx-live-time { font-size: 0.56rem; padding: 2px 7px; }
 }
 #cxChrome.hide-live .cx-live { display: none; }
 #cxChrome.hide-jornada .cx-jornada { display: none; }
