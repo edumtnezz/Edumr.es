@@ -86,6 +86,10 @@
     loadTeams();
     loadLive();
     setInterval(loadLive, 90000);
+    // Refresca el marcador de la jornada en curso cada minuto: así los
+    // partidos que están jugando ahora mismo van actualizando el resultado
+    // sin tener que recargar la página.
+    setInterval(function () { if (jornada) loadJornada(jornada); }, 60000);
   }
   function mountScrollBar(scrollEl, barEl) {
     if (!scrollEl || !barEl) return;

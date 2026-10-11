@@ -524,9 +524,13 @@ body {
 .cx-more-btn:hover, .cx-more-btn.active { background: transparent !important; color: #fff !important; }
 .cx-more-ico { font-size: 1.5rem !important; line-height: 1; }
 .cx-sub .cx-more-menu { background: var(--cx-surface); border-color: var(--cx-border); }
-.cx-sub .cx-more-item { color: var(--cx-text) !important; }
-.cx-sub .cx-more-item.active { color: var(--cx-green) !important; }
+/* Los items del menú "Más" llevan también la clase ".tab", así que hay que
+   ganar en especificidad a las reglas .cx-sub .tab:not(.active) / .tab.active
+   (si no, en tema claro quedaba texto blanco sobre el menú blanco). */
+.cx-sub .cx-more-menu .cx-more-item { color: var(--cx-text) !important; background: transparent !important; border: none !important; }
+.cx-sub .cx-more-menu .cx-more-item:hover { background: var(--cx-surface-2) !important; }
+.cx-sub .cx-more-menu .cx-more-item.active { color: var(--cx-green) !important; background: var(--cx-surface-2) !important; }
 /* --- Pestañas sin borde/círculo --- */
 .cx-sub .tab { border: none !important; background: transparent !important; border-radius: 0 !important; }
-.cx-sub .tab:not(.active) { color: rgba(255, 255, 255, 0.85) !important; }
-.cx-sub .tab.active { background: transparent !important; color: #fff !important; border-bottom: 2px solid #fff !important; }
+.cx-sub .tab:not(.active):not(.cx-more-item) { color: rgba(255, 255, 255, 0.85) !important; }
+.cx-sub .tab.active:not(.cx-more-item) { background: transparent !important; color: #fff !important; border-bottom: 2px solid #fff !important; }

@@ -2113,6 +2113,32 @@ function cmLiveState(cls) {
   if (/label-danger/.test(cls)) return "suspended";
   return "previa";
 }
+// Marcador/estado en directo desde football-data (ya viene dentro de la
+// jornada, es el mismo equipo que el resto de datos, y se actualiza al
+// minuto). Se usa como fuente principal y Comuniate queda de respaldo, así
+// los partidos que están jugando ahora mismo (p.ej. Málaga o Racing) sí
+// muestran su marcador en cuanto football-data lo publica.
+function flLive(m) {
+  if (!m) return null;
+  const st = String(m.status || "");
+  const sc = m.score || {};
+  const ft = sc.fullTime || {};
+  const ht = sc.halfTime || {};
+  const j = (a, b) => (a === null || a === undefined || a === "" || b === null || b === undefined || b === "") ? "" : (a + " - " + b);
+  if (st === "FINISHED" || st === "AWARDED") {
+    const s = j(ft.home, ft.away);
+    return s ? { state: "final", label: "FINALIZADO", minute: "", score: s } : null;
+  }
+  if (st === "IN_PLAY" || st === "PAUSED") {
+    const s = j(ft.home, ft.away) || j(ht.home, ht.away);
+    const lbl = st === "PAUSED" ? "Descanso" : "EN JUEGO";
+    return { state: "live", label: lbl, minute: lbl, score: s || "0 - 0" };
+  }
+  if (st === "SUSPENDED" || st === "POSTPONED" || st === "CANCELLED") {
+    return { state: "suspended", label: "SUSPENDIDO", minute: "", score: "" };
+  }
+  return null;
+}
 
 async function getJornadaStrip(env, matchday) {
   let jd = null;
@@ -2146,7 +2172,7 @@ async function getJornadaStrip(env, matchday) {
       const s = teamScore(list[i].home, home) + teamScore(list[i].away, away);
       if (s > bs) { bs = s; bi = i; }
     }
-    return { home, away, homeCrest: (m.homeTeam && m.homeTeam.crest) || "", awayCrest: (m.awayTeam && m.awayTeam.crest) || "", day, date, time, dt: date + "|" + time, bi, bs };
+    return { home, away, homeCrest: (m.homeTeam && m.homeTeam.crest) || "", awayCrest: (m.awayTeam && m.awayTeam.crest) || "", day, date, time, dt: date + "|" + time, bi, bs, m };
   });
   prep.forEach((p) => { if (p.bs >= 4 && p.bi >= 0) used[p.bi] = true; });
 
@@ -2181,10 +2207,11 @@ async function getJornadaStrip(env, matchday) {
       tv = accum[key];
     }
 
-    // Marcador y estado en directo, tal cual los enseña Comuniate.
+    // Marcador y estado: primero football-data (en directo de verdad);
+    // si aún no lo tiene, se usa Comuniate como respaldo.
+    let live = flLive(p.m);
     const cmM = cmStrip.find((e) => teamScore(e.home, p.home) + teamScore(e.away, p.away) >= 4);
-    let live = null;
-    if (cmM && (cmM.score || cmM.statusCls)) {
+    if (!live && cmM && (cmM.score || cmM.statusCls)) {
       const state = cmLiveState(cmM.statusCls);
       if (cmM.score && (state === "final" || state === "live")) {
         live = { state, label: cmM.statusText || "", minute: state === "live" ? cmM.sub : "", score: cmM.score };
