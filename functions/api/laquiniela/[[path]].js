@@ -1872,7 +1872,7 @@ function parsePartidoFF(h, home, away) {
   };
 }
 async function getPartidoFF(env, home, away) {
-  const key = "partido:v1:" + normKey(String(home || "").toLowerCase()) + "-" + normKey(String(away || "").toLowerCase());
+  const key = "partido:v2:" + normKey(String(home || "").toLowerCase()) + "-" + normKey(String(away || "").toLowerCase());
   try { const c = await env.PORRA.get(key, "json"); if (c && c.data && Date.now() - (c.at || 0) < 10 * 60 * 1000) return c.data; } catch (e) {}
   let data = null;
   try {
