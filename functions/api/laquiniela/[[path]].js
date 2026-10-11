@@ -1701,6 +1701,114 @@ async function getOnce(env, home, away, jornada) {
   return data || { home: { name: home, starters: [], bench: [] }, away: { name: away, starters: [], bench: [] }, stadium, kickoff, referee };
 }
 
+/* ---------- Alineaciones CONFIRMADAS (copia tal cual de Comuniate) ----------
+   A diferencia de "Alineaciones probables" (getOnce, arriba), que mezcla datos
+   de futbolfantasy.com con un % calculado, esto es un volcado literal del
+   once YA CONFIRMADO que publica comuniate.com en la ficha de cada partido
+   (solo nombre, foto y posición en el campo — nada de porcentajes ni
+   banquillo, porque esa página no los trae). Edu pidió explícitamente que
+   fuera "tal cual" como sale ahí, sin tocar nada. */
+async function getComuniateHrefs(env, jornada) {
+  const key = "cm:hrefs:v1:" + jornada;
+  try { const c = await env.PORRA.get(key, "json"); if (c && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.links; } catch (e) {}
+  let links = [];
+  try {
+    const body = "id_jornada=" + encodeURIComponent(jornada) + "&modo_alineaciones=jornada_actual";
+    const mh = await (await fetch("https://www.comuniate.com/ajax/partidos_jornada.php", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded" }), body })).text();
+    links = [...mh.matchAll(/href="(\/partido\/[^"]+)"/g)].map((m) => m[1]);
+  } catch (e) {}
+  try { if (links.length) await env.PORRA.put(key, JSON.stringify({ at: Date.now(), links }), { expirationTtl: 1800 }); } catch (e) {}
+  return links;
+}
+function findComuniateHref(links, home, away) {
+  const sHome = (normKey(String(home).toLowerCase()).split(" ")[0]) || "";
+  const sAway = (normKey(String(away).toLowerCase()).split(" ")[0]) || "";
+  let href = "";
+  for (const l of links) { const slug = stripAccents(l.split("/").pop().toLowerCase()); if (sHome && sAway && slug.indexOf(sHome) >= 0 && slug.indexOf(sAway) >= 0) { href = l; break; } }
+  if (!href) for (const l of links) { const slug = stripAccents(l.split("/").pop().toLowerCase()); if ((sHome && slug.indexOf(sHome) >= 0) || (sAway && slug.indexOf(sAway) >= 0)) { href = l; break; } }
+  return href;
+}
+// Comuniate pinta el campo de un partido confirmado como UN solo bloque: el
+// once local (portero→defensas→medios→delanteros) seguido, sin separación
+// especial en el HTML, del once visitante en orden inverso (delanteros→
+// portero) porque visualmente queda reflejado en el otro lado del campo.
+// Cada bloque de posición cierra siempre con el mismo comentario
+// "<!-- fin XXX-->", así que separarlos así es fiable pase lo que pase con
+// la alineación (formación, número de jugadores, etc). Si no salen los 8
+// bloques (4 del equipo local + 4 del visitante) es que uno de los dos
+// onces todavía no está confirmado del todo, y entonces no se muestra nada
+// de ese partido en esta sección (solo onces 100% confirmados, tal y como
+// pidió Edu).
+function parseConfirmedPitch(html) {
+  const re = /<div id="(portero|defensas|medios|delanteros)"[^>]*>([\s\S]*?)<!--\s*fin\s+\w+\s*-->/g;
+  const blocks = [...html.matchAll(re)];
+  if (blocks.length < 8) return null;
+  const parsePlayers = (seg) => {
+    const chunks = seg.split('class="jugador jugador_campo').slice(1);
+    const players = [];
+    for (const c of chunks) {
+      const nm = (c.match(/nombre_jugador">\s*([^<]+?)\s*</) || [])[1] || "";
+      const ph = (c.match(/caras3\/(\d+)\.png/) || [])[1] || "";
+      const pid = (c.match(/ver_observaciones\('(\d+)'\)/) || [])[1] || ph;
+      if (nm) players.push({ name: stripHtml(nm), photo: ph ? "https://www.comuniate.com/caras3/" + ph + ".png" : "", pid });
+    }
+    return players;
+  };
+  const side = (arr) => {
+    const out = { portero: [], defensas: [], medios: [], delanteros: [] };
+    for (const b of arr) out[b[1]] = parsePlayers(b[2]);
+    return out;
+  };
+  const home = side(blocks.slice(0, 4));
+  const away = side(blocks.slice(4, 8));
+  const fmt = (o) => o.defensas.length + "-" + o.medios.length + "-" + o.delanteros.length;
+  home.formation = fmt(home);
+  away.formation = fmt(away);
+  return { home, away };
+}
+async function getAlineacionesConfirmadas(env, matchdayParam) {
+  const cacheKey = "cm:confirmadas:v1:" + (matchdayParam || "current");
+  try { const c = await env.PORRA.get(cacheKey, "json"); if (c && Date.now() - (c.at || 0) < 10 * 60 * 1000) return c.data; } catch (e) {}
+  let jd = null;
+  try { jd = await getJornada(env, matchdayParam || null); } catch (e) {}
+  const out = { matchday: (jd && jd.matchday) || 0, updatedAt: Date.now(), matches: [] };
+  if (jd && jd.matches && jd.matches.length) {
+    const links = await getComuniateHrefs(env, out.matchday || matchdayParam || "");
+    const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
+    const dtF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" });
+    const tF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hour12: false });
+    const results = await Promise.all(jd.matches.map(async (m) => {
+      const home = (m.homeTeam && (m.homeTeam.shortName || m.homeTeam.name)) || "";
+      const away = (m.awayTeam && (m.awayTeam.shortName || m.awayTeam.name)) || "";
+      if (!home || !away) return null;
+      const href = findComuniateHref(links, home, away);
+      if (!href) return null;
+      let html = "";
+      try { html = await (await fetch("https://www.comuniate.com" + href, { headers: cmHeaders() })).text(); } catch (e) { return null; }
+      const pitch = parseConfirmedPitch(html);
+      if (!pitch) return null;
+      const stadium = (html.match(/"location":\{"@type":"Place","name":"([^"]+)"/) || [])[1] || "";
+      const referee = (html.match(/cronista\.png[^>]*>[\s\S]*?<span>([^<]+)<\/span>/) || [])[1] || "";
+      const d = new Date(m.utcDate);
+      let day = "", date = "", time = "";
+      if (!isNaN(d.getTime())) {
+        let w = wdF.format(d).replace(".", "");
+        day = w.charAt(0).toUpperCase() + w.slice(1);
+        date = dtF.format(d);
+        time = tF.format(d);
+      }
+      return {
+        home: { name: home, crest: (m.homeTeam && m.homeTeam.crest) || "", formation: pitch.home.formation, portero: pitch.home.portero, defensas: pitch.home.defensas, medios: pitch.home.medios, delanteros: pitch.home.delanteros },
+        away: { name: away, crest: (m.awayTeam && m.awayTeam.crest) || "", formation: pitch.away.formation, portero: pitch.away.portero, defensas: pitch.away.defensas, medios: pitch.away.medios, delanteros: pitch.away.delanteros },
+        day, date, time, stadium, referee,
+      };
+    }));
+    out.matches = results.filter(Boolean);
+  }
+  try { await env.PORRA.put(cacheKey, JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 600 }); } catch (e) {}
+  return out;
+}
+
 /* ---------- Franja de jornada (escudos, día/hora y TV) ---------- */
 function wkey(s) {
   return stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").split(/\s+/)
@@ -2972,6 +3080,9 @@ export async function onRequestGet({ request, env, params }) {
   }
   if (path === "once") {
     try { return json(await getOnce(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "", url.searchParams.get("jornada") || "")); } catch (e) { return json({ error: String(e) }); }
+  }
+  if (path === "alineaciones-confirmadas") {
+    try { return json(await getAlineacionesConfirmadas(env, url.searchParams.get("jornada") || null)); } catch (e) { return json({ matchday: 0, matches: [], error: String(e) }); }
   }
   if (path === "equipos") {
     try { return json({ teams: await getTeams(env) }); } catch (e) { return json({ teams: [] }); }

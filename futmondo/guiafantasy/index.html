@@ -42,6 +42,7 @@
           <button class="tab" data-tab="mercado">Mercado</button>
           <button class="tab" data-tab="fichajes">Fichajes</button>
           <button class="tab" data-tab="clausulazos">Clausulazo Jugoso</button>
+          <button class="tab" data-tab="confirmadas">Alineaciones confirmadas</button>
           <button class="tab" data-tab="analiza">Analiza tu equipo</button>
         </nav>
       </div>
@@ -151,6 +152,17 @@
       </section>
     </section>
 
+    <section class="tab-panel hidden" id="tab-confirmadas">
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Alineaciones confirmadas</h2>
+          <span class="muted small" id="confirmUpdated"></span>
+        </div>
+        <p class="muted small">Onces YA CONFIRMADOS de los partidos de esta jornada, copiados tal cual de Comuniate (suelen publicarse sobre una hora antes de cada partido).</p>
+        <div id="confirmOut"></div>
+      </section>
+    </section>
+
     <section class="tab-panel hidden" id="tab-fichajes">
       <section class="panel">
         <div class="panel-head">
@@ -173,6 +185,6 @@
   </div>
 
   <script src="/futmondo/chrome.js?v=13"></script>
-  <script src="/futmondo/guiafantasy/mercado.js?v=158"></script>
+  <script src="/futmondo/guiafantasy/mercado.js?v=159"></script>
 </body>
 </html>

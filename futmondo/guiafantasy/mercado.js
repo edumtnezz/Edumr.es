@@ -707,6 +707,59 @@
     })();
   }
 
+  // "Alineaciones confirmadas": copia literal del once ya confirmado de
+  // comuniate.com (sin %, sin banquillo — esa página no los trae). Se
+  // reutiliza el mismo renderPitch() del modal de "alineaciones probables":
+  // al no tener p.prob ni t.bench, el propio renderPitch ya deja de pintar
+  // el badge de % y el banquillo solo, sin tocar nada de esa función.
+  function confirmTeamShape(side) {
+    const mk = (arr, pos) => (arr || []).map((p) => ({ name: p.name, last: p.name, full: p.name, photo: p.photo, pos }));
+    return {
+      name: side.name,
+      formation: side.formation,
+      starters: [].concat(mk(side.portero, "portero"), mk(side.defensas, "defensa"), mk(side.medios, "centrocampista"), mk(side.delanteros, "delantero")),
+      bench: [],
+    };
+  }
+  async function renderConfirmadas() {
+    const box = $("confirmOut");
+    if (!box) return;
+    box.innerHTML = '<p class="muted small">Cargando…</p>';
+    try {
+      const r = await (await fetch(API + "/alineaciones-confirmadas")).json();
+      box.innerHTML = "";
+      const upd = $("confirmUpdated");
+      if (upd) upd.textContent = r && r.updatedAt ? "Actualizado " + new Date(r.updatedAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "";
+      if (!r || !r.matches || !r.matches.length) {
+        box.innerHTML = '<p class="muted small">Todavía no hay ninguna alineación confirmada para esta jornada. Comuniate suele publicarlas sobre una hora antes de cada partido — vuelve a mirar más tarde.</p>';
+        return;
+      }
+      r.matches.forEach((m) => {
+        const card = el("div", "alin-card confirm-card");
+        const head = el("div", "alin-mhead");
+        head.appendChild(el("div", "alin-mtitle", "Jornada " + (r.matchday || "") + " · LaLiga" + (m.stadium ? " · " + m.stadium : "")));
+        const teams = el("div", "alin-mteams");
+        const hb = el("div", "alin-mteam");
+        if (m.home.crest) { const im = el("img"); im.src = m.home.crest; im.alt = ""; im.loading = "lazy"; hb.appendChild(im); }
+        hb.appendChild(el("span", null, m.home.name));
+        teams.appendChild(hb);
+        teams.appendChild(el("span", "alin-mvs", "vs"));
+        const ab = el("div", "alin-mteam");
+        if (m.away.crest) { const im = el("img"); im.src = m.away.crest; im.alt = ""; im.loading = "lazy"; ab.appendChild(im); }
+        ab.appendChild(el("span", null, m.away.name));
+        teams.appendChild(ab);
+        head.appendChild(teams);
+        head.appendChild(el("div", "alin-mwhen", ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim() + (m.referee ? " · Árbitro: " + m.referee : "")));
+        card.appendChild(head);
+        const pitches = el("div", "alin-pitches");
+        pitches.appendChild(renderPitch(confirmTeamShape(m.home), m.home.crest));
+        pitches.appendChild(renderPitch(confirmTeamShape(m.away), m.away.crest));
+        card.appendChild(pitches);
+        box.appendChild(card);
+      });
+    } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar.</p>'; }
+  }
+
   function filteredList() {
     const q = stripAccents($("mjSearch") ? $("mjSearch").value.trim() : "");
     const team = teamFilter;
@@ -1079,6 +1132,7 @@
     }
     if (name === "inicio") renderInicioFeatured();
     if (name === "clausulazos") renderClausulas();
+    if (name === "confirmadas") renderConfirmadas();
     if (name === "fichajes") renderFichajes();
     if (name === "analiza") renderCapHistorial();
     try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
@@ -1788,7 +1842,7 @@
   (function restoreTab() {
     let name = "";
     try {
-      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|noticias|analiza|clausulazos)/);
+      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|noticias|analiza|clausulazos|confirmadas)/);
       if (m) name = m[1];
     } catch (e) {}
     if (!name) { try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {} }
