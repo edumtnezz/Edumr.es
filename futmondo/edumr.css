@@ -517,3 +517,12 @@ body {
 .cx-nav-caret { display: none !important; }
 .cx-team-dot { display: none !important; }
 .tab .tab-ico, .cx-more-item .tab-ico { width: 15px; height: 15px; vertical-align: -2px; margin-right: 6px; flex: 0 0 auto; }
+
+/* --- Menú "Más": solo las 3 rayas, sin píldora, y items visibles --- */
+.cx-more-label { display: none !important; }
+.cx-more-btn { background: transparent !important; border: none !important; border-radius: 0 !important; padding: 4px 6px !important; color: #fff !important; }
+.cx-more-btn:hover, .cx-more-btn.active { background: transparent !important; color: #fff !important; }
+.cx-more-ico { font-size: 1.5rem !important; line-height: 1; }
+.cx-sub .cx-more-menu { background: var(--cx-surface); border-color: var(--cx-border); }
+.cx-sub .cx-more-item { color: var(--cx-text) !important; }
+.cx-sub .cx-more-item.active { color: var(--cx-green) !important; }
