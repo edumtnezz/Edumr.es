@@ -1844,9 +1844,12 @@ function parsePartidoFF(h, home, away) {
   else if (/siguiendo|directo|live|jugando|descanso/.test(stRaw)) state = "live";
   const dateTxt = (h.match(/class="fecha">\s*([^<]+)</) || [])[1] || "";
   const minM = h.match(/partido-header[\s\S]{0,4000}?>\s*(\d{1,3})'\s*</);
-  const gH = (h.match(/goleadores local">([\s\S]*?)(?:class="goleadores visitante"|<\/header>|class="partido-container")/) || [])[1] || "";
-  const gA = (h.match(/goleadores visitante">([\s\S]*?)(?:<\/header>|class="partido-container")/) || [])[1] || "";
-  const parseGoals = (s) => [...s.matchAll(/class="jugador"[^>]*>([^<]+)<\/a>\s*\((\d+)'\)/g)].map((m) => ({ name: m[1].trim(), min: Number(m[2]) }));
+  const gi = h.indexOf("goleadores_wrapper");
+  const gseg = gi >= 0 ? h.slice(gi, gi + 3500) : "";
+  const gVi = gseg.indexOf("goleadores visitante");
+  const gH = (gseg.match(/goleadores local">([\s\S]*?)(?:goleadores visitante|$)/) || [])[1] || "";
+  const gA = gVi >= 0 ? gseg.slice(gVi) : "";
+  const parseGoals = (s) => [...s.matchAll(/(?:\((\d+)'\)\s*)?<a[^>]*class="jugador"[^>]*>([^<]+)<\/a>\s*(?:\((\d+)'\))?/g)].map((m) => ({ name: m[2].trim(), min: Number(m[1] || m[3] || 0) }));
   const players = parsePlayerBlocks(h);
   const tit = players.filter((p) => p.titular);
   const ben = players.filter((p) => !p.titular);

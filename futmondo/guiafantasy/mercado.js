@@ -669,32 +669,62 @@
     if (p.indexOf("med") >= 0 || p.indexOf("centro") >= 0) return ["MD", "md"];
     return ["", "x"];
   }
+  function roleForName(name) {
+    const q = stripAccents(String(name).toLowerCase());
+    if (!all || !all.length || !q) return "";
+    const last = q.split(/\s+/).pop();
+    const p = all.find((x) => stripAccents(x.name).toLowerCase() === q) || all.find((x) => stripAccents(x.name).toLowerCase().split(/\s+/).pop() === last) || all.find((x) => stripAccents(x.name).toLowerCase().indexOf(last) >= 0);
+    return p ? p.role : "";
+  }
   function renderMatchDetail(box, m, d, jn) {
     box.innerHTML = "";
-    const head = el("div", "mpage-head");
-    head.appendChild(el("div", "mpage-comp", "LaLiga" + (jn ? " · Jornada " + jn : "")));
+    const head = el("div", "mpage-top");
+    const tl = el("div", "mpage-topline");
+    tl.appendChild(el("span", "mpage-comp", "LaLiga" + (jn ? " · Jornada " + jn : "")));
+    if (m.tv && m.tv.length) {
+      const t = el("span", "mpage-tv");
+      m.tv.forEach((c) => { if (!c || !c.logo) return; const im = el("img"); im.src = c.logo; im.alt = c.name || ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); t.appendChild(im); });
+      tl.appendChild(t);
+    }
+    head.appendChild(tl);
+    const state = d.state === "final" ? "FINALIZADO" : d.state === "live" ? ("EN JUEGO " + (d.minute ? d.minute + "'" : "")) : ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim();
+    const mkTeam = (name, crest) => { const t = el("div", "mpage-team"); if (crest) { const im = el("img"); im.src = crest; im.alt = ""; t.appendChild(im); } t.appendChild(el("span", null, name)); return t; };
     const teams = el("div", "mpage-teams");
-    const mk = (name, crest) => { const t = el("div", "mpage-team"); if (crest) { const im = el("img"); im.src = crest; im.alt = ""; t.appendChild(im); } t.appendChild(el("span", null, name)); return t; };
-    teams.appendChild(mk(m.home, m.homeCrest));
-    const sc = (d.score != null && d.scoreAway != null) ? (d.score + " - " + d.scoreAway) : "vs";
-    teams.appendChild(el("div", "mpage-score", String(sc)));
-    teams.appendChild(mk(m.away, m.awayCrest));
+    teams.appendChild(mkTeam(m.home, m.homeCrest));
+    const mid = el("div", "mpage-mid");
+    mid.appendChild(el("div", "mpage-state", state));
+    mid.appendChild(el("div", "mpage-score", (d.score != null && d.scoreAway != null) ? (d.score + " - " + d.scoreAway) : "vs"));
+    teams.appendChild(mid);
+    teams.appendChild(mkTeam(m.away, m.awayCrest));
     head.appendChild(teams);
-    head.appendChild(el("div", "mpage-state", d.state === "final" ? "FINALIZADO" : d.state === "live" ? ("EN JUEGO " + (d.minute ? d.minute + "'" : "")) : ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim()));
     box.appendChild(head);
     const gh = d.goalsHome || [], ga = d.goalsAway || [];
     if (gh.length || ga.length) {
       const g = el("div", "mpage-goals");
-      gh.forEach((x) => g.appendChild(el("span", "mpage-goal", x.name + " " + x.min + "'")));
-      ga.forEach((x) => g.appendChild(el("span", "mpage-goal away", x.name + " " + x.min + "'")));
+      const gcol = (list) => { const c = el("div", "mpage-gcol"); (list || []).forEach((x) => { const r = el("div", "mpage-grow"); r.appendChild(el("span", "mpage-gname", x.name)); if (x.min) r.appendChild(el("span", "mpage-gmin", x.min + "'")); c.appendChild(r); }); return c; };
+      g.appendChild(gcol(gh));
+      g.appendChild(gcol(ga));
       box.appendChild(g);
     }
     const cols = el("div", "mpage-cols");
-    const col = (list) => { const c = el("div", "mpage-col"); (list || []).forEach((p) => { const r = el("div", "mpage-row"); const pp = mpPos(p.pos); r.appendChild(el("span", "mpage-pos " + pp[1], pp[0])); r.appendChild(el("span", "mpage-name", p.name)); r.appendChild(el("span", "mpage-pts", p.pts != null ? String(p.pts) : "–")); c.appendChild(r); }); return c; };
+    const col = (list) => {
+      const c = el("div", "mpage-col");
+      const maxP = Math.max.apply(null, (list || []).map((p) => p.pts || 0).concat([0]));
+      (list || []).forEach((p) => {
+        const r = el("div", "mpage-row");
+        const pp = mpPos(roleForName(p.name) || p.pos);
+        if (pp[0]) r.appendChild(el("span", "mpage-pos " + pp[1], pp[0]));
+        r.appendChild(el("span", "mpage-name", p.name));
+        const pts = el("span", "mpage-pts", p.pts != null ? String(p.pts) : "–");
+        if (p.pts != null && p.pts > 0 && p.pts === maxP && maxP >= 6) pts.classList.add("top");
+        r.appendChild(pts);
+        c.appendChild(r);
+      });
+      return c;
+    };
     cols.appendChild(col(d.homePlayers));
     cols.appendChild(col(d.awayPlayers));
     box.appendChild(cols);
-    box.appendChild(el("p", "muted small", "Puntos de tus jugadores (Futmondo). Se actualiza con el partido."));
   }
   async function renderMatchPage(slug) {
     const main = document.querySelector(".quiniela-main");
