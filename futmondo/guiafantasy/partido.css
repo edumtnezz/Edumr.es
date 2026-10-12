@@ -8,8 +8,8 @@
 .mpage-topline { justify-content: center; }
 .mpage-team { font-size: 1.05rem; }
 .mpage-team img { width: 62px; height: 62px; }
-.mpage-teams { margin: 22px 0 6px; padding: 0 clamp(36px, 14vw, 120px); }
-.mpage-score { font-size: 3.2rem; }
+.mpage-teams { margin: 22px 0 6px; padding: 0 clamp(20px, 9vw, 100px); }
+.mpage-score { font-size: 2.7rem; white-space: nowrap; }
 .mpage-ev-sum { margin: 14px 0 4px; border: 1px solid var(--border); border-radius: 18px; padding: 14px 14px 10px; background: var(--card, #fff); }
 .mpage-ev-title { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 1rem; text-align: center; margin-bottom: 10px; }
 .mpage-ev-list { display: flex; flex-direction: column; gap: 4px; }
