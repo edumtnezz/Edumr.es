@@ -973,6 +973,14 @@
   }
   // Resumen compacto de lo más destacado: los del local a la izquierda y los del
   // visitante a la derecha. Goles, asistencias, rojas, penaltis fallados y cambios.
+  function haIcon(home) {
+    const NS = "http://www.w3.org/2000/svg";
+    const sv = document.createElementNS(NS, "svg");
+    sv.setAttribute("viewBox", "0 0 24 24"); sv.setAttribute("class", "ffx-ha " + (home ? "h" : "a")); sv.setAttribute("aria-label", home ? "En casa" : "Fuera");
+    const p = document.createElementNS(NS, "path");
+    p.setAttribute("d", home ? "M12 3.2 2.8 11.4a1 1 0 0 0 .7 1.7H5V20a1 1 0 0 0 1 1h4v-5.5h4V21h4a1 1 0 0 0 1-1v-6.9h1.5a1 1 0 0 0 .7-1.7L12 3.2z" : "M21.2 3.4 2.9 10.6a.8.8 0 0 0 0 1.5l5.6 2.2 2.2 5.6a.8.8 0 0 0 1.5 0l7.2-18.3a.8.8 0 0 0-1.2-.2zM9.4 13.4l7.6-6.2-5.4 8.1-.6-1.7-1.6-.2z");
+    sv.appendChild(p); return sv;
+  }
   function buildEvents(m, d) {
     const rows = [];
     const minOf = (t) => { const x = String(t || "").match(/\(?(\d+)(?:\+(\d+))?'\)?/); return x ? Number(x[1]) + (x[2] ? Number(x[2]) / 100 : 0) : 999; };
@@ -2353,7 +2361,7 @@
         const c = el("div", "ficha-fix-it");
         c.appendChild(el("div", "ffx-d", ((n.date || "") + " " + (n.time || "")).trim()));
         const row = el("div", "ffx-r");
-        row.appendChild(el("span", "ffx-ha " + (n.home ? "h" : "a"), n.home ? "CASA" : "FUERA"));
+        row.appendChild(haIcon(n.home));
         row.appendChild(el("span", "ffx-j", "J" + n.j));
         if (n.crest) { const im = el("img"); im.src = n.crest; im.alt = n.rival || ""; im.title = n.rival || ""; im.loading = "lazy"; row.appendChild(im); }
         c.appendChild(row);
@@ -2396,7 +2404,7 @@
         if (m) {
           const rival = (m.home === d.team) ? m.away : (m.away === d.team ? m.home : (m.away || m.home || ""));
           const casa = m.home === d.team;
-          { const mt = el("span", "fm-match"); if (rival) { mt.appendChild(el("span", "ffx-ha " + (casa ? "h" : "a"), casa ? "CASA" : "FUERA")); mt.appendChild(document.createTextNode(" " + rival)); } row.appendChild(mt); }
+          { const mt = el("span", "fm-match"); if (rival) { mt.appendChild(haIcon(casa)); mt.appendChild(document.createTextNode(" " + rival)); } row.appendChild(mt); }
           const mn = Number(m.mins) || 0;
           let tg = "", tgCls = "";
           if (mn > 0) {

@@ -66,3 +66,8 @@
 .ffx-ha.h{background:rgba(22,163,74,.16);color:#16a34a}
 .ffx-ha.a{background:rgba(99,102,241,.16);color:#6366f1}
 .fm-pend{opacity:.8;font-style:italic}
+
+svg.ffx-ha{width:20px;height:20px;padding:3px;box-sizing:border-box;border-radius:50%;vertical-align:middle;margin-right:2px;font-size:0;letter-spacing:0}
+svg.ffx-ha path{fill:currentColor}
+svg.ffx-ha.h{background:rgba(22,163,74,.16);color:#16a34a}
+svg.ffx-ha.a{background:rgba(99,102,241,.16);color:#6366f1}
