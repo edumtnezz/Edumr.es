@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1080" preserveAspectRatio="xMidYMid slice">
+<defs>
+<radialGradient id="luz" cx="50%" cy="45%" r="75%"><stop offset="0" stop-color="#fff" stop-opacity=".10"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></radialGradient>
+</defs>
+<rect x="0" y="0" width="900" height="90" fill="#17a24f"/><rect x="0" y="90" width="900" height="90" fill="#139245"/><rect x="0" y="180" width="900" height="90" fill="#17a24f"/><rect x="0" y="270" width="900" height="90" fill="#139245"/><rect x="0" y="360" width="900" height="90" fill="#17a24f"/><rect x="0" y="450" width="900" height="90" fill="#139245"/><rect x="0" y="540" width="900" height="90" fill="#17a24f"/><rect x="0" y="630" width="900" height="90" fill="#139245"/><rect x="0" y="720" width="900" height="90" fill="#17a24f"/><rect x="0" y="810" width="900" height="90" fill="#139245"/><rect x="0" y="900" width="900" height="90" fill="#17a24f"/><rect x="0" y="990" width="900" height="90" fill="#139245"/>
+<rect width="900" height="1080" fill="url(#luz)"/>
+<g fill="none" stroke="#fff" stroke-opacity=".78" stroke-width="5" stroke-linejoin="round">
+<rect x="40" y="40" width="820" height="1000" rx="6"/>
+<line x1="40" y1="540" x2="860" y2="540"/>
+<circle cx="450" cy="540" r="105"/>
+<rect x="230" y="40" width="440" height="170"/>
+<rect x="350" y="40" width="200" height="62"/>
+<path d="M378.8 210 A90 90 0 0 0 521.2 210"/>
+<rect x="230" y="870" width="440" height="170"/>
+<rect x="350" y="978" width="200" height="62"/>
+<path d="M378.8 870 A90 90 0 0 1 521.2 870"/>
+<path d="M40 56 A16 16 0 0 0 56 40"/><path d="M844 40 A16 16 0 0 0 860 56"/>
+<path d="M40 1024 A16 16 0 0 1 56 1040"/><path d="M844 1040 A16 16 0 0 1 860 1024"/>
+</g>
+<g fill="#fff" fill-opacity=".85"><circle cx="450" cy="540" r="6"/><circle cx="450" cy="155" r="5"/><circle cx="450" cy="925" r="5"/></g>
+</svg>
