@@ -3444,6 +3444,28 @@ export async function onRequestGet({ request, env, params }) {
   if (path === "alineaciones-confirmadas") {
     try { return json(await getAlineacionesConfirmadas(env, url.searchParams.get("jornada") || null)); } catch (e) { return json({ matchday: 0, matches: [], error: String(e) }); }
   }
+  // Cambios exactos de un partido (quién sale y quién entra) desde Sofascore.
+  if (path === "cambios") {
+    const id = String(url.searchParams.get("sofa") || "").replace(/\D/g, "");
+    if (!id) return json({ subs: [] });
+    const ck = "cambios:v1:" + id;
+    try { const c = await env.PORRA.get(ck, "json"); if (c && Date.now() - (c.at || 0) < 10 * 60 * 1000) return json(c.data); } catch (e) {}
+    const out = { subs: [], ok: false };
+    try {
+      const r = await fetch("https://api.sofascore.com/api/v1/event/" + id + "/incidents", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)", accept: "application/json" } });
+      out.status = r.status;
+      if (r.ok) {
+        const j = await r.json();
+        (j.incidents || []).forEach((i) => {
+          if (i.incidentType !== "substitution" || !i.playerIn || !i.playerOut) return;
+          out.subs.push({ home: !!i.isHome, min: i.time, add: i.addedTime || 0, in: i.playerIn.name || i.playerIn.shortName || "", out: i.playerOut.name || i.playerOut.shortName || "" });
+        });
+        out.ok = true;
+      }
+    } catch (e) { out.err = String(e).slice(0, 120); }
+    try { if (out.ok) await env.PORRA.put(ck, JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 3600 }); } catch (e) {}
+    return json(out);
+  }
   if (path === "equipos") {
     try { return json({ teams: await getTeams(env) }); } catch (e) { return json({ teams: [] }); }
   }

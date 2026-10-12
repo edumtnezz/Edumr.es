@@ -1061,9 +1061,6 @@
     cols.appendChild(col(d.awayPlayers));
     box.appendChild(cols);
     }
-    const lg = el("div", "mpage-legend");
-    [["G", "goal", "Gol"], ["G", "goal", "Gol penalti"], ["P.P.", "own", "Gol propia"], ["A", "assist", "Asistencia"], ["Y", "yel", "Amarilla"], ["R", "red", "Roja"], ["IN", "in", "Entra"], ["OUT", "out", "Sale"]].forEach((x) => { const s = el("span", "mpage-lg"); s.appendChild(el("span", "mpage-evb " + x[1], x[0])); s.appendChild(el("span", null, x[2])); lg.appendChild(s); });
-    box.appendChild(lg);
   }
   async function renderMatchPage(slug) {
     const main = document.querySelector(".quiniela-main");
