@@ -2076,10 +2076,31 @@
     b.classList.toggle("active", newsMineOnly);
     b.textContent = "🔎 Solo mis jugadores (" + myTeam.length + ")";
   }
+  // ¿Habla este texto de ESE jugador? Nombre completo como palabras enteras; o, si el nombre tiene
+  // varias palabras, solo el apellido largo cuando no va detrás de otro nombre de pila distinto
+  // ("Toni Amor" NO es "Toni Martínez"). Nunca por el nombre de pila solo.
+  function newsMentions(text, name) {
+    const norm = (x) => stripAccents(String(x || "")).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+    const words = norm(text).split(" "), n = norm(name);
+    if (!n || !words[0]) return false;
+    const T = " " + words.join(" ") + " ";
+    if (T.indexOf(" " + n + " ") >= 0) return true;
+    const toks = n.split(" ");
+    if (toks.length < 2) return false;
+    const last = toks[toks.length - 1];
+    if (last.length < 5) return false;
+    const PART = { de: 1, del: 1, la: 1, el: 1, y: 1, a: 1, en: 1, con: 1, por: 1, que: 1, y: 1 };
+    for (let i = 0; i < words.length; i++) {
+      if (words[i] !== last) continue;
+      const prev = words[i - 1];
+      if (!prev || PART[prev] || toks.indexOf(prev) >= 0) return true;
+    }
+    return false;
+  }
   function newsMatchMyTeam(x) {
     if (!myTeam.length) return true;
-    const t = stripAccents(String(x.title || "") + " " + String(x.lead || ""));
-    return myTeam.some((n) => { const k = stripAccents(n); return k.length >= 4 && t.includes(k); });
+    const t = String(x.title || "") + " " + String(x.lead || "");
+    return myTeam.some((n) => newsMentions(t, n));
   }
 
   function haceTxt(ts) {
@@ -2698,10 +2719,8 @@
       (async () => {
         let list = (lastNews && lastNews.noticias) || null;
         if (!list) { try { list = ((await (await fetch(API + "/noticias")).json()) || {}).noticias || []; } catch (e) { list = []; } }
-        const nn = stripAccents(nm).replace(/[^a-z0-9 ]/g, "").trim(), first = nn.split(" ")[0];
-        const has = (t, k) => k.length > 3 && stripAccents(String(t || "")).replace(/[^a-z0-9 ]/g, "").indexOf(k) >= 0;
-        let hit = list.filter((x) => has(x.title, nn));
-        if (!hit.length) hit = list.filter((x) => has(x.title, first));
+        const hit0 = list.filter((x) => newsMentions(x.title, nm));
+        let hit = hit0;
         hit = hit.slice(0, 3);
         if (!hit.length) { sec.remove(); return; }
         sec.appendChild(el("h3", "ficha-news-h", "Últimas noticias sobre " + nm));
