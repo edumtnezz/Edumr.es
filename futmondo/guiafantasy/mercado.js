@@ -788,7 +788,7 @@
     }));
     return { starters, bench: [], formation: [g.defensas.length, g.medios.length, g.delanteros.length].join("-") };
   }
-  let mpCambios = [], mpPairs = [], mpReds = [], mpConf = null, mpLive = false;
+  let mpCambios = [], mpPairs = [], mpReds = [], mpGm = null, mpConf = null, mpLive = false;
   function mpNewCard(side, name, crest, subtitle, mode, photoMap, bench) {
     return window.EduAlineacion.card(xiToStarters(side, photoMap, mode === "played"), name, crest, subtitle, all, mode, bench);
   }
@@ -995,10 +995,11 @@
     const minOf = (t) => { const x = String(t || "").match(/\(?(\d+)(?:\+(\d+))?'\)?/); return x ? Number(x[1]) + (x[2] ? Number(x[2]) / 100 : 0) : 999; };
     const clean = (t) => String(t || "").replace(/\(?\d+(?:\+\d+)?'\)?/g, "").replace(/\s+/g, " ").trim();
     const shortName = (x) => { const mi = marketInfo(x); return (mi && mi.name) || String(x || "").trim(); };
-    [["home", d.goalsHome], ["away", d.goalsAway]].forEach((g) => (g[1] || []).forEach((x) => {
+    [["home", d.goalsHome], ["away", d.goalsAway]].forEach((g) => (g[1] || []).forEach((x, gi) => {
       const t = String(x.text || ""); const pen = /\(p\.?\)/i.test(t), og = /\(p\.?p\.?\)|propia/i.test(t);
       const who = clean(t).replace(/\(p\.?p?\.?\)/ig, "").replace(/^[A-ZÁÉÍÓÚ]\.\s*/, "").trim();
-      rows.push({ side: g[0], min: minOf(t), ico: og ? "🙈" : pen ? "🎯" : "⚽", txt: shortName(who) || who });
+      const q = mpGm && mpGm[g[0]] && mpGm[g[0]][gi];
+      rows.push({ side: g[0], min: q ? q.m + (q.x || 0) / 100 : minOf(t), sc: q && q.sc, ico: og ? "🙈" : pen ? "🎯" : "⚽", txt: shortName(who) || who });
     }));
     const sameN = (x, y) => { const n = (v) => stripAccents(String(v || "")).replace(/[^a-z0-9 ]/g, " ").trim().split(/\s+/).filter(Boolean); const p = n(x), q = n(y); if (!p.length || !q.length) return false; return p.every((t) => q.indexOf(t) >= 0) || q.every((t) => p.indexOf(t) >= 0) || (p[p.length - 1].length >= 4 && p[p.length - 1] === q[q.length - 1]); };
     [["home", d.homePlayers], ["away", d.awayPlayers]].forEach((g) => {
@@ -1006,9 +1007,9 @@
       let gi = 0;
       (g[1] || []).forEach((p) => {
         (p.hl || []).forEach((h) => {
-          if (/fa-square/.test(h.ico || "") && /danger|red|ff0000/i.test(h.cls || "")) {
+          if ((/fa-square/.test(h.ico || "") && /danger|red|ff0000/i.test(h.cls || "")) || /doble-amarilla|square-roja/i.test(h.ico || "")) {
             const rd = (mpReds || []).find((x) => sameN(x.name, p.name));
-            rows.push({ side: g[0], min: rd ? rd.min : 998, ico: "🟥", txt: shortName(p.name) });
+            rows.push({ side: g[0], min: rd ? rd.min + (rd.x || 0) / 100 : 998, ico: "🟥", txt: shortName(p.name) });
           }
           else if (/arrow-circle-down/.test(h.ico || "")) rows.push({ side: g[0], min: 997, ico: "❌", txt: shortName(p.name) });
           else if (/arrow-right/.test(h.ico || "")) rows.push({ side: g[0], min: 996, ico: "👟", txt: shortName(p.name), assist: true });
@@ -1021,7 +1022,7 @@
     for (let i = rows.length - 1; i >= 0; i--) if (rows[i].merged) rows.splice(i, 1);
     // Cambios del mismo equipo y minuto: una sola tarjeta con varias parejas
     const subG = {};
-    mpPairs.forEach((c) => { const k = c.side + "|" + Math.floor(c.min); if (!subG[k]) { subG[k] = { side: c.side, min: c.min + 0.002, sub: true, pairs: [] }; rows.push(subG[k]); } subG[k].pairs.push(c); });
+    mpPairs.forEach((c) => { const k = c.side + "|" + Math.floor(c.min); if (!subG[k]) { subG[k] = { side: c.side, min: c.min + (c.x || 0) / 100 + 0.002, sub: true, pairs: [] }; rows.push(subG[k]); } subG[k].pairs.push(c); });
     const nSubs = mpPairs.length;
     if (!rows.length) return null;
     rows.sort((a, b) => a.min - b.min);
@@ -1052,7 +1053,7 @@
         pill.appendChild(el("span", "mpage-ev-ico", r.ico));
         const tx = el("div", "mpage-ev-tx");
         tx.appendChild(el("span", "mpage-ev-txt", r.txt));
-        if (lbl[r.ico]) tx.appendChild(el("span", "mpage-ev-kind", lbl[r.ico]));
+        if (lbl[r.ico]) tx.appendChild(el("span", "mpage-ev-kind", lbl[r.ico] + (r.sc ? " · " + r.sc : "")));
         if (r.by) { const a2 = el("span", "mpage-ev-by"); a2.appendChild(document.createTextNode("👟 ")); a2.appendChild(el("b", null, r.by)); tx.appendChild(a2); }
         pill.appendChild(tx);
         return pill;
@@ -1060,7 +1061,7 @@
       const L = el("div", "mpage-ev-cell l"), R = el("div", "mpage-ev-cell r");
       (r.side === "home" ? L : R).appendChild(mk());
       row.appendChild(L);
-      row.appendChild(el("span", "mpage-ev-min", r.min < 900 ? Math.floor(r.min) + "'" : "•"));
+      row.appendChild(el("span", "mpage-ev-min", r.min < 900 ? (Math.floor(r.min + 1e-6) + (Math.round((r.min - Math.floor(r.min + 1e-6)) * 100) > 0 ? "+" + Math.round((r.min - Math.floor(r.min + 1e-6)) * 100) : "") + "'") : "•"));
       row.appendChild(R);
       box.appendChild(row);
     });
@@ -1113,7 +1114,7 @@
         const sw = (o) => { const ev = xiFindEv(idx, o.full || o.name); const h = (ev && ev.hl) || []; const dir = h.some((x) => /sign-in/.test(x.ico || "")) ? "in" : h.some((x) => /sign-out/.test(x.ico || "")) ? "out" : ""; if (dir && ev.min) o.sw = { dir, min: ev.min };
           let g = 0, a = 0; h.forEach((x) => { const ic = x.ico || ""; if (/fa-circle$/.test(ic) && !/danger/i.test(x.cls || "")) g++; else if (/arrow-circle-up/.test(ic)) g++; else if (/arrow-right/.test(ic)) a++; });
           if (g || a) o.ev = { g, a };
-          if (h.some((x) => /fa-square/.test(x.ico || "") && /danger/i.test(x.cls || ""))) o.red = true;
+          if (h.some((x) => (/fa-square/.test(x.ico || "") && /danger/i.test(x.cls || "")) || /doble-amarilla|square-roja/i.test(x.ico || ""))) o.red = true;
           return o; };
         const st = xiToStarters(side, null, true);
         st.starters.forEach(sw);
@@ -1123,13 +1124,13 @@
         const normT = (x) => stripAccents(String(x || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").trim().split(/\s+/).filter(Boolean);
         const same = (pn, sn) => { const a = normT(pn), b = normT(sn); if (!a.length || !b.length) return false; return a.every((t) => b.indexOf(t) >= 0) || (a[a.length - 1].length >= 4 && a[a.length - 1] === b[b.length - 1]); };
         const outs = st.starters.filter((o) => o.sw && o.sw.dir === "out"), ins = subsL.filter((o) => o.sw && o.sw.dir === "in");
-        const P = (mpCambios || []).map((c) => ({ min: Number(c.min) || 0, o: outs.find((x) => same(x.name, c.out)) || null, i: ins.find((x) => same(x.name, c.in)) || null })).filter((p) => p.o || p.i);
+        const P = (mpCambios || []).map((c) => ({ min: Number(c.min) || 0, x: Number(c.x) || 0, o: outs.find((x) => same(x.name, c.out)) || null, i: ins.find((x) => same(x.name, c.in)) || null })).filter((p) => p.o || p.i);
         const taken = (list) => list.map((p) => p.i).filter(Boolean);
         P.forEach((p) => { // un lado conocido y el otro no: por eliminación (mismo minuto ±1, único libre)
           if (p.o && !p.i) { const c = ins.filter((x) => taken(P).indexOf(x) < 0 && Math.abs(Number(x.sw.min) - p.min) <= 1); if (c.length === 1) p.i = c[0]; }
           if (p.i && !p.o) { const usedO = P.map((q) => q.o).filter(Boolean); const c = outs.filter((x) => usedO.indexOf(x) < 0 && Math.abs(Number(x.sw.min) - p.min) <= 1); if (c.length === 1) p.o = c[0]; }
         });
-        P.forEach((p) => { if (p.o && p.i) { p.o.sw.with = [p.i]; p.i.sw.with = [p.o]; mpPairs.push({ side: name === m.home ? "home" : "away", min: p.min, inN: window.EduAlineacion.nameOf(p.i, name, all), outN: window.EduAlineacion.nameOf(p.o, name, all) }); } });
+        P.forEach((p) => { if (p.o && p.i) { p.o.sw.with = [p.i]; p.i.sw.with = [p.o]; mpPairs.push({ side: name === m.home ? "home" : "away", min: p.min, x: p.x, inN: window.EduAlineacion.nameOf(p.i, name, all), outN: window.EduAlineacion.nameOf(p.o, name, all) }); } });
         const cardEl = window.EduAlineacion.card(st, name, crest, rival, all, "played", subsL);
         if (mpLive) { const tt = cardEl.querySelector(".al-title"); if (tt) tt.innerHTML = "Partido <b>en juego</b>"; cardEl.classList.add("al-live"); }
         return cardEl;
@@ -1273,8 +1274,8 @@
           }
         } catch (e) {}
       }
-      mpCambios = []; mpPairs = []; mpReds = [];
-      if (finished) { try { const cj = await (await fetch(API + "/cambios?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json(); mpCambios = cj.subs || []; mpReds = cj.reds || []; } catch (e) {} }
+      mpCambios = []; mpPairs = []; mpReds = []; mpGm = null;
+      if (finished) { try { const cj = await (await fetch(API + "/cambios?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json(); mpCambios = cj.subs || []; mpReds = cj.reds || []; mpGm = cj.gm || null; } catch (e) {} }
       // Nunca "probable" con % si el partido ya empezó o si todos están al 100% (= confirmada)
       const sure = (o) => o && o.starters && o.starters.length >= 10 && o.starters.every((p) => p.prob === 100);
       if (xiKind === "probable" && xi && ((m.live && m.live.state === "live") || (sure(xi.home) && sure(xi.away)))) xiKind = "confirmada";

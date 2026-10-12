@@ -3501,7 +3501,7 @@ export async function onRequestGet({ request, env: env0, params }) {
   // patrones; lo que no encaje se ignora (el cliente lo cruza por eliminación).
   if (path === "cambios") {
     const hh = url.searchParams.get("home") || "", aa = url.searchParams.get("away") || "", jj = url.searchParams.get("jornada") || "";
-    const ck = (url.searchParams.get("raw") ? "x" : "") + "cambios:v3:" + jj + ":" + normKey(hh.toLowerCase()) + "-" + normKey(aa.toLowerCase());
+    const ck = (url.searchParams.get("raw") ? "x" : "") + "cambios:v4:" + jj + ":" + normKey(hh.toLowerCase()) + "-" + normKey(aa.toLowerCase());
     try { const c = await env.PORRA.get(ck, "json"); if (c && Date.now() - (c.at || 0) < 10 * 60 * 1000) return json(c.data); } catch (e) {}
     const out = { subs: [] };
     try {
@@ -3511,12 +3511,15 @@ export async function onRequestGet({ request, env: env0, params }) {
         const texts = [...new Set([...html.matchAll(/"articleBody":"([^"]*)"/g)].map((m) => m[1]))];
         const clean = (t) => String(t || "").replace(/\([^)]*\)/g, "").replace(/^(?:del campo|del terreno de juego)\s+/i, "").replace(/\s+abandona el terreno de juego(?: y)?$/i, "").replace(/\s+y$/i, "").replace(/[.¡!]+\s*$/g, "").replace(/\s+/g, " ").trim();
         if (url.searchParams.get("raw")) out.raw = texts.filter((x) => /^\d+/.test(x));
+        const goalLines = [];
         for (const raw of texts) {
-          const mm = raw.match(/^(\d+)(?:\+\d+)?'\s*[—-]\s*(.*)$/);
+          const mm = raw.match(/^(\d+)(?:\+(\d+))?'\s*[—-]\s*(.*)$/);
           if (!mm) continue;
-          const min = Number(mm[1]), t = mm[2];
-          const rj = t.match(/tarjeta roja a ([^(!.]+?)\s*\(/i) || t.match(/expulsa(?:do)? a ([^(!.]+?)\s*\(/i);
-          if (rj) { (out.reds = out.reds || []).push({ min, name: rj[1].trim() }); continue; }
+          const min = Number(mm[1]), x = Number(mm[2]) || 0, t = mm[3];
+          if (/¡\s*gol\b|golazo/i.test(t) && !/anulad|malogr|ocasi[oó]n|fuera de juego|revisi[oó]n/i.test(t)) goalLines.push({ min, x, t });
+          let rj = t.match(/tarjeta roja a ([^(!.]+?)\s*\(/i) || t.match(/expulsa(?:do)? a ([^(!.]+?)\s*\(/i);
+          if (!rj && /expulsi[oó]n|expulsad|doble amarilla|segunda amarilla|tarjeta roja/i.test(t) && !/le muestra tarjeta amarilla|tarjeta amarilla a/i.test(t)) rj = t.match(/^([^.()!¡]+?)\s*\(/);
+          if (rj) { (out.reds = out.reds || []).push({ min, x, name: rj[1].trim() }); continue; }
           if (!/entr|sustitu|cambio|sale\b/i.test(t)) continue;
           let a = null, b = null, m2;
           if ((m2 = t.match(/sale (.+?) y entra (.+?)(?:\s*\(|\.|$)/i))) { b = m2[1]; a = m2[2]; }
@@ -3529,11 +3532,38 @@ export async function onRequestGet({ request, env: env0, params }) {
           else if ((m2 = t.match(/sustituir a (.+?) por (.+?)(?:\s*\(|\.|$)/i))) { b = m2[1]; a = m2[2]; }
           else if ((m2 = t.match(/(.+?) (?:ha )?entra(?:do)?(?: en el (?:terreno de juego|campo))? (?:en sustituci[oó]n de|en lugar de|por|como sustituto de) (.+?)(?:\s*\(|\.|$)/i))) { a = m2[1].replace(/^.*\. /, ""); b = m2[2]; }
           else if ((m2 = t.match(/entra (.+?) en sustituci[oó]n de (.+?)(?:\s*\(|\.|$)/i))) { a = m2[1]; b = m2[2]; }
-          if (a && b) out.subs.push({ min, in: clean(a), out: clean(b) });
+          if (a && b) out.subs.push({ min, x, in: clean(a), out: clean(b) });
         }
+        // Minuto exacto de cada gol (con descuento) cruzando la crónica con la lista de goleadores
+        try {
+          const nrm = (v) => String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+          const hk = nrm(hh).split(/\s+/)[0], ak = nrm(aa).split(/\s+/)[0];
+          const sideOf = (t) => { const m3 = [...t.matchAll(/\(([^)]+)\)/g)].map((q) => nrm(q[1])); for (const q of m3) { if (hk.length >= 3 && q.indexOf(hk) >= 0) return "home"; if (ak.length >= 3 && q.indexOf(ak) >= 0) return "away"; } return ""; };
+          const bySide = { home: [], away: [] };
+          goalLines.forEach((g) => { const sd = sideOf(g.t); if (sd) bySide[sd].push(g); });
+          const gm = { home: [], away: [] }; let okAll = true;
+          [["home", d.goalsHome], ["away", d.goalsAway]].forEach(([sd, gl]) => {
+            gl = gl || []; const lines = bySide[sd].slice();
+            if (gl.length !== lines.length) { okAll = false; return; }
+            const used = new Array(lines.length).fill(false), res = new Array(gl.length).fill(null);
+            gl.forEach((g, i) => {
+              const name = nrm(String(g.text || "").replace(/\([^)]*\)/g, " ")); const toks = name.split(/[^a-z]+/).filter((w) => w.length >= 4);
+              const k = lines.findIndex((l, li) => !used[li] && toks.some((w) => nrm(l.t).indexOf(w) >= 0));
+              if (k >= 0) { used[k] = true; res[i] = lines[k]; }
+            });
+            gl.forEach((g, i) => { if (!res[i]) { const k = used.indexOf(false); if (k >= 0) { used[k] = true; res[i] = lines[k]; } } });
+            gm[sd] = res.map((l) => l ? { m: l.min, x: l.x } : null);
+          });
+          if (okAll) {
+            const all2 = []; ["home", "away"].forEach((sd) => gm[sd].forEach((q) => { if (q) all2.push({ sd, q }); }));
+            all2.sort((a, b) => (a.q.m + a.q.x / 100) - (b.q.m + b.q.x / 100));
+            let h = 0, a2 = 0; all2.forEach((e) => { if (e.sd === "home") h++; else a2++; e.q.sc = h + " - " + a2; });
+            out.gm = gm;
+          }
+        } catch (e) {}
       }
     } catch (e) { out.err = String(e).slice(0, 120); }
-    try { if (out.subs.length || out.reds) await env.PORRA.put(ck, JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 3600 }); } catch (e) {}
+    try { if (out.subs.length || out.reds || out.gm) await env.PORRA.put(ck, JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 3600 }); } catch (e) {}
     return json(out);
   }
   if (path === "equipos") {
