@@ -66,7 +66,8 @@
     }).join("");
     var vals = d.valores || [];
     var vrows = vals.map(function (v) {
-      var df = v.diff == null ? "" : '<span class="' + (v.diff > 0 ? "down" : "up") + '">' + (v.diff > 0 ? "▼ " : "▲ ") + eur(Math.abs(v.diff)) + "</span>";
+      var dl = (d.value || 0) - (v.v || 0);
+      var df = v.days ? '<span class="' + (dl >= 0 ? "up" : "down") + '">' + (dl >= 0 ? "▲ " : "▼ ") + eur(Math.abs(dl)) + "</span>" : "";
       return "<tr><td>" + esc(v.label) + '</td><td class="df">' + df + "</td><td>" + eur(v.v) + "</td></tr>";
     }).join("");
     var serie = (d.temporada && d.temporada.serie) || [];
