@@ -967,8 +967,10 @@
     if (!ids.length) return false;
     let map = {};
     try {
-      const r = await (await fetch(API + "/puntos?jornada=" + encodeURIComponent(jn) + "&ids=" + ids.join(","), { cache: "no-store" })).json();
-      map = (r && r.points) || {};
+      // En trozos de 8: cada petición al servidor tiene un tope de llamadas externas y con 28 jugadores de golpe fallaban la mayoría
+      const chunks = []; for (let i = 0; i < ids.length; i += 8) chunks.push(ids.slice(i, i + 8));
+      const rs = await Promise.all(chunks.map((c) => fetch(API + "/puntos?jornada=" + encodeURIComponent(jn) + "&ids=" + c.join(","), { cache: "no-store" }).then((x) => x.json()).catch(() => null)));
+      rs.forEach((r) => { if (r && r.points) Object.keys(r.points).forEach((k) => { if (r.points[k]) map[k] = r.points[k]; }); });
     } catch (e) {}
     const arrived = Object.keys(map).some((k) => map[k] && map[k].f === true && map[k].p != null);
     box.querySelectorAll(".mpage-xpts[data-full], .mpage-subpts[data-full], .pl-pts[data-full]").forEach((el2) => {
