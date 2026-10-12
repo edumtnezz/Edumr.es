@@ -699,6 +699,15 @@
       || all.find((x) => { const xn = norm(x.name); return last.length >= 4 && xn.split(/\s+/).pop() === last; })
       // Apodos/cortes: "Chupe" (Comuniate) vs "Chupete" (Futmondo).
       || all.find((x) => { const xn = norm(x.name).replace(/\s+/g, ""); return last.length >= 5 && (xn.indexOf(last) === 0 || last.indexOf(xn) === 0); })
+      // Apodo dentro del nombre largo: "Adrián de la Fuente" -> "Dela" (sin espacios)
+      || (() => { const qs = q.replace(/\s+/g, ""); const c = all.filter((x) => { const xn = norm(x.name).replace(/\s+/g, ""); return xn.length >= 4 && qs.length > xn.length && qs.indexOf(xn) >= 0; }); return c.length === 1 ? c[0] : null; })()
+      // Una letra de diferencia en el apellido ("Brugui" / "Brugué"), solo si es único
+      || (() => {
+        const lev = (a, b) => { if (Math.abs(a.length - b.length) > 1) return 9; const d = []; for (let i = 0; i <= a.length; i++) { d[i] = [i]; } for (let j = 1; j <= b.length; j++) d[0][j] = j; for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length]; };
+        if (last.length < 5) return null;
+        const c = all.filter((x) => { const xl = norm(x.name).split(/\s+/).pop(); return xl.length >= 5 && xl[0] === last[0] && lev(xl, last) <= 1; });
+        return c.length === 1 ? c[0] : null;
+      })()
       || null;
   }
   const MPC = { PT: "pt", DF: "df", MD: "md", DL: "dl" };
