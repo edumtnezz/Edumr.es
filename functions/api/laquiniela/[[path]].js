@@ -1438,10 +1438,21 @@ async function playerFicha(env, id) {
     const bd = pl.birthdate || pl.birth || pl.born || pl.nacimiento || "";
     if (bd) { const b = new Date(bd); if (!isNaN(b.getTime())) age = Math.floor((Date.now() - b.getTime()) / (365.25 * 24 * 3600 * 1000)); }
   }
-  // Último recurso: la edad que publica futbolfantasy.com (data-edad), que ya
-  // se guarda en el mapa ff:map4.
+  // Último recurso: la edad que publica futbolfantasy.com en la ficha de
+  // cada equipo (data-edad), que ya se guarda al traer los onces de FF.
   if (!age) {
-    try { const e = ffPick(pl.name || "", await ffMap(env)); if (e && e.age) age = e.age; } catch (err) {}
+    try {
+      const teamName = (a.team && a.team.name) || pl.team || "";
+      if (teamName) {
+        const t = await getFFTeam(env, teamName);
+        const pool = [].concat(t.starters || [], t.bench || []);
+        const q = normKey(String(pl.name || "").toLowerCase());
+        const last = q.split(" ").pop();
+        const hit = pool.find((x) => normKey(String(x.full || x.name || "").toLowerCase()) === q)
+          || pool.find((x) => last.length >= 4 && normKey(String(x.full || x.name || "").toLowerCase()).split(" ").pop() === last);
+        if (hit && hit.edad) age = hit.edad;
+      }
+    } catch (err) {}
   }
   return {
     id,
@@ -1645,7 +1656,7 @@ async function getFFTeam(env, name) {
     "espanyol-barcelona": "espanyol",
   };
   if (SLUG_FIX[slug]) slug = SLUG_FIX[slug];
-  const key = "ffteam:v7:" + slug;
+  const key = "ffteam:v8:" + slug;
   try { const c = await env.PORRA.get(key, "json"); if (c && c.data && Date.now() - (c.at || 0) < 3 * 3600 * 1000) return c.data; } catch (e) {}
   const data = { starters: [], bench: [] };
   try {
@@ -1666,11 +1677,12 @@ async function getFFTeam(env, name) {
       const x = (it.match(/data-onceFF-x="([\d.]+)%"/) || [])[1];
       const y = (it.match(/data-onceFF-y="([\d.]+)%"/) || [])[1];
       const nat = (it.match(/data-nacionalidad="([^"]+)"/) || [])[1] || "";
+      const edad = Number((it.match(/data-edad="(\d+)"/) || [])[1]) || 0;
       const inj = Number((it.match(/data-lesion="(\d+)"/) || [])[1] || 0) === 1;
       const san = Number((it.match(/data-sancionado="(\d+)"/) || [])[1] || 0) === 1;
       const fullName = stripHtml(full);
       const last = (fullName || stripHtml(nm)).split(/\s+/).pop();
-      return { name: stripHtml(nm), full: fullName, last, photo, pos, prob: prob != null ? Number(prob) : null, x: x ? parseFloat(x) : null, y: y ? parseFloat(y) : null, nat, inj, san };
+      return { name: stripHtml(nm), full: fullName, last, photo, pos, prob: prob != null ? Number(prob) : null, x: x ? parseFloat(x) : null, y: y ? parseFloat(y) : null, nat, edad, inj, san };
     }).filter(Boolean);
     data.starters = parse(hTit);
     data.bench = parse(hSup);
