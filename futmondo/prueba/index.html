@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="prueba.css?v=9">
+  <link rel="stylesheet" href="prueba.css?v=10">
 </head>
 <body>
 <div class="al">
@@ -39,5 +39,23 @@
   </div>
   <div class="al-foot">EduMR · Guía Fantasy</div>
 </div>
+<script>
+// Fotos de los jugadores: las mismas de Futmondo que ya usa el Mercado de la web.
+(function () {
+  var strip = function (s) { return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim(); };
+  fetch("/api/laquiniela/mercado").then(function (r) { return r.json(); }).then(function (d) {
+    var all = (d.players || []).filter(function (p) { return p.photo; });
+    document.querySelectorAll(".pl").forEach(function (pl) {
+      var nm = pl.querySelector(".pl-nm"), im = pl.querySelector(".pl-ph img");
+      if (!nm || !im) return;
+      var q = strip(nm.textContent), last = q.split(" ").pop();
+      var hit = all.find(function (p) { return strip(p.name) === q; }) ||
+        all.find(function (p) { var n = strip(p.name); return n.indexOf(q) >= 0 || q.indexOf(n) >= 0; }) ||
+        all.find(function (p) { return /levante/.test(strip(p.team)) && strip(p.name).split(" ").pop() === last; });
+      if (hit) im.src = hit.photo;
+    });
+  }).catch(function () {});
+})();
+</script>
 </body>
 </html>
