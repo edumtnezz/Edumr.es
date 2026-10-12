@@ -76,28 +76,50 @@
     return html;
   }
 
-  function msg(t) { document.getElementById("alPitch").innerHTML = '<p class="al-msg">' + esc(t) + "</p>"; }
+  function msg(card, t) { card.querySelector(".pitch").innerHTML = '<p class="al-msg">' + esc(t) + "</p>"; }
 
-  var wanted = new URLSearchParams(location.search).get("equipo") || "Levante";
-  Promise.all([fetch(API + "/jornada").then(function (r) { return r.json(); }), fetch(API + "/mercado").then(function (r) { return r.json(); })]).then(function (res) {
-    var jd = res[0], players = res[1].players || [];
+  // Rellena UNA tarjeta (.al) con el once probable de un equipo.
+  function renderCard(card, wanted, ctx) {
+    var jd = ctx.jd, players = ctx.players;
     var best = null, bs = 0;
     (jd.matches || []).forEach(function (m) {
       var sh = teamScore(wanted, m.home), sa = teamScore(wanted, m.away);
       if (Math.max(sh, sa) > bs) { bs = Math.max(sh, sa); best = { m: m, home: sh >= sa }; }
     });
-    if (!best) return msg("No encuentro ese equipo en la jornada.");
+    if (!best) { msg(card, "No encuentro ese equipo en la jornada."); return Promise.resolve(); }
     var m = best.m;
-    document.getElementById("alCrest").src = (best.home ? m.homeCrest : m.awayCrest) || "/img/avatar.svg";
+    card.querySelector(".al-head img").src = (best.home ? m.homeCrest : m.awayCrest) || "/img/avatar.svg";
     return fetch(API + "/once?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jd.matchday || "")).then(function (r) { return r.json(); }).then(function (o) {
       var side = best.home ? o.home : o.away;
-      if (!side || !side.starters || !side.starters.length) return msg("Todavía no hay once probable.");
+      if (!side || !side.starters || !side.starters.length) return msg(card, "Todavía no hay once probable.");
       var teamName = best.home ? m.home : m.away;
       var pool = players.filter(function (p) { return teamScore(p.team, teamName) >= 1; });
-      document.getElementById("alPitch").innerHTML = render(side, pool, side.bench || []);
+      card.querySelector(".pitch").innerHTML = render(side, pool, side.bench || []);
       var rival = best.home ? m.away : m.home;
-      document.getElementById("alFoot").textContent = "J" + jd.matchday + " · " + (best.home ? "vs " : "en ") + rival + " · " + (side.formation || "");
-      if (sinPareja.length) console.warn("[alineación] jugadores sin pareja:", sinPareja.join(", "));
-    });
-  }).catch(function () { msg("No se pudo cargar la alineación."); });
+      card.querySelector(".al-foot").textContent = teamName + " · J" + jd.matchday + " · " + (best.home ? "vs " : "en ") + rival + " · " + (side.formation || "");
+    }).catch(function () { msg(card, "No se pudo cargar la alineación."); });
+  }
+
+  function cardHtml() {
+    return '<div class="al-head"><img src="/img/avatar.svg" alt=""><span class="al-title">Alineación <b>probable</b></span></div>' +
+      '<div class="pitch"><p class="al-msg">Cargando alineación…</p></div><div class="al-foot">EduMR · Guía Fantasy</div>';
+  }
+
+  Promise.all([fetch(API + "/jornada").then(function (r) { return r.json(); }), fetch(API + "/mercado").then(function (r) { return r.json(); })]).then(function (res) {
+    var ctx = { jd: res[0], players: res[1].players || [] };
+    var multi = document.getElementById("alTodos");
+    if (multi) { // todos los equipos de la jornada, uno detrás de otro
+      return fetch(API + "/equipos").then(function (r) { return r.json(); }).then(function (d) {
+        return Promise.all((d.teams || []).map(function (t) {
+          var card = document.createElement("div"); card.className = "al"; card.innerHTML = cardHtml();
+          multi.appendChild(card);
+          return renderCard(card, t.name, ctx);
+        }));
+      });
+    }
+    var one = document.querySelector(".al");
+    return renderCard(one, new URLSearchParams(location.search).get("equipo") || "Levante", ctx);
+  }).then(function () {
+    if (sinPareja.length) console.warn("[alineación] jugadores sin pareja:", sinPareja.join(", "));
+  }).catch(function () {});
 })();
