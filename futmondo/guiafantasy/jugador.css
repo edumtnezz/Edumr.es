@@ -1,0 +1,34 @@
+/* Página de jugador: perfil a dos columnas, más grande */
+.playerpage { max-width: 1180px; margin: 0 auto; }
+.playerpage .pp-back { width: auto; height: 44px; padding: 0 18px; border-radius: 999px; font-size: 1rem; font-weight: 800; margin-bottom: 14px; }
+.playerpage .pp-back::after { content: " Volver"; font-size: .95rem; }
+.playerpage .ficha { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; font-size: 1.06rem; }
+.playerpage .ficha-side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+@media (min-width: 900px) { .playerpage .ficha { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; } }
+.playerpage .pp-status { padding: 14px 16px; }
+.playerpage .pp-status-v { font-size: 1.15rem; }
+.playerpage .ficha-head-center { background: var(--card-solid, rgba(255,255,255,.04)); border: 1px solid var(--border); border-radius: 22px; padding: 22px 16px 20px; gap: 6px; margin: 0; }
+.playerpage .ficha-head-center .mcard-photo { width: 168px; height: 168px; margin: 0 auto 10px; }
+.playerpage .ficha-head-center .mcard-img { width: 100%; height: 100%; }
+.playerpage .ficha-name { font-size: 2.1rem; line-height: 1.1; }
+.playerpage .ficha-team { font-size: 1.05rem; }
+.playerpage .ficha-team img { width: 26px; height: 26px; }
+.playerpage .ficha-val { font-size: 1.9rem; font-weight: 800; margin-top: 8px; }
+.playerpage .cmp-trend { font-size: 1.05rem; }
+.ficha-next { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 12px; text-align: left; }
+.ficha-next .fn-box { background: rgba(34,197,94,.08); border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px; }
+.ficha-next .fn-k { font-size: .62rem; font-weight: 800; letter-spacing: .05em; color: var(--muted); }
+.ficha-next .fn-v { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 1.1rem; margin-top: 2px; }
+.playerpage .ficha-stats { gap: 12px; margin: 0; }
+.playerpage .ficha-stat { padding: 16px 10px; border-radius: 16px; }
+.playerpage .fs-val { font-size: 1.6rem; }
+.playerpage .fs-lab { font-size: .85rem; }
+.playerpage .ficha-pct { font-size: .95rem; }
+.playerpage .estado-title { font-size: 1.15rem; }
+.playerpage .fm-row { font-size: 1rem; padding: 6px 0; }
+.playerpage .fv-trow, .playerpage .fv-thead { font-size: .95rem; }
+/* Listas de jugadores un poco más grandes en toda la web */
+.merc-row { font-size: .98rem; padding: 9px 0; gap: 12px; }
+.merc-row-photo, .merc-row-img { width: 46px; height: 46px; }
+.merc-row-meta { font-size: .82rem; }
+.merc-row-crest { width: 17px; height: 17px; }

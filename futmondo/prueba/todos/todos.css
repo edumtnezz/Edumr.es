@@ -1,4 +1,0 @@
-body { display: block; padding: 14px 10px 40px; }
-.t-h { font: 800 1rem 'Plus Jakarta Sans', sans-serif; text-align: center; margin: 4px 0 14px; color: #10151c; }
-.t-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 450px)); gap: 18px; justify-content: center; }
-.t-grid .al { margin: 0; }

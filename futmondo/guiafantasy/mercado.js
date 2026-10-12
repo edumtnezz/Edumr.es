@@ -498,11 +498,11 @@
 
   const akey = (s) => stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9]/g, "");
   function nameSlug(s) { return stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9]/g, ""); }
-  // URL de la ficha de un jugador: /futmondo/guiafantasy/jugadores/<id>/<nombre>
+  // URL de la ficha de un jugador: /jugador/<id>/<nombre>
   // (el id es el de Futmondo; el nombre solo hace la URL legible).
   function playerUrl(name) {
     const p = marketInfo(name);
-    if (p && p.id) return "/futmondo/guiafantasy/jugadores/" + encodeURIComponent(p.id) + "/" + nameSlug(p.name);
+    if (p && p.id) return "/jugador/" + encodeURIComponent(p.id) + "/" + nameSlug(p.name);
     return "";
   }
   function openPlayerByName(name) {
@@ -937,9 +937,46 @@
     box.querySelectorAll(".mpage-xpts.on, .pl-pts.on").forEach((e2) => { const v = Number(e2.textContent) || 0; if (max == null || v > max) max = v; });
     if (max != null && max >= 6) box.querySelectorAll(".mpage-xpts.on, .pl-pts.on").forEach((e2) => { if ((Number(e2.textContent) || 0) === max) e2.classList.add("top"); });
   }
+  // Resumen gráfico de lo más destacado: goles, rojas, penaltis fallados y cambios.
+  function buildEvents(m, d) {
+    const rows = [];
+    const minOf = (t) => { const x = String(t || "").match(/\(?(\d+)(?:\+(\d+))?'\)?/); return x ? Number(x[1]) + (x[2] ? Number(x[2]) / 100 : 0) : 999; };
+    const clean = (t) => String(t || "").replace(/\(?\d+(?:\+\d+)?'\)?/g, "").replace(/\s+/g, " ").trim();
+    [["home", d.goalsHome], ["away", d.goalsAway]].forEach((g) => (g[1] || []).forEach((x) => {
+      const t = String(x.text || ""); const pen = /\(p\.?\)/i.test(t), og = /\(p\.?p\.?\)|propia/i.test(t);
+      rows.push({ side: g[0], min: minOf(t), ico: og ? "🙈" : pen ? "🎯" : "⚽", txt: clean(t).replace(/\(p\.?p?\.?\)/ig, "").trim() + (pen ? " (penalti)" : og ? " (en propia)" : "") });
+    }));
+    [["home", d.homePlayers], ["away", d.awayPlayers]].forEach((g) => (g[1] || []).forEach((p) => {
+      (p.hl || []).forEach((h) => {
+        if (/fa-square/.test(h.ico || "") && /danger|red|ff0000/i.test(h.cls || "")) rows.push({ side: g[0], min: p.min ? Number(p.min) : 998, ico: "🟥", txt: p.name + " expulsado" });
+        else if (/arrow-circle-down/.test(h.ico || "")) rows.push({ side: g[0], min: 997, ico: "❌", txt: "Penalti fallado: " + p.name });
+      });
+    }));
+    (mpCambios || []).forEach((c) => {
+      const nm = (x) => { const mi = marketInfo(x); return (mi && mi.name) || x; };
+      const mi0 = marketInfo(c.in) || marketInfo(c.out); const inHome = mi0 ? xiScore(mi0.team, m.home) >= 1 : true;
+      rows.push({ side: inHome ? "home" : "away", min: Number(c.min) || 0, ico: "🔄", txt: nm(c.in) + " por " + nm(c.out), sub: true });
+    });
+    if (!rows.length) return null;
+    rows.sort((a, b) => a.min - b.min);
+    const box = el("section", "mpage-ev-sum");
+    box.appendChild(el("div", "mpage-ev-title", "⭐ Lo más destacado"));
+    const lst = el("div", "mpage-ev-list");
+    rows.forEach((r) => {
+      const row = el("div", "mpage-ev-row " + r.side + (r.sub ? " sub" : ""));
+      const mm = r.min < 900 ? Math.floor(r.min) + "'" : "";
+      row.appendChild(el("span", "mpage-ev-min", mm));
+      row.appendChild(el("span", "mpage-ev-ico", r.ico));
+      row.appendChild(el("span", "mpage-ev-txt", r.txt));
+      lst.appendChild(row);
+    });
+    box.appendChild(lst);
+    return box;
+  }
   function renderMatchDetail(box, m, d, jn, xi, xiKind, finished, ffData) {
     box.innerHTML = "";
     const head = el("div", "mpage-top");
+    [[m.homeCrest, "left"], [m.awayCrest, "right"]].forEach((x) => { if (!x[0]) return; const bg = el("img", "mpage-bgcrest " + x[1]); bg.src = x[0]; bg.alt = ""; head.appendChild(bg); });
     const tl = el("div", "mpage-topline");
     tl.appendChild(el("span", "mpage-comp", "LaLiga" + (jn ? " · Jornada " + jn : "")));
     if (m.tv && m.tv.length) {
@@ -958,20 +995,8 @@
     teams.appendChild(mid);
     teams.appendChild(mkTeam(m.away, m.awayCrest));
     head.appendChild(teams);
-    const meta = el("div", "mpage-meta");
-    if (d.stadium) meta.appendChild(el("span", "mpage-mi", "🏟️ " + d.stadium));
-    if (d.referee) meta.appendChild(el("span", "mpage-mi", "🔉 " + d.referee));
-    if (d.cronista) meta.appendChild(el("span", "mpage-mi", "✍️ " + d.cronista));
-    if (meta.children.length) head.appendChild(meta);
     box.appendChild(head);
-    const gh = d.goalsHome || [], ga = d.goalsAway || [];
-    if (gh.length || ga.length) {
-      const g = el("div", "mpage-goals");
-      const gc = (list, away) => { const c = el("div", "mpage-gcol" + (away ? " away" : "")); (list || []).forEach((x) => c.appendChild(el("div", "mpage-grow", x.text || ""))); return c; };
-      g.appendChild(gc(gh, false));
-      g.appendChild(gc(ga, true));
-      box.appendChild(g);
-    }
+    { const evb = buildEvents(m, d); if (evb) box.appendChild(evb); }
     if (finished) {
       const sec = el("section", "mpage-xi mpage-xi-done");
       const hd = el("div", "mpage-xi-h");
@@ -1111,7 +1136,7 @@
     } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar el partido.</p>'; }
   }
   // Ficha de jugador como página propia:
-  // /futmondo/guiafantasy/jugadores/<id>/<nombre>
+  // /jugador/<id>/<nombre>
   async function renderPlayerPage(id) {
     const main = document.querySelector(".quiniela-main");
     if (!main) return;
@@ -1623,12 +1648,11 @@
     ["portero", "defensa", "centrocampista", "delantero"].forEach((pos) => {
       byExp.filter((p) => p.role === pos).slice(0, 2).forEach((p) => { if (!seen.has(p)) { picked.push(p); seen.add(p); } });
     });
-    byExp.forEach((p) => { if (picked.length < 12 && !seen.has(p)) { picked.push(p); seen.add(p); } });
-    const top = picked.sort((a, b) => expOf(b) - expOf(a));
+    byExp.forEach((p) => { if (picked.length < 10 && !seen.has(p)) { picked.push(p); seen.add(p); } });
+    const top = picked.sort((a, b) => expOf(b) - expOf(a)).slice(0, 10);
     const head = el("div", "merc-besthead");
     head.appendChild(el("span", "mbh-t", "⭐ Mejor fichaje de la jornada"));
     head.appendChild(el("span", "mbh-sub", "por puntos probables"));
-    head.appendChild(el("span", "mbh-hint", "↔ desliza para ver más"));
     box.appendChild(head);
     const row = el("div", "merc-bestrow");
     row.id = "mercBestRow";
@@ -1663,10 +1687,6 @@
       row.appendChild(c);
     });
     box.appendChild(row);
-    const bar = el("div", "cx-scrollbar");
-    bar.id = "mercBestBar";
-    bar.appendChild(el("div", "cx-scrollbar-thumb"));
-    box.appendChild(bar);
     return box;
   }
 
@@ -2005,6 +2025,7 @@
   }
 
   function openFicha(p) {
+    if (p && p.id) { location.href = "/jugador/" + encodeURIComponent(p.id) + "/" + nameSlug(p.name); return; }
     const w = el("div");
     w.appendChild(el("p", "muted small", "Cargando ficha…"));
     showModal(w);
@@ -2097,6 +2118,8 @@
 
   function renderFicha(d, p) {
     const root = el("div", "ficha");
+    const colA = el("div", "ficha-side ficha-side-a"), colB = el("div", "ficha-side ficha-side-b");
+
     // Caja de estado (como Comuniate): "ESTADO DEL JUGADOR / En forma".
     const stat = String(d.status || p.status || "");
     const bad = stat === "redcard" || stat.indexOf("injured") === 0;
@@ -2107,7 +2130,7 @@
     stx.appendChild(el("div", "pp-status-k", "ESTADO DEL JUGADOR"));
     stx.appendChild(el("div", "pp-status-v", statusLabel(stat)));
     sb.appendChild(stx);
-    root.appendChild(sb);
+    colA.appendChild(sb);
     const head = el("div", "ficha-head-center");
     const ph = el("div", "mcard-photo");
     ph.appendChild(posRing(photoImg(d.photo || p.photo, "mcard-img"), d.role || p.role, d.role2 || p.role2));
@@ -2128,30 +2151,36 @@
       head.appendChild(tt);
     }
     if (rb2) head.appendChild(el("div", "ficha-multi", "Multiposición: " + rb + " · " + rb2));
+    if (p.rivalFf || p.prob != null) {
+      const nx = el("div", "ficha-next");
+      if (p.rivalFf) { const b1 = el("div", "fn-box"); b1.appendChild(el("div", "fn-k", "PRÓXIMO PARTIDO" + (p.jornadaFf ? " · J" + p.jornadaFf : ""))); b1.appendChild(el("div", "fn-v", (p.casaFf ? "🏠 vs " : "✈️ en ") + p.rivalFf)); nx.appendChild(b1); }
+      if (p.prob != null) { const b2 = el("div", "fn-box"); b2.appendChild(el("div", "fn-k", "TITULARIDAD")); b2.appendChild(el("div", "fn-v", p.prob + "%")); nx.appendChild(b2); }
+      head.appendChild(nx);
+    }
     head.appendChild(el("div", "ficha-val", money(d.value || p.value) + " €"));
     const chg = Number(d.change != null ? d.change : p.change) || 0;
     head.appendChild(el("div", "cmp-trend " + (chg > 0 ? "up" : chg < 0 ? "down" : "flat"),
       chg > 0 ? "▲ " + formatDots(chg) + " €" + pct(d.value || p.value, chg) : chg < 0 ? "▼ " + formatDots(-chg) + " €" + pct(d.value || p.value, chg) : "—"));
     if (d.pronostico) head.appendChild(el("div", "ficha-pron", "Pronóstico: " + d.pronostico));
     if (d.fichaje && d.fichaje.date) head.appendChild(el("div", "ficha-fichaje", "🖊️ Fichado: " + d.fichaje.date + (d.fichaje.club ? " · " + d.fichaje.club : "")));
-    root.appendChild(head);
+    colA.appendChild(head);
 
     const stats = el("div", "ficha-stats");
     const st = (label, val) => { const c = el("div", "ficha-stat"); c.appendChild(el("div", "fs-val", String(val))); c.appendChild(el("div", "fs-lab", label)); stats.appendChild(c); };
     st("Puntos", d.points || 0);
     st("Media", String(Math.round((Number(d.average) || 0) * 10) / 10).replace(".", ","));
     st("Partidos", d.matches5 || 0);
-    root.appendChild(stats);
+    colA.appendChild(stats);
     const peers = all.filter((x) => x.role && x.role === (d.role || p.role));
     if (peers.length >= 8) {
       const cheaper = peers.filter((x) => (Number(x.value) || 0) < (Number(d.value) || 0)).length;
       const pct = Math.round((cheaper / (peers.length - 1)) * 100);
-      root.appendChild(el("div", "ficha-pct", "💶 Precio: más caro que el " + pct + "% de los " + (roleFull(d.role || p.role) || "jugadores") + " (" + peers.length + ")"));
+      colA.appendChild(el("div", "ficha-pct", "💶 Precio: más caro que el " + pct + "% de los " + (roleFull(d.role || p.role) || "jugadores") + " (" + peers.length + ")"));
     }
 
-    if (d.participacion) root.appendChild(renderParticipacion(d.participacion, d.status || p.status));
+    if (d.participacion) colA.appendChild(renderParticipacion(d.participacion, d.status || p.status));
 
-    const cols = el("div", "ficha-cols");
+
     const colL = el("div", "ficha-col");
     const colR = el("div", "ficha-col");
 
@@ -2306,8 +2335,8 @@
       });
       colR.appendChild(t);
     }
-    cols.appendChild(colL); cols.appendChild(colR);
-    root.appendChild(cols);
+    colA.appendChild(colL); colB.appendChild(colR);
+    root.appendChild(colA); root.appendChild(colB);
     return root;
   }
 
@@ -2315,7 +2344,7 @@
   setupMoreMenu();
   (function restoreTab() {
     try { const pm = location.pathname.match(/\/guiafantasy\/partido\/([a-z0-9-]+)/); if (pm) { renderMatchPage(pm[1]); return; } } catch (e) {}
-    try { const pj = location.pathname.match(/\/guiafantasy\/jugadores\/([a-z0-9]{6,40})/i); if (pj) { renderPlayerPage(pj[1]); return; } } catch (e) {}
+    try { const pj = location.pathname.match(/\/jugadores?\/([a-z0-9]{6,40})/i); if (pj) { renderPlayerPage(pj[1]); return; } } catch (e) {}
     let name = "";
     try {
       const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|noticias|analiza|clausulazos)/);
@@ -2888,6 +2917,13 @@
 
   const bind = (id, ev) => { const e = $(id); if (e) e.addEventListener(ev, () => { shown = 18; renderGrid(); }); };
   const searchEl = $("mjSearch");
+  if (searchEl) {
+    // En el móvil el teclado tapa la lista: al escribir se esconden los filtros
+    // de debajo y el buscador sube arriba para ver los resultados justo debajo.
+    const focusSearch = () => { document.body.classList.add("mj-searching"); setTimeout(() => { try { const r = searchEl.getBoundingClientRect(); window.scrollBy(0, r.top - 8); } catch (e) {} }, 300); };
+    searchEl.addEventListener("focus", focusSearch);
+    searchEl.addEventListener("blur", () => setTimeout(() => document.body.classList.remove("mj-searching"), 200));
+  }
   if (searchEl) searchEl.addEventListener("input", () => { const y = window.scrollY; shown = 18; renderGrid(); if (window.scrollY !== y) window.scrollTo(0, y); });
   bind("mjRole", "change");
   const estadoSel = $("estadoSel"); if (estadoSel) estadoSel.addEventListener("change", renderEstado);

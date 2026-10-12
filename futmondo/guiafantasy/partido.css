@@ -1,0 +1,42 @@
+/* Partido: cabecera con escudos enormes a los bordes + resumen de eventos */
+.mpage-top { position: relative; overflow: hidden; border-radius: 22px; padding: 18px 16px 20px; background: linear-gradient(180deg, #f6f7f8, #eceff1); min-height: 210px; }
+[data-theme="dark"] .mpage-top { background: linear-gradient(180deg, #1b222c, #141a22); }
+.mpage-top > * { position: relative; z-index: 1; }
+.mpage-bgcrest { position: absolute !important; z-index: 0 !important; top: 50%; width: min(260px, 52vw); height: auto; max-height: 120%; object-fit: contain; transform: translateY(-50%); opacity: .95; pointer-events: none; }
+.mpage-bgcrest.left { left: calc(min(260px, 52vw) / -2); }
+.mpage-bgcrest.right { right: calc(min(260px, 52vw) / -2); }
+.mpage-topline { justify-content: center; }
+.mpage-team { font-size: 1.05rem; }
+.mpage-team img { width: 62px; height: 62px; }
+.mpage-teams { margin: 22px 0 6px; }
+.mpage-score { font-size: 3.2rem; }
+.mpage-ev-sum { margin: 14px 0 4px; border: 1px solid var(--border); border-radius: 18px; padding: 14px 14px 10px; background: var(--card, #fff); }
+.mpage-ev-title { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 1rem; text-align: center; margin-bottom: 10px; }
+.mpage-ev-list { display: flex; flex-direction: column; gap: 4px; }
+.mpage-ev-row { display: grid; grid-template-columns: 1fr 34px 1fr; align-items: center; gap: 8px; padding: 5px 0; border-top: 1px dashed var(--border); font-size: .92rem; }
+.mpage-ev-row:first-child { border-top: 0; }
+.mpage-ev-min { grid-column: 2; grid-row: 1; justify-self: center; font: 800 .74rem 'Space Grotesk', sans-serif; color: var(--muted); }
+.mpage-ev-ico { grid-column: 2; grid-row: 2; justify-self: center; font-size: 1.25rem; line-height: 1; }
+.mpage-ev-txt { grid-row: 1 / span 2; font-weight: 700; line-height: 1.2; }
+.mpage-ev-row.home .mpage-ev-txt { grid-column: 1; text-align: right; }
+.mpage-ev-row.away .mpage-ev-txt { grid-column: 3; text-align: left; }
+.mpage-ev-row.sub .mpage-ev-txt { font-weight: 600; font-size: .85rem; opacity: .85; }
+/* Dos campos: línea de separación para distinguir un equipo del otro */
+.al-pair > .al + .al, .al-pair > .al + .al-col, .al-pair > .al-col + .al-col, .al-pair > * + * { position: relative; }
+.al-pair > * + *::before { content: ""; position: absolute; left: 6%; right: 6%; top: -19px; height: 4px; border-radius: 4px; background: linear-gradient(90deg, transparent, #16a34a 20%, #16a34a 80%, transparent); }
+@media (min-width: 700px) { .al-pair { column-gap: 40px; } .al-pair > * + *::before { left: -21px; right: auto; top: 3%; bottom: 3%; width: 4px; height: auto; background: linear-gradient(180deg, transparent, #16a34a 15%, #16a34a 85%, transparent); } }
+/* Mejor fichaje de la jornada: 5 columnas, 2 filas, sin deslizar */
+.merc-bestrow { display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; overflow: visible !important; }
+.merc-bestrow .mbc { width: auto; padding: 14px 8px; border-radius: 16px; gap: 4px; }
+.merc-bestrow .mbc-photo, .merc-bestrow .mbc-img { width: 74px; height: 74px; }
+.merc-bestrow .mbc-name { font-size: .95rem; }
+.merc-bestrow .mbc-team { font-size: .78rem; }
+.merc-bestrow .mbc-crest { width: 17px; height: 17px; }
+.merc-bestrow .mbc-exp { font-size: .95rem; }
+.merc-bestrow .mbc-val { font-size: .9rem; }
+.merc-bestrow .mbc-rival { font-size: .76rem; }
+.merc-bestrow .mbc-role { font-size: .66rem; }
+.merc-bestrow .mbc-last5 .ficha-chip { font-size: .7rem; padding: 2px 6px; }
+@media (max-width: 760px) { .merc-bestrow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .merc-bestrow .mbc-photo, .merc-bestrow .mbc-img { width: 82px; height: 82px; } }
+/* Buscador: con el teclado abierto se esconden los filtros y sube arriba */
+@media (max-width: 760px) { body.mj-searching #tab-mercado .merc-select, body.mj-searching #tab-mercado .merc-range, body.mj-searching #tab-mercado .merc-seg, body.mj-searching #tab-mercado > .panel > p, body.mj-searching #tab-mercado #rachasOut, body.mj-searching #tab-mercado .panel-head { display: none !important; } }
