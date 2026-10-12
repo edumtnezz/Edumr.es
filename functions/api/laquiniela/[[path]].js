@@ -285,7 +285,7 @@ async function fetchFootballData(env, matchday) {
 }
 
 // Escudos desactualizados de football-data → versión actual (Futmondo, 128 px)
-const CREST_FIX = { 263: "https://static02.mondocore.com/futmondo/img/teams/128/deportivo-alaves.png" };
+const CREST_FIX = { 263: "https://static02.mondocore.com/futmondo/img/teams/128/deportivo-alaves.png", 84: "https://static02.mondocore.com/futmondo/img/teams/128/malaga.png" };
 function fixCrests(data) {
   try {
     ((data && data.matches) || []).forEach((m) => {
