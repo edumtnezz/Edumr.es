@@ -1825,6 +1825,8 @@
     const cell = e.target.closest ? e.target.closest("#cxStrip .cx-team") : null;
     if (!cell) return;
     const t = cell.dataset.team || "";
+    // En Inicio la tira de escudos lleva a la página del club; en Mercado/Noticias sigue filtrando
+    if (currentTab === "inicio") { location.href = t ? (clubHref(t) || "/equipos") : "/equipos"; return; }
     setTeam(teamFilter === t ? "" : t);
   });
 
@@ -1912,7 +1914,7 @@
     // La cinta de la portada se recalcula al volver a Inicio (al estar
     // oculta su ancho era 0 y la duración de la animación quedaba corta).
     if (name === "inicio") { try { if (window.__cxTickerSync) window.__cxTickerSync(); } catch (e) {} }
-    if (name === "inicio") { renderInicioFeatured(); renderInicioEquipos(); }
+    if (name === "inicio") renderInicioFeatured();
     if (name === "clausulazos") renderClausulas();
     if (name === "fichajes") renderFichajes();
     if (name === "analiza") renderCapHistorial();
@@ -2719,24 +2721,6 @@
   }
 
   // ---------- Páginas de club (/equipos y /equipos/<club>) ----------
-  async function renderInicioEquipos() {
-    const box = $("inicioEquipos"); if (!box || box.dataset.done) return;
-    let teams = [];
-    try { teams = await eqTeams(); } catch (e) {}
-    if (!teams.length) return;
-    box.dataset.done = "1";
-    box.innerHTML = "";
-    const h = el("div", "eq-inicio-h"); h.appendChild(el("span", null, "🛡️ Equipos"));
-    const all = el("a", "eq-more", "Ver todos →"); all.href = "/equipos"; h.appendChild(all);
-    box.appendChild(h);
-    const row = el("div", "merc-clubs eq-inicio-row");
-    teams.slice().sort((a, b) => a.name.localeCompare(b.name, "es")).forEach((t) => {
-      const a = el("a", "merc-club"); a.href = "/equipos/" + teamSlug(t.name); a.title = t.name;
-      if (t.logo) { const im = el("img", "merc-club-img"); im.src = t.logo; im.alt = t.name; im.loading = "lazy"; a.appendChild(im); }
-      row.appendChild(a);
-    });
-    box.appendChild(row);
-  }
   function teamSlug(n) { return stripAccents(String(n || "")).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
   function eqOpen() {
     const main = document.querySelector(".quiniela-main");
