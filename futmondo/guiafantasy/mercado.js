@@ -983,8 +983,15 @@
       sec.appendChild(hd);
       const idxH = xiEvIndex(d.homePlayers), idxA = xiEvIndex(d.awayPlayers);
       const pitches = el("div", "alin-pitches mpage-xipitches");
+      if (xiKind === "probable" && window.EduAlineacion) {
+        // Nuevo campo EduMR (alineacion.js): foto de Futmondo, % de titularidad y alternativa
+        pitches.classList.add("al-pair");
+        pitches.appendChild(window.EduAlineacion.card(xi.home || {}, m.home, m.homeCrest, "vs " + m.away, all));
+        pitches.appendChild(window.EduAlineacion.card(xi.away || {}, m.away, m.awayCrest, "en " + m.home, all));
+      } else {
       pitches.appendChild(mpXiTeam(xi.home || {}, (xi.home && xi.home.crest) || m.homeCrest, idxH, false));
       pitches.appendChild(mpXiTeam(xi.away || {}, (xi.away && xi.away.crest) || m.awayCrest, idxA, false));
+      }
       sec.appendChild(pitches);
       box.appendChild(sec);
     } else {

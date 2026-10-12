@@ -1,7 +1,6 @@
 /* Alineación probable · estilo EduMR (todo propio) */
-:root { --g: #16a34a; --g2: #22c55e; --ink: #10151c; --muted: #64748b; --card: #fff; --bg: #f1f4f8; }
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Plus Jakarta Sans', system-ui, sans-serif; display: grid; grid-template-columns: minmax(0, 1fr); padding: 18px 12px 40px; }
+.al { --g: #16a34a; --g2: #22c55e; --ink: #10151c; --muted: #64748b; --card: #fff; }
+.al, .al * { box-sizing: border-box; }
 .al { width: 100%; max-width: 450px; margin: 0 auto; border-radius: 22px; overflow: hidden; background: linear-gradient(160deg, #15803d, #16a34a 55%, #22c55e); box-shadow: 0 18px 40px rgba(16,21,28,.22); }
 .al-head { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 8px 14px; color: #fff; }
 .al-head img { width: 36px; height: 36px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,.35)); }
@@ -32,3 +31,5 @@ a.pl:hover .pl-ph img { transform: scale(1.05); }
 .pl-ph img { transition: transform .15s ease; }
 .pl-prob.p90 { --pc: #4184ab; } .pl-prob.p80 { --pc: #41ab58; } .pl-prob.p60 { --pc: #ebcc34; color: #10151c; } .pl-prob.p40 { --pc: #cf8236; } .pl-prob.p0 { --pc: #cf4a36; }
 .pl-duda.bad { background: #ef4444; color: #fff; }
+.al-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 450px)); gap: 18px; justify-content: center; }
+.al-pair .al { margin: 0; }

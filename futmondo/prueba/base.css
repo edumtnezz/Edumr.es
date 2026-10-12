@@ -1,0 +1,4 @@
+/* Solo para las páginas de prueba */
+:root { --g: #16a34a; --g2: #22c55e; --ink: #10151c; --muted: #64748b; --card: #fff; --bg: #f1f4f8; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Plus Jakarta Sans', system-ui, sans-serif; display: grid; grid-template-columns: minmax(0, 1fr); padding: 18px 12px 40px; }
