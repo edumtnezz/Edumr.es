@@ -1003,7 +1003,7 @@ html { overflow-anchor: none; }
   background-repeat: no-repeat;
 }
 .mpage-xpts {
-  position: absolute; top: 3px; right: 3px; z-index: 3;
+  position: absolute; bottom: 4px; right: 4px; z-index: 3;
   min-width: 20px; text-align: center;
   background: #0b3d22; color: #fff;
   font-weight: 900; font-size: 0.7rem; line-height: 1.5;
@@ -1029,12 +1029,15 @@ html { overflow-anchor: none; }
 .mpage-xi .alin-bench .alin-bp .alin-bimg img { width: 26px; height: 26px; }
 .mpage-xi .alin-bench .alin-bprob { position: static; margin: 0; background: #16191d; color: #fff; border: none; font-size: 0.56rem; padding: 1px 5px; }
 .mpage-xi .alin-bench .alin-bname { color: #16191d; font-size: 0.64rem; margin: 0; max-width: none; white-space: nowrap; }
-/* Suplentes que salieron en la segunda parte */
-.mpage-subs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; margin-top: 14px; }
+/* Suplentes que salieron en la segunda parte: debajo del campo de SU equipo */
+.mpage-subs-block { margin-top: 10px; }
 .mpage-subs-h { font-weight: 800; font-size: 0.78rem; margin-bottom: 6px; color: var(--text); }
 .mpage-subs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 6px; }
-.mpage-subp .mpage-xpts { font-size: 0.62rem; min-width: 17px; }
-@media (max-width: 640px) { .mpage-subs { grid-template-columns: 1fr; gap: 12px; } }
+.mpage-subpts {
+  font-weight: 900; font-size: 0.62rem;
+  background: #0b3d22; color: #fff;
+  border-radius: 6px; padding: 0 5px;
+}
 /* En móvil el campo va a todo el ancho de la pantalla (como la captura de
    Comuniate): se quita el padding del panel y del main solo en la página de
    partido/ficha, y las tarjetas de arriba recuperan su margen. */
@@ -1045,9 +1048,9 @@ html { overflow-anchor: none; }
   .quiniela-main.mpage-open .mpage-meta,
   .quiniela-main.mpage-open .mpage-goals,
   .quiniela-main.mpage-open .mpage-xi-h,
-  .quiniela-main.mpage-open .mpage-subs,
   .quiniela-main.mpage-open .mpage-legend,
   .quiniela-main.mpage-open .mpage-cols { margin-left: 12px; margin-right: 12px; }
+  .quiniela-main.mpage-open .mpage-xi-team .mpage-subs-block { margin-left: 12px; margin-right: 12px; }
   .quiniela-main.mpage-open .mpage-xipitches { margin-left: 0; margin-right: 0; }
   .quiniela-main.mpage-open .mpage-xi-team .alin-pitch { border-radius: 0; }
 }

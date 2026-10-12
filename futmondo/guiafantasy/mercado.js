@@ -840,8 +840,16 @@
     if (!q || !map) return "";
     if (map[q]) return map[q];
     const last = q.split(/\s+/).pop();
-    const hit = Object.keys(map).find((k) => k.split(/\s+/).pop() === last);
-    return hit ? map[hit] : "";
+    if (last.length < 4) return "";
+    const keys = Object.keys(map);
+    const exact = keys.find((k) => k.split(/\s+/).pop() === last);
+    if (exact) return map[exact];
+    // Pequeñas diferencias de una letra (Elliot vs Elliott).
+    const pref = keys.find((k) => {
+      const kl = k.split(/\s+/).pop();
+      return kl.length >= 4 && Math.abs(kl.length - last.length) <= 1 && (kl.indexOf(last) === 0 || last.indexOf(kl) === 0);
+    });
+    return pref ? map[pref] : "";
   }
   // Jugadores que acabaron jugando el partido (tabla PUNTOS de Comuniate):
   // titulares = sin evento de entrada; suplentes que salieron = con "IN".
@@ -868,17 +876,25 @@
       const c = el("div", "alin-bp mpage-subp");
       const ph = el("div", "alin-bimg mpage-xiimg");
       if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); ph.appendChild(im); }
-      const pts = el("span", "mpage-xpts", "–");
-      pts.setAttribute("data-full", p.full || p.name || "");
-      pts.title = "Puntos de mi liga Futmondo";
-      ph.appendChild(pts);
       c.appendChild(ph);
       c.appendChild(el("span", "alin-bname", p.last || p.name));
+      // Los puntos van en un chip al lado del nombre, no encima de la foto
+      // (tapaba la cara en las fotos pequeñas del banquillo).
+      const pts = el("span", "mpage-subpts", "–");
+      pts.setAttribute("data-full", p.full || p.name || "");
+      pts.title = "Puntos de mi liga Futmondo";
+      c.appendChild(pts);
       if (ev && ev.hl && ev.hl.length) { const evs = mpEv(ev.hl, ev.min); evs.classList.add("mpage-xev"); c.appendChild(evs); }
       c.addEventListener("click", () => openPlayerByName(p.full || p.name));
       grid.appendChild(c);
     });
     return grid;
+  }
+  function mpSubsBlock(teamName, list, evIdx) {
+    const block = el("div", "mpage-subs-block");
+    block.appendChild(el("div", "mpage-subs-h", "Desde el banquillo · " + teamName));
+    block.appendChild(mpSubsGrid(list, evIdx));
+    return block;
   }
   async function fillMpPoints(box, d, jn) {
     const idByName = {};
@@ -895,7 +911,7 @@
       const r = await (await fetch(API + "/puntos?jornada=" + encodeURIComponent(jn) + "&ids=" + ids.join(","), { cache: "no-store" })).json();
       map = (r && r.points) || {};
     } catch (e) {}
-    box.querySelectorAll(".mpage-xpts[data-full]").forEach((el2) => {
+    box.querySelectorAll(".mpage-xpts[data-full], .mpage-subpts[data-full]").forEach((el2) => {
       const id = idByName[el2.getAttribute("data-full")];
       const rec = id ? map[id] : null;
       if (rec && rec.f === true && rec.p != null) { el2.textContent = String(rec.p); el2.classList.add("on"); }
@@ -948,21 +964,16 @@
       const idxH = xiEvIndex(d.homePlayers), idxA = xiEvIndex(d.awayPlayers);
       const home = xiFinishedSide(m.home, m.homeCrest, d.homePlayers, xiPhotoMap(ffData && ffData.home));
       const away = xiFinishedSide(m.away, m.awayCrest, d.awayPlayers, xiPhotoMap(ffData && ffData.away));
+      // Cada equipo con su campo y, debajo, los suyos que salieron del
+      // banquillo (pedido por Edu).
+      const colH = mpXiTeam(home, m.homeCrest, idxH, true);
+      if (home.subs.length) colH.appendChild(mpSubsBlock(m.home, home.subs, idxH));
+      const colA = mpXiTeam(away, m.awayCrest, idxA, true);
+      if (away.subs.length) colA.appendChild(mpSubsBlock(m.away, away.subs, idxA));
       const pitches = el("div", "alin-pitches mpage-xipitches");
-      pitches.appendChild(mpXiTeam(home, m.homeCrest, idxH, true));
-      pitches.appendChild(mpXiTeam(away, m.awayCrest, idxA, true));
+      pitches.appendChild(colH);
+      pitches.appendChild(colA);
       sec.appendChild(pitches);
-      if (home.subs.length || away.subs.length) {
-        const subs = el("div", "mpage-subs");
-        const cH = el("div", "mpage-subcol");
-        cH.appendChild(el("div", "mpage-subs-h", "Desde el banquillo · " + m.home));
-        cH.appendChild(mpSubsGrid(home.subs, idxH));
-        const cA = el("div", "mpage-subcol");
-        cA.appendChild(el("div", "mpage-subs-h", "Desde el banquillo · " + m.away));
-        cA.appendChild(mpSubsGrid(away.subs, idxA));
-        subs.appendChild(cH); subs.appendChild(cA);
-        sec.appendChild(subs);
-      }
       box.appendChild(sec);
     } else if (xi) {
       const sec = el("section", "mpage-xi");
