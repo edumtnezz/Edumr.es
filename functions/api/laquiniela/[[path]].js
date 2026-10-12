@@ -3462,7 +3462,7 @@ export async function onRequestGet({ request, env, params }) {
   // patrones; lo que no encaje se ignora (el cliente lo cruza por eliminación).
   if (path === "cambios") {
     const hh = url.searchParams.get("home") || "", aa = url.searchParams.get("away") || "", jj = url.searchParams.get("jornada") || "";
-    const ck = "cambios:v2:" + jj + ":" + normKey(hh.toLowerCase()) + "-" + normKey(aa.toLowerCase());
+    const ck = (url.searchParams.get("raw") ? "x" : "") + "cambios:v2:" + jj + ":" + normKey(hh.toLowerCase()) + "-" + normKey(aa.toLowerCase());
     try { const c = await env.PORRA.get(ck, "json"); if (c && Date.now() - (c.at || 0) < 10 * 60 * 1000) return json(c.data); } catch (e) {}
     const out = { subs: [] };
     try {
@@ -3471,6 +3471,7 @@ export async function onRequestGet({ request, env, params }) {
         const html = await (await fetch(d.url, { headers: cmHeaders() })).text();
         const texts = [...new Set([...html.matchAll(/"articleBody":"([^"]*)"/g)].map((m) => m[1]))];
         const clean = (t) => String(t || "").replace(/\([^)]*\)/g, "").replace(/[.¡!]+\s*$/g, "").replace(/\s+/g, " ").trim();
+        if (url.searchParams.get("raw")) out.raw = texts.filter((x) => /^\d+/.test(x));
         for (const raw of texts) {
           const mm = raw.match(/^(\d+)(?:\+\d+)?'\s*[—-]\s*(.*)$/);
           if (!mm) continue;
