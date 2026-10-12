@@ -1,0 +1,68 @@
+:root { --bg:#eef1f5; --card:#fff; --ink:#0f172a; --muted:#64748b; --line:rgba(15,23,42,.09); --green:#16a34a; --red:#dc2626; --amber:#f59e0b; --soft:#f4f6f9; }
+[data-theme="dark"] { --bg:#0b0f16; --card:#151b25; --ink:#e8edf5; --muted:#8b97a8; --line:rgba(255,255,255,.09); --soft:#1c2430; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:'Plus Jakarta Sans',system-ui,sans-serif; }
+.pj { max-width:1120px; margin:0 auto; padding:14px 14px 40px; }
+.pj-load { color:var(--muted); text-align:center; padding:60px 0; }
+.pj h1,.pj h2 { font-family:'Space Grotesk',sans-serif; margin:0; }
+.pj-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+.pj-back { background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:999px; padding:10px 18px; font:800 .95rem 'Plus Jakarta Sans'; cursor:pointer; }
+.pj-tag { font-size:.7rem; font-weight:800; letter-spacing:.06em; color:var(--muted); }
+.pj-grid { display:grid; gap:14px; grid-template-columns:1fr; }
+@media (min-width:900px){ .pj-grid { grid-template-columns:1fr 1fr; align-items:start; } .pj-full{ grid-column:1/-1; } }
+.card { background:var(--card); border:1px solid var(--line); border-radius:20px; padding:16px; }
+.card h2 { font-size:1.05rem; margin-bottom:12px; }
+/* Cabecera */
+.hero { text-align:center; padding:22px 16px 18px; }
+.hero-ph { position:relative; width:128px; height:128px; margin:0 auto 10px; }
+.hero-ph img.face { width:100%; height:100%; border-radius:50%; object-fit:cover; background:var(--soft); border:3px solid var(--card); box-shadow:0 6px 18px rgba(0,0,0,.18); }
+.hero-ph img.club { position:absolute; right:-6px; bottom:-2px; width:38px; height:38px; object-fit:contain; background:var(--card); border-radius:50%; padding:4px; box-shadow:0 2px 8px rgba(0,0,0,.25); }
+.dots { display:flex; justify-content:center; gap:5px; margin:6px 0 4px; }
+.dots i { width:9px; height:9px; border-radius:50%; background:var(--line); }
+.dots i.g { background:#22c55e; } .dots i.a { background:var(--amber); } .dots i.r { background:var(--red); }
+.hero h1 { font-size:2rem; line-height:1.1; }
+.hero-line { margin-top:8px; color:var(--muted); font-size:.95rem; }
+.hero-line b { color:var(--ink); }
+.chip { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:999px; font-weight:800; font-size:.82rem; margin-top:10px; background:rgba(34,197,94,.14); color:#15803d; }
+.chip.doubt { background:rgba(245,158,11,.16); color:#b45309; } .chip.bad { background:rgba(220,38,38,.14); color:#b91c1c; }
+/* Tarjetitas */
+.mini { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.mini .m { background:var(--soft); border-radius:14px; padding:10px 12px; }
+.mini .k { font-size:.68rem; font-weight:800; letter-spacing:.05em; color:var(--muted); text-transform:uppercase; }
+.mini .v { font:700 1.25rem 'Space Grotesk'; margin-top:2px; }
+.up { color:var(--green); font-weight:800; font-size:.8rem; } .down { color:var(--red); font-weight:800; font-size:.8rem; }
+.pos { display:flex; gap:6px; margin-top:6px; }
+.pos span { padding:6px 12px; border-radius:9px; font-weight:800; font-size:.8rem; color:#fff; }
+.pos .p-delantero { background:#de1b1b; } .pos .p-centrocampista { background:#10af00; } .pos .p-defensa { background:#2563eb; } .pos .p-portero { background:#d97706; }
+/* Próximos */
+.next { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.nx { background:var(--soft); border-radius:14px; padding:9px 4px; text-align:center; }
+.nx .d { font-size:.68rem; color:var(--muted); font-weight:700; }
+.nx img { width:34px; height:34px; object-fit:contain; margin:6px 0 4px; }
+.nx .j { display:inline-block; background:var(--ink); color:var(--card); font-size:.68rem; font-weight:800; border-radius:6px; padding:2px 7px; }
+.nx .l { font-size:.66rem; font-weight:800; color:var(--muted); margin-top:4px; }
+/* Puntos */
+.tri { display:grid; grid-template-columns:repeat(3,1fr); text-align:center; gap:8px; margin-bottom:12px; }
+.tri .v { font:700 1.6rem 'Space Grotesk'; } .tri .k { font-size:.7rem; color:var(--muted); font-weight:700; }
+.forma { display:flex; gap:6px; justify-content:center; margin-bottom:12px; }
+.pt { display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:30px; padding:0 6px; border-radius:8px; font-weight:800; color:#fff; font-size:.88rem; background:#9ca3af; }
+.pt.hi { background:#059248; } .pt.mid { background:#edbb28; color:#1a1a1a; } .pt.lo { background:#dc2626; } .pt.na { background:#9ca3af; }
+.games { max-height:300px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
+.gm { display:grid; grid-template-columns:34px 1fr 76px; align-items:center; gap:8px; background:var(--soft); border-radius:12px; padding:7px 10px; font-size:.8rem; }
+.gm .tm { display:flex; align-items:center; justify-content:center; gap:6px; font-weight:800; }
+.gm .tm img { width:22px; height:22px; object-fit:contain; }
+.gm .dt { text-align:right; color:var(--muted); font-size:.7rem; }
+.gm .mn { display:block; height:5px; border-radius:3px; background:var(--green); margin-top:3px; margin-left:auto; }
+/* Valor */
+.vtab { width:100%; border-collapse:collapse; font-size:.86rem; }
+.vtab td { padding:7px 4px; border-bottom:1px solid var(--line); } .vtab td:last-child { text-align:right; font-weight:800; } .vtab td.df { text-align:right; }
+.hl { display:flex; justify-content:space-around; margin:12px 0 6px; font-weight:800; font-size:.9rem; }
+.chart { width:100%; height:160px; display:block; }
+/* Noticias */
+.news { display:grid; gap:10px; grid-template-columns:1fr; }
+@media (min-width:700px){ .news { grid-template-columns:1.4fr 1fr 1fr; } .news a:first-child { grid-row:span 2; } }
+.news a { position:relative; display:block; min-height:150px; border-radius:16px; overflow:hidden; color:#fff; text-decoration:none; background:#222; }
+.news img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:brightness(.5); }
+.news .t { position:absolute; left:0; right:0; bottom:0; padding:12px; font-weight:800; font-size:.92rem; line-height:1.2; background:linear-gradient(0deg,rgba(0,0,0,.75),transparent); }
+.news .t small { display:block; font-weight:600; opacity:.8; margin-top:4px; }
+.empty { color:var(--muted); font-size:.9rem; }
