@@ -171,7 +171,7 @@
             statusRow = '<div class="cx-jn-statusrow cx-jn-statusrow-suspended"><span class="cx-jn-dot"></span>SUSPENDIDO</div>';
             mid = tv;
           } else {
-            if (m.confirmed) statusRow = '<div class="cx-jn-statusrow cx-jn-statusrow-confirm">✅ Once confirmado</div>';
+            if (m.confirmed) { statusRow = '<div class="cx-jn-statusrow cx-jn-statusrow-confirm">Once confirmado</div>'; cardCls += " cx-jn-confirmed"; }
             mid = '<span class="cx-jn-time">' + esc(((m.day || "") + " " + (m.date || "")).trim()) + '</span><span class="cx-jn-hora">' + esc(m.time || "") + '</span>' + tv;
           }
           return '<div class="' + cardCls + '" data-home="' + esc(m.home) + '" data-away="' + esc(m.away) + '" data-hcrest="' + esc(m.homeCrest) + '" data-acrest="' + esc(m.awayCrest) + '">' +

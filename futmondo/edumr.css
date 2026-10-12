@@ -350,10 +350,17 @@ body {
 .cx-jn-statusrow-suspended .cx-jn-dot { background: #e08a2f; }
 @keyframes cxLivePulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 .cx-jn-statusrow-confirm {
-  color: #fff; background: var(--cx-green); border-radius: 999px;
-  font-size: 0.4rem; letter-spacing: 0.02em; padding: 1px 7px; margin: 0 auto 1px;
-  width: fit-content; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 3px;
+  color: #fff; background: linear-gradient(135deg, #22c55e, #15803d); border-radius: 999px;
+  font-size: 0.42rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 2px 8px 2px 5px; margin: 0 auto 2px; width: fit-content; white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(22, 163, 74, 0.45);
 }
+.cx-jn-statusrow-confirm::before {
+  content: "✓"; display: inline-flex; align-items: center; justify-content: center;
+  width: 8px; height: 8px; border-radius: 50%; background: #fff; color: #15803d; font-size: 0.4rem; line-height: 1; font-weight: 900;
+}
+.cx-jn.cx-jn-confirmed { border-color: #22c55e; box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.55), 0 2px 8px rgba(34, 197, 94, 0.22); }
 
 /* ---------- Última hora (ticker) ---------- */
 .cx-live {
