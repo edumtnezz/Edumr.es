@@ -27,7 +27,8 @@
       function (p) { var n = strip(p.name); return names.indexOf(n) >= 0; },                               // 1. nombre igual
       function (p) { var pt = strip(p.name).split(" "); return pt.every(function (t) { return toks[t]; }); }, // 2. todas sus palabras están en el nombre completo
       function (p) { var q = strip(p.name).replace(/ /g, ""); return q.length >= 4 && squash.some(function (z) { return z.indexOf(q) >= 0; }); }, // 3. "Dela" dentro de "adriandelafuente"
-      function (p) { var pt = strip(p.name).split(" "); return pt.every(function (t) { return Object.keys(toks).some(function (k) { return lev1(t, k); }); }); } // 4. una letra de diferencia
+      function (p) { var pt = strip(p.name).split(" "); return pt.every(function (t) { return Object.keys(toks).some(function (k) { return lev1(t, k) || (t.length >= 4 && k.indexOf(t) === 0); }); }); }, // 4. una letra de diferencia o diminutivo (Fede→Federico)
+      function (p) { var pt = strip(p.name).split(" "), last = pt[pt.length - 1]; return last.length >= 4 && toks[last] && pool.filter(function (q) { var qt = strip(q.name).split(" "); return qt[qt.length - 1] === last; }).length === 1; } // 5. mismo apellido y único en el equipo
     ];
     for (var i = 0; i < steps.length; i++) {
       var hits = pool.filter(steps[i]);
