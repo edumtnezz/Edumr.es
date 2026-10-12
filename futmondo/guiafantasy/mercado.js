@@ -688,9 +688,32 @@
     if (p.indexOf("med") >= 0 || p.indexOf("centro") >= 0) return ["MD", "md"];
     return ["", "x"];
   }
-  function marketInfo(name) {
+  // Equipo canónico para comparar "Barça" con "Barcelona", "Atleti" con "Atlético de Madrid"...
+  function teamCanon(t) {
+    const n = stripAccents(String(t || "").toLowerCase()).replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
+    const T = [[/barc/, "fcb"], [/athletic|bilbao/, "ath"], [/atleti|atletico/, "atm"], [/real madrid/, "rma"], [/betis/, "bet"], [/sociedad/, "rso"], [/celta/, "cel"], [/depor/, "dep"], [/rayo/, "ray"], [/espanyol|espanol/, "esp"], [/getafe/, "get"], [/alaves/, "ala"], [/elche/, "elc"], [/osasuna/, "osa"], [/villarreal/, "vil"], [/valencia/, "val"], [/sevilla/, "sev"], [/levante/, "lev"], [/malaga/, "mal"], [/racing/, "rac"], [/girona/, "gir"], [/mallorca/, "mll"], [/oviedo/, "ovi"], [/palmas/, "lpa"]];
+    for (const [re, k] of T) if (re.test(n)) return k;
+    return n.split(" ").filter((w) => !/^(real|fc|de|la|del|club|ud|cd|rc|ca|cf|sd)$/.test(w))[0] || n;
+  }
+  function marketInfo(name, team) {
     const norm = (s) => stripAccents(String(s || "").toLowerCase()).replace(/\s+/g, " ").trim();
     let q = norm(name);
+    if (team) {
+      const tc = teamCanon(team);
+      const sub = (all || []).filter((x) => teamCanon(x.team) === tc);
+      if (sub.length) {
+        const prev = all; all = sub;
+        try {
+          let r = marketInfo(name);
+          if (!r) { // un apellido largo en común dentro de la plantilla ("González de Zárate" / "Urko González"), si es único
+            const qt = q.split(/\s+/).filter((w) => w.length >= 5);
+            const c = sub.filter((x) => norm(x.name).split(/\s+/).some((w) => w.length >= 5 && qt.indexOf(w) >= 0));
+            if (c.length === 1) r = c[0];
+          }
+          return r;
+        } finally { all = prev; }
+      }
+    }
     if (q === "alexander-arnold" || q === "alexander arnold" || q === "trent alexander-arnold") q = "trent";
     if (!all || !all.length || !q) return null;
     const last = q.split(/\s+/).pop();
@@ -797,7 +820,7 @@
     }));
     return { starters, bench: [], formation: [g.defensas.length, g.medios.length, g.delanteros.length].join("-") };
   }
-  let mpCambios = [], mpPairs = [], mpReds = [], mpGm = null, mpConf = null, mpLive = false;
+  let mpTeams = { home: "", away: "" }, mpCambios = [], mpPairs = [], mpReds = [], mpGm = null, mpConf = null, mpLive = false;
   function mpNewCard(side, name, crest, subtitle, mode, photoMap, bench) {
     return window.EduAlineacion.card(xiToStarters(side, photoMap, mode === "played"), name, crest, subtitle, all, mode, bench);
   }
@@ -899,7 +922,7 @@
     (list || []).forEach((p) => {
       const q = stripAccents(String(p.pos || "").toLowerCase()).trim();
       const isSub = (p.hl || []).some((h) => /sign-in/.test(h.ico || ""));
-      const mi = marketInfo(p.name);
+      const mi = marketInfo(p.name, name);
       const o = { pos: q, name: p.name, full: p.name, last: String(p.name || "").split(/\s+/).pop(), photo: ffPhotoFor(photoMap, p.name) || (mi && mi.photo) || "" };
       if (isSub) { g.subs.push(o); return; }
       const cr = (q === "pt" || /porter/.test(q)) ? "" : rowOf(p.name);
@@ -965,13 +988,14 @@
       });
       return;
     }
-    const idByName = {};
-    [].concat(d.homePlayers || [], d.awayPlayers || []).forEach((p) => {
+    const idByName = {}, teamOfName = {};
+    [["home", d.homePlayers], ["away", d.awayPlayers]].forEach(([sd, ps]) => (ps || []).forEach((p) => {
       const nm = p.name || "";
       if (!nm || idByName[nm] != null) return;
-      const mi = marketInfo(nm);
+      const mi = marketInfo(nm, mpTeams[sd]);
       idByName[nm] = (mi && mi.id) || "";
-    });
+      if (mi) teamOfName[nm] = mi;
+    }));
     const ids = Object.keys(idByName).map((k) => idByName[k]).filter((x, i, a) => x && a.indexOf(x) === i);
     if (!ids.length) return false;
     let map = {};
@@ -1002,7 +1026,7 @@
         card.appendChild(el("div", "mvp-k", "⭐ MVP del partido"));
         const wrap = el("div", "mvp-list");
         top.forEach((x) => {
-          const mi = marketInfo(x.nm) || {};
+          const mi = teamOfName[x.nm] || marketInfo(x.nm) || {};
           const it = el("button", "mvp-it"); it.type = "button";
           const im = el("img"); im.alt = ""; im.src = mi.photo || "/img/avatar.svg"; im.addEventListener("error", () => { im.src = "/img/avatar.svg"; }, { once: true }); it.appendChild(im);
           const tx = el("div", "mvp-tx"); tx.appendChild(el("b", null, mi.name || x.nm));
@@ -1037,19 +1061,19 @@
     const rows = [];
     const minOf = (t) => { const x = String(t || "").match(/\(?(\d+)(?:\+(\d+))?'\)?/); return x ? Number(x[1]) + (x[2] ? Number(x[2]) / 100 : 0) : 999; };
     const clean = (t) => String(t || "").replace(/\(?\d+(?:\+\d+)?'\)?/g, "").replace(/\s+/g, " ").trim();
-    const shortName = (x) => { const mi = marketInfo(x); return (mi && mi.name) || String(x || "").trim(); };
+    const shortName = (x, sd) => { const mi = marketInfo(x, sd ? mpTeams[sd] : ""); return (mi && mi.name) || String(x || "").trim(); };
     [["home", d.goalsHome], ["away", d.goalsAway]].forEach((g) => (g[1] || []).forEach((x, gi) => {
       const t = String(x.text || ""); const pen = /\(p\.?\)/i.test(t), og = /\(p\.?p\.?\)|propia/i.test(t);
       const who = clean(t).replace(/\(p\.?p?\.?\)/ig, "").replace(/^[A-ZÁÉÍÓÚ]\.\s*/, "").trim();
       const q = mpGm && mpGm[g[0]] && mpGm[g[0]][gi];
       // Quién es de verdad el goleador: se cruza con los jugadores de ese equipo que tienen gol
-      let nm = shortName(who) || who;
+      let nm = shortName(who, g[0]) || who;
       try {
         const nz = (v) => stripAccents(String(v || "").toLowerCase()).replace(/[^a-z ]/g, " ").trim().split(/\s+/).filter(Boolean);
         const wt = nz(who).filter((w) => w.length >= 3);
         const sc = ((g[0] === "home" ? d.homePlayers : d.awayPlayers) || []).filter((p) => (p.hl || []).some((h) => (/fa-circle$/.test(h.ico || "") && !/danger/i.test(h.cls || "")) || /arrow-circle-up/.test(h.ico || "")));
         const hit = sc.filter((p) => { const pt = nz(p.name); return wt.length && wt.every((w) => pt.some((x) => x === w || (w.length >= 3 && x.indexOf(w) === 0))); });
-        if (hit.length === 1) nm = shortName(hit[0].name) || hit[0].name;
+        if (hit.length === 1) nm = shortName(hit[0].name, g[0]) || hit[0].name;
       } catch (e) {}
       rows.push({ side: g[0], min: q ? q.m + (q.x || 0) / 100 : minOf(t), sc: q && q.sc, ico: og ? "🙈" : pen ? "🎯" : "⚽", txt: nm });
     }));
@@ -1061,10 +1085,10 @@
         (p.hl || []).forEach((h) => {
           if ((/fa-square/.test(h.ico || "") && /danger|red|ff0000/i.test(h.cls || "")) || /doble-amarilla|square-roja/i.test(h.ico || "")) {
             const rd = (mpReds || []).find((x) => sameN(x.name, p.name));
-            rows.push({ side: g[0], min: rd ? rd.min + (rd.x || 0) / 100 : 998, ico: "🟥", txt: shortName(p.name) });
+            rows.push({ side: g[0], min: rd ? rd.min + (rd.x || 0) / 100 : 998, ico: "🟥", txt: shortName(p.name, g[0]) });
           }
-          else if (/arrow-circle-down/.test(h.ico || "")) rows.push({ side: g[0], min: 997, ico: "❌", txt: shortName(p.name) });
-          else if (/arrow-right/.test(h.ico || "")) rows.push({ side: g[0], min: 996, ico: "👟", txt: shortName(p.name), assist: true });
+          else if (/arrow-circle-down/.test(h.ico || "")) rows.push({ side: g[0], min: 997, ico: "❌", txt: shortName(p.name, g[0]) });
+          else if (/arrow-right/.test(h.ico || "")) rows.push({ side: g[0], min: 996, ico: "👟", txt: shortName(p.name, g[0]), assist: true });
         });
       });
       // Minuto de cada asistencia: se empareja con los goles del equipo, por orden
@@ -1326,6 +1350,7 @@
           }
         } catch (e) {}
       }
+      mpTeams = { home: m.home, away: m.away };
       mpCambios = []; mpPairs = []; mpReds = []; mpGm = null;
       if (finished) { try { const cj = await (await fetch(API + "/cambios?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json(); mpCambios = cj.subs || []; mpReds = cj.reds || []; mpGm = cj.gm || null; } catch (e) {} }
       // Nunca "probable" con % si el partido ya empezó o si todos están al 100% (= confirmada)
