@@ -25,3 +25,10 @@ body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Plus J
 .pl-nm { margin-top: 5px; max-width: 100%; font: 800 .72rem 'Plus Jakarta Sans', sans-serif; color: #fff; text-transform: uppercase; line-height: 1.1; text-shadow: 0 1px 5px rgba(0,0,0,.65); }
 .pl-alt { margin-top: 3px; font: 700 .6rem 'Plus Jakarta Sans', sans-serif; color: var(--ink); background: rgba(255,255,255,.85); padding: 2px 6px; border-radius: 6px; line-height: 1.15; }
 .al-foot { padding: 10px 14px 14px; text-align: center; font: 700 .68rem 'Plus Jakarta Sans', sans-serif; color: rgba(255,255,255,.85); }
+
+.al-msg { color: #fff; font-weight: 700; text-align: center; margin: auto; }
+a.pl { text-decoration: none; color: inherit; }
+a.pl:hover .pl-ph img { transform: scale(1.05); }
+.pl-ph img { transition: transform .15s ease; }
+.pl-prob.p90 { --pc: #4184ab; } .pl-prob.p80 { --pc: #41ab58; } .pl-prob.p60 { --pc: #ebcc34; color: #10151c; } .pl-prob.p40 { --pc: #cf8236; } .pl-prob.p0 { --pc: #cf4a36; }
+.pl-duda.bad { background: #ef4444; color: #fff; }

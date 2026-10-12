@@ -8,37 +8,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="prueba.css?v=10">
+  <link rel="stylesheet" href="prueba.css?v=11">
 </head>
 <body>
 <div class="al">
   <div class="al-head">
-    <img src="https://crests.football-data.org/88.png" alt="Levante">
+    <img id="alCrest" src="/img/avatar.svg" alt="">
     <span class="al-title">Alineación <b>probable</b></span>
   </div>
-  <div class="pitch">
-    <div class="line fw">
-      <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""><span class="pl-prob" style="--pc:#ebcc34">50%</span><span class="pl-duda">?</span></div><div class="pl-nm">Thiago Fernández</div><div class="pl-alt">Ratkov / Víctor García</div></div>
-      <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""></div><div class="pl-nm">Iván Romero</div></div>
-      <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""></div><div class="pl-nm" data-alt="Brugué">Brugui</div></div>
-    </div>
-    <div class="line md">
-      <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""></div><div class="pl-nm">Bardeli</div></div>
-      <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""></div><div class="pl-nm">Oriol Rey</div></div>
-      <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""></div><div class="pl-nm">Olasagasti</div></div>
-    </div>
-    <div class="line df">
-      <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""></div><div class="pl-nm">Manu Sánchez</div></div>
-      <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""><span class="pl-prob" style="--pc:#4184ab">70%</span><span class="pl-duda">?</span></div><div class="pl-nm">Aïssa Mandi</div><div class="pl-alt">Ndukwe</div></div>
-      <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""></div><div class="pl-nm" data-alt="Dela">Adrián de la Fuente</div></div>
-      <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""><span class="pl-prob" style="--pc:#4184ab">70%</span><span class="pl-duda">?</span></div><div class="pl-nm">Toljan</div><div class="pl-alt">Nacho Pérez</div></div>
-    </div>
-    <div class="line gk">
-      <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""></div><div class="pl-nm">Ryan</div></div>
-    </div>
-  </div>
-  <div class="al-foot">EduMR · Guía Fantasy</div>
+  <div class="pitch" id="alPitch"><p class="al-msg">Cargando alineación…</p></div>
+  <div class="al-foot" id="alFoot">EduMR · Guía Fantasy</div>
 </div>
-<script src="fotos.js?v=1"></script>
+<script src="alineacion.js?v=1"></script>
 </body>
 </html>
