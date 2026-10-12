@@ -3155,7 +3155,7 @@
   const searchEl = $("mjSearch");
   if (searchEl) {
     // Al tocar el buscador sube arriba para que las sugerencias queden a la vista.
-    searchEl.addEventListener("focus", () => setTimeout(() => { try { const r = searchEl.getBoundingClientRect(); if (r.top > 90) window.scrollBy(0, r.top - 12); } catch (e) {} }, 300));
+    searchEl.addEventListener("focus", () => [120, 450, 800].forEach((t) => setTimeout(() => { try { if (document.activeElement !== searchEl) return; const r = searchEl.getBoundingClientRect(); if (Math.abs(r.top - 128) > 6) window.scrollBy(0, r.top - 128); } catch (e) {} }, t)));
   }
   if (searchEl) {
     // Sugerencias justo debajo del buscador: se ven aunque el teclado tape la lista.

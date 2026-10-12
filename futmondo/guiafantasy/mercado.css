@@ -1068,3 +1068,29 @@ html { overflow-anchor: none; }
 .mkt-rival b,.mkt-prob{font-size:.76rem;padding:1px 6px}
 .mkt-lens{font-size:.95rem}
 @media (max-width:820px){.mkt-table{min-width:1100px}}
+
+/* Móvil: tabla más estrecha (sin "Valor ant.") para ver tendencia y rival */
+@media (max-width:820px){
+  .mkt-table{min-width:660px}
+  .mkt-row{grid-template-columns:150px 92px 104px 66px 58px 120px;padding:10px 10px;gap:8px;font-size:.88rem}
+  .mkt-row > :nth-child(3){display:none}
+  .mkt-photo{width:40px;height:40px}
+  .mkt-jname b{font-size:.84rem}
+  .mkt-jteam{font-size:.7rem}
+  .mkt-jteam img{width:14px;height:14px}
+  .mkt-head{font-size:.64rem}
+  .mkt-rival{font-size:.72rem}
+  .mkt-rival b,.mkt-prob{font-size:.64rem}
+  /* Buscador: más aire, y al escribir queda fijo arriba con las sugerencias */
+  .merc-filters{display:flex;flex-direction:column;gap:10px}
+  .merc-filters:focus-within{position:sticky;top:112px;z-index:40;background:var(--cx-surface,var(--card-solid,#fff));padding:10px;margin:0 -6px;border-radius:16px;box-shadow:0 10px 26px rgba(0,0,0,.22)}
+  .merc-filters:focus-within #mjRole{display:none}
+  .merc-filters .market-search{font-size:16px;margin:0}
+  .merc-filters .mj-suggest{margin:0}
+  .mj-sug-row{padding:12px 14px;gap:14px}
+  .mj-sug-row img{width:46px;height:46px}
+  .mj-sug-tx b{font-size:1rem}
+  .mj-sug-tx small{font-size:.8rem;opacity:.8}
+  .merc-range{margin-top:12px}
+  .merc-seg{margin-top:14px;margin-bottom:14px}
+}
