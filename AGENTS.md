@@ -72,3 +72,4 @@ Antes de tocar partidos/alineaciones/ficha, repasar esta lista y verificar con c
 - **Cloudflare KV**: máx. 1.000 puts/día → datos cacheados cortos van a Cache API (`withCacheKV`); no meter puts nuevos a KV en rutas calientes.
 - **Mobile first**: Edu mira casi todo en el móvil; comprobar ancho ~390 px.
 - Si cambia la cache de un endpoint, subir la clave (`cambios:v5`…) para no servir datos viejos.
+- **Puntos de Futmondo tras el partido**: si el partido ya terminó y aún no han llegado los puntos (Futmondo Social), la página debe seguir buscándolos cada minuto hasta que lleguen (nunca quedarse sin puntos y sin MVP). Regla pedida por Edu: aplicar SIEMPRE a cualquier sitio donde se muestren puntos de partidos terminados.

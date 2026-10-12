@@ -964,12 +964,13 @@
       idByName[nm] = (mi && mi.id) || "";
     });
     const ids = Object.keys(idByName).map((k) => idByName[k]).filter((x, i, a) => x && a.indexOf(x) === i);
-    if (!ids.length) return;
+    if (!ids.length) return false;
     let map = {};
     try {
       const r = await (await fetch(API + "/puntos?jornada=" + encodeURIComponent(jn) + "&ids=" + ids.join(","), { cache: "no-store" })).json();
       map = (r && r.points) || {};
     } catch (e) {}
+    const arrived = Object.keys(map).some((k) => map[k] && map[k].f === true && map[k].p != null);
     box.querySelectorAll(".mpage-xpts[data-full], .mpage-subpts[data-full], .pl-pts[data-full]").forEach((el2) => {
       const id = idByName[el2.getAttribute("data-full")];
       const rec = id ? map[id] : null;
@@ -1009,6 +1010,7 @@
     let max = null;
     box.querySelectorAll(".mpage-xpts.on, .pl-pts.on").forEach((e2) => { const v = Number(e2.textContent) || 0; if (max == null || v > max) max = v; });
     if (max != null && max >= 6) box.querySelectorAll(".mpage-xpts.on, .pl-pts.on").forEach((e2) => { if ((Number(e2.textContent) || 0) === max) e2.classList.add("top"); });
+    return arrived;
   }
   // Resumen compacto de lo más destacado: los del local a la izquierda y los del
   // visitante a la derecha. Goles, asistencias, rojas, penaltis fallados y cambios.
@@ -1322,8 +1324,11 @@
       box.appendChild(buildOtherMatches(ms, m, jn));
       // Los puntos de MI liga Futmondo se piden aparte (por jugador y con
       // caché en el backend) y se pintan encima en cuanto llegan.
-      if (finished) { try { await fillMpPoints(box, d, jn); } catch (e) {} }
-      return !finalNow;
+      // Partido acabado pero sin puntos todavía: se sigue buscando cada minuto hasta que lleguen
+      let pointsIn = true;
+      if (finished) { try { const r = await fillMpPoints(box, d, jn); if (!mpLive) pointsIn = r !== false; } catch (e) { pointsIn = false; } }
+      if (finalNow && !pointsIn) { const h = box.querySelector(".mpage-xi-h"); if (h) h.insertAdjacentElement("afterend", el("p", "muted small mpage-live-note", "⏳ Esperando los puntos de Futmondo… se ponen solos en cuanto llegan")); }
+      return !finalNow || !pointsIn;
     };
     try {
       const more = await run(true);
