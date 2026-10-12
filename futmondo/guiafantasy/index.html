@@ -14,7 +14,7 @@
   <script src="/futmondo/theme.js?v=65"></script>
   <link rel="stylesheet" href="/futmondo/quiniela/quiniela.css?v=129">
   <link rel="stylesheet" href="/futmondo/edumr.css?v=58">
-  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=157">
+  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=158">
   <link rel="stylesheet" href="/futmondo/guiafantasy/jugador.css?v=7">
   <link rel="stylesheet" href="/futmondo/guiafantasy/partido.css?v=16">
   <link rel="stylesheet" href="/futmondo/alineacion.css?v=17">
@@ -109,10 +109,14 @@
             </div>
           </div>
           <div class="mx-row">
-            <div class="merc-range">
-              <span class="muted small">Precio: <b id="mjRangeLabel">—</b></span>
-              <input type="range" id="mjMin" min="0" max="100" value="0" aria-label="Precio mínimo">
-              <input type="range" id="mjMax" min="0" max="100" value="100" aria-label="Precio máximo">
+            <span class="mx-lab">Precio</span>
+            <div class="mx-chips" id="mxPrice">
+              <button type="button" class="mx-chip active" data-min="0" data-max="0">Cualquiera</button>
+              <button type="button" class="mx-chip" data-min="0" data-max="1000000">Hasta 1M</button>
+              <button type="button" class="mx-chip" data-min="1000000" data-max="5000000">1M – 5M</button>
+              <button type="button" class="mx-chip" data-min="5000000" data-max="15000000">5M – 15M</button>
+              <button type="button" class="mx-chip" data-min="15000000" data-max="40000000">15M – 40M</button>
+              <button type="button" class="mx-chip" data-min="40000000" data-max="0">+40M</button>
             </div>
           </div>
         </section>
@@ -202,6 +206,6 @@
 
   <script src="/futmondo/chrome.js?v=26"></script>
   <script src="/futmondo/alineacion.js?v=19"></script>
-  <script src="/futmondo/guiafantasy/mercado.js?v=207"></script>
+  <script src="/futmondo/guiafantasy/mercado.js?v=208"></script>
 </body>
 </html>

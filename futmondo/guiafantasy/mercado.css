@@ -1141,3 +1141,5 @@ html { overflow-anchor: none; }
 .racha-kind.racha{background:rgba(249,115,22,.15);color:#ea580c}
 .racha-kind.best{background:rgba(234,179,8,.18);color:#a16207}
 .rk-best{border-color:rgba(234,179,8,.45)}
+/* separador entre bloques de Destacados */
+.racha-row.rk-best:first-of-type{margin-top:0}

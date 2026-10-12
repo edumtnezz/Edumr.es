@@ -212,7 +212,7 @@
       const used = new Set(rl.map(key));
       const bl = bestPicks().filter((p) => !used.has(key(p))).slice(0, 5).map((p) => Object.assign({ _k: "best" }, p));
       const list = [];
-      for (let i = 0; i < Math.max(rl.length, bl.length); i++) { if (rl[i]) list.push(rl[i]); if (bl[i]) list.push(bl[i]); }
+      rl.forEach((p) => list.push(p)); bl.forEach((p) => list.push(p));
       const j0 = Number(d && d.jornada) || 0;
       if (!list.length) { table.innerHTML = '<div class="rachas-empty">Sin rachas ahora mismo.</div>'; return; }
       table.innerHTML = "";
@@ -239,7 +239,7 @@
         const fit = (p.fit || p.fitness || []).map((x) => Number(x) || 0);
         for (let k = 0; k < fit.length; k++) {
           const v = Math.round(fit[fit.length - 1 - k]);
-          const j = (j0 && p._k === "racha") ? j0 - k : 0;
+          const j = j0 ? j0 - k : 0;
           const cls = v >= 6 ? " hi" : v >= 4 ? " mid" : v > 0 ? " lo" : " zero";
           const cell = el("span", "racha-chip" + cls);
           if (j > 0) cell.appendChild(el("i", null, "J" + j));
@@ -3190,6 +3190,11 @@
   }
   if (searchEl) searchEl.addEventListener("input", () => { const y = window.scrollY; shown = 18; renderGrid(); if (window.scrollY !== y) window.scrollTo(0, y); });
   bind("mjRole", "change");
+  document.querySelectorAll("#mxPrice .mx-chip").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll("#mxPrice .mx-chip").forEach((x) => x.classList.toggle("active", x === b));
+    rangeMin = Number(b.dataset.min) || 0; rangeMax = Number(b.dataset.max) || Infinity;
+    shown = 18; renderGrid();
+  }));
   document.querySelectorAll("#mxRole .mx-chip").forEach((b) => b.addEventListener("click", () => {
     document.querySelectorAll("#mxRole .mx-chip").forEach((x) => x.classList.toggle("active", x === b));
     const sel = $("mjRole"); if (sel) { sel.value = b.dataset.role || ""; sel.dispatchEvent(new Event("change")); }
