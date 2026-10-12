@@ -2884,9 +2884,10 @@
         const a = el("a", "eq-calrow" + (st === "final" ? " fin" : st === "live" ? " live" : ""));
         a.href = "/futmondo/guiafantasy/partido/" + matchSlug(m.home, m.away) + "?j=" + m.jn;
         a.appendChild(el("span", "eq-calj", "J" + m.jn));
+        a.appendChild(haIcon(home));
         const c = el("img"); c.src = (home ? m.awayCrest : m.homeCrest) || ""; c.alt = ""; c.loading = "lazy";
         a.appendChild(c);
-        a.appendChild(el("span", "eq-calrival", (home ? "vs " : "@ ") + (home ? m.away : m.home)));
+        a.appendChild(el("span", "eq-calrival", home ? m.away : m.home));
         const res = st === "final" || st === "live" ? ((m.live && m.live.score) || "") : [m.day, m.date, m.time].filter(Boolean).join(" ");
         a.appendChild(el("span", "eq-calres", (st === "live" ? "● " : "") + res));
         rows.appendChild(a);

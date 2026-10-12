@@ -184,3 +184,4 @@
 .eq-inicio:empty{display:none}
 .eq-inicio-h{display:flex;align-items:center;justify-content:space-between;font:800 1rem 'Space Grotesk',sans-serif;margin-bottom:6px}
 .eq-inicio-row .merc-club{text-decoration:none}
+.eq-calrow svg.ffx-ha{width:20px;height:20px;flex:none;margin:0}
