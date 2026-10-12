@@ -47,6 +47,12 @@
   function render(side, pool, bench) {
     var groups = { fw: [], md: [], df: [], gk: [] };
     side.starters.forEach(function (s) { groups[line(s.pos)].push(s); });
+    // Cada suplente es alternativa de UN solo titular dudoso (el de menor probabilidad de su línea).
+    var altOf = new Map(), libres = bench.filter(function (b) { return (b.prob || 0) >= 40; }).slice();
+    side.starters.filter(function (s) { return s.prob != null && s.prob < 80; }).sort(function (a, b) { return a.prob - b.prob; }).forEach(function (st) {
+      var cands = libres.filter(function (b) { return line(b.pos) === line(st.pos); }).sort(function (a, b) { return (b.prob || 0) - (a.prob || 0); });
+      if (cands.length) { altOf.set(st, cands[0]); libres.splice(libres.indexOf(cands[0]), 1); }
+    });
     var html = "";
     ["fw", "md", "df", "gk"].forEach(function (k) {
       var arr = groups[k].sort(function (a, b) { return (a.x || 0) - (b.x || 0); });
@@ -61,10 +67,8 @@
         if (s.san || s.inj) inner += '<span class="pl-duda bad">' + (s.san ? "✕" : "+") + '</span>';
         else if (s.prob != null && s.prob < 80) inner += '<span class="pl-duda">?</span>';
         inner += '</div><div class="pl-nm">' + esc(name) + '</div>';
-        if (s.prob != null && s.prob < 80) {
-          var alts = bench.filter(function (b) { return line(b.pos) === k && (b.prob || 0) >= 40; }).sort(function (a, b) { return (b.prob || 0) - (a.prob || 0); }).slice(0, 2);
-          if (alts.length) inner += '<div class="pl-alt">' + alts.map(function (b) { return esc(b.last || b.name); }).join(" / ") + '</div>';
-        }
+        var alt = altOf.get(s);
+        if (alt) inner += '<div class="pl-alt">' + esc(alt.last || alt.name) + '</div>';
         return fm ? '<a class="pl" href="/futmondo/guiafantasy/jugadores/' + encodeURIComponent(fm.id) + '/' + slug(fm.name) + '">' + inner + '</a>' : '<div class="pl">' + inner + '</div>';
       }).join("") + "</div>";
     });
