@@ -54,6 +54,27 @@
   function probCls(p) { return p >= 90 ? "p90" : p >= 80 ? "p80" : p >= 60 ? "p60" : p >= 40 ? "p40" : "p0"; }
   function slug(s) { return strip(s).replace(/ /g, ""); }
 
+  function playerHtml(s, pool, mode, probable, alt) {
+        var fm = match(s, pool);
+        if (!fm) { sinPareja.push(s.full || s.name); console.warn("[alineación] sin pareja en Futmondo:", s.full || s.name); }
+        var name = fm ? fm.name : (s.name || s.full);
+        var photo = (fm && fm.photo) || s.photo || "/img/avatar.svg", ffPh = s.photo || "/img/avatar.svg";
+        var inner = '<div class="pl-ph"><img src="' + esc(photo) + '" alt="" data-ff="' + esc(ffPh) + '">';
+        if (probable && s.prob != null) inner += '<span class="pl-prob ' + probCls(s.prob) + '">' + s.prob + '%</span>';
+        if (mode === "played") inner += '<span class="pl-pts" data-full="' + esc(s.full || s.name) + '">–</span>';
+        else if (!probable) { /* confirmada: sin dudas */ }
+        else if (s.san || s.inj) inner += '<span class="pl-duda bad">' + (s.san ? "✕" : "+") + '</span>';
+        else if (s.prob != null && s.prob < 80) inner += '<span class="pl-duda">?</span>';
+        inner += '</div><div class="pl-nm">' + esc(name) + '</div>';
+        if (alt) { var fa = match(alt, pool); inner += '<div class="pl-alt">' + esc(fa ? fa.name : (alt.name || alt.last)) + '</div>'; }
+        return fm ? '<a class="pl" href="/futmondo/guiafantasy/jugadores/' + encodeURIComponent(fm.id) + '/' + slug(fm.name) + '">' + inner + '</a>' : '<div class="pl">' + inner + '</div>';
+  }
+
+  function benchHtml(subs, pool) {
+    if (!subs || !subs.length) return "";
+    return '<div class="al-bench"><div class="al-bench-h">Desde el banquillo</div><div class="al-bench-row">' + subs.map(function (s) { return playerHtml(s, pool, "played", false, null); }).join("") + '</div></div>';
+  }
+
   function render(side, pool, bench, mode) {
     var probable = !mode || mode === "probable";
     var groups = { fw: [], md: [], df: [], gk: [] };
@@ -69,20 +90,7 @@
       var arr = groups[k].sort(function (a, b) { return (a.x || 0) - (b.x || 0); });
       if (!arr.length) return;
       html += '<div class="line ' + k + '">' + arr.map(function (s) {
-        var fm = match(s, pool);
-        if (!fm) { sinPareja.push(s.full || s.name); console.warn("[alineación] sin pareja en Futmondo:", s.full || s.name); }
-        var name = fm ? fm.name : (s.name || s.full);
-        var photo = (fm && fm.photo) || s.photo || "/img/avatar.svg", ffPh = s.photo || "/img/avatar.svg";
-        var inner = '<div class="pl-ph"><img src="' + esc(photo) + '" alt="" data-ff="' + esc(ffPh) + '"">';
-        if (probable && s.prob != null) inner += '<span class="pl-prob ' + probCls(s.prob) + '">' + s.prob + '%</span>';
-        if (mode === "played") inner += '<span class="pl-pts" data-full="' + esc(s.full || s.name) + '">–</span>';
-        else if (!probable) { /* confirmada: sin dudas */ }
-        else if (s.san || s.inj) inner += '<span class="pl-duda bad">' + (s.san ? "✕" : "+") + '</span>';
-        else if (s.prob != null && s.prob < 80) inner += '<span class="pl-duda">?</span>';
-        inner += '</div><div class="pl-nm">' + esc(name) + '</div>';
-        var alt = altOf.get(s);
-        if (alt) { var fa = match(alt, pool); inner += '<div class="pl-alt">' + esc(fa ? fa.name : (alt.name || alt.last)) + '</div>'; }
-        return fm ? '<a class="pl" href="/futmondo/guiafantasy/jugadores/' + encodeURIComponent(fm.id) + '/' + slug(fm.name) + '">' + inner + '</a>' : '<div class="pl">' + inner + '</div>';
+        return playerHtml(s, pool, mode, probable, altOf.get(s));
       }).join("") + "</div>";
     });
     return html;
@@ -132,14 +140,15 @@
 
   // API para otras páginas (Guía Fantasy): devuelve una tarjeta .al ya pintada.
   window.EduAlineacion = {
-    card: function (side, teamName, crest, subtitle, players, mode) {
+    card: function (side, teamName, crest, subtitle, players, mode, subs) {
       var card = document.createElement("div"); card.className = "al"; card.innerHTML = cardHtml();
       var tt = card.querySelector(".al-title");
-      if (mode === "played") tt.innerHTML = "Partido <b>confirmado</b>";
+      if (mode === "played") tt.innerHTML = "Partido <b>finalizado</b>";
       else if (mode === "confirmed") tt.innerHTML = "Alineación <b>confirmada</b>";
       card.querySelector(".al-head img").src = crest || "/img/avatar.svg";
       var pool = (players || []).filter(function (p) { return teamScore(p.team, teamName) >= 1; });
       card.querySelector(".pitch").innerHTML = render(side, pool, side.bench || [], mode);
+      if (subs && subs.length) card.querySelector(".pitch").insertAdjacentHTML("afterend", benchHtml(subs, pool));
       card.querySelector(".al-foot").textContent = teamName + (subtitle ? " · " + subtitle : "") + " · " + formacion(side);
       return card;
     }

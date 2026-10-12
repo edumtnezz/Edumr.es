@@ -974,7 +974,7 @@
     if (finished) {
       const sec = el("section", "mpage-xi mpage-xi-done");
       const hd = el("div", "mpage-xi-h");
-      hd.appendChild(el("span", "mpage-xi-title", "Partido confirmado"));
+      hd.appendChild(el("span", "mpage-xi-title", "Partido finalizado"));
       sec.appendChild(hd);
       const idxH = xiEvIndex(d.homePlayers), idxA = xiEvIndex(d.awayPlayers);
       const home = xiFinishedSide(m.home, m.homeCrest, d.homePlayers, xiPhotoMap(ffData && ffData.home));
@@ -984,10 +984,7 @@
       const useNew = !!window.EduAlineacion;
       const mkCol = (side, name, crest, rival, idx) => {
         if (!useNew) { const c = mpXiTeam(side, crest, idx, true); if (side.subs.length) c.appendChild(mpSubsBlock(name, side.subs, idx)); return c; }
-        const c = el("div", "al-col");
-        c.appendChild(mpNewCard(side, name, crest, rival, "played", null));
-        if (side.subs.length) c.appendChild(mpSubsBlock(name, side.subs, idx));
-        return c;
+        return window.EduAlineacion.card(xiToStarters(side, null, true), name, crest, rival, all, "played", side.subs);
       };
       const colH = mkCol(home, m.home, m.homeCrest, "vs " + m.away, idxH);
       const colA = mkCol(away, m.away, m.awayCrest, "en " + m.home, idxA);
