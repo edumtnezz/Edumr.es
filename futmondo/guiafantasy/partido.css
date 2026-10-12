@@ -91,3 +91,6 @@
 .mpage-score { font-size: clamp(1.8rem, 9vw, 2.7rem); }
 .al.al-live .al-title b { color: #fecaca; }
 .cx-conf-alert { background: transparent; }
+
+.pl-pts.prov { outline: 1.5px dashed rgba(255,255,255,.9); outline-offset: -2px; }
+.mpage-live-note { text-align: center; margin: 2px 0 10px; }
