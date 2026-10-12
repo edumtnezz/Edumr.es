@@ -59,3 +59,16 @@ Para ver estilos/posiciones calculadas (depurar huecos, etc.) usar el CDP:
 - Config en `config.json` (chmod 600): token, clave DeepSeek, token+repo GitHub, model, tareas, offset, usage, memory.
 
 
+
+## 🚫 Fallos ya reportados por Edu (NO repetir; comprobar siempre antes de dar algo por hecho)
+Antes de tocar partidos/alineaciones/ficha, repasar esta lista y verificar con captura real.
+- **Fases del partido** (siempre así): días antes = alineación PROBABLE con % y % de banquillo → rato antes = CONFIRMADA sin % → en juego = "Partido en juego" con la alineación actual (NUNCA "probable 100%") → final = resumen. Si todos los titulares están al 100% o el partido ya empezó, es confirmada/en juego.
+- **Directo**: la cabecera "Equipo 0 - 0 Equipo" va centrada y alineada con los números, pegada al VS sin tapar escudos. El refresco automático (60 s) NO debe echar al usuario ni mover el scroll.
+- **Formaciones**: nunca 3-6-1 ni raras; el texto de la formación debe coincidir con el dibujo del campo.
+- **Eventos del partido**: minutos EXACTOS con descuento (90+2', 90+10'), con el marcador de cada gol; asistencia dentro de la tarjeta del gol; rojas (también doble amarilla / "Expulsión" de la crónica) con su minuto; cambios por minuto y plegados. Un jugador expulsado NO se cambia: no inventar sustituciones. Iconos de evento no pegados a la puntuación.
+- **Nombres/fotos**: resolver el goleador contra los jugadores del equipo (ej. "Adri" = Adrián de la Fuente, no Adrián Niño). Alexander-Arnold = "Trent" en Futmondo; usar la foto de cara (no cuerpo entero, ej. Morante). Escudos Alavés y Málaga: PNG de Futmondo, sin fondo blanco.
+- **Ficha de jugador**: sin "Precio: más caro…", sin dorsal/Biwenger/LaLiga Fantasy. Próximos partidos con "J9, J10…" (sin la jornada ya empezada). Si el partido de esa jornada está en juego o sin jugar NO poner "No jugó" (poner En juego / Aún no se ha jugado). Pronóstico con % al lado, sin cuadro "Titularidad".
+- **Mercado**: botones (no desplegables ni deslizadores), todos iguales; buscador grande y fijo arriba al escribir (el teclado del móvil no debe tapar lo que escribes); tabla estrecha en móvil; cada jugador en su recuadro; sin fondos blancos raros.
+- **Cloudflare KV**: máx. 1.000 puts/día → datos cacheados cortos van a Cache API (`withCacheKV`); no meter puts nuevos a KV en rutas calientes.
+- **Mobile first**: Edu mira casi todo en el móvil; comprobar ancho ~390 px.
+- Si cambia la cache de un endpoint, subir la clave (`cambios:v5`…) para no servir datos viejos.

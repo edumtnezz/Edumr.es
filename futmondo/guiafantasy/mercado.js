@@ -999,7 +999,16 @@
       const t = String(x.text || ""); const pen = /\(p\.?\)/i.test(t), og = /\(p\.?p\.?\)|propia/i.test(t);
       const who = clean(t).replace(/\(p\.?p?\.?\)/ig, "").replace(/^[A-ZÁÉÍÓÚ]\.\s*/, "").trim();
       const q = mpGm && mpGm[g[0]] && mpGm[g[0]][gi];
-      rows.push({ side: g[0], min: q ? q.m + (q.x || 0) / 100 : minOf(t), sc: q && q.sc, ico: og ? "🙈" : pen ? "🎯" : "⚽", txt: shortName(who) || who });
+      // Quién es de verdad el goleador: se cruza con los jugadores de ese equipo que tienen gol
+      let nm = shortName(who) || who;
+      try {
+        const nz = (v) => stripAccents(String(v || "").toLowerCase()).replace(/[^a-z ]/g, " ").trim().split(/\s+/).filter(Boolean);
+        const wt = nz(who).filter((w) => w.length >= 3);
+        const sc = ((g[0] === "home" ? d.homePlayers : d.awayPlayers) || []).filter((p) => (p.hl || []).some((h) => (/fa-circle$/.test(h.ico || "") && !/danger/i.test(h.cls || "")) || /arrow-circle-up/.test(h.ico || "")));
+        const hit = sc.filter((p) => { const pt = nz(p.name); return wt.length && wt.every((w) => pt.some((x) => x === w || (w.length >= 3 && x.indexOf(w) === 0))); });
+        if (hit.length === 1) nm = shortName(hit[0].name) || hit[0].name;
+      } catch (e) {}
+      rows.push({ side: g[0], min: q ? q.m + (q.x || 0) / 100 : minOf(t), sc: q && q.sc, ico: og ? "🙈" : pen ? "🎯" : "⚽", txt: nm });
     }));
     const sameN = (x, y) => { const n = (v) => stripAccents(String(v || "")).replace(/[^a-z0-9 ]/g, " ").trim().split(/\s+/).filter(Boolean); const p = n(x), q = n(y); if (!p.length || !q.length) return false; return p.every((t) => q.indexOf(t) >= 0) || q.every((t) => p.indexOf(t) >= 0) || (p[p.length - 1].length >= 4 && p[p.length - 1] === q[q.length - 1]); };
     [["home", d.homePlayers], ["away", d.awayPlayers]].forEach((g) => {
