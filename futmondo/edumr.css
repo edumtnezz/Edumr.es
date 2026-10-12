@@ -657,3 +657,20 @@ body {
   .gf-page .cx-more-btn { padding: 6px 8px !important; }
   .gf-page .cx-more-ico { font-size: 1.7rem !important; }
 }
+/* Bordes de partido según estado */
+.cx-jn.cx-jn-islive { border-color: #ef4444; box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.6); animation: cxJnLive 1.3s ease-in-out infinite; }
+@keyframes cxJnLive { 0%, 100% { box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.9), 0 0 0 0 rgba(239, 68, 68, 0.45); } 50% { box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.35), 0 0 10px 3px rgba(239, 68, 68, 0.4); } }
+.cx-jn.cx-jn-islive .cx-jn-statusrow-live { color: #ef4444; } .cx-jn.cx-jn-islive .cx-jn-statusrow-live .cx-jn-dot { background: #ef4444; }
+.cx-jn.cx-jn-isfinal { border-color: #818cf8; box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.5), 0 2px 8px rgba(99, 102, 241, 0.18); }
+.cx-jn.cx-jn-isfinal .cx-jn-statusrow-final { color: #6366f1; } .cx-jn.cx-jn-isfinal .cx-jn-statusrow-final .cx-jn-dot { background: #6366f1; }
+@media (prefers-reduced-motion: reduce) { .cx-jn.cx-jn-islive { animation: none; } }
+/* Alerta de alineación confirmada */
+.cx-conf-alert { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 8px 10px; background: var(--cx-black, #07090e); }
+.cx-conf-pill { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; padding: 6px 14px; border-radius: 999px; text-decoration: none; color: #fff; font-size: 0.74rem; font-weight: 800; background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); animation: cxConfPulse 1.8s ease-out infinite; }
+.cx-conf-bell { display: inline-block; transform-origin: 50% 0; animation: cxBell 2.4s ease-in-out infinite; }
+.cx-conf-k { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.64rem; opacity: 0.95; }
+.cx-conf-m { background: rgba(0, 0, 0, 0.22); padding: 2px 8px; border-radius: 999px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@keyframes cxConfPulse { 0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); } 70%, 100% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); } }
+@keyframes cxBell { 0%, 60%, 100% { transform: rotate(0); } 66% { transform: rotate(16deg); } 72% { transform: rotate(-14deg); } 78% { transform: rotate(10deg); } 84% { transform: rotate(-6deg); } }
+@media (max-width: 420px) { .cx-conf-k { display: none; } }
+@media (prefers-reduced-motion: reduce) { .cx-conf-pill, .cx-conf-bell { animation: none; } }

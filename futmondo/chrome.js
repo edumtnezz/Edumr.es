@@ -166,6 +166,7 @@
           if (state === "final" || state === "live") {
             var stLabel = state === "final" ? "FINALIZADO" : (live.minute || "EN JUEGO");
             statusRow = '<div class="cx-jn-statusrow cx-jn-statusrow-' + state + '"><span class="cx-jn-dot"></span>' + esc(stLabel) + '</div>';
+            cardCls += state === "final" ? " cx-jn-isfinal" : " cx-jn-islive";
             mid = '<span class="cx-jn-score">' + esc(live.score || "") + '</span>' + tv;
           } else if (state === "suspended") {
             statusRow = '<div class="cx-jn-statusrow cx-jn-statusrow-suspended"><span class="cx-jn-dot"></span>SUSPENDIDO</div>';
@@ -253,7 +254,26 @@
     if (Math.abs(cur - dur) > 2) track.style.animationDuration = dur + "s";
   }
   window.__cxTickerSync = tickerSyncDuration;
+  // Alerta bajo la cinta: alineaciones confirmadas en las últimas horas
+  function renderConfAlert(items) {
+    var tk = document.querySelector(".cx-ticker");
+    if (!tk) return;
+    var box = document.getElementById("cxConfAlert");
+    var seen = {}, list = [];
+    (items || []).forEach(function (x) {
+      if (x.kind !== "match" || !x.home || !x.away) return;
+      var k = x.home + "|" + x.away;
+      if (seen[k] || !x.at || Date.now() - Number(x.at) > 5 * 3600 * 1000) return;
+      seen[k] = 1; list.push(x);
+    });
+    if (!list.length) { if (box) box.remove(); return; }
+    if (!box) { box = document.createElement("div"); box.id = "cxConfAlert"; box.className = "cx-conf-alert"; tk.insertAdjacentElement("afterend", box); }
+    box.innerHTML = list.slice(0, 4).map(function (x) {
+      return '<a class="cx-conf-pill" href="/futmondo/guiafantasy/partido/' + tickerSlug(x.home, x.away) + '"><span class="cx-conf-bell">🔔</span><span class="cx-conf-k">Alineación confirmada</span><span class="cx-conf-m">' + esc(x.home) + ' vs ' + esc(x.away) + '</span></a>';
+    }).join("");
+  }
   function renderTicker(items) {
+    renderConfAlert(items);
     var track = document.getElementById("cxTickerTrack");
     if (!track) return;
     if (!items.length) {
