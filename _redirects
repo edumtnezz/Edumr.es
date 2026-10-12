@@ -21,3 +21,5 @@
 /futmondo/guiafantasy/analiza /futmondo/guiafantasy/ 200
 /futmondo/guiafantasy/clausulazos /futmondo/guiafantasy/ 200
 /futmondo/guiafantasy/confirmadas /futmondo/guiafantasy/inicio 301
+/equipos /futmondo/guiafantasy/ 200
+/equipos/* /futmondo/guiafantasy/ 200

@@ -2693,10 +2693,215 @@
     return root;
   }
 
+  // ---------- Páginas de club (/equipos y /equipos/<club>) ----------
+  function teamSlug(n) { return stripAccents(String(n || "")).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
+  function eqOpen() {
+    const main = document.querySelector(".quiniela-main");
+    if (!main) return null;
+    main.classList.add("mpage-open");
+    document.querySelectorAll(".cx-sub").forEach((e) => e.classList.add("hidden"));
+    document.querySelectorAll(".tab-panel").forEach((e) => e.classList.add("hidden"));
+    const ch = $("cxChrome"); if (ch) ch.classList.add("hidden");
+    const box = el("section", "panel mpage eq-page");
+    main.appendChild(box);
+    return box;
+  }
+  function eqBack(box) {
+    const a = el("a", "eq-back", "← Todos los equipos");
+    a.href = "/equipos";
+    box.appendChild(a);
+  }
+  async function eqTeams() {
+    const d = await (await fetch(API + "/equipos")).json();
+    return (d && d.teams) || [];
+  }
+  async function renderTeamsIndex() {
+    const box = eqOpen(); if (!box) return;
+    box.appendChild(el("h2", "eq-h1", "Equipos"));
+    const grid = el("div", "eq-grid");
+    box.appendChild(grid);
+    let teams = [];
+    try { teams = await eqTeams(); } catch (e) {}
+    if (!teams.length) { grid.appendChild(el("p", "muted small", "No se pudieron cargar los equipos.")); return; }
+    teams.slice().sort((a, b) => a.name.localeCompare(b.name, "es")).forEach((t) => {
+      const a = el("a", "eq-tile");
+      a.href = "/equipos/" + teamSlug(t.name);
+      if (t.logo) { const im = el("img"); im.src = t.logo; im.alt = ""; im.loading = "lazy"; a.appendChild(im); }
+      a.appendChild(el("span", null, t.name));
+      grid.appendChild(a);
+    });
+  }
+  async function renderTeamPage(slug) {
+    const box = eqOpen(); if (!box) return;
+    eqBack(box);
+    const body = el("div", "eq-body");
+    box.appendChild(body);
+    body.appendChild(el("p", "muted small", "Cargando equipo…"));
+    let timer = null;
+    const run = async (first) => {
+      const teams = await eqTeams();
+      const team = teams.find((t) => teamSlug(t.name) === slug);
+      if (!team) { if (first) body.innerHTML = '<p class="muted small">No se encontró ese equipo.</p>'; return false; }
+      const tc = teamCanon(team.name);
+      if (!all || !all.length) { try { await load(); } catch (e) {} }
+      const jr = await (await fetch(API + "/jornada")).json();
+      const cur = Number(jr && jr.matchday) || 0;
+      const jrs = [{ n: cur, ms: (jr && jr.matches) || [] }];
+      await Promise.all([cur - 1, cur + 1, cur + 2, cur + 3].filter((n) => n >= 1 && n <= 38).map(async (n) => {
+        try { const j2 = await (await fetch(API + "/jornada?jornada=" + n)).json(); jrs.push({ n, ms: (j2 && j2.matches) || [] }); } catch (e) {}
+      }));
+      jrs.sort((a, b) => a.n - b.n);
+      const mine = [];
+      jrs.forEach((j) => j.ms.forEach((m) => { if (teamCanon(m.home) === tc || teamCanon(m.away) === tc) mine.push(Object.assign({ jn: j.n }, m)); }));
+      const stOf = (m) => (m.live && m.live.state) || "";
+      const upcoming = mine.filter((m) => stOf(m) !== "final");
+      const played = mine.filter((m) => stOf(m) === "final");
+      const next = upcoming[0] || null;
+      const last = played[played.length - 1] || null;
+      const squad = (all || []).filter((p) => teamCanon(p.team) === tc);
+      const frag = document.createDocumentFragment();
+      // Cabecera
+      const hd = el("div", "eq-head");
+      if (team.logo) { const im = el("img", "eq-crest"); im.src = team.logo; im.alt = ""; hd.appendChild(im); }
+      const ht = el("div", "eq-htxt");
+      ht.appendChild(el("h2", "eq-h1", team.name));
+      if (next) {
+        const home = teamCanon(next.home) === tc;
+        const rival = home ? next.away : next.home;
+        const when = stOf(next) === "live" ? "● En juego" : [next.day, next.date, next.time].filter(Boolean).join(" ");
+        ht.appendChild(el("div", "eq-hsub", "J" + next.jn + " · " + (home ? "en casa vs " : "fuera en ") + rival + " · " + when));
+      }
+      hd.appendChild(ht);
+      frag.appendChild(hd);
+      // Alineación (probable / confirmada) del próximo partido
+      if (next) {
+        const sec = el("section", "eq-sec");
+        const isHome = teamCanon(next.home) === tc;
+        const name = isHome ? next.home : next.away;
+        const crest = isHome ? next.homeCrest : next.awayCrest;
+        const sub = isHome ? "vs " + next.away : "en " + next.home;
+        const link = el("a", "eq-more", "Ver partido →");
+        link.href = "/futmondo/guiafantasy/partido/" + matchSlug(next.home, next.away) + "?j=" + next.jn;
+        if (stOf(next) === "live") {
+          const h = el("div", "eq-sech"); h.appendChild(el("h3", null, "Partido en juego")); h.appendChild(link);
+          sec.appendChild(h);
+          sec.appendChild(el("p", "muted small", "La alineación actual y los eventos están en la ficha del partido."));
+        } else {
+          let side = null, kind = "", ff = null, conf = null;
+          try {
+            const c = await (await fetch(API + "/alineaciones-confirmadas?jornada=" + next.jn, { cache: "no-store" })).json();
+            const cm = findXiMatch((c && c.matches) || [], next.home, next.away);
+            if (cm) conf = cm[isHome ? "home" : "away"];
+          } catch (e) {}
+          try {
+            const o = await (await fetch(API + "/once?home=" + encodeURIComponent(next.home) + "&away=" + encodeURIComponent(next.away) + "&jornada=" + next.jn)).json();
+            if (o && o.home && ((o.home.starters || []).length || (o.away.starters || []).length)) ff = o[isHome ? "home" : "away"];
+          } catch (e) {}
+          const sure = (o) => o && o.starters && o.starters.length >= 10 && o.starters.every((p) => p.prob === 100);
+          if (conf) { side = conf; kind = "confirmada"; } else if (ff) { side = ff; kind = sure(ff) ? "confirmada" : "probable"; }
+          const h = el("div", "eq-sech");
+          h.appendChild(el("h3", null, side ? (kind === "confirmada" ? "Alineación confirmada" : "Alineación probable") : "Alineación"));
+          h.appendChild(link);
+          sec.appendChild(h);
+          if (side && window.EduAlineacion) {
+            const wrap = el("div", "alin-pitches mpage-xipitches eq-pitch");
+            if (kind === "confirmada") wrap.appendChild(mpNewCard(side, name, crest, sub, "confirmed", xiPhotoMap(ff), (ff && ff.bench) || []));
+            else wrap.appendChild(window.EduAlineacion.card(side, name, crest, sub, all, "probable", (side && side.bench) || []));
+            sec.appendChild(wrap);
+          } else {
+            sec.appendChild(el("p", "muted small", "Aún no hay alineación publicada para este partido."));
+          }
+        }
+        frag.appendChild(sec);
+      }
+      // Calendario
+      const cal = el("section", "eq-sec");
+      cal.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "Calendario"));
+      const rows = el("div", "eq-cal");
+      const calList = [].concat(last ? [last] : [], upcoming.slice(0, 3));
+      calList.forEach((m) => {
+        const home = teamCanon(m.home) === tc;
+        const st = stOf(m);
+        const a = el("a", "eq-calrow" + (st === "final" ? " fin" : st === "live" ? " live" : ""));
+        a.href = "/futmondo/guiafantasy/partido/" + matchSlug(m.home, m.away) + "?j=" + m.jn;
+        a.appendChild(el("span", "eq-calj", "J" + m.jn));
+        const c = el("img"); c.src = (home ? m.awayCrest : m.homeCrest) || ""; c.alt = ""; c.loading = "lazy";
+        a.appendChild(c);
+        a.appendChild(el("span", "eq-calrival", (home ? "vs " : "@ ") + (home ? m.away : m.home)));
+        const res = st === "final" || st === "live" ? ((m.live && m.live.score) || "") : [m.day, m.date, m.time].filter(Boolean).join(" ");
+        a.appendChild(el("span", "eq-calres", (st === "live" ? "● " : "") + res));
+        rows.appendChild(a);
+      });
+      if (!calList.length) rows.appendChild(el("p", "muted small", "Sin partidos próximos."));
+      cal.appendChild(rows);
+      frag.appendChild(cal);
+      // Plantilla
+      const sq = el("section", "eq-sec");
+      sq.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "Plantilla · últimos 5 partidos"));
+      const ord = { portero: 0, defensa: 1, centrocampista: 2, delantero: 3 };
+      const lab = { portero: "Porteros", defensa: "Defensas", centrocampista: "Centrocampistas", delantero: "Delanteros" };
+      Object.keys(ord).forEach((role) => {
+        const list = squad.filter((p) => String(p.role || "").toLowerCase() === role)
+          .sort((a, b) => (Number(b.points) || 0) - (Number(a.points) || 0));
+        if (!list.length) return;
+        sq.appendChild(el("div", "eq-grp", lab[role]));
+        list.forEach((p) => {
+          const r = el("a", "eq-pl");
+          r.href = "/jugador/" + encodeURIComponent(p.id) + "/" + nameSlug(p.name);
+          const ph = photoImg(p.photo, "eq-pimg");
+          r.appendChild(ph);
+          const mid = el("div", "eq-pmid");
+          mid.appendChild(el("div", "eq-pname", p.name));
+          const st = statusInfo(p.status);
+          mid.appendChild(el("div", "eq-pval", money(p.value) + " €" + (st ? " · " + st.label : "")));
+          r.appendChild(mid);
+          const sc = el("div", "racha-scores");
+          const fit = (p.fitness || []).map((x) => Number(x) || 0);
+          const j0 = (Number(p.jornadaFf) || 0) - 1;
+          for (let k = 0; k < fit.length; k++) {
+            const v = Math.round(fit[fit.length - 1 - k]);
+            const j = j0 > 0 ? j0 - k : 0;
+            const cell = el("span", "racha-chip" + (v >= 6 ? " hi" : v >= 4 ? " mid" : v > 0 ? " lo" : " zero"));
+            if (j > 0) cell.appendChild(el("i", null, "J" + j));
+            cell.appendChild(el("b", null, v > 0 ? String(v) : "–"));
+            sc.appendChild(cell);
+          }
+          r.appendChild(sc);
+          sq.appendChild(r);
+        });
+      });
+      if (!squad.length) sq.appendChild(el("p", "muted small", "Plantilla no disponible ahora mismo."));
+      frag.appendChild(sq);
+      // Pinta en el sitio (sin mover el scroll)
+      const y = window.scrollY;
+      body.innerHTML = "";
+      body.appendChild(frag);
+      window.scrollTo(0, y);
+      return !!next && stOf(next) === "live";
+    };
+    let swrT = null;
+    const onSwr = (ev) => {
+      if (!document.body.contains(box)) { document.removeEventListener("cx:swr", onSwr); return; }
+      const u = (ev.detail && ev.detail.url) || "";
+      if (!/mercado|jornada|\/once|alineaciones-confirmadas|equipos/.test(u)) return;
+      clearTimeout(swrT);
+      swrT = setTimeout(() => { if (document.body.contains(box)) run(false).catch(() => {}); }, 300);
+    };
+    document.addEventListener("cx:swr", onSwr);
+    try {
+      const live = await run(true);
+      timer = setInterval(() => {
+        if (!document.body.contains(box)) { clearInterval(timer); return; }
+        if (!document.hidden) run(false).catch(() => {});
+      }, live ? 60000 : 300000);
+    } catch (e) { body.innerHTML = '<p class="muted small">No se pudo cargar el equipo.</p>'; }
+  }
+
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
   setupMoreMenu();
   (function restoreTab() {
     try { const pm = location.pathname.match(/\/guiafantasy\/partido\/([a-z0-9-]+)/); if (pm) { renderMatchPage(pm[1]); return; } } catch (e) {}
+    try { const pe = location.pathname.match(/^\/equipos\/([a-z0-9-]+)/); if (pe) { renderTeamPage(pe[1]); return; } if (/^\/equipos\/?$/.test(location.pathname)) { renderTeamsIndex(); return; } } catch (e) {}
     try { const pj = location.pathname.match(/\/jugador(?:es)?\/([a-z0-9]{6,40})/i); if (pj) { renderPlayerPage(pj[1]); return; } } catch (e) {}
     let name = "";
     try {
