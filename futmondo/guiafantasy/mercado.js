@@ -681,7 +681,8 @@
   }
   function marketInfo(name) {
     const norm = (s) => stripAccents(String(s || "").toLowerCase()).replace(/\s+/g, " ").trim();
-    const q = norm(name);
+    let q = norm(name);
+    if (q === "alexander-arnold" || q === "alexander arnold" || q === "trent alexander-arnold") q = "trent";
     if (!all || !all.length || !q) return null;
     const last = q.split(/\s+/).pop();
     return all.find((x) => norm(x.name) === q)
@@ -778,7 +779,7 @@
     }));
     return { starters, bench: [], formation: [g.defensas.length, g.medios.length, g.delanteros.length].join("-") };
   }
-  let mpCambios = [], mpPairs = [];
+  let mpCambios = [], mpPairs = [], mpReds = [];
   function mpNewCard(side, name, crest, subtitle, mode, photoMap, bench) {
     return window.EduAlineacion.card(xiToStarters(side, photoMap, mode === "played"), name, crest, subtitle, all, mode, bench);
   }
@@ -880,6 +881,7 @@
       if (q === "pt" || /porter/.test(q)) g.portero.push(o);
       else if (q === "df" || /defens/.test(q)) g.defensas.push(o);
       else if (q === "dl" || /delant/.test(q)) g.delanteros.push(o);
+      else if (!q && mi && mi.role) { const r = String(mi.role).toLowerCase(); if (/defens/.test(r)) g.defensas.push(o); else if (/delant/.test(r)) g.delanteros.push(o); else g.medios.push(o); }
       else g.medios.push(o);
     });
     g.formation = [g.defensas.length, g.medios.length, g.delanteros.length].join("-");
@@ -949,13 +951,25 @@
       const who = clean(t).replace(/\(p\.?p?\.?\)/ig, "").replace(/^[A-ZÁÉÍÓÚ]\.\s*/, "").trim();
       rows.push({ side: g[0], min: minOf(t), ico: og ? "🙈" : pen ? "🎯" : "⚽", txt: shortName(who) || who });
     }));
-    [["home", d.homePlayers], ["away", d.awayPlayers]].forEach((g) => (g[1] || []).forEach((p) => {
-      (p.hl || []).forEach((h) => {
-        if (/fa-square/.test(h.ico || "") && /danger|red|ff0000/i.test(h.cls || "")) rows.push({ side: g[0], min: 998, ico: "🟥", txt: shortName(p.name) });
-        else if (/arrow-circle-down/.test(h.ico || "")) rows.push({ side: g[0], min: 997, ico: "❌", txt: shortName(p.name) });
-        else if (/arrow-right/.test(h.ico || "")) rows.push({ side: g[0], min: 996, ico: "👟", txt: shortName(p.name) });
+    const sameN = (x, y) => { const n = (v) => stripAccents(String(v || "")).replace(/[^a-z0-9 ]/g, " ").trim().split(/\s+/).filter(Boolean); const p = n(x), q = n(y); if (!p.length || !q.length) return false; return p.every((t) => q.indexOf(t) >= 0) || q.every((t) => p.indexOf(t) >= 0) || (p[p.length - 1].length >= 4 && p[p.length - 1] === q[q.length - 1]); };
+    [["home", d.homePlayers], ["away", d.awayPlayers]].forEach((g) => {
+      const goals = rows.filter((r) => r.side === g[0] && r.ico === "⚽").sort((a, b) => a.min - b.min);
+      let gi = 0;
+      (g[1] || []).forEach((p) => {
+        (p.hl || []).forEach((h) => {
+          if (/fa-square/.test(h.ico || "") && /danger|red|ff0000/i.test(h.cls || "")) {
+            const rd = (mpReds || []).find((x) => sameN(x.name, p.name));
+            rows.push({ side: g[0], min: rd ? rd.min : 998, ico: "🟥", txt: shortName(p.name) });
+          }
+          else if (/arrow-circle-down/.test(h.ico || "")) rows.push({ side: g[0], min: 997, ico: "❌", txt: shortName(p.name) });
+          else if (/arrow-right/.test(h.ico || "")) rows.push({ side: g[0], min: 996, ico: "👟", txt: shortName(p.name), assist: true });
+        });
       });
-    }));
+      // Minuto de cada asistencia: se empareja con los goles del equipo, por orden
+      const as = rows.filter((r) => r.side === g[0] && r.assist);
+      as.forEach((r, i) => { if (as.length <= goals.length && goals[i]) r.min = goals[i].min + 0.001; });
+    });
+    mpPairs.forEach((c) => rows.push({ side: c.side, min: c.min + 0.002, sub: true, inN: c.inN, outN: c.outN }));
     if (!rows.length) return null;
     rows.sort((a, b) => a.min - b.min);
     const box = el("section", "mpage-ev-sum");
@@ -964,6 +978,13 @@
     rows.forEach((r) => {
       const row = el("div", "mpage-ev-row " + r.side);
       const mk = () => {
+        if (r.sub) {
+          const pill = el("div", "mpage-ev-pill sub");
+          const tx = el("div", "mpage-ev-tx");
+          const i1 = el("span", "mpage-ev-in"); i1.appendChild(el("i", null, "▲")); i1.appendChild(document.createTextNode(" " + r.inN));
+          const o1 = el("span", "mpage-ev-out"); o1.appendChild(el("i", null, "▼")); o1.appendChild(document.createTextNode(" " + r.outN));
+          tx.appendChild(i1); tx.appendChild(o1); pill.appendChild(tx); return pill;
+        }
         const pill = el("div", "mpage-ev-pill");
         pill.appendChild(el("span", "mpage-ev-ico", r.ico));
         const tx = el("div", "mpage-ev-tx");
@@ -983,6 +1004,10 @@
   }
   function renderMatchDetail(box, m, d, jn, xi, xiKind, finished, ffData) {
     box.innerHTML = "";
+    const back = el("button", "btn-ghost noti-back pp-back mpage-back", "←");
+    back.type = "button"; back.setAttribute("aria-label", "Volver");
+    back.addEventListener("click", () => { if (history.length > 1) history.back(); else location.href = "/futmondo/guiafantasy/inicio"; });
+    box.appendChild(back);
     const head = el("div", "mpage-top");
     [[m.homeCrest, "left"], [m.awayCrest, "right"]].forEach((x) => { if (!x[0]) return; const bg = el("img", "mpage-bgcrest " + x[1]); window.EduAlineacion ? window.EduAlineacion.setCrest(bg, x[0]) : (bg.src = x[0]); bg.alt = ""; head.appendChild(bg); });
     const tl = el("div", "mpage-topline");
@@ -1020,7 +1045,9 @@
         if (!useNew) { const c = mpXiTeam(side, crest, idx, true); if (side.subs.length) c.appendChild(mpSubsBlock(name, side.subs, idx)); return c; }
         const sw = (o) => { const ev = xiFindEv(idx, o.full || o.name); const h = (ev && ev.hl) || []; const dir = h.some((x) => /sign-in/.test(x.ico || "")) ? "in" : h.some((x) => /sign-out/.test(x.ico || "")) ? "out" : ""; if (dir && ev.min) o.sw = { dir, min: ev.min };
           let g = 0, a = 0; h.forEach((x) => { const ic = x.ico || ""; if (/fa-circle$/.test(ic) && !/danger/i.test(x.cls || "")) g++; else if (/arrow-circle-up/.test(ic)) g++; else if (/arrow-right/.test(ic)) a++; });
-          if (g || a) o.ev = { g, a }; return o; };
+          if (g || a) o.ev = { g, a };
+          if (h.some((x) => /fa-square/.test(x.ico || "") && /danger/i.test(x.cls || ""))) o.red = true;
+          return o; };
         const st = xiToStarters(side, null, true);
         st.starters.forEach(sw);
         const subsL = (side.subs || []).map(sw);
@@ -1149,8 +1176,8 @@
           }
         } catch (e) {}
       }
-      mpCambios = []; mpPairs = [];
-      if (finished) { try { mpCambios = ((await (await fetch(API + "/cambios?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json()).subs) || []; } catch (e) {} }
+      mpCambios = []; mpPairs = []; mpReds = [];
+      if (finished) { try { const cj = await (await fetch(API + "/cambios?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json(); mpCambios = cj.subs || []; mpReds = cj.reds || []; } catch (e) {} }
       renderMatchDetail(box, m, d, jn, xi, xiKind, finished, ffData);
       // Los puntos de MI liga Futmondo se piden aparte (por jugador y con
       // caché en el backend) y se pintan encima en cuanto llegan.

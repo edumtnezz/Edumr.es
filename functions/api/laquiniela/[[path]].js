@@ -3462,7 +3462,7 @@ export async function onRequestGet({ request, env, params }) {
   // patrones; lo que no encaje se ignora (el cliente lo cruza por eliminación).
   if (path === "cambios") {
     const hh = url.searchParams.get("home") || "", aa = url.searchParams.get("away") || "", jj = url.searchParams.get("jornada") || "";
-    const ck = (url.searchParams.get("raw") ? "x" : "") + "cambios:v2:" + jj + ":" + normKey(hh.toLowerCase()) + "-" + normKey(aa.toLowerCase());
+    const ck = (url.searchParams.get("raw") ? "x" : "") + "cambios:v3:" + jj + ":" + normKey(hh.toLowerCase()) + "-" + normKey(aa.toLowerCase());
     try { const c = await env.PORRA.get(ck, "json"); if (c && Date.now() - (c.at || 0) < 10 * 60 * 1000) return json(c.data); } catch (e) {}
     const out = { subs: [] };
     try {
@@ -3470,12 +3470,14 @@ export async function onRequestGet({ request, env, params }) {
       if (d && d.url) {
         const html = await (await fetch(d.url, { headers: cmHeaders() })).text();
         const texts = [...new Set([...html.matchAll(/"articleBody":"([^"]*)"/g)].map((m) => m[1]))];
-        const clean = (t) => String(t || "").replace(/\([^)]*\)/g, "").replace(/[.¡!]+\s*$/g, "").replace(/\s+/g, " ").trim();
+        const clean = (t) => String(t || "").replace(/\([^)]*\)/g, "").replace(/^(?:del campo|del terreno de juego)\s+/i, "").replace(/\s+abandona el terreno de juego(?: y)?$/i, "").replace(/\s+y$/i, "").replace(/[.¡!]+\s*$/g, "").replace(/\s+/g, " ").trim();
         if (url.searchParams.get("raw")) out.raw = texts.filter((x) => /^\d+/.test(x));
         for (const raw of texts) {
           const mm = raw.match(/^(\d+)(?:\+\d+)?'\s*[—-]\s*(.*)$/);
           if (!mm) continue;
           const min = Number(mm[1]), t = mm[2];
+          const rj = t.match(/tarjeta roja a ([^(!.]+?)\s*\(/i) || t.match(/expulsa(?:do)? a ([^(!.]+?)\s*\(/i);
+          if (rj) { (out.reds = out.reds || []).push({ min, name: rj[1].trim() }); continue; }
           if (!/entr|sustitu|cambio|sale\b/i.test(t)) continue;
           let a = null, b = null, m2;
           if ((m2 = t.match(/sale (.+?) y entra (.+?)(?:\s*\(|\.|$)/i))) { b = m2[1]; a = m2[2]; }
@@ -3484,13 +3486,15 @@ export async function onRequestGet({ request, env, params }) {
             b = pre; a = m2[1];
           }
           else if ((m2 = t.match(/(.+?) sale del terreno de juego,? y (.+?) entra en su lugar/i))) { b = m2[1].replace(/^.*\. /, ""); a = m2[2]; }
-          else if ((m2 = t.match(/(.+?) (?:ha )?entra(?:do)?(?: en el terreno de juego)? (?:en sustituci[oó]n de|en lugar de|por|como sustituto de) (.+?)(?:\s*\(|\.|$)/i))) { a = m2[1].replace(/^.*\. /, ""); b = m2[2]; }
+          else if ((m2 = t.match(/dar entrada a (.+?) por (.+?)(?:\s*\(|\.|$)/i))) { a = m2[1]; b = m2[2]; }
+          else if ((m2 = t.match(/sustituir a (.+?) por (.+?)(?:\s*\(|\.|$)/i))) { b = m2[1]; a = m2[2]; }
+          else if ((m2 = t.match(/(.+?) (?:ha )?entra(?:do)?(?: en el (?:terreno de juego|campo))? (?:en sustituci[oó]n de|en lugar de|por|como sustituto de) (.+?)(?:\s*\(|\.|$)/i))) { a = m2[1].replace(/^.*\. /, ""); b = m2[2]; }
           else if ((m2 = t.match(/entra (.+?) en sustituci[oó]n de (.+?)(?:\s*\(|\.|$)/i))) { a = m2[1]; b = m2[2]; }
           if (a && b) out.subs.push({ min, in: clean(a), out: clean(b) });
         }
       }
     } catch (e) { out.err = String(e).slice(0, 120); }
-    try { if (out.subs.length) await env.PORRA.put(ck, JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 3600 }); } catch (e) {}
+    try { if (out.subs.length || out.reds) await env.PORRA.put(ck, JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 3600 }); } catch (e) {}
     return json(out);
   }
   if (path === "equipos") {

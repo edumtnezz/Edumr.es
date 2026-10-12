@@ -18,9 +18,11 @@
   }
 
   // Cruce del jugador del once con el jugador de Futmondo, solo dentro de su equipo.
+  var ALIAS = { "alexander arnold": "trent", "trent alexander arnold": "trent" }; // nombre en Futmondo
   var sinPareja = (window.__sinPareja = []);
   function match(s, pool) {
     var names = [strip(s.full), strip(s.name)].filter(Boolean);
+    names.slice().forEach(function (n) { if (ALIAS[n]) names.push(ALIAS[n]); });
     var toks = {}; names.forEach(function (n) { n.split(" ").forEach(function (t) { toks[t] = 1; }); });
     var squash = names.map(function (n) { return n.replace(/ /g, ""); });
     var steps = [
@@ -68,6 +70,8 @@
         if (!fm) { sinPareja.push(s.full || s.name); console.warn("[alineación] sin pareja en Futmondo:", s.full || s.name); }
         var name = fm ? fm.name : (s.name || s.full);
         var photo = (fm && fm.photo) || s.photo || "/img/avatar.svg", ffPh = s.photo || "/img/avatar.svg";
+        // Fotos de Futmondo con nombre en vez de número suelen ser de cuerpo entero: mejor la cara de FF
+        if (fm && fm.photo && s.photo && !/\/faces\/\d+\/\d+\.png/.test(fm.photo)) photo = s.photo;
         var inner = '<div class="pl-ph"><img src="' + esc(photo) + '" alt="" data-ff="' + esc(ffPh) + '">';
         if (probable && s.prob != null) inner += '<span class="pl-prob ' + probCls(s.prob) + '">' + s.prob + '%</span>';
         if (mode === "played") inner += '<span class="pl-pts" data-full="' + esc(s.full || s.name) + '">–</span>';
@@ -75,6 +79,7 @@
         else if (s.san || s.inj) inner += '<span class="pl-duda bad">' + (s.san ? "✕" : "+") + '</span>';
         else if (s.prob != null && s.prob < 80 && !s.bench) inner += '<span class="pl-duda">?</span>';
         if (s.ev && (s.ev.g || s.ev.a)) inner += '<span class="pl-evs">' + "⚽".repeat(s.ev.g || 0) + "👟".repeat(s.ev.a || 0) + "</span>";
+        if (s.red) inner += '<span class="pl-red" title="Expulsado"></span>';
         inner += '</div><div class="pl-nm">' + esc(name) + '</div>';
         if (s.sw) inner += '<div class="pl-sw ' + s.sw.dir + '"><i>' + (s.sw.dir === "in" ? "▲" : "▼") + "</i>" + esc(s.sw.min) + "'</div>" + (s.sw.with ? '<div class="pl-sw-who">' + (s.sw.dir === "in" ? "por " : "→ ") + esc(s.sw.with.map(function (o) { var f = match(o, pool); return f ? f.name : (o.name || o.full); }).join(" / ")) + "</div>" : "");
         if (alt) { var fa = match(alt, pool); inner += '<div class="pl-alt">' + esc(fa ? fa.name : (alt.name || alt.last)) + '</div>'; }
