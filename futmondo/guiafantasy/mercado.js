@@ -1179,7 +1179,7 @@
       if (!all || !all.length) { try { await load(); } catch (e) {} }
       const finalNow = (m.live && m.live.state === "final") || /finaliz/i.test(String(d.state || ""));
       // En juego: se enseña lo que hay ahora en el campo (tabla de jugadores) en vez de la probable
-      mpLive = !!(m.live && m.live.state === "live" && !finalNow && d.homePlayers && d.homePlayers.length >= 11 && d.awayPlayers && d.awayPlayers.length >= 11);
+      mpLive = !!(!finalNow && d.homePlayers && d.homePlayers.length >= 11 && d.awayPlayers && d.awayPlayers.length >= 11);
       const finished = finalNow || mpLive;
       // Alineación para el campo (solo si el partido NO ha acabado): primero
       // la confirmada (Comuniate, literal); si aún no está, la probable
@@ -1207,6 +1207,9 @@
       }
       mpCambios = []; mpPairs = []; mpReds = [];
       if (finished) { try { const cj = await (await fetch(API + "/cambios?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json(); mpCambios = cj.subs || []; mpReds = cj.reds || []; } catch (e) {} }
+      // Nunca "probable" con % si el partido ya empezó o si todos están al 100% (= confirmada)
+      const sure = (o) => o && o.starters && o.starters.length >= 10 && o.starters.every((p) => p.prob === 100);
+      if (xiKind === "probable" && xi && ((m.live && m.live.state === "live") || (sure(xi.home) && sure(xi.away)))) xiKind = "confirmada";
       renderMatchDetail(box, m, d, jn, xi, xiKind, finished, ffData);
       // Los puntos de MI liga Futmondo se piden aparte (por jugador y con
       // caché en el backend) y se pintan encima en cuanto llegan.

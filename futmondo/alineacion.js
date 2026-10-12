@@ -179,6 +179,8 @@
       var f = match(o, pool); return f ? f.name : (o.name || o.full);
     },
     card: function (side, teamName, crest, subtitle, players, mode, subs) {
+      // Todos al 100% = once confirmado: nunca se enseñan porcentajes
+      if ((!mode || mode === "probable") && side.starters && side.starters.length >= 10 && side.starters.every(function (p) { return p.prob === 100; })) mode = "confirmed";
       var card = document.createElement("div"); card.className = "al"; card.innerHTML = cardHtml();
       var tt = card.querySelector(".al-title");
       if (mode === "played") tt.innerHTML = "Partido <b>finalizado</b>";
