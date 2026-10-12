@@ -119,7 +119,7 @@
       if (last != null && last - y <= 7) rows[rows.length - 1]++; else rows.push(1);
       last = y;
     });
-    return rows.join("-");
+    return rows.length > 4 ? (side.formation || rows.join("-")) : rows.join("-");
   }
 
   function cardHtml() {
