@@ -892,6 +892,18 @@
       else if (!q && mi && mi.role) { const r = String(mi.role).toLowerCase(); if (/defens/.test(r)) g.defensas.push(o); else if (/delant/.test(r)) g.delanteros.push(o); else g.medios.push(o); }
       else g.medios.push(o);
     });
+    // Formaciones imposibles (3-6-1, 6-3-1…): la tabla de puntos clasifica a los carrileros/pivotes
+    // por su ficha, no por dónde jugaron. Se lleva al reparto realista más cercano.
+    if (!cg) {
+      let guard = 0;
+      while (guard++ < 4) {
+        if (g.defensas.length >= 6 && g.medios.length <= 4) g.medios.unshift(g.defensas.pop());
+        else if (g.medios.length >= 6 && g.delanteros.length <= 1) g.delanteros.push(g.medios.pop());
+        else if (g.medios.length >= 6 && g.defensas.length <= 3 && g.delanteros.length >= 2) g.defensas.push(g.medios.shift());
+        else if (g.defensas.length <= 2 && g.medios.length >= 5) g.defensas.push(g.medios.shift());
+        else break;
+      }
+    }
     g.formation = [g.defensas.length, g.medios.length, g.delanteros.length].join("-");
     return g;
   }
