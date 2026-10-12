@@ -999,8 +999,9 @@
       });
       // Minuto de cada asistencia: se empareja con los goles del equipo, por orden
       const as = rows.filter((r) => r.side === g[0] && r.assist);
-      as.forEach((r, i) => { if (as.length <= goals.length && goals[i]) r.min = goals[i].min + 0.001; });
+      as.forEach((r, i) => { if (as.length <= goals.length && goals[i]) { r.min = goals[i].min + 0.001; goals[i].by = r.txt; r.merged = true; } });
     });
+    for (let i = rows.length - 1; i >= 0; i--) if (rows[i].merged) rows.splice(i, 1);
     mpPairs.forEach((c) => rows.push({ side: c.side, min: c.min + 0.002, sub: true, inN: c.inN, outN: c.outN }));
     if (!rows.length) return null;
     rows.sort((a, b) => a.min - b.min);
@@ -1022,6 +1023,7 @@
         const tx = el("div", "mpage-ev-tx");
         tx.appendChild(el("span", "mpage-ev-txt", r.txt));
         if (lbl[r.ico]) tx.appendChild(el("span", "mpage-ev-kind", lbl[r.ico]));
+        if (r.by) { const a2 = el("span", "mpage-ev-by"); a2.appendChild(document.createTextNode("👟 ")); a2.appendChild(el("b", null, r.by)); tx.appendChild(a2); }
         pill.appendChild(tx);
         return pill;
       };

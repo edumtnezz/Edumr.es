@@ -111,3 +111,13 @@
 .mo-row img { width: 34px; height: 34px; object-fit: contain; }
 .mo-sc { font: 800 1.3rem 'Space Grotesk', sans-serif; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .mo-card.live { animation: none; } }
+
+/* Lo más destacado más compacto + gol con su asistencia en la misma tarjeta */
+.mpage-ev-sum { gap: 5px; padding: 12px 8px 10px; }
+.mpage-ev-pill { padding: 4px 10px 4px 7px; gap: 7px; }
+.mpage-ev-row.away .mpage-ev-pill { padding: 4px 7px 4px 10px; }
+.mpage-ev-ico { font-size: 1.15rem; }
+.mpage-ev-by { font-size: .68rem; color: var(--muted); font-weight: 600; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mpage-ev-by b { color: inherit; font-weight: 800; }
+.mpage-ev-pill.sub { padding: 3px 9px; }
+.mpage-ev-sum::before { top: 42px; }
