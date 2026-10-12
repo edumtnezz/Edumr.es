@@ -96,8 +96,21 @@
       var pool = players.filter(function (p) { return teamScore(p.team, teamName) >= 1; });
       card.querySelector(".pitch").innerHTML = render(side, pool, side.bench || []);
       var rival = best.home ? m.away : m.home;
-      card.querySelector(".al-foot").textContent = teamName + " · J" + jd.matchday + " · " + (best.home ? "vs " : "en ") + rival + " · " + (side.formation || "");
+      card.querySelector(".al-foot").textContent = teamName + " · J" + jd.matchday + " · " + (best.home ? "vs " : "en ") + rival + " · " + formacion(side);
     }).catch(function () { msg(card, "No se pudo cargar la alineación."); });
+  }
+
+  // Formación según DÓNDE están dibujados (filas por altura), no según la etiqueta de posición
+  function formacion(side) {
+    var f = (side.starters || []).filter(function (p) { return p.y != null && !/portero/i.test(p.pos); })
+      .map(function (p) { return p.y; }).sort(function (a, b) { return b - a; });
+    if (f.length < 8) return side.formation || "";
+    var rows = [], last = null;
+    f.forEach(function (y) {
+      if (last != null && last - y <= 10) rows[rows.length - 1]++; else rows.push(1);
+      last = y;
+    });
+    return rows.join("-");
   }
 
   function cardHtml() {
