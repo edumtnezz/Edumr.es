@@ -3181,6 +3181,15 @@
   }
   if (searchEl) searchEl.addEventListener("input", () => { const y = window.scrollY; shown = 18; renderGrid(); if (window.scrollY !== y) window.scrollTo(0, y); });
   bind("mjRole", "change");
+  document.querySelectorAll("#mxRole .mx-chip").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll("#mxRole .mx-chip").forEach((x) => x.classList.toggle("active", x === b));
+    const sel = $("mjRole"); if (sel) { sel.value = b.dataset.role || ""; sel.dispatchEvent(new Event("change")); }
+  }));
+  document.querySelectorAll(".mx-tab").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll(".mx-tab").forEach((x) => x.classList.toggle("active", x === b));
+    $("mxPaneRachas").classList.toggle("hidden", b.dataset.mx !== "rachas");
+    $("mxPaneBest").classList.toggle("hidden", b.dataset.mx !== "best");
+  }));
   const estadoSel = $("estadoSel"); if (estadoSel) estadoSel.addEventListener("change", renderEstado);
   const teamSel = $("mjTeam"); if (teamSel) teamSel.addEventListener("change", () => { syncClubActive(); shown = 18; renderGrid(); });
 

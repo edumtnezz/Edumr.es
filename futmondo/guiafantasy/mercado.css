@@ -1106,3 +1106,27 @@ html { overflow-anchor: none; }
 .mkt-row:not(.mkt-head) > :first-child{background:var(--cx-surface,#fff);box-shadow:none;border-radius:14px 0 0 14px}
 .mkt-row:not(.mkt-head):hover{border-color:rgba(34,197,94,.6)}
 .mkt-head{border-radius:12px}
+
+/* ===== Mercado rediseñado ===== */
+.mx-feat{margin:6px 0 18px;border:1px solid var(--border);border-radius:20px;padding:12px 12px 6px;background:var(--cx-surface,var(--card-solid,#fff))}
+.mx-tabs{display:flex;gap:6px;padding:4px;border-radius:14px;background:rgba(127,127,127,.12);margin-bottom:8px}
+.mx-tab{flex:1;border:0;background:transparent;color:var(--muted);font:800 .88rem/1 inherit;padding:11px 8px;border-radius:11px;cursor:pointer;transition:.18s}
+.mx-tab.active{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;box-shadow:0 4px 14px rgba(34,197,94,.35)}
+.mx-pane.hidden{display:none}
+.mx-feat .hl-head{margin-top:6px;padding-top:0;border-top:0}
+.mx-feat .merc-best{margin-bottom:10px}
+.mx-filters{margin:0 0 16px;border:1px solid var(--border);border-radius:20px;padding:14px;display:grid;gap:14px;background:var(--cx-surface,var(--card-solid,#fff))}
+.mx-row{display:flex;flex-direction:column;gap:8px}
+.mx-lab{font:800 .68rem/1 inherit;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.mx-chips{display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0;padding:2px 0}
+.mx-chips::-webkit-scrollbar{display:none}
+.mx-chip,.merc-segbtn.mx-chip{flex:0 0 auto;border:1.5px solid var(--border);background:transparent;color:var(--text);font:700 .86rem/1 inherit;padding:10px 15px;border-radius:999px;cursor:pointer;transition:.15s;white-space:nowrap}
+.mx-chip:active{transform:scale(.96)}
+.mx-chip.active,.merc-segbtn.mx-chip.active{background:linear-gradient(135deg,#16a34a,#22c55e);border-color:transparent;color:#fff;box-shadow:0 4px 12px rgba(34,197,94,.3)}
+/* Periodo: control segmentado */
+.hl-seg{background:rgba(127,127,127,.12);padding:4px;border-radius:14px;gap:2px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+.hl-seg::-webkit-scrollbar{display:none}
+.hl-btn{border:0;background:transparent;color:var(--muted);padding:8px 13px;border-radius:10px;white-space:nowrap}
+.hl-btn.active{background:var(--cx-surface,#fff);color:#16a34a;box-shadow:0 2px 8px rgba(0,0,0,.16)}
+.mkt-top{margin:6px 0 12px}
+@media (max-width:560px){.mkt-top{flex-direction:column;align-items:stretch}.hl-seg{width:100%}.hl-btn{flex:1}}
