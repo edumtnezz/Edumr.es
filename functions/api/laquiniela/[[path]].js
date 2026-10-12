@@ -2778,7 +2778,6 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
     const idx = matches.findIndex((x) => Number(x.r) === Number(jornada));
     if (idx < 0) return null;
     const m = matches[idx];
-    if (globalThis.__pjpDebug) globalThis.__pjpDebug.m = { ...m, ps: undefined };
     const out = { finished: m.st === "F", points: null };
     if (out.finished) {
       // Puntos de MI liga Futmondo Social: son los mismos que enseña la
@@ -2798,7 +2797,8 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
       let mkFresh = false;
       try {
         const mk = await getMarketPlayers(env);
-        mkFresh = matches.some((x) => Number(x.r) > Number(jornada) && x.st === "F") || !!(mk && mk.at && mk.at > fa.at);
+        const ko = Date.parse((m.info && m.info.date) || ""); const recent = ko > 0 && Date.now() - ko < 3 * 3600 * 1000;
+        mkFresh = !recent || matches.some((x) => Number(x.r) > Number(jornada) && x.st === "F") || !!(mk && mk.at && mk.at > fa.at);
         const mp = (mk.players || []).find((x) => String(x.id) === String(playerId));
         const fit = (mp && mp.fitness) || [];
         const k = fit.length - 1 - idx;
@@ -3677,12 +3677,11 @@ export async function onRequestGet({ request, env: env0, params }) {
         .split(",").map((x) => x.trim()).filter((x) => /^[a-z0-9]{6,40}$/i.test(x))
         .filter((x, i, a) => a.indexOf(x) === i).slice(0, 60);
       const out = {};
-      if (url.searchParams.get("debug")) globalThis.__pjpDebug = {};
       await Promise.all(ids.map(async (id) => {
         const r = await getPlayerJornadaPoints(env, id, j);
         out[id] = r ? { p: r.points, f: !!r.finished } : null;
       }));
-      return json({ jornada: j, points: out, dbg: globalThis.__pjpDebug || undefined });
+      return json({ jornada: j, points: out });
     } catch (e) { return json({ error: String(e) }); }
   }
   return json({ error: "not found" }, 404);
