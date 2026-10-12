@@ -80,3 +80,4 @@
 .mpage-team { justify-content: center; }
 .mpage-team.home { margin-right: -16px; }
 .mpage-team.away { margin-left: -16px; }
+.mpage-team { transform: translateY(15px); }
