@@ -3554,6 +3554,7 @@ export async function onRequestGet({ request, env: env0, params }) {
             gl.forEach((g, i) => { if (!res[i]) { const k = used.indexOf(false); if (k >= 0) { used[k] = true; res[i] = lines[k]; } } });
             gm[sd] = res.map((l) => l ? { m: l.min, x: l.x } : null);
           });
+          if (url.searchParams.get("raw")) out.dbg = { gl: goalLines.map((g) => g.min + "+" + g.x + " " + sideOf(g.t)), gh: (d.goalsHome || []).length, ga: (d.goalsAway || []).length, hk, ak };
           if (okAll) {
             const all2 = []; ["home", "away"].forEach((sd) => gm[sd].forEach((q) => { if (q) all2.push({ sd, q }); }));
             all2.sort((a, b) => (a.q.m + a.q.x / 100) - (b.q.m + b.q.x / 100));
