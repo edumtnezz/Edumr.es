@@ -2079,14 +2079,17 @@
   // ¿Habla este texto de ESE jugador? Nombre completo como palabras enteras; o, si el nombre tiene
   // varias palabras, solo el apellido largo cuando no va detrás de otro nombre de pila distinto
   // ("Toni Amor" NO es "Toni Martínez"). Nunca por el nombre de pila solo.
-  function newsMentions(text, name) {
+  function newsMentions(text, name, team) {
     const norm = (x) => stripAccents(String(x || "")).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
     const words = norm(text).split(" "), n = norm(name);
     if (!n || !words[0]) return false;
     const T = " " + words.join(" ") + " ";
     if (T.indexOf(" " + n + " ") >= 0) return true;
     const toks = n.split(" ");
-    if (toks.length < 2) return false;
+    if (toks.length < 2 || !team) return false;
+    // Solo el apellido: exige que la noticia nombre también su club (evita "Martínez Valero", "Álex Martínez"...)
+    const tk = norm(team).split(" ").filter((w) => w.length >= 4 && !/^(real|club|futbol|deportivo|atletico)$/.test(w))[0] || norm(team).split(" ")[0];
+    if (!tk || T.indexOf(" " + tk + " ") < 0) return false;
     const last = toks[toks.length - 1];
     if (last.length < 5) return false;
     const PART = { de: 1, del: 1, la: 1, el: 1, y: 1, a: 1, en: 1, con: 1, por: 1, que: 1, y: 1 };
@@ -2719,7 +2722,7 @@
       (async () => {
         let list = (lastNews && lastNews.noticias) || null;
         if (!list) { try { list = ((await (await fetch(API + "/noticias")).json()) || {}).noticias || []; } catch (e) { list = []; } }
-        const hit0 = list.filter((x) => newsMentions(x.title, nm));
+        const hit0 = list.filter((x) => newsMentions(x.title, nm, d.team || p.team || ""));
         let hit = hit0;
         hit = hit.slice(0, 3);
         if (!hit.length) { sec.remove(); return; }
