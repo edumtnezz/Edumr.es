@@ -2232,13 +2232,58 @@
       tt.appendChild(el("span", null, [ageTxt, teamName].filter(Boolean).join(" · ")));
       head.appendChild(tt);
     }
-    if (rb2) head.appendChild(el("div", "ficha-multi", "Multiposición: " + rb + " · " + rb2));
-    if (p.rivalFf || p.prob != null) {
+    // Demarcación: píldora ancha con la posición principal + chips de las secundarias
+    {
+      const ROLE_AB = { portero: "PT", defensa: "DF", centrocampista: "MC", delantero: "DL" };
+      const r1 = String(d.role || p.role || "").toLowerCase(), r2 = String(d.role2 || p.role2 || "").toLowerCase();
+      if (r1) {
+        const dm = el("div", "ficha-dem");
+        dm.appendChild(el("div", "ficha-dem-k", "Demarcación"));
+        const bar = el("div", "ficha-dem-bar");
+        const m1 = el("div", "ficha-dem-main posb-" + posCls(r1));
+        m1.appendChild(el("span", "ficha-dem-ab", ROLE_AB[r1] || ""));
+        m1.appendChild(el("span", null, roleFull(r1)));
+        bar.appendChild(m1);
+        if (r2) bar.appendChild(el("div", "ficha-dem-sec posb-" + posCls(r2), ROLE_AB[r2] || ""));
+        dm.appendChild(bar);
+        head.appendChild(dm);
+      }
+    }
+    // Próximos 4 partidos (se rellenan al llegar los datos de las jornadas)
+    const fixBox = el("div", "ficha-fix");
+    fixBox.appendChild(el("div", "ficha-fix-k", "Próximos partidos"));
+    const fixRow = el("div", "ficha-fix-row");
+    fixBox.appendChild(fixRow);
+    head.appendChild(fixBox);
+    if (p.prob != null) {
       const nx = el("div", "ficha-next");
-      if (p.rivalFf) { const b1 = el("div", "fn-box"); b1.appendChild(el("div", "fn-k", "PRÓXIMO PARTIDO" + (p.jornadaFf ? " · J" + p.jornadaFf : ""))); b1.appendChild(el("div", "fn-v", (p.casaFf ? "🏠 vs " : "✈️ en ") + p.rivalFf)); nx.appendChild(b1); }
-      if (p.prob != null) { const b2 = el("div", "fn-box"); b2.appendChild(el("div", "fn-k", "TITULARIDAD")); b2.appendChild(el("div", "fn-v", p.prob + "%")); nx.appendChild(b2); }
+      const b2 = el("div", "fn-box"); b2.appendChild(el("div", "fn-k", "TITULARIDAD")); b2.appendChild(el("div", "fn-v", p.prob + "%")); nx.appendChild(b2);
       head.appendChild(nx);
     }
+    (async () => {
+      const cur = Number(d.jornada) || Number(p.jornadaFf) || 0;
+      if (!cur) { fixBox.remove(); return; }
+      const nrm = (x) => stripAccents(String(x || "")).replace(/[^a-z0-9 ]/g, "").trim();
+      const sameT = (a1, b1) => { const x = nrm(a1), y = nrm(b1); return !!x && !!y && (x === y || x.indexOf(y) >= 0 || y.indexOf(x) >= 0); };
+      const rs = await Promise.all([0, 1, 2, 3, 4].map((k) => fetch(API + "/jornada?jornada=" + (cur + k)).then((r) => r.json()).then((j) => ({ k, j })).catch(() => ({ k, j: {} }))));
+      const out = [];
+      rs.forEach((r) => (r.j.matches || []).forEach((m) => {
+        if ((m.live && m.live.state === "final") || out.length >= 4) return;
+        const home = sameT(m.home, teamName), away = sameT(m.away, teamName);
+        if (home || away) out.push({ j: cur + r.k, home, crest: home ? m.awayCrest : m.homeCrest, rival: home ? m.away : m.home, day: m.day, date: m.date, time: m.time });
+      }));
+      if (!out.length) { fixBox.remove(); return; }
+      out.forEach((n) => {
+        const c = el("div", "ficha-fix-it");
+        c.appendChild(el("div", "ffx-d", ((n.date || "") + " " + (n.time || "")).trim()));
+        const row = el("div", "ffx-r");
+        row.appendChild(el("span", "ffx-ha", n.home ? "🏠" : "✈️"));
+        row.appendChild(el("span", "ffx-j", String(n.j)));
+        if (n.crest) { const im = el("img"); im.src = n.crest; im.alt = n.rival || ""; im.title = n.rival || ""; im.loading = "lazy"; row.appendChild(im); }
+        c.appendChild(row);
+        fixRow.appendChild(c);
+      });
+    })();
     head.appendChild(el("div", "ficha-val", money(d.value || p.value) + " €"));
     const chg = Number(d.change != null ? d.change : p.change) || 0;
     head.appendChild(el("div", "cmp-trend " + (chg > 0 ? "up" : chg < 0 ? "down" : "flat"),
@@ -2412,6 +2457,33 @@
     }
     colA.appendChild(colL); colB.appendChild(colR);
     root.appendChild(colA); root.appendChild(colB);
+    // Últimas noticias sobre el jugador (abajo del todo)
+    {
+      const nm = d.name || p.name || "";
+      const sec = el("section", "ficha-news");
+      root.appendChild(sec);
+      (async () => {
+        let list = (lastNews && lastNews.noticias) || null;
+        if (!list) { try { list = ((await (await fetch(API + "/noticias")).json()) || {}).noticias || []; } catch (e) { list = []; } }
+        const nn = stripAccents(nm).replace(/[^a-z0-9 ]/g, "").trim(), first = nn.split(" ")[0];
+        const has = (t, k) => k.length > 3 && stripAccents(String(t || "")).replace(/[^a-z0-9 ]/g, "").indexOf(k) >= 0;
+        let hit = list.filter((x) => has(x.title, nn));
+        if (!hit.length) hit = list.filter((x) => has(x.title, first));
+        hit = hit.slice(0, 3);
+        if (!hit.length) { sec.remove(); return; }
+        sec.appendChild(el("h3", "ficha-news-h", "Últimas noticias sobre " + nm));
+        const g = el("div", "ficha-news-grid");
+        hit.forEach((x) => {
+          const a1 = el("a", "ficha-news-it"); a1.href = x.link || "#"; a1.target = "_blank"; a1.rel = "noopener";
+          const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = x.thumb || "/img/balon.svg";
+          im.addEventListener("error", () => { im.src = "/img/balon.svg"; }, { once: true });
+          a1.appendChild(im);
+          const t = el("div", "ficha-news-t"); t.appendChild(el("span", null, x.title || "")); t.appendChild(el("small", null, (x.date || "") + (x.time ? " · " + x.time : ""))); a1.appendChild(t);
+          g.appendChild(a1);
+        });
+        sec.appendChild(g);
+      })();
+    }
     return root;
   }
 

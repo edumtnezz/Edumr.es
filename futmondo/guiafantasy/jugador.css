@@ -32,3 +32,32 @@
 .merc-row-photo, .merc-row-img { width: 46px; height: 46px; }
 .merc-row-meta { font-size: .82rem; }
 .merc-row-crest { width: 17px; height: 17px; }
+
+/* Demarcación */
+.ficha-dem { width: 100%; background: var(--soft, rgba(127,127,127,.1)); border-radius: 14px; padding: 10px 12px; margin-top: 12px; }
+.ficha-dem-k { font-weight: 800; font-size: .8rem; text-align: center; margin-bottom: 6px; }
+.ficha-dem-bar { display: flex; gap: 6px; align-items: stretch; height: 30px; }
+.ficha-dem-main { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 9px; color: #fff; font-weight: 800; font-size: .82rem; background: #de1b1b; }
+.ficha-dem-ab { font-size: .7rem; opacity: .9; }
+.ficha-dem-sec { display: flex; align-items: center; justify-content: center; width: 34px; border-radius: 9px; color: #fff; font-weight: 800; font-size: .7rem; background: #10af00; }
+.ficha-dem-main.posb-por, .ficha-dem-main.posb-gk { background: #d97706; } .ficha-dem-main.posb-def, .ficha-dem-main.posb-df { background: #2563eb; } .ficha-dem-main.posb-med, .ficha-dem-main.posb-mc { background: #10af00; }
+/* Próximos partidos */
+.ficha-fix { width: 100%; background: var(--soft, rgba(127,127,127,.1)); border-radius: 14px; padding: 10px 8px; margin-top: 10px; }
+.ficha-fix-k { font-weight: 800; font-size: .8rem; text-align: center; margin-bottom: 8px; }
+.ficha-fix-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.ficha-fix-it { text-align: center; }
+.ffx-d { font-size: .68rem; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
+.ffx-r { display: flex; align-items: center; justify-content: center; gap: 5px; }
+.ffx-ha { font-size: 1.05rem; }
+.ffx-j { background: #0f172a; color: #fff; font-weight: 800; font-size: .72rem; border-radius: 6px; padding: 3px 6px; }
+.ffx-r img { width: 26px; height: 26px; object-fit: contain; }
+@media (max-width: 420px) { .ffx-r { gap: 3px; } .ffx-r img { width: 22px; height: 22px; } .ffx-d { font-size: .62rem; } }
+/* Noticias */
+.ficha-news { grid-column: 1 / -1; margin-top: 6px; }
+.ficha-news-h { font-family: 'Space Grotesk', sans-serif; font-size: 1.15rem; margin: 6px 0 10px; }
+.ficha-news-grid { display: grid; gap: 10px; grid-template-columns: 1fr; }
+@media (min-width: 700px) { .ficha-news-grid { grid-template-columns: 1.4fr 1fr 1fr; } .ficha-news-grid a:first-child { grid-row: span 2; } }
+.ficha-news-it { position: relative; display: block; min-height: 150px; border-radius: 16px; overflow: hidden; color: #fff; text-decoration: none; background: #222; }
+.ficha-news-it img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(.55); }
+.ficha-news-t { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px; font-weight: 800; font-size: .92rem; line-height: 1.2; background: linear-gradient(0deg, rgba(0,0,0,.78), transparent); }
+.ficha-news-t small { display: block; font-weight: 600; opacity: .8; margin-top: 4px; }
