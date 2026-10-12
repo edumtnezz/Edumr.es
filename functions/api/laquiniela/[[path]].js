@@ -2802,6 +2802,7 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
           if (globalThis.__mkForceP) { const m2 = await globalThis.__mkForceP; if (m2 && m2.at) mk = m2; }
         }
         mkFresh = okMk(mk) || matches.some((x) => Number(x.r) > Number(jornada) && x.st === "F");
+        (globalThis.__pjd = globalThis.__pjd || {})[playerId] = { mkAt: mk && mk.at, minAt, ko, fresh: mkFresh, now: Date.now() };
         const mp = (mk.players || []).find((x) => String(x.id) === String(playerId));
         const fit = (mp && mp.fitness) || [];
         const k = fit.length - 1 - idx;
@@ -3685,7 +3686,7 @@ export async function onRequestGet({ request, env: env0, params }) {
         const r = await getPlayerJornadaPoints(env, id, j);
         out[id] = r ? { p: r.points, f: !!r.finished } : null;
       }));
-      return json({ jornada: j, points: out });
+      return json({ jornada: j, points: out, dbg: url.searchParams.get("debug") ? globalThis.__pjd : undefined });
     } catch (e) { return json({ error: String(e) }); }
   }
   return json({ error: "not found" }, 404);
