@@ -680,12 +680,15 @@
     return ["", "x"];
   }
   function marketInfo(name) {
-    const q = stripAccents(String(name).toLowerCase());
+    const norm = (s) => stripAccents(String(s || "").toLowerCase()).replace(/\s+/g, " ").trim();
+    const q = norm(name);
     if (!all || !all.length || !q) return null;
     const last = q.split(/\s+/).pop();
-    return all.find((x) => stripAccents(x.name).toLowerCase() === q)
-      || all.find((x) => { const xn = stripAccents(x.name).toLowerCase(); return xn.length >= 3 && q.indexOf(xn) >= 0; })
-      || all.find((x) => stripAccents(x.name).toLowerCase().split(/\s+/).pop() === last)
+    return all.find((x) => norm(x.name) === q)
+      || all.find((x) => { const xn = norm(x.name); return xn.length >= 3 && (q.indexOf(xn) >= 0 || xn.indexOf(q) >= 0); })
+      || all.find((x) => { const xn = norm(x.name); return last.length >= 4 && xn.split(/\s+/).pop() === last; })
+      // Apodos/cortes: "Chupe" (Comuniate) vs "Chupete" (Futmondo).
+      || all.find((x) => { const xn = norm(x.name).replace(/\s+/g, ""); return last.length >= 5 && (xn.indexOf(last) === 0 || last.indexOf(xn) === 0); })
       || null;
   }
   const MPC = { PT: "pt", DF: "df", MD: "md", DL: "dl" };
@@ -715,7 +718,7 @@
   function xiWords(s) {
     return stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").split(/\s+/)
       .filter((w) => w && XI_FILLER.indexOf(w) < 0)
-      .map((w) => ({ barca: "barcelona", atleti: "atletico" }[w] || w));
+      .map((w) => ({ barca: "barcelona", atleti: "atletico", santander: "racing" }[w] || w));
   }
   function xiScore(a, b) {
     const A = xiWords(a), B = xiWords(b);
@@ -821,15 +824,34 @@
     if (side.bench && side.bench.length) col.appendChild(renderBench(side.bench, "Banquillo"));
     return col;
   }
+  // Fotos recortadas de FutbolFantasy por equipo (clave = nombre normalizado
+  // completo; también se busca por apellido).
+  function xiPhotoMap(side) {
+    const map = {};
+    [].concat((side && side.starters) || [], (side && side.bench) || []).forEach((p) => {
+      if (!p || !p.photo) return;
+      const key = stripAccents(String(p.full || p.name || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").trim();
+      if (key) map[key] = p.photo;
+    });
+    return map;
+  }
+  function ffPhotoFor(map, name) {
+    const q = stripAccents(String(name || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").trim();
+    if (!q || !map) return "";
+    if (map[q]) return map[q];
+    const last = q.split(/\s+/).pop();
+    const hit = Object.keys(map).find((k) => k.split(/\s+/).pop() === last);
+    return hit ? map[hit] : "";
+  }
   // Jugadores que acabaron jugando el partido (tabla PUNTOS de Comuniate):
   // titulares = sin evento de entrada; suplentes que salieron = con "IN".
-  function xiFinishedSide(name, crest, list) {
+  function xiFinishedSide(name, crest, list, photoMap) {
     const g = { name, crest, portero: [], defensas: [], medios: [], delanteros: [], subs: [] };
     (list || []).forEach((p) => {
       const q = stripAccents(String(p.pos || "").toLowerCase()).trim();
       const isSub = (p.hl || []).some((h) => /sign-in/.test(h.ico || ""));
       const mi = marketInfo(p.name);
-      const o = { name: p.name, full: p.name, last: String(p.name || "").split(/\s+/).pop(), photo: (mi && mi.photo) || "" };
+      const o = { name: p.name, full: p.name, last: String(p.name || "").split(/\s+/).pop(), photo: ffPhotoFor(photoMap, p.name) || (mi && mi.photo) || "" };
       if (isSub) { g.subs.push(o); return; }
       if (q === "pt" || /porter/.test(q)) g.portero.push(o);
       else if (q === "df" || /defens/.test(q)) g.defensas.push(o);
@@ -883,7 +905,7 @@
     box.querySelectorAll(".mpage-xpts.on").forEach((e2) => { const v = Number(e2.textContent) || 0; if (max == null || v > max) max = v; });
     if (max != null && max >= 6) box.querySelectorAll(".mpage-xpts.on").forEach((e2) => { if ((Number(e2.textContent) || 0) === max) e2.classList.add("top"); });
   }
-  function renderMatchDetail(box, m, d, jn, xi, xiKind, finished) {
+  function renderMatchDetail(box, m, d, jn, xi, xiKind, finished, ffData) {
     box.innerHTML = "";
     const head = el("div", "mpage-top");
     const tl = el("div", "mpage-topline");
@@ -924,8 +946,8 @@
       hd.appendChild(el("span", "mpage-xi-title", "Jugadores del partido"));
       sec.appendChild(hd);
       const idxH = xiEvIndex(d.homePlayers), idxA = xiEvIndex(d.awayPlayers);
-      const home = xiFinishedSide(m.home, m.homeCrest, d.homePlayers);
-      const away = xiFinishedSide(m.away, m.awayCrest, d.awayPlayers);
+      const home = xiFinishedSide(m.home, m.homeCrest, d.homePlayers, xiPhotoMap(ffData && ffData.home));
+      const away = xiFinishedSide(m.away, m.awayCrest, d.awayPlayers, xiPhotoMap(ffData && ffData.away));
       const pitches = el("div", "alin-pitches mpage-xipitches");
       pitches.appendChild(mpXiTeam(home, m.homeCrest, idxH, true));
       pitches.appendChild(mpXiTeam(away, m.awayCrest, idxA, true));
@@ -1005,22 +1027,27 @@
       // Alineación para el campo (solo si el partido NO ha acabado): primero
       // la confirmada (Comuniate, literal); si aún no está, la probable
       // (FutbolFantasy con % y banquillo). Si ya acabó, en su lugar se
-      // muestran los jugadores que jugaron de verdad (tabla PUNTOS).
-      let xi = null, xiKind = "";
+      // muestran los jugadores que jugaron de verdad (tabla PUNTOS). La
+      // probable se pide también con el partido acabado, solo por las fotos
+      // recortadas de FF (el mercado no siempre tiene foto de todos).
+      let xi = null, xiKind = "", ffData = null;
       if (!finished) {
         try {
           const c = await (await fetch(API + "/alineaciones-confirmadas?jornada=" + encodeURIComponent(jn), { cache: "no-store" })).json();
           const cm = findXiMatch((c && c.matches) || [], m.home, m.away);
           if (cm) { xi = cm; xiKind = "confirmada"; }
         } catch (e) {}
-        if (!xi) {
-          try {
-            const o = await (await fetch(API + "/once?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn), { cache: "no-store" })).json();
-            if (o && o.home && (((o.home.starters || []).length) || ((o.away.starters || []).length))) { xi = o; xiKind = "probable"; }
-          } catch (e) {}
-        }
       }
-      renderMatchDetail(box, m, d, jn, xi, xiKind, finished);
+      if (!xi || finished) {
+        try {
+          const o = await (await fetch(API + "/once?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn), { cache: "no-store" })).json();
+          if (o && o.home && (((o.home.starters || []).length) || ((o.away.starters || []).length))) {
+            ffData = o;
+            if (!finished) { xi = o; xiKind = "probable"; }
+          }
+        } catch (e) {}
+      }
+      renderMatchDetail(box, m, d, jn, xi, xiKind, finished, ffData);
       // Los puntos de MI liga Futmondo se piden aparte (por jugador y con
       // caché en el backend) y se pintan encima en cuanto llegan.
       if (finished) { try { await fillMpPoints(box, d, jn); } catch (e) {} }
@@ -1042,8 +1069,9 @@
     try {
       const d = await (await fetch(API + "/jugador?id=" + encodeURIComponent(id), { cache: "no-store" })).json();
       box.innerHTML = "";
-      const back = el("button", "btn-ghost noti-back", "← Volver");
+      const back = el("button", "btn-ghost noti-back pp-back", "←");
       back.type = "button";
+      back.setAttribute("aria-label", "Volver");
       back.addEventListener("click", () => { if (history.length > 1) history.back(); else location.href = "/futmondo/guiafantasy/inicio"; });
       box.appendChild(back);
       box.appendChild(renderFicha(d, p));
@@ -2012,6 +2040,17 @@
 
   function renderFicha(d, p) {
     const root = el("div", "ficha");
+    // Caja de estado (como Comuniate): "ESTADO DEL JUGADOR / En forma".
+    const stat = String(d.status || p.status || "");
+    const bad = stat === "redcard" || stat.indexOf("injured") === 0;
+    const warn = stat === "doubt";
+    const sb = el("div", "pp-status" + (bad ? " bad" : warn ? " warn" : ""));
+    sb.appendChild(el("span", "pp-status-ico", bad ? "✕" : warn ? "?" : "✓"));
+    const stx = el("div", "pp-status-tx");
+    stx.appendChild(el("div", "pp-status-k", "ESTADO DEL JUGADOR"));
+    stx.appendChild(el("div", "pp-status-v", statusLabel(stat)));
+    sb.appendChild(stx);
+    root.appendChild(sb);
     const head = el("div", "ficha-head-center");
     const ph = el("div", "mcard-photo");
     ph.appendChild(posRing(photoImg(d.photo || p.photo, "mcard-img"), d.role || p.role, d.role2 || p.role2));
@@ -2023,10 +2062,12 @@
     head.appendChild(el("h2", "ficha-name", d.name || p.name || ""));
     const teamName = d.team || p.team || "";
     const teamLogo = d.logo || p.logo || "";
-    if (teamName || teamLogo) {
+    const ageN = Number(d.age || p.age) || 0;
+    const ageTxt = ageN ? (ageN + " años") : "";
+    if (ageTxt || teamName || teamLogo) {
       const tt = el("div", "ficha-team");
       if (teamLogo) { const lg = el("img"); lg.src = teamLogo; lg.alt = ""; lg.loading = "lazy"; tt.appendChild(lg); }
-      tt.appendChild(el("span", null, teamName));
+      tt.appendChild(el("span", null, [ageTxt, teamName].filter(Boolean).join(" · ")));
       head.appendChild(tt);
     }
     if (rb2) head.appendChild(el("div", "ficha-multi", "Multiposición: " + rb + " · " + rb2));
@@ -2034,7 +2075,6 @@
     const chg = Number(d.change != null ? d.change : p.change) || 0;
     head.appendChild(el("div", "cmp-trend " + (chg > 0 ? "up" : chg < 0 ? "down" : "flat"),
       chg > 0 ? "▲ " + formatDots(chg) + " €" + pct(d.value || p.value, chg) : chg < 0 ? "▼ " + formatDots(-chg) + " €" + pct(d.value || p.value, chg) : "—"));
-    head.appendChild(el("div", "cmp-status", statusLabel(d.status || p.status)));
     if (d.pronostico) head.appendChild(el("div", "ficha-pron", "Pronóstico: " + d.pronostico));
     if (d.fichaje && d.fichaje.date) head.appendChild(el("div", "ficha-fichaje", "🖊️ Fichado: " + d.fichaje.date + (d.fichaje.club ? " · " + d.fichaje.club : "")));
     root.appendChild(head);
@@ -2808,53 +2848,8 @@
     location.href = "/futmondo/guiafantasy/partido/" + matchSlug(d.home, d.away);
   });
 
-  // Cambiar de pestaña deslizando con el dedo (swipe). La vez anterior esto
-  // cambiaba de pestaña sin querer en cualquier scroll vertical con algo de
-  // deriva horizontal; ahora el gesto se "bloquea" en horizontal o vertical
-  // nada más despegar el dedo y, si se bloquea en vertical, ya no se vuelve
-  // a evaluar aunque el dedo derive luego hacia un lado.
-  (function initSwipe() {
-    const order = ["inicio", "noticias", "mercado", "fichajes", "clausulazos", "analiza"];
-    const main = document.querySelector(".quiniela-main");
-    if (!main) return;
-    // Nada de swipe si el gesto empieza dentro de algo que ya tiene su
-    // propio scroll horizontal (tabla de mercado, tira de escudos, última
-    // hora, selectores de periodo/filtros, etc).
-    const SKIP_SEL = ".mkt-wrap, .merc-clubs, .merc-bestrow, .hl-seg, .merc-seg, .claus-frow, .claus-chip, .mjRole, select, input, .merc-range";
-    let sx = 0, sy = 0, tracking = false, lock = null;
-    main.addEventListener("touchstart", (e) => {
-      if (e.touches.length !== 1) { tracking = false; return; }
-      const ov = $("fichaOverlay");
-      if (ov && !ov.classList.contains("hidden")) { tracking = false; return; }
-      const t = e.touches[0];
-      if (t.target.closest && t.target.closest(SKIP_SEL)) { tracking = false; return; }
-      sx = t.clientX; sy = t.clientY; tracking = true; lock = null;
-    }, { passive: true });
-    main.addEventListener("touchmove", (e) => {
-      if (!tracking || lock || e.touches.length !== 1) return;
-      const t = e.touches[0];
-      const dx = t.clientX - sx, dy = t.clientY - sy;
-      if (Math.abs(dx) < 14 && Math.abs(dy) < 14) return;
-      // El gesto decide su dirección en cuanto se mueve lo suficiente, y ya
-      // no cambia: evita que un scroll vertical "normal" acabe deslizando
-      // de pestaña si en algún momento deriva un poco hacia un lado.
-      lock = Math.abs(dx) > Math.abs(dy) * 2 ? "h" : "v";
-    }, { passive: true });
-    main.addEventListener("touchend", (e) => {
-      if (!tracking) return;
-      tracking = false;
-      if (lock !== "h") return;
-      const t = e.changedTouches[0];
-      const dx = t.clientX - sx, dy = t.clientY - sy;
-      if (Math.abs(dx) < 80 || Math.abs(dx) < Math.abs(dy) * 2) return;
-      const idx = order.indexOf(currentTab);
-      if (idx < 0) return;
-      const next = dx < 0 ? idx + 1 : idx - 1;
-      if (next < 0 || next >= order.length) return;
-      switchTab(order[next]);
-    }, { passive: true });
-    main.addEventListener("touchcancel", () => { tracking = false; lock = null; }, { passive: true });
-  })();
+  // El cambio de pestaña deslizando con el dedo se quitó: en móvil daba
+  // saltos sin querer al hacer scroll. Las pestañas se cambian con su botón.
 
   (async function initUserChip() {
     const ub = $("userBox");

@@ -15,7 +15,7 @@
   // los de /jornada no siempre coinciden letra a letra (p.ej. "Atleti" vs
   // "Atletico Madrid"), así que se empareja por palabras en común, igual
   // que hace el backend con teamScore()/wkey().
-  var TEAM_ALIASES = { barca: "barcelona", atleti: "atletico" };
+  var TEAM_ALIASES = { barca: "barcelona", atleti: "atletico", santander: "racing" };
   var WORD_STOP = ["de", "del", "la", "cf", "fc", "club", "sad", "sd", "ud", "rcd", "rc", "balompie", "c", "f"];
   function stripAccents(s) { return String(s == null ? "" : s).normalize("NFD").replace(/[̀-ͯ]/g, ""); }
   function wkey(s) {

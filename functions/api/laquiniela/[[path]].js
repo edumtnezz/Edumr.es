@@ -273,6 +273,14 @@ async function fetchFootballData(env, matchday) {
       }
     }
   }
+  // football-data abrevia el Racing como "Santander" y en la web se enseña
+  // siempre "Racing de Santander" (pedido por Edu). Se cambia el shortName,
+  // del que salen todos los nombres que se pintan; el emparejamiento con
+  // otras fuentes sigue funcionando porque wkey() aliasa santander→racing.
+  matches.forEach((m) => {
+    if (m.homeTeam && m.homeTeam.shortName === "Santander") m.homeTeam.shortName = "Racing de Santander";
+    if (m.awayTeam && m.awayTeam.shortName === "Santander") m.awayTeam.shortName = "Racing de Santander";
+  });
   return { matchday: md, source: "football-data", matches };
 }
 
@@ -670,6 +678,7 @@ async function getMarketPlayers(env) {
       points: Number(p.points) || 0,
       matches: Number((p.average && p.average.matches) || 0) || 0,
       avg: Number((p.average && p.average.average) || 0) || 0,
+      age: Number(p.age) || Number(p.edad) || 0,
       fitness: (p.average && p.average.fitness) || [],
       computer: p.computer === true,
       photo: p.photo ? FACE_BASE + p.photo : "",
@@ -689,11 +698,15 @@ async function getTeams(env) {
   } catch (e) {}
   const header = await futbolHeader(env);
   const tmRes = await futbolPost("/1/league/championshipteams", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
-  const teams = (tmRes.answer || []).map((t) => ({
-    id: String(t.id || ""),
-    name: String(t.name || ""),
-    logo: t.logo ? LOGO_BASE + t.logo : "",
-  })).filter((t) => t.name);
+  const teams = (tmRes.answer || []).map((t) => {
+    let name = String(t.name || "");
+    if (/^racing( de santander| santander)?$/i.test(name)) name = "Racing de Santander";
+    return {
+      id: String(t.id || ""),
+      name,
+      logo: t.logo ? LOGO_BASE + t.logo : "",
+    };
+  }).filter((t) => t.name);
   try { await env.PORRA.put(TEAMS_KEY, JSON.stringify({ at: Date.now(), teams }), { expirationTtl: 6 * 3600 }); } catch (e) {}
   return teams;
 }
@@ -1417,9 +1430,17 @@ async function playerFicha(env, id) {
   };
   let fichaje = null;
   try { fichaje = await tmProfile(env, pl.name || "", (a.team && a.team.name) || pl.team || ""); } catch (e) {}
+  // Edad: Futmondo la trae en el jugador; si no, se calcula de la fecha de
+  // nacimiento (cualquiera de los nombres que usa la API).
+  let age = Number(pl.age) || Number(pl.edad) || Number(mp && mp.age) || 0;
+  if (!age) {
+    const bd = pl.birthdate || pl.birth || pl.born || pl.nacimiento || "";
+    if (bd) { const b = new Date(bd); if (!isNaN(b.getTime())) age = Math.floor((Date.now() - b.getTime()) / (365.25 * 24 * 3600 * 1000)); }
+  }
   return {
     id,
     name: pl.name || "",
+    age,
     role: pl.role || "",
     role2: pl.role2 || "",
     value: todayVal,
@@ -1612,7 +1633,7 @@ async function getFFTeam(env, name) {
   const SLUG_FIX = {
     "atleti": "atletico", "atletico-madrid": "atletico",
     "barca": "barcelona",
-    "santander": "racing",
+    "santander": "racing", "racing-santander": "racing", "racing-de-santander": "racing",
     "real-betis": "betis",
     "deportivo-coruna": "deportivo", "deportivo-de-coruna": "deportivo", "coruna": "deportivo", "rcdeportivo": "deportivo",
     "espanyol-barcelona": "espanyol",
@@ -1930,7 +1951,7 @@ async function getPartidoFF(env, home, away, jornada) {
 // (p.ej. "Barça" → "barca", que no es ni empieza igual que "barcelona"), así
 // que sin esto teamScore() les daba 0 y no emparejaban con fuentes que usan
 // el nombre completo (como Comuniate).
-const TEAM_ALIASES = { barca: "barcelona", atleti: "atletico" };
+const TEAM_ALIASES = { barca: "barcelona", atleti: "atletico", santander: "racing" };
 function wkey(s) {
   return stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").split(/\s+/)
     .filter((w) => w && ["de", "del", "la", "cf", "fc", "club", "sad", "sd", "ud", "rcd", "rc", "balompie", "c", "f"].indexOf(w) < 0)
