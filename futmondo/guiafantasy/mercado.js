@@ -956,20 +956,28 @@
         else if (/arrow-right/.test(h.ico || "")) rows.push({ side: g[0], min: 996, ico: "👟", txt: shortName(p.name) });
       });
     }));
-    mpPairs.forEach((c) => rows.push({ side: c.side, min: c.min, ico: "🔄", txt: c.inN + " ⇄ " + c.outN, sub: true }));
     if (!rows.length) return null;
     rows.sort((a, b) => a.min - b.min);
     const box = el("section", "mpage-ev-sum");
-    ["home", "away"].forEach((side) => {
-      const col = el("div", "mpage-ev-col " + side);
-      rows.filter((r) => r.side === side).forEach((r) => {
-        const row = el("div", "mpage-ev-row" + (r.sub ? " sub" : ""));
-        const mm = r.min < 900 ? Math.floor(r.min) + "'" : "";
-        if (side === "home") { row.appendChild(el("span", "mpage-ev-ico", r.ico)); if (mm) row.appendChild(el("span", "mpage-ev-min", mm)); row.appendChild(el("span", "mpage-ev-txt", r.txt)); }
-        else { row.appendChild(el("span", "mpage-ev-txt", r.txt)); if (mm) row.appendChild(el("span", "mpage-ev-min", mm)); row.appendChild(el("span", "mpage-ev-ico", r.ico)); }
-        col.appendChild(row);
-      });
-      box.appendChild(col);
+    box.appendChild(el("div", "mpage-ev-title", "⭐ Lo más destacado"));
+    const lbl = { "⚽": "Gol", "🎯": "Penalti", "🙈": "En propia", "🟥": "Roja", "❌": "Falló penalti", "👟": "Asistencia" };
+    rows.forEach((r) => {
+      const row = el("div", "mpage-ev-row " + r.side);
+      const mk = () => {
+        const pill = el("div", "mpage-ev-pill");
+        pill.appendChild(el("span", "mpage-ev-ico", r.ico));
+        const tx = el("div", "mpage-ev-tx");
+        tx.appendChild(el("span", "mpage-ev-txt", r.txt));
+        if (lbl[r.ico]) tx.appendChild(el("span", "mpage-ev-kind", lbl[r.ico]));
+        pill.appendChild(tx);
+        return pill;
+      };
+      const L = el("div", "mpage-ev-cell l"), R = el("div", "mpage-ev-cell r");
+      (r.side === "home" ? L : R).appendChild(mk());
+      row.appendChild(L);
+      row.appendChild(el("span", "mpage-ev-min", r.min < 900 ? Math.floor(r.min) + "'" : "•"));
+      row.appendChild(R);
+      box.appendChild(row);
     });
     return box;
   }
@@ -1102,8 +1110,16 @@
     box.innerHTML = '<p class="muted small">Cargando partido…</p>';
     main.appendChild(box);
     try {
-      const jr = await (await fetch(API + "/jornada", { cache: "no-store" })).json();
-      const ms = (jr && jr.matches) || [];
+      let qj = ""; try { qj = new URLSearchParams(location.search).get("j") || ""; } catch (e) {}
+      let jr = await (await fetch(API + "/jornada" + (qj ? "?jornada=" + encodeURIComponent(qj) : ""), { cache: "no-store" })).json();
+      let ms = (jr && jr.matches) || [];
+      if (!ms.some((x) => matchSlug(x.home, x.away) === slug) && !qj) {
+        // Sin ?j=: busca en las 3 jornadas siguientes
+        const cur = Number(jr && jr.matchday) || 0;
+        for (let k = 1; k <= 3 && cur && cur + k <= 38; k++) {
+          try { const j2 = await (await fetch(API + "/jornada?jornada=" + (cur + k))).json(); if ((j2.matches || []).some((x) => matchSlug(x.home, x.away) === slug)) { jr = j2; ms = j2.matches; break; } } catch (e) {}
+        }
+      }
       const jn = Number(jr && jr.matchday) || 0;
       const m = ms.find((x) => matchSlug(x.home, x.away) === slug);
       if (!m) { box.innerHTML = '<p class="muted small">No se encontró el partido.</p>'; return; }
@@ -1152,10 +1168,11 @@
     const box = el("section", "panel playerpage");
     box.innerHTML = '<p class="muted small">Cargando ficha…</p>';
     main.appendChild(box);
-    if (!all || !all.length) { try { await load(); } catch (e) {} }
-    const p = (all || []).find((x) => String(x.id) === String(id)) || {};
     try {
-      const d = await (await fetch(API + "/jugador?id=" + encodeURIComponent(id), { cache: "no-store" })).json();
+      const pl = (!all || !all.length) ? load().catch(() => {}) : Promise.resolve();
+      const dp = fetch(API + "/jugador?id=" + encodeURIComponent(id)).then((r) => r.json());
+      const [d] = await Promise.all([dp, pl]);
+      const p = (all || []).find((x) => String(x.id) === String(id)) || {};
       box.innerHTML = "";
       const back = el("button", "btn-ghost noti-back pp-back", "←");
       back.type = "button";
@@ -1717,6 +1734,17 @@
     setTimeout(update, 300);
   }
 
+  (function backScroll() {
+    let y = 0, k = "scrollBack:" + location.pathname;
+    try { history.scrollRestoration = "manual"; y = Number(sessionStorage.getItem(k)) || 0; sessionStorage.removeItem(k); } catch (e) {}
+    if (!y || /\/jugador(?:es)?\//.test(location.pathname)) return;
+    let n = 0;
+    const t = setInterval(() => {
+      n++;
+      if (document.documentElement.scrollHeight >= y + window.innerHeight - 5) { window.scrollTo(0, y); if (Math.abs(window.scrollY - y) < 4 && n > 3) clearInterval(t); }
+      if (n > 40) clearInterval(t);
+    }, 150);
+  })();
   let lastMarketAt = 0;
   async function load() {
     try {
@@ -2031,7 +2059,7 @@
   }
 
   function openFicha(p) {
-    if (p && p.id) { location.href = "/jugador/" + encodeURIComponent(p.id) + "/" + nameSlug(p.name); return; }
+    if (p && p.id) { try { sessionStorage.setItem("scrollBack:" + location.pathname, String(window.scrollY || 0)); } catch (e) {} location.href = "/jugador/" + encodeURIComponent(p.id) + "/" + nameSlug(p.name); return; }
     const w = el("div");
     w.appendChild(el("p", "muted small", "Cargando ficha…"));
     showModal(w);
@@ -2177,13 +2205,6 @@
     st("Media", String(Math.round((Number(d.average) || 0) * 10) / 10).replace(".", ","));
     st("Partidos", d.matches5 || 0);
     colA.appendChild(stats);
-    const peers = all.filter((x) => x.role && x.role === (d.role || p.role));
-    if (peers.length >= 8) {
-      const cheaper = peers.filter((x) => (Number(x.value) || 0) < (Number(d.value) || 0)).length;
-      const pct = Math.round((cheaper / (peers.length - 1)) * 100);
-      colA.appendChild(el("div", "ficha-pct", "💶 Precio: más caro que el " + pct + "% de los " + (roleFull(d.role || p.role) || "jugadores") + " (" + peers.length + ")"));
-    }
-
     if (d.participacion) colA.appendChild(renderParticipacion(d.participacion, d.status || p.status));
 
 
@@ -2963,7 +2984,7 @@
   document.addEventListener("cx:once", (e) => {
     const d = e.detail || {};
     if (!d.home || !d.away) return;
-    location.href = "/futmondo/guiafantasy/partido/" + matchSlug(d.home, d.away);
+    location.href = "/futmondo/guiafantasy/partido/" + matchSlug(d.home, d.away) + (d.jornada ? "?j=" + encodeURIComponent(d.jornada) : "");
   });
 
   // El cambio de pestaña deslizando con el dedo se quitó: en móvil daba

@@ -300,3 +300,16 @@
   if (document.readyState !== "loading") boot();
   else document.addEventListener("DOMContentLoaded", boot);
 })();
+
+/* Móvil: que el botón activo del menú verde se vea ENTERO (centrado en la barra) */
+(function () {
+  function fit() {
+    var nav = document.querySelector(".cx-nav"); if (!nav) return;
+    var a = nav.querySelector("a.active"); if (!a) return;
+    var left = a.offsetLeft - (nav.clientWidth - a.offsetWidth) / 2;
+    nav.scrollLeft = Math.max(0, left);
+  }
+  if (document.readyState !== "loading") fit(); else document.addEventListener("DOMContentLoaded", fit);
+  window.addEventListener("load", fit);
+  window.addEventListener("resize", fit);
+})();

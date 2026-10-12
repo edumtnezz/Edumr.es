@@ -82,6 +82,7 @@
   }
 
   function benchHtml(subs, pool, mode) {
+    if (subs && mode !== "played") subs = subs.filter(function (s) { return s.prob == null || s.prob >= 10; });
     if (!subs || !subs.length) return "";
     var played = mode === "played", probable = !mode || mode === "probable";
     return '<div class="al-bench"><div class="al-bench-h">' + (played ? "Desde el banquillo" : "Banquillo") + '</div><div class="al-bench-row">' + subs.map(function (s) {
@@ -100,11 +101,14 @@
       var cands = libres.filter(function (b) { return line(b.pos) === line(st.pos); }).sort(function (a, b) { return (b.prob || 0) - (a.prob || 0); });
       if (cands.length) { altOf.set(st, cands[0]); libres.splice(libres.indexOf(cands[0]), 1); }
     });
-    var html = "";
-    ["fw", "md", "df", "gk"].forEach(function (k) {
-      var arr = groups[k].sort(function (a, b) { return (a.x || 0) - (b.x || 0); });
+    var html = "", rows = rowsOf(side);
+    var lines = rows ? rows.slice().reverse().map(function (r, i) { return { k: i === 0 ? "fw" : (i === rows.length - 1 ? "df" : "md"), arr: r }; })
+      : ["fw", "md", "df"].map(function (k) { return { k: k, arr: groups[k] }; });
+    lines.push({ k: "gk", arr: groups.gk });
+    lines.forEach(function (ln) {
+      var arr = ln.arr.sort(function (a, b) { return (a.x || 0) - (b.x || 0); });
       if (!arr.length) return;
-      html += '<div class="line ' + k + '">' + arr.map(function (s) {
+      html += '<div class="line ' + ln.k + '">' + arr.map(function (s) {
         return playerHtml(s, pool, mode, probable, altOf.get(s));
       }).join("") + "</div>";
     });
@@ -136,16 +140,25 @@
   }
 
   // Formación según DÓNDE están dibujados (filas por altura), no según la etiqueta de posición
-  function formacion(side) {
-    var f = (side.starters || []).filter(function (p) { return p.y != null && !/portero/i.test(p.pos); })
-      .map(function (p) { return p.y; }).sort(function (a, b) { return b - a; });
-    if (f.length < 8) return Array.isArray(side.formation) ? "" : (side.formation || "");
+  // Filas del campo (defensas primero) según la altura y; null si no hay datos fiables.
+  function rowsOf(side) {
+    var f = (side.starters || []).filter(function (p) { return !/portero/i.test(p.pos); });
+    if (f.length < 8 || f.some(function (p) { return p.y == null; })) return null;
+    f = f.slice().sort(function (a, b) { return b.y - a.y; });
     var rows = [], last = null;
-    f.forEach(function (y) {
-      if (last != null && last - y <= 7) rows[rows.length - 1]++; else rows.push(1);
-      last = y;
+    f.forEach(function (p) {
+      if (last != null && last - p.y <= 7) rows[rows.length - 1].push(p); else rows.push([p]);
+      last = p.y;
     });
-    return rows.length > 4 ? (side.formation || rows.join("-")) : rows.join("-");
+    return rows.length >= 2 && rows.length <= 4 ? rows : null;
+  }
+  // La etiqueta sale SIEMPRE de lo que se dibuja (mismas filas).
+  function formacion(side) {
+    var rows = rowsOf(side);
+    if (rows) return rows.map(function (r) { return r.length; }).join("-");
+    var c = { df: 0, md: 0, fw: 0 };
+    (side.starters || []).forEach(function (p) { var k = line(p.pos); if (c[k] != null) c[k]++; });
+    return c.df + "-" + c.md + "-" + c.fw;
   }
 
   function cardHtml() {

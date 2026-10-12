@@ -284,7 +284,20 @@ async function fetchFootballData(env, matchday) {
   return { matchday: md, source: "football-data", matches };
 }
 
+// Escudos desactualizados de football-data → versión actual (Futmondo, 128 px)
+const CREST_FIX = { 263: "https://static02.mondocore.com/futmondo/img/teams/128/deportivo-alaves.png" };
+function fixCrests(data) {
+  try {
+    ((data && data.matches) || []).forEach((m) => {
+      [m.homeTeam, m.awayTeam].forEach((t) => { if (t && CREST_FIX[t.id]) t.crest = CREST_FIX[t.id]; });
+    });
+  } catch (e) {}
+  return data;
+}
 async function getJornada(env, matchday) {
+  return fixCrests(await getJornadaRaw(env, matchday));
+}
+async function getJornadaRaw(env, matchday) {
   const kv = env.PORRA;
   const cacheKey = `jornada:${matchday || "current"}`;
   const raw = await kv.get(cacheKey, "json");
