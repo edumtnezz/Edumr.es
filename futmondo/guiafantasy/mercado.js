@@ -2076,34 +2076,44 @@
     b.classList.toggle("active", newsMineOnly);
     b.textContent = "🔎 Solo mis jugadores (" + myTeam.length + ")";
   }
-  // ¿Habla este texto de ESE jugador? Nombre completo como palabras enteras; o, si el nombre tiene
-  // varias palabras, solo el apellido largo cuando no va detrás de otro nombre de pila distinto
-  // ("Toni Amor" NO es "Toni Martínez"). Nunca por el nombre de pila solo.
+  // ¿Habla este texto de ESE jugador? Nombre completo como palabras enteras. Si el nombre es de una sola
+  // palabra ("Romero") o solo se usa el apellido, se exige que no vaya detrás de OTRO nombre de pila
+  // ("Isaac Romero" no es "Romero" del Atlético) salvo que la noticia nombre también su club.
+  // Nunca por el nombre de pila solo ("Toni Amor" no es "Toni Martínez").
   function newsMentions(text, name, team) {
-    const norm = (x) => stripAccents(String(x || "")).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
-    const words = norm(text).split(" "), n = norm(name);
-    if (!n || !words[0]) return false;
-    const T = " " + words.join(" ") + " ";
-    if (T.indexOf(" " + n + " ") >= 0) return true;
-    const toks = n.split(" ");
-    if (toks.length < 2 || !team) return false;
-    // Solo el apellido: exige que la noticia nombre también su club (evita "Martínez Valero", "Álex Martínez"...)
-    const tk = norm(team).split(" ").filter((w) => w.length >= 4 && !/^(real|club|futbol|deportivo|atletico)$/.test(w))[0] || norm(team).split(" ")[0];
-    if (!tk || T.indexOf(" " + tk + " ") < 0) return false;
-    const last = toks[toks.length - 1];
-    if (last.length < 5) return false;
-    const PART = { de: 1, del: 1, la: 1, el: 1, y: 1, a: 1, en: 1, con: 1, por: 1, que: 1, y: 1 };
-    for (let i = 0; i < words.length; i++) {
-      if (words[i] !== last) continue;
-      const prev = words[i - 1];
-      if (!prev || PART[prev] || toks.indexOf(prev) >= 0) return true;
+    const clean = (x) => stripAccents(String(x || "")).replace(/[^a-z0-9 ,;:()]/g, " ");
+    const toks = clean(text).replace(/([,;:()])/g, " $1 ").split(/\s+/).filter(Boolean);
+    const isP = (w) => w === "," || w === ";" || w === ":" || w === "(" || w === ")";
+    const nt = clean(name).replace(/[,;:()]/g, " ").split(/\s+/).filter(Boolean);
+    if (!nt.length || !toks.length) return false;
+    const PART = { de: 1, del: 1, la: 1, el: 1, y: 1, a: 1, en: 1, con: 1, por: 1, que: 1, sobre: 1, para: 1, e: 1 };
+    const words = toks.filter((w) => !isP(w));
+    let tk = "";
+    if (team) { tk = clean(team).split(/\s+/).filter((w) => w.length >= 4 && !/^(real|club|futbol|deportivo|atletico)$/.test(w))[0] || clean(team).split(/\s+/)[0] || ""; }
+    const teamIn = !!tk && words.indexOf(tk) >= 0;
+    const find = (seq) => {
+      const out = [];
+      for (let i = 0; i + seq.length <= toks.length; i++) {
+        let ok = true;
+        for (let k = 0; k < seq.length; k++) if (toks[i + k] !== seq[k]) { ok = false; break; }
+        if (ok) out.push(i);
+      }
+      return out;
+    };
+    const prevOk = (i) => { const pv = toks[i - 1]; return !pv || isP(pv) || !!PART[pv]; };
+    if (nt.length >= 2) {
+      if (find(nt).length) return true;
+      const last = nt[nt.length - 1];
+      if (last.length < 5 || !teamIn) return false;
+      return find([last]).some((i) => prevOk(i) || nt.indexOf(toks[i - 1]) >= 0);
     }
-    return false;
+    if (nt[0].length < 4) return false;
+    return find(nt).some((i) => prevOk(i) || teamIn);
   }
   function newsMatchMyTeam(x) {
     if (!myTeam.length) return true;
     const t = String(x.title || "") + " " + String(x.lead || "");
-    return myTeam.some((n) => newsMentions(t, n));
+    return myTeam.some((n) => newsMentions(t, n, ""));
   }
 
   function haceTxt(ts) {
