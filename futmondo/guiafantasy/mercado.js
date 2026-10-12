@@ -779,8 +779,8 @@
     return { starters, bench: [], formation: [g.defensas.length, g.medios.length, g.delanteros.length].join("-") };
   }
   let mpCambios = [], mpPairs = [];
-  function mpNewCard(side, name, crest, subtitle, mode, photoMap) {
-    return window.EduAlineacion.card(xiToStarters(side, photoMap, mode === "played"), name, crest, subtitle, all, mode);
+  function mpNewCard(side, name, crest, subtitle, mode, photoMap, bench) {
+    return window.EduAlineacion.card(xiToStarters(side, photoMap, mode === "played"), name, crest, subtitle, all, mode, bench);
   }
   function mpXiTeam(side, crest, evIdx, showPts) {
     const col = el("div", "alin-teamcol mpage-xi-team");
@@ -937,42 +937,46 @@
     box.querySelectorAll(".mpage-xpts.on, .pl-pts.on").forEach((e2) => { const v = Number(e2.textContent) || 0; if (max == null || v > max) max = v; });
     if (max != null && max >= 6) box.querySelectorAll(".mpage-xpts.on, .pl-pts.on").forEach((e2) => { if ((Number(e2.textContent) || 0) === max) e2.classList.add("top"); });
   }
-  // Resumen gráfico de lo más destacado: goles, rojas, penaltis fallados y cambios.
+  // Resumen compacto de lo más destacado: los del local a la izquierda y los del
+  // visitante a la derecha. Goles, asistencias, rojas, penaltis fallados y cambios.
   function buildEvents(m, d) {
     const rows = [];
     const minOf = (t) => { const x = String(t || "").match(/\(?(\d+)(?:\+(\d+))?'\)?/); return x ? Number(x[1]) + (x[2] ? Number(x[2]) / 100 : 0) : 999; };
     const clean = (t) => String(t || "").replace(/\(?\d+(?:\+\d+)?'\)?/g, "").replace(/\s+/g, " ").trim();
+    const shortName = (x) => { const mi = marketInfo(x); return (mi && mi.name) || String(x || "").trim(); };
     [["home", d.goalsHome], ["away", d.goalsAway]].forEach((g) => (g[1] || []).forEach((x) => {
       const t = String(x.text || ""); const pen = /\(p\.?\)/i.test(t), og = /\(p\.?p\.?\)|propia/i.test(t);
-      rows.push({ side: g[0], min: minOf(t), ico: og ? "🙈" : pen ? "🎯" : "⚽", txt: clean(t).replace(/\(p\.?p?\.?\)/ig, "").trim() + (pen ? " (penalti)" : og ? " (en propia)" : "") });
+      const who = clean(t).replace(/\(p\.?p?\.?\)/ig, "").replace(/^[A-ZÁÉÍÓÚ]\.\s*/, "").trim();
+      rows.push({ side: g[0], min: minOf(t), ico: og ? "🙈" : pen ? "🎯" : "⚽", txt: shortName(who) || who });
     }));
     [["home", d.homePlayers], ["away", d.awayPlayers]].forEach((g) => (g[1] || []).forEach((p) => {
       (p.hl || []).forEach((h) => {
-        if (/fa-square/.test(h.ico || "") && /danger|red|ff0000/i.test(h.cls || "")) rows.push({ side: g[0], min: p.min ? Number(p.min) : 998, ico: "🟥", txt: p.name + " expulsado" });
-        else if (/arrow-circle-down/.test(h.ico || "")) rows.push({ side: g[0], min: 997, ico: "❌", txt: "Penalti fallado: " + p.name });
+        if (/fa-square/.test(h.ico || "") && /danger|red|ff0000/i.test(h.cls || "")) rows.push({ side: g[0], min: 998, ico: "🟥", txt: shortName(p.name) });
+        else if (/arrow-circle-down/.test(h.ico || "")) rows.push({ side: g[0], min: 997, ico: "❌", txt: shortName(p.name) });
+        else if (/arrow-right/.test(h.ico || "")) rows.push({ side: g[0], min: 996, ico: "👟", txt: shortName(p.name) });
       });
     }));
-    mpPairs.forEach((c) => rows.push({ side: c.side, min: c.min, ico: "🔄", txt: c.inN + " por " + c.outN, sub: true }));
+    mpPairs.forEach((c) => rows.push({ side: c.side, min: c.min, ico: "🔄", txt: c.inN + " ⇄ " + c.outN, sub: true }));
     if (!rows.length) return null;
     rows.sort((a, b) => a.min - b.min);
     const box = el("section", "mpage-ev-sum");
-    box.appendChild(el("div", "mpage-ev-title", "⭐ Lo más destacado"));
-    const lst = el("div", "mpage-ev-list");
-    rows.forEach((r) => {
-      const row = el("div", "mpage-ev-row " + r.side + (r.sub ? " sub" : ""));
-      const mm = r.min < 900 ? Math.floor(r.min) + "'" : "";
-      row.appendChild(el("span", "mpage-ev-min", mm));
-      row.appendChild(el("span", "mpage-ev-ico", r.ico));
-      row.appendChild(el("span", "mpage-ev-txt", r.txt));
-      lst.appendChild(row);
+    ["home", "away"].forEach((side) => {
+      const col = el("div", "mpage-ev-col " + side);
+      rows.filter((r) => r.side === side).forEach((r) => {
+        const row = el("div", "mpage-ev-row" + (r.sub ? " sub" : ""));
+        const mm = r.min < 900 ? Math.floor(r.min) + "'" : "";
+        if (side === "home") { row.appendChild(el("span", "mpage-ev-ico", r.ico)); if (mm) row.appendChild(el("span", "mpage-ev-min", mm)); row.appendChild(el("span", "mpage-ev-txt", r.txt)); }
+        else { row.appendChild(el("span", "mpage-ev-txt", r.txt)); if (mm) row.appendChild(el("span", "mpage-ev-min", mm)); row.appendChild(el("span", "mpage-ev-ico", r.ico)); }
+        col.appendChild(row);
+      });
+      box.appendChild(col);
     });
-    box.appendChild(lst);
     return box;
   }
   function renderMatchDetail(box, m, d, jn, xi, xiKind, finished, ffData) {
     box.innerHTML = "";
     const head = el("div", "mpage-top");
-    [[m.homeCrest, "left"], [m.awayCrest, "right"]].forEach((x) => { if (!x[0]) return; const bg = el("img", "mpage-bgcrest " + x[1]); bg.src = x[0]; bg.alt = ""; head.appendChild(bg); });
+    [[m.homeCrest, "left"], [m.awayCrest, "right"]].forEach((x) => { if (!x[0]) return; const bg = el("img", "mpage-bgcrest " + x[1]); window.EduAlineacion ? window.EduAlineacion.setCrest(bg, x[0]) : (bg.src = x[0]); bg.alt = ""; head.appendChild(bg); });
     const tl = el("div", "mpage-topline");
     tl.appendChild(el("span", "mpage-comp", "LaLiga" + (jn ? " · Jornada " + jn : "")));
     if (m.tv && m.tv.length) {
@@ -982,14 +986,14 @@
     }
     head.appendChild(tl);
     const state = d.state || ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim();
-    const mkTeam = (name, crest) => { const t = el("div", "mpage-team"); if (crest) { const im = el("img"); im.src = crest; im.alt = ""; t.appendChild(im); } t.appendChild(el("span", null, name)); return t; };
+    const mkTeam = (name, crest, cls) => { const t = el("div", "mpage-team " + cls); t.appendChild(el("span", null, name)); return t; };
     const teams = el("div", "mpage-teams");
-    teams.appendChild(mkTeam(m.home, m.homeCrest));
+    teams.appendChild(mkTeam(m.home, m.homeCrest, "home"));
     const mid = el("div", "mpage-mid");
     mid.appendChild(el("div", "mpage-state", state));
     mid.appendChild(el("div", "mpage-score", (d.score != null && d.scoreAway != null) ? (d.score + " - " + d.scoreAway) : "vs"));
     teams.appendChild(mid);
-    teams.appendChild(mkTeam(m.away, m.awayCrest));
+    teams.appendChild(mkTeam(m.away, m.awayCrest, "away"));
     head.appendChild(teams);
     box.appendChild(head);
     const evSlot = el("div"); box.appendChild(evSlot);
@@ -1006,7 +1010,9 @@
       const useNew = !!window.EduAlineacion;
       const mkCol = (side, name, crest, rival, idx) => {
         if (!useNew) { const c = mpXiTeam(side, crest, idx, true); if (side.subs.length) c.appendChild(mpSubsBlock(name, side.subs, idx)); return c; }
-        const sw = (o) => { const ev = xiFindEv(idx, o.full || o.name); const h = (ev && ev.hl) || []; const dir = h.some((x) => /sign-in/.test(x.ico || "")) ? "in" : h.some((x) => /sign-out/.test(x.ico || "")) ? "out" : ""; if (dir && ev.min) o.sw = { dir, min: ev.min }; return o; };
+        const sw = (o) => { const ev = xiFindEv(idx, o.full || o.name); const h = (ev && ev.hl) || []; const dir = h.some((x) => /sign-in/.test(x.ico || "")) ? "in" : h.some((x) => /sign-out/.test(x.ico || "")) ? "out" : ""; if (dir && ev.min) o.sw = { dir, min: ev.min };
+          let g = 0, a = 0; h.forEach((x) => { const ic = x.ico || ""; if (/fa-circle$/.test(ic) && !/danger/i.test(x.cls || "")) g++; else if (/arrow-circle-up/.test(ic)) g++; else if (/arrow-right/.test(ic)) a++; });
+          if (g || a) o.ev = { g, a }; return o; };
         const st = xiToStarters(side, null, true);
         st.starters.forEach(sw);
         const subsL = (side.subs || []).map(sw);
@@ -1043,15 +1049,15 @@
       if (xiKind === "confirmada" && window.EduAlineacion) {
         // Confirmada: sin % ni dudas ni recambios
         pitches.classList.add("al-pair");
-        pitches.appendChild(mpNewCard(xi.home || {}, m.home, m.homeCrest, "vs " + m.away, "confirmed", xiPhotoMap(ffData && ffData.home)));
+        pitches.appendChild(mpNewCard(xi.home || {}, m.home, m.homeCrest, "vs " + m.away, "confirmed", xiPhotoMap(ffData && ffData.home), (ffData && ffData.home && ffData.home.bench) || []));
         pitches.appendChild(el("div", "al-sep"));
-        pitches.appendChild(mpNewCard(xi.away || {}, m.away, m.awayCrest, "en " + m.home, "confirmed", xiPhotoMap(ffData && ffData.away)));
+        pitches.appendChild(mpNewCard(xi.away || {}, m.away, m.awayCrest, "en " + m.home, "confirmed", xiPhotoMap(ffData && ffData.away), (ffData && ffData.away && ffData.away.bench) || []));
       } else if (xiKind === "probable" && window.EduAlineacion) {
         // Nuevo campo EduMR (alineacion.js): foto de Futmondo, % de titularidad y alternativa
         pitches.classList.add("al-pair");
-        pitches.appendChild(window.EduAlineacion.card(xi.home || {}, m.home, m.homeCrest, "vs " + m.away, all));
+        pitches.appendChild(window.EduAlineacion.card(xi.home || {}, m.home, m.homeCrest, "vs " + m.away, all, "probable", (xi.home && xi.home.bench) || []));
         pitches.appendChild(el("div", "al-sep"));
-        pitches.appendChild(window.EduAlineacion.card(xi.away || {}, m.away, m.awayCrest, "en " + m.home, all));
+        pitches.appendChild(window.EduAlineacion.card(xi.away || {}, m.away, m.awayCrest, "en " + m.home, all, "probable", (xi.away && xi.away.bench) || []));
       } else {
       pitches.appendChild(mpXiTeam(xi.home || {}, (xi.home && xi.home.crest) || m.homeCrest, idxH, false));
       pitches.appendChild(mpXiTeam(xi.away || {}, (xi.away && xi.away.crest) || m.awayCrest, idxA, false));

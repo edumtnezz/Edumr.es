@@ -50,6 +50,15 @@
     else if (t.getAttribute("src") !== "/img/avatar.svg") t.src = "/img/avatar.svg";
   }, true);
 
+  // Escudos de football-data: el SVG se ve nítido a cualquier tamaño (algunos PNG son de 70px).
+  function setCrest(img, url) {
+    var u = String(url || "");
+    if (/crests\.football-data\.org\/\d+\.png$/.test(u)) {
+      img.addEventListener("error", function f() { img.removeEventListener("error", f); img.src = u; });
+      img.src = u.replace(/\.png$/, ".svg");
+    } else img.src = u || "/img/avatar.svg";
+  }
+
   function line(pos) { return /port/i.test(pos) ? "gk" : /def/i.test(pos) ? "df" : /del/i.test(pos) ? "fw" : "md"; }
   function probCls(p) { return p >= 90 ? "p90" : p >= 80 ? "p80" : p >= 60 ? "p60" : p >= 40 ? "p40" : "p0"; }
   function slug(s) { return strip(s).replace(/ /g, ""); }
@@ -64,16 +73,21 @@
         if (mode === "played") inner += '<span class="pl-pts" data-full="' + esc(s.full || s.name) + '">–</span>';
         else if (!probable) { /* confirmada: sin dudas */ }
         else if (s.san || s.inj) inner += '<span class="pl-duda bad">' + (s.san ? "✕" : "+") + '</span>';
-        else if (s.prob != null && s.prob < 80) inner += '<span class="pl-duda">?</span>';
+        else if (s.prob != null && s.prob < 80 && !s.bench) inner += '<span class="pl-duda">?</span>';
+        if (s.ev && (s.ev.g || s.ev.a)) inner += '<span class="pl-evs">' + "⚽".repeat(s.ev.g || 0) + "👟".repeat(s.ev.a || 0) + "</span>";
         inner += '</div><div class="pl-nm">' + esc(name) + '</div>';
         if (s.sw) inner += '<div class="pl-sw ' + s.sw.dir + '"><i>' + (s.sw.dir === "in" ? "▲" : "▼") + "</i>" + esc(s.sw.min) + "'</div>" + (s.sw.with ? '<div class="pl-sw-who">' + (s.sw.dir === "in" ? "por " : "→ ") + esc(s.sw.with.map(function (o) { var f = match(o, pool); return f ? f.name : (o.name || o.full); }).join(" / ")) + "</div>" : "");
         if (alt) { var fa = match(alt, pool); inner += '<div class="pl-alt">' + esc(fa ? fa.name : (alt.name || alt.last)) + '</div>'; }
         return fm ? '<a class="pl" href="/jugador/' + encodeURIComponent(fm.id) + '/' + slug(fm.name) + '">' + inner + '</a>' : '<div class="pl">' + inner + '</div>';
   }
 
-  function benchHtml(subs, pool) {
+  function benchHtml(subs, pool, mode) {
     if (!subs || !subs.length) return "";
-    return '<div class="al-bench"><div class="al-bench-h">Desde el banquillo</div><div class="al-bench-row">' + subs.map(function (s) { return playerHtml(s, pool, "played", false, null); }).join("") + '</div></div>';
+    var played = mode === "played", probable = !mode || mode === "probable";
+    return '<div class="al-bench"><div class="al-bench-h">' + (played ? "Desde el banquillo" : "Banquillo") + '</div><div class="al-bench-row">' + subs.map(function (s) {
+      var o = played ? s : Object.assign({}, s, { bench: true });
+      return playerHtml(o, pool, played ? "played" : mode, probable, null);
+    }).join("") + '</div></div>';
   }
 
   function render(side, pool, bench, mode) {
@@ -141,6 +155,7 @@
 
   // API para otras páginas (Guía Fantasy): devuelve una tarjeta .al ya pintada.
   window.EduAlineacion = {
+    setCrest: setCrest,
     nameOf: function (o, teamName, players) {
       var pool = (players || []).filter(function (p) { return teamScore(p.team, teamName) >= 1; });
       var f = match(o, pool); return f ? f.name : (o.name || o.full);
@@ -150,10 +165,10 @@
       var tt = card.querySelector(".al-title");
       if (mode === "played") tt.innerHTML = "Partido <b>finalizado</b>";
       else if (mode === "confirmed") tt.innerHTML = "Alineación <b>confirmada</b>";
-      card.querySelector(".al-head img").src = crest || "/img/avatar.svg";
+      setCrest(card.querySelector(".al-head img"), crest);
       var pool = (players || []).filter(function (p) { return teamScore(p.team, teamName) >= 1; });
       card.querySelector(".pitch").innerHTML = render(side, pool, side.bench || [], mode);
-      if (subs && subs.length) card.querySelector(".pitch").insertAdjacentHTML("afterend", benchHtml(subs, pool));
+      if (subs && subs.length) card.querySelector(".pitch").insertAdjacentHTML("afterend", benchHtml(subs, pool, mode));
       card.querySelector(".al-foot").textContent = teamName + (subtitle ? " · " + subtitle : "") + " · " + formacion(side);
       return card;
     }
