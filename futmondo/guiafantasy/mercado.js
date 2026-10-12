@@ -766,6 +766,21 @@
       || idx.find((x) => last.length >= 4 && (x.key.indexOf(last) >= 0 || x.last.indexOf(last) >= 0));
     return hit ? hit.p : null;
   }
+  // Convierte un once en grupos (portero/defensas/medios/delanteros) a la lista
+  // "starters" que entiende alineacion.js. Sin fotos de Comuniate: la foto sale
+  // de Futmondo (cruce por nombre) o, si falta, de futbolfantasy.
+  function xiToStarters(side, photoMap, keepPhoto) {
+    const g = xiGroups(side);
+    const POS = { portero: "Portero", defensas: "Defensa", medios: "Mediocampista", delanteros: "Delantero" };
+    const starters = [];
+    ["portero", "defensas", "medios", "delanteros"].forEach((k) => (g[k] || []).forEach((p) => {
+      starters.push({ name: p.name, full: p.full || p.name, pos: POS[k], photo: (keepPhoto && p.photo) || ffPhotoFor(photoMap, p.full || p.name) || "" });
+    }));
+    return { starters, bench: [], formation: [g.defensas.length, g.medios.length, g.delanteros.length].join("-") };
+  }
+  function mpNewCard(side, name, crest, subtitle, mode, photoMap) {
+    return window.EduAlineacion.card(xiToStarters(side, photoMap, mode === "played"), name, crest, subtitle, all, mode);
+  }
   function mpXiTeam(side, crest, evIdx, showPts) {
     const col = el("div", "alin-teamcol mpage-xi-team");
     const th = el("div", "alin-tcolhead mpage-xi-head");
@@ -911,15 +926,15 @@
       const r = await (await fetch(API + "/puntos?jornada=" + encodeURIComponent(jn) + "&ids=" + ids.join(","), { cache: "no-store" })).json();
       map = (r && r.points) || {};
     } catch (e) {}
-    box.querySelectorAll(".mpage-xpts[data-full], .mpage-subpts[data-full]").forEach((el2) => {
+    box.querySelectorAll(".mpage-xpts[data-full], .mpage-subpts[data-full], .pl-pts[data-full]").forEach((el2) => {
       const id = idByName[el2.getAttribute("data-full")];
       const rec = id ? map[id] : null;
-      if (rec && rec.f === true && rec.p != null) { el2.textContent = String(rec.p); el2.classList.add("on"); }
+      if (rec && rec.f === true && rec.p != null) { el2.textContent = String(rec.p); el2.classList.add("on"); if (rec.p < 0) el2.classList.add("neg"); }
       else el2.remove();
     });
     let max = null;
-    box.querySelectorAll(".mpage-xpts.on").forEach((e2) => { const v = Number(e2.textContent) || 0; if (max == null || v > max) max = v; });
-    if (max != null && max >= 6) box.querySelectorAll(".mpage-xpts.on").forEach((e2) => { if ((Number(e2.textContent) || 0) === max) e2.classList.add("top"); });
+    box.querySelectorAll(".mpage-xpts.on, .pl-pts.on").forEach((e2) => { const v = Number(e2.textContent) || 0; if (max == null || v > max) max = v; });
+    if (max != null && max >= 6) box.querySelectorAll(".mpage-xpts.on, .pl-pts.on").forEach((e2) => { if ((Number(e2.textContent) || 0) === max) e2.classList.add("top"); });
   }
   function renderMatchDetail(box, m, d, jn, xi, xiKind, finished, ffData) {
     box.innerHTML = "";
@@ -959,18 +974,24 @@
     if (finished) {
       const sec = el("section", "mpage-xi mpage-xi-done");
       const hd = el("div", "mpage-xi-h");
-      hd.appendChild(el("span", "mpage-xi-title", "Jugadores del partido"));
+      hd.appendChild(el("span", "mpage-xi-title", "Partido confirmado"));
       sec.appendChild(hd);
       const idxH = xiEvIndex(d.homePlayers), idxA = xiEvIndex(d.awayPlayers);
       const home = xiFinishedSide(m.home, m.homeCrest, d.homePlayers, xiPhotoMap(ffData && ffData.home));
       const away = xiFinishedSide(m.away, m.awayCrest, d.awayPlayers, xiPhotoMap(ffData && ffData.away));
       // Cada equipo con su campo y, debajo, los suyos que salieron del
       // banquillo (pedido por Edu).
-      const colH = mpXiTeam(home, m.homeCrest, idxH, true);
-      if (home.subs.length) colH.appendChild(mpSubsBlock(m.home, home.subs, idxH));
-      const colA = mpXiTeam(away, m.awayCrest, idxA, true);
-      if (away.subs.length) colA.appendChild(mpSubsBlock(m.away, away.subs, idxA));
-      const pitches = el("div", "alin-pitches mpage-xipitches");
+      const useNew = !!window.EduAlineacion;
+      const mkCol = (side, name, crest, rival, idx) => {
+        if (!useNew) { const c = mpXiTeam(side, crest, idx, true); if (side.subs.length) c.appendChild(mpSubsBlock(name, side.subs, idx)); return c; }
+        const c = el("div", "al-col");
+        c.appendChild(mpNewCard(side, name, crest, rival, "played", null));
+        if (side.subs.length) c.appendChild(mpSubsBlock(name, side.subs, idx));
+        return c;
+      };
+      const colH = mkCol(home, m.home, m.homeCrest, "vs " + m.away, idxH);
+      const colA = mkCol(away, m.away, m.awayCrest, "en " + m.home, idxA);
+      const pitches = el("div", "alin-pitches mpage-xipitches" + (useNew ? " al-pair" : ""));
       pitches.appendChild(colH);
       pitches.appendChild(colA);
       sec.appendChild(pitches);
@@ -983,7 +1004,12 @@
       sec.appendChild(hd);
       const idxH = xiEvIndex(d.homePlayers), idxA = xiEvIndex(d.awayPlayers);
       const pitches = el("div", "alin-pitches mpage-xipitches");
-      if (xiKind === "probable" && window.EduAlineacion) {
+      if (xiKind === "confirmada" && window.EduAlineacion) {
+        // Confirmada: sin % ni dudas ni recambios
+        pitches.classList.add("al-pair");
+        pitches.appendChild(mpNewCard(xi.home || {}, m.home, m.homeCrest, "vs " + m.away, "confirmed", xiPhotoMap(ffData && ffData.home)));
+        pitches.appendChild(mpNewCard(xi.away || {}, m.away, m.awayCrest, "en " + m.home, "confirmed", xiPhotoMap(ffData && ffData.away)));
+      } else if (xiKind === "probable" && window.EduAlineacion) {
         // Nuevo campo EduMR (alineacion.js): foto de Futmondo, % de titularidad y alternativa
         pitches.classList.add("al-pair");
         pitches.appendChild(window.EduAlineacion.card(xi.home || {}, m.home, m.homeCrest, "vs " + m.away, all));
@@ -1056,12 +1082,12 @@
           if (cm) { xi = cm; xiKind = "confirmada"; }
         } catch (e) {}
       }
-      if (!xi || finished) {
+      {
         try {
           const o = await (await fetch(API + "/once?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn), { cache: "no-store" })).json();
           if (o && o.home && (((o.home.starters || []).length) || ((o.away.starters || []).length))) {
             ffData = o;
-            if (!finished) { xi = o; xiKind = "probable"; }
+            if (!finished && !xi) { xi = o; xiKind = "probable"; }
           }
         } catch (e) {}
       }

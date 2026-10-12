@@ -54,12 +54,13 @@
   function probCls(p) { return p >= 90 ? "p90" : p >= 80 ? "p80" : p >= 60 ? "p60" : p >= 40 ? "p40" : "p0"; }
   function slug(s) { return strip(s).replace(/ /g, ""); }
 
-  function render(side, pool, bench) {
+  function render(side, pool, bench, mode) {
+    var probable = !mode || mode === "probable";
     var groups = { fw: [], md: [], df: [], gk: [] };
     side.starters.forEach(function (s) { groups[line(s.pos)].push(s); });
     // Cada suplente es alternativa de UN solo titular dudoso (el de menor probabilidad de su línea).
-    var altOf = new Map(), libres = bench.filter(function (b) { return (b.prob || 0) >= 40; }).slice();
-    side.starters.filter(function (s) { return s.prob != null && s.prob < 80; }).sort(function (a, b) { return a.prob - b.prob; }).forEach(function (st) {
+    var altOf = new Map(), libres = !probable ? [] : bench.filter(function (b) { return (b.prob || 0) >= 40; }).slice();
+    (probable ? side.starters : []).filter(function (s) { return s.prob != null && s.prob < 80; }).sort(function (a, b) { return a.prob - b.prob; }).forEach(function (st) {
       var cands = libres.filter(function (b) { return line(b.pos) === line(st.pos); }).sort(function (a, b) { return (b.prob || 0) - (a.prob || 0); });
       if (cands.length) { altOf.set(st, cands[0]); libres.splice(libres.indexOf(cands[0]), 1); }
     });
@@ -73,8 +74,10 @@
         var name = fm ? fm.name : (s.name || s.full);
         var photo = (fm && fm.photo) || s.photo || "/img/avatar.svg", ffPh = s.photo || "/img/avatar.svg";
         var inner = '<div class="pl-ph"><img src="' + esc(photo) + '" alt="" data-ff="' + esc(ffPh) + '"">';
-        if (s.prob != null) inner += '<span class="pl-prob ' + probCls(s.prob) + '">' + s.prob + '%</span>';
-        if (s.san || s.inj) inner += '<span class="pl-duda bad">' + (s.san ? "✕" : "+") + '</span>';
+        if (probable && s.prob != null) inner += '<span class="pl-prob ' + probCls(s.prob) + '">' + s.prob + '%</span>';
+        if (mode === "played") inner += '<span class="pl-pts" data-full="' + esc(s.full || s.name) + '">–</span>';
+        else if (!probable) { /* confirmada: sin dudas */ }
+        else if (s.san || s.inj) inner += '<span class="pl-duda bad">' + (s.san ? "✕" : "+") + '</span>';
         else if (s.prob != null && s.prob < 80) inner += '<span class="pl-duda">?</span>';
         inner += '</div><div class="pl-nm">' + esc(name) + '</div>';
         var alt = altOf.get(s);
@@ -113,7 +116,7 @@
   function formacion(side) {
     var f = (side.starters || []).filter(function (p) { return p.y != null && !/portero/i.test(p.pos); })
       .map(function (p) { return p.y; }).sort(function (a, b) { return b - a; });
-    if (f.length < 8) return side.formation || "";
+    if (f.length < 8) return Array.isArray(side.formation) ? "" : (side.formation || "");
     var rows = [], last = null;
     f.forEach(function (y) {
       if (last != null && last - y <= 7) rows[rows.length - 1]++; else rows.push(1);
@@ -129,11 +132,14 @@
 
   // API para otras páginas (Guía Fantasy): devuelve una tarjeta .al ya pintada.
   window.EduAlineacion = {
-    card: function (side, teamName, crest, subtitle, players) {
+    card: function (side, teamName, crest, subtitle, players, mode) {
       var card = document.createElement("div"); card.className = "al"; card.innerHTML = cardHtml();
+      var tt = card.querySelector(".al-title");
+      if (mode === "played") tt.innerHTML = "Partido <b>confirmado</b>";
+      else if (mode === "confirmed") tt.innerHTML = "Alineación <b>confirmada</b>";
       card.querySelector(".al-head img").src = crest || "/img/avatar.svg";
       var pool = (players || []).filter(function (p) { return teamScore(p.team, teamName) >= 1; });
-      card.querySelector(".pitch").innerHTML = render(side, pool, side.bench || []);
+      card.querySelector(".pitch").innerHTML = render(side, pool, side.bench || [], mode);
       card.querySelector(".al-foot").textContent = teamName + (subtitle ? " · " + subtitle : "") + " · " + formacion(side);
       return card;
     }

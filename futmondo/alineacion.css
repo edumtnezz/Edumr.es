@@ -33,3 +33,9 @@ a.pl:hover .pl-ph img { transform: scale(1.05); }
 .pl-duda.bad { background: #ef4444; color: #fff; }
 .al-pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 450px)); gap: 18px; justify-content: center; }
 .al-pair .al { margin: 0; }
+.pl-pts { position: absolute; right: -8px; top: -5px; min-width: 22px; height: 22px; padding: 0 4px; border-radius: 11px; background: #fff; color: #10151c; font: 800 .74rem 'Space Grotesk', sans-serif; display: grid; place-items: center; border: 1.5px solid #16a34a; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+.pl-pts.on { background: #16a34a; color: #fff; border-color: #fff; }
+.pl-pts.on.top { background: #facc15; color: #10151c; }
+.pl-pts.neg { background: #ef4444; color: #fff; border-color: #fff; }
+.al-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.al-col .mpage-subs-block { margin: 0; }
