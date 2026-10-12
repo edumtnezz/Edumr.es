@@ -5,5 +5,25 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   X-XSS-Protection: 1; mode=block
   Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
-  Cache-Control: no-cache, no-store, must-revalidate
+  Cache-Control: no-cache
   Content-Security-Policy: default-src 'self'; img-src 'self' data: https:; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self'; connect-src 'self'
+
+/img/*
+  ! Cache-Control
+  Cache-Control: public, max-age=604800
+
+/futmondo/*.js
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+/futmondo/*/*.js
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+/futmondo/*.css
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable
+
+/futmondo/*/*.css
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable

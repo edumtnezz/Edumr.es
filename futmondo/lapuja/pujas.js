@@ -877,7 +877,7 @@ function renderActividad(l, list0) {
   tt.appendChild(el("span", "", "Vestuario"));
   top.appendChild(tt);
   const logo = el("span", "wa-logo");
-  logo.innerHTML = '<img src="/img/balonmundial.png" alt="">';
+  logo.innerHTML = '<img src="/img/balonmundial.webp" alt="">';
   top.appendChild(logo);
   l.appendChild(top);
 
@@ -912,7 +912,7 @@ function renderActividad(l, list0) {
   });
 
   const bot = el("div", "wa-bottom");
-  bot.innerHTML = '<span class="wa-bottom-logo"><img src="/img/balonmundial.png" alt=""></span>';
+  bot.innerHTML = '<span class="wa-bottom-logo"><img src="/img/balonmundial.webp" alt=""></span>';
   body.appendChild(bot);
 
   l.appendChild(body);
