@@ -241,7 +241,7 @@
         const fit = (p.fit || p.fitness || []).map((x) => Number(x) || 0);
         for (let k = 0; k < fit.length; k++) {
           const v = Math.round(fit[fit.length - 1 - k]);
-          const j = j0 ? j0 - k : 0;
+          const j = jLab(p.team, fit.length, k, j0);
           const cls = v >= 6 ? " hi" : v >= 4 ? " mid" : v > 0 ? " lo" : " zero";
           const cell = el("span", "racha-chip" + cls);
           if (j > 0) cell.appendChild(el("i", null, "J" + j));
@@ -342,7 +342,7 @@
         const n = Math.min(5, fit.length);
         for (let k = 0; k < n; k++) {
           const v = Math.round(fit[fit.length - 1 - k]);
-          const j = j0 ? j0 - k : 0;
+          const j = jLab(p.team, fit.length, k, j0);
           const cls = v >= 6 ? " hi" : v >= 4 ? " mid" : v > 0 ? " lo" : " zero";
           const cell = el("span", "racha-chip" + cls);
           if (j > 0) cell.appendChild(el("i", null, "J" + j));
@@ -716,6 +716,36 @@
     node.addEventListener("click", go);
     node.addEventListener("keydown", (e) => { if (e.key === "Enter") go(e); });
     return node;
+  }
+  // Jornadas que ha JUGADO cada equipo (partidos terminados). Los 5 puntos de "fitness" son de los
+  // últimos 5 partidos jugados, así que si un partido se suspende/aplaza (Rayo–Athletic) esa jornada
+  // no cuenta y las etiquetas J deben saltársela.
+  let playedJ = null;
+  function jLab(team, len, k, j0) {
+    const l = playedJ && playedJ[teamCanon(team)];
+    if (l && l.length >= len) return l[l.length - 1 - k];
+    return j0 ? j0 - k : 0;
+  }
+  let playedJBusy = false;
+  async function ensurePlayedJ() {
+    if (playedJ || playedJBusy) return;
+    playedJBusy = true;
+    try {
+      const jr = await (await fetch(API + "/jornada")).json();
+      const cur = Number(jr && jr.matchday) || 0;
+      if (!cur) return;
+      const m = {};
+      const rs = await Promise.all(Array.from({ length: cur }, (_, i) => i + 1).map((n) =>
+        n === cur ? Promise.resolve({ n, ms: (jr && jr.matches) || [] }) :
+        fetch(API + "/jornada?jornada=" + n).then((r) => r.json()).then((j) => ({ n, ms: (j && j.matches) || [] })).catch(() => null)));
+      if (rs.some((x) => !x)) return; // si falta alguna jornada, mejor no inventar
+      rs.sort((a, b) => a.n - b.n).forEach((r) => r.ms.forEach((x) => {
+        if (x.live && x.live.state === "final") [x.home, x.away].forEach((t) => { const k = teamCanon(t); (m[k] = m[k] || []).push(r.n); });
+      }));
+      playedJ = m;
+      try { renderRachas(); } catch (e) {}
+      try { if (typeof clausApply === "function") clausApply(); } catch (e) {}
+    } catch (e) {} finally { playedJBusy = false; }
   }
   function marketInfo(name, team) {
     const norm = (s) => stripAccents(String(s || "").toLowerCase()).replace(/\s+/g, " ").trim();
@@ -2920,7 +2950,7 @@
           const j0 = (Number(p.jornadaFf) || 0) - 1;
           for (let k = 0; k < fit.length; k++) {
             const v = Math.round(fit[fit.length - 1 - k]);
-            const j = j0 > 0 ? j0 - k : 0;
+            const j = jLab(p.team, fit.length, k, j0 > 0 ? j0 : 0);
             const cell = el("span", "racha-chip" + (v >= 6 ? " hi" : v >= 4 ? " mid" : v > 0 ? " lo" : " zero"));
             if (j > 0) cell.appendChild(el("i", null, "J" + j));
             cell.appendChild(el("b", null, v > 0 ? String(v) : "–"));
@@ -2959,6 +2989,7 @@
 
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
   setupMoreMenu();
+  ensurePlayedJ();
   (function restoreTab() {
     try { const pm = location.pathname.match(/\/guiafantasy\/partido\/([a-z0-9-]+)/); if (pm) { renderMatchPage(pm[1]); return; } } catch (e) {}
     try { const pe = location.pathname.match(/^\/equipos\/([a-z0-9-]+)/); if (pe) { renderTeamPage(pe[1]); return; } if (/^\/equipos\/?$/.test(location.pathname)) { renderTeamsIndex(); return; } } catch (e) {}
