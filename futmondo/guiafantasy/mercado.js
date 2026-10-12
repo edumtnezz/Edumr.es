@@ -1178,7 +1178,7 @@
       const c1 = el("img"); c1.src = x.homeCrest || ""; c1.alt = x.home; c1.title = x.home; c1.loading = "lazy";
       const c2 = el("img"); c2.src = x.awayCrest || ""; c2.alt = x.away; c2.title = x.away; c2.loading = "lazy";
       row.appendChild(c1);
-      row.appendChild(el("span", "mo-sc", (st === "live" || st === "final") && x.live.score ? x.live.score : (x.time || "vs")));
+      row.appendChild(el("span", "mo-sc", (st === "live" || st === "final") && x.live.score ? x.live.score : st === "suspended" ? "—" : (x.time || "vs")));
       row.appendChild(c2);
       card.appendChild(row);
       grid.appendChild(card);
