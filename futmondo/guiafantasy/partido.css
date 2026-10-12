@@ -178,3 +178,9 @@
 .eq-tile img{width:34px;height:34px;object-fit:contain;flex:none}
 @media(min-width:700px){.eq-grid{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:420px){.eq-pl .racha-chip{min-width:23px}.eq-pl .racha-chip b{padding:2px 3px}}
+.club-link{cursor:pointer}
+.club-link:hover{text-decoration:underline}
+.eq-inicio{margin-top:12px}
+.eq-inicio:empty{display:none}
+.eq-inicio-h{display:flex;align-items:center;justify-content:space-between;font:800 1rem 'Space Grotesk',sans-serif;margin-bottom:6px}
+.eq-inicio-row .merc-club{text-decoration:none}

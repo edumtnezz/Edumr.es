@@ -156,6 +156,7 @@
       const row = el("div", "mcard-team");
       if (p.logo) { const lg = el("img", "mcard-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; row.appendChild(lg); }
       row.appendChild(el("span", null, p.team));
+      clubLink(row, p.team);
       body.appendChild(row);
     }
     body.appendChild(statRow(p));
@@ -230,6 +231,7 @@
         const meta = el("div", "racha-meta");
         if (p.logo) { const lg = el("img", "racha-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; meta.appendChild(lg); }
         if (p.team) meta.appendChild(el("span", null, p.team));
+        { const cl = meta.querySelector(".racha-crest"), sp = meta.querySelector("span"); if (cl) clubLink(cl, p.team); if (sp) clubLink(sp, p.team); }
         const rb = roleBadge(p.role);
         if (rb) meta.appendChild(el("span", "racha-role posb posb-" + posCls(p.role), rb));
         info.appendChild(meta);
@@ -321,6 +323,7 @@
       const tm = el("div", "claus-team");
       if (p.logo) { const lg = el("img", "racha-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; tm.appendChild(lg); }
       if (p.team) tm.appendChild(el("span", null, p.team));
+      clubLink(tm, p.team);
       body.appendChild(tm);
       const ow = el("div", "claus-owner");
       const av = el("img", "claus-ownav"); av.src = p.ownerPhoto || "/img/avatar.svg"; av.alt = ""; av.loading = "lazy";
@@ -694,6 +697,25 @@
     const T = [[/barc/, "fcb"], [/athletic|bilbao/, "ath"], [/atleti|atletico/, "atm"], [/real madrid/, "rma"], [/betis/, "bet"], [/sociedad/, "rso"], [/celta/, "cel"], [/depor/, "dep"], [/rayo/, "ray"], [/espanyol|espanol/, "esp"], [/getafe/, "get"], [/alaves/, "ala"], [/elche/, "elc"], [/osasuna/, "osa"], [/villarreal/, "vil"], [/valencia/, "val"], [/sevilla/, "sev"], [/levante/, "lev"], [/malaga/, "mal"], [/racing/, "rac"], [/girona/, "gir"], [/mallorca/, "mll"], [/oviedo/, "ovi"], [/palmas/, "lpa"]];
     for (const [re, k] of T) if (re.test(n)) return k;
     return n.split(" ").filter((w) => !/^(real|fc|de|la|del|club|ud|cd|rc|ca|cf|sd)$/.test(w))[0] || n;
+  }
+  // Enlace al club: cualquier escudo o nombre de equipo lleva a /equipos/<club> (salvo en los partidos "vs")
+  const CLUB_SLUG = { fcb: "barcelona", ath: "athletic-de-bilbao", atm: "atletico-de-madrid", rma: "real-madrid", bet: "betis", rso: "real-sociedad", cel: "celta-de-vigo", dep: "deportivo-de-la-coruna", ray: "rayo-vallecano", esp: "espanyol", get: "getafe", ala: "alaves", elc: "elche", osa: "osasuna", vil: "villarreal", val: "valencia", sev: "sevilla", lev: "levante", mal: "malaga", rac: "racing-de-santander" };
+  function clubHref(t) { const k = CLUB_SLUG[teamCanon(t)]; return k ? "/equipos/" + k : ""; }
+  function clubLink(node, team) {
+    const h = clubHref(team);
+    if (!node || !h) return node;
+    node.classList.add("club-link");
+    node.setAttribute("role", "link");
+    node.tabIndex = 0;
+    node.title = team;
+    const go = (e) => {
+      e.stopPropagation(); e.preventDefault();
+      try { sessionStorage.setItem("scrollBack:" + location.pathname, String(window.scrollY || 0)); } catch (x) {}
+      location.href = h;
+    };
+    node.addEventListener("click", go);
+    node.addEventListener("keydown", (e) => { if (e.key === "Enter") go(e); });
+    return node;
   }
   function marketInfo(name, team) {
     const norm = (s) => stripAccents(String(s || "").toLowerCase()).replace(/\s+/g, " ").trim();
@@ -1161,7 +1183,7 @@
     head.appendChild(tl);
     const isLive = m.live && m.live.state === "live";
     const state = isLive ? (m.live.minute || "EN JUEGO") : d.state || ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim();
-    const mkTeam = (name, crest, cls) => { const t = el("div", "mpage-team " + cls); t.appendChild(el("span", null, name)); return t; };
+    const mkTeam = (name, crest, cls) => { const t = el("div", "mpage-team " + cls); t.appendChild(clubLink(el("span", null, name), name)); return t; };
     const teams = el("div", "mpage-teams");
     if (d.score != null && d.scoreAway != null) teams.classList.add("mpage-hasscore");
     teams.appendChild(mkTeam(m.home, m.homeCrest, "home"));
@@ -1569,6 +1591,7 @@
       const tm = el("span", "mkt-jteam");
       if (p.logo) { const lg = el("img"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; tm.appendChild(lg); }
       if (p.team) tm.appendChild(el("span", null, p.team));
+      clubLink(tm, p.team);
       jj.appendChild(tm);
       j.appendChild(jj);
       row.appendChild(j);
@@ -1889,7 +1912,7 @@
     // La cinta de la portada se recalcula al volver a Inicio (al estar
     // oculta su ancho era 0 y la duración de la animación quedaba corta).
     if (name === "inicio") { try { if (window.__cxTickerSync) window.__cxTickerSync(); } catch (e) {} }
-    if (name === "inicio") renderInicioFeatured();
+    if (name === "inicio") { renderInicioFeatured(); renderInicioEquipos(); }
     if (name === "clausulazos") renderClausulas();
     if (name === "fichajes") renderFichajes();
     if (name === "analiza") renderCapHistorial();
@@ -1942,6 +1965,7 @@
         const tr = el("div", "mbc-team");
         if (p.logo) { const lg = el("img", "mbc-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; tr.appendChild(lg); }
         tr.appendChild(el("span", null, p.team));
+        clubLink(tr, p.team);
         c.appendChild(tr);
       }
       const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
@@ -2430,8 +2454,9 @@
     const ageTxt = ageN ? (ageN + " años") : "";
     if (ageTxt || teamName || teamLogo) {
       const tt = el("div", "ficha-team");
-      if (teamLogo) { const lg = el("img"); lg.src = teamLogo; lg.alt = ""; lg.loading = "lazy"; tt.appendChild(lg); }
-      tt.appendChild(el("span", null, [ageTxt, teamName].filter(Boolean).join(" · ")));
+      if (teamLogo) { const lg = el("img"); lg.src = teamLogo; lg.alt = ""; lg.loading = "lazy"; tt.appendChild(lg); clubLink(lg, teamName); }
+      if (ageTxt) tt.appendChild(el("span", null, ageTxt + (teamName ? " · " : "")));
+      if (teamName) tt.appendChild(clubLink(el("span", null, teamName), teamName));
       head.appendChild(tt);
     }
     // Demarcación: píldora ancha con la posición principal + chips de las secundarias
@@ -2694,6 +2719,24 @@
   }
 
   // ---------- Páginas de club (/equipos y /equipos/<club>) ----------
+  async function renderInicioEquipos() {
+    const box = $("inicioEquipos"); if (!box || box.dataset.done) return;
+    let teams = [];
+    try { teams = await eqTeams(); } catch (e) {}
+    if (!teams.length) return;
+    box.dataset.done = "1";
+    box.innerHTML = "";
+    const h = el("div", "eq-inicio-h"); h.appendChild(el("span", null, "🛡️ Equipos"));
+    const all = el("a", "eq-more", "Ver todos →"); all.href = "/equipos"; h.appendChild(all);
+    box.appendChild(h);
+    const row = el("div", "merc-clubs eq-inicio-row");
+    teams.slice().sort((a, b) => a.name.localeCompare(b.name, "es")).forEach((t) => {
+      const a = el("a", "merc-club"); a.href = "/equipos/" + teamSlug(t.name); a.title = t.name;
+      if (t.logo) { const im = el("img", "merc-club-img"); im.src = t.logo; im.alt = t.name; im.loading = "lazy"; a.appendChild(im); }
+      row.appendChild(a);
+    });
+    box.appendChild(row);
+  }
   function teamSlug(n) { return stripAccents(String(n || "")).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""); }
   function eqOpen() {
     const main = document.querySelector(".quiniela-main");
