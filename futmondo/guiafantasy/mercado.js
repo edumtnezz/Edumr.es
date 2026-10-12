@@ -779,7 +779,7 @@
     }));
     return { starters, bench: [], formation: [g.defensas.length, g.medios.length, g.delanteros.length].join("-") };
   }
-  let mpCambios = [], mpPairs = [], mpReds = [];
+  let mpCambios = [], mpPairs = [], mpReds = [], mpConf = null;
   function mpNewCard(side, name, crest, subtitle, mode, photoMap, bench) {
     return window.EduAlineacion.card(xiToStarters(side, photoMap, mode === "played"), name, crest, subtitle, all, mode, bench);
   }
@@ -870,7 +870,13 @@
   }
   // Jugadores que acabaron jugando el partido (tabla PUNTOS de Comuniate):
   // titulares = sin evento de entrada; suplentes que salieron = con "IN".
-  function xiFinishedSide(name, crest, list, photoMap) {
+  function xiFinishedSide(name, crest, list, photoMap, conf) {
+    // Formación real (alineación confirmada): fila de cada titular según dónde jugó de verdad
+    let cg = null;
+    if (conf) { cg = xiGroups(conf); if (!(cg.defensas.length + cg.medios.length + cg.delanteros.length >= 8)) cg = null; }
+    const nT = (x) => stripAccents(String(x || "")).replace(/[^a-z0-9 ]/g, " ").trim().split(/\s+/).filter(Boolean);
+    const sameC = (a, b) => { const p = nT(a), q = nT(b); if (!p.length || !q.length) return false; return p.every((t) => q.indexOf(t) >= 0) || q.every((t) => p.indexOf(t) >= 0) || (p[p.length - 1].length >= 4 && p[p.length - 1] === q[q.length - 1]); };
+    const rowOf = (nm) => { if (!cg) return ""; for (const k of ["defensas", "medios", "delanteros"]) if (cg[k].some((c) => sameC(c.full || c.name, nm))) return k; return ""; };
     const g = { name, crest, portero: [], defensas: [], medios: [], delanteros: [], subs: [] };
     (list || []).forEach((p) => {
       const q = stripAccents(String(p.pos || "").toLowerCase()).trim();
@@ -878,7 +884,9 @@
       const mi = marketInfo(p.name);
       const o = { pos: q, name: p.name, full: p.name, last: String(p.name || "").split(/\s+/).pop(), photo: ffPhotoFor(photoMap, p.name) || (mi && mi.photo) || "" };
       if (isSub) { g.subs.push(o); return; }
-      if (q === "pt" || /porter/.test(q)) g.portero.push(o);
+      const cr = (q === "pt" || /porter/.test(q)) ? "" : rowOf(p.name);
+      if (cr) g[cr].push(o);
+      else if (q === "pt" || /porter/.test(q)) g.portero.push(o);
       else if (q === "df" || /defens/.test(q)) g.defensas.push(o);
       else if (q === "dl" || /delant/.test(q)) g.delanteros.push(o);
       else if (!q && mi && mi.role) { const r = String(mi.role).toLowerCase(); if (/defens/.test(r)) g.defensas.push(o); else if (/delant/.test(r)) g.delanteros.push(o); else g.medios.push(o); }
@@ -1036,8 +1044,8 @@
       hd.appendChild(el("span", "mpage-xi-title", "Partido finalizado"));
       sec.appendChild(hd);
       const idxH = xiEvIndex(d.homePlayers), idxA = xiEvIndex(d.awayPlayers);
-      const home = xiFinishedSide(m.home, m.homeCrest, d.homePlayers, xiPhotoMap(ffData && ffData.home));
-      const away = xiFinishedSide(m.away, m.awayCrest, d.awayPlayers, xiPhotoMap(ffData && ffData.away));
+      const home = xiFinishedSide(m.home, m.homeCrest, d.homePlayers, xiPhotoMap(ffData && ffData.home), mpConf && mpConf.home);
+      const away = xiFinishedSide(m.away, m.awayCrest, d.awayPlayers, xiPhotoMap(ffData && ffData.away), mpConf && mpConf.away);
       // Cada equipo con su campo y, debajo, los suyos que salieron del
       // banquillo (pedido por Edu).
       const useNew = !!window.EduAlineacion;
@@ -1160,11 +1168,12 @@
       // probable se pide también con el partido acabado, solo por las fotos
       // recortadas de FF (el mercado no siempre tiene foto de todos).
       let xi = null, xiKind = "", ffData = null;
-      if (!finished) {
+      mpConf = null;
+      {
         try {
           const c = await (await fetch(API + "/alineaciones-confirmadas?jornada=" + encodeURIComponent(jn), { cache: "no-store" })).json();
           const cm = findXiMatch((c && c.matches) || [], m.home, m.away);
-          if (cm) { xi = cm; xiKind = "confirmada"; }
+          if (cm) { mpConf = cm; if (!finished) { xi = cm; xiKind = "confirmada"; } }
         } catch (e) {}
       }
       {
