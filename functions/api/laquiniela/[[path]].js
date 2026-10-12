@@ -2787,24 +2787,21 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
       // J8 tenía stats=9 y en la liga 10.
       let pts = null;
       // Salvaguarda: los datos del mercado pueden ir con retraso respecto al
-      // estado "terminado". Solo se dan por buenos si el mercado se ha
-      // refrescado DESPUÉS de que viéramos el partido terminado; si no, se
-      // devuelve "aún no" (y el cliente sigue preguntando) en vez de un
-      // valor viejo que además se guardaría 30 días.
-      let fa = null; const fk = "pjf:v1:" + playerId + ":" + (Number(jornada) || 0);
-      try { fa = await env.PORRA.get(fk, "json"); } catch (e) {}
-      if (!fa || !fa.at) { fa = { at: Date.now() }; try { await env.PORRA.put(fk, JSON.stringify(fa), { expirationTtl: 21600 }); } catch (e) {} }
+      // estado "terminado". Solo se dan por buenos si el mercado se refrescó
+      // cuando el partido ya podía haber acabado (inicio + 105 min); si va
+      // por detrás, se fuerza UN refresco (como mucho cada 30 s) y, si aun
+      // así no sirve, se devuelve "aún no" (el cliente sigue preguntando)
+      // en vez de un valor viejo que además se guardaría 30 días.
       let mkFresh = false;
       try {
         let mk = await getMarketPlayers(env);
-        // Si el mercado va por detrás del final del partido, se fuerza UN refresco (como mucho cada 60 s)
-        if (mk && mk.at && mk.at <= fa.at && !(globalThis.__mkForceAt && Date.now() - globalThis.__mkForceAt < 60000)) {
-          globalThis.__mkForceAt = Date.now();
-          globalThis.__mkForceP = getMarketPlayers(env, true).catch(() => null);
+        const ko = Date.parse((m.info && m.info.date) || ""); const minAt = ko > 0 ? ko + 105 * 60000 : 0;
+        const okMk = (q) => !!(q && q.at && q.at >= minAt);
+        if (!okMk(mk) && Date.now() >= minAt) {
+          if (!(globalThis.__mkForceAt && Date.now() - globalThis.__mkForceAt < 30000)) { globalThis.__mkForceAt = Date.now(); globalThis.__mkForceP = getMarketPlayers(env, true).catch(() => null); }
+          if (globalThis.__mkForceP) { const m2 = await globalThis.__mkForceP; if (m2 && m2.at) mk = m2; }
         }
-        if (globalThis.__mkForceP && mk && mk.at <= fa.at) { const m2 = await globalThis.__mkForceP; if (m2 && m2.at) mk = m2; }
-        const ko = Date.parse((m.info && m.info.date) || ""); const recent = ko > 0 && Date.now() - ko < 3 * 3600 * 1000;
-        mkFresh = !recent || matches.some((x) => Number(x.r) > Number(jornada) && x.st === "F") || !!(mk && mk.at && mk.at > fa.at);
+        mkFresh = okMk(mk) || matches.some((x) => Number(x.r) > Number(jornada) && x.st === "F");
         const mp = (mk.players || []).find((x) => String(x.id) === String(playerId));
         const fit = (mp && mp.fitness) || [];
         const k = fit.length - 1 - idx;
