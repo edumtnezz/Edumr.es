@@ -1163,6 +1163,29 @@
     }
     { const evb = buildEvents(m, d); if (evb) evSlot.appendChild(evb); }
   }
+  // Resto de partidos de la jornada (acceso rápido, con estado y marcador en directo)
+  function buildOtherMatches(ms, cur, jn) {
+    const sec = el("section", "mpage-others");
+    sec.appendChild(el("h3", "mpage-others-h", "⚽ Partidos de la jornada " + jn));
+    const grid = el("div", "mpage-others-grid");
+    (ms || []).forEach((x) => {
+      const st = x.live && x.live.state;
+      const card = el("a", "mo-card" + (x === cur || matchSlug(x.home, x.away) === matchSlug(cur.home, cur.away) ? " cur" : "") + (st === "live" ? " live" : st === "final" ? " fin" : ""));
+      card.href = "/futmondo/guiafantasy/partido/" + matchSlug(x.home, x.away) + "?j=" + encodeURIComponent(jn);
+      const lab = st === "final" ? "Finalizado" : st === "live" ? (x.live.minute || "En juego") : st === "suspended" ? "Suspendido" : [x.day, x.date].filter(Boolean).join(" ");
+      card.appendChild(el("div", "mo-st", (st === "live" ? "● " : "") + lab));
+      const row = el("div", "mo-row");
+      const c1 = el("img"); c1.src = x.homeCrest || ""; c1.alt = x.home; c1.title = x.home; c1.loading = "lazy";
+      const c2 = el("img"); c2.src = x.awayCrest || ""; c2.alt = x.away; c2.title = x.away; c2.loading = "lazy";
+      row.appendChild(c1);
+      row.appendChild(el("span", "mo-sc", (st === "live" || st === "final") && x.live.score ? x.live.score : (x.time || "vs")));
+      row.appendChild(c2);
+      card.appendChild(row);
+      grid.appendChild(card);
+    });
+    sec.appendChild(grid);
+    return sec;
+  }
   async function renderMatchPage(slug) {
     const main = document.querySelector(".quiniela-main");
     if (!main) return;
@@ -1224,6 +1247,7 @@
       const sure = (o) => o && o.starters && o.starters.length >= 10 && o.starters.every((p) => p.prob === 100);
       if (xiKind === "probable" && xi && ((m.live && m.live.state === "live") || (sure(xi.home) && sure(xi.away)))) xiKind = "confirmada";
       renderMatchDetail(box, m, d, jn, xi, xiKind, finished, ffData);
+      box.appendChild(buildOtherMatches(ms, m, jn));
       // Los puntos de MI liga Futmondo se piden aparte (por jugador y con
       // caché en el backend) y se pintan encima en cuanto llegan.
       if (finished) { try { await fillMpPoints(box, d, jn); } catch (e) {} }

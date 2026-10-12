@@ -94,3 +94,20 @@
 
 .pl-pts.prov { outline: 1.5px dashed rgba(255,255,255,.9); outline-offset: -2px; }
 .mpage-live-note { text-align: center; margin: 2px 0 10px; }
+
+/* Resto de partidos de la jornada */
+.mpage-others { margin-top: 22px; padding: 14px; border-radius: 20px; background: var(--card-solid, rgba(127,127,127,.08)); border: 1px solid var(--border); }
+.mpage-others-h { font-family: 'Space Grotesk', sans-serif; font-size: 1rem; margin: 0 0 12px; text-align: center; }
+.mpage-others-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (min-width: 760px) { .mpage-others-grid { grid-template-columns: repeat(3, 1fr); } }
+.mo-card { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 9px 6px; border-radius: 14px; text-decoration: none; color: inherit; background: var(--card-solid, #fff); border: 1.5px solid var(--border); transition: transform .14s ease; }
+.mo-card:hover { transform: translateY(-2px); }
+.mo-card.cur { border-color: #16a34a; box-shadow: 0 0 0 1px rgba(34,197,94,.5); }
+.mo-card.fin { border-color: rgba(129,140,248,.7); }
+.mo-card.live { border-color: #ef4444; animation: cxJnLive 1.3s ease-in-out infinite; }
+.mo-st { font-size: .66rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+.mo-card.live .mo-st { color: #ef4444; } .mo-card.fin .mo-st { color: #6366f1; }
+.mo-row { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+.mo-row img { width: 34px; height: 34px; object-fit: contain; }
+.mo-sc { font: 800 1.3rem 'Space Grotesk', sans-serif; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .mo-card.live { animation: none; } }
