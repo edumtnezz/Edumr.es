@@ -2315,7 +2315,6 @@
       const r1 = String(d.role || p.role || "").toLowerCase(), r2 = String(d.role2 || p.role2 || "").toLowerCase();
       if (r1) {
         const dm = el("div", "ficha-dem");
-        dm.appendChild(el("div", "ficha-dem-k", "Demarcación"));
         const bar = el("div", "ficha-dem-bar");
         const m1 = el("div", "ficha-dem-main posb-" + posCls(r1));
         m1.appendChild(el("span", "ficha-dem-ab", ROLE_AB[r1] || ""));
@@ -2345,7 +2344,7 @@
       const rs = await Promise.all([0, 1, 2, 3, 4].map((k) => fetch(API + "/jornada?jornada=" + (cur + k)).then((r) => r.json()).then((j) => ({ k, j })).catch(() => ({ k, j: {} }))));
       const out = [];
       rs.forEach((r) => (r.j.matches || []).forEach((m) => {
-        if ((m.live && m.live.state === "final") || out.length >= 4) return;
+        if (m.live || out.length >= 4) return;
         const home = sameT(m.home, teamName), away = sameT(m.away, teamName);
         if (home || away) out.push({ j: cur + r.k, home, crest: home ? m.awayCrest : m.homeCrest, rival: home ? m.away : m.home, day: m.day, date: m.date, time: m.time });
       }));
@@ -2354,8 +2353,8 @@
         const c = el("div", "ficha-fix-it");
         c.appendChild(el("div", "ffx-d", ((n.date || "") + " " + (n.time || "")).trim()));
         const row = el("div", "ffx-r");
-        row.appendChild(el("span", "ffx-ha", n.home ? "🏠" : "✈️"));
-        row.appendChild(el("span", "ffx-j", String(n.j)));
+        row.appendChild(el("span", "ffx-ha " + (n.home ? "h" : "a"), n.home ? "CASA" : "FUERA"));
+        row.appendChild(el("span", "ffx-j", "J" + n.j));
         if (n.crest) { const im = el("img"); im.src = n.crest; im.alt = n.rival || ""; im.title = n.rival || ""; im.loading = "lazy"; row.appendChild(im); }
         c.appendChild(row);
         fixRow.appendChild(c);
@@ -2397,7 +2396,7 @@
         if (m) {
           const rival = (m.home === d.team) ? m.away : (m.away === d.team ? m.home : (m.away || m.home || ""));
           const casa = m.home === d.team;
-          row.appendChild(el("span", "fm-match", rival ? ((casa ? "🏠 " : "✈️ ") + rival) : ""));
+          { const mt = el("span", "fm-match"); if (rival) { mt.appendChild(el("span", "ffx-ha " + (casa ? "h" : "a"), casa ? "CASA" : "FUERA")); mt.appendChild(document.createTextNode(" " + rival)); } row.appendChild(mt); }
           const mn = Number(m.mins) || 0;
           let tg = "", tgCls = "";
           if (mn > 0) {
@@ -2411,9 +2410,19 @@
           const pts = v != null ? String(v) : (stPts !== 0 ? String(stPts) : "—");
           row.appendChild(el("span", "fm-pts " + (v != null ? "pt-" + ptClass(v) : "pt-st"), pts));
         } else {
-          row.appendChild(el("span", "fm-match fm-nojugo", "No jugó"));
+          const nj = el("span", "fm-match fm-nojugo", "No jugó");
+          row.appendChild(nj);
           row.appendChild(el("span", "fm-tag", ""));
           row.appendChild(el("span", "fm-pts", "—"));
+          if (j === topJ && d.team) { // ¿de verdad no jugó, o su partido aún no ha acabado?
+            fetch(API + "/jornada?jornada=" + j).then((r) => r.json()).then((jj) => {
+              const nn = (x) => stripAccents(String(x || "")).replace(/[^a-z0-9 ]/g, "").trim(), tn = nn(d.team);
+              const mm = (jj.matches || []).find((x) => { const a = nn(x.home), b = nn(x.away); return a === tn || b === tn || a.indexOf(tn) >= 0 || tn.indexOf(a) >= 0 || b.indexOf(tn) >= 0 || tn.indexOf(b) >= 0; });
+              if (!mm || (mm.live && mm.live.state === "final")) return;
+              nj.classList.remove("fm-nojugo"); nj.classList.add("fm-pend");
+              nj.textContent = mm.live && mm.live.state === "live" ? "🔴 En juego" : "⏳ Aún no se ha jugado" + (mm.time ? " · " + mm.time : "");
+            }).catch(() => {});
+          }
         }
         tbl.appendChild(row);
       }
