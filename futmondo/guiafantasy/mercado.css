@@ -1054,3 +1054,17 @@ html { overflow-anchor: none; }
   .quiniela-main.mpage-open .mpage-xipitches { margin-left: 0; margin-right: 0; }
   .quiniela-main.mpage-open .mpage-xi-team .alin-pitch { border-radius: 0; }
 }
+/* Todos los jugadores: más grande */
+@media (min-width: 821px){ .quiniela-main:has(.mkt-table){max-width:1400px} }
+.mkt-table{min-width:1100px}
+.mkt-row{padding:14px 18px;font-size:1rem;gap:14px;grid-template-columns:minmax(230px,1.8fr) 1fr 1fr 1.15fr .8fr .7fr 2fr}
+.mkt-head{font-size:.78rem}
+.mkt-photo{width:52px;height:52px}
+.mkt-pos{font-size:.46rem;bottom:-6px}
+.mkt-jname b{font-size:1rem}
+.mkt-jteam{font-size:.82rem}
+.mkt-jteam img{width:18px;height:18px}
+.mkt-rival{font-size:.84rem}
+.mkt-rival b,.mkt-prob{font-size:.76rem;padding:1px 6px}
+.mkt-lens{font-size:.95rem}
+@media (max-width:820px){.mkt-table{min-width:1100px}}

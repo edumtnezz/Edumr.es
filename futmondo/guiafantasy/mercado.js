@@ -2339,11 +2339,6 @@
     const fixRow = el("div", "ficha-fix-row");
     fixBox.appendChild(fixRow);
     head.appendChild(fixBox);
-    if (p.prob != null) {
-      const nx = el("div", "ficha-next");
-      const b2 = el("div", "fn-box"); b2.appendChild(el("div", "fn-k", "TITULARIDAD")); b2.appendChild(el("div", "fn-v", p.prob + "%")); nx.appendChild(b2);
-      head.appendChild(nx);
-    }
     (async () => {
       const cur = Number(d.jornada) || Number(p.jornadaFf) || 0;
       if (!cur) { fixBox.remove(); return; }
@@ -2372,7 +2367,7 @@
     const chg = Number(d.change != null ? d.change : p.change) || 0;
     head.appendChild(el("div", "cmp-trend " + (chg > 0 ? "up" : chg < 0 ? "down" : "flat"),
       chg > 0 ? "▲ " + formatDots(chg) + " €" + pct(d.value || p.value, chg) : chg < 0 ? "▼ " + formatDots(-chg) + " €" + pct(d.value || p.value, chg) : "—"));
-    if (d.pronostico) head.appendChild(el("div", "ficha-pron", "Pronóstico: " + d.pronostico));
+    if (d.pronostico) { const pr = el("div", "ficha-pron", "Pronóstico: " + d.pronostico); if (p.prob != null) pr.appendChild(el("span", "ficha-pron-pct", p.prob + "%")); head.appendChild(pr); }
     if (d.fichaje && d.fichaje.date) head.appendChild(el("div", "ficha-fichaje", "🖊️ Fichado: " + d.fichaje.date + (d.fichaje.club ? " · " + d.fichaje.club : "")));
     colA.appendChild(head);
 
