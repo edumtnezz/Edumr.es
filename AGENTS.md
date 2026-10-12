@@ -73,3 +73,5 @@ Antes de tocar partidos/alineaciones/ficha, repasar esta lista y verificar con c
 - **Mobile first**: Edu mira casi todo en el móvil; comprobar ancho ~390 px.
 - Si cambia la cache de un endpoint, subir la clave (`cambios:v5`…) para no servir datos viejos.
 - **Puntos de Futmondo tras el partido**: si el partido ya terminó y aún no han llegado los puntos (Futmondo Social), la página debe seguir buscándolos cada minuto hasta que lleguen (nunca quedarse sin puntos y sin MVP). Regla pedida por Edu: aplicar SIEMPRE a cualquier sitio donde se muestren puntos de partidos terminados.
+- **Tope de llamadas por petición (Cloudflare)**: una Function solo puede hacer ~50 llamadas externas/KV por petición. Endpoints que consultan un jugador cada uno (`/puntos`) se piden desde el cliente en trozos de 8 ids (máx. 12 por petición). Nunca pedir 20-60 jugadores de golpe: la mayoría fallaba y se veían partidos sin puntos.
+- Cualquier salvaguarda nueva debe probarse en un partido real con TODOS sus jugadores antes de dar por hecho que funciona (la primera versión de la de puntos escondía los puntos de casi todos).
