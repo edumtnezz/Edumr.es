@@ -897,7 +897,8 @@
     if (!cg) {
       let guard = 0;
       while (guard++ < 4) {
-        if (g.defensas.length >= 6 && g.medios.length <= 4) g.medios.unshift(g.defensas.pop());
+        if (g.defensas.length >= 5 && g.medios.length <= 2 && g.delanteros.length >= 3) g.medios.unshift(g.defensas.pop());
+        else if (g.defensas.length >= 6 && g.medios.length <= 4) g.medios.unshift(g.defensas.pop());
         else if (g.medios.length >= 6 && g.delanteros.length <= 1) g.delanteros.push(g.medios.pop());
         else if (g.medios.length >= 6 && g.defensas.length <= 3 && g.delanteros.length >= 2) g.defensas.push(g.medios.shift());
         else if (g.defensas.length <= 2 && g.medios.length >= 5) g.defensas.push(g.medios.shift());
