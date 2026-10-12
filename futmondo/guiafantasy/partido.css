@@ -68,3 +68,9 @@
 .mpage-ev-in, .mpage-ev-out { font-weight: 700; font-size: .74rem; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mpage-ev-in i { color: #16a34a; font-style: normal; } .mpage-ev-out i { color: #dc2626; font-style: normal; }
 .mpage-back { margin-bottom: 10px; }
+
+/* Estado largo ("ALINEACIONES CONFIRMADAS") en dos líneas: el centro queda estrecho y los nombres pegados al VS */
+.mpage-mid { max-width: 108px; }
+.mpage-state { white-space: normal !important; text-align: center; line-height: 1.15; font-size: .64rem !important; }
+.mpage-team.home { padding-right: 0 !important; }
+.mpage-team.away { padding-left: 0 !important; }
