@@ -66,6 +66,7 @@
         else if (s.san || s.inj) inner += '<span class="pl-duda bad">' + (s.san ? "✕" : "+") + '</span>';
         else if (s.prob != null && s.prob < 80) inner += '<span class="pl-duda">?</span>';
         inner += '</div><div class="pl-nm">' + esc(name) + '</div>';
+        if (s.sw) inner += '<div class="pl-sw ' + s.sw.dir + '"><i>' + (s.sw.dir === "in" ? "▲" : "▼") + "</i>" + esc(s.sw.min) + "'</div>";
         if (alt) { var fa = match(alt, pool); inner += '<div class="pl-alt">' + esc(fa ? fa.name : (alt.name || alt.last)) + '</div>'; }
         return fm ? '<a class="pl" href="/futmondo/guiafantasy/jugadores/' + encodeURIComponent(fm.id) + '/' + slug(fm.name) + '">' + inner + '</a>' : '<div class="pl">' + inner + '</div>';
   }

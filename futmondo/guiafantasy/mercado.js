@@ -984,7 +984,10 @@
       const useNew = !!window.EduAlineacion;
       const mkCol = (side, name, crest, rival, idx) => {
         if (!useNew) { const c = mpXiTeam(side, crest, idx, true); if (side.subs.length) c.appendChild(mpSubsBlock(name, side.subs, idx)); return c; }
-        return window.EduAlineacion.card(xiToStarters(side, null, true), name, crest, rival, all, "played", side.subs);
+        const sw = (o) => { const ev = xiFindEv(idx, o.full || o.name); const h = (ev && ev.hl) || []; const dir = h.some((x) => /sign-in/.test(x.ico || "")) ? "in" : h.some((x) => /sign-out/.test(x.ico || "")) ? "out" : ""; if (dir && ev.min) o.sw = { dir, min: ev.min }; return o; };
+        const st = xiToStarters(side, null, true);
+        st.starters.forEach(sw);
+        return window.EduAlineacion.card(st, name, crest, rival, all, "played", (side.subs || []).map(sw));
       };
       const colH = mkCol(home, m.home, m.homeCrest, "vs " + m.away, idxH);
       const colA = mkCol(away, m.away, m.awayCrest, "en " + m.home, idxA);

@@ -39,7 +39,11 @@ a.pl:hover .pl-ph img { transform: scale(1.05); }
 .pl-pts.neg { background: #ef4444; color: #fff; border-color: #fff; }
 .al-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .al-col .mpage-subs-block { margin: 0; }
-.al-bench { padding: 10px 10px 14px; background: rgba(0,0,0,.16); }
+.al-bench { padding: 12px 10px 16px; background: linear-gradient(180deg, #8b94a3, #4b5563 55%, #374151); border-top: 3px solid rgba(255,255,255,.35); }
 .al-bench-h { color: #fff; font: 800 .72rem 'Plus Jakarta Sans', sans-serif; letter-spacing: .06em; text-transform: uppercase; text-align: center; margin-bottom: 10px; opacity: .9; }
 .al-bench-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 4px; }
 .al-bench-row .pl { width: 25%; }
+.pl-sw { margin-top: 2px; font: 800 .66rem 'Space Grotesk', sans-serif; color: #fff; display: inline-flex; align-items: center; gap: 3px; background: rgba(0,0,0,.35); border-radius: 8px; padding: 1px 6px; }
+.pl-sw i { font-style: normal; font-size: .62rem; }
+.pl-sw.in i { color: #4ade80; }
+.pl-sw.out i { color: #f87171; }
