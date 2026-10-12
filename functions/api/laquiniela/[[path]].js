@@ -2811,7 +2811,8 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
         if (k >= 0 && k < fit.length && fit[k] != null) pts = Math.round(Number(fit[k]) || 0);
       } catch (e) {}
       if (!mkFresh) {
-        try { await env.PORRA.put(ck, JSON.stringify({ at: Date.now(), finished: false, points: null }), { expirationTtl: 120 }); } catch (e) {}
+        // pendiente: se guarda solo 30 s para volver a mirar pronto
+        try { await env.PORRA.put(ck, JSON.stringify({ at: Date.now() - 90000, finished: false, points: null }), { expirationTtl: 60 }); } catch (e) {}
         return { finished: false, points: null };
       }
       if (pts == null) {
