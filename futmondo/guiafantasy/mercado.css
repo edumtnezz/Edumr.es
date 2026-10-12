@@ -1130,3 +1130,14 @@ html { overflow-anchor: none; }
 .hl-btn.active{background:var(--cx-surface,#fff);color:#16a34a;box-shadow:0 2px 8px rgba(0,0,0,.16)}
 .mkt-top{margin:6px 0 12px}
 @media (max-width:560px){.mkt-top{flex-direction:column;align-items:stretch}.hl-seg{width:100%}.hl-btn{flex:1}}
+
+/* Móvil: chips que se ajustan en vez de cortarse; rol con punto de color */
+.mx-chips{flex-wrap:wrap;overflow:visible}
+.mx-chip{padding:9px 14px}
+#mxRole .mx-chip:not([data-role=""])::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;background:var(--rc,#64748b)}
+#mxRole .r-por{--rc:#f59e0b}#mxRole .r-def{--rc:#3b82f6}#mxRole .r-med{--rc:#22c55e}#mxRole .r-del{--rc:#ef4444}
+#mxRole .mx-chip.active::before{background:#fff}
+.racha-kind{display:inline-block;align-self:flex-start;font:800 .6rem/1 inherit;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;border-radius:999px;margin-bottom:3px}
+.racha-kind.racha{background:rgba(249,115,22,.15);color:#ea580c}
+.racha-kind.best{background:rgba(234,179,8,.18);color:#a16207}
+.rk-best{border-color:rgba(234,179,8,.45)}

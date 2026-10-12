@@ -187,14 +187,17 @@
       mountScrollBar($("mercBestRow"), $("mercBestBar"));
     }
   }
+  function bestPicks() {
+    const cand = all.filter((p) => p.fitness && p.fitness.length >= 3 && p.value > 0);
+    return cand.slice().sort((a, b) => expOf(b) - expOf(a));
+  }
   async function renderRachas() {
-    renderMejorFichaje();
     const box = $("rachasOut");
     if (!box) return;
     box.innerHTML = "";
     const head = el("div", "hl-head");
-    head.appendChild(el("span", "hl-title", "🔥 Jugadores en racha"));
-    const sub = el("span", "rachas-sub", "Partidos seguidos puntuando · más reciente primero");
+    head.appendChild(el("span", "hl-title", "🔥 Destacados"));
+    const sub = el("span", "rachas-sub", "5 en racha + 5 mejores fichajes");
     head.appendChild(sub);
     box.appendChild(head);
     const table = el("div", "rachas-table");
@@ -203,13 +206,18 @@
     try {
       let d = rachasData;
       if (!d) { d = await (await fetch(API + "/rachas")).json(); rachasData = d; }
-      if (d && d.updatedAt) sub.textContent = "Partidos seguidos puntuando · más reciente primero · actualizado " + horaTxt(d.updatedAt);
-      const list = (d && d.players) || [];
+      if (d && d.updatedAt) sub.textContent = "5 en racha + 5 mejores fichajes · actualizado " + horaTxt(d.updatedAt);
+      const rl = ((d && d.players) || []).slice(0, 5).map((p) => Object.assign({ _k: "racha" }, p));
+      const key = (p) => stripAccents(String(p.name || "").toLowerCase()) + "|" + String(p.team || "").toLowerCase();
+      const used = new Set(rl.map(key));
+      const bl = bestPicks().filter((p) => !used.has(key(p))).slice(0, 5).map((p) => Object.assign({ _k: "best" }, p));
+      const list = [];
+      for (let i = 0; i < Math.max(rl.length, bl.length); i++) { if (rl[i]) list.push(rl[i]); if (bl[i]) list.push(bl[i]); }
       const j0 = Number(d && d.jornada) || 0;
       if (!list.length) { table.innerHTML = '<div class="rachas-empty">Sin rachas ahora mismo.</div>'; return; }
       table.innerHTML = "";
-      list.slice(0, 6).forEach((p) => {
-        const row = el("button", "racha-row"); row.type = "button";
+      list.forEach((p) => {
+        const row = el("button", "racha-row " + (p._k === "best" ? "rk-best" : "rk-racha")); row.type = "button";
         const ph = el("div", "racha-photo");
         const im = el("img", ""); im.loading = "lazy"; im.alt = ""; im.src = p.photo || "/img/avatar.svg";
         im.addEventListener("error", () => { if (im.getAttribute("src") !== "/img/avatar.svg") im.src = "/img/avatar.svg"; }, { once: true });
@@ -225,12 +233,13 @@
         const rb = roleBadge(p.role);
         if (rb) meta.appendChild(el("span", "racha-role posb posb-" + posCls(p.role), rb));
         info.appendChild(meta);
+        info.insertBefore(el("span", "racha-kind " + p._k, p._k === "best" ? "⭐ Mejor fichaje" : "🔥 En racha"), info.firstChild);
         row.appendChild(info);
         const scores = el("div", "racha-scores");
-        const fit = (p.fit || []).map((x) => Number(x) || 0);
+        const fit = (p.fit || p.fitness || []).map((x) => Number(x) || 0);
         for (let k = 0; k < fit.length; k++) {
           const v = Math.round(fit[fit.length - 1 - k]);
-          const j = j0 ? j0 - k : 0;
+          const j = (j0 && p._k === "racha") ? j0 - k : 0;
           const cls = v >= 6 ? " hi" : v >= 4 ? " mid" : v > 0 ? " lo" : " zero";
           const cell = el("span", "racha-chip" + cls);
           if (j > 0) cell.appendChild(el("i", null, "J" + j));
@@ -3185,11 +3194,7 @@
     document.querySelectorAll("#mxRole .mx-chip").forEach((x) => x.classList.toggle("active", x === b));
     const sel = $("mjRole"); if (sel) { sel.value = b.dataset.role || ""; sel.dispatchEvent(new Event("change")); }
   }));
-  document.querySelectorAll(".mx-tab").forEach((b) => b.addEventListener("click", () => {
-    document.querySelectorAll(".mx-tab").forEach((x) => x.classList.toggle("active", x === b));
-    $("mxPaneRachas").classList.toggle("hidden", b.dataset.mx !== "rachas");
-    $("mxPaneBest").classList.toggle("hidden", b.dataset.mx !== "best");
-  }));
+
   const estadoSel = $("estadoSel"); if (estadoSel) estadoSel.addEventListener("change", renderEstado);
   const teamSel = $("mjTeam"); if (teamSel) teamSel.addEventListener("change", () => { syncClubActive(); shown = 18; renderGrid(); });
 
