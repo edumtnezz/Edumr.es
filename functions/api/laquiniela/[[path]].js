@@ -3471,8 +3471,8 @@ export async function onRequestGet({ request, env, params }) {
       const mh = await (await fetch("https://www.comuniate.com/partido/26/1/8/alaves-atletico", { headers: cmHeaders() })).text();
       const aj = await (await fetch("https://www.comuniate.com/ajax/partidos/carga_puntos_futmondo.php?modo=PRENSA", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded" }), body: "id_sofascore=16421056&temporada=26" })).text();
       const i = aj.indexOf("fa-sign-in");
-      const ms = [...mh.matchAll(/(sustitu|cambio|entra por|sale por)/ig)].slice(0, 8).map((m) => mh.slice(Math.max(0, m.index - 150), m.index + 250));
-      return json({ row: aj.slice(Math.max(0, i - 900), i + 500), ms, len: mh.length });
+      const ms = [...new Set([...mh.matchAll(/"articleBody":"([^"]*)"/g)].map((m) => m[1]).filter((t) => /entr|sustitu|cambio|sale|relev/i.test(t)))];
+      return json({ ms });
     } catch (e) { return json({ err: String(e) }); }
   }
   if (path === "equipos") {
