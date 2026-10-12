@@ -976,6 +976,33 @@
       if (rec && rec.f === true && rec.p != null) { el2.textContent = String(rec.p); el2.classList.add("on"); if (rec.p < 0) el2.classList.add("neg"); }
       else el2.remove();
     });
+    // MVP del partido: el que más puntos de Futmondo ha sacado
+    try {
+      const best = [];
+      Object.keys(idByName).forEach((nm) => { const rec = map[idByName[nm]]; if (rec && rec.f === true && rec.p != null) best.push({ nm, p: Number(rec.p) || 0 }); });
+      best.sort((a, b) => b.p - a.p);
+      const top = best.filter((x) => best.length && x.p === best[0].p).slice(0, 2);
+      if (top.length && top[0].p >= 1 && !box.querySelector(".mpage-mvp")) {
+        const card = el("div", "mpage-mvp");
+        card.appendChild(el("div", "mvp-k", "⭐ MVP del partido"));
+        const wrap = el("div", "mvp-list");
+        top.forEach((x) => {
+          const mi = marketInfo(x.nm) || {};
+          const it = el("button", "mvp-it"); it.type = "button";
+          const im = el("img"); im.alt = ""; im.src = mi.photo || "/img/avatar.svg"; im.addEventListener("error", () => { im.src = "/img/avatar.svg"; }, { once: true }); it.appendChild(im);
+          const tx = el("div", "mvp-tx"); tx.appendChild(el("b", null, mi.name || x.nm));
+          const sm = el("small"); if (mi.logo) { const lg = el("img"); lg.src = mi.logo; lg.alt = ""; sm.appendChild(lg); } sm.appendChild(document.createTextNode(mi.team || "")); tx.appendChild(sm);
+          it.appendChild(tx);
+          it.appendChild(el("span", "mvp-pts", String(x.p)));
+          if (mi.id) it.addEventListener("click", () => openFicha(mi));
+          wrap.appendChild(it);
+        });
+        card.appendChild(wrap);
+        card.appendChild(el("div", "mvp-sub", "Puntos Futmondo Social"));
+        const ev = box.querySelector(".mpage-ev-sum");
+        if (ev) ev.insertAdjacentElement("beforebegin", card); else { const xi = box.querySelector(".mpage-xi"); if (xi) xi.insertAdjacentElement("beforebegin", card); }
+      }
+    } catch (e) {}
     let max = null;
     box.querySelectorAll(".mpage-xpts.on, .pl-pts.on").forEach((e2) => { const v = Number(e2.textContent) || 0; if (max == null || v > max) max = v; });
     if (max != null && max >= 6) box.querySelectorAll(".mpage-xpts.on, .pl-pts.on").forEach((e2) => { if ((Number(e2.textContent) || 0) === max) e2.classList.add("top"); });
