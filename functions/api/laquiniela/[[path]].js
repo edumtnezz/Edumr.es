@@ -936,7 +936,7 @@ async function searchMercado(env, q) {
 }
 
 const FF_MARKET_URL = "https://www.futbolfantasy.com/analytics/futmondo/mercado/social";
-const FF_MAP_KEY = "ff:map4";
+const FF_MAP_KEY = "ff:map5";
 
 async function ffMap(env) {
   let cached = null;
@@ -974,7 +974,8 @@ async function ffMap(env) {
       }
       const dif = (n) => { const m = r.match(new RegExp('data-diferencia' + n + '="(-?\\d+)"')); return m ? Number(m[1]) : null; };
       const tnd = r.match(/data-tendencia="(-?\d+)"/);
-      map[key] = { id: idm[1], prob: pm ? Number(pm[1]) : null, rival, casa, jornada, tend: tnd ? Number(tnd[1]) : null, d1: dif(1), d2: dif(2), d3: dif(3), d7: dif(7), d14: dif(14), d30: dif(30) };
+      const ageM = r.match(/data-edad="(\d+)"/);
+      map[key] = { id: idm[1], prob: pm ? Number(pm[1]) : null, rival, casa, jornada, tend: tnd ? Number(tnd[1]) : null, d1: dif(1), d2: dif(2), d3: dif(3), d7: dif(7), d14: dif(14), d30: dif(30), age: ageM ? Number(ageM[1]) : 0 };
     }
     if (Object.keys(map).length > 50) {
       try { await env.PORRA.put(FF_MAP_KEY, JSON.stringify({ at: Date.now(), map })); } catch (e) {}
@@ -1436,6 +1437,11 @@ async function playerFicha(env, id) {
   if (!age) {
     const bd = pl.birthdate || pl.birth || pl.born || pl.nacimiento || "";
     if (bd) { const b = new Date(bd); if (!isNaN(b.getTime())) age = Math.floor((Date.now() - b.getTime()) / (365.25 * 24 * 3600 * 1000)); }
+  }
+  // Último recurso: la edad que publica futbolfantasy.com (data-edad), que ya
+  // se guarda en el mapa ff:map4.
+  if (!age) {
+    try { const e = ffPick(pl.name || "", await ffMap(env)); if (e && e.age) age = e.age; } catch (err) {}
   }
   return {
     id,
