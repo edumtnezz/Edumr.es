@@ -3516,7 +3516,7 @@ export async function onRequestGet({ request, env: env0, params }) {
           const mm = raw.match(/^(\d+)(?:\+(\d+))?'\s*[—-]\s*(.*)$/);
           if (!mm) continue;
           const min = Number(mm[1]), x = Number(mm[2]) || 0, t = mm[3];
-          if (/¡\s*gol\b|golazo/i.test(t) && !/anulad|malogr|ocasi[oó]n|fuera de juego|revisi[oó]n/i.test(t)) goalLines.push({ min, x, t });
+          if (/¡\s*gol\b|golazo/i.test(t) && !/anulad|malogr|ocasi[oó]n|fuera de juego/i.test(t)) goalLines.push({ min, x, t });
           let rj = t.match(/tarjeta roja a ([^(!.]+?)\s*\(/i) || t.match(/expulsa(?:do)? a ([^(!.]+?)\s*\(/i);
           if (!rj && /expulsi[oó]n|expulsad|doble amarilla|segunda amarilla|tarjeta roja/i.test(t) && !/le muestra tarjeta amarilla|tarjeta amarilla a/i.test(t)) rj = t.match(/^([^.()!¡]+?)\s*\(/);
           if (rj) { (out.reds = out.reds || []).push({ min, x, name: rj[1].trim() }); continue; }
