@@ -778,6 +778,7 @@
     }));
     return { starters, bench: [], formation: [g.defensas.length, g.medios.length, g.delanteros.length].join("-") };
   }
+  let mpCambios = [];
   function mpNewCard(side, name, crest, subtitle, mode, photoMap) {
     return window.EduAlineacion.card(xiToStarters(side, photoMap, mode === "played"), name, crest, subtitle, all, mode);
   }
@@ -988,21 +989,18 @@
         const st = xiToStarters(side, null, true);
         st.starters.forEach(sw);
         const subsL = (side.subs || []).map(sw);
-        // Quién se cambió por quién: mismo minuto y misma línea; si hay varios
-        // candidatos se muestran todos (el dato solo trae el minuto).
-        const lineOf = (o) => { const q = stripAccents(String(o.pos || "").toLowerCase()); return /^pt|porter/.test(q) ? "gk" : /^df|defens/.test(q) ? "df" : /^dl|delant/.test(q) ? "fw" : "md"; };
-        const shortN = (o) => { const w = String(o.name || "").trim().split(/\s+/); return w.length > 1 && w[w.length - 1].length < 4 ? w.slice(-2).join(" ") : w[w.length - 1]; };
+        // Quién se cambió por quién: se lee de la crónica del partido (endpoint
+        // /cambios). Nada de adivinar: si no hay pareja segura no se muestra.
+        const normT = (x) => stripAccents(String(x || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").trim().split(/\s+/).filter(Boolean);
+        const same = (pn, sn) => { const a = normT(pn), b = normT(sn); if (!a.length || !b.length) return false; return a.every((t) => b.indexOf(t) >= 0) || (a[a.length - 1].length >= 4 && a[a.length - 1] === b[b.length - 1]); };
         const outs = st.starters.filter((o) => o.sw && o.sw.dir === "out"), ins = subsL.filter((o) => o.sw && o.sw.dir === "in");
-        const link = (A, B) => { // A y B: jugadores del mismo minuto, uno de cada tipo
-          const byLine = (arr, l) => arr.filter((o) => lineOf(o) === l);
-          A.forEach((a) => {
-            let c = byLine(B, lineOf(a));
-            if (!c.length) c = B;
-            a.sw.who = c.map(shortN).join(" / ");
-          });
-        };
-        const mins = {}; outs.concat(ins).forEach((o) => { (mins[o.sw.min] = mins[o.sw.min] || { o: [], i: [] })[o.sw.dir === "out" ? "o" : "i"].push(o); });
-        Object.keys(mins).forEach((k) => { link(mins[k].o, mins[k].i); link(mins[k].i, mins[k].o); });
+        const P = (mpCambios || []).map((c) => ({ min: Number(c.min) || 0, o: outs.find((x) => same(x.name, c.out)) || null, i: ins.find((x) => same(x.name, c.in)) || null })).filter((p) => p.o || p.i);
+        const taken = (list) => list.map((p) => p.i).filter(Boolean);
+        P.forEach((p) => { // un lado conocido y el otro no: por eliminación (mismo minuto ±1, único libre)
+          if (p.o && !p.i) { const c = ins.filter((x) => taken(P).indexOf(x) < 0 && Math.abs(Number(x.sw.min) - p.min) <= 1); if (c.length === 1) p.i = c[0]; }
+          if (p.i && !p.o) { const usedO = P.map((q) => q.o).filter(Boolean); const c = outs.filter((x) => usedO.indexOf(x) < 0 && Math.abs(Number(x.sw.min) - p.min) <= 1); if (c.length === 1) p.o = c[0]; }
+        });
+        P.forEach((p) => { if (p.o && p.i) { p.o.sw.with = [p.i]; p.i.sw.with = [p.o]; } });
         return window.EduAlineacion.card(st, name, crest, rival, all, "played", subsL);
       };
       const colH = mkCol(home, m.home, m.homeCrest, "vs " + m.away, idxH);
@@ -1104,6 +1102,8 @@
           }
         } catch (e) {}
       }
+      mpCambios = [];
+      if (finished) { try { mpCambios = ((await (await fetch(API + "/cambios?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json()).subs) || []; } catch (e) {} }
       renderMatchDetail(box, m, d, jn, xi, xiKind, finished, ffData);
       // Los puntos de MI liga Futmondo se piden aparte (por jugador y con
       // caché en el backend) y se pintan encima en cuanto llegan.

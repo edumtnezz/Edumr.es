@@ -3444,36 +3444,40 @@ export async function onRequestGet({ request, env, params }) {
   if (path === "alineaciones-confirmadas") {
     try { return json(await getAlineacionesConfirmadas(env, url.searchParams.get("jornada") || null)); } catch (e) { return json({ matchday: 0, matches: [], error: String(e) }); }
   }
-  // Cambios exactos de un partido (quién sale y quién entra) desde Sofascore.
+  // Cambios de un partido (quién sale y quién entra), sacados de la crónica
+  // minuto a minuto de la página del partido. Cada frase se lee con varios
+  // patrones; lo que no encaje se ignora (el cliente lo cruza por eliminación).
   if (path === "cambios") {
-    const id = String(url.searchParams.get("sofa") || "").replace(/\D/g, "");
-    if (!id) return json({ subs: [] });
-    const ck = "cambios:v1:" + id;
+    const hh = url.searchParams.get("home") || "", aa = url.searchParams.get("away") || "", jj = url.searchParams.get("jornada") || "";
+    const ck = "cambios:v2:" + jj + ":" + normKey(hh.toLowerCase()) + "-" + normKey(aa.toLowerCase());
     try { const c = await env.PORRA.get(ck, "json"); if (c && Date.now() - (c.at || 0) < 10 * 60 * 1000) return json(c.data); } catch (e) {}
-    const out = { subs: [], ok: false };
+    const out = { subs: [] };
     try {
-      const r = await fetch("https://api.sofascore.com/api/v1/event/" + id + "/incidents", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)", accept: "application/json" } });
-      out.status = r.status;
-      if (r.ok) {
-        const j = await r.json();
-        (j.incidents || []).forEach((i) => {
-          if (i.incidentType !== "substitution" || !i.playerIn || !i.playerOut) return;
-          out.subs.push({ home: !!i.isHome, min: i.time, add: i.addedTime || 0, in: i.playerIn.name || i.playerIn.shortName || "", out: i.playerOut.name || i.playerOut.shortName || "" });
-        });
-        out.ok = true;
+      const d = await getPartidoFF(env, hh, aa, jj);
+      if (d && d.url) {
+        const html = await (await fetch(d.url, { headers: cmHeaders() })).text();
+        const texts = [...new Set([...html.matchAll(/"articleBody":"([^"]*)"/g)].map((m) => m[1]))];
+        const clean = (t) => String(t || "").replace(/\([^)]*\)/g, "").replace(/[.¡!]+\s*$/g, "").replace(/\s+/g, " ").trim();
+        for (const raw of texts) {
+          const mm = raw.match(/^(\d+)(?:\+\d+)?'\s*[—-]\s*(.*)$/);
+          if (!mm) continue;
+          const min = Number(mm[1]), t = mm[2];
+          if (!/entr|sustitu|cambio|sale\b/i.test(t)) continue;
+          let a = null, b = null, m2;
+          if ((m2 = t.match(/sale (.+?) y entra (.+?)(?:\s*\(|\.|$)/i))) { b = m2[1]; a = m2[2]; }
+          else if ((m2 = t.match(/(?:^|\. |, que |\s)(?:es|ha sido) sustituido por (.+?)(?:\s*\(|\.|$)/i)) && (m2[0])) {
+            const pre = t.slice(0, m2.index).replace(/^.*?(?:para|\. )\s*/i, "");
+            b = pre; a = m2[1];
+          }
+          else if ((m2 = t.match(/(.+?) sale del terreno de juego,? y (.+?) entra en su lugar/i))) { b = m2[1].replace(/^.*\. /, ""); a = m2[2]; }
+          else if ((m2 = t.match(/(.+?) (?:ha )?entra(?:do)?(?: en el terreno de juego)? (?:en sustituci[oó]n de|en lugar de|por|como sustituto de) (.+?)(?:\s*\(|\.|$)/i))) { a = m2[1].replace(/^.*\. /, ""); b = m2[2]; }
+          else if ((m2 = t.match(/entra (.+?) en sustituci[oó]n de (.+?)(?:\s*\(|\.|$)/i))) { a = m2[1]; b = m2[2]; }
+          if (a && b) out.subs.push({ min, in: clean(a), out: clean(b) });
+        }
       }
     } catch (e) { out.err = String(e).slice(0, 120); }
-    try { if (out.ok) await env.PORRA.put(ck, JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 3600 }); } catch (e) {}
+    try { if (out.subs.length) await env.PORRA.put(ck, JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 3600 }); } catch (e) {}
     return json(out);
-  }
-  if (path === "dbg-cm") {
-    try {
-      const mh = await (await fetch("https://www.comuniate.com/partido/26/1/8/alaves-atletico", { headers: cmHeaders() })).text();
-      const aj = await (await fetch("https://www.comuniate.com/ajax/partidos/carga_puntos_futmondo.php?modo=PRENSA", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded" }), body: "id_sofascore=16421056&temporada=26" })).text();
-      const i = aj.indexOf("fa-sign-in");
-      const ms = [...new Set([...mh.matchAll(/"articleBody":"([^"]*)"/g)].map((m) => m[1]).filter((t) => /entr|sustitu|cambio|sale|relev/i.test(t)))];
-      return json({ ms });
-    } catch (e) { return json({ err: String(e) }); }
   }
   if (path === "equipos") {
     try { return json({ teams: await getTeams(env) }); } catch (e) { return json({ teams: [] }); }
