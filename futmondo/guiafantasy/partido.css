@@ -81,3 +81,13 @@
 .mpage-team.home { margin-right: -16px; }
 .mpage-team.away { margin-left: -16px; }
 .mpage-team { transform: translateY(15px); }
+
+/* Con marcador: estado siempre de altura fija (marcador y nombres siempre al mismo nivel) y sin tapar el resultado */
+.mpage-mid { max-width: none; }
+.mpage-state { max-width: 112px; min-height: 30px; display: flex; align-items: center; justify-content: center; margin: 0 auto; }
+.mpage-hasscore .mpage-team.home { margin-right: 0; padding-right: 6px !important; }
+.mpage-hasscore .mpage-team.away { margin-left: 0; padding-left: 6px !important; }
+.mpage-hasscore .mpage-team { font-size: 1rem; }
+.mpage-score { font-size: clamp(1.8rem, 9vw, 2.7rem); }
+.al.al-live .al-title b { color: #fecaca; }
+.cx-conf-alert { background: transparent; }

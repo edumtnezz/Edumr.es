@@ -779,7 +779,7 @@
     }));
     return { starters, bench: [], formation: [g.defensas.length, g.medios.length, g.delanteros.length].join("-") };
   }
-  let mpCambios = [], mpPairs = [], mpReds = [], mpConf = null;
+  let mpCambios = [], mpPairs = [], mpReds = [], mpConf = null, mpLive = false;
   function mpNewCard(side, name, crest, subtitle, mode, photoMap, bench) {
     return window.EduAlineacion.card(xiToStarters(side, photoMap, mode === "played"), name, crest, subtitle, all, mode, bench);
   }
@@ -1038,9 +1038,11 @@
       tl.appendChild(t);
     }
     head.appendChild(tl);
-    const state = d.state || ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim();
+    const isLive = m.live && m.live.state === "live";
+    const state = isLive ? (m.live.minute || "EN JUEGO") : d.state || ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim();
     const mkTeam = (name, crest, cls) => { const t = el("div", "mpage-team " + cls); t.appendChild(el("span", null, name)); return t; };
     const teams = el("div", "mpage-teams");
+    if (d.score != null && d.scoreAway != null) teams.classList.add("mpage-hasscore");
     teams.appendChild(mkTeam(m.home, m.homeCrest, "home"));
     const mid = el("div", "mpage-mid");
     mid.appendChild(el("div", "mpage-state", state));
@@ -1053,7 +1055,7 @@
     if (finished) {
       const sec = el("section", "mpage-xi mpage-xi-done");
       const hd = el("div", "mpage-xi-h");
-      hd.appendChild(el("span", "mpage-xi-title", "Partido finalizado"));
+      hd.appendChild(el("span", "mpage-xi-title", mpLive ? "Partido en juego" : "Partido finalizado"));
       sec.appendChild(hd);
       const idxH = xiEvIndex(d.homePlayers), idxA = xiEvIndex(d.awayPlayers);
       const home = xiFinishedSide(m.home, m.homeCrest, d.homePlayers, xiPhotoMap(ffData && ffData.home), mpConf && mpConf.home);
@@ -1083,7 +1085,9 @@
           if (p.i && !p.o) { const usedO = P.map((q) => q.o).filter(Boolean); const c = outs.filter((x) => usedO.indexOf(x) < 0 && Math.abs(Number(x.sw.min) - p.min) <= 1); if (c.length === 1) p.o = c[0]; }
         });
         P.forEach((p) => { if (p.o && p.i) { p.o.sw.with = [p.i]; p.i.sw.with = [p.o]; mpPairs.push({ side: name === m.home ? "home" : "away", min: p.min, inN: window.EduAlineacion.nameOf(p.i, name, all), outN: window.EduAlineacion.nameOf(p.o, name, all) }); } });
-        return window.EduAlineacion.card(st, name, crest, rival, all, "played", subsL);
+        const cardEl = window.EduAlineacion.card(st, name, crest, rival, all, "played", subsL);
+        if (mpLive) { const tt = cardEl.querySelector(".al-title"); if (tt) tt.innerHTML = "Partido <b>en juego</b>"; cardEl.classList.add("al-live"); }
+        return cardEl;
       };
       const colH = mkCol(home, m.home, m.homeCrest, "vs " + m.away, idxH);
       const colA = mkCol(away, m.away, m.awayCrest, "en " + m.home, idxA);
@@ -1172,7 +1176,10 @@
       if (!m) { box.innerHTML = '<p class="muted small">No se encontró el partido.</p>'; return; }
       const d = await (await fetch(API + "/detallepartido?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json();
       if (!all || !all.length) { try { await load(); } catch (e) {} }
-      const finished = (m.live && m.live.state === "final") || /finaliz/i.test(String(d.state || ""));
+      const finalNow = (m.live && m.live.state === "final") || /finaliz/i.test(String(d.state || ""));
+      // En juego: se enseña lo que hay ahora en el campo (tabla de jugadores) en vez de la probable
+      mpLive = !!(m.live && m.live.state === "live" && !finalNow && d.homePlayers && d.homePlayers.length >= 11 && d.awayPlayers && d.awayPlayers.length >= 11);
+      const finished = finalNow || mpLive;
       // Alineación para el campo (solo si el partido NO ha acabado): primero
       // la confirmada (Comuniate, literal); si aún no está, la probable
       // (FutbolFantasy con % y banquillo). Si ya acabó, en su lugar se
