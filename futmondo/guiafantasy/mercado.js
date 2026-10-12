@@ -874,7 +874,7 @@
       const q = stripAccents(String(p.pos || "").toLowerCase()).trim();
       const isSub = (p.hl || []).some((h) => /sign-in/.test(h.ico || ""));
       const mi = marketInfo(p.name);
-      const o = { name: p.name, full: p.name, last: String(p.name || "").split(/\s+/).pop(), photo: ffPhotoFor(photoMap, p.name) || (mi && mi.photo) || "" };
+      const o = { pos: q, name: p.name, full: p.name, last: String(p.name || "").split(/\s+/).pop(), photo: ffPhotoFor(photoMap, p.name) || (mi && mi.photo) || "" };
       if (isSub) { g.subs.push(o); return; }
       if (q === "pt" || /porter/.test(q)) g.portero.push(o);
       else if (q === "df" || /defens/.test(q)) g.defensas.push(o);
@@ -987,7 +987,23 @@
         const sw = (o) => { const ev = xiFindEv(idx, o.full || o.name); const h = (ev && ev.hl) || []; const dir = h.some((x) => /sign-in/.test(x.ico || "")) ? "in" : h.some((x) => /sign-out/.test(x.ico || "")) ? "out" : ""; if (dir && ev.min) o.sw = { dir, min: ev.min }; return o; };
         const st = xiToStarters(side, null, true);
         st.starters.forEach(sw);
-        return window.EduAlineacion.card(st, name, crest, rival, all, "played", (side.subs || []).map(sw));
+        const subsL = (side.subs || []).map(sw);
+        // Quién se cambió por quién: mismo minuto y misma línea; si hay varios
+        // candidatos se muestran todos (el dato solo trae el minuto).
+        const lineOf = (o) => { const q = stripAccents(String(o.pos || "").toLowerCase()); return /^pt|porter/.test(q) ? "gk" : /^df|defens/.test(q) ? "df" : /^dl|delant/.test(q) ? "fw" : "md"; };
+        const shortN = (o) => { const w = String(o.name || "").trim().split(/\s+/); return w.length > 1 && w[w.length - 1].length < 4 ? w.slice(-2).join(" ") : w[w.length - 1]; };
+        const outs = st.starters.filter((o) => o.sw && o.sw.dir === "out"), ins = subsL.filter((o) => o.sw && o.sw.dir === "in");
+        const link = (A, B) => { // A y B: jugadores del mismo minuto, uno de cada tipo
+          const byLine = (arr, l) => arr.filter((o) => lineOf(o) === l);
+          A.forEach((a) => {
+            let c = byLine(B, lineOf(a));
+            if (!c.length) c = B;
+            a.sw.who = c.map(shortN).join(" / ");
+          });
+        };
+        const mins = {}; outs.concat(ins).forEach((o) => { (mins[o.sw.min] = mins[o.sw.min] || { o: [], i: [] })[o.sw.dir === "out" ? "o" : "i"].push(o); });
+        Object.keys(mins).forEach((k) => { link(mins[k].o, mins[k].i); link(mins[k].i, mins[k].o); });
+        return window.EduAlineacion.card(st, name, crest, rival, all, "played", subsL);
       };
       const colH = mkCol(home, m.home, m.homeCrest, "vs " + m.away, idxH);
       const colA = mkCol(away, m.away, m.awayCrest, "en " + m.home, idxA);
