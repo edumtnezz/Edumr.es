@@ -312,4 +312,6 @@
   if (document.readyState !== "loading") fit(); else document.addEventListener("DOMContentLoaded", fit);
   window.addEventListener("load", fit);
   window.addEventListener("resize", fit);
+  try { document.fonts && document.fonts.ready.then(fit); } catch (e) {}
+  setTimeout(fit, 400); setTimeout(fit, 1500); setTimeout(fit, 4000);
 })();
