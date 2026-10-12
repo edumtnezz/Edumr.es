@@ -2786,13 +2786,27 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
       // (stats, picas...) NO son la puntuación de la liga: p.ej. Lamine
       // J8 tenía stats=9 y en la liga 10.
       let pts = null;
+      // Salvaguarda: los datos del mercado pueden ir con retraso respecto al
+      // estado "terminado". Solo se dan por buenos si el mercado se ha
+      // refrescado DESPUÉS de que viéramos el partido terminado; si no, se
+      // devuelve "aún no" (y el cliente sigue preguntando) en vez de un
+      // valor viejo que además se guardaría 30 días.
+      let fa = null; const fk = "pjf:v1:" + playerId + ":" + (Number(jornada) || 0);
+      try { fa = await env.PORRA.get(fk, "json"); } catch (e) {}
+      if (!fa || !fa.at) { fa = { at: Date.now() }; try { await env.PORRA.put(fk, JSON.stringify(fa), { expirationTtl: 21600 }); } catch (e) {} }
+      let mkFresh = false;
       try {
         const mk = await getMarketPlayers(env);
+        mkFresh = matches.some((x) => Number(x.r) > Number(jornada) && x.st === "F") || !!(mk && mk.at && mk.at > fa.at);
         const mp = (mk.players || []).find((x) => String(x.id) === String(playerId));
         const fit = (mp && mp.fitness) || [];
         const k = fit.length - 1 - idx;
         if (k >= 0 && k < fit.length && fit[k] != null) pts = Math.round(Number(fit[k]) || 0);
       } catch (e) {}
+      if (!mkFresh) {
+        try { await env.PORRA.put(ck, JSON.stringify({ at: Date.now(), finished: false, points: null }), { expirationTtl: 120 }); } catch (e) {}
+        return { finished: false, points: null };
+      }
       if (pts == null) {
         const po = (m.ps && m.ps.po) || [];
         const z = po.find((k) => k.mode === "stats");
