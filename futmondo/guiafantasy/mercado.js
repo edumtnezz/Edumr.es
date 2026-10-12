@@ -1366,6 +1366,21 @@
       if (finalNow && !pointsIn) { const h = box.querySelector(".mpage-xi-h"); if (h) h.insertAdjacentElement("afterend", el("p", "muted small mpage-live-note", "⏳ Esperando los puntos de Futmondo… se ponen solos en cuanto llegan")); }
       return !finalNow || !pointsIn;
     };
+    // Si llegan datos nuevos distintos de lo que se pintó al instante (carga rápida), se repinta en el sitio
+    let swrT = null;
+    const onSwr = (ev) => {
+      if (!document.body.contains(box)) { document.removeEventListener("cx:swr", onSwr); return; }
+      const u = (ev.detail && ev.detail.url) || "";
+      if (!/detallepartido|\/once|alineaciones-confirmadas|cambios|puntos|\/jornada/.test(u)) return;
+      clearTimeout(swrT);
+      swrT = setTimeout(async () => {
+        if (!document.body.contains(box)) return;
+        const y = window.scrollY; box.style.minHeight = box.offsetHeight + "px";
+        try { await run(false); } catch (e) {}
+        box.style.minHeight = ""; window.scrollTo(0, y);
+      }, 250);
+    };
+    document.addEventListener("cx:swr", onSwr);
     try {
       const more = await run(true);
       // Actualización en directo cada minuto, en el sitio (sin recargar ni mover lo que estás viendo)
@@ -1391,11 +1406,12 @@
     const box = el("section", "panel playerpage");
     box.innerHTML = '<p class="muted small">Cargando ficha…</p>';
     main.appendChild(box);
-    try {
+    const paint = async (first) => {
       const pl = (!all || !all.length) ? load().catch(() => {}) : Promise.resolve();
       const dp = fetch(API + "/jugador?id=" + encodeURIComponent(id)).then((r) => r.json());
       const [d] = await Promise.all([dp, pl]);
       const p = (all || []).find((x) => String(x.id) === String(id)) || {};
+      const y = window.scrollY;
       box.innerHTML = "";
       const back = el("button", "btn-ghost noti-back pp-back", "←");
       back.type = "button";
@@ -1403,7 +1419,17 @@
       back.addEventListener("click", () => { if (history.length > 1) history.back(); else location.href = "/futmondo/guiafantasy/inicio"; });
       box.appendChild(back);
       box.appendChild(renderFicha(d, p));
-    } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar la ficha.</p>'; }
+      if (!first) window.scrollTo(0, y);
+    };
+    try { await paint(true); } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar la ficha.</p>'; }
+    let swrP = null;
+    const onSwrP = (ev) => {
+      if (!document.body.contains(box)) { document.removeEventListener("cx:swr", onSwrP); return; }
+      const u = (ev.detail && ev.detail.url) || "";
+      if (u.indexOf("/jugador?id=" + id) < 0 && !/\/mercado/.test(u)) return;
+      clearTimeout(swrP); swrP = setTimeout(() => { paint(false).catch(() => {}); }, 250);
+    };
+    document.addEventListener("cx:swr", onSwrP);
   }
 
   function openMatchFicha(m, jn) {
@@ -1968,6 +1994,7 @@
       if (n > 40) clearInterval(t);
     }, 150);
   })();
+  document.addEventListener("cx:swr", (ev) => { const u = (ev.detail && ev.detail.url) || ""; if (/\/mercado/.test(u) && typeof load === "function") load(); });
   let lastMarketAt = 0;
   async function load() {
     try {
