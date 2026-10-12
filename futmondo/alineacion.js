@@ -141,6 +141,10 @@
 
   // API para otras páginas (Guía Fantasy): devuelve una tarjeta .al ya pintada.
   window.EduAlineacion = {
+    nameOf: function (o, teamName, players) {
+      var pool = (players || []).filter(function (p) { return teamScore(p.team, teamName) >= 1; });
+      var f = match(o, pool); return f ? f.name : (o.name || o.full);
+    },
     card: function (side, teamName, crest, subtitle, players, mode, subs) {
       var card = document.createElement("div"); card.className = "al"; card.innerHTML = cardHtml();
       var tt = card.querySelector(".al-title");

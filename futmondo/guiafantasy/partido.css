@@ -2,13 +2,13 @@
 .mpage-top { position: relative; overflow: hidden; border-radius: 22px; padding: 18px 16px 20px; background: linear-gradient(180deg, #f6f7f8, #eceff1); min-height: 210px; }
 [data-theme="dark"] .mpage-top { background: linear-gradient(180deg, #1b222c, #141a22); }
 .mpage-top > * { position: relative; z-index: 1; }
-.mpage-bgcrest { position: absolute !important; z-index: 0 !important; top: 50%; width: min(260px, 52vw); height: auto; max-height: 120%; object-fit: contain; transform: translateY(-50%); opacity: .95; pointer-events: none; }
-.mpage-bgcrest.left { left: calc(min(260px, 52vw) / -2); }
-.mpage-bgcrest.right { right: calc(min(260px, 52vw) / -2); }
+.mpage-bgcrest { position: absolute !important; z-index: 0 !important; top: 50%; width: min(190px, 42vw); height: auto; max-height: 120%; object-fit: contain; transform: translateY(-50%); opacity: .95; pointer-events: none; }
+.mpage-bgcrest.left { left: calc(min(190px, 42vw) / -2); }
+.mpage-bgcrest.right { right: calc(min(190px, 42vw) / -2); }
 .mpage-topline { justify-content: center; }
 .mpage-team { font-size: 1.05rem; }
 .mpage-team img { width: 62px; height: 62px; }
-.mpage-teams { margin: 22px 0 6px; }
+.mpage-teams { margin: 22px 0 6px; padding: 0 clamp(36px, 14vw, 120px); }
 .mpage-score { font-size: 3.2rem; }
 .mpage-ev-sum { margin: 14px 0 4px; border: 1px solid var(--border); border-radius: 18px; padding: 14px 14px 10px; background: var(--card, #fff); }
 .mpage-ev-title { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 1rem; text-align: center; margin-bottom: 10px; }

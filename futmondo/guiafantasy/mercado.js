@@ -778,7 +778,7 @@
     }));
     return { starters, bench: [], formation: [g.defensas.length, g.medios.length, g.delanteros.length].join("-") };
   }
-  let mpCambios = [];
+  let mpCambios = [], mpPairs = [];
   function mpNewCard(side, name, crest, subtitle, mode, photoMap) {
     return window.EduAlineacion.card(xiToStarters(side, photoMap, mode === "played"), name, crest, subtitle, all, mode);
   }
@@ -952,11 +952,7 @@
         else if (/arrow-circle-down/.test(h.ico || "")) rows.push({ side: g[0], min: 997, ico: "❌", txt: "Penalti fallado: " + p.name });
       });
     }));
-    (mpCambios || []).forEach((c) => {
-      const nm = (x) => { const mi = marketInfo(x); return (mi && mi.name) || x; };
-      const mi0 = marketInfo(c.in) || marketInfo(c.out); const inHome = mi0 ? xiScore(mi0.team, m.home) >= 1 : true;
-      rows.push({ side: inHome ? "home" : "away", min: Number(c.min) || 0, ico: "🔄", txt: nm(c.in) + " por " + nm(c.out), sub: true });
-    });
+    mpPairs.forEach((c) => rows.push({ side: c.side, min: c.min, ico: "🔄", txt: c.inN + " por " + c.outN, sub: true }));
     if (!rows.length) return null;
     rows.sort((a, b) => a.min - b.min);
     const box = el("section", "mpage-ev-sum");
@@ -996,7 +992,7 @@
     teams.appendChild(mkTeam(m.away, m.awayCrest));
     head.appendChild(teams);
     box.appendChild(head);
-    { const evb = buildEvents(m, d); if (evb) box.appendChild(evb); }
+    const evSlot = el("div"); box.appendChild(evSlot);
     if (finished) {
       const sec = el("section", "mpage-xi mpage-xi-done");
       const hd = el("div", "mpage-xi-h");
@@ -1025,7 +1021,7 @@
           if (p.o && !p.i) { const c = ins.filter((x) => taken(P).indexOf(x) < 0 && Math.abs(Number(x.sw.min) - p.min) <= 1); if (c.length === 1) p.i = c[0]; }
           if (p.i && !p.o) { const usedO = P.map((q) => q.o).filter(Boolean); const c = outs.filter((x) => usedO.indexOf(x) < 0 && Math.abs(Number(x.sw.min) - p.min) <= 1); if (c.length === 1) p.o = c[0]; }
         });
-        P.forEach((p) => { if (p.o && p.i) { p.o.sw.with = [p.i]; p.i.sw.with = [p.o]; } });
+        P.forEach((p) => { if (p.o && p.i) { p.o.sw.with = [p.i]; p.i.sw.with = [p.o]; mpPairs.push({ side: name === m.home ? "home" : "away", min: p.min, inN: window.EduAlineacion.nameOf(p.i, name, all), outN: window.EduAlineacion.nameOf(p.o, name, all) }); } });
         return window.EduAlineacion.card(st, name, crest, rival, all, "played", subsL);
       };
       const colH = mkCol(home, m.home, m.homeCrest, "vs " + m.away, idxH);
@@ -1084,6 +1080,7 @@
     cols.appendChild(col(d.awayPlayers));
     box.appendChild(cols);
     }
+    { const evb = buildEvents(m, d); if (evb) evSlot.appendChild(evb); }
   }
   async function renderMatchPage(slug) {
     const main = document.querySelector(".quiniela-main");
@@ -1127,7 +1124,7 @@
           }
         } catch (e) {}
       }
-      mpCambios = [];
+      mpCambios = []; mpPairs = [];
       if (finished) { try { mpCambios = ((await (await fetch(API + "/cambios?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json()).subs) || []; } catch (e) {} }
       renderMatchDetail(box, m, d, jn, xi, xiKind, finished, ffData);
       // Los puntos de MI liga Futmondo se piden aparte (por jugador y con
