@@ -664,9 +664,9 @@ async function futbolHeader(env) {
   return { token: m.token, userid: m.userid };
 }
 
-async function getMarketPlayers(env) {
+async function getMarketPlayers(env, force) {
   const cached = await env.PORRA.get(MARKET_KEY, "json");
-  if (cached && Date.now() - (cached.at || 0) < MARKET_TTL_MS) return cached;
+  if (!force && cached && Date.now() - (cached.at || 0) < MARKET_TTL_MS) return cached;
   const header = await futbolHeader(env);
   const [plRes, tmRes] = await Promise.all([
     futbolPost("/5/league/championshipplayers", header, { championshipId: FUTMONDO_CHAMPIONSHIP }),
@@ -2796,7 +2796,13 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
       if (!fa || !fa.at) { fa = { at: Date.now() }; try { await env.PORRA.put(fk, JSON.stringify(fa), { expirationTtl: 21600 }); } catch (e) {} }
       let mkFresh = false;
       try {
-        const mk = await getMarketPlayers(env);
+        let mk = await getMarketPlayers(env);
+        // Si el mercado va por detrás del final del partido, se fuerza UN refresco (como mucho cada 60 s)
+        if (mk && mk.at && mk.at <= fa.at && !(globalThis.__mkForceAt && Date.now() - globalThis.__mkForceAt < 60000)) {
+          globalThis.__mkForceAt = Date.now();
+          globalThis.__mkForceP = getMarketPlayers(env, true).catch(() => null);
+        }
+        if (globalThis.__mkForceP && mk && mk.at <= fa.at) { const m2 = await globalThis.__mkForceP; if (m2 && m2.at) mk = m2; }
         const ko = Date.parse((m.info && m.info.date) || ""); const recent = ko > 0 && Date.now() - ko < 3 * 3600 * 1000;
         mkFresh = !recent || matches.some((x) => Number(x.r) > Number(jornada) && x.st === "F") || !!(mk && mk.at && mk.at > fa.at);
         const mp = (mk.players || []).find((x) => String(x.id) === String(playerId));
