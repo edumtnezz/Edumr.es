@@ -74,3 +74,9 @@
 .mpage-state { white-space: normal !important; text-align: center; line-height: 1.15; font-size: .64rem !important; }
 .mpage-team.home { padding-right: 0 !important; }
 .mpage-team.away { padding-left: 0 !important; }
+
+/* Nombres a la altura del VS y aún más pegados a él */
+.mpage-teams { align-items: center !important; }
+.mpage-team { justify-content: center; }
+.mpage-team.home { margin-right: -16px; }
+.mpage-team.away { margin-left: -16px; }
