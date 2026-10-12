@@ -20,7 +20,7 @@
     <div class="line fw">
       <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""><span class="pl-prob" style="--pc:#ebcc34">50%</span><span class="pl-duda">?</span></div><div class="pl-nm">Thiago Fernández</div><div class="pl-alt">Ratkov / Víctor García</div></div>
       <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""></div><div class="pl-nm">Iván Romero</div></div>
-      <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""></div><div class="pl-nm">Brugui</div></div>
+      <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""></div><div class="pl-nm" data-alt="Brugué">Brugui</div></div>
     </div>
     <div class="line md">
       <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""></div><div class="pl-nm">Bardeli</div></div>
@@ -30,7 +30,7 @@
     <div class="line df">
       <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""></div><div class="pl-nm">Manu Sánchez</div></div>
       <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""><span class="pl-prob" style="--pc:#4184ab">70%</span><span class="pl-duda">?</span></div><div class="pl-nm">Aïssa Mandi</div><div class="pl-alt">Ndukwe</div></div>
-      <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""></div><div class="pl-nm">Adrián de la Fuente</div></div>
+      <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""></div><div class="pl-nm" data-alt="Dela">Adrián de la Fuente</div></div>
       <div class="pl"><div class="pl-ph"><img src="/img/avatar.svg" alt=""><span class="pl-prob" style="--pc:#4184ab">70%</span><span class="pl-duda">?</span></div><div class="pl-nm">Toljan</div><div class="pl-alt">Nacho Pérez</div></div>
     </div>
     <div class="line gk">
@@ -39,23 +39,6 @@
   </div>
   <div class="al-foot">EduMR · Guía Fantasy</div>
 </div>
-<script>
-// Fotos de los jugadores: las mismas de Futmondo que ya usa el Mercado de la web.
-(function () {
-  var strip = function (s) { return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim(); };
-  fetch("/api/laquiniela/mercado").then(function (r) { return r.json(); }).then(function (d) {
-    var all = (d.players || []).filter(function (p) { return p.photo; });
-    document.querySelectorAll(".pl").forEach(function (pl) {
-      var nm = pl.querySelector(".pl-nm"), im = pl.querySelector(".pl-ph img");
-      if (!nm || !im) return;
-      var q = strip(nm.textContent), last = q.split(" ").pop();
-      var hit = all.find(function (p) { return strip(p.name) === q; }) ||
-        all.find(function (p) { var n = strip(p.name); return n.indexOf(q) >= 0 || q.indexOf(n) >= 0; }) ||
-        all.find(function (p) { return /levante/.test(strip(p.team)) && strip(p.name).split(" ").pop() === last; });
-      if (hit) im.src = hit.photo;
-    });
-  }).catch(function () {});
-})();
-</script>
+<script src="fotos.js?v=1"></script>
 </body>
 </html>
