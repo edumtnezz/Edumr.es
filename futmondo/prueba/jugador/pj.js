@@ -29,19 +29,18 @@
     if (!d || !d.name) { root.innerHTML = '<p class="pj-load">No se encontró el jugador.</p>'; return; }
     draw(d, news);
     // Próximos partidos (sin bloquear la ficha)
-    var cur = Number(d.jornada) || 0, out = [], k = 0;
-    (function next() {
-      if (out.length >= 4 || k > 6 || !cur) { fillNext(out); return; }
-      jget("/jornada?jornada=" + (cur + k)).then(function (j) {
-        (j.matches || []).forEach(function (m) {
-          var fin = m.live && m.live.state === "final";
-          if (fin || out.length >= 4) return;
+    var cur = Number(d.jornada) || 0, out = [];
+    if (!cur) { fillNext(out); return; }
+    Promise.all([0, 1, 2, 3, 4].map(function (k) { return jget("/jornada?jornada=" + (cur + k)).then(function (j) { return { k: k, j: j }; }).catch(function () { return { k: k, j: {} }; }); })).then(function (rs) {
+      rs.forEach(function (r) {
+        (r.j.matches || []).forEach(function (m) {
+          if ((m.live && m.live.state === "final") || out.length >= 4) return;
           var home = same(m.home, d.team), away = same(m.away, d.team);
-          if (home || away) out.push({ j: cur + k, home: home, rival: home ? m.away : m.home, crest: home ? m.awayCrest : m.homeCrest, day: m.day, date: m.date, time: m.time });
+          if (home || away) out.push({ j: cur + r.k, home: home, rival: home ? m.away : m.home, crest: home ? m.awayCrest : m.homeCrest, day: m.day, date: m.date, time: m.time });
         });
-        k++; next();
-      }).catch(function () { k++; next(); });
-    })();
+      });
+      fillNext(out);
+    });
   }).catch(function () { root.innerHTML = '<p class="pj-load">No se pudo cargar la ficha.</p>'; });
 
   function fillNext(list) {
@@ -87,7 +86,7 @@
       '<section class="card hero"><div class="hero-ph"><img class="face" src="' + esc(d.photo) + '" alt=""><img class="club" src="' + esc(d.logo) + '" alt=""></div>' +
       '<div class="dots">' + dots.split(" ").map(function (c) { return '<i class="' + c + '"></i>'; }).join("") + "</div>" +
       "<h1>" + esc(d.name) + "</h1>" +
-      '<div class="hero-line">Pronóstico: <b>' + esc(d.pronostico || "—") + '</b></div>' +
+      '<div class="hero-line">Pronóstico: <b>' + esc(String(d.pronostico || "—").replace(/\s*[\u{1F300}-\u{1FAFF}\u2600-\u27BF]+/gu, "")) + '</b></div>' +
       '<span class="chip ' + chipCls + '">' + esc(stTxt) + "</span></section>" +
       '<section class="card"><h2>Ficha</h2><div class="mini">' +
       '<div class="m"><div class="k">Valor</div><div class="v">' + eur(d.value) + '</div><span class="' + (d.change >= 0 ? "up" : "down") + '">' + (d.change >= 0 ? "▲ " : "▼ ") + eur(Math.abs(d.change || 0)) + "</span></div>" +
