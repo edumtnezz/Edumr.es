@@ -980,8 +980,11 @@
     try {
       const best = [];
       Object.keys(idByName).forEach((nm) => { const rec = map[idByName[nm]]; if (rec && rec.f === true && rec.p != null) best.push({ nm, p: Number(rec.p) || 0 }); });
-      best.sort((a, b) => b.p - a.p);
-      const top = best.filter((x) => best.length && x.p === best[0].p).slice(0, 2);
+      // Desempate: más goles y asistencias en el partido, luego el del equipo ganador
+      const hlOf = {}; const gh = Number(d.score), ga = Number(d.scoreAway);
+      [["h", d.homePlayers], ["a", d.awayPlayers]].forEach(([sd, ps]) => (ps || []).forEach((p) => { let g = 0, a = 0; (p.hl || []).forEach((h) => { const ic = h.ico || ""; if ((/fa-circle$/.test(ic) && !/danger/i.test(h.cls || "")) || /arrow-circle-up/.test(ic)) g++; else if (/arrow-right/.test(ic)) a++; }); hlOf[p.name] = { ga: g * 2 + a, win: sd === "h" ? (gh > ga ? 1 : 0) : (ga > gh ? 1 : 0) }; }));
+      best.sort((a, b) => b.p - a.p || ((hlOf[b.nm] || {}).ga || 0) - ((hlOf[a.nm] || {}).ga || 0) || ((hlOf[b.nm] || {}).win || 0) - ((hlOf[a.nm] || {}).win || 0));
+      const top = best.slice(0, 1);
       if (top.length && top[0].p >= 1 && !box.querySelector(".mpage-mvp")) {
         const card = el("div", "mpage-mvp");
         card.appendChild(el("div", "mvp-k", "⭐ MVP del partido"));
