@@ -1083,10 +1083,9 @@ html { overflow-anchor: none; }
   .mkt-rival b,.mkt-prob{font-size:.64rem}
   /* Buscador: más aire, y al escribir queda fijo arriba con las sugerencias */
   .merc-filters{display:flex;flex-direction:column;gap:10px}
-  .merc-filters:focus-within{position:sticky;top:112px;z-index:40;background:var(--cx-surface,var(--card-solid,#fff));padding:10px;margin:0 -6px;border-radius:16px;box-shadow:0 10px 26px rgba(0,0,0,.22)}
-  .merc-filters:focus-within #mjRole{display:none}
-  .merc-filters .market-search{font-size:16px;margin:0}
-  .merc-filters .mj-suggest{margin:0}
+  .merc-search-hero:focus-within{position:sticky;top:112px;z-index:40;background:var(--cx-surface,var(--card-solid,#fff));padding:10px;margin:0 -6px;border-radius:16px;box-shadow:0 10px 26px rgba(0,0,0,.22)}
+  .merc-search-hero .market-search{font-size:16px;margin:0}
+  .merc-search-hero .mj-suggest{margin:8px 0 0}
   .mj-sug-row{padding:12px 14px;gap:14px}
   .mj-sug-row img{width:46px;height:46px}
   .mj-sug-tx b{font-size:1rem}
@@ -1094,3 +1093,16 @@ html { overflow-anchor: none; }
   .merc-range{margin-top:12px}
   .merc-seg{margin-top:14px;margin-bottom:14px}
 }
+
+/* Buscador protagonista */
+.merc-search-hero{margin:14px 0 18px;padding:16px;border-radius:20px;border:1px solid rgba(34,197,94,.45);background:linear-gradient(135deg,rgba(34,197,94,.14),rgba(34,197,94,.04));box-shadow:0 8px 24px rgba(34,197,94,.12)}
+.msh-lab{display:block;font:800 .95rem/1.2 'Space Grotesk',sans-serif;margin:0 0 10px}
+.merc-search-hero .market-search{width:100%;box-sizing:border-box;height:54px;font-size:1.05rem;border-radius:16px;border:2px solid rgba(34,197,94,.55);margin:0}
+.merc-search-hero .mj-suggest{margin:10px 0 0}
+.merc-filters{margin-top:6px}
+/* Cada jugador en su recuadro */
+.mkt-table{border:0;gap:8px;background:transparent}
+.mkt-row:not(.mkt-head){border:1px solid var(--border);border-radius:14px;background:var(--cx-surface,#fff)}
+.mkt-row:not(.mkt-head) > :first-child{background:var(--cx-surface,#fff);box-shadow:none;border-radius:14px 0 0 14px}
+.mkt-row:not(.mkt-head):hover{border-color:rgba(34,197,94,.6)}
+.mkt-head{border-radius:12px}
