@@ -121,3 +121,10 @@
 .mpage-ev-by b { color: inherit; font-weight: 800; }
 .mpage-ev-pill.sub { padding: 3px 9px; }
 .mpage-ev-sum::before { top: 42px; }
+
+/* cambios: plegados por defecto, agrupados por minuto */
+.mpage-ev-sum .mpage-ev-row.is-sub{display:none}
+.mpage-ev-sum.show-subs .mpage-ev-row.is-sub{display:grid}
+.mpage-ev-swap{display:flex;gap:8px;line-height:1.25}
+.mpage-ev-swap+.mpage-ev-swap{margin-top:3px}
+.mpage-ev-toggle{display:block;margin:2px auto 8px;padding:5px 14px;border-radius:999px;border:1px solid var(--line,#d8dce6);background:transparent;color:inherit;font:600 12px/1.2 inherit;cursor:pointer}

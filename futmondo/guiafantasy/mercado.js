@@ -1002,21 +1002,34 @@
       as.forEach((r, i) => { if (as.length <= goals.length && goals[i]) { r.min = goals[i].min + 0.001; goals[i].by = r.txt; r.merged = true; } });
     });
     for (let i = rows.length - 1; i >= 0; i--) if (rows[i].merged) rows.splice(i, 1);
-    mpPairs.forEach((c) => rows.push({ side: c.side, min: c.min + 0.002, sub: true, inN: c.inN, outN: c.outN }));
+    // Cambios del mismo equipo y minuto: una sola tarjeta con varias parejas
+    const subG = {};
+    mpPairs.forEach((c) => { const k = c.side + "|" + Math.floor(c.min); if (!subG[k]) { subG[k] = { side: c.side, min: c.min + 0.002, sub: true, pairs: [] }; rows.push(subG[k]); } subG[k].pairs.push(c); });
+    const nSubs = mpPairs.length;
     if (!rows.length) return null;
     rows.sort((a, b) => a.min - b.min);
     const box = el("section", "mpage-ev-sum");
     box.appendChild(el("div", "mpage-ev-title", "⭐ Lo más destacado"));
     const lbl = { "⚽": "Gol", "🎯": "Penalti", "🙈": "En propia", "🟥": "Roja", "❌": "Falló penalti", "👟": "Asistencia" };
+    if (nSubs) {
+      const tg = el("button", "mpage-ev-toggle", "🔄 Ver cambios (" + nSubs + ")");
+      tg.type = "button";
+      tg.addEventListener("click", () => { const on = box.classList.toggle("show-subs"); tg.textContent = on ? "🔄 Ocultar cambios" : "🔄 Ver cambios (" + nSubs + ")"; });
+      box.appendChild(tg);
+    }
     rows.forEach((r) => {
-      const row = el("div", "mpage-ev-row " + r.side);
+      const row = el("div", "mpage-ev-row " + r.side + (r.sub ? " is-sub" : ""));
       const mk = () => {
         if (r.sub) {
           const pill = el("div", "mpage-ev-pill sub");
           const tx = el("div", "mpage-ev-tx");
-          const i1 = el("span", "mpage-ev-in"); i1.appendChild(el("i", null, "▲")); i1.appendChild(document.createTextNode(" " + r.inN));
-          const o1 = el("span", "mpage-ev-out"); o1.appendChild(el("i", null, "▼")); o1.appendChild(document.createTextNode(" " + r.outN));
-          tx.appendChild(i1); tx.appendChild(o1); pill.appendChild(tx); return pill;
+          r.pairs.forEach((c) => {
+            const ln = el("div", "mpage-ev-swap");
+            const i1 = el("span", "mpage-ev-in"); i1.appendChild(el("i", null, "▲")); i1.appendChild(document.createTextNode(" " + c.inN));
+            const o1 = el("span", "mpage-ev-out"); o1.appendChild(el("i", null, "▼")); o1.appendChild(document.createTextNode(" " + c.outN));
+            ln.appendChild(i1); ln.appendChild(o1); tx.appendChild(ln);
+          });
+          pill.appendChild(tx); return pill;
         }
         const pill = el("div", "mpage-ev-pill");
         pill.appendChild(el("span", "mpage-ev-ico", r.ico));
