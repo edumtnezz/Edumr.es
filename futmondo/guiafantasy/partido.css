@@ -40,3 +40,12 @@
 @media (max-width: 760px) { .merc-bestrow { grid-template-columns: repeat(2, minmax(0, 1fr)); } .merc-bestrow .mbc-photo, .merc-bestrow .mbc-img { width: 82px; height: 82px; } }
 /* Buscador: con el teclado abierto se esconden los filtros y sube arriba */
 @media (max-width: 760px) { body.mj-searching #tab-mercado .merc-select, body.mj-searching #tab-mercado .merc-range, body.mj-searching #tab-mercado .merc-seg, body.mj-searching #tab-mercado > .panel > p, body.mj-searching #tab-mercado #rachasOut, body.mj-searching #tab-mercado .panel-head { display: none !important; } }
+.mj-suggest { display: flex; flex-direction: column; margin: 6px 0 10px; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--card-solid, #fff); box-shadow: 0 8px 22px rgba(0,0,0,.14); }
+.mj-suggest[hidden] { display: none; }
+.mj-sug-row { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border: 0; border-top: 1px solid var(--border); background: transparent; color: var(--text); text-align: left; font: inherit; cursor: pointer; }
+.mj-sug-row:first-child { border-top: 0; }
+.mj-sug-row img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: var(--bg-surface); }
+.mj-sug-tx { display: flex; flex-direction: column; min-width: 0; }
+.mj-sug-tx b { font-size: 1rem; }
+.mj-sug-tx small { color: var(--muted); font-size: .8rem; }
+.mj-sug-empty { padding: 12px; color: var(--muted); font-size: .9rem; }

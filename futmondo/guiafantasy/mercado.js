@@ -2915,11 +2915,30 @@
   const bind = (id, ev) => { const e = $(id); if (e) e.addEventListener(ev, () => { shown = 18; renderGrid(); }); };
   const searchEl = $("mjSearch");
   if (searchEl) {
-    // En el móvil el teclado tapa la lista: al escribir se esconden los filtros
-    // de debajo y el buscador sube arriba para ver los resultados justo debajo.
-    const focusSearch = () => { document.body.classList.add("mj-searching"); setTimeout(() => { try { const r = searchEl.getBoundingClientRect(); window.scrollBy(0, r.top - 8); } catch (e) {} }, 300); };
-    searchEl.addEventListener("focus", focusSearch);
-    searchEl.addEventListener("blur", () => setTimeout(() => document.body.classList.remove("mj-searching"), 200));
+    // Al tocar el buscador sube arriba para que las sugerencias queden a la vista.
+    searchEl.addEventListener("focus", () => setTimeout(() => { try { const r = searchEl.getBoundingClientRect(); if (r.top > 90) window.scrollBy(0, r.top - 12); } catch (e) {} }, 300));
+  }
+  if (searchEl) {
+    // Sugerencias justo debajo del buscador: se ven aunque el teclado tape la lista.
+    const sug = el("div", "mj-suggest"); sug.id = "mjSuggest"; sug.hidden = true;
+    searchEl.insertAdjacentElement("afterend", sug);
+    const upd = () => {
+      const q = stripAccents(String(searchEl.value || "").toLowerCase()).trim();
+      sug.innerHTML = "";
+      if (q.length < 2 || !all || !all.length) { sug.hidden = true; return; }
+      const hits = all.filter((p) => stripAccents(String(p.name || "").toLowerCase()).indexOf(q) >= 0).sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0)).slice(0, 6);
+      if (!hits.length) { sug.appendChild(el("div", "mj-sug-empty", "Ningún jugador se llama así")); sug.hidden = false; return; }
+      hits.forEach((p) => {
+        const r = el("button", "mj-sug-row"); r.type = "button";
+        const im = el("img"); im.src = p.photo || "/img/avatar.svg"; im.alt = ""; r.appendChild(im);
+        const tx = el("span", "mj-sug-tx"); tx.appendChild(el("b", null, p.name)); tx.appendChild(el("small", null, [p.team, p.value ? money(p.value) + " €" : ""].filter(Boolean).join(" · "))); r.appendChild(tx);
+        r.addEventListener("mousedown", (e) => e.preventDefault());
+        r.addEventListener("click", () => openFicha(p));
+        sug.appendChild(r);
+      });
+      sug.hidden = false;
+    };
+    searchEl.addEventListener("input", upd);
   }
   if (searchEl) searchEl.addEventListener("input", () => { const y = window.scrollY; shown = 18; renderGrid(); if (window.scrollY !== y) window.scrollTo(0, y); });
   bind("mjRole", "change");
