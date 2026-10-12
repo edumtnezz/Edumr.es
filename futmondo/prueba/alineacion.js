@@ -107,7 +107,7 @@
     if (f.length < 8) return side.formation || "";
     var rows = [], last = null;
     f.forEach(function (y) {
-      if (last != null && last - y <= 10) rows[rows.length - 1]++; else rows.push(1);
+      if (last != null && last - y <= 7) rows[rows.length - 1]++; else rows.push(1);
       last = y;
     });
     return rows.join("-");
