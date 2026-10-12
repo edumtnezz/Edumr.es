@@ -22,9 +22,9 @@
 .mpage-ev-row.away .mpage-ev-txt { grid-column: 3; text-align: left; }
 .mpage-ev-row.sub .mpage-ev-txt { font-weight: 600; font-size: .85rem; opacity: .85; }
 /* Dos campos: línea de separación para distinguir un equipo del otro */
-.al-pair > .al + .al, .al-pair > .al + .al-col, .al-pair > .al-col + .al-col, .al-pair > * + * { position: relative; }
-.al-pair > * + *::before { content: ""; position: absolute; left: 6%; right: 6%; top: -19px; height: 4px; border-radius: 4px; background: linear-gradient(90deg, transparent, #16a34a 20%, #16a34a 80%, transparent); }
-@media (min-width: 700px) { .al-pair { column-gap: 40px; } .al-pair > * + *::before { left: -21px; right: auto; top: 3%; bottom: 3%; width: 4px; height: auto; background: linear-gradient(180deg, transparent, #16a34a 15%, #16a34a 85%, transparent); } }
+.al-pair { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+.al-sep { height: 5px; margin: 14px 4%; border-radius: 5px; background: linear-gradient(90deg, transparent, #16a34a 15%, #16a34a 85%, transparent); }
+@media (min-width: 760px) { .al-pair { grid-template-columns: minmax(0, 1fr) 5px minmax(0, 1fr); gap: 22px; align-items: stretch; } .al-sep { width: 5px; height: auto; margin: 0; background: linear-gradient(180deg, transparent, #16a34a 10%, #16a34a 90%, transparent); } }
 /* Mejor fichaje de la jornada: 5 columnas, 2 filas, sin deslizar */
 .merc-bestrow { display: grid !important; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; overflow: visible !important; }
 .merc-bestrow .mbc { width: auto; padding: 14px 8px; border-radius: 16px; gap: 4px; }

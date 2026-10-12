@@ -1028,6 +1028,7 @@
       const colA = mkCol(away, m.away, m.awayCrest, "en " + m.home, idxA);
       const pitches = el("div", "alin-pitches mpage-xipitches" + (useNew ? " al-pair" : ""));
       pitches.appendChild(colH);
+      if (useNew) pitches.appendChild(el("div", "al-sep"));
       pitches.appendChild(colA);
       sec.appendChild(pitches);
       box.appendChild(sec);
@@ -1043,11 +1044,13 @@
         // Confirmada: sin % ni dudas ni recambios
         pitches.classList.add("al-pair");
         pitches.appendChild(mpNewCard(xi.home || {}, m.home, m.homeCrest, "vs " + m.away, "confirmed", xiPhotoMap(ffData && ffData.home)));
+        pitches.appendChild(el("div", "al-sep"));
         pitches.appendChild(mpNewCard(xi.away || {}, m.away, m.awayCrest, "en " + m.home, "confirmed", xiPhotoMap(ffData && ffData.away)));
       } else if (xiKind === "probable" && window.EduAlineacion) {
         // Nuevo campo EduMR (alineacion.js): foto de Futmondo, % de titularidad y alternativa
         pitches.classList.add("al-pair");
         pitches.appendChild(window.EduAlineacion.card(xi.home || {}, m.home, m.homeCrest, "vs " + m.away, all));
+        pitches.appendChild(el("div", "al-sep"));
         pitches.appendChild(window.EduAlineacion.card(xi.away || {}, m.away, m.awayCrest, "en " + m.home, all));
       } else {
       pitches.appendChild(mpXiTeam(xi.home || {}, (xi.home && xi.home.crest) || m.homeCrest, idxH, false));
