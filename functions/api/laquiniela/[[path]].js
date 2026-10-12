@@ -1229,7 +1229,7 @@ async function ogThumb(env, url) {
     const m = h.match(/<meta[^>]+property="og:image"[^>]+content="([^"]+)"/i) || h.match(/<meta[^>]+content="([^"]+)"[^>]+property="og:image"/i) || h.match(/<img[^>]+src="([^"]*fotos_noticias[^"]+)"/i);
     img = m ? m[1] : "";
   } catch (e) {}
-  try { await env.PORRA.put(key, img, { expirationTtl: 43200 }); } catch (e) {}
+  try { await env.PORRA.put(key, img, { expirationTtl: 21600 }); } catch (e) {}
   return img;
 }
 
@@ -3379,7 +3379,46 @@ async function handlePrediccion(request, env, user) {
   return json({ ok: true, state });
 }
 
-export async function onRequestGet({ request, env, params }) {
+// ---- Cachés fuera de KV ----------------------------------------------------
+// KV gratis solo admite 1.000 escrituras/día. Todo lo que se guarda con caducidad
+// corta (<= 6 h) es una caché: se guarda en la Cache API de Cloudflare (sin límite
+// ni coste) y solo lo duradero (sin caducidad o de días) va a KV.
+const CACHE_MAX_TTL = 6 * 3600;
+function withCacheKV(env) {
+  try {
+    if (!env || !env.PORRA || env.PORRA.__shim || typeof caches === "undefined" || !caches.default) return env;
+    const kv = env.PORRA, c = caches.default;
+    const rq = (k) => new Request("https://kvcache.edumr.internal/" + encodeURIComponent(k));
+    const shim = {
+      __shim: true,
+      async get(key, opts) {
+        const type = typeof opts === "string" ? opts : (opts && opts.type) || "text";
+        try {
+          const m = await c.match(rq(key));
+          if (m) return type === "json" ? await m.json() : type === "arrayBuffer" ? await m.arrayBuffer() : await m.text();
+        } catch (e) {}
+        return kv.get(key, opts);
+      },
+      async put(key, value, opts) {
+        const ttl = opts && opts.expirationTtl;
+        if (ttl && ttl <= CACHE_MAX_TTL) {
+          try {
+            await c.put(rq(key), new Response(value, { headers: { "Cache-Control": "public, max-age=" + Math.max(30, ttl) } }));
+            return;
+          } catch (e) {}
+        }
+        return kv.put(key, value, opts);
+      },
+      async delete(key) { try { await c.delete(rq(key)); } catch (e) {} return kv.delete(key); },
+      list: (o) => kv.list(o),
+      getWithMetadata: (k, o) => kv.getWithMetadata(k, o),
+    };
+    return Object.assign({}, env, { PORRA: shim });
+  } catch (e) { return env; }
+}
+
+export async function onRequestGet({ request, env: env0, params }) {
+  const env = withCacheKV(env0);
   const path = (params.path || []).join("/");
   const url = new URL(request.url);
   const user = await getSessionUser(env, request);
@@ -3602,7 +3641,8 @@ export async function onRequestGet({ request, env, params }) {
   return json({ error: "not found" }, 404);
 }
 
-export async function onRequestPost({ request, env, params }) {
+export async function onRequestPost({ request, env: env0, params }) {
+  const env = withCacheKV(env0);
   const path = (params.path || []).join("/");
   if (path === "registro") return handleRegistro(request, env);
   if (path === "login") return handleLogin(request, env);
