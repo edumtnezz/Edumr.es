@@ -3943,8 +3943,32 @@
       if (!hits.length) { sug.appendChild(el("div", "mj-sug-empty", "Ningún jugador se llama así")); sug.hidden = false; return; }
       hits.forEach((p) => {
         const r = el("button", "mj-sug-row"); r.type = "button";
-        const im = el("img"); im.src = p.photo || "/img/avatar.svg"; im.alt = ""; r.appendChild(im);
-        const tx = el("span", "mj-sug-tx"); tx.appendChild(el("b", null, p.name)); tx.appendChild(el("small", null, [p.team, p.value ? money(p.value) + " €" : ""].filter(Boolean).join(" · "))); r.appendChild(tx);
+        const im = el("img", "mj-sug-ph"); im.src = p.photo || "/img/avatar.svg"; im.alt = ""; r.appendChild(im);
+        const tx = el("span", "mj-sug-tx");
+        const l1 = el("span", "mj-sug-l1"); l1.appendChild(el("b", null, p.name));
+        const rb = roleBadge(p.role);
+        if (rb) l1.appendChild(el("span", "posb posb-" + posCls(p.role), rb + (roleBadge(p.role2) ? "·" + roleBadge(p.role2) : "")));
+        tx.appendChild(l1);
+        const l2 = el("small", "mj-sug-l2");
+        if (p.logo) { const lg = el("img", "mj-sug-crest"); lg.src = p.logo; lg.alt = ""; l2.appendChild(lg); }
+        l2.appendChild(document.createTextNode(p.team || ""));
+        tx.appendChild(l2);
+        const l3 = el("span", "mj-sug-l3");
+        const st = String(p.status || "");
+        if (st === "redcard") l3.appendChild(el("i", "bad", "Sancionado 🟥"));
+        else if (st.indexOf("injured") === 0) l3.appendChild(el("i", "bad", "Lesionado ❌"));
+        else if (st === "doubt") l3.appendChild(el("i", "mid", "Duda 🟠"));
+        if (Number(p.avg) > 0) l3.appendChild(el("i", null, "Media " + Number(p.avg).toFixed(1).replace(".", ",") + " pts"));
+        if (p.prob != null) l3.appendChild(el("i", null, p.prob + "% de jugar"));
+        const fl = (p.fitness || []).slice(-5);
+        if (fl.length) l3.appendChild(el("i", null, "Últimos: " + fl.map((x) => Number(x) || 0).join(" · ")));
+        if (l3.childNodes.length) tx.appendChild(l3);
+        r.appendChild(tx);
+        const rt = el("span", "mj-sug-r");
+        if (p.value) rt.appendChild(el("b", null, money(p.value) + " €"));
+        const chg = hlChange(p);
+        if (chg) rt.appendChild(el("small", chg > 0 ? "up" : "down", (chg > 0 ? "▲ +" : "▼ −") + formatDots(Math.abs(chg)) + " €"));
+        r.appendChild(rt);
         r.addEventListener("mousedown", (e) => e.preventDefault());
         r.addEventListener("click", () => openFicha(p));
         sug.appendChild(r);
