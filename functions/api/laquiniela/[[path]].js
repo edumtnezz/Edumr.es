@@ -295,14 +295,17 @@ function fixCrests(data) {
   return data;
 }
 async function getJornada(env, matchday) {
-  return fixCrests(await getJornadaRaw(env, matchday));
+  // Si football-data no responde y no hay copia buena: jornada vacía (nunca partidos inventados)
+  return fixCrests((await getJornadaRaw(env, matchday)) || { matchday: Number(matchday) || 0, source: "none", matches: [] });
 }
 async function getJornadaRaw(env, matchday) {
   const kv = env.PORRA;
   const cacheKey = `jornada:${matchday || "current"}`;
   const raw = await kv.get(cacheKey, "json");
-  if (raw && raw.fetchedAt && Date.now() - raw.fetchedAt < CACHE_TTL_MS) {
-    return raw.data;
+  // Una jornada con todos los partidos terminados ya no cambia: se guarda horas. Si no, 1 minuto.
+  const okRaw = raw && raw.data && raw.data.source === "football-data" ? raw : null;
+  if (okRaw && okRaw.fetchedAt && Date.now() - okRaw.fetchedAt < (okRaw.final ? 6 * 3600 * 1000 : CACHE_TTL_MS)) {
+    return okRaw.data;
   }
   let data = null;
   try {
@@ -310,9 +313,14 @@ async function getJornadaRaw(env, matchday) {
   } catch (e) {
     data = null;
   }
-  if (!data) data = mockJornada(matchday || 1);
-  await kv.put(cacheKey, JSON.stringify({ fetchedAt: Date.now(), data }), {
-    expirationTtl: 600,
+  if (!data || !data.matches || !data.matches.length) {
+    // football-data falla o limita (10 peticiones/min): se sirve lo último bueno que hubiera.
+    // NUNCA datos inventados (antes caía a una jornada falsa Real Madrid–Barcelona).
+    return okRaw ? okRaw.data : null;
+  }
+  const final = data.matches.every((m) => m.status === "FINISHED");
+  await kv.put(cacheKey, JSON.stringify({ fetchedAt: Date.now(), final, data }), {
+    expirationTtl: final ? 6 * 3600 : 3600,
   });
   return data;
 }

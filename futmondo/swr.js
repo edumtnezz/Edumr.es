@@ -4,7 +4,7 @@
 (function () {
   "use strict";
   var EPS = /^\/api\/laquiniela\/(mercado|jugador|jornada|rachas|equipos|portada|noticias|detallepartido|once|alineaciones-confirmadas|cambios|puntos|ultimahora)(\?|$)/;
-  var MAXAGE = 6 * 3600 * 1000, MAXBODY = 1500000, PFX = "swr1:";
+  var MAXAGE = 6 * 3600 * 1000, MAXBODY = 1500000, PFX = "swr2:";
   var native = window.fetch.bind(window), inflight = {}, lastEv = {};
   function lsGet(k) { try { return JSON.parse(localStorage.getItem(PFX + k)); } catch (e) { return null; } }
   function lsPut(k, body) {
@@ -47,7 +47,7 @@
       return Promise.resolve(mk(c.b));
     }
     return net(path, path).then(function (x) {
-      if (x.ok && x.text.length < MAXBODY) lsPut(path, x.text);
+      if (x.ok && x.text.length < MAXBODY && !/"matches":\[\]/.test(x.text)) lsPut(path, x.text);
       return x.res.clone ? (x.ok ? mk(x.text) : x.res) : x.res;
     });
   };

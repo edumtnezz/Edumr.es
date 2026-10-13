@@ -738,7 +738,7 @@
       const rs = await Promise.all(Array.from({ length: cur }, (_, i) => i + 1).map((n) =>
         n === cur ? Promise.resolve({ n, ms: (jr && jr.matches) || [] }) :
         fetch(API + "/jornada?jornada=" + n).then((r) => r.json()).then((j) => ({ n, ms: (j && j.matches) || [] })).catch(() => null)));
-      if (rs.some((x) => !x)) return; // si falta alguna jornada, mejor no inventar
+      if (rs.some((x) => !x || !x.ms.length)) return; // si falta alguna jornada, mejor no inventar
       rs.sort((a, b) => a.n - b.n).forEach((r) => r.ms.forEach((x) => {
         if (x.live && x.live.state === "final") [x.home, x.away].forEach((t) => { const k = teamCanon(t); (m[k] = m[k] || []).push(r.n); });
       }));
