@@ -1347,6 +1347,10 @@
       row.appendChild(el("span", "mo-sc", (st === "live" || st === "final") && x.live.score ? x.live.score : st === "suspended" ? "—" : (x.time || "vs")));
       row.appendChild(c2);
       card.appendChild(row);
+      const fo = formOf(p);
+      if (fo.len && fo.len - fo.played > 0) {
+        card.appendChild(el("div", "an-fm-irr", "🎲 Jugó " + fo.played + " de " + fo.len + " · media " + f1e(fo.avg) + " cuando juega · " + f1e(fo.avgAll) + " contando los partidos que no jugó"));
+      }
       grid.appendChild(card);
     });
     sec.appendChild(grid);
@@ -1973,7 +1977,7 @@
     const avg = pl.length ? pl.reduce((a, b) => a + b, 0) / pl.length : 0;
     const l2 = f.slice(-2).filter((x) => x !== 0);
     const rec = l2.length ? l2.reduce((a, b) => a + b, 0) / l2.length : avg;
-    return { avg, rec, base: avg, trend: l2.length ? rec - avg : 0, played: pl.length };
+    return { avg, rec, base: avg, trend: l2.length ? rec - avg : 0, played: pl.length, len: f.length, avgAll: f.length ? f.reduce((a, b) => a + b, 0) / f.length : 0 };
   }
   function expOf(p) {
     const f = p.fitness || [];
@@ -3371,6 +3375,8 @@
     };
     group("🔥", "En racha", "hot", hot, (p) => "▲ " + f1d(formOf(p).rec) + " en sus 2 últimos · media " + f1d(formOf(p).avg));
     group("🧊", "A la baja", "cold", cold, (p) => "▼ " + f1d(formOf(p).rec) + " en sus 2 últimos · media " + f1d(formOf(p).avg));
+    const irr = ps.filter((p) => { const fo = formOf(p); return fo.len >= 3 && fo.len - fo.played >= 2 && fo.played >= 1; }).sort((a, b) => formOf(b).avg - formOf(a).avg).slice(0, 4);
+    group("🎲", "Irregulares: puntúan al jugar, pero se pierden partidos", "irr", irr, (p) => { const fo = formOf(p); return "jugó " + fo.played + " de " + fo.len + " · media " + f1d(fo.avg) + " al jugar"; });
     group("⚠️", "Dudas de jugar", "risk", risk, (p) => p.prob + "% de jugar");
     return { box, total };
   }
