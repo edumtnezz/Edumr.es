@@ -87,3 +87,13 @@ Antes de tocar partidos/alineaciones/ficha, repasar esta lista y verificar con c
 - Futmondo Social, puntuación CONFIGURABLE: Diario AS 50%, Marca 50%, SofaScore 50%, Tiempo de juego 0%, estadísticas básicas. Capitán sí, multiposición sí, estrategias extra sí, entrenador manual, se puede cambiar un jugador ya puntuado, alineaciones bloqueadas en partidos aplazados.
 - Primas: 70.000€/punto, 1.000.000€ por jugador en el equipo ideal, 2.000.000€ por MVP de jornada.
 - NO sabemos cómo combina Futmondo los porcentajes ni los puntos por gol/asistencia: no afirmarlo. Pendiente: lanzadores de penaltis, SofaScore y dificultad del rival (sin fuente verificada todavía) → "sin dato".
+
+## Ideas pendientes de Edu (hacer cuando acabe lo de "Analiza tu equipo")
+1. **Jugadores rentables**: qué jugadores puntúan más en SofaScore, ordenables por calidad-precio (con fuente verificada, nada inventado).
+2. **Jugadores con ≥90% de probabilidad de jugar** (datos de FutbolFantasy).
+
+## Hallazgos verificados para Analiza (13/10/2026)
+- Puntos de un jugador en la jornada = suma de AS + Marca + SofaScore + 1 (minutos jugados) + 1 (portería a cero en portero/defensa), redondeado (deducido de 4 capturas de Futmondo, no confirmado oficialmente).
+- Lanzadores de penaltis: constante `PENALTY_TAKERS` en el backend (Jornada Perfecta, 06/08/2026; revisar si cambian).
+- Dificultad del rival: aún sin fuente fiable de "puntos concedidos". futbolfantasy.com/laliga/estadisticas-puntos da puntos fantasy POR equipo (local/visitante), no concedidos. Pendiente.
+- SofaScore por posición: solo hay guías cualitativas (Comuniate, Jornada Perfecta); el artículo oficial de SofaScore no da pesos por posición.
