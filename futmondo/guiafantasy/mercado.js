@@ -3953,6 +3953,11 @@
         if (p.logo) { const lg = el("img", "mj-sug-crest"); lg.src = p.logo; lg.alt = ""; l2.appendChild(lg); }
         l2.appendChild(document.createTextNode(p.team || ""));
         tx.appendChild(l2);
+        const rt = el("span", "mj-sug-r");
+        if (p.value) rt.appendChild(el("b", null, money(p.value) + " €"));
+        const chg = hlChange(p);
+        if (chg) rt.appendChild(el("small", chg > 0 ? "up" : "down", (chg > 0 ? "▲ +" : "▼ −") + formatDots(Math.abs(chg)) + " €"));
+        tx.appendChild(rt);
         const l3 = el("span", "mj-sug-l3");
         const st = String(p.status || "");
         if (st === "redcard") l3.appendChild(el("i", "bad", "Sancionado 🟥"));
@@ -3964,11 +3969,6 @@
         if (fl.length) l3.appendChild(el("i", null, "Últimos: " + fl.map((x) => Number(x) || 0).join(" · ")));
         if (l3.childNodes.length) tx.appendChild(l3);
         r.appendChild(tx);
-        const rt = el("span", "mj-sug-r");
-        if (p.value) rt.appendChild(el("b", null, money(p.value) + " €"));
-        const chg = hlChange(p);
-        if (chg) rt.appendChild(el("small", chg > 0 ? "up" : "down", (chg > 0 ? "▲ +" : "▼ −") + formatDots(Math.abs(chg)) + " €"));
-        r.appendChild(rt);
         r.addEventListener("mousedown", (e) => e.preventDefault());
         r.addEventListener("click", () => openFicha(p));
         sug.appendChild(r);

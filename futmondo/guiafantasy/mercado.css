@@ -1333,15 +1333,16 @@ html { overflow-anchor: none; }
 .mj-sug-row .mj-sug-ph{flex:none}
 .mj-sug-tx{flex:1;gap:2px}
 .mj-sug-l1{display:flex;align-items:center;gap:6px;min-width:0}
-.mj-sug-l1 b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
 .mj-sug-l2{display:flex;align-items:center;gap:5px}
 .mj-sug-row img.mj-sug-crest{width:16px;height:16px;border-radius:0;background:none;object-fit:contain}
 .mj-sug-l3{display:flex;flex-wrap:wrap;gap:3px 8px;font-size:.72rem;color:var(--muted)}
 .mj-sug-l3 i{font-style:normal}
 .mj-sug-l3 i.bad{color:#c0261b;font-weight:700}
 .mj-sug-l3 i.mid{color:#d97706;font-weight:700}
-.mj-sug-r{display:flex;flex-direction:column;align-items:flex-end;flex:none;white-space:nowrap}
+.mj-sug-r{display:flex;align-items:baseline;gap:8px;white-space:nowrap}
 .mj-sug-r b{font-size:.92rem}
 .mj-sug-r small{font-size:.72rem;font-weight:700}
 .mj-sug-r small.up{color:#2e9b4f}
 .mj-sug-r small.down{color:#c0261b}
+.mj-sug-row{align-items:flex-start}
