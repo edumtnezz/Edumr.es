@@ -240,6 +240,16 @@ async function fetchMatchday(headers, md) {
   }));
 }
 
+// Fin del día (23:59:59.999) en hora de Madrid del instante ms, con horario de verano/invierno correcto
+function madridDayEnd(ms) {
+  const fmt = (o) => new Intl.DateTimeFormat("en-CA", Object.assign({ timeZone: "Europe/Madrid" }, o));
+  const ymd = fmt({ year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(ms));
+  const off = (fmt({ timeZoneName: "longOffset" }).formatToParts(new Date(ms)).find((x) => x.type === "timeZoneName") || {}).value || "GMT+02:00";
+  const m = off.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/);
+  const sign = m ? m[1] : "+", hh = m ? String(m[2]).padStart(2, "0") : "02", mm = m && m[3] ? m[3] : "00";
+  const t = Date.parse(ymd + "T23:59:59.999" + sign + hh + ":" + mm);
+  return isNaN(t) ? ms + 24 * 3600 * 1000 : t;
+}
 const isMatchDone = (m) => m.status === "FINISHED" || m.status === "POSTPONED" || m.status === "SUSPENDED" || m.status === "CANCELLED" || m.status === "AWARDED";
 async function fetchFootballData(env, matchday, hold) {
   const token = env.FOOTBALL_API_KEY;
@@ -265,7 +275,8 @@ async function fetchFootballData(env, matchday, hold) {
       const pm = await fetchMatchday(headers, md - 1);
       if (pm.length && pm.every(isMatchDone)) {
         const last = Math.max.apply(null, pm.filter((m) => m.status === "FINISHED").map((m) => Date.parse(m.utcDate) || 0).concat([0]));
-        if (last && Date.now() < last + 27 * 3600 * 1000) { md = md - 1; matches = pm; held = true; }
+        // Se mantiene hasta las 23:59 (hora de Madrid) del día en que acaba su último partido
+        if (last && Date.now() < madridDayEnd(last + 2 * 3600 * 1000)) { md = md - 1; matches = pm; held = true; }
       }
     } catch (e) {}
   }
