@@ -184,7 +184,7 @@ body {
   scrollbar-width: none;
 }
 .cx-sub .tabs::-webkit-scrollbar { display: none; }
-.cx-sub .tab {
+.cx-sub .tab, .cx-sub a.cx-more-item {
   flex: 0 0 auto;
   min-width: auto;
   color: var(--cx-muted);
@@ -598,7 +598,7 @@ body {
   .cx-top .theme-toggle, .cx-header .theme-toggle { width: 32px; height: 32px; flex: 0 0 auto; }
   .cx-sub-inner { justify-content: flex-start; }
   .cx-sub .tabs { width: 100%; justify-content: flex-start; }
-  .cx-sub .tab { padding: 12px 9px; font-size: 0.78rem; }
+  .cx-sub .tab, .cx-sub a.cx-more-item { padding: 12px 9px; font-size: 0.78rem; }
   .quiniela-main { padding: 16px 12px 50px; }
   .panel { padding: 20px 16px; border-radius: 14px; }
 }
@@ -648,12 +648,12 @@ body {
    del menú ☰). */
 .gf-page .cx-sub-inner { justify-content: flex-start; gap: 4px; }
 .gf-page .cx-sub .tabs { flex: 1 1 auto; width: auto; flex-wrap: nowrap; justify-content: space-between; overflow: visible; gap: 0; }
-.gf-page .cx-sub .tab { flex: 1 1 0; display: flex; align-items: center; justify-content: center; text-align: center; }
+.gf-page .cx-sub .tab, .gf-page .cx-sub a.cx-more-item { flex: 1 1 0; display: flex; align-items: center; justify-content: center; text-align: center; }
 @media (max-width: 720px) {
   .gf-page .cx-sub-inner { padding: 0 8px; gap: 0; }
   .gf-page .cx-sub .tabs { width: auto; justify-content: space-between; }
-  .gf-page .cx-sub .tab { flex: 1 1 0; padding: 14px 4px; font-size: 0.86rem; }
-  .gf-page .cx-sub .tab .tab-ico { width: 18px; height: 18px; margin-right: 5px; }
+  .gf-page .cx-sub .tab, .gf-page .cx-sub a.cx-more-item { flex: 1 1 0; padding: 14px 4px; font-size: 0.86rem; }
+  .gf-page .cx-sub .tab .tab-ico, .gf-page .cx-sub a.cx-more-item .tab-ico { width: 18px; height: 18px; margin-right: 5px; }
   .gf-page .cx-more-btn { padding: 6px 8px !important; }
   .gf-page .cx-more-ico { font-size: 1.7rem !important; }
 }
@@ -689,3 +689,5 @@ body {
 }
 .cx-jn.cx-jn-probable { border-color: #3b82f6; box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.45), 0 2px 8px rgba(59, 130, 246, 0.18); }
 .cx-prob-t { opacity: .85; font-weight: 700; letter-spacing: 0; }
+
+.cx-sub a.cx-more-item { text-decoration: none; border-bottom: 0; }

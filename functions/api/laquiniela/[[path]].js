@@ -3718,6 +3718,14 @@ export async function onRequestGet({ request, env: env0, params }) {
       return json(health);
     } catch (e) { return json({ at: 0, total: 0, broken: [], error: String(e) }); }
   }
+  if (path === "analiza-estado") {
+    if (!user) return json({ status: "none" });
+    let j = null;
+    try { j = await env.PORRA.get("anjob:" + user.key, "json"); } catch (e) {}
+    if (!j) return json({ status: "none" });
+    if (j.status === "running" && Date.now() - (j.at || 0) > 120000) return json({ id: j.id, status: "error", at: j.at, error: "El análisis se cortó. Vuelve a enviarlo." });
+    return json(j);
+  }
   if (path === "capitan-historial") {
     if (!user) return json({ error: "Inicia sesión para ver tu histórico." }, 401);
     try { return json({ historial: await getCapitanHistorial(env, user) }); } catch (e) { return json({ historial: [], error: String(e) }); }
@@ -3751,7 +3759,7 @@ export async function onRequestGet({ request, env: env0, params }) {
   return json({ error: "not found" }, 404);
 }
 
-export async function onRequestPost({ request, env: env0, params }) {
+export async function onRequestPost({ request, env: env0, params, waitUntil }) {
   const env = withCacheKV(env0);
   const path = (params.path || []).join("/");
   if (path === "registro") return handleRegistro(request, env);
@@ -3767,6 +3775,30 @@ export async function onRequestPost({ request, env: env0, params }) {
   }
   if (path === "analiza") {
     const user = await getSessionUser(env, request);
+    // Modo segundo plano (?bg=1): responde al instante y sigue analizando en
+    // el servidor aunque el usuario cierre la app; el resultado queda
+    // guardado y se recoge con GET analiza-estado. TTL > 6 h para ir a KV real.
+    if (user && new URL(request.url).searchParams.get("bg") === "1" && typeof waitUntil === "function") {
+      const text = await request.text();
+      const jobKey = "anjob:" + user.key;
+      const id = Date.now().toString(36);
+      try {
+        const prev = await env.PORRA.get(jobKey, "json");
+        if (prev && prev.status === "running" && Date.now() - (prev.at || 0) < 90000) return json({ error: "Ya hay un análisis en marcha, espera a que acabe.", job: prev.id }, 429);
+      } catch (e) {}
+      try { await env.PORRA.put(jobKey, JSON.stringify({ id, status: "running", at: Date.now() }), { expirationTtl: 8 * 3600 }); } catch (e) {}
+      waitUntil((async () => {
+        let rec;
+        try {
+          const rq = new Request(request.url, { method: "POST", headers: { "content-type": "application/json" }, body: text });
+          const res = await handleAnaliza(rq, env, user);
+          const d = await res.json();
+          rec = res.ok ? { id, status: "done", at: Date.now(), data: d } : { id, status: "error", at: Date.now(), error: d.error || "No se pudo analizar." };
+        } catch (e) { rec = { id, status: "error", at: Date.now(), error: "No se pudo analizar." }; }
+        try { await env.PORRA.put(jobKey, JSON.stringify(rec), { expirationTtl: 8 * 3600 }); } catch (e) {}
+      })());
+      return json({ job: id, status: "running" }, 202);
+    }
     return handleAnaliza(request, env, user);
   }
   if (path === "puja/pujar") {

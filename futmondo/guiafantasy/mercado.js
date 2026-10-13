@@ -3104,21 +3104,69 @@
     const d = await runAnaliza({ jugadores: flatPlayers(anData) }, "Reanalizando…");
     if (d) { anStale = false; renderAnalisis(d); }
   }
+  // Análisis en segundo plano: el servidor sigue trabajando aunque salgas de
+  // la app; al volver se recoge el resultado (anJobPending en localStorage).
+  let anPollT = null, anT0 = 0;
+  function anStopPoll() { if (anPollT) { clearTimeout(anPollT); anPollT = null; } }
+  function anShowRunning(prefijo) {
+    const s = Math.round((Date.now() - anT0) / 1000); const m = $("anMsg");
+    if (m) m.textContent = "🧠 " + prefijo + " " + s + " s · puedes salirte, seguirá trabajando y lo verás al volver";
+  }
+  function anPoll(prefijo, onDone) {
+    anStopPoll();
+    const tick = async () => {
+      anShowRunning(prefijo);
+      let j = null;
+      try { const r = await fetch(API + "/analiza-estado", { cache: "no-store" }); j = await r.json(); } catch (e) { anPollT = setTimeout(tick, 3000); return; }
+      if (j && j.status === "running") { anPollT = setTimeout(tick, 2500); return; }
+      anStopPoll();
+      try { localStorage.removeItem("anJobPending"); } catch (e) {}
+      onDone(j);
+    };
+    tick();
+  }
   async function runAnaliza(payload, prefijo) {
-    const t0 = Date.now();
-    const upd = () => { const s = Math.round((Date.now() - t0) / 1000); const m = $("anMsg"); if (m) m.textContent = "🧠 " + prefijo + " " + s + " s · suele tardar ~30 s, mantente a la espera"; };
-    upd();
-    const timer = setInterval(upd, 250);
+    anT0 = Date.now();
+    anShowRunning(prefijo);
+    const timer = setInterval(() => anShowRunning(prefijo), 1000);
     try {
-      const r = await fetch(API + "/analiza", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
-      const d = await r.json();
-      clearInterval(timer);
-      const total = ((Date.now() - t0) / 1000).toFixed(1).replace(".", ",");
-      if (!r.ok) { $("anMsg").textContent = (d.error || "No se pudo analizar.") + " · " + total + " s"; return null; }
-      $("anMsg").textContent = "✅ Analizado en " + total + " s";
-      return d;
+      const r = await fetch(API + "/analiza?bg=1", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
+      const d = await r.json().catch(() => ({}));
+      if (r.status !== 202) { clearInterval(timer); $("anMsg").textContent = d.error || "No se pudo analizar."; return null; }
+      try { localStorage.setItem("anJobPending", String(d.job || Date.now())); } catch (e) {}
+      return await new Promise((resolve) => {
+        anPoll(prefijo, (j) => {
+          clearInterval(timer);
+          const total = ((Date.now() - anT0) / 1000).toFixed(1).replace(".", ",");
+          if (j && j.status === "done") { try { localStorage.setItem("anJobSeen", String(j.id)); } catch (e) {} $("anMsg").textContent = "✅ Analizado en " + total + " s"; resolve(j.data); }
+          else { $("anMsg").textContent = (j && j.error) || "No se pudo analizar."; resolve(null); }
+        });
+      });
     } catch (e) { clearInterval(timer); $("anMsg").textContent = "Error de red."; return null; }
   }
+  // Al volver a la app: si había un análisis en marcha o terminado sin ver, se recoge.
+  async function resumeAnaliza() {
+    if (!$("anOut") || anPollT) return;
+    let j = null;
+    try { const r = await fetch(API + "/analiza-estado", { cache: "no-store" }); j = await r.json(); } catch (e) { return; }
+    if (!j || j.status === "none") return;
+    let seen = ""; try { seen = localStorage.getItem("anJobSeen") || ""; } catch (e) {}
+    const finish = (x) => {
+      if (x && x.status === "done" && x.data) {
+        if (String(x.id) === seen && $("anOut").children.length) return;
+        try { localStorage.setItem("anJobSeen", String(x.id)); } catch (e) {}
+        const m = $("anMsg"); if (m) m.textContent = "✅ Análisis terminado mientras no estabas";
+        renderAnalisis(x.data);
+      } else if (x && x.status === "error") {
+        let pend = null; try { pend = localStorage.getItem("anJobPending"); } catch (e) {}
+        if (pend) { try { localStorage.removeItem("anJobPending"); } catch (e) {} const m = $("anMsg"); if (m) m.textContent = x.error || "No se pudo analizar."; }
+      }
+    };
+    if (j.status === "running") { anT0 = j.at || Date.now(); anPoll("Analizando…", finish); }
+    else finish(j);
+  }
+  resumeAnaliza();
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) resumeAnaliza(); });
 
   function miniLine(s) {
     return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
