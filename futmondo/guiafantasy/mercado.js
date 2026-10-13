@@ -2886,21 +2886,56 @@
     const d = await (await fetch(API + "/equipos")).json();
     return (d && d.teams) || [];
   }
+  function eqMoney(v) { v = Number(v) || 0; return v >= 1e6 ? (v / 1e6).toFixed(v >= 1e8 ? 0 : 1).replace(".", ",") + " M€" : money(v) + " €"; }
+  function eqFacts(tc) {
+    const sq = (all || []).filter((p) => teamCanon(p.team) === tc);
+    let val = 0, bajas = 0, dudas = 0, racha = 0;
+    sq.forEach((p) => {
+      val += Number(p.value) || 0;
+      const st = String(p.status || "");
+      if (st === "redcard" || st.indexOf("injured") === 0) bajas++; else if (st === "doubt") dudas++;
+      const f = (p.fitness || []).slice(-3);
+      if (f.length === 3 && f.every((x) => Number(x) > 0)) racha++;
+    });
+    return { n: sq.length, val, bajas, dudas, racha };
+  }
   async function renderTeamsIndex() {
     const box = eqOpen(); if (!box) return;
     const bar0 = el("div", "eq-backbar"); bar0.appendChild(backBtn("/futmondo/guiafantasy/inicio")); box.appendChild(bar0);
-    box.appendChild(el("h2", "eq-h1", "Equipos"));
+    const hero = el("div", "eqi-hero");
+    hero.appendChild(el("h2", "eq-h1", "Equipos"));
+    hero.appendChild(el("p", "eqi-sub", "Toca un club para ver su próximo partido, la alineación, el calendario y toda su plantilla."));
+    const inp = el("input", "market-search eqi-search"); inp.placeholder = "Buscar club…"; inp.autocomplete = "off";
+    hero.appendChild(inp);
+    box.appendChild(hero);
     const grid = el("div", "eq-grid");
     box.appendChild(grid);
     let teams = [];
     try { teams = await eqTeams(); } catch (e) {}
     if (!teams.length) { grid.appendChild(el("p", "muted small", "No se pudieron cargar los equipos.")); return; }
+    if (!all || !all.length) { try { await load(); } catch (e) {} }
+    const tiles = [];
     teams.slice().sort((a, b) => a.name.localeCompare(b.name, "es")).forEach((t) => {
       const a = el("a", "eq-tile");
       a.href = "/equipos/" + teamSlug(t.name);
-      if (t.logo) { const im = el("img"); im.src = t.logo; im.alt = ""; im.loading = "lazy"; a.appendChild(im); }
-      a.appendChild(el("span", null, t.name));
-      grid.appendChild(a);
+      const cw = el("span", "eq-tile-cw");
+      if (t.logo) { const im = el("img"); im.src = t.logo; im.alt = ""; im.loading = "lazy"; cw.appendChild(im); }
+      a.appendChild(cw);
+      const tx = el("span", "eq-tile-tx");
+      tx.appendChild(el("b", null, t.name));
+      const f = eqFacts(teamCanon(t.name));
+      if (f.n) tx.appendChild(el("small", null, f.n + " jugadores · " + eqMoney(f.val)));
+      if (f.bajas) tx.appendChild(el("small", "eq-tile-bad", "❌ " + f.bajas + (f.bajas === 1 ? " baja" : " bajas")));
+      a.appendChild(tx);
+      a.appendChild(el("span", "eq-tile-go", "›"));
+      a.dataset.n = stripAccents(t.name);
+      grid.appendChild(a); tiles.push(a);
+    });
+    const empty = el("p", "muted small eq-empty", "Ningún club se llama así."); empty.hidden = true; box.appendChild(empty);
+    inp.addEventListener("input", () => {
+      const q = stripAccents(inp.value.trim()); let n = 0;
+      tiles.forEach((a) => { const ok = !q || a.dataset.n.indexOf(q) >= 0; a.hidden = !ok; if (ok) n++; });
+      empty.hidden = n > 0;
     });
   }
   async function renderTeamPage(slug) {
@@ -2933,10 +2968,13 @@
       const squad = (all || []).filter((p) => teamCanon(p.team) === tc);
       const frag = document.createDocumentFragment();
       // Cabecera
-      const hd = el("div", "eq-head");
+      const hd = el("div", "eq-hero");
+      if (team.logo) { const bg = el("img", "eq-hero-bg"); bg.src = team.logo; bg.alt = ""; hd.appendChild(bg); }
       if (team.logo) { const im = el("img", "eq-crest"); im.src = team.logo; im.alt = ""; hd.appendChild(im); }
       const ht = el("div", "eq-htxt");
       ht.appendChild(el("h2", "eq-h1", team.name));
+      const fx = eqFacts(tc);
+      if (fx.n) ht.appendChild(el("div", "eq-hsub", fx.n + " jugadores en Futmondo"));
       if (next) {
         const home = teamCanon(next.home) === tc;
         const rival = home ? next.away : next.home;
@@ -2960,6 +2998,13 @@
       }
       hd.appendChild(ht);
       frag.appendChild(hd);
+      if (fx.n) {
+        const stx = el("div", "eq-stats");
+        [[eqMoney(fx.val), "valor plantilla", ""], [String(fx.racha), "en racha", fx.racha ? "up" : ""], [String(fx.bajas), "bajas", fx.bajas ? "down" : ""], [String(fx.dudas), "dudas", fx.dudas ? "mid" : ""]].forEach((x) => {
+          const c = el("div", "eq-stat " + x[2]); c.appendChild(el("b", null, x[0])); c.appendChild(el("small", null, x[1])); stx.appendChild(c);
+        });
+        frag.appendChild(stx);
+      }
       // Alineación (probable / confirmada) del próximo partido
       if (next) {
         const sec = el("section", "eq-sec");
@@ -3041,7 +3086,7 @@
           const mid = el("div", "eq-pmid");
           mid.appendChild(el("div", "eq-pname", p.name));
           const st = statusInfo(p.status);
-          mid.appendChild(el("div", "eq-pval", money(p.value) + " €" + (st ? " · " + st.label : "")));
+          mid.appendChild(el("div", "eq-pval", [money(p.value) + " €", Number(p.avg) > 0 ? "Media " + Number(p.avg).toFixed(1).replace(".", ",") : "", p.prob != null ? p.prob + "% de jugar" : "", st ? st.label : ""].filter(Boolean).join(" · ")));
           r.appendChild(mid);
           const sc = el("div", "racha-scores");
           const fit = (p.fitness || []).map((x) => Number(x) || 0);
