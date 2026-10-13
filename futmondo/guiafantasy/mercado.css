@@ -1191,3 +1191,8 @@ html { overflow-anchor: none; }
 .an-cap-opt-n { font-weight: 800; font-size: .82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .an-cap-opt-s { font-size: .68rem; color: var(--muted); }
 .an-cap-opt-tx { min-width: 0; flex: 1; }
+.an-rules-g { margin-top: 10px; font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; opacity: .75; }
+.an-rules-row.out { opacity: .8; }
+.an-rules-d { font-size: .72rem; opacity: .8; font-weight: 400; }
+.an-ideal .al-bench { background: linear-gradient(180deg, #1e1b4b, #312e81 55%, #4338ca); border-top-color: rgba(255,255,255,.2); }
+.an-ideal .al .pitch { background-image: none; background: linear-gradient(180deg, #3730a3, #4f46e5); }

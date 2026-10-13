@@ -3361,12 +3361,18 @@
       const arr = ideal.by[g[0]] || [];
       if (!arr.length) return;
       const n = g[0] === "POR" ? 1 : ideal.formacion.split("-")[g[0] === "DEF" ? 0 : g[0] === "CEN" ? 1 : 2] * 1;
-      const row = el("div", "an-rules-row");
-      row.appendChild(el("b", null, g[1] + ": "));
-      row.appendChild(document.createTextNode(arr.map((p, i) => (i < n ? "✅ " : "▫️ ") + (p.last || p.nombre) + " " + f1(expOf(p)) + (p.prob != null ? " (" + p.prob + "%)" : "")).join(" · ")));
-      ul.appendChild(row);
+      ul.appendChild(el("div", "an-rules-g", g[1]));
+      arr.forEach((p, i) => {
+        const fo = formOf(p);
+        const ser = (p.fitness || []).length ? (p.fitness || []).join("-") : "sin datos";
+        const out = (p.san || p.inj || /SANC|LESI/i.test(p.estado || "")) && (p.prob == null || p.prob < 10);
+        const row = el("div", "an-rules-row" + (i < n ? " in" : " out"));
+        row.appendChild(el("b", null, (i < n ? "✅ " : "▫️ ") + (p.last || p.nombre) + " → " + f1(expOf(p)) + " pts esperados"));
+        row.appendChild(el("div", "an-rules-d", out ? "Sancionado/lesionado: vale 0." : "media de sus últimos partidos " + f1(fo.avg) + " (" + ser + ") × " + (p.prob != null ? p.prob + "% de jugar" : "sin dato de probabilidad (se usa 60%)") + (p.casa === true ? " · juega en casa" : p.casa === false ? " · juega fuera" : "")));
+        ul.appendChild(row);
+      });
     });
-    ul.appendChild(el("p", "muted small", "Formación elegida: " + ideal.formacion + " · ✅ entra, ▫️ se queda fuera. Los números son los puntos esperados."));
+    ul.appendChild(el("p", "muted small", "Formación elegida: " + ideal.formacion + " · ✅ entra, ▫️ se queda fuera (en cada puesto entran los de más puntos esperados). La racha de los últimos partidos NO cambia la cuenta: solo cuenta la media y la probabilidad de jugar."));
     d.appendChild(ul);
     return d;
   }
