@@ -3807,7 +3807,9 @@ export async function onRequestPost({ request, env: env0, params, waitUntil }) {
         if (prev && prev.status === "running" && Date.now() - (prev.at || 0) < 90000) return json({ error: "Ya hay un análisis en marcha, espera a que acabe.", job: prev.id }, 429);
       } catch (e) {}
       try { await env.PORRA.put(jobKey, JSON.stringify({ id, status: "running", at: Date.now() }), { expirationTtl: 8 * 3600 }); } catch (e) {}
-      waitUntil((async () => {
+      // Se ejecuta DENTRO de la petición (sin límite mientras el móvil siga conectado) y,
+      // si el móvil se desconecta, waitUntil deja terminar el trabajo y guardarlo.
+      const job = (async () => {
         let rec;
         try {
           const rq = new Request(request.url, { method: "POST", headers: { "content-type": "application/json" }, body: text });
@@ -3816,12 +3818,17 @@ export async function onRequestPost({ request, env: env0, params, waitUntil }) {
           rec = res.ok ? { id, status: "done", at: Date.now(), data: d } : { id, status: "error", at: Date.now(), error: d.error || "No se pudo analizar." };
         } catch (e) { rec = { id, status: "error", at: Date.now(), error: "No se pudo analizar." }; }
         try { await env.PORRA.put(jobKey, JSON.stringify(rec), { expirationTtl: 8 * 3600 }); } catch (e) {}
-      })());
-      return json({ job: id, status: "running" }, 202);
+        return rec;
+      })();
+      waitUntil(job);
+      const rec = await job;
+      if (rec.status === "done") return json({ job: id, status: "done", data: rec.data });
+      return json({ job: id, status: "error", error: rec.error }, 422);
     }
     return handleAnaliza(request, env, user);
   }
   if (path === "capitan-elegir") {
+    const user = await getSessionUser(env, request);
     if (!user) return json({ error: "Inicia sesión." }, 401);
     let b; try { b = await request.json(); } catch (e) { return json({ error: "Datos inválidos." }, 400); }
     const key = "cap:hist:" + user.key;

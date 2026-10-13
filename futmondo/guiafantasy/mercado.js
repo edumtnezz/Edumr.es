@@ -3140,17 +3140,25 @@
     try {
       const r = await fetch(API + "/analiza?bg=1", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(payload) });
       const d = await r.json().catch(() => ({}));
-      if (r.status !== 202) { clearInterval(timer); $("anMsg").textContent = d.error || "No se pudo analizar."; return null; }
-      try { localStorage.setItem("anJobPending", String(d.job || Date.now())); } catch (e) {}
+      clearInterval(timer);
+      if (r.status === 200 && d.status === "done") {
+        try { localStorage.setItem("anJobSeen", String(d.job)); localStorage.removeItem("anJobPending"); } catch (e) {}
+        $("anMsg").textContent = "✅ Analizado en " + ((Date.now() - anT0) / 1000).toFixed(1).replace(".", ",") + " s";
+        return d.data;
+      }
+      $("anMsg").textContent = d.error || "No se pudo analizar.";
+      return null;
+    } catch (e) {
+      // Se cortó la conexión (p. ej. saliste de la app): el servidor sigue trabajando; se recoge el resultado.
+      clearInterval(timer);
+      try { localStorage.setItem("anJobPending", String(Date.now())); } catch (e2) {}
       return await new Promise((resolve) => {
         anPoll(prefijo, (j) => {
-          clearInterval(timer);
-          const total = ((Date.now() - anT0) / 1000).toFixed(1).replace(".", ",");
-          if (j && j.status === "done") { try { localStorage.setItem("anJobSeen", String(j.id)); } catch (e) {} $("anMsg").textContent = "✅ Analizado en " + total + " s"; resolve(j.data); }
+          if (j && j.status === "done") { try { localStorage.setItem("anJobSeen", String(j.id)); } catch (e2) {} $("anMsg").textContent = "✅ Análisis recuperado"; resolve(j.data); }
           else { $("anMsg").textContent = (j && j.error) || "No se pudo analizar."; resolve(null); }
         });
       });
-    } catch (e) { clearInterval(timer); $("anMsg").textContent = "Error de red."; return null; }
+    }
   }
   // Al volver a la app: si había un análisis en marcha o terminado sin ver, se recoge.
   async function resumeAnaliza() {
