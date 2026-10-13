@@ -3380,6 +3380,43 @@
     group("⚠️", "Dudas de jugar", "risk", risk, (p) => p.prob + "% de jugar");
     return { box, total };
   }
+  // Desglose de una jornada: AS, Marca y SofaScore (puntos de su tabla × 50% de tu liga), minutos y el resto
+  // (goles, asistencias, tarjetas…) como diferencia con los puntos reales que Futmondo dio al jugador.
+  const fmCache = {};
+  const fmN = (x) => (Math.round(x * 10) / 10).toString().replace(".", ",");
+  const fmS = (x) => (x > 0 ? "+" : "") + fmN(x);
+  function fmToggle(card, row, chip, p, jn, total) {
+    const old = card.querySelector(".an-fm-det");
+    const same = chip.classList.contains("sel");
+    row.querySelectorAll(".an-fm-chip.sel").forEach((c) => c.classList.remove("sel"));
+    if (old) old.remove();
+    if (same) return;
+    chip.classList.add("sel");
+    const det = el("div", "an-fm-det", "Cargando…");
+    row.after(det);
+    const draw = (j) => {
+      det.innerHTML = "";
+      const m = j && (j.matches || []).find((x) => Number(x.r) === Number(jn));
+      if (!m || (m.as == null && m.marca == null && m.ss == null)) { det.textContent = "Sin desglose de esta jornada."; return; }
+      const mins = Number(m.mins) || 0;
+      const a = (Number(m.as) || 0) / 2, mc = (Number(m.marca) || 0) / 2, ss = (Number(m.ss) || 0) / 2, mn = mins >= 60 ? 1 : 0;
+      const base = a + mc + ss + mn;
+      const rest = Math.floor(total - base + 1e-9);
+      const t = el("div", "an-fm-dt");
+      t.appendChild(el("b", null, "J" + jn + " · " + total + " pts"));
+      t.appendChild(el("small", null, mins + " min jugados"));
+      det.appendChild(t);
+      const add = (lab, val, cls) => { const r = el("div", "an-fm-dr" + (cls ? " " + cls : "")); r.appendChild(el("span", null, lab)); r.appendChild(el("b", null, val)); det.appendChild(r); };
+      add("AS (" + fmN(Number(m.as) || 0) + " en su tabla × 50%)", fmS(a));
+      add("Marca (" + fmN(Number(m.marca) || 0) + " × 50%)", fmS(mc));
+      add("SofaScore (" + fmN(Number(m.ss) || 0) + " × 50%)", fmS(ss));
+      add("Minutos (" + (mn ? "60 o más" : "menos de 60") + ")", fmS(mn));
+      if (rest !== 0) add("Goles, asistencias, tarjetas y otros", fmS(rest), rest < 0 ? "neg" : "pos");
+      det.appendChild(el("div", "an-fm-dn", "Suma " + fmN(base + rest) + (Math.abs(base + rest - total) > 0.01 ? " · Futmondo redondea a " + total : "") + ". AS, Marca, SofaScore y minutos salen directos de Futmondo; la última línea es la diferencia hasta los puntos reales."));
+    };
+    if (fmCache[p.id]) { draw(fmCache[p.id]); return; }
+    fetch(API + "/jugador?id=" + encodeURIComponent(p.id)).then((r) => r.json()).then((j) => { fmCache[p.id] = j; if (det.isConnected) draw(j); }).catch(() => { det.textContent = "No se pudo cargar el desglose."; });
+  }
   // Forma de cada jugador: puntos de Futmondo en sus últimas 5 jornadas, con jornada y rival.
   function renderForma(box, players, d) {
     box.innerHTML = "";
@@ -3415,10 +3452,12 @@
         if (op) { if (op.crest) { const im = el("img"); im.src = op.crest; im.alt = ""; im.loading = "lazy"; mid.appendChild(im); } mid.appendChild(haIcon(op.home)); }
         c.appendChild(mid);
         c.appendChild(el("div", "an-fm-v", v === 0 ? "–" : String(v)));
+        if (v !== 0 && p.id && jn) { c.classList.add("tap"); c.setAttribute("role", "button"); c.setAttribute("tabindex", "0"); c.addEventListener("click", () => fmToggle(card, row, c, p, jn, v)); }
         row.appendChild(c);
       });
       if (!f.length) row.appendChild(el("div", "muted small", "Sin datos de sus últimos partidos."));
       card.appendChild(row);
+      if (f.some((v) => v !== 0) && p.id) card.appendChild(el("div", "an-fm-hint", "👆 Toca una jornada para ver de dónde salen sus puntos"));
       grid.appendChild(card);
     });
     box.appendChild(grid);
