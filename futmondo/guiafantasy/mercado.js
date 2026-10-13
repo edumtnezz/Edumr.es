@@ -1467,7 +1467,7 @@
         box.style.minHeight = "";
         window.scrollTo(0, y);
       }, 60000);
-    } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar el partido.</p>'; }
+    } catch (e) { try { console.error('partido:', e && e.stack || e); } catch (e2) {} box.innerHTML = '<p class="muted small">No se pudo cargar el partido.</p>'; }
   }
   // Ficha de jugador como página propia:
   // /jugador/<id>/<nombre>
