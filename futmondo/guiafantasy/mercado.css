@@ -1273,3 +1273,10 @@ html { overflow-anchor: none; }
 .an-fm-v { font: 800 .98rem/1 'Space Grotesk', sans-serif; }
 .an-tr-group.irr { background: linear-gradient(135deg, rgba(168,85,247,.16), rgba(168,85,247,.04)); border-color: rgba(168,85,247,.4); }
 .an-fm-irr { margin-top: 7px; font-size: .68rem; color: var(--muted); }
+
+/* Cómo puntúa tu liga */
+.an-quote { margin: 4px 0 12px; }
+.an-quote summary { cursor: pointer; font-weight: 800; font-size: .86rem; padding: 6px 0; }
+.an-quote blockquote { margin: 6px 0 0; padding: 8px 12px; border-left: 4px solid #6366f1; border-radius: 0 12px 12px 0; background: rgba(99,102,241,.1); }
+.an-quote blockquote p { margin: 4px 0; font-size: .76rem; line-height: 1.45; }
+.an-quote blockquote small { display: block; margin-top: 6px; font-size: .64rem; color: var(--muted); }
