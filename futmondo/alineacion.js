@@ -184,15 +184,17 @@
       var pool = (players || []).filter(function (p) { return teamScore(p.team, teamName) >= 1; });
       var f = match(o, pool); return f ? f.name : (o.name || o.full);
     },
-    card: function (side, teamName, crest, subtitle, players, mode, subs) {
+    card: function (side, teamName, crest, subtitle, players, mode, subs, opts) {
+      opts = opts || {};
       // Todos al 100% = once confirmado: nunca se enseñan porcentajes
-      if ((!mode || mode === "probable") && side.starters && side.starters.length >= 10 && side.starters.every(function (p) { return p.prob === 100; })) mode = "confirmed";
+      if (!opts.noAuto && (!mode || mode === "probable") && side.starters && side.starters.length >= 10 && side.starters.every(function (p) { return p.prob === 100; })) mode = "confirmed";
       var card = document.createElement("div"); card.className = "al"; card.innerHTML = cardHtml();
       var tt = card.querySelector(".al-title");
       if (mode === "played") tt.innerHTML = "Partido <b>finalizado</b>";
       else if (mode === "confirmed") tt.innerHTML = "Alineación <b>confirmada</b>";
+      if (opts.title) tt.innerHTML = opts.title;
       setCrest(card.querySelector(".al-head img"), crest);
-      var pool = (players || []).filter(function (p) { return teamScore(p.team, teamName) >= 1; });
+      var pool = opts.pool || (players || []).filter(function (p) { return teamScore(p.team, teamName) >= 1; });
       card.querySelector(".pitch").innerHTML = render(side, pool, side.bench || [], mode);
       if (subs && subs.length) card.querySelector(".pitch").insertAdjacentHTML("afterend", benchHtml(subs, pool, mode));
       card.querySelector(".al-foot").textContent = teamName + (subtitle ? " · " + subtitle : "") + " · " + formacion(side);

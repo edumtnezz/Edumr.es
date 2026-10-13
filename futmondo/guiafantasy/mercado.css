@@ -1147,3 +1147,9 @@ html { overflow-anchor: none; }
 /* Todos los botones de filtro iguales */
 #mxRole .mx-chip::before{display:none!important}
 .mx-filters .mx-chip,.mx-filters .merc-segbtn.mx-chip{min-width:84px;height:40px;display:inline-flex;align-items:center;justify-content:center;padding:0 16px;font:700 .86rem/1 inherit}
+
+/* Reglas del once ideal */
+.an-rules { margin: 8px 0 14px; border: 1px solid var(--border); border-radius: 12px; padding: 8px 12px; background: var(--card); }
+.an-rules summary { cursor: pointer; font-weight: 700; font-size: 0.88rem; }
+.an-rules-row { font-size: 0.8rem; line-height: 1.5; margin-top: 6px; }
+#anOut .al { margin: 10px auto 6px; max-width: 520px; }

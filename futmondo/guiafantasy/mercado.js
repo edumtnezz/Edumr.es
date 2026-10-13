@@ -3264,6 +3264,79 @@
     });
     return box;
   }
+  // ---- Once ideal con reglas fijas ----
+  // Puntos esperados de un jugador = media de sus últimos partidos (+0,4 si
+  // juega en casa, -0,2 fuera) × probabilidad de ser titular. Si está
+  // sancionado/lesionado con menos de 10% de jugar, vale 0.
+  function expOf(p) {
+    const out = (p.san || p.inj || /SANC|LESI/i.test(p.estado || "")) && (p.prob == null || p.prob < 10);
+    if (out) return 0;
+    const f = (p.fitness || []).map(Number).filter((x) => !isNaN(x));
+    const avg = f.length ? f.reduce((a, b) => a + b, 0) / f.length : 3;
+    const base = Math.max(0, avg + (p.casa === true ? 0.4 : p.casa === false ? -0.2 : 0));
+    const prob = p.prob != null ? p.prob : 60;
+    return base * prob / 100;
+  }
+  const IDEAL_FORMS = [[3, 4, 3], [3, 5, 2], [4, 3, 3], [4, 4, 2], [4, 5, 1], [5, 3, 2], [5, 4, 1]];
+  function pickIdealXI(players) {
+    const multi = players.filter((p) => p.pos2 && p.pos2 !== p.pos && p.pos !== "POR" && p.pos2 !== "POR").slice(0, 6);
+    let best = null;
+    for (let mask = 0; mask < (1 << multi.length); mask++) {
+      const posOf = new Map();
+      players.forEach((p) => posOf.set(p, p.pos));
+      multi.forEach((p, i) => { if (mask & (1 << i)) posOf.set(p, p.pos2); });
+      const by = { POR: [], DEF: [], CEN: [], DEL: [] };
+      players.forEach((p) => { const k = posOf.get(p); if (by[k]) by[k].push(p); });
+      Object.keys(by).forEach((k) => by[k].sort((a, b) => expOf(b) - expOf(a)));
+      if (!by.POR.length) continue;
+      IDEAL_FORMS.forEach((f) => {
+        if (by.DEF.length < f[0] || by.CEN.length < f[1] || by.DEL.length < f[2]) return;
+        const sel = [by.POR[0]].concat(by.DEF.slice(0, f[0]), by.CEN.slice(0, f[1]), by.DEL.slice(0, f[2]));
+        const tot = sel.reduce((a, p) => a + expOf(p), 0);
+        if (!best || tot > best.total + 1e-9) best = { total: tot, form: f, sel, posOf, by };
+      });
+    }
+    if (!best) return null;
+    const slots = best.sel.map((p) => ({ p, pos: best.posOf.get(p) }));
+    return { formacion: best.form.join("-"), starters: best.sel, slots, total: best.total, by: best.by, players };
+  }
+  function idealRules(ideal) {
+    const d = el("details", "an-rules");
+    d.appendChild(el("summary", null, "¿Cómo se elige el once ideal?"));
+    const ul = el("div", "an-rules-b");
+    const f1 = (x) => x.toFixed(1).replace(".", ",");
+    ul.appendChild(el("p", "muted small", "Reglas: 1) Puntos esperados = media de sus últimos partidos (+0,4 en casa, −0,2 fuera) × probabilidad de ser titular. 2) Sancionados o lesionados con menos de 10% valen 0. 3) Se prueban las formaciones 3-4-3, 3-5-2, 4-3-3, 4-4-2, 4-5-1, 5-3-2 y 5-4-1 (también la posición alternativa de los multiposición) y se queda la de más puntos esperados en total. 4) Siempre 1 portero. El nombre o el precio del jugador NO cuentan, solo estos números."));
+    [["POR", "Portero"], ["DEF", "Defensas"], ["CEN", "Centrocampistas"], ["DEL", "Delanteros"]].forEach((g) => {
+      const arr = ideal.by[g[0]] || [];
+      if (!arr.length) return;
+      const n = g[0] === "POR" ? 1 : ideal.formacion.split("-")[g[0] === "DEF" ? 0 : g[0] === "CEN" ? 1 : 2] * 1;
+      const row = el("div", "an-rules-row");
+      row.appendChild(el("b", null, g[1] + ": "));
+      row.appendChild(document.createTextNode(arr.map((p, i) => (i < n ? "✅ " : "▫️ ") + (p.last || p.nombre) + " " + f1(expOf(p)) + (p.prob != null ? " (" + p.prob + "%)" : "")).join(" · ")));
+      ul.appendChild(row);
+    });
+    ul.appendChild(el("p", "muted small", "Formación elegida: " + ideal.formacion + " · ✅ entra, ▫️ se queda fuera. Los números son los puntos esperados."));
+    d.appendChild(ul);
+    return d;
+  }
+  let anRefT = null;
+  async function anRefresh() {
+    if (document.hidden || !anData || anStale) return;
+    const ps = [].concat(anData.titulares || [], anData.suplentes || []);
+    if (!ps.length) return;
+    let r = null;
+    try { r = await (await fetch(API + "/analiza-refresco?n=" + encodeURIComponent(ps.map((p) => p.nombre + "~" + (p.equipo || "")).join("|")), { cache: "no-store" })).json(); } catch (e) { return; }
+    if (!r || !r.items) return;
+    let ch = false;
+    ps.forEach((p) => {
+      const it = r.items[p.nombre]; if (!it) return;
+      if (it.prob != null && it.prob !== p.prob) { p.prob = it.prob; ch = true; }
+      if (!!it.san !== !!p.san || !!it.inj !== !!p.inj) { p.san = !!it.san; p.inj = !!it.inj; ch = true; }
+    });
+    if (ch) { const y = window.scrollY; renderAnalisis(anData); window.scrollTo(0, y); const m = $("anMsg"); if (m) m.textContent = "🔄 Alineaciones probables actualizadas a las " + new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }); }
+  }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) anRefresh(); });
+
   function renderAnalisis(d) {
     anData = d;
     const out = $("anOut");
@@ -3414,84 +3487,46 @@
       root.appendChild(list);
       showModal(root);
     }
-    // Campo: mismo motor visual que "Alineaciones probables" (posicionamiento
-    // en % con fotos que se encogen progresivamente si hay 4 o 5+ jugadores
-    // en la línea), para que no queden pegados/descuadrados como antes.
-    const pitchCard = (p, x, y, sizeClass) => {
-      const pl = el("div", "alin-pl" + (sizeClass ? " alin-pl-" + sizeClass : ""));
-      pl.style.left = x + "%";
-      pl.style.top = y + "%";
-      const ph = el("div", "alin-pimg");
-      ph.appendChild(photoImg(p.photo));
-      if (p.prob != null) {
-        const pct = el("span", "alin-pct", p.prob + "%");
-        pct.style.borderColor = pctColor(p.prob);
-        pct.title = probTitle(p.prob);
-        ph.appendChild(pct);
-      }
-      pl.appendChild(ph);
-      pl.appendChild(el("div", "alin-pname", p.last || p.nombre || ""));
-      pl.addEventListener("click", () => swapPicker(p));
-      return pl;
-    };
-    const field = el("div", "alin-pitch");
-    field.style.maxWidth = "520px";
-    field.style.margin = "12px auto";
-    // Antes se mostraba debajo de cada titular con la plaza en duda un
-    // "recambio" tomado del banquillo de la MISMA posición (como en
-    // "Alineaciones probables"). Se quita: con pocos jugadores por posición
-    // en un equipo de Futmondo, el banquillo de esa posición se agotaba con
-    // el primer titular dudoso y los siguientes se quedaban sin recambio
-    // aunque estuvieran igual o peor (p.ej. Lemar sí lo mostraba y Vinícius
-    // o Amatucci no), dando una sensación inconsistente/con fallos. El
-    // banquillo completo ya se ve debajo del campo y sigue sirviendo para
-    // tocar y meter a cualquiera.
-    [["DEL", 15], ["CEN", 41], ["DEF", 67], ["POR", 88]].forEach((band) => {
-      const arr = tits.filter((p) => p.pos === band[0]);
-      const n = arr.length;
-      if (!n) return;
-      const sizeClass = n >= 5 ? "tight" : n === 4 ? "semi" : "";
-      const inset = n >= 5 ? 13 : n === 4 ? 16 : 20;
-      const span = 100 - inset * 2;
-      const step = n > 1 ? span / (n - 1) : 0;
-      arr.forEach((p, i) => {
-        const x = n > 1 ? (inset + i * step) : 50;
-        field.appendChild(pitchCard(p, x, band[1], sizeClass));
+    // Campo y banquillo: EXACTAMENTE la misma plantilla que "Alineaciones
+    // probables" (EduAlineacion.card): mismas fotos, % de titularidad, avisos
+    // de duda/sancionado/lesionado y banquillo.
+    const POSLAB = { POR: "Portero", DEF: "Defensa", CEN: "Mediocampista", DEL: "Delantero" };
+    const toSide = (p, pos) => ({ name: p.nombre, full: p.nombre, pos: POSLAB[pos || p.pos] || "Mediocampista", photo: p.photo || "", prob: p.prob != null ? p.prob : null, san: !!p.san || /SANC/i.test(p.estado || ""), inj: !!p.inj || /LESI/i.test(p.estado || ""), _p: p });
+    const myIds = new Set([].concat(tits, sups).map((p) => String(p.id || "")).filter(Boolean));
+    const pool = (all || []).filter((q) => myIds.has(String(q.id)));
+    const cardOpts = (title) => ({ pool, title, noAuto: true });
+    const hookSwap = (card) => {
+      card.querySelectorAll("a.pl").forEach((a) => {
+        a.addEventListener("click", (ev) => {
+          const m = (a.getAttribute("href") || "").match(/\/jugador\/([^/]+)/);
+          const pl = m && [].concat(tits, sups).find((x) => String(x.id) === decodeURIComponent(m[1]));
+          if (pl) { ev.preventDefault(); swapPicker(pl); }
+        });
       });
-    });
-    if (field.children.length) { out.appendChild(field); out.appendChild(probLegendBtn()); }
-
-    const benchCard = (p) => {
-      const card = el("div", "pitch-player bench");
-      const ph = el("div", "pitch-photo");
-      ph.appendChild(photoImg(p.photo));
-      card.appendChild(ph);
-      card.appendChild(el("div", "pitch-name", p.nombre || ""));
-      if (p.logo) {
-        const tm = el("div", "pitch-team");
-        const lg = el("img", "pitch-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy";
-        tm.appendChild(lg);
-        if (p.equipo) tm.appendChild(el("span", null, p.equipo));
-        card.appendChild(tm);
-      }
-      const info = el("div", "pitch-info");
-      const pcp = el("span", "pc-prob", (p.prob != null ? p.prob : "?") + "%"); if (p.prob != null) pcp.title = probTitle(p.prob); info.appendChild(pcp);
-      if (p.estado && p.estado !== "OK" && p.estado !== "?") info.appendChild(el("span", "pc-bad", p.estado));
-      card.appendChild(info);
-      if (p.rival) card.appendChild(el("div", "pitch-ha", (p.casa === true ? "🏠 " : p.casa === false ? "✈️ " : "") + p.rival));
-      if (p.fecha) card.appendChild(el("div", "pitch-when", whenShort(p.fecha)));
-      card.appendChild(el("div", "pitch-pts", p.puntos != null ? p.puntos + " pts" : ""));
-      card.addEventListener("click", () => swapPicker(p));
-      return card;
     };
-    if (sups.length) {
-      const bsec = el("div", "estado-sec");
-      bsec.appendChild(el("div", "estado-title", "Banquillo (toca para meterlo en el once)"));
-      const bench = el("div", "pitch-bench");
-      sups.forEach((p) => bench.appendChild(benchCard(p)));
-      bsec.appendChild(bench);
-      out.appendChild(bsec);
+    if (window.EduAlineacion && tits.length) {
+      const hs = el("div", "estado-title", "Tu once (toca a un jugador para cambiarlo)");
+      out.appendChild(hs);
+      const mine = window.EduAlineacion.card({ starters: tits.map((p) => toSide(p)), bench: [] }, "Tu equipo", "/img/avatar.svg", "", all, "probable", sups.map((p) => toSide(p)), cardOpts("Tu <b>once</b>"));
+      hookSwap(mine);
+      out.appendChild(mine);
+      out.appendChild(probLegendBtn());
+      // Once ideal con reglas fijas (no lo decide la IA)
+      const ideal = pickIdealXI(tits.concat(sups));
+      if (ideal) {
+        out.appendChild(el("div", "estado-title", "Once ideal"));
+        const rest = tits.concat(sups).filter((p) => ideal.starters.indexOf(p) < 0);
+        const posOf = new Map(ideal.slots.map((x) => [x.p, x.pos]));
+        const ic = window.EduAlineacion.card({ starters: ideal.starters.map((p) => toSide(p, posOf.get(p))), bench: [] }, "Once ideal", "/img/avatar.svg", "", all, "probable", rest.map((p) => toSide(p)), cardOpts("Once <b>ideal</b>"));
+        out.appendChild(ic);
+        const dif = ideal.starters.filter((p) => tits.indexOf(p) < 0).map((p) => p.nombre);
+        const fuera = tits.filter((p) => ideal.starters.indexOf(p) < 0).map((p) => p.nombre);
+        if (dif.length) out.appendChild(el("p", "muted small", "Respecto a tu once: entran " + dif.join(", ") + " y salen " + fuera.join(", ") + "."));
+        else out.appendChild(el("p", "muted small", "✅ Tu once ya es el ideal según las reglas."));
+        out.appendChild(idealRules(ideal));
+      }
     }
+
 
     // Plan de cambios por horario: en Futmondo puedes cambiar a un jugador
     // mientras NO haya jugado todavía (las veces que haga falta), pero en
@@ -3564,6 +3599,7 @@
       sec.appendChild(renderAiText(d.analisis, [].concat(tits, sups)));
       out.appendChild(sec);
     }
+    clearInterval(anRefT); anRefT = setInterval(anRefresh, 300000);
   }
 
   // Histórico de capitán: cada vez que analizas tu equipo se guarda a quién

@@ -2489,6 +2489,42 @@ async function dsChat(env, messages, model, think) {
   return (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content) || "";
 }
 
+function matchFFPlayer(nombre, roster, minScore) {
+  const nk = normKey(String(nombre || "").toLowerCase());
+  if (!nk || !roster || !roster.length) return null;
+  const words = nk.split(" ").filter(Boolean);
+  const last = words[words.length - 1];
+  const hint = words.length > 1 && words[0].length === 1 ? words[0] : "";
+  let best = null, bestScore = 0;
+  roster.forEach((r) => {
+    // Comparamos contra el nombre CORTO mostrado en la ficha (r.name,
+    // p.ej. "Vinícius") Y el nombre completo (r.full). Antes solo se
+    // miraba r.full y se puntuaba por la ÚLTIMA palabra (el apellido);
+    // eso fallaba con jugadores que se conocen por un solo nombre
+    // (Vinícius, Amatucci…) porque su "apellido" real en el nombre
+    // completo no es la palabra con la que juega el usuario, así que
+    // nunca llegaban al umbral y se quedaban con la foto antigua.
+    const candidates = [normKey(String(r.name || "").toLowerCase()), normKey(String(r.full || "").toLowerCase())].filter(Boolean);
+    let s = 0;
+    candidates.forEach((rk) => {
+      if (!rk) return;
+      const rw = rk.split(" ").filter(Boolean);
+      const rlast = rw[rw.length - 1];
+      let sc = 0;
+      if (rk === nk) sc = 100;
+      else {
+        if (rlast && rlast === last) sc += 50;
+        if (hint && rw[0] && rw[0][0] === hint) sc += 10;
+        if (rk.indexOf(nk) >= 0 || nk.indexOf(rk) >= 0) sc += 30;
+        if (words.some((w) => w.length >= 4 && rw.indexOf(w) >= 0)) sc += 30;
+      }
+      if (sc > s) s = sc;
+    });
+    if (s > bestScore) { bestScore = s; best = r; }
+  });
+  return bestScore >= (minScore || 50) ? best : null;
+}
+
 async function handleAnaliza(request, env, user) {
   if (!user) return json({ error: "Inicia sesión para analizar tu equipo." }, 401);
   // Cada llamada puede hacer hasta 2 peticiones a la IA (vision), así que se
@@ -2660,41 +2696,6 @@ async function handleAnaliza(request, env, user) {
   // el campo de "Analiza tu equipo" se vea igual que "Alineaciones probables"
   // (recorte de cuerpo entero de futbolfantasy.com) buscamos la foto de cada
   // jugador en el roster de su equipo (misma fuente y caché que Alineaciones).
-  const matchFFPlayer = (nombre, roster, minScore) => {
-    const nk = normKey(String(nombre || "").toLowerCase());
-    if (!nk || !roster || !roster.length) return null;
-    const words = nk.split(" ").filter(Boolean);
-    const last = words[words.length - 1];
-    const hint = words.length > 1 && words[0].length === 1 ? words[0] : "";
-    let best = null, bestScore = 0;
-    roster.forEach((r) => {
-      // Comparamos contra el nombre CORTO mostrado en la ficha (r.name,
-      // p.ej. "Vinícius") Y el nombre completo (r.full). Antes solo se
-      // miraba r.full y se puntuaba por la ÚLTIMA palabra (el apellido);
-      // eso fallaba con jugadores que se conocen por un solo nombre
-      // (Vinícius, Amatucci…) porque su "apellido" real en el nombre
-      // completo no es la palabra con la que juega el usuario, así que
-      // nunca llegaban al umbral y se quedaban con la foto antigua.
-      const candidates = [normKey(String(r.name || "").toLowerCase()), normKey(String(r.full || "").toLowerCase())].filter(Boolean);
-      let s = 0;
-      candidates.forEach((rk) => {
-        if (!rk) return;
-        const rw = rk.split(" ").filter(Boolean);
-        const rlast = rw[rw.length - 1];
-        let sc = 0;
-        if (rk === nk) sc = 100;
-        else {
-          if (rlast && rlast === last) sc += 50;
-          if (hint && rw[0] && rw[0][0] === hint) sc += 10;
-          if (rk.indexOf(nk) >= 0 || nk.indexOf(rk) >= 0) sc += 30;
-          if (words.some((w) => w.length >= 4 && rw.indexOf(w) >= 0)) sc += 30;
-        }
-        if (sc > s) s = sc;
-      });
-      if (s > bestScore) { bestScore = s; best = r; }
-    });
-    return bestScore >= (minScore || 50) ? best : null;
-  };
   try {
     const equipos = [...new Set([].concat(titulares, suplentes).map((p) => p.equipo).filter(Boolean))];
     const rosterByTeam = {};
@@ -2720,6 +2721,9 @@ async function handleAnaliza(request, env, user) {
       // de otro jugador distinto con nombre parecido en otro equipo.
       if (!m) m = matchFFPlayer(p.nombre, allRoster, 90);
       if (m && m.photo) p.photo = m.photo;
+      // Misma fuente que "Alineaciones probables" (FutbolFantasy, por equipo):
+      // así el % y los sancionados/lesionados coinciden con esa pestaña.
+      if (m) { if (m.prob != null) { p.prob = m.prob; p.probFf = m.prob; } p.san = !!m.san; p.inj = !!m.inj; }
       p.last = shortName(p.nombre);
     });
   } catch (e) {}
@@ -2758,7 +2762,7 @@ async function handleAnaliza(request, env, user) {
   // regla real, p.ej. recomendando meter de inicio a alguien que juega el
   // último día, dejando sin margen de reacción). Solo se le pide el once
   // ideal (con el número real de líneas, no uno fijo) y multiposición.
-  const prompt = "Eres un analista experto de fútbol fantasy (Futmondo Social). Analiza la PRÓXIMA jornada del equipo del usuario. Cada jugador trae posición(es), estado, probabilidad de ser titular, forma, puntos, si juega en CASA/FUERA y la FECHA/HORA de su partido.\n\n" + ctx + "\n\nResponde en español, BREVE, con emojis y **negrita** (prohibido #, tablas o listas con guiones). Usa EXACTAMENTE estos títulos cada uno en su propia línea, sin nada más en esa línea:\n**ONCE IDEAL**\n**PORTERO:**\n(el portero)\n**DEFENSA DE " + (cnt("DEF") || 0) + " CON:**\n(los " + (cnt("DEF") || 0) + " defensas, en su mejor posición, separados por comas)\n**MEDIOCENTROS:**\n(los centrocampistas)\n**DELANTEROS:**\n(los delanteros)\n**MULTIPOSICIÓN**\n(" + multiHint + ")";
+  const prompt = "Eres un analista experto de fútbol fantasy (Futmondo Social). Analiza la PRÓXIMA jornada del equipo del usuario. Cada jugador trae posición(es), estado, probabilidad de ser titular, forma, puntos, si juega en CASA/FUERA y la FECHA/HORA de su partido.\n\n" + ctx + "\n\nResponde en español, BREVE, con emojis y **negrita** (prohibido #, tablas o listas con guiones). Usa EXACTAMENTE este título en su propia línea, sin nada más en esa línea:\n**MULTIPOSICIÓN**\n(" + multiHint + ")";
   const analisis = await dsChat(env, [{ role: "user", content: prompt }], "deepseek-flash");
   // Guarda la recomendación de capitán de ESTA jornada (misma fórmula que
   // usa el frontend para pintar "Capitán recomendado") para poder comparar
@@ -3717,6 +3721,17 @@ export async function onRequestGet({ request, env: env0, params }) {
       }
       return json(health);
     } catch (e) { return json({ at: 0, total: 0, broken: [], error: String(e) }); }
+  }
+  if (path === "analiza-refresco") {
+    // Probabilidades/sanciones/lesiones al día (misma fuente que Alineaciones
+    // probables) para los jugadores ya analizados. n = "nombre~equipo|nombre~equipo".
+    const pairs = String(url.searchParams.get("n") || "").split("|").map((x) => x.split("~")).filter((x) => x[0]).slice(0, 30);
+    const teams = [...new Set(pairs.map((x) => x[1]).filter(Boolean))].slice(0, 14);
+    const rosters = {};
+    await Promise.all(teams.map(async (t) => { try { const d = await getFFTeam(env, t); rosters[t] = [].concat(d.starters || [], d.bench || []); } catch (e) { rosters[t] = []; } }));
+    const items = {};
+    pairs.forEach(([nm, tm]) => { const m = matchFFPlayer(nm, rosters[tm] || []); if (m) items[nm] = { prob: m.prob, san: !!m.san, inj: !!m.inj }; });
+    return json({ items, at: Date.now() });
   }
   if (path === "analiza-estado") {
     if (!user) return json({ status: "none" });
