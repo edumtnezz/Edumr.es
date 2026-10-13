@@ -91,6 +91,8 @@ Antes de tocar partidos/alineaciones/ficha, repasar esta lista y verificar con c
 ## Ideas pendientes de Edu (hacer cuando acabe lo de "Analiza tu equipo")
 1. **Jugadores rentables**: qué jugadores puntúan más en SofaScore, ordenables por calidad-precio (con fuente verificada, nada inventado).
 2. **Jugadores con ≥90% de probabilidad de jugar** (datos de FutbolFantasy).
+3. **Minutos jugados y rotaciones** (Edu, 13/10/2026): guardar el histórico de minutos de cada jugador (dato real de Futmondo: `mins` por partido en `/jugador`) para saber cuánto tiempo está en el campo. Poder filtrar/ordenar por los que juegan más minutos y por los que casi nunca sustituyen (más tiempo en campo = más opciones de gol y de puntos). Va junto a la idea 2 (apartado de jugadores con más posibilidades de jugar). Solo con datos reales; nada inventado.
+4. **Ajuste por rival** (pendiente de confirmar con Edu): medido el 13/10/2026 con 200 jugadores y 849 partidos (J4–J8): contra rival de los 10 primeros −1,6 pts (±0,4) frente a rival de los 10 últimos; casa/fuera casi no cambia (+0,35 ±0,35). Si se aplica, calcularlo en backend y cachearlo, y decir que es medición real de esta liga.
 
 ## Hallazgos verificados para Analiza (13/10/2026)
 - Puntos de un jugador en la jornada = suma de lo que aporta cada medio (ya × %) + estadísticas básicas; confirmado con la ayuda oficial de Futmondo (ver arriba).
