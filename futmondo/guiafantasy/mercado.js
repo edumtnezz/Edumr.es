@@ -3374,18 +3374,20 @@
         const ph = el("div", "an-tr-ph"); ph.appendChild(photoImg(photoOf(p))); c.appendChild(ph);
         const tx = el("div", "an-tr-tx");
         tx.appendChild(el("b", null, p.last || p.nombre));
-        tx.appendChild(el("small", null, sub(p)));
+        const st = el("div", "an-tr-st");
+        sub(p).forEach((x) => { const i = el("div", "an-tr-s" + (x[2] ? " " + x[2] : "")); i.appendChild(el("b", null, x[0])); i.appendChild(el("span", null, x[1])); st.appendChild(i); });
+        tx.appendChild(st);
         c.appendChild(tx);
         row.appendChild(c);
       });
       g.appendChild(row);
       box.appendChild(g);
     };
-    group("🔥", "En racha", "hot", hot, (p) => "▲ Últimos 2 partidos: " + f1d(formOf(p).rec) + " pts de media · en los 5: " + f1d(formOf(p).avg) + " pts de media");
-    group("🧊", "A la baja", "cold", cold, (p) => "▼ Últimos 2 partidos: " + f1d(formOf(p).rec) + " pts de media · en los 5: " + f1d(formOf(p).avg) + " pts de media");
+    group("🔥", "En racha", "hot", hot, (p) => { const fo = formOf(p); return [["▲ " + f1d(fo.rec), "últimos 2", "up"], [f1d(fo.avg), "últimos 5", ""]]; });
+    group("🧊", "A la baja", "cold", cold, (p) => { const fo = formOf(p); return [["▼ " + f1d(fo.rec), "últimos 2", "down"], [f1d(fo.avg), "últimos 5", ""]]; });
     const irr = ps.filter((p) => { const fo = formOf(p); return fo.len >= 3 && fo.len - fo.played >= 2 && fo.played >= 1; }).sort((a, b) => formOf(b).avg - formOf(a).avg).slice(0, 4);
-    group("🎲", "Irregulares: puntúan al jugar, pero se pierden partidos", "irr", irr, (p) => { const fo = formOf(p); return "Jugó " + fo.played + " de " + fo.len + " partidos · " + f1d(fo.avg) + " pts de media cuando juega"; });
-    group("⚠️", "Dudas de jugar", "risk", risk, (p) => p.prob + "% de jugar");
+    group("🎲", "Irregulares: puntúan al jugar, pero se pierden partidos", "irr", irr, (p) => { const fo = formOf(p); return [[fo.played + "/" + fo.len, "jugó", ""], [f1d(fo.avg), "pts al jugar", "up"]]; });
+    group("⚠️", "Dudas de jugar", "risk", risk, (p) => [[p.prob + "%", "de jugar", "down"]]);
     return { box, total };
   }
   // Desglose de una jornada: AS, Marca y SofaScore (puntos de su tabla × 50% de tu liga), minutos y el resto

@@ -1319,3 +1319,10 @@ html { overflow-anchor: none; }
 .an-fm-bar.extra.pos b { color: #4ade80; }
 .an-fm-bar.extra.neg b { color: #f87171; }
 .an-fm-det .an-fm-dn { color: rgba(255,255,255,.65); padding: 6px 4px 2px; }
+.an-tr-chip { border-radius: 18px; padding: 5px 12px 5px 5px; }
+.an-tr-st { display: flex; gap: 6px; margin-top: 3px; }
+.an-tr-s { display: flex; flex-direction: column; align-items: center; line-height: 1.05; padding: 3px 8px; border-radius: 10px; background: rgba(255,255,255,.1); min-width: 46px; }
+.an-tr-tx .an-tr-s b { font: 800 .95rem 'Space Grotesk', sans-serif; }
+.an-tr-s span { font-size: .5rem; text-transform: uppercase; letter-spacing: .06em; opacity: .7; margin-top: 2px; white-space: nowrap; }
+.an-tr-s.up { background: rgba(34,197,94,.2); color: #4ade80; }
+.an-tr-s.down { background: rgba(239,68,68,.2); color: #f87171; }
