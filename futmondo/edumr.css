@@ -688,3 +688,4 @@ body {
   width: 8px; height: 8px; border-radius: 50%; background: #fff; color: #2563eb; font-size: 0.4rem; line-height: 1; font-weight: 900;
 }
 .cx-jn.cx-jn-probable { border-color: #3b82f6; box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.45), 0 2px 8px rgba(59, 130, 246, 0.18); }
+.cx-prob-upd { text-align: center; font-size: 0.66rem; font-weight: 700; color: #2563eb; padding: 6px 0 2px; }

@@ -135,18 +135,31 @@
       }
     });
   }
+  // "Onces probables · actualizado a las HH:MM" (hora de la lectura más antigua de las usadas)
+  function showProbTime(c) {
+    var grid = document.getElementById("cxJGrid");
+    if (!grid || !grid.parentNode) return;
+    var el = document.getElementById("cxProbUpd");
+    var has = c && c.upd && Object.keys(c.set).length;
+    if (!has) { if (el) el.remove(); return; }
+    if (!el) { el = document.createElement("div"); el.id = "cxProbUpd"; el.className = "cx-prob-upd"; grid.parentNode.appendChild(el); }
+    var d = new Date(c.upd), now = new Date();
+    var hm = d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+    var same = d.toDateString() === now.toDateString();
+    el.textContent = "Onces probables · actualizado " + (same ? "a las " + hm : d.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit" }) + " " + hm);
+  }
   function applyProb(n) {
     if (!n) return;
     var c = probCache[n];
-    if (c) markProb(c.set);
+    if (c) { markProb(c.set); showProbTime(c); }
     if (c && Date.now() - c.at < 300000) return;
     fetch(API + "/alineaciones-estado?jornada=" + n, { cache: "no-store" })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         var set = {};
         ((d && d.items) || []).forEach(function (i) { set[i.home + "|" + i.away] = 1; });
-        probCache[n] = { at: Date.now(), set: set };
-        if (jornada === n) markProb(set);
+        probCache[n] = { at: Date.now(), set: set, upd: (d && d.updatedAt) || 0 };
+        if (jornada === n) { markProb(set); showProbTime(probCache[n]); }
       }).catch(function () {});
   }
   function loadJornada(n) {

@@ -1700,8 +1700,8 @@ async function getFFTeam(env, name) {
   };
   if (SLUG_FIX[slug]) slug = SLUG_FIX[slug];
   const key = "ffteam:v8:" + slug;
-  try { const c = await env.PORRA.get(key, "json"); if (c && c.data && Date.now() - (c.at || 0) < 3 * 3600 * 1000) return c.data; } catch (e) {}
-  const data = { starters: [], bench: [] };
+  try { const c = await env.PORRA.get(key, "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) { if (!c.data.fetchedAt) c.data.fetchedAt = c.at; return c.data; } } catch (e) {}
+  const data = { starters: [], bench: [], fetchedAt: Date.now() };
   try {
     const h = await (await fetch("https://www.futbolfantasy.com/laliga/equipos/" + slug, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text();
     const iTit = h.indexOf("jugadores-titulares-");
@@ -2269,9 +2269,12 @@ async function getProbableFlags(env, jornada) {
   const nm = (t) => (t && (t.shortName || t.name)) || "";
   const open = (jd.matches || []).filter((m) => m.status === "SCHEDULED" || m.status === "TIMED");
   const names = [...new Set(open.reduce((a, m) => a.concat([nm(m.homeTeam), nm(m.awayTeam)]), []).filter(Boolean))];
-  const has = {};
-  await Promise.all(names.map(async (n) => { try { const t = await getFFTeam(env, n); has[n] = ((t && t.starters) || []).length >= 10; } catch (e) { has[n] = false; } }));
-  return { matchday: jn, items: open.filter((m) => has[nm(m.homeTeam)] && has[nm(m.awayTeam)]).map((m) => ({ home: nm(m.homeTeam), away: nm(m.awayTeam) })) };
+  const has = {}, at = {};
+  await Promise.all(names.map(async (n) => { try { const t = await getFFTeam(env, n); has[n] = ((t && t.starters) || []).length >= 10; at[n] = (t && t.fetchedAt) || 0; } catch (e) { has[n] = false; } }));
+  const items = open.filter((m) => has[nm(m.homeTeam)] && has[nm(m.awayTeam)]);
+  // Hora de la lectura MÁS ANTIGUA de las usadas: así la hora enseñada nunca promete más frescura de la real
+  const ts = items.reduce((a, m) => a.concat([at[nm(m.homeTeam)], at[nm(m.awayTeam)]]), []).filter(Boolean);
+  return { matchday: jn, updatedAt: ts.length ? Math.min.apply(null, ts) : 0, items: items.map((m) => ({ home: nm(m.homeTeam), away: nm(m.awayTeam) })) };
 }
 
 async function getJornadaStrip(env, matchday) {
