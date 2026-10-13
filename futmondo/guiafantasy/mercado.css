@@ -1350,3 +1350,12 @@ html { overflow-anchor: none; }
 /* Ordenar: misma fuente que el resto de botones, en normal */
 .mx-filters .mx-chip,.mx-filters .merc-segbtn.mx-chip,.mx-filters .merc-segbtn{font-family:inherit;font-weight:400;font-size:.86rem;line-height:1}
 .mkt-reset{display:block;width:100%;margin:0 0 12px;padding:11px 14px;border-radius:14px;font-weight:600}
+
+/* Botón Volver unificado (partido, jugador, club, equipos) */
+.pp-back{width:auto;height:44px;padding:0 18px 0 14px;border-radius:999px;font-size:1.05rem;font-weight:700;opacity:1;margin-bottom:12px;gap:2px;-webkit-tap-highlight-color:transparent;transition:transform .12s,background .15s}
+.pp-back::after{content:" Volver";font-size:.95rem;font-weight:700}
+.pp-back:active{transform:scale(.95)}
+.pp-back:focus-visible{outline:2px solid #22c55e;outline-offset:2px}
+.eq-backbar{display:flex;align-items:center;gap:14px;margin:0 0 6px;flex-wrap:wrap}
+.eq-backbar .pp-back{margin-bottom:6px}
+.eq-backbar .eq-back{margin:0 0 6px}

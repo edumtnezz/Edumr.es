@@ -118,6 +118,18 @@
   }
 
   function $(id) { return document.getElementById(id); }
+  // Botón "Volver": vuelve atrás solo si venimos de esta misma web; si no (enlace externo, pestaña nueva) va a un sitio sensato.
+  function goBack(fallback) {
+    let same = false;
+    try { same = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (e) {}
+    if (same && history.length > 1) history.back(); else location.href = fallback || "/futmondo/guiafantasy/inicio";
+  }
+  function backBtn(fallback, extra) {
+    const b = el("button", "btn-ghost noti-back pp-back" + (extra ? " " + extra : ""), "←");
+    b.type = "button"; b.setAttribute("aria-label", "Volver");
+    b.addEventListener("click", () => goBack(fallback));
+    return b;
+  }
   function money(n) { return Number(n || 0).toLocaleString("es-ES"); }
   function horaTxt(v) { try { return new Date(v).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }); } catch (e) { return ""; } }
   function el(tag, cls, txt) {
@@ -1245,10 +1257,7 @@
   }
   function renderMatchDetail(box, m, d, jn, xi, xiKind, finished, ffData) {
     box.innerHTML = "";
-    const back = el("button", "btn-ghost noti-back pp-back mpage-back", "←");
-    back.type = "button"; back.setAttribute("aria-label", "Volver");
-    back.addEventListener("click", () => { if (history.length > 1) history.back(); else location.href = "/futmondo/guiafantasy/inicio"; });
-    box.appendChild(back);
+    box.appendChild(backBtn("/futmondo/guiafantasy/inicio", "mpage-back"));
     const head = el("div", "mpage-top");
     [[m.homeCrest, "left"], [m.awayCrest, "right"]].forEach((x) => { if (!x[0]) return; const bg = el("img", "mpage-bgcrest " + x[1]); window.EduAlineacion ? window.EduAlineacion.setCrest(bg, x[0]) : (bg.src = x[0]); bg.alt = ""; head.appendChild(bg); });
     const tl = el("div", "mpage-topline");
@@ -1518,11 +1527,7 @@
       const p = (all || []).find((x) => String(x.id) === String(id)) || {};
       const y = window.scrollY;
       box.innerHTML = "";
-      const back = el("button", "btn-ghost noti-back pp-back", "←");
-      back.type = "button";
-      back.setAttribute("aria-label", "Volver");
-      back.addEventListener("click", () => { if (history.length > 1) history.back(); else location.href = "/futmondo/guiafantasy/inicio"; });
-      box.appendChild(back);
+      box.appendChild(backBtn("/futmondo/guiafantasy/mercado"));
       box.appendChild(renderFicha(d, p));
       if (!first) window.scrollTo(0, y);
     };
@@ -2870,9 +2875,12 @@
     return box;
   }
   function eqBack(box) {
-    const a = el("a", "eq-back", "← Todos los equipos");
+    const bar = el("div", "eq-backbar");
+    bar.appendChild(backBtn("/equipos"));
+    const a = el("a", "eq-back", "Todos los equipos");
     a.href = "/equipos";
-    box.appendChild(a);
+    bar.appendChild(a);
+    box.appendChild(bar);
   }
   async function eqTeams() {
     const d = await (await fetch(API + "/equipos")).json();
@@ -2880,6 +2888,7 @@
   }
   async function renderTeamsIndex() {
     const box = eqOpen(); if (!box) return;
+    const bar0 = el("div", "eq-backbar"); bar0.appendChild(backBtn("/futmondo/guiafantasy/inicio")); box.appendChild(bar0);
     box.appendChild(el("h2", "eq-h1", "Equipos"));
     const grid = el("div", "eq-grid");
     box.appendChild(grid);
