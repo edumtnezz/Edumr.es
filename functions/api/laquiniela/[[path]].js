@@ -3682,6 +3682,16 @@ export async function onRequestGet({ request, env: env0, params }) {
   if (path === "rachas") {
     try { return json(await getRachas(env)); } catch (e) { return json({ players: [] }); }
   }
+  if (path === "ff-upd-debug") {
+    try {
+      const h = await (await fetch("https://www.futbolfantasy.com/laliga/equipos/" + (url.searchParams.get("t") || "sevilla"), { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text();
+      const out = [];
+      const re = /(actualiz|hace \d+|updated|ultima|última|probabilidades)[^<]{0,90}/gi; let m;
+      while ((m = re.exec(h)) && out.length < 25) out.push(h.slice(Math.max(0, m.index - 80), m.index + 140).replace(/\s+/g, " "));
+      const dt = [...h.matchAll(/(datetime|data-fecha|data-update|data-time|data-actualiz)[^>]{0,80}/gi)].slice(0, 15).map((x) => x[0]);
+      return json({ len: h.length, out, dt });
+    } catch (e) { return json({ error: String(e) }); }
+  }
   if (path === "alineaciones-estado") {
     try { return json(await getProbableFlags(env, url.searchParams.get("jornada") || null)); } catch (e) { return json({ matchday: 0, items: [] }); }
   }
