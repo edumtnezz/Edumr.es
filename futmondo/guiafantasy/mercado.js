@@ -3736,6 +3736,10 @@
               const mn = same.length ? Math.min(...same.map((x) => expOf(x.p))) : null;
               const nm = { POR: "portero", DEF: "defensas", CEN: "centrocampistas", DEL: "delanteros" }[p.pos] || p.pos;
               if (mn != null) why += " · en " + nm + " entran " + same.length + " con " + f1e(mn) + " o más";
+              if (mn != null && mn - expOf(p) < 1) {
+                const hechos = [p.casa === true ? "juega en casa" : p.casa === false ? "juega fuera" : "", p.rival ? "rival " + p.rival : "", p.penal ? "penaltis: " + p.penal : ""].filter(Boolean);
+                why += " · ⚖️ casi empate (solo " + f1e(mn - expOf(p)) + " pts de diferencia)" + (hechos.length ? ": " + hechos.join(" · ") : "") + ". Puedes dejarlo tú si te convence más.";
+              }
             }
             tx.appendChild(el("small", null, why));
             r.appendChild(tx);
