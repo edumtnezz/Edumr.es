@@ -3193,6 +3193,11 @@
     });
     return bestScore >= 40 ? best : null;
   }
+  let anPool = [];
+  function photoOf(p) {
+    try { if (window.EduAlineacion && p) return window.EduAlineacion.photoFor({ name: p.nombre, full: p.nombre, photo: p.photo || "" }, anPool); } catch (e) {}
+    return p && p.photo;
+  }
   function renderAiText(t, roster) {
     const box = el("div", "an-ai");
     const ICONS = [["ONCE", "⭐"], ["PORTERO", "🧤"], ["DEFENSA", "🛡️"], ["MEDIO", "🎯"], ["DELANTERO", "⚽"], ["CAMBIOS", "🔄"], ["MULTIPOSICI", "↔️"], ["AVISO", "⏰"]];
@@ -3201,7 +3206,7 @@
     const isMulti = (title) => /MULTIPOSICI/i.test(title);
     const photoChip = (p) => {
       const c = el("div", "an-pchip");
-      const ph = el("div", "an-pchip-photo"); ph.appendChild(photoImg(p.photo));
+      const ph = el("div", "an-pchip-photo"); ph.appendChild(photoImg(photoOf(p)));
       c.appendChild(ph);
       c.appendChild(el("div", "an-pchip-name", p.last || p.nombre || ""));
       return c;
@@ -3215,7 +3220,7 @@
       const row = el("div", "an-mp-row");
       if (mm) {
         const pl = roster && roster.length ? findRosterPlayer(mm[1], roster) : null;
-        const ph = el("div", "an-mp-photo"); if (pl) ph.appendChild(photoImg(pl.photo)); else ph.textContent = "↔️";
+        const ph = el("div", "an-mp-photo"); if (pl) ph.appendChild(photoImg(photoOf(pl))); else ph.textContent = "↔️";
         row.appendChild(ph);
         const txt = el("div", "an-mp-text");
         txt.appendChild(el("div", "an-mp-name", (pl && (pl.last || pl.nombre)) || mm[1].trim()));
@@ -3404,7 +3409,7 @@
         const cap = el("div", "an-capitan");
         cap.appendChild(el("div", "an-capitan-t", "👑 Capitán recomendado"));
         const row = el("div", "an-cap-pick");
-        const ph = el("div", "an-cap-photo"); ph.appendChild(photoImg(top.photo)); row.appendChild(ph);
+        const ph = el("div", "an-cap-photo"); ph.appendChild(photoImg(photoOf(top))); row.appendChild(ph);
         const body = el("div", "an-cap-body");
         body.appendChild(el("div", "an-cap-name", top.nombre || ""));
         const why = [];
@@ -3437,7 +3442,7 @@
         cla.slice(0, 8).forEach((p) => {
           const c = el("div", "an-clause-card");
           const ph = el("div", "an-clause-photo");
-          ph.appendChild(photoImg(p.photo));
+          ph.appendChild(photoImg(photoOf(p)));
           c.appendChild(ph);
           c.appendChild(el("div", "an-clause-name", p.nombre || ""));
           c.appendChild(el("div", "an-clause-cl", "🔓 " + money(p.clause) + " €"));
@@ -3476,7 +3481,7 @@
       const list = el("div", "pick-list");
       others.forEach((o) => {
         const row = el("button", "cmp-sugrow"); row.type = "button";
-        const ph = el("span", "cmp-sugphoto"); ph.appendChild(photoImg(o.photo)); row.appendChild(ph);
+        const ph = el("span", "cmp-sugphoto"); ph.appendChild(photoImg(photoOf(o))); row.appendChild(ph);
         const bb = el("span", "cmp-sugbody");
         bb.appendChild(el("span", "cmp-sugname", o.nombre || ""));
         bb.appendChild(el("span", "cmp-sugteam", (o.pos || "") + (o.prob != null ? " · juega " + o.prob + "%" : "")));
@@ -3494,7 +3499,8 @@
     const toSide = (p, pos) => ({ name: p.nombre, full: p.nombre, pos: POSLAB[pos || p.pos] || "Mediocampista", photo: p.photo || "", prob: p.prob != null ? p.prob : null, san: !!p.san || /SANC/i.test(p.estado || ""), inj: !!p.inj || /LESI/i.test(p.estado || ""), _p: p });
     const myIds = new Set([].concat(tits, sups).map((p) => String(p.id || "")).filter(Boolean));
     const pool = (all || []).filter((q) => myIds.has(String(q.id)));
-    const cardOpts = (title) => ({ pool, title, noAuto: true });
+    anPool = pool;
+    const cardOpts = (title) => ({ pool, title, noAuto: true, noCrest: true });
     const hookSwap = (card) => {
       card.querySelectorAll("a.pl").forEach((a) => {
         a.addEventListener("click", (ev) => {
@@ -3510,20 +3516,25 @@
       const mine = window.EduAlineacion.card({ starters: tits.map((p) => toSide(p)), bench: [] }, "Tu equipo", "/img/avatar.svg", "", all, "probable", sups.map((p) => toSide(p)), cardOpts("Tu <b>once</b>"));
       hookSwap(mine);
       out.appendChild(mine);
-      out.appendChild(probLegendBtn());
       // Once ideal con reglas fijas (no lo decide la IA)
       const ideal = pickIdealXI(tits.concat(sups));
       if (ideal) {
-        out.appendChild(el("div", "estado-title", "Once ideal"));
+        const wrap = el("div", "an-ideal");
+        const hd = el("div", "an-ideal-head");
+        hd.appendChild(el("span", "an-ideal-badge", "✨ Recomendación de la IA"));
+        hd.appendChild(el("div", "an-ideal-t", "Tu once ideal"));
+        hd.appendChild(el("div", "an-ideal-s", "Formación " + ideal.formacion + " · el once que más puntos debería dar esta jornada"));
+        wrap.appendChild(hd);
         const rest = tits.concat(sups).filter((p) => ideal.starters.indexOf(p) < 0);
         const posOf = new Map(ideal.slots.map((x) => [x.p, x.pos]));
         const ic = window.EduAlineacion.card({ starters: ideal.starters.map((p) => toSide(p, posOf.get(p))), bench: [] }, "Once ideal", "/img/avatar.svg", "", all, "probable", rest.map((p) => toSide(p)), cardOpts("Once <b>ideal</b>"));
-        out.appendChild(ic);
+        wrap.appendChild(ic);
         const dif = ideal.starters.filter((p) => tits.indexOf(p) < 0).map((p) => p.nombre);
         const fuera = tits.filter((p) => ideal.starters.indexOf(p) < 0).map((p) => p.nombre);
-        if (dif.length) out.appendChild(el("p", "muted small", "Respecto a tu once: entran " + dif.join(", ") + " y salen " + fuera.join(", ") + "."));
-        else out.appendChild(el("p", "muted small", "✅ Tu once ya es el ideal según las reglas."));
-        out.appendChild(idealRules(ideal));
+        if (dif.length) wrap.appendChild(el("p", "an-ideal-diff", "Respecto a tu once: entran " + dif.join(", ") + " y salen " + fuera.join(", ") + "."));
+        else wrap.appendChild(el("p", "an-ideal-diff", "✅ Tu once ya es el ideal según las reglas."));
+        wrap.appendChild(idealRules(ideal));
+        out.appendChild(wrap);
       }
     }
 
@@ -3575,7 +3586,7 @@
         card.appendChild(el("span", "swap-pos", (posIcon[pos] || "") + " " + pos));
         const side = (p, cls) => {
           const s = el("div", "swap-side " + cls);
-          const ph = el("div", "swap-photo"); ph.appendChild(photoImg(p.photo)); s.appendChild(ph);
+          const ph = el("div", "swap-photo"); ph.appendChild(photoImg(photoOf(p))); s.appendChild(ph);
           s.appendChild(el("div", "swap-name", p.last || p.nombre || ""));
           s.appendChild(el("div", "swap-time", p.fecha ? whenShort(p.fecha) : "sin hora"));
           return s;
@@ -3593,10 +3604,12 @@
       sec.appendChild(grid);
       out.appendChild(sec);
     }
-    if (d.analisis) {
+    // Análisis guardados antes traían un "ONCE IDEAL" escrito por la IA: se quita (ahora va arriba con reglas fijas).
+    let aiTxt = String(d.analisis || "");
+    if (/\*\*ONCE IDEAL\*\*/i.test(aiTxt)) aiTxt = /\*\*MULTIPOSICI/i.test(aiTxt) ? aiTxt.replace(/\*\*ONCE IDEAL\*\*[\s\S]*?(?=\*\*MULTIPOSICI)/i, "") : "";
+    if (aiTxt.trim()) {
       const sec = el("div", "estado-sec");
-      sec.appendChild(el("div", "estado-title", "Recomendaciones de la IA"));
-      sec.appendChild(renderAiText(d.analisis, [].concat(tits, sups)));
+      sec.appendChild(renderAiText(aiTxt, [].concat(tits, sups)));
       out.appendChild(sec);
     }
     clearInterval(anRefT); anRefT = setInterval(anRefresh, 300000);

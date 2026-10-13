@@ -184,6 +184,13 @@
       var pool = (players || []).filter(function (p) { return teamScore(p.team, teamName) >= 1; });
       var f = match(o, pool); return f ? f.name : (o.name || o.full);
     },
+    // Misma foto que se pinta en el campo (cara de Futmondo o, si no, la de FutbolFantasy)
+    photoFor: function (s, pool) {
+      var fm = match(s, pool || []);
+      var photo = (fm && fm.photo) || s.photo || "/img/avatar.svg";
+      if (fm && fm.photo && s.photo && !/\/faces\/\d+\/\d+\.png/.test(fm.photo)) photo = s.photo;
+      return photo;
+    },
     card: function (side, teamName, crest, subtitle, players, mode, subs, opts) {
       opts = opts || {};
       // Todos al 100% = once confirmado: nunca se enseñan porcentajes
@@ -193,6 +200,7 @@
       if (mode === "played") tt.innerHTML = "Partido <b>finalizado</b>";
       else if (mode === "confirmed") tt.innerHTML = "Alineación <b>confirmada</b>";
       if (opts.title) tt.innerHTML = opts.title;
+      if (opts.noCrest) card.classList.add("al-nocrest");
       setCrest(card.querySelector(".al-head img"), crest);
       var pool = opts.pool || (players || []).filter(function (p) { return teamScore(p.team, teamName) >= 1; });
       card.querySelector(".pitch").innerHTML = render(side, pool, side.bench || [], mode);

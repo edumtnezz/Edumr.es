@@ -52,3 +52,6 @@ a.pl:hover .pl-ph img { transform: scale(1.05); }
 /* Banquillo: sancionados (roja) y lesionados con 0% */
 .pl-prob.pl-out { --pc: #dc2626; left: 50%; transform: translateX(-50%); bottom: -6px; font-size: .5rem; letter-spacing: .02em; text-transform: uppercase; white-space: nowrap; padding: 2px 5px; }
 .al-bench-row .pl:has(.pl-out) .pl-ph img { filter: grayscale(.7); opacity: .75; }
+
+/* Tarjetas dentro de "Analiza tu equipo": sin escudo */
+.al-nocrest .al-head img { display: none; }
