@@ -3473,8 +3473,10 @@
             const isSel = chosenId ? String(p.id) === chosenId : false;
             const c = el("button", "an-cap-opt" + (isSel ? " sel" : "")); c.type = "button";
             const ph = el("div", "an-cap-opt-ph"); ph.appendChild(photoImg(photoOf(p))); c.appendChild(ph);
-            c.appendChild(el("div", "an-cap-opt-n", p.last || p.nombre || ""));
-            c.appendChild(el("div", "an-cap-opt-s", (i === 0 ? "⭐ Recomendado · " : "") + capScoreOf(p) + "/100"));
+            const tx = el("div", "an-cap-opt-tx");
+            tx.appendChild(el("div", "an-cap-opt-n", p.last || p.nombre || ""));
+            tx.appendChild(el("div", "an-cap-opt-s", (i === 0 ? "⭐ Recomendado · " : "") + capScoreOf(p) + "/100"));
+            c.appendChild(tx);
             c.addEventListener("click", async () => {
               if (!d.capJornada) { const m = $("anMsg"); if (m) m.textContent = "Vuelve a analizar para poder guardar tu capitán."; return; }
               try {

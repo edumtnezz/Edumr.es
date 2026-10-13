@@ -1190,4 +1190,4 @@ html { overflow-anchor: none; }
 .an-cap-opt-ph img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
 .an-cap-opt-n { font-weight: 800; font-size: .82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .an-cap-opt-s { font-size: .68rem; color: var(--muted); }
-.an-cap-opt > div:not(.an-cap-opt-ph) { min-width: 0; }
+.an-cap-opt-tx { min-width: 0; flex: 1; }
