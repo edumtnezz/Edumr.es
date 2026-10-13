@@ -720,7 +720,7 @@
   // Jornadas que ha JUGADO cada equipo (partidos terminados). Los 5 puntos de "fitness" son de los
   // últimos 5 partidos jugados, así que si un partido se suspende/aplaza (Rayo–Athletic) esa jornada
   // no cuenta y las etiquetas J deben saltársela.
-  let playedJ = null;
+  let playedJ = null, oppJ = {}, anFormaRender = null;
   function jLab(team, len, k, j0) {
     const l = playedJ && playedJ[teamCanon(team)];
     if (l && l.length >= len) return l[l.length - 1 - k];
@@ -740,9 +740,14 @@
         fetch(API + "/jornada?jornada=" + n).then((r) => r.json()).then((j) => ({ n, ms: (j && j.matches) || [] })).catch(() => null)));
       if (rs.some((x) => !x || !x.ms.length)) return; // si falta alguna jornada, mejor no inventar
       rs.sort((a, b) => a.n - b.n).forEach((r) => r.ms.forEach((x) => {
-        if (x.live && x.live.state === "final") [x.home, x.away].forEach((t) => { const k = teamCanon(t); (m[k] = m[k] || []).push(r.n); });
+        if (x.live && x.live.state === "final") [x.home, x.away].forEach((t) => {
+          const k = teamCanon(t); (m[k] = m[k] || []).push(r.n);
+          const isH = t === x.home;
+          (oppJ[k] = oppJ[k] || {})[r.n] = { rival: isH ? x.away : x.home, home: isH, crest: isH ? x.awayCrest : x.homeCrest };
+        });
       }));
       playedJ = m;
+      try { if (anFormaRender) anFormaRender(); } catch (e) {}
       try { renderRachas(); } catch (e) {}
       try { if (typeof clausApply === "function") clausApply(); } catch (e) {}
     } catch (e) {} finally { playedJBusy = false; }
@@ -1961,13 +1966,14 @@
     } catch (e) {}
   }
 
-  // Forma: media REAL de los puntos de sus últimos partidos (Futmondo). Sin pesos inventados.
+  // Forma: media REAL de los puntos de los últimos partidos que JUGÓ (Futmondo; un 0 = no jugó). Sin pesos inventados.
   function formOf(p) {
     const f = (p.fitness || []).map(Number).filter((x) => !isNaN(x));
-    const avg = f.length ? f.reduce((a, b) => a + b, 0) / f.length : 3;
-    const l2 = f.slice(-2);
+    const pl = f.filter((x) => x !== 0); // un 0 = no jugó ("–" en Futmondo)
+    const avg = pl.length ? pl.reduce((a, b) => a + b, 0) / pl.length : 0;
+    const l2 = f.slice(-2).filter((x) => x !== 0);
     const rec = l2.length ? l2.reduce((a, b) => a + b, 0) / l2.length : avg;
-    return { avg, rec, base: avg, trend: rec - avg };
+    return { avg, rec, base: avg, trend: l2.length ? rec - avg : 0, played: pl.length };
   }
   function expOf(p) {
     const f = p.fitness || [];
@@ -3320,6 +3326,7 @@
     return { formacion: best.form.join("-"), starters: best.sel, slots, total: best.total, by: best.by, players };
   }
   // Puntuación probable del once: suma de puntos esperados + análisis de racha.
+  const f1e = (x) => x.toFixed(1).replace(".", ",");
   function projBox(players, title, versus) {
     const ps = players.filter(Boolean);
     const f1 = (x) => x.toFixed(0);
@@ -3344,19 +3351,78 @@
     const hot = ps.filter((p) => expOf(p) > 0 && formOf(p).trend >= 1.5).sort((a, b) => formOf(b).trend - formOf(a).trend).slice(0, 4);
     const cold = ps.filter((p) => expOf(p) > 0 && formOf(p).trend <= -1.5).sort((a, b) => formOf(a).trend - formOf(b).trend).slice(0, 4);
     const risk = ps.filter((p) => p.prob != null && p.prob < 70).sort((a, b) => a.prob - b.prob).slice(0, 4);
-    const nm = (p) => p.last || p.nombre;
-    if (hot.length) box.appendChild(el("div", "an-proj-l", "🔥 En racha: " + hot.map((p) => nm(p) + " (últimos 2: " + formOf(p).rec.toFixed(1).replace(".", ",") + " vs media " + formOf(p).avg.toFixed(1).replace(".", ",") + ")").join(" · ")));
-    if (cold.length) box.appendChild(el("div", "an-proj-l", "🧊 A la baja: " + cold.map((p) => nm(p) + " (" + formOf(p).rec.toFixed(1).replace(".", ",") + " vs " + formOf(p).avg.toFixed(1).replace(".", ",") + ")").join(" · ")));
-    if (risk.length) box.appendChild(el("div", "an-proj-l", "⚠️ Dudas de jugar: " + risk.map((p) => nm(p) + " " + p.prob + "%").join(" · ")));
-    box.appendChild(el("div", "an-proj-note", "Se calcula solo con datos reales: la media de puntos de sus últimos partidos (Futmondo) × su probabilidad de ser titular (FutbolFantasy). La racha y las dudas se muestran como información, no cambian la cuenta."));
+    const f1d = (x) => x.toFixed(1).replace(".", ",");
+    const group = (icon, label, cls, arr, sub) => {
+      if (!arr.length) return;
+      const g = el("div", "an-tr-group " + cls);
+      g.appendChild(el("div", "an-tr-h", icon + " " + label));
+      const row = el("div", "an-tr-row");
+      arr.forEach((p) => {
+        const c = el("div", "an-tr-chip");
+        const ph = el("div", "an-tr-ph"); ph.appendChild(photoImg(photoOf(p))); c.appendChild(ph);
+        const tx = el("div", "an-tr-tx");
+        tx.appendChild(el("b", null, p.last || p.nombre));
+        tx.appendChild(el("small", null, sub(p)));
+        c.appendChild(tx);
+        row.appendChild(c);
+      });
+      g.appendChild(row);
+      box.appendChild(g);
+    };
+    group("🔥", "En racha", "hot", hot, (p) => "▲ " + f1d(formOf(p).rec) + " en sus 2 últimos · media " + f1d(formOf(p).avg));
+    group("🧊", "A la baja", "cold", cold, (p) => "▼ " + f1d(formOf(p).rec) + " en sus 2 últimos · media " + f1d(formOf(p).avg));
+    group("⚠️", "Dudas de jugar", "risk", risk, (p) => p.prob + "% de jugar");
     return { box, total };
+  }
+  // Forma de cada jugador: puntos de Futmondo en sus últimas 5 jornadas, con jornada y rival.
+  function renderForma(box, players, d) {
+    box.innerHTML = "";
+    box.appendChild(el("div", "estado-title", "📊 Forma de tus jugadores"));
+    box.appendChild(el("p", "muted small", "Puntos de Futmondo en sus últimas 5 jornadas, con la más reciente a la derecha. «–» = no jugó. «Esperado» = media de los partidos que jugó × su probabilidad de jugar."));
+    const j0 = d && d.capJornada ? d.capJornada - 1 : 0;
+    const order = { POR: 0, DEF: 1, CEN: 2, DEL: 3 };
+    const tits = (d && d.titulares) || [];
+    const sorted = players.slice().sort((a, b) => ((tits.indexOf(a) >= 0 ? 0 : 1) - (tits.indexOf(b) >= 0 ? 0 : 1)) || ((order[a.pos] || 0) - (order[b.pos] || 0)));
+    const grid = el("div", "an-fm-list");
+    sorted.forEach((p) => {
+      const card = el("div", "an-fm-card" + (tits.indexOf(p) >= 0 ? "" : " bench"));
+      const head = el("div", "an-fm-head");
+      const ph = el("div", "an-fm-ph"); ph.appendChild(photoImg(photoOf(p))); head.appendChild(ph);
+      const tx = el("div", "an-fm-tx");
+      const nm = el("b", null, p.last || p.nombre); tx.appendChild(nm);
+      tx.appendChild(el("small", null, (p.pos || "") + (p.equipo ? " · " + p.equipo : "") + (tits.indexOf(p) >= 0 ? "" : " · banquillo")));
+      head.appendChild(tx);
+      const rt = el("div", "an-fm-rt");
+      rt.appendChild(el("b", null, f1e(expOf(p)) + " pts"));
+      rt.appendChild(el("small", null, "esperado" + (p.prob != null ? " · " + p.prob + "% jugar" : "")));
+      head.appendChild(rt);
+      card.appendChild(head);
+      const f = (p.fitness || []).map(Number);
+      const row = el("div", "an-fm-row");
+      const len = f.length;
+      f.forEach((v, i) => {
+        const jn = jLab(p.equipo, len, len - 1 - i, j0);
+        const op = jn && oppJ[teamCanon(p.equipo)] && oppJ[teamCanon(p.equipo)][jn];
+        const c = el("div", "an-fm-chip " + (v === 0 ? "none" : v <= 3 ? "low" : v >= 10 ? "high" : "mid"));
+        c.appendChild(el("div", "an-fm-j", jn ? "J" + jn : "–"));
+        const mid = el("div", "an-fm-op");
+        if (op) { if (op.crest) { const im = el("img"); im.src = op.crest; im.alt = ""; im.loading = "lazy"; mid.appendChild(im); } mid.appendChild(haIcon(op.home)); }
+        c.appendChild(mid);
+        c.appendChild(el("div", "an-fm-v", v === 0 ? "–" : String(v)));
+        row.appendChild(c);
+      });
+      if (!f.length) row.appendChild(el("div", "muted small", "Sin datos de sus últimos partidos."));
+      card.appendChild(row);
+      grid.appendChild(card);
+    });
+    box.appendChild(grid);
   }
   function idealRules(ideal) {
     const d = el("details", "an-rules");
     d.appendChild(el("summary", null, "¿Cómo se elige el once ideal?"));
     const ul = el("div", "an-rules-b");
     const f1 = (x) => x.toFixed(1).replace(".", ",");
-    ul.appendChild(el("p", "muted small", "Reglas: 1) Puntos esperados = media de los puntos reales de sus últimos partidos (Futmondo) × probabilidad de ser titular (FutbolFantasy). No se suma ni se resta nada inventado (la racha y casa/fuera solo se muestran, no cuentan). 2) Sancionados o lesionados con menos de 10% valen 0. 3) Se prueban las formaciones 3-4-3, 3-5-2, 4-3-3, 4-4-2, 4-5-1, 5-3-2 y 5-4-1 (también la posición alternativa de los multiposición) y se queda la de más puntos esperados en total. 4) Siempre 1 portero. El nombre o el precio del jugador NO cuentan, solo estos números."));
+    ul.appendChild(el("p", "muted small", "Reglas: 1) Puntos esperados = media de los puntos reales de los últimos partidos que jugó (Futmondo; los guiones no cuentan) × probabilidad de ser titular (FutbolFantasy). No se suma ni se resta nada inventado (la racha y casa/fuera solo se muestran, no cuentan). 2) Sancionados o lesionados con menos de 10% valen 0. 3) Se prueban las formaciones 3-4-3, 3-5-2, 4-3-3, 4-4-2, 4-5-1, 5-3-2 y 5-4-1 (también la posición alternativa de los multiposición) y se queda la de más puntos esperados en total. 4) Siempre 1 portero. El nombre o el precio del jugador NO cuentan, solo estos números."));
     [["POR", "Portero"], ["DEF", "Defensas"], ["CEN", "Centrocampistas"], ["DEL", "Delanteros"]].forEach((g) => {
       const arr = ideal.by[g[0]] || [];
       if (!arr.length) return;
@@ -3368,7 +3434,7 @@
         const out = (p.san || p.inj || /SANC|LESI/i.test(p.estado || "")) && (p.prob == null || p.prob < 10);
         const row = el("div", "an-rules-row" + (i < n ? " in" : " out"));
         row.appendChild(el("b", null, (i < n ? "✅ " : "▫️ ") + (p.last || p.nombre) + " → " + f1(expOf(p)) + " pts esperados"));
-        row.appendChild(el("div", "an-rules-d", out ? "Sancionado/lesionado: vale 0." : "media de sus últimos partidos " + f1(fo.avg) + " (" + ser + ") × " + (p.prob != null ? p.prob + "% de jugar" : "sin dato de probabilidad (se usa 60%)") + (p.casa === true ? " · juega en casa" : p.casa === false ? " · juega fuera" : "")));
+        row.appendChild(el("div", "an-rules-d", out ? "Sancionado/lesionado: vale 0." : "media " + f1(fo.avg) + " en los " + fo.played + " partidos que jugó (últimos 5, de antiguo a reciente: " + ser + ") × " + (p.prob != null ? p.prob + "% de jugar" : "sin dato de probabilidad (se usa 60%)") + (p.casa === true ? " · juega en casa" : p.casa === false ? " · juega fuera" : "")));
         ul.appendChild(row);
       });
     });
@@ -3422,7 +3488,6 @@
       box.appendChild(el("div", "an-nota-num", nota + "/100"));
       box.appendChild(el("div", "an-nota-txt", "Nota de tu once · " + parts.join(" · ")));
       box.appendChild(el("div", "an-nota-info", "Cada posición se puntúa sobre 100 con: su forma en los últimos partidos, su probabilidad de ser titular, +4 si juega en casa / -2 si juega fuera, y +2 si tiene doble posición. Si está lesionado, se queda en 5."));
-      out.appendChild(box);
       // Capitán: en el modo Full Mundo dobla los puntos que haga, así que lo
       // que de verdad importa no es la nota genérica del once (esa vale para
       // defensas y porteros, que rara vez interesan de capitán), sino quién
@@ -3609,13 +3674,39 @@
         const idProj = projBox(ideal.starters, "📈 Puntuación probable del once ideal", myProj.total);
         idProj.box.classList.add("an-proj-dark");
         wrap.appendChild(idProj.box);
-        const dif = ideal.starters.filter((p) => tits.indexOf(p) < 0).map((p) => p.nombre);
-        const fuera = tits.filter((p) => ideal.starters.indexOf(p) < 0).map((p) => p.nombre);
-        if (dif.length) wrap.appendChild(el("p", "an-ideal-diff", "Respecto a tu once: entran " + dif.join(", ") + " y salen " + fuera.join(", ") + "."));
-        else wrap.appendChild(el("p", "an-ideal-diff", "✅ Tu once ya es el ideal según las reglas."));
+        const entran = ideal.starters.filter((p) => tits.indexOf(p) < 0);
+        const salen = tits.filter((p) => ideal.starters.indexOf(p) < 0);
+        if (entran.length || salen.length) {
+          const sw = el("div", "an-sw");
+          sw.appendChild(el("div", "an-sw-h", "Cambios respecto a tu once"));
+          const mk = (p, dir) => {
+            const r = el("div", "an-sw-row " + dir);
+            r.appendChild(el("span", "an-sw-ar", dir === "in" ? "▲" : "▼"));
+            const ph = el("div", "an-sw-ph"); ph.appendChild(photoImg(photoOf(p))); r.appendChild(ph);
+            const tx = el("div", "an-sw-tx");
+            tx.appendChild(el("b", null, p.last || p.nombre));
+            let why = f1e(expOf(p)) + " pts esperados";
+            if (dir === "out") {
+              const same = ideal.slots.filter((x) => x.pos === p.pos);
+              const mn = same.length ? Math.min(...same.map((x) => expOf(x.p))) : null;
+              const nm = { POR: "portero", DEF: "defensas", CEN: "centrocampistas", DEL: "delanteros" }[p.pos] || p.pos;
+              if (mn != null) why += " · en " + nm + " entran " + same.length + " con " + f1e(mn) + " o más";
+            }
+            tx.appendChild(el("small", null, why));
+            r.appendChild(tx);
+            return r;
+          };
+          entran.forEach((p) => sw.appendChild(mk(p, "in")));
+          salen.forEach((p) => sw.appendChild(mk(p, "out")));
+          wrap.appendChild(sw);
+        } else wrap.appendChild(el("p", "an-ideal-diff", "✅ Tu once ya es el ideal según las reglas."));
         wrap.appendChild(idealRules(ideal));
         out.appendChild(wrap);
       }
+      const fb = el("div", "an-forma");
+      out.appendChild(fb);
+      anFormaRender = () => renderForma(fb, tits.concat(sups), d);
+      anFormaRender();
     }
 
 

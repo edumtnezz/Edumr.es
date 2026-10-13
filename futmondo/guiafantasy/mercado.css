@@ -1195,3 +1195,79 @@ html { overflow-anchor: none; }
 .an-rules-row.out { opacity: .8; }
 .an-rules-d { font-size: .72rem; opacity: .8; font-weight: 400; }
 .an-ideal .al-bench { background: linear-gradient(180deg, #1e1b4b, #312e81 55%, #4338ca); border-top-color: rgba(255,255,255,.2); }
+
+/* Capitán y cláusulas: más compactos */
+.an-capitan { padding: 9px 11px; margin-bottom: 8px; }
+.an-capitan-t { font-size: .8rem; margin-bottom: 6px; }
+.an-cap-photo { width: 40px; height: 40px; }
+.an-cap-name { font-size: .86rem; }
+.an-cap-why { font-size: .68rem; }
+.an-cap-score { font-size: .95rem; }
+.an-cap-pickt { margin-top: 8px; font-size: .7rem; }
+.an-cap-opts { gap: 6px; margin-top: 6px; }
+.an-cap-opt { padding: 6px; gap: 6px; }
+.an-cap-opt-ph { width: 30px; height: 30px; }
+.an-cap-opt-n { font-size: .76rem; }
+.an-cap-opt-s { font-size: .62rem; }
+.an-clauses { padding: 9px 11px; }
+.an-clauses-t { font-size: .8rem; }
+.an-clauses-info { font-size: .66rem; margin-bottom: 4px; }
+.an-clause-grid { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 7px; margin-top: 6px; }
+.an-clause-card { padding: 7px 6px; gap: 2px; }
+.an-clause-photo { width: 36px; height: 36px; }
+.an-clause-name { font-size: .7rem; }
+.an-clause-cl { font-size: .72rem; }
+.an-clause-vl { font-size: .62rem; }
+
+/* Racha / a la baja / dudas */
+.an-tr-group { margin-top: 10px; padding: 8px 10px; border-radius: 14px; border: 1px solid rgba(127,127,127,.25); }
+.an-tr-group.hot { background: linear-gradient(135deg, rgba(34,197,94,.16), rgba(34,197,94,.04)); border-color: rgba(34,197,94,.4); }
+.an-tr-group.cold { background: linear-gradient(135deg, rgba(56,189,248,.16), rgba(56,189,248,.04)); border-color: rgba(56,189,248,.4); }
+.an-tr-group.risk { background: linear-gradient(135deg, rgba(250,204,21,.18), rgba(250,204,21,.04)); border-color: rgba(250,204,21,.45); }
+.an-tr-h { font: 800 .72rem 'Space Grotesk', sans-serif; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
+.an-tr-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.an-tr-chip { display: flex; align-items: center; gap: 7px; padding: 4px 10px 4px 4px; border-radius: 999px; background: rgba(127,127,127,.14); min-width: 0; }
+.an-tr-ph { width: 30px; height: 30px; border-radius: 50%; overflow: hidden; flex: none; background: rgba(127,127,127,.2); }
+.an-tr-ph img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.an-tr-tx { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.an-tr-tx b { font-size: .78rem; }
+.an-tr-tx small { font-size: .64rem; opacity: .75; }
+
+/* Entra / sale del once ideal */
+.an-sw { margin: 14px 0 4px; display: flex; flex-direction: column; gap: 6px; }
+.an-sw-h { font: 800 .72rem 'Space Grotesk', sans-serif; letter-spacing: .06em; text-transform: uppercase; opacity: .8; }
+.an-sw-row { display: flex; align-items: center; gap: 9px; padding: 6px 10px 6px 8px; border-radius: 14px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); }
+.an-sw-row.in { border-left: 4px solid #22c55e; }
+.an-sw-row.out { border-left: 4px solid #ef4444; }
+.an-sw-ar { font-size: .9rem; font-weight: 800; width: 16px; text-align: center; }
+.an-sw-row.in .an-sw-ar { color: #4ade80; }
+.an-sw-row.out .an-sw-ar { color: #f87171; }
+.an-sw-ph { width: 34px; height: 34px; border-radius: 50%; overflow: hidden; flex: none; background: rgba(255,255,255,.15); }
+.an-sw-ph img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.an-sw-tx { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+.an-sw-tx b { font-size: .84rem; }
+.an-sw-tx small { font-size: .66rem; opacity: .8; }
+
+/* Forma de tus jugadores */
+.an-forma { margin-top: 20px; }
+.an-fm-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.an-fm-card { padding: 9px 10px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); }
+.an-fm-card.bench { opacity: .88; }
+.an-fm-head { display: flex; align-items: center; gap: 9px; }
+.an-fm-ph { width: 34px; height: 34px; border-radius: 50%; overflow: hidden; flex: none; background: rgba(127,127,127,.15); }
+.an-fm-ph img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.an-fm-tx { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; flex: 1; }
+.an-fm-tx b { font-size: .86rem; }
+.an-fm-tx small, .an-fm-rt small { font-size: .64rem; color: var(--muted); }
+.an-fm-rt { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2; flex: none; }
+.an-fm-rt b { font: 800 .9rem 'Space Grotesk', sans-serif; color: #16a34a; }
+.an-fm-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; margin-top: 8px; }
+.an-fm-chip { border-radius: 10px; padding: 4px 2px 5px; text-align: center; background: rgba(127,127,127,.12); border: 1px solid transparent; }
+.an-fm-chip.high { background: rgba(34,197,94,.18); border-color: rgba(34,197,94,.5); }
+.an-fm-chip.low { background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.45); }
+.an-fm-chip.none { opacity: .55; }
+.an-fm-j { font: 800 .62rem 'Space Grotesk', sans-serif; color: var(--muted); }
+.an-fm-op { display: flex; align-items: center; justify-content: center; gap: 3px; height: 18px; margin: 2px 0; }
+.an-fm-op img { width: 15px; height: 15px; object-fit: contain; }
+.an-fm-op svg.ffx-ha { width: 12px; height: 12px; margin: 0; }
+.an-fm-v { font: 800 .98rem/1 'Space Grotesk', sans-serif; }
