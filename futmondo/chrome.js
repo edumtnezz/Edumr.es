@@ -132,8 +132,12 @@
       var at = set[el.getAttribute("data-home") + "|" + el.getAttribute("data-away")];
       if (at) {
         el.classList.add("cx-jn-probable");
-        var tm = at > 1e9 ? new Date(at).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) : "";
-        el.insertAdjacentHTML("afterbegin", '<div class="cx-jn-statusrow-prob" title="Actualizado a las ' + tm + '">Once probable' + (tm ? ' <span class="cx-prob-t">· ' + tm + "</span>" : "") + "</div>");
+        var tm = "";
+        if (at > 1e9) {
+          var dd = new Date(at), hm = dd.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+          tm = dd.toDateString() === new Date().toDateString() ? hm : dd.toLocaleDateString("es-ES", { day: "numeric", month: "numeric" }) + " " + hm;
+        }
+        el.insertAdjacentHTML("afterbegin", '<div class="cx-jn-statusrow-prob" title="Último cambio del once: ' + tm + '">Once probable' + (tm ? ' <span class="cx-prob-t">· ' + tm + "</span>" : "") + "</div>");
       }
     });
   }

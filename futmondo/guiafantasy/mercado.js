@@ -2557,7 +2557,7 @@
       if (!cur) { fixBox.remove(); return; }
       const nrm = (x) => stripAccents(String(x || "")).replace(/[^a-z0-9 ]/g, "").trim();
       const sameT = (a1, b1) => { const x = nrm(a1), y = nrm(b1); return !!x && !!y && (x === y || x.indexOf(y) >= 0 || y.indexOf(x) >= 0); };
-      const rs = await Promise.all([0, 1, 2, 3, 4].map((k) => fetch(API + "/jornada?jornada=" + (cur + k)).then((r) => r.json()).then((j) => ({ k, j })).catch(() => ({ k, j: {} }))));
+      const rs = await Promise.all([0, 1, 2, 3, 4, 5].filter((k) => cur + k <= 38).map((k) => fetch(API + "/jornada?jornada=" + (cur + k)).then((r) => r.json()).then((j) => ({ k, j })).catch(() => ({ k, j: {} }))));
       const out = [];
       rs.forEach((r) => (r.j.matches || []).forEach((m) => {
         if (m.live || out.length >= 4) return;
@@ -2567,12 +2567,16 @@
       if (!out.length) { fixBox.remove(); return; }
       out.forEach((n) => {
         const c = el("div", "ficha-fix-it");
-        c.appendChild(el("div", "ffx-d", ((n.date || "") + " " + (n.time || "")).trim()));
-        const row = el("div", "ffx-r");
-        row.appendChild(haIcon(n.home));
-        row.appendChild(el("span", "ffx-j", "J" + n.j));
-        if (n.crest) { const im = el("img"); im.src = n.crest; im.alt = n.rival || ""; im.title = n.rival || ""; im.loading = "lazy"; row.appendChild(im); }
-        c.appendChild(row);
+        const top = el("div", "ffx-top");
+        top.appendChild(el("span", "ffx-j", "J" + n.j));
+        top.appendChild(haIcon(n.home));
+        c.appendChild(top);
+        const mid = el("div", "ffx-mid");
+        if (n.crest) { const im = el("img"); im.src = n.crest; im.alt = ""; im.loading = "lazy"; mid.appendChild(im); }
+        mid.appendChild(el("b", "ffx-rival", n.rival || ""));
+        c.appendChild(mid);
+        const when = [n.day, n.date].filter(Boolean).join(" ");
+        c.appendChild(el("div", "ffx-d", when + (n.time ? " · " + n.time : "")));
         fixRow.appendChild(c);
       });
     })();

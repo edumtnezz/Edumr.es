@@ -1699,7 +1699,7 @@ async function getFFTeam(env, name) {
     "espanyol-barcelona": "espanyol",
   };
   if (SLUG_FIX[slug]) slug = SLUG_FIX[slug];
-  const key = "ffteam:v8:" + slug;
+  const key = "ffteam:v9:" + slug;
   try { const c = await env.PORRA.get(key, "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) { if (!c.data.fetchedAt) c.data.fetchedAt = c.at; return c.data; } } catch (e) {}
   const data = { starters: [], bench: [], fetchedAt: Date.now() };
   try {
@@ -1729,6 +1729,13 @@ async function getFFTeam(env, name) {
     }).filter(Boolean);
     data.starters = parse(hTit);
     data.bench = parse(hSup);
+    // FutbolFantasy guarda las versiones del once probable con su fecha ("12/10 20:06", "13/10 17:06"...):
+    // la última es cuándo se actualizó DE VERDAD el once de este equipo.
+    try {
+      let upd = 0;
+      for (const fm of h.matchAll(/data-fecha="(\d{1,2}\/\d{1,2}) (\d{1,2}:\d{2})"[^>]{0,80}renderLineup/g)) { const t = ffWhenAt(fm[1], fm[2]); if (t > upd) upd = t; }
+      if (upd) data.updatedAt = upd;
+    } catch (e) {}
     const S = data.starters;
     const def = S.filter((p) => /defensa/i.test(p.pos)).length;
     const mid = S.filter((p) => /mediocampista|centrocampista|medio/i.test(p.pos)).length;
@@ -2270,11 +2277,11 @@ async function getProbableFlags(env, jornada) {
   const open = (jd.matches || []).filter((m) => m.status === "SCHEDULED" || m.status === "TIMED");
   const names = [...new Set(open.reduce((a, m) => a.concat([nm(m.homeTeam), nm(m.awayTeam)]), []).filter(Boolean))];
   const has = {}, at = {};
-  await Promise.all(names.map(async (n) => { try { const t = await getFFTeam(env, n); has[n] = ((t && t.starters) || []).length >= 10; at[n] = (t && t.fetchedAt) || 0; } catch (e) { has[n] = false; } }));
+  await Promise.all(names.map(async (n) => { try { const t = await getFFTeam(env, n); has[n] = ((t && t.starters) || []).length >= 10; at[n] = (t && (t.updatedAt || t.fetchedAt)) || 0; } catch (e) { has[n] = false; } }));
   const items = open.filter((m) => has[nm(m.homeTeam)] && has[nm(m.awayTeam)]);
-  // Cada equipo se actualiza por su cuenta en futbolfantasy: la hora es PARTIDO a PARTIDO (la lectura más
-  // antigua de sus dos equipos, para no prometer más frescura de la real).
-  return { matchday: jn, items: items.map((m) => ({ home: nm(m.homeTeam), away: nm(m.awayTeam), at: Math.min(at[nm(m.homeTeam)] || Date.now(), at[nm(m.awayTeam)] || Date.now()) })) };
+  // Cada equipo actualiza su once por su cuenta en futbolfantasy: la hora es PARTIDO a PARTIDO y es la de la
+  // última actualización real (la más reciente de sus dos equipos), no la de cuando la leímos nosotros.
+  return { matchday: jn, items: items.map((m) => ({ home: nm(m.homeTeam), away: nm(m.awayTeam), at: Math.max(at[nm(m.homeTeam)] || 0, at[nm(m.awayTeam)] || 0) })) };
 }
 
 async function getJornadaStrip(env, matchday) {
@@ -3681,16 +3688,6 @@ export async function onRequestGet({ request, env: env0, params }) {
   }
   if (path === "rachas") {
     try { return json(await getRachas(env)); } catch (e) { return json({ players: [] }); }
-  }
-  if (path === "ff-upd-debug") {
-    try {
-      const h = await (await fetch("https://www.futbolfantasy.com/laliga/equipos/" + (url.searchParams.get("t") || "sevilla"), { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text();
-      const out = [];
-      const re = /(actualiz|hace \d+|updated|ultima|última|probabilidades)[^<]{0,90}/gi; let m;
-      while ((m = re.exec(h)) && out.length < 25) out.push(h.slice(Math.max(0, m.index - 80), m.index + 140).replace(/\s+/g, " "));
-      const dt = [...h.matchAll(/(datetime|data-fecha|data-update|data-time|data-actualiz)[^>]{0,80}/gi)].slice(0, 15).map((x) => x[0]);
-      return json({ len: h.length, out, dt });
-    } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "alineaciones-estado") {
     try { return json(await getProbableFlags(env, url.searchParams.get("jornada") || null)); } catch (e) { return json({ matchday: 0, items: [] }); }
