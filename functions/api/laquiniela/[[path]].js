@@ -267,34 +267,32 @@ async function fetchFootballData(env, matchday, hold) {
   }
   if (!md) return null;
   let matches = await fetchMatchday(headers, md);
-  // football-data avanza de jornada en cuanto termina la anterior; Edu quiere seguir viendo los
-  // resultados un día entero: se enseña la jornada recién terminada hasta 27 h tras su último partido.
-  let held = false;
-  if (hold && !matchday && md > 1 && matches.length && matches.every((m) => m.status === "SCHEDULED" || m.status === "TIMED")) {
-    try {
-      const pm = await fetchMatchday(headers, md - 1);
-      if (pm.length && pm.every(isMatchDone)) {
-        const last = Math.max.apply(null, pm.filter((m) => m.status === "FINISHED").map((m) => Date.parse(m.utcDate) || 0).concat([0]));
-        // Se mantiene hasta las 23:59 (hora de Madrid) del día en que acaba su último partido
-        if (last && Date.now() < madridDayEnd(last + 2 * 3600 * 1000)) { md = md - 1; matches = pm; held = true; }
-      }
-    } catch (e) {}
-  }
-  if (!matchday && matches.length && !held) {
-    const allFinished = matches.every((m) => m.status === "FINISHED");
-    if (allFinished) {
-      for (let next = md + 1; next <= md + 3; next++) {
-        try {
-          const nm = await fetchMatchday(headers, next);
-          if (nm.length) {
-            md = next;
-            matches = nm;
-            break;
-          }
-        } catch (e) {
-          break;
+  if (!matchday && matches.length) {
+    // "Terminada" = todos los partidos jugados, aplazados o suspendidos: un partido suspendido
+    // (Rayo–Athletic) no debe dejar la jornada atascada para siempre.
+    const lastEndOf = (ms) => {
+      const last = Math.max.apply(null, ms.filter((m) => m.status === "FINISHED").map((m) => Date.parse(m.utcDate) || 0).concat([0]));
+      return last ? madridDayEnd(last + 2 * 3600 * 1000) : 0;
+    };
+    let held = false;
+    if (matches.every(isMatchDone)) {
+      // Con hold (franja de jornada de Inicio) se sigue enseñando hasta las 23:59 (Madrid) del día
+      // en que acabó su último partido; después, la siguiente. Sin hold (juegos), pasa enseguida.
+      if (hold && Date.now() < lastEndOf(matches)) held = true;
+      if (!held) {
+        for (let next = md + 1; next <= md + 3; next++) {
+          try {
+            const nm = await fetchMatchday(headers, next);
+            if (nm.length) { md = next; matches = nm; break; }
+          } catch (e) { break; }
         }
       }
+    } else if (hold && md > 1 && matches.every((m) => m.status === "SCHEDULED" || m.status === "TIMED")) {
+      // football-data ya avanzó a la siguiente: la recién terminada se mantiene hasta las 23:59 del día
+      try {
+        const pm = await fetchMatchday(headers, md - 1);
+        if (pm.length && pm.every(isMatchDone) && Date.now() < lastEndOf(pm)) { md = md - 1; matches = pm; }
+      } catch (e) {}
     }
   }
   // football-data abrevia el Racing como "Santander" y en la web se enseña
