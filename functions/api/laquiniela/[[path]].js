@@ -2525,6 +2525,59 @@ function matchFFPlayer(nombre, roster, minScore) {
   return bestScore >= (minScore || 50) ? best : null;
 }
 
+// Clasificación y goles a favor/en contra (local y visitante) calculados con los resultados REALES
+// terminados de football-data. Sirve para estimar la dificultad del rival (es una estimación nuestra).
+async function getTableStats(env) {
+  const ck = "tablestats:v1";
+  try { const c = await env.PORRA.get(ck, "json"); if (c && c.at && Date.now() - c.at < 30 * 60000 && c.teams) return c.teams; } catch (e) {}
+  try {
+    const res = await fetch(`https://api.football-data.org/v4/competitions/${COMPETITION}/matches?status=FINISHED`, { headers: { "X-Auth-Token": env.FOOTBALL_API_KEY } });
+    const d = await res.json();
+    const T = {};
+    const get = (n) => (T[n] = T[n] || { name: n, pj: 0, pts: 0, gf: 0, ga: 0, hpj: 0, hgf: 0, hga: 0, apj: 0, agf: 0, aga: 0 });
+    (d.matches || []).forEach((m) => {
+      const ft = m.score && m.score.fullTime;
+      if (!ft || ft.home == null || ft.away == null || !m.homeTeam || !m.awayTeam) return;
+      const h = get(m.homeTeam.name), a = get(m.awayTeam.name);
+      h.pj++; a.pj++; h.gf += ft.home; h.ga += ft.away; a.gf += ft.away; a.ga += ft.home;
+      h.hpj++; h.hgf += ft.home; h.hga += ft.away; a.apj++; a.agf += ft.away; a.aga += ft.home;
+      if (ft.home > ft.away) h.pts += 3; else if (ft.home < ft.away) a.pts += 3; else { h.pts++; a.pts++; }
+    });
+    const arr = Object.values(T).sort((x, y) => y.pts - x.pts || (y.gf - y.ga) - (x.gf - x.ga));
+    arr.forEach((t, i) => { t.pos = i + 1; });
+    if (!arr.length) return null;
+    try { await env.PORRA.put(ck, JSON.stringify({ at: Date.now(), teams: arr }), { expirationTtl: 3600 }); } catch (e) {}
+    return arr;
+  } catch (e) { return null; }
+}
+
+// Dificultad estimada del rival para un jugador. Atacantes (CEN/DEL): cuánto encaja el rival;
+// defensas/portero: cuánto marca el rival. Se usa el campo en el que jugará el rival (casa/fuera).
+function rivalDifficulty(teams, rivalName, pos, playerAtHome) {
+  if (!teams || !rivalName) return "";
+  const rk = teamKey(rivalName);
+  let r = teams.find((t) => teamKey(t.name) === rk) || teams.find((t) => { const k = teamKey(t.name); return k && rk && (k.includes(rk) || rk.includes(k)); });
+  if (!r) return "";
+  const attack = pos === "CEN" || pos === "DEL";
+  const rivalHome = playerAtHome === false; // si el jugador juega fuera, el rival juega en casa
+  const venue = playerAtHome == null ? "all" : (rivalHome ? "h" : "a");
+  const stat = (t) => {
+    const pj = venue === "h" ? t.hpj : venue === "a" ? t.apj : t.pj;
+    const gf = venue === "h" ? t.hgf : venue === "a" ? t.agf : t.gf;
+    const ga = venue === "h" ? t.hga : venue === "a" ? t.aga : t.ga;
+    return { pj, v: pj ? (attack ? ga : gf) / pj : null };
+  };
+  const mine = stat(r);
+  if (mine.v == null) return "";
+  const all = teams.map((t) => stat(t).v).filter((x) => x != null);
+  // attack: más goles encajados = más fácil → rank 1 = más fácil; defensa/portero: menos goles marcados = más fácil
+  const easier = all.filter((x) => (attack ? x > mine.v : x < mine.v)).length + 1;
+  const label = easier <= 7 ? "FÁCIL" : easier <= 13 ? "MEDIA" : "DIFÍCIL";
+  const f = (x) => x.toFixed(1).replace(".", ",");
+  const where = venue === "h" ? "en casa" : venue === "a" ? "fuera" : "en total";
+  return `rival ${r.name} (${r.pos}º, ${r.pts} pts): ${attack ? "encaja" : "marca"} ${f(mine.v)} goles/partido ${where} (${mine.pj} PJ${mine.pj < 3 ? ", muestra muy corta" : ""}) → ${label} para ${attack ? "atacantes" : "defensas y porteros"} [estimación, puesto ${easier}/${all.length} en facilidad]`;
+}
+
 // Lanzadores de penaltis LaLiga 2026/27 — fuente: Jornada Perfecta, "Guía Fantasy: Los lanzadores de LaLiga 2026/27", actualizada el 06/08/2026 (puede haber cambiado).
 const PENALTY_TAKERS = {
   "alaves": ["Boyé", "Toni Martínez"], "athletic": ["Sancet", "Nico Williams"], "atletico": ["Grimaldo", "Julián Álvarez"],
@@ -2717,6 +2770,9 @@ async function handleAnaliza(request, env, user) {
   const titulares = enrich(team.titulares);
   const suplentes = enrich(team.suplentes);
   [].concat(titulares, suplentes).forEach((p) => { p.penal = penaltyRole(p.nombre, p.equipo); });
+  let tableTeams = null;
+  try { tableTeams = await getTableStats(env); } catch (e) {}
+  [].concat(titulares, suplentes).forEach((p) => { p.dificultad = rivalDifficulty(tableTeams, p.rival, p.pos, p.casa); });
   // Las fotos del mercado de Futmondo son una cara de carné pequeña; para que
   // el campo de "Analiza tu equipo" se vea igual que "Alineaciones probables"
   // (recorte de cuerpo entero de futbolfantasy.com) buscamos la foto de cada
@@ -2778,7 +2834,7 @@ async function handleAnaliza(request, env, user) {
     ? "Tiene doble posición EXACTAMENTE esta lista de " + multiList.length + " jugador(es), ni uno más ni uno menos: " + multiList.map((p) => p.nombre + " (" + p.pos + "/" + p.pos2 + ")").join(", ") + ". Escribe una línea por CADA UNO de ellos explicando en cuál de sus DOS posiciones conviene más alinearlo para sacarle más puntos (por su rol en el campo, su forma y su rival), NUNCA uses como motivo la probabilidad de ser titular ni si va a jugar o no (eso ya se decide aparte, aquí solo importa EN QUÉ POSICIÓN rinde mejor si juega). Formato \"Nombre: en X porque...\"."
     : "Ninguno de tus jugadores tiene doble posición esta jornada.";
   const kick = (v) => { if (!v) return "?"; try { return new Date(v).toLocaleString("es-ES", { weekday: "short", day: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }); } catch (e) { return "?"; } };
-  const line = (p) => `- ${p.pos}${p.pos2 ? "/" + p.pos2 : ""} ${p.nombre} (${p.equipo || "?"}) · ${p.estado} · prob.jugar ${p.prob != null ? p.prob : "?"}%${p.probFf != null ? " (FutbolFantasy)" : ""} · ${p.puntos != null ? p.puntos + " pts" : "sin datos"} · últ5 ${(p.fitness || []).join("-")} · rival ${p.rival || "desconocido"} ${p.casa === true ? "(CASA)" : p.casa === false ? "(FUERA)" : ""} · juega ${kick(p.fecha)}${p.penal ? " · lanza penaltis (" + p.penal + ")" : ""}`;
+  const line = (p) => `- ${p.pos}${p.pos2 ? "/" + p.pos2 : ""} ${p.nombre} (${p.equipo || "?"}) · ${p.estado} · prob.jugar ${p.prob != null ? p.prob : "?"}%${p.probFf != null ? " (FutbolFantasy)" : ""} · ${p.puntos != null ? p.puntos + " pts" : "sin datos"} · últ5 ${(p.fitness || []).join("-")} · rival ${p.rival || "desconocido"} ${p.casa === true ? "(CASA)" : p.casa === false ? "(FUERA)" : ""} · juega ${kick(p.fecha)}${p.penal ? " · lanza penaltis (" + p.penal + ")" : ""} · dificultad ${p.dificultad || "sin dato"}`;
   const ctx = "FORMACIÓN: " + formacion + "\nTITULARES:\n" + titulares.map(line).join("\n") + "\nBANQUILLO:\n" + suplentes.map(line).join("\n");
   // Nota: el "plan de cambios por horario" y la lista de recambio de cada
   // titular YA se calculan aparte con datos reales (fechas de partido y
@@ -2788,7 +2844,7 @@ async function handleAnaliza(request, env, user) {
   // último día, dejando sin margen de reacción). Solo se le pide el once
   // ideal (con el número real de líneas, no uno fijo) y multiposición.
   const LIGA_CONTEXTO = "CONTEXTO REAL DE LA LIGA (verificado con los ajustes de la liga del usuario, \"Con Permisoo\"): Futmondo Social, sistema de puntuación CONFIGURABLE con Diario AS 50%, Marca 50%, SofaScore 50%, Tiempo de juego 0% y estadísticas básicas. Se permite capitán, multiposición y estrategias extra; el entrenador es manual; se pueden cambiar jugadores ya puntuados; las alineaciones se bloquean en partidos aplazados. Premios: 70.000€ por punto, 1.000.000€ por jugador en el equipo ideal de la jornada y 2.000.000€ por MVP de la jornada. NO se sabe cómo combina Futmondo esos porcentajes ni los puntos exactos por gol/asistencia: no lo afirmes. DEDUCIDO de 4 jugadores reales de esa liga (portero, defensa, centrocampista y delantero): los puntos de la jornada son la SUMA de los puntos de AS + Marca + SofaScore + 1 por minutos jugados (+1 por portería a cero en el defensa y el portero de los ejemplos), redondeada. SOFASCORE (guías de Comuniate y Jornada Perfecta, parte de la temporada pasada; son orientaciones, no cifras): premia en porteros las paradas dentro del área y los pases cortos seguros, penaliza errores que acaban en gol; en defensas penalizan las posesiones perdidas (laterales muy ofensivos arriesgan) y premian despejes, intercepciones y precisión de pase; en centrocampistas valora al que aporta en las dos fases, con puntuaciones notables y regulares; en delanteros pesan goles y creación, y penaliza mucho las ocasiones claras falladas; extremos regateadores con poca precisión puntúan peor. PENALTIS: cada jugador marcado \"lanza penaltis (principal/suplente)\" viene de la guía de Jornada Perfecta del 06/08/2026, que puede haber cambiado; si no está marcado, no se sabe.";
-  const REGLAS_IA = "REGLAS ESTRICTAS: usa SOLO los datos de arriba. NO inventes cifras, estadísticas de SofaScore, penaltis, lanzadores, clasificación ni dificultad del rival: no se te han dado, así que si hace falta algo así di \"sin dato\". Puedes razonar con lo que sí tienes (forma = puntos de sus últimos partidos, probabilidad de jugar, casa/fuera, estado, hora del partido) y con el contexto de la liga, pero explícalo con esos datos concretos.";
+  const REGLAS_IA = "REGLAS ESTRICTAS: usa SOLO los datos de arriba. NO inventes cifras, estadísticas de SofaScore ni penaltis. La \"dificultad\" del rival que acompaña a cada jugador es una ESTIMACIÓN calculada con la clasificación y los goles reales (dilo así y menciona la muestra corta si la hay); lo que no se te ha dado, así que si hace falta algo así di \"sin dato\". Puedes razonar con lo que sí tienes (forma = puntos de sus últimos partidos, probabilidad de jugar, casa/fuera, estado, hora del partido) y con el contexto de la liga, pero explícalo con esos datos concretos.";
   const prompt = "Eres un analista experto de fútbol fantasy (Futmondo Social). Analiza la PRÓXIMA jornada del equipo del usuario. Cada jugador trae posición(es), estado, probabilidad de ser titular, forma, puntos, si juega en CASA/FUERA y la FECHA/HORA de su partido.\n\n" + LIGA_CONTEXTO + "\n\n" + ctx + "\n\n" + REGLAS_IA + "\n\nResponde en español, BREVE, con emojis y **negrita** (prohibido #, tablas o listas con guiones). Usa EXACTAMENTE estos títulos, cada uno en su propia línea, sin nada más en esa línea:\n**CLAVES POR JUGADOR**\n(entre 4 y 6 líneas, una por jugador clave de ESTA jornada: titulares dudosos, los mejor y peor parados por forma, y cualquier jugador con baja o 0% de probabilidad. Formato EXACTO de cada línea: Nombre: razón breve en una frase con sus datos reales, p. ej. forma, % de jugar, casa/fuera o estado)\n**MULTIPOSICIÓN**\n(" + multiHint + ")";
   const analisis = await dsChat(env, [{ role: "user", content: prompt }], "deepseek-flash");
   // Guarda la recomendación de capitán de ESTA jornada (misma fórmula que

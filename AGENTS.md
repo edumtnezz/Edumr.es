@@ -95,5 +95,5 @@ Antes de tocar partidos/alineaciones/ficha, repasar esta lista y verificar con c
 ## Hallazgos verificados para Analiza (13/10/2026)
 - Puntos de un jugador en la jornada = suma de AS + Marca + SofaScore + 1 (minutos jugados) + 1 (portería a cero en portero/defensa), redondeado (deducido de 4 capturas de Futmondo, no confirmado oficialmente).
 - Lanzadores de penaltis: constante `PENALTY_TAKERS` en el backend (Jornada Perfecta, 06/08/2026; revisar si cambian).
-- Dificultad del rival: aún sin fuente fiable de "puntos concedidos". futbolfantasy.com/laliga/estadisticas-puntos da puntos fantasy POR equipo (local/visitante), no concedidos. Pendiente.
+- Dificultad del rival: ESTIMACIÓN propia (aprobada por Edu) con `getTableStats`/`rivalDifficulty` en el backend: clasificación y goles a favor/en contra reales (football-data, partidos terminados, split casa/fuera). Atacantes: goles que encaja el rival; defensas/portero: goles que marca. Con muestra corta se avisa. No hay fuente directa de "puntos concedidos por posición".
 - SofaScore por posición: solo hay guías cualitativas (Comuniate, Jornada Perfecta); el artículo oficial de SofaScore no da pesos por posición.
