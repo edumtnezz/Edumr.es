@@ -3381,10 +3381,10 @@
       g.appendChild(row);
       box.appendChild(g);
     };
-    group("🔥", "En racha", "hot", hot, (p) => "▲ " + f1d(formOf(p).rec) + " en sus 2 últimos · media " + f1d(formOf(p).avg));
-    group("🧊", "A la baja", "cold", cold, (p) => "▼ " + f1d(formOf(p).rec) + " en sus 2 últimos · media " + f1d(formOf(p).avg));
+    group("🔥", "En racha", "hot", hot, (p) => "▲ Últimos 2 partidos: " + f1d(formOf(p).rec) + " pts de media · en los 5: " + f1d(formOf(p).avg) + " pts de media");
+    group("🧊", "A la baja", "cold", cold, (p) => "▼ Últimos 2 partidos: " + f1d(formOf(p).rec) + " pts de media · en los 5: " + f1d(formOf(p).avg) + " pts de media");
     const irr = ps.filter((p) => { const fo = formOf(p); return fo.len >= 3 && fo.len - fo.played >= 2 && fo.played >= 1; }).sort((a, b) => formOf(b).avg - formOf(a).avg).slice(0, 4);
-    group("🎲", "Irregulares: puntúan al jugar, pero se pierden partidos", "irr", irr, (p) => { const fo = formOf(p); return "jugó " + fo.played + " de " + fo.len + " · media " + f1d(fo.avg) + " al jugar"; });
+    group("🎲", "Irregulares: puntúan al jugar, pero se pierden partidos", "irr", irr, (p) => { const fo = formOf(p); return "Jugó " + fo.played + " de " + fo.len + " partidos · " + f1d(fo.avg) + " pts de media cuando juega"; });
     group("⚠️", "Dudas de jugar", "risk", risk, (p) => p.prob + "% de jugar");
     return { box, total };
   }
@@ -3419,18 +3419,16 @@
         defLine = oj.ga === 0 ? ["Portería a cero", 1] : (v !== 0 ? ["Goles encajados (" + oj.ga + ")", v] : null);
         rest -= v;
       }
-      const t = el("div", "an-fm-dt");
-      t.appendChild(el("b", null, "J" + jn + " · " + total + " pts"));
-      t.appendChild(el("small", null, mins + " min jugados"));
-      det.appendChild(t);
-      const add = (lab, val, cls) => { const r = el("div", "an-fm-dr" + (cls ? " " + cls : "")); r.appendChild(el("span", null, lab)); r.appendChild(el("b", null, val)); det.appendChild(r); };
-      add("AS (" + fmN(Number(m.as) || 0) + " en su tabla × 50%)", fmS(a));
-      add("Marca (" + fmN(Number(m.marca) || 0) + " × 50%)", fmS(mc));
-      add("SofaScore (" + fmN(Number(m.ss) || 0) + " × 50%)", fmS(ss));
-      add("Minutos (" + (mn ? "60 o más" : "menos de 60") + ")", fmS(mn));
-      if (defLine) add(defLine[0], fmS(defLine[1]), defLine[1] < 0 ? "neg" : "pos");
-      if (rest !== 0) add(rest < 0 ? "Tarjetas, penaltis y otros descuentos" : "Goles, asistencias y otros", fmS(rest), rest < 0 ? "neg" : "pos");
-      det.appendChild(el("div", "an-fm-dn", "Suma " + fmN(base + rest + (defLine ? defLine[1] : 0)) + (Math.abs(base + rest + (defLine ? defLine[1] : 0) - total) > 0.01 ? " · Futmondo redondea a " + total : "") + ". AS, Marca, SofaScore y minutos salen directos de Futmondo; la última línea es la diferencia hasta los puntos reales."));
+      const bar = (cls, lab, val) => { const r = el("div", "an-fm-bar " + cls); r.appendChild(el("span", "an-fm-bl", lab)); r.appendChild(el("b", null, val)); det.appendChild(r); };
+      bar("pts", "💡 Puntos J" + jn, String(total));
+      bar("as", "AS", fmN(a));
+      bar("marca", "MARCA", fmN(mc));
+      bar("ss", "SofaScore", fmN(ss));
+      bar("min", "Min. jugados", mins + "' · " + fmS(mn));
+      if (defLine) bar("extra" + (defLine[1] < 0 ? " neg" : " pos"), defLine[0], fmS(defLine[1]));
+      if (rest !== 0) bar("extra" + (rest < 0 ? " neg" : " pos"), rest < 0 ? "Tarjetas, penaltis y otros descuentos" : "Goles, asistencias y otros", fmS(rest));
+      const sum = base + rest + (defLine ? defLine[1] : 0);
+      det.appendChild(el("div", "an-fm-dn", "AS, Marca y SofaScore son los puntos de su tabla × 50% (tu liga)." + (Math.abs(sum - total) > 0.01 ? " Suma " + fmN(sum) + "; Futmondo redondea a " + total + "." : "") + " AS, Marca, SofaScore y minutos salen directos de Futmondo; la última línea, si sale, es la diferencia hasta los puntos reales."));
     };
     if (fmCache[p.id]) { draw(fmCache[p.id]); return; }
     fetch(API + "/jugador?id=" + encodeURIComponent(p.id)).then((r) => r.json()).then((j) => { fmCache[p.id] = j; if (det.isConnected) draw(j); }).catch(() => { det.textContent = "No se pudo cargar el desglose."; });

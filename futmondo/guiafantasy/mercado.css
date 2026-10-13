@@ -1301,3 +1301,21 @@ html { overflow-anchor: none; }
 .an-sw-bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #22c55e, #86efac); }
 .an-sw-row.out .an-sw-bar i { background: linear-gradient(90deg, #ef4444, #fca5a5); }
 .an-sw-ex small { font-size: .56rem; opacity: .6; text-transform: uppercase; letter-spacing: .05em; }
+.an-fm-det { padding: 6px; background: rgba(15,23,42,.92); border-color: rgba(255,255,255,.12); }
+.an-fm-bar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 12px; color: #fff; font-size: .8rem; margin-bottom: 2px; }
+.an-fm-bar:first-child { border-radius: 10px 10px 0 0; }
+.an-fm-bar:last-of-type { border-radius: 0 0 10px 10px; }
+.an-fm-bar b { font: 800 .95rem 'Space Grotesk', sans-serif; flex: none; }
+.an-fm-bl { font-weight: 700; letter-spacing: .02em; }
+.an-fm-bar.pts { background: #4caf50; font-size: .88rem; }
+.an-fm-bar.pts b { font-size: 1.05rem; }
+.an-fm-bar.as { background: #c0261b; }
+.an-fm-bar.marca { background: #c0261b; }
+.an-fm-bar.as .an-fm-bl { font: 900 1.05rem 'Space Grotesk', sans-serif; text-transform: lowercase; letter-spacing: -.02em; }
+.an-fm-bar.marca .an-fm-bl { font: 900 .95rem 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: .01em; }
+.an-fm-bar.ss { background: #22559c; }
+.an-fm-bar.min { background: #111827; border-left: 3px solid #4caf50; }
+.an-fm-bar.extra { background: #1f2937; }
+.an-fm-bar.extra.pos b { color: #4ade80; }
+.an-fm-bar.extra.neg b { color: #f87171; }
+.an-fm-det .an-fm-dn { color: rgba(255,255,255,.65); padding: 6px 4px 2px; }
