@@ -185,3 +185,14 @@
 .eq-inicio-h{display:flex;align-items:center;justify-content:space-between;font:800 1rem 'Space Grotesk',sans-serif;margin-bottom:6px}
 .eq-inicio-row .merc-club{text-decoration:none}
 .eq-calrow svg.ffx-ha{width:20px;height:20px;flex:none;margin:0}
+.eq-head{align-items:flex-start}
+.eq-htxt{flex:1;min-width:0}
+.eq-next{margin-top:10px;padding:10px 12px;border-radius:14px;background:rgba(127,127,127,.1);border:1px solid var(--border)}
+.eq-next-k{font-size:.62rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.eq-next-row{display:flex;align-items:center;gap:8px;min-width:0}
+.eq-next-j{background:#0f172a;color:#fff;font:800 .72rem 'Space Grotesk',sans-serif;border-radius:6px;padding:3px 7px;flex:none}
+.eq-next-crest{width:26px;height:26px;object-fit:contain;flex:none}
+.eq-next-rival{font:800 1.02rem/1.1 'Space Grotesk',sans-serif;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eq-next svg.ffx-ha{width:20px;height:20px;flex:none;margin:0}
+.eq-next-when{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.eq-chip{font-size:.74rem;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--card-solid,#fff);border:1px solid var(--border)}

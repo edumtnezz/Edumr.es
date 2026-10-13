@@ -2862,8 +2862,23 @@
       if (next) {
         const home = teamCanon(next.home) === tc;
         const rival = home ? next.away : next.home;
-        const when = stOf(next) === "live" ? "● En juego" : [next.day, next.date, next.time].filter(Boolean).join(" ");
-        ht.appendChild(el("div", "eq-hsub", "J" + next.jn + " · " + (home ? "en casa vs " : "fuera en ") + rival + " · " + when));
+        const rcrest = home ? next.awayCrest : next.homeCrest;
+        const liveNow = stOf(next) === "live";
+        const nx = el("div", "eq-next");
+        nx.appendChild(el("div", "eq-next-k", liveNow ? "● En juego ahora" : "Próximo partido"));
+        const r1 = el("div", "eq-next-row");
+        r1.appendChild(el("span", "eq-next-j", "J" + next.jn));
+        r1.appendChild(haIcon(home));
+        if (rcrest) { const im = el("img", "eq-next-crest"); im.src = rcrest; im.alt = ""; r1.appendChild(im); }
+        r1.appendChild(el("b", "eq-next-rival", rival));
+        nx.appendChild(r1);
+        const r2 = el("div", "eq-next-when");
+        r2.appendChild(el("span", "eq-chip", home ? "En casa" : "Fuera"));
+        const dd = [next.day, next.date].filter(Boolean).join(" ");
+        if (dd) r2.appendChild(el("span", "eq-chip", "📅 " + dd));
+        if (next.time) r2.appendChild(el("span", "eq-chip", "🕒 " + next.time));
+        nx.appendChild(r2);
+        ht.appendChild(nx);
       }
       hd.appendChild(ht);
       frag.appendChild(hd);
