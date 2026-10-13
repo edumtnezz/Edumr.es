@@ -726,6 +726,11 @@
     if (l && l.length >= len) return l[l.length - 1 - k];
     return j0 ? j0 - k : 0;
   }
+  function dateKey(d, t) {
+    const a = String(d || "").split("/").map(Number);
+    const hm = String(t || "0:0").replace(":", "") * 1 || 0;
+    return (((a[1] >= 7 ? a[1] : a[1] + 12) || 0) * 100 + (a[0] || 0)) * 10000 + hm;
+  }
   let playedJBusy = false;
   async function ensurePlayedJ() {
     if (playedJ || playedJBusy) return;
@@ -741,12 +746,14 @@
       if (rs.some((x) => !x || !x.ms.length)) return; // si falta alguna jornada, mejor no inventar
       rs.sort((a, b) => a.n - b.n).forEach((r) => r.ms.forEach((x) => {
         if (x.live && x.live.state === "final") [x.home, x.away].forEach((t) => {
-          const k = teamCanon(t); (m[k] = m[k] || []).push(r.n);
+          const k = teamCanon(t); (m[k] = m[k] || []).push({ n: r.n, k: dateKey(x.date, x.time) });
           const isH = t === x.home;
           const sm = x.live.score && String(x.live.score).match(/(\d+)\s*-\s*(\d+)/);
           (oppJ[k] = oppJ[k] || {})[r.n] = { rival: isH ? x.away : x.home, home: isH, crest: isH ? x.awayCrest : x.homeCrest, ga: sm ? (isH ? +sm[2] : +sm[1]) : null };
         });
       }));
+      // Futmondo ordena los últimos partidos por FECHA, no por nº de jornada (un partido aplazado se juega antes o después).
+      Object.keys(m).forEach((k) => { m[k] = m[k].sort((a, b) => a.k - b.k).map((e) => e.n); });
       playedJ = m;
       try { if (anFormaRender) anFormaRender(); } catch (e) {}
       try { renderRachas(); } catch (e) {}
