@@ -1355,10 +1355,6 @@
       row.appendChild(el("span", "mo-sc", (st === "live" || st === "final") && x.live.score ? x.live.score : st === "suspended" ? "—" : (x.time || "vs")));
       row.appendChild(c2);
       card.appendChild(row);
-      const fo = formOf(p);
-      if (fo.len && fo.len - fo.played > 0) {
-        card.appendChild(el("div", "an-fm-irr", "🎲 Jugó " + fo.played + " de " + fo.len + " · media " + f1e(fo.avg) + " cuando juega · " + f1e(fo.avgAll) + " contando los partidos que no jugó"));
-      }
       grid.appendChild(card);
     });
     sec.appendChild(grid);
