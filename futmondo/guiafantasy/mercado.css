@@ -1180,3 +1180,14 @@ html { overflow-anchor: none; }
 .an-proj-note { margin-top: 8px; font-size: .68rem; opacity: .7; }
 .an-proj-dark { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.2); color: #fff; }
 .an-proj-dark .an-proj-n { color: #a5f3fc; }
+
+/* Elegir capitán */
+.an-cap-pickt { margin-top: 12px; font-size: .76rem; font-weight: 800; color: var(--muted); }
+.an-cap-opts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 8px; }
+.an-cap-opt { display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 12px; border: 2px solid var(--border); background: var(--card-solid, var(--card)); color: inherit; text-align: left; cursor: pointer; font-family: inherit; }
+.an-cap-opt.sel { border-color: #f59e0b; background: rgba(245,158,11,.14); }
+.an-cap-opt-ph { width: 38px; height: 38px; border-radius: 50%; overflow: hidden; flex: none; background: rgba(127,127,127,.15); }
+.an-cap-opt-ph img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.an-cap-opt-n { font-weight: 800; font-size: .82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.an-cap-opt-s { font-size: .68rem; color: var(--muted); }
+.an-cap-opt > div:not(.an-cap-opt-ph) { min-width: 0; }

@@ -3463,11 +3463,32 @@
         row.appendChild(body);
         row.appendChild(el("div", "an-cap-score", capScoreOf(top) + "/100"));
         cap.appendChild(row);
-        if (capList.length > 1) {
-          const alts = el("div", "an-cap-alts");
-          alts.appendChild(el("span", "an-cap-altslabel", "Alternativas:"));
-          capList.slice(1, 3).forEach((p) => alts.appendChild(el("span", "an-cap-altchip", (p.last || p.nombre || "") + " · " + capScoreOf(p))));
-          cap.appendChild(alts);
+        // Tú eliges: las 4 mejores opciones (recomendada + 3 alternativas). Tu elección se guarda en el histórico.
+        const opts = capList.slice(0, 4);
+        if (opts.length > 1) {
+          cap.appendChild(el("div", "an-cap-pickt", "Elige tu capitán (se guarda en tu histórico)"));
+          const grid = el("div", "an-cap-opts");
+          const chosenId = String(d.capChosen || "");
+          opts.forEach((p, i) => {
+            const isSel = chosenId ? String(p.id) === chosenId : false;
+            const c = el("button", "an-cap-opt" + (isSel ? " sel" : "")); c.type = "button";
+            const ph = el("div", "an-cap-opt-ph"); ph.appendChild(photoImg(photoOf(p))); c.appendChild(ph);
+            c.appendChild(el("div", "an-cap-opt-n", p.last || p.nombre || ""));
+            c.appendChild(el("div", "an-cap-opt-s", (i === 0 ? "⭐ Recomendado · " : "") + capScoreOf(p) + "/100"));
+            c.addEventListener("click", async () => {
+              if (!d.capJornada) { const m = $("anMsg"); if (m) m.textContent = "Vuelve a analizar para poder guardar tu capitán."; return; }
+              try {
+                const r = await fetch(API + "/capitan-elegir", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jornada: d.capJornada, id: p.id }) });
+                if (!r.ok) throw new Error("x");
+                d.capChosen = String(p.id); capHistLoaded = false;
+                grid.querySelectorAll(".an-cap-opt").forEach((x) => x.classList.remove("sel")); c.classList.add("sel");
+                const m = $("anMsg"); if (m) m.textContent = "👑 Capitán guardado: " + (p.nombre || "");
+                renderCapHistorial();
+              } catch (e) { const m = $("anMsg"); if (m) m.textContent = "No se pudo guardar tu capitán."; }
+            });
+            grid.appendChild(c);
+          });
+          cap.appendChild(grid);
         }
         out.appendChild(cap);
       }
@@ -3675,11 +3696,11 @@
       box.innerHTML = "";
       const sec = el("div", "estado-sec an-caphist");
       sec.appendChild(el("div", "estado-title", "📊 Histórico de capitán"));
-      sec.appendChild(el("p", "muted small", "A quién recomendamos de capitán cada jornada y los puntos que hizo de verdad (en cuanto termina su partido)."));
+      sec.appendChild(el("p", "muted small", "Tu capitán elegido de cada jornada (si no eliges, el recomendado) y los puntos que hizo de verdad (en cuanto termina su partido)."));
       let wins = 0, resolved = 0;
       hist.forEach((h) => {
         const results = h.results || [];
-        const cap = results[0];
+        const cap = (h.chosen && results.find((r) => String(r.id) === String(h.chosen))) || results[0];
         if (!cap) return;
         const row = el("div", "cap-hist-row");
         row.appendChild(el("div", "cap-hist-j", "J" + h.jornada));
@@ -3691,7 +3712,7 @@
           const best = results.reduce((m, r) => (r.points != null && (m == null || r.points > m)) ? r.points : m, null);
           const fue = cap.points != null && best != null && cap.points >= best;
           if (fue) wins++;
-          const alts = results.slice(1).map((r) => (r.nombre || "") + " " + (r.points != null ? r.points : "?")).join(" · ");
+          const alts = results.filter((r) => r !== cap).map((r) => (r.nombre || "") + " " + (r.points != null ? r.points : "?")).join(" · ");
           body.appendChild(el("div", "cap-hist-alts", alts ? "Alternativas: " + alts : ""));
           const pts = el("span", "cap-hist-pts" + (fue ? " win" : ""), (cap.points != null ? cap.points : "?") + " pts" + (fue ? " 👑 mejor opción" : ""));
           row.appendChild(body);
@@ -3703,7 +3724,7 @@
         }
         sec.appendChild(row);
       });
-      if (resolved) sec.insertBefore(el("div", "cap-hist-summary", "Acertó la mejor opción de las 3 en " + wins + " de " + resolved + " jornadas resueltas."), sec.children[2] || null);
+      if (resolved) sec.insertBefore(el("div", "cap-hist-summary", "Tu capitán fue la mejor opción en " + wins + " de " + resolved + " jornadas resueltas."), sec.children[2] || null);
       box.appendChild(sec);
     } catch (e) { box.innerHTML = ""; }
   }

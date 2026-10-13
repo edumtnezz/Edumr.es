@@ -2768,6 +2768,7 @@ async function handleAnaliza(request, env, user) {
   // usa el frontend para pintar "Capitán recomendado") para poder comparar
   // luego, cuando la jornada haya terminado, cuántos puntos hizo de verdad.
   // No bloquea la respuesta si falla.
+  let capInfo = {};
   try {
     const jornadaPred = (market.players || []).reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0) + 1;
     // Misma fórmula que el frontend (capScoreOf en mercado.js): nunca un
@@ -2796,11 +2797,12 @@ async function handleAnaliza(request, env, user) {
     if (!capList.length) capList = titulares.filter((p) => (p.pos === "CEN" || p.pos === "DEL") && p.id).slice().sort((a, b) => capScore(b) - capScore(a));
     if (!capList.length) capList = titulares.filter((p) => p.pos !== "POR" && p.id).slice().sort((a, b) => capScore(b) - capScore(a));
     if (capList.length) {
-      const alts = capList.slice(0, 3).map((p) => ({ id: p.id, nombre: p.nombre, pos: p.pos, photo: p.photo }));
-      await saveCapitanPrediction(env, user, jornadaPred, alts);
+      const alts = capList.slice(0, 4).map((p) => ({ id: p.id, nombre: p.nombre, pos: p.pos, photo: p.photo }));
+      const ent = await saveCapitanPrediction(env, user, jornadaPred, alts);
+      capInfo = { capJornada: jornadaPred, capChosen: (ent && ent.chosen) || "" };
     }
   } catch (e) {}
-  return json({ formacion, titulares, suplentes, analisis, leido });
+  return json({ formacion, titulares, suplentes, analisis, leido, ...capInfo });
 }
 
 async function saveCapitanPrediction(env, user, jornada, alts) {
@@ -2815,10 +2817,13 @@ async function saveCapitanPrediction(env, user, jornada, alts) {
   // de guardar las dos — lo que cuenta es a quién le dijimos que pusiera
   // de capitán la ÚLTIMA vez.
   const entry = { jornada, at: Date.now(), alts, resolved: false, results: null };
+  // Si ya habías elegido capitán esta jornada y sigue entre las opciones, se respeta tu elección.
+  if (idx >= 0 && hist[idx].chosen && alts.some((a) => String(a.id) === String(hist[idx].chosen))) entry.chosen = hist[idx].chosen;
   if (idx >= 0) hist[idx] = entry; else hist.push(entry);
   hist.sort((a, b) => b.jornada - a.jornada);
   hist = hist.slice(0, 25);
   try { await env.PORRA.put(key, JSON.stringify(hist)); } catch (e) {}
+  return entry;
 }
 
 async function getPlayerJornadaPoints(env, playerId, jornada) {
@@ -3815,6 +3820,18 @@ export async function onRequestPost({ request, env: env0, params, waitUntil }) {
       return json({ job: id, status: "running" }, 202);
     }
     return handleAnaliza(request, env, user);
+  }
+  if (path === "capitan-elegir") {
+    if (!user) return json({ error: "Inicia sesión." }, 401);
+    let b; try { b = await request.json(); } catch (e) { return json({ error: "Datos inválidos." }, 400); }
+    const key = "cap:hist:" + user.key;
+    let hist = []; try { hist = (await env.PORRA.get(key, "json")) || []; } catch (e) {}
+    const h = Array.isArray(hist) ? hist.find((x) => Number(x.jornada) === Number(b.jornada)) : null;
+    if (!h || !(h.alts || []).some((a) => String(a.id) === String(b.id))) return json({ error: "Opción no válida." }, 400);
+    h.chosen = String(b.id);
+    h.resolved = false; h.results = null; // se recalcula con la nueva elección
+    try { await env.PORRA.put(key, JSON.stringify(hist)); } catch (e) { return json({ error: "No se pudo guardar." }, 500); }
+    return json({ ok: true });
   }
   if (path === "puja/pujar") {
     const user = await getSessionUser(env, request);
