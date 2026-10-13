@@ -1167,3 +1167,16 @@ html { overflow-anchor: none; }
 .an-ideal-diff { margin: 12px 4px 4px; font-size: .84rem; color: rgba(255,255,255,.88); text-align: center; }
 .an-ideal .an-rules { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.2); color: #fff; }
 .an-ideal .an-rules .muted { color: rgba(255,255,255,.7); }
+
+/* Puntuación probable */
+.an-proj { margin: 12px 0; padding: 12px 14px; border-radius: 16px; border: 1px solid var(--border); background: var(--card); }
+.an-proj-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.an-proj-k { font: 800 .86rem 'Space Grotesk', sans-serif; }
+.an-proj-n { font: 800 1.6rem/1 'Space Grotesk', sans-serif; color: #16a34a; white-space: nowrap; }
+.an-proj-r, .an-proj-vs, .an-proj-l { margin-top: 6px; font-size: .78rem; line-height: 1.4; }
+.an-proj-vs { font-weight: 800; }
+.an-proj-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.an-proj-chip { font-size: .72rem; font-weight: 800; padding: 3px 9px; border-radius: 999px; background: rgba(127,127,127,.14); }
+.an-proj-note { margin-top: 8px; font-size: .68rem; opacity: .7; }
+.an-proj-dark { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.2); color: #fff; }
+.an-proj-dark .an-proj-n { color: #a5f3fc; }

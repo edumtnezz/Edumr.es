@@ -1961,6 +1961,14 @@
     } catch (e) {}
   }
 
+  // Forma: media de los últimos partidos (60%) y de los 2 últimos (40%, la racha).
+  function formOf(p) {
+    const f = (p.fitness || []).map(Number).filter((x) => !isNaN(x));
+    const avg = f.length ? f.reduce((a, b) => a + b, 0) / f.length : 3;
+    const l2 = f.slice(-2);
+    const rec = l2.length ? l2.reduce((a, b) => a + b, 0) / l2.length : avg;
+    return { avg, rec, base: avg * 0.6 + rec * 0.4, trend: rec - avg };
+  }
   function expOf(p) {
     const f = p.fitness || [];
     const played = f.filter((x) => Number(x) !== 0).length;
@@ -3276,9 +3284,7 @@
   function expOf(p) {
     const out = (p.san || p.inj || /SANC|LESI/i.test(p.estado || "")) && (p.prob == null || p.prob < 10);
     if (out) return 0;
-    const f = (p.fitness || []).map(Number).filter((x) => !isNaN(x));
-    const avg = f.length ? f.reduce((a, b) => a + b, 0) / f.length : 3;
-    const base = Math.max(0, avg + (p.casa === true ? 0.4 : p.casa === false ? -0.2 : 0));
+    const base = Math.max(0, formOf(p).base + (p.casa === true ? 0.4 : p.casa === false ? -0.2 : 0));
     const prob = p.prob != null ? p.prob : 60;
     return base * prob / 100;
   }
@@ -3305,12 +3311,44 @@
     const slots = best.sel.map((p) => ({ p, pos: best.posOf.get(p) }));
     return { formacion: best.form.join("-"), starters: best.sel, slots, total: best.total, by: best.by, players };
   }
+  // Puntuación probable del once: suma de puntos esperados + análisis de racha.
+  function projBox(players, title, versus) {
+    const ps = players.filter(Boolean);
+    const f1 = (x) => x.toFixed(0);
+    const total = ps.reduce((a, p) => a + expOf(p), 0);
+    const cap = ps.filter((p) => p.pos === "CEN" || p.pos === "DEL").slice().sort((a, b) => expOf(b) - expOf(a))[0];
+    const box = el("div", "an-proj");
+    const top = el("div", "an-proj-top");
+    top.appendChild(el("div", "an-proj-k", title));
+    top.appendChild(el("div", "an-proj-n", "~" + f1(total) + " pts"));
+    box.appendChild(top);
+    box.appendChild(el("div", "an-proj-r", "Rango probable: " + f1(total * 0.8) + " – " + f1(total * 1.2) + " pts" + (cap ? " · con " + (cap.last || cap.nombre) + " de capitán (doble): ~" + f1(total + expOf(cap)) : "")));
+    if (versus != null) {
+      const d = total - versus;
+      box.appendChild(el("div", "an-proj-vs", (d >= 0.5 ? "▲ +" + f1(d) + " pts más que tu once actual" : d <= -0.5 ? "▼ " + f1(d) + " pts vs tu once actual" : "= igual que tu once actual")));
+    }
+    const chips = el("div", "an-proj-chips");
+    [["POR", "🧤"], ["DEF", "🛡️"], ["CEN", "🎯"], ["DEL", "⚽"]].forEach((g) => {
+      const arr = ps.filter((p) => p.pos === g[0]);
+      if (arr.length) chips.appendChild(el("span", "an-proj-chip", g[1] + " " + g[0] + " " + f1(arr.reduce((a, p) => a + expOf(p), 0))));
+    });
+    box.appendChild(chips);
+    const hot = ps.filter((p) => expOf(p) > 0 && formOf(p).trend >= 1.5).sort((a, b) => formOf(b).trend - formOf(a).trend).slice(0, 4);
+    const cold = ps.filter((p) => expOf(p) > 0 && formOf(p).trend <= -1.5).sort((a, b) => formOf(a).trend - formOf(b).trend).slice(0, 4);
+    const risk = ps.filter((p) => p.prob != null && p.prob < 70).sort((a, b) => a.prob - b.prob).slice(0, 4);
+    const nm = (p) => p.last || p.nombre;
+    if (hot.length) box.appendChild(el("div", "an-proj-l", "🔥 En racha: " + hot.map((p) => nm(p) + " (últimos 2: " + formOf(p).rec.toFixed(1).replace(".", ",") + " vs media " + formOf(p).avg.toFixed(1).replace(".", ",") + ")").join(" · ")));
+    if (cold.length) box.appendChild(el("div", "an-proj-l", "🧊 A la baja: " + cold.map((p) => nm(p) + " (" + formOf(p).rec.toFixed(1).replace(".", ",") + " vs " + formOf(p).avg.toFixed(1).replace(".", ",") + ")").join(" · ")));
+    if (risk.length) box.appendChild(el("div", "an-proj-l", "⚠️ Dudas de jugar: " + risk.map((p) => nm(p) + " " + p.prob + "%").join(" · ")));
+    box.appendChild(el("div", "an-proj-note", "Se calcula con: forma (media y racha reciente), probabilidad de ser titular, casa o fuera. Es una estimación, no una promesa."));
+    return { box, total };
+  }
   function idealRules(ideal) {
     const d = el("details", "an-rules");
     d.appendChild(el("summary", null, "¿Cómo se elige el once ideal?"));
     const ul = el("div", "an-rules-b");
     const f1 = (x) => x.toFixed(1).replace(".", ",");
-    ul.appendChild(el("p", "muted small", "Reglas: 1) Puntos esperados = media de sus últimos partidos (+0,4 en casa, −0,2 fuera) × probabilidad de ser titular. 2) Sancionados o lesionados con menos de 10% valen 0. 3) Se prueban las formaciones 3-4-3, 3-5-2, 4-3-3, 4-4-2, 4-5-1, 5-3-2 y 5-4-1 (también la posición alternativa de los multiposición) y se queda la de más puntos esperados en total. 4) Siempre 1 portero. El nombre o el precio del jugador NO cuentan, solo estos números."));
+    ul.appendChild(el("p", "muted small", "Reglas: 1) Puntos esperados = forma (60% media de sus últimos partidos + 40% de los 2 últimos, la racha; +0,4 en casa, −0,2 fuera) × probabilidad de ser titular. 2) Sancionados o lesionados con menos de 10% valen 0. 3) Se prueban las formaciones 3-4-3, 3-5-2, 4-3-3, 4-4-2, 4-5-1, 5-3-2 y 5-4-1 (también la posición alternativa de los multiposición) y se queda la de más puntos esperados en total. 4) Siempre 1 portero. El nombre o el precio del jugador NO cuentan, solo estos números."));
     [["POR", "Portero"], ["DEF", "Defensas"], ["CEN", "Centrocampistas"], ["DEL", "Delanteros"]].forEach((g) => {
       const arr = ideal.by[g[0]] || [];
       if (!arr.length) return;
@@ -3516,6 +3554,8 @@
       const mine = window.EduAlineacion.card({ starters: tits.map((p) => toSide(p)), bench: [] }, "Tu equipo", "/img/avatar.svg", "", all, "probable", sups.map((p) => toSide(p)), cardOpts("Tu <b>once</b>"));
       hookSwap(mine);
       out.appendChild(mine);
+      const myProj = projBox(tits, "📈 Puntuación probable de tu once");
+      out.appendChild(myProj.box);
       // Once ideal con reglas fijas (no lo decide la IA)
       const ideal = pickIdealXI(tits.concat(sups));
       if (ideal) {
@@ -3529,6 +3569,9 @@
         const posOf = new Map(ideal.slots.map((x) => [x.p, x.pos]));
         const ic = window.EduAlineacion.card({ starters: ideal.starters.map((p) => toSide(p, posOf.get(p))), bench: [] }, "Once ideal", "/img/avatar.svg", "", all, "probable", rest.map((p) => toSide(p)), cardOpts("Once <b>ideal</b>"));
         wrap.appendChild(ic);
+        const idProj = projBox(ideal.starters, "📈 Puntuación probable del once ideal", myProj.total);
+        idProj.box.classList.add("an-proj-dark");
+        wrap.appendChild(idProj.box);
         const dif = ideal.starters.filter((p) => tits.indexOf(p) < 0).map((p) => p.nombre);
         const fuera = tits.filter((p) => ideal.starters.indexOf(p) < 0).map((p) => p.nombre);
         if (dif.length) wrap.appendChild(el("p", "an-ideal-diff", "Respecto a tu once: entran " + dif.join(", ") + " y salen " + fuera.join(", ") + "."));
