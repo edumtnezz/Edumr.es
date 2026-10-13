@@ -82,3 +82,8 @@ Antes de tocar partidos/alineaciones/ficha, repasar esta lista y verificar con c
 - Nunca inventar datos, cifras, pesos, rangos ni explicaciones. Todo dato sale de una fuente real (Futmondo, FutbolFantasy, football-data…). Si no hay dato, NO se muestra o se dice "sin datos".
 - Si una fórmula necesita parámetros arbitrarios (pesos, bonus, rangos), no usarlos; si no hay más remedio, decirlo claramente al usuario, nunca presentarlos como si fueran datos.
 - Al explicar algo, decir honestamente qué se verificó y qué no.
+
+## Liga de Edu (verificado con captura de ajustes, 13/10/2026) — "Con Permisoo"
+- Futmondo Social, puntuación CONFIGURABLE: Diario AS 50%, Marca 50%, SofaScore 50%, Tiempo de juego 0%, estadísticas básicas. Capitán sí, multiposición sí, estrategias extra sí, entrenador manual, se puede cambiar un jugador ya puntuado, alineaciones bloqueadas en partidos aplazados.
+- Primas: 70.000€/punto, 1.000.000€ por jugador en el equipo ideal, 2.000.000€ por MVP de jornada.
+- NO sabemos cómo combina Futmondo los porcentajes ni los puntos por gol/asistencia: no afirmarlo. Pendiente: lanzadores de penaltis, SofaScore y dificultad del rival (sin fuente verificada todavía) → "sin dato".

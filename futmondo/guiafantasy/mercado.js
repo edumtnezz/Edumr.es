@@ -3216,10 +3216,10 @@
   }
   function renderAiText(t, roster) {
     const box = el("div", "an-ai");
-    const ICONS = [["ONCE", "⭐"], ["PORTERO", "🧤"], ["DEFENSA", "🛡️"], ["MEDIO", "🎯"], ["DELANTERO", "⚽"], ["CAMBIOS", "🔄"], ["MULTIPOSICI", "↔️"], ["AVISO", "⏰"]];
+    const ICONS = [["ONCE", "⭐"], ["PORTERO", "🧤"], ["DEFENSA", "🛡️"], ["MEDIO", "🎯"], ["DELANTERO", "⚽"], ["CAMBIOS", "🔄"], ["CLAVES", "🔑"], ["MULTIPOSICI", "↔️"], ["AVISO", "⏰"]];
     const iconOf = (title) => { const u = title.toUpperCase(); const f = ICONS.find((x) => u.indexOf(x[0]) === 0); return f ? f[1] : "•"; };
     const isLineup = (title) => /PORTERO|DEFENSA|MEDIO|DELANTERO/i.test(title);
-    const isMulti = (title) => /MULTIPOSICI/i.test(title);
+    const isMulti = (title) => /MULTIPOSICI|CLAVES/i.test(title);
     const photoChip = (p) => {
       const c = el("div", "an-pchip");
       const ph = el("div", "an-pchip-photo"); ph.appendChild(photoImg(photoOf(p)));
@@ -3686,7 +3686,7 @@
     }
     // Análisis guardados antes traían un "ONCE IDEAL" escrito por la IA: se quita (ahora va arriba con reglas fijas).
     let aiTxt = String(d.analisis || "");
-    if (/\*\*ONCE IDEAL\*\*/i.test(aiTxt)) aiTxt = /\*\*MULTIPOSICI/i.test(aiTxt) ? aiTxt.replace(/\*\*ONCE IDEAL\*\*[\s\S]*?(?=\*\*MULTIPOSICI)/i, "") : "";
+    if (/\*\*ONCE IDEAL\*\*/i.test(aiTxt)) aiTxt = /\*\*(?:MULTIPOSICI|CLAVES)/i.test(aiTxt) ? aiTxt.replace(/\*\*ONCE IDEAL\*\*[\s\S]*?(?=\*\*(?:MULTIPOSICI|CLAVES))/i, "") : "";
     if (aiTxt.trim()) {
       const sec = el("div", "estado-sec");
       sec.appendChild(renderAiText(aiTxt, [].concat(tits, sups)));
