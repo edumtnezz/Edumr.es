@@ -2272,9 +2272,9 @@ async function getProbableFlags(env, jornada) {
   const has = {}, at = {};
   await Promise.all(names.map(async (n) => { try { const t = await getFFTeam(env, n); has[n] = ((t && t.starters) || []).length >= 10; at[n] = (t && t.fetchedAt) || 0; } catch (e) { has[n] = false; } }));
   const items = open.filter((m) => has[nm(m.homeTeam)] && has[nm(m.awayTeam)]);
-  // Hora de la lectura MÁS ANTIGUA de las usadas: así la hora enseñada nunca promete más frescura de la real
-  const ts = items.reduce((a, m) => a.concat([at[nm(m.homeTeam)], at[nm(m.awayTeam)]]), []).filter(Boolean);
-  return { matchday: jn, updatedAt: ts.length ? Math.min.apply(null, ts) : 0, items: items.map((m) => ({ home: nm(m.homeTeam), away: nm(m.awayTeam) })) };
+  // Cada equipo se actualiza por su cuenta en futbolfantasy: la hora es PARTIDO a PARTIDO (la lectura más
+  // antigua de sus dos equipos, para no prometer más frescura de la real).
+  return { matchday: jn, items: items.map((m) => ({ home: nm(m.homeTeam), away: nm(m.awayTeam), at: Math.min(at[nm(m.homeTeam)] || Date.now(), at[nm(m.awayTeam)] || Date.now()) })) };
 }
 
 async function getJornadaStrip(env, matchday) {

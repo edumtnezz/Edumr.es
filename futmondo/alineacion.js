@@ -73,7 +73,8 @@
         // Fotos de Futmondo con nombre en vez de número suelen ser de cuerpo entero: mejor la cara de FF
         if (fm && fm.photo && s.photo && !/\/faces\/\d+\/\d+\.png/.test(fm.photo)) photo = s.photo;
         var inner = '<div class="pl-ph"><img src="' + esc(photo) + '" alt="" data-ff="' + esc(ffPh) + '">';
-        if (probable && s.prob != null) inner += '<span class="pl-prob ' + probCls(s.prob) + '">' + s.prob + '%</span>';
+        if (probable && s.bench && (s.san || s.inj) && (s.prob == null || s.prob < 10)) inner += '<span class="pl-prob pl-out">' + (s.san ? "Sancionado" : "Lesionado") + '</span>';
+        else if (probable && s.prob != null) inner += '<span class="pl-prob ' + probCls(s.prob) + '">' + s.prob + '%</span>';
         if (mode === "played") inner += '<span class="pl-pts" data-full="' + esc(s.full || s.name) + '">–</span>';
         else if (!probable) { /* confirmada: sin dudas */ }
         else if (s.san || s.inj) inner += '<span class="pl-duda bad">' + (s.san ? "✕" : "+") + '</span>';
@@ -87,7 +88,12 @@
   }
 
   function benchHtml(subs, pool, mode) {
-    if (subs && mode !== "played") subs = subs.filter(function (s) { return s.prob == null || s.prob >= 10; });
+    // Con un 0% por sanción (roja) o lesión se enseñan igualmente, marcados, al final del banquillo
+    if (subs && mode !== "played") {
+      var out = function (s) { return !!(s.san || s.inj); };
+      subs = subs.filter(function (s) { return s.prob == null || s.prob >= 10 || out(s); });
+      subs = subs.filter(function (s) { return !out(s); }).concat(subs.filter(out));
+    }
     if (!subs || !subs.length) return "";
     var played = mode === "played", probable = !mode || mode === "probable";
     return '<div class="al-bench"><div class="al-bench-h">' + (played ? "Desde el banquillo" : "Banquillo") + '</div><div class="al-bench-row">' + subs.map(function (s) {
