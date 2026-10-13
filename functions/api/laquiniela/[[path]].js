@@ -240,7 +240,8 @@ async function fetchMatchday(headers, md) {
   }));
 }
 
-async function fetchFootballData(env, matchday) {
+const isMatchDone = (m) => m.status === "FINISHED" || m.status === "POSTPONED" || m.status === "SUSPENDED" || m.status === "CANCELLED" || m.status === "AWARDED";
+async function fetchFootballData(env, matchday, hold) {
   const token = env.FOOTBALL_API_KEY;
   if (!token) return null;
   const headers = { "X-Auth-Token": token };
@@ -256,7 +257,19 @@ async function fetchFootballData(env, matchday) {
   }
   if (!md) return null;
   let matches = await fetchMatchday(headers, md);
-  if (!matchday && matches.length) {
+  // football-data avanza de jornada en cuanto termina la anterior; Edu quiere seguir viendo los
+  // resultados un día entero: se enseña la jornada recién terminada hasta 27 h tras su último partido.
+  let held = false;
+  if (hold && !matchday && md > 1 && matches.length && matches.every((m) => m.status === "SCHEDULED" || m.status === "TIMED")) {
+    try {
+      const pm = await fetchMatchday(headers, md - 1);
+      if (pm.length && pm.every(isMatchDone)) {
+        const last = Math.max.apply(null, pm.filter((m) => m.status === "FINISHED").map((m) => Date.parse(m.utcDate) || 0).concat([0]));
+        if (last && Date.now() < last + 27 * 3600 * 1000) { md = md - 1; matches = pm; held = true; }
+      }
+    } catch (e) {}
+  }
+  if (!matchday && matches.length && !held) {
     const allFinished = matches.every((m) => m.status === "FINISHED");
     if (allFinished) {
       for (let next = md + 1; next <= md + 3; next++) {
@@ -294,13 +307,13 @@ function fixCrests(data) {
   } catch (e) {}
   return data;
 }
-async function getJornada(env, matchday) {
+async function getJornada(env, matchday, hold) {
   // Si football-data no responde y no hay copia buena: jornada vacía (nunca partidos inventados)
-  return fixCrests((await getJornadaRaw(env, matchday)) || { matchday: Number(matchday) || 0, source: "none", matches: [] });
+  return fixCrests((await getJornadaRaw(env, matchday, hold)) || { matchday: Number(matchday) || 0, source: "none", matches: [] });
 }
-async function getJornadaRaw(env, matchday) {
+async function getJornadaRaw(env, matchday, hold) {
   const kv = env.PORRA;
-  const cacheKey = `jornada:${matchday || "current"}`;
+  const cacheKey = `jornada:${matchday || (hold ? "currenthold" : "current")}`;
   const raw = await kv.get(cacheKey, "json");
   // Una jornada con todos los partidos terminados ya no cambia: se guarda horas. Si no, 1 minuto.
   const okRaw = raw && raw.data && raw.data.source === "football-data" ? raw : null;
@@ -309,7 +322,7 @@ async function getJornadaRaw(env, matchday) {
   }
   let data = null;
   try {
-    data = await fetchFootballData(env, matchday);
+    data = await fetchFootballData(env, matchday, hold);
   } catch (e) {
     data = null;
   }
@@ -318,7 +331,7 @@ async function getJornadaRaw(env, matchday) {
     // NUNCA datos inventados (antes caía a una jornada falsa Real Madrid–Barcelona).
     return okRaw ? okRaw.data : null;
   }
-  const final = data.matches.every((m) => m.status === "FINISHED");
+  const final = !!matchday && data.matches.every((m) => m.status === "FINISHED");
   await kv.put(cacheKey, JSON.stringify({ fetchedAt: Date.now(), final, data }), {
     expirationTtl: final ? 6 * 3600 : 3600,
   });
@@ -2235,9 +2248,26 @@ function flLive(m) {
   return null;
 }
 
+// ¿Qué partidos de la jornada tienen ya alineación probable publicada (futbolfantasy)? La página de
+// equipo de FF siempre enseña el once del PRÓXIMO partido, así que solo vale para la jornada en curso
+// (o la siguiente si la actual ya acabó).
+async function getProbableFlags(env, jornada) {
+  const jd = await getJornada(env, jornada || null);
+  const dj = jornada ? await getJornada(env, null) : jd;
+  const jn = Number(jd.matchday) || 0, dn = Number(dj.matchday) || 0;
+  const ok = jn && (jn === dn || (jn === dn + 1 && (dj.matches || []).length && (dj.matches || []).every(isMatchDone)));
+  if (!ok) return { matchday: jn, items: [] };
+  const nm = (t) => (t && (t.shortName || t.name)) || "";
+  const open = (jd.matches || []).filter((m) => m.status === "SCHEDULED" || m.status === "TIMED");
+  const names = [...new Set(open.reduce((a, m) => a.concat([nm(m.homeTeam), nm(m.awayTeam)]), []).filter(Boolean))];
+  const has = {};
+  await Promise.all(names.map(async (n) => { try { const t = await getFFTeam(env, n); has[n] = ((t && t.starters) || []).length >= 10; } catch (e) { has[n] = false; } }));
+  return { matchday: jn, items: open.filter((m) => has[nm(m.homeTeam)] && has[nm(m.awayTeam)]).map((m) => ({ home: nm(m.homeTeam), away: nm(m.awayTeam) })) };
+}
+
 async function getJornadaStrip(env, matchday) {
   let jd = null;
-  try { jd = await getJornada(env, matchday || null); } catch (e) {}
+  try { jd = await getJornada(env, matchday || null, true); } catch (e) {}
   if (!jd || !jd.matches) return { matchday: 0, matches: [] };
   let fl = { byName: {}, list: [] }, ffc = { byName: {}, list: [] };
   try { fl = await fltvMap(env); } catch (e) {}
@@ -3639,6 +3669,9 @@ export async function onRequestGet({ request, env: env0, params }) {
   }
   if (path === "rachas") {
     try { return json(await getRachas(env)); } catch (e) { return json({ players: [] }); }
+  }
+  if (path === "alineaciones-estado") {
+    try { return json(await getProbableFlags(env, url.searchParams.get("jornada") || null)); } catch (e) { return json({ matchday: 0, items: [] }); }
   }
   if (path === "jornada") {
     try { return json(await getJornadaStrip(env, url.searchParams.get("jornada"))); } catch (e) { return json({ matchday: 0, matches: [] }); }

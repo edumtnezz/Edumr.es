@@ -122,6 +122,33 @@
     scrollEl._cxBarUpdate = update;
     update();
   }
+  // "Once probable" encima de los partidos que ya tienen alineación probable (los que no, sin nada)
+  var probCache = {};
+  function markProb(set) {
+    var grid = document.getElementById("cxJGrid");
+    if (!grid) return;
+    grid.querySelectorAll(".cx-jn").forEach(function (el) {
+      if (el.querySelector(".cx-jn-statusrow, .cx-jn-statusrow-prob")) return;
+      if (set[el.getAttribute("data-home") + "|" + el.getAttribute("data-away")]) {
+        el.classList.add("cx-jn-probable");
+        el.insertAdjacentHTML("afterbegin", '<div class="cx-jn-statusrow-prob">Once probable</div>');
+      }
+    });
+  }
+  function applyProb(n) {
+    if (!n) return;
+    var c = probCache[n];
+    if (c) markProb(c.set);
+    if (c && Date.now() - c.at < 300000) return;
+    fetch(API + "/alineaciones-estado?jornada=" + n, { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var set = {};
+        ((d && d.items) || []).forEach(function (i) { set[i.home + "|" + i.away] = 1; });
+        probCache[n] = { at: Date.now(), set: set };
+        if (jornada === n) markProb(set);
+      }).catch(function () {});
+  }
   function loadJornada(n) {
     var grid = document.getElementById("cxJGrid");
     var title = document.getElementById("cxJTitle");
@@ -185,6 +212,7 @@
             '</div>';
         }).join("");
         grid.style.minHeight = "";
+        applyProb(jornada);
         var pv = document.getElementById("cxJPrev"), nx = document.getElementById("cxJNext");
         if (pv) pv.disabled = jornada <= 1;
         if (nx) nx.disabled = jornada >= 38;

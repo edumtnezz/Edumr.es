@@ -674,3 +674,17 @@ body {
 @keyframes cxBell { 0%, 60%, 100% { transform: rotate(0); } 66% { transform: rotate(16deg); } 72% { transform: rotate(-14deg); } 78% { transform: rotate(10deg); } 84% { transform: rotate(-6deg); } }
 @media (max-width: 420px) { .cx-conf-k { display: none; } }
 @media (prefers-reduced-motion: reduce) { .cx-conf-pill, .cx-conf-bell { animation: none; } }
+
+/* Once probable: encima de los partidos que ya tienen alineación probable */
+.cx-jn-statusrow-prob {
+  display: inline-flex; align-items: center; gap: 3px;
+  color: #fff; background: linear-gradient(135deg, #38bdf8, #2563eb); border-radius: 999px;
+  font-size: 0.42rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 2px 8px 2px 5px; margin: 0 auto 2px; width: fit-content; white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.4);
+}
+.cx-jn-statusrow-prob::before {
+  content: "?"; display: inline-flex; align-items: center; justify-content: center;
+  width: 8px; height: 8px; border-radius: 50%; background: #fff; color: #2563eb; font-size: 0.4rem; line-height: 1; font-weight: 900;
+}
+.cx-jn.cx-jn-probable { border-color: #3b82f6; box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.45), 0 2px 8px rgba(59, 130, 246, 0.18); }
