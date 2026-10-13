@@ -3428,7 +3428,7 @@
       bar("ss", "SofaScore", fmN(ss));
       bar("min", "Min. jugados", mins + "' · " + fmS(mn));
       if (defLine) bar("extra" + (defLine[1] < 0 ? " neg" : " pos"), defLine[0], fmS(defLine[1]));
-      if (rest !== 0) bar("extra" + (rest < 0 ? " neg" : " pos"), rest < 0 ? "Tarjetas, penaltis y otros descuentos" : "Goles, asistencias y otros", fmS(rest));
+      if (rest !== 0) bar("extra" + (rest < 0 ? " neg" : " pos"), rest < 0 ? "Otros descuentos (p. ej. goles encajados o tarjetas)" : "Goles, asistencias y otros", fmS(rest));
       const sum = base + rest + (defLine ? defLine[1] : 0);
       det.appendChild(el("div", "an-fm-dn", "AS, Marca y SofaScore son los puntos de su tabla × 50% (tu liga)." + (Math.abs(sum - total) > 0.01 ? " Suma " + fmN(sum) + "; Futmondo redondea a " + total + "." : "") + " AS, Marca, SofaScore y minutos salen directos de Futmondo; la última línea, si sale, es la diferencia hasta los puntos reales."));
     };
