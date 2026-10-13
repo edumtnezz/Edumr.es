@@ -1346,3 +1346,7 @@ html { overflow-anchor: none; }
 .mj-sug-r small.up{color:#2e9b4f}
 .mj-sug-r small.down{color:#c0261b}
 .mj-sug-row{align-items:flex-start}
+
+/* Ordenar: misma fuente que el resto de botones, en normal */
+.mx-filters .mx-chip,.mx-filters .merc-segbtn.mx-chip,.mx-filters .merc-segbtn{font-family:inherit;font-weight:400;font-size:.86rem;line-height:1}
+.mkt-reset{display:block;width:100%;margin:0 0 12px;padding:11px 14px;border-radius:14px;font-weight:600}

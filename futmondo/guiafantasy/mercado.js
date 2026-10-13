@@ -81,6 +81,41 @@
   let selA = null, selB = null;
   let rangeMin = 0;
   let rangeMax = Infinity;
+  const MS_KEY = "merc_state";
+  let msRestored = false;
+  function saveMercState() {
+    try {
+      const sr = $("mjSearch"), rl = $("mjRole");
+      sessionStorage.setItem(MS_KEY, JSON.stringify({ q: sr ? sr.value : "", sortMode, quick, teamFilter, role: rl ? rl.value : "", rangeMin, rangeMax: rangeMax === Infinity ? 0 : rangeMax, hlPeriod, mktSort, shown }));
+    } catch (e) {}
+  }
+  function restoreMercState() {
+    if (msRestored) return; msRestored = true;
+    let st = null;
+    try { st = JSON.parse(sessionStorage.getItem(MS_KEY) || "null"); } catch (e) {}
+    if (!st) return;
+    sortMode = st.sortMode || sortMode; quick = st.quick || ""; teamFilter = st.teamFilter || "";
+    rangeMin = Number(st.rangeMin) || 0; rangeMax = Number(st.rangeMax) || Infinity;
+    if (st.hlPeriod) hlPeriod = st.hlPeriod;
+    if (st.mktSort && typeof st.mktSort === "object") mktSort = st.mktSort;
+    shown = Math.max(18, Number(st.shown) || 18);
+    const sr = $("mjSearch"); if (sr && st.q) sr.value = st.q;
+    const rl = $("mjRole"); if (rl) rl.value = st.role || "";
+    document.querySelectorAll("#mxRole .mx-chip").forEach((x) => x.classList.toggle("active", (x.dataset.role || "") === (st.role || "")));
+    document.querySelectorAll("#mxPrice .mx-chip").forEach((x) => x.classList.toggle("active", (Number(x.dataset.min) || 0) === rangeMin && (Number(x.dataset.max) || Infinity) === rangeMax));
+    document.querySelectorAll(".merc-segbtn").forEach((x) => x.classList.toggle("active", x.dataset.sort === sortMode));
+    renderChips(); syncClubActive();
+  }
+  function resetMercFilters() {
+    const sr = $("mjSearch"); if (sr) sr.value = "";
+    const sg = $("mjSuggest"); if (sg) { sg.innerHTML = ""; sg.hidden = true; }
+    const rl = $("mjRole"); if (rl) rl.value = "";
+    sortMode = "all"; quick = ""; teamFilter = ""; rangeMin = 0; rangeMax = Infinity; shown = 18; mktSort = { key: "", dir: -1 };
+    document.querySelectorAll("#mxRole .mx-chip").forEach((x) => x.classList.toggle("active", !(x.dataset.role || "")));
+    document.querySelectorAll("#mxPrice .mx-chip").forEach((x) => x.classList.toggle("active", !(Number(x.dataset.max) || 0) && !(Number(x.dataset.min) || 0)));
+    document.querySelectorAll(".merc-segbtn").forEach((x) => x.classList.toggle("active", x.dataset.sort === "all"));
+    renderChips(); syncClubActive(); renderGrid();
+  }
 
   function $(id) { return document.getElementById(id); }
   function money(n) { return Number(n || 0).toLocaleString("es-ES"); }
@@ -1580,7 +1615,15 @@
   function renderGrid() {
     const grid = $("marketGrid");
     if (!grid) return;
+    restoreMercState();
+    saveMercState();
     grid.innerHTML = "";
+    const _sq = $("mjSearch"), _rl = $("mjRole");
+    if ((_sq && _sq.value.trim()) || quick || teamFilter || (_rl && _rl.value) || rangeMin > 0 || (rangeMax !== Infinity && rangeMax > 0 && document.querySelector("#mxPrice .mx-chip.active") && (Number(document.querySelector("#mxPrice .mx-chip.active").dataset.max) || 0)) || sortMode !== "all") {
+      const rb = el("button", "btn-ghost mkt-reset", "✕ Quitar filtros y ver todos los jugadores"); rb.type = "button";
+      rb.addEventListener("click", resetMercFilters);
+      grid.appendChild(rb);
+    }
     const top = el("div", "mkt-top");
     const tl = el("div", "mkt-tl");
     tl.appendChild(el("div", "mkt-headline", "📋 Todos los jugadores"));
