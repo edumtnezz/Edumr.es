@@ -3306,7 +3306,7 @@
     const prob = p.prob != null ? p.prob : 60;
     return base * prob / 100;
   }
-  const IDEAL_FORMS = [[3, 4, 3], [3, 5, 2], [4, 3, 3], [4, 4, 2], [4, 5, 1], [5, 3, 2], [5, 4, 1], [3, 3, 4]];
+  const IDEAL_FORMS = [[3, 4, 3], [3, 5, 2], [4, 3, 3], [4, 4, 2], [4, 5, 1], [5, 3, 2], [5, 4, 1], [3, 3, 4], [3, 6, 1], [4, 2, 4], [4, 6, 0], [5, 2, 3]];
   function pickIdealXI(players) {
     const multi = players.filter((p) => p.pos2 && p.pos2 !== p.pos && p.pos !== "POR" && p.pos2 !== "POR").slice(0, 6);
     let best = null;
@@ -3467,7 +3467,7 @@
     d.appendChild(el("summary", null, "¿Cómo se elige el once ideal?"));
     const ul = el("div", "an-rules-b");
     const f1 = (x) => x.toFixed(1).replace(".", ",");
-    ul.appendChild(el("p", "muted small", "Reglas: 1) Puntos esperados = media de los puntos reales de los últimos partidos que jugó (Futmondo; los guiones no cuentan) × probabilidad de ser titular (FutbolFantasy). No se suma ni se resta nada inventado (la racha y casa/fuera solo se muestran, no cuentan). 2) Sancionados o lesionados con menos de 10% valen 0. 3) Se prueban las formaciones 3-4-3, 3-5-2, 4-3-3, 4-4-2, 4-5-1, 5-3-2, 5-4-1 y 3-3-4 (la que usas tú) (también la posición alternativa de los multiposición) y se queda la de más puntos esperados en total. 4) Siempre 1 portero. El nombre o el precio del jugador NO cuentan, solo estos números."));
+    ul.appendChild(el("p", "muted small", "Reglas: 1) Puntos esperados = media de los puntos reales de los últimos partidos que jugó (Futmondo; los guiones no cuentan) × probabilidad de ser titular (FutbolFantasy). No se suma ni se resta nada inventado (la racha y casa/fuera solo se muestran, no cuentan). 2) Sancionados o lesionados con menos de 10% valen 0. 3) Se prueban las formaciones 3-4-3, 3-5-2, 4-3-3, 4-4-2, 4-5-1, 5-3-2, 5-4-1, 3-3-4, 3-6-1, 4-2-4, 4-6-0 y 5-2-3 (las 12 formaciones de tu Futmondo) (también la posición alternativa de los multiposición) y se queda la de más puntos esperados en total. 4) Siempre 1 portero. El nombre o el precio del jugador NO cuentan, solo estos números."));
     [["POR", "Portero"], ["DEF", "Defensas"], ["CEN", "Centrocampistas"], ["DEL", "Delanteros"]].forEach((g) => {
       const arr = ideal.by[g[0]] || [];
       if (!arr.length) return;

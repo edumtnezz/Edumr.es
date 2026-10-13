@@ -166,7 +166,7 @@
   // La etiqueta sale SIEMPRE de lo que se dibuja (mismas filas).
   function formacion(side) {
     var rows = rowsOf(side);
-    if (rows) return rows.map(function (r) { return r.length; }).join("-");
+    if (rows) { var lab = rows.map(function (r) { return r.length; }).join("-"); if (rows.length === 2) lab += "-0"; return lab; }
     var c = { df: 0, md: 0, fw: 0 };
     (side.starters || []).forEach(function (p) { var k = line(p.pos); if (c[k] != null) c[k]++; });
     return c.df + "-" + c.md + "-" + c.fw;
