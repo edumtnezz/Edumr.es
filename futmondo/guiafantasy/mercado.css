@@ -1311,7 +1311,7 @@ html { overflow-anchor: none; }
 .an-fm-bar.pts b { font-size: 1.05rem; }
 .an-fm-bar.as { background: #c0261b; }
 .an-fm-bar.marca { background: #c0261b; }
-.an-fm-bar.as .an-fm-bl { font: 900 1.05rem 'Space Grotesk', sans-serif; text-transform: lowercase; letter-spacing: -.02em; }
+.an-fm-bar.as .an-fm-bl { font: 900 1.05rem 'Space Grotesk', sans-serif; letter-spacing: .01em; }
 .an-fm-bar.marca .an-fm-bl { font: 900 .95rem 'Space Grotesk', sans-serif; text-transform: uppercase; letter-spacing: .01em; }
 .an-fm-bar.ss { background: #22559c; }
 .an-fm-bar.min { background: #111827; border-left: 3px solid #4caf50; }
@@ -1326,3 +1326,5 @@ html { overflow-anchor: none; }
 .an-tr-s span { font-size: .5rem; text-transform: uppercase; letter-spacing: .06em; opacity: .7; margin-top: 2px; white-space: nowrap; }
 .an-tr-s.up { background: rgba(34,197,94,.2); color: #4ade80; }
 .an-tr-s.down { background: rgba(239,68,68,.2); color: #f87171; }
+.an-tr-s.wide span { white-space: normal; text-align: center; max-width: 130px; line-height: 1.2; }
+.an-fm-det { color: #fff; }

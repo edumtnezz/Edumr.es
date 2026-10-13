@@ -3361,7 +3361,6 @@
     });
     box.appendChild(chips);
     const hot = ps.filter((p) => expOf(p) > 0 && formOf(p).trend >= 1.5).sort((a, b) => formOf(b).trend - formOf(a).trend).slice(0, 4);
-    const cold = ps.filter((p) => expOf(p) > 0 && formOf(p).trend <= -1.5).sort((a, b) => formOf(a).trend - formOf(b).trend).slice(0, 4);
     const risk = ps.filter((p) => p.prob != null && p.prob < 70).sort((a, b) => a.prob - b.prob).slice(0, 4);
     const f1d = (x) => x.toFixed(1).replace(".", ",");
     const group = (icon, label, cls, arr, sub) => {
@@ -3383,8 +3382,7 @@
       g.appendChild(row);
       box.appendChild(g);
     };
-    group("🔥", "En racha", "hot", hot, (p) => { const fo = formOf(p); return [["▲ " + f1d(fo.rec), "últimos 2", "up"], [f1d(fo.avg), "últimos 5", ""]]; });
-    group("🧊", "A la baja", "cold", cold, (p) => { const fo = formOf(p); return [["▼ " + f1d(fo.rec), "últimos 2", "down"], [f1d(fo.avg), "últimos 5", ""]]; });
+    group("🔥", "En racha", "hot", hot, (p) => { const fo = formOf(p); return [["▲ " + f1d(fo.rec), "puntos de media en sus 2 últimos partidos", "up wide"]]; });
     const irr = ps.filter((p) => { const fo = formOf(p); return fo.len >= 3 && fo.len - fo.played >= 2 && fo.played >= 1; }).sort((a, b) => formOf(b).avg - formOf(a).avg).slice(0, 4);
     group("🎲", "Irregulares: puntúan al jugar, pero se pierden partidos", "irr", irr, (p) => { const fo = formOf(p); return [[fo.played + "/" + fo.len, "jugó", ""], [f1d(fo.avg), "pts al jugar", "up"]]; });
     group("⚠️", "Dudas de jugar", "risk", risk, (p) => [[p.prob + "%", "de jugar", "down"]]);
