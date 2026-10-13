@@ -743,7 +743,8 @@
         if (x.live && x.live.state === "final") [x.home, x.away].forEach((t) => {
           const k = teamCanon(t); (m[k] = m[k] || []).push(r.n);
           const isH = t === x.home;
-          (oppJ[k] = oppJ[k] || {})[r.n] = { rival: isH ? x.away : x.home, home: isH, crest: isH ? x.awayCrest : x.homeCrest };
+          const sm = x.live.score && String(x.live.score).match(/(\d+)\s*-\s*(\d+)/);
+          (oppJ[k] = oppJ[k] || {})[r.n] = { rival: isH ? x.away : x.home, home: isH, crest: isH ? x.awayCrest : x.homeCrest, ga: sm ? (isH ? +sm[2] : +sm[1]) : null };
         });
       }));
       playedJ = m;
@@ -3401,7 +3402,16 @@
       const mins = Number(m.mins) || 0;
       const a = (Number(m.as) || 0) / 2, mc = (Number(m.marca) || 0) / 2, ss = (Number(m.ss) || 0) / 2, mn = mins >= 60 ? 1 : 0;
       const base = a + mc + ss + mn;
-      const rest = Math.floor(total - base + 1e-9);
+      let rest = Math.floor(total - base + 1e-9);
+      // Porteros y defensas (60+ min): portería a cero +1, o -1 por cada 2 goles encajados (ayuda oficial; comprobado con datos reales).
+      const oj = oppJ[teamCanon(p.equipo)] && oppJ[teamCanon(p.equipo)][jn];
+      const defRole = /portero|defensa/.test(String(j.role || ""));
+      let defLine = null;
+      if (defRole && mins >= 60 && oj && oj.ga != null) {
+        const v = oj.ga === 0 ? 1 : -Math.floor(oj.ga / 2);
+        defLine = oj.ga === 0 ? ["Portería a cero", 1] : (v !== 0 ? ["Goles encajados (" + oj.ga + ")", v] : null);
+        rest -= v;
+      }
       const t = el("div", "an-fm-dt");
       t.appendChild(el("b", null, "J" + jn + " · " + total + " pts"));
       t.appendChild(el("small", null, mins + " min jugados"));
@@ -3411,8 +3421,9 @@
       add("Marca (" + fmN(Number(m.marca) || 0) + " × 50%)", fmS(mc));
       add("SofaScore (" + fmN(Number(m.ss) || 0) + " × 50%)", fmS(ss));
       add("Minutos (" + (mn ? "60 o más" : "menos de 60") + ")", fmS(mn));
-      if (rest !== 0) add("Goles, asistencias, tarjetas y otros", fmS(rest), rest < 0 ? "neg" : "pos");
-      det.appendChild(el("div", "an-fm-dn", "Suma " + fmN(base + rest) + (Math.abs(base + rest - total) > 0.01 ? " · Futmondo redondea a " + total : "") + ". AS, Marca, SofaScore y minutos salen directos de Futmondo; la última línea es la diferencia hasta los puntos reales."));
+      if (defLine) add(defLine[0], fmS(defLine[1]), defLine[1] < 0 ? "neg" : "pos");
+      if (rest !== 0) add(rest < 0 ? "Tarjetas, penaltis y otros descuentos" : "Goles, asistencias y otros", fmS(rest), rest < 0 ? "neg" : "pos");
+      det.appendChild(el("div", "an-fm-dn", "Suma " + fmN(base + rest + (defLine ? defLine[1] : 0)) + (Math.abs(base + rest + (defLine ? defLine[1] : 0) - total) > 0.01 ? " · Futmondo redondea a " + total : "") + ". AS, Marca, SofaScore y minutos salen directos de Futmondo; la última línea es la diferencia hasta los puntos reales."));
     };
     if (fmCache[p.id]) { draw(fmCache[p.id]); return; }
     fetch(API + "/jugador?id=" + encodeURIComponent(p.id)).then((r) => r.json()).then((j) => { fmCache[p.id] = j; if (det.isConnected) draw(j); }).catch(() => { det.textContent = "No se pudo cargar el desglose."; });
@@ -3724,13 +3735,15 @@
         if (entran.length || salen.length) {
           const sw = el("div", "an-sw");
           sw.appendChild(el("div", "an-sw-h", "Cambios respecto a tu once"));
+          const swMax = Math.max(1, ...tits.concat(ideal.starters).map((q) => expOf(q)));
           const mk = (p, dir) => {
             const r = el("div", "an-sw-row " + dir);
             r.appendChild(el("span", "an-sw-ar", dir === "in" ? "▲" : "▼"));
             const ph = el("div", "an-sw-ph"); ph.appendChild(photoImg(photoOf(p))); r.appendChild(ph);
             const tx = el("div", "an-sw-tx");
             tx.appendChild(el("b", null, p.last || p.nombre));
-            let why = f1e(expOf(p)) + " pts esperados";
+            const fo0 = formOf(p);
+            let why = "media " + f1e(fo0.avg) + (p.prob != null ? " × " + p.prob + "% de jugar" : "");
             if (dir === "out") {
               const same = ideal.slots.filter((x) => x.pos === p.pos);
               const mn = same.length ? Math.min(...same.map((x) => expOf(x.p))) : null;
@@ -3743,6 +3756,12 @@
             }
             tx.appendChild(el("small", null, why));
             r.appendChild(tx);
+            const ex = el("div", "an-sw-ex");
+            const nb = el("div", "an-sw-n"); nb.appendChild(document.createTextNode(f1e(expOf(p)))); nb.appendChild(el("span", null, " pts"));
+            ex.appendChild(nb);
+            const bar = el("div", "an-sw-bar"); const fill = el("i"); fill.style.width = Math.max(6, Math.min(100, expOf(p) / swMax * 100)) + "%"; bar.appendChild(fill); ex.appendChild(bar);
+            ex.appendChild(el("small", null, "esperados"));
+            r.appendChild(ex);
             return r;
           };
           entran.forEach((p) => sw.appendChild(mk(p, "in")));
