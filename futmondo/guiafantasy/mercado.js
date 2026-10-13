@@ -1365,9 +1365,14 @@
       if (!ms.some((x) => matchSlug(x.home, x.away) === slug) && !qj) {
         // Sin ?j=: busca en las 3 jornadas siguientes
         const cur = Number(jr && jr.matchday) || 0;
-        for (let k = 1; k <= 3 && cur && cur + k <= 38; k++) {
-          try { const j2 = await (await fetch(API + "/jornada?jornada=" + (cur + k))).json(); if ((j2.matches || []).some((x) => matchSlug(x.home, x.away) === slug)) { jr = j2; ms = j2.matches; break; } } catch (e) {}
-        }
+        const tryJ = async (n) => {
+          try { const j2 = await (await fetch(API + "/jornada?jornada=" + n)).json(); if ((j2.matches || []).some((x) => matchSlug(x.home, x.away) === slug)) { jr = j2; ms = j2.matches; return true; } } catch (e) {}
+          return false;
+        };
+        let found = false;
+        for (let k = 1; k <= 3 && !found && cur && cur + k <= 38; k++) found = await tryJ(cur + k);
+        // Partidos ya jugados: la jornada actual avanza y el enlace sin ?j= ya no lo encontraba
+        for (let n = cur - 1; n >= 1 && !found && n >= cur - 12; n--) found = await tryJ(n);
       }
       const jn = Number(jr && jr.matchday) || 0;
       const m = ms.find((x) => matchSlug(x.home, x.away) === slug);
