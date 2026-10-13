@@ -77,3 +77,8 @@ Antes de tocar partidos/alineaciones/ficha, repasar esta lista y verificar con c
 - Cualquier salvaguarda nueva debe probarse en un partido real con TODOS sus jugadores antes de dar por hecho que funciona (la primera versión de la de puntos escondía los puntos de casi todos).
 - **Carga instantánea (swr.js)**: `futmondo/swr.js` envuelve `fetch` de la API (mercado, jugador, jornada, partido…): pinta al instante lo guardado en localStorage y actualiza detrás; si cambia, lanza el evento `cx:swr` y la página se repinta en el sitio (sin mover el scroll). Cualquier página nueva que pida datos de la API debe escuchar `cx:swr` (si no, se queda con lo viejo). No cachear endpoints del usuario (`me`, etc.).
 - **Jornadas falsas (mock)**: football-data.org (plan gratis) limita a ~10 peticiones/min. Antes, si fallaba, `getJornadaRaw` devolvía una jornada INVENTADA (Real Madrid–Barcelona "mañana") y se veía como real (J9, J10 y J11 con el mismo partido). Ahora nunca se inventa: se sirve la última copia buena o una jornada vacía. Las jornadas terminadas se cachean 6 h. No abrir muchas jornadas de golpe desde el cliente sin pensar en este límite; si cambia el formato de la caché de `jornada`, subir también el prefijo de `swr.js` (`swr2:`…).
+
+## 🚫 REGLA GRAVE: NO INVENTAR NADA (pedida por Edu)
+- Nunca inventar datos, cifras, pesos, rangos ni explicaciones. Todo dato sale de una fuente real (Futmondo, FutbolFantasy, football-data…). Si no hay dato, NO se muestra o se dice "sin datos".
+- Si una fórmula necesita parámetros arbitrarios (pesos, bonus, rangos), no usarlos; si no hay más remedio, decirlo claramente al usuario, nunca presentarlos como si fueran datos.
+- Al explicar algo, decir honestamente qué se verificó y qué no.

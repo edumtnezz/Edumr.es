@@ -1961,13 +1961,13 @@
     } catch (e) {}
   }
 
-  // Forma: media de los últimos partidos (60%) y de los 2 últimos (40%, la racha).
+  // Forma: media REAL de los puntos de sus últimos partidos (Futmondo). Sin pesos inventados.
   function formOf(p) {
     const f = (p.fitness || []).map(Number).filter((x) => !isNaN(x));
     const avg = f.length ? f.reduce((a, b) => a + b, 0) / f.length : 3;
     const l2 = f.slice(-2);
     const rec = l2.length ? l2.reduce((a, b) => a + b, 0) / l2.length : avg;
-    return { avg, rec, base: avg * 0.6 + rec * 0.4, trend: rec - avg };
+    return { avg, rec, base: avg, trend: rec - avg };
   }
   function expOf(p) {
     const f = p.fitness || [];
@@ -3284,7 +3284,7 @@
   function expOf(p) {
     const out = (p.san || p.inj || /SANC|LESI/i.test(p.estado || "")) && (p.prob == null || p.prob < 10);
     if (out) return 0;
-    const base = Math.max(0, formOf(p).base + (p.casa === true ? 0.4 : p.casa === false ? -0.2 : 0));
+    const base = Math.max(0, formOf(p).base);
     const prob = p.prob != null ? p.prob : 60;
     return base * prob / 100;
   }
@@ -3322,7 +3322,7 @@
     top.appendChild(el("div", "an-proj-k", title));
     top.appendChild(el("div", "an-proj-n", "~" + f1(total) + " pts"));
     box.appendChild(top);
-    box.appendChild(el("div", "an-proj-r", "Rango probable: " + f1(total * 0.8) + " – " + f1(total * 1.2) + " pts" + (cap ? " · con " + (cap.last || cap.nombre) + " de capitán (doble): ~" + f1(total + expOf(cap)) : "")));
+    box.appendChild(el("div", "an-proj-r", (cap ? "Con " + (cap.last || cap.nombre) + " de capitán (dobla puntos): ~" + f1(total + expOf(cap)) + " pts" : "")));
     if (versus != null) {
       const d = total - versus;
       box.appendChild(el("div", "an-proj-vs", (d >= 0.5 ? "▲ +" + f1(d) + " pts más que tu once actual" : d <= -0.5 ? "▼ " + f1(d) + " pts vs tu once actual" : "= igual que tu once actual")));
@@ -3340,7 +3340,7 @@
     if (hot.length) box.appendChild(el("div", "an-proj-l", "🔥 En racha: " + hot.map((p) => nm(p) + " (últimos 2: " + formOf(p).rec.toFixed(1).replace(".", ",") + " vs media " + formOf(p).avg.toFixed(1).replace(".", ",") + ")").join(" · ")));
     if (cold.length) box.appendChild(el("div", "an-proj-l", "🧊 A la baja: " + cold.map((p) => nm(p) + " (" + formOf(p).rec.toFixed(1).replace(".", ",") + " vs " + formOf(p).avg.toFixed(1).replace(".", ",") + ")").join(" · ")));
     if (risk.length) box.appendChild(el("div", "an-proj-l", "⚠️ Dudas de jugar: " + risk.map((p) => nm(p) + " " + p.prob + "%").join(" · ")));
-    box.appendChild(el("div", "an-proj-note", "Se calcula con: forma (media y racha reciente), probabilidad de ser titular, casa o fuera. Es una estimación, no una promesa."));
+    box.appendChild(el("div", "an-proj-note", "Se calcula solo con datos reales: la media de puntos de sus últimos partidos (Futmondo) × su probabilidad de ser titular (FutbolFantasy). La racha y las dudas se muestran como información, no cambian la cuenta."));
     return { box, total };
   }
   function idealRules(ideal) {
@@ -3348,7 +3348,7 @@
     d.appendChild(el("summary", null, "¿Cómo se elige el once ideal?"));
     const ul = el("div", "an-rules-b");
     const f1 = (x) => x.toFixed(1).replace(".", ",");
-    ul.appendChild(el("p", "muted small", "Reglas: 1) Puntos esperados = forma (60% media de sus últimos partidos + 40% de los 2 últimos, la racha; +0,4 en casa, −0,2 fuera) × probabilidad de ser titular. 2) Sancionados o lesionados con menos de 10% valen 0. 3) Se prueban las formaciones 3-4-3, 3-5-2, 4-3-3, 4-4-2, 4-5-1, 5-3-2 y 5-4-1 (también la posición alternativa de los multiposición) y se queda la de más puntos esperados en total. 4) Siempre 1 portero. El nombre o el precio del jugador NO cuentan, solo estos números."));
+    ul.appendChild(el("p", "muted small", "Reglas: 1) Puntos esperados = media de los puntos reales de sus últimos partidos (Futmondo) × probabilidad de ser titular (FutbolFantasy). No se suma ni se resta nada inventado (la racha y casa/fuera solo se muestran, no cuentan). 2) Sancionados o lesionados con menos de 10% valen 0. 3) Se prueban las formaciones 3-4-3, 3-5-2, 4-3-3, 4-4-2, 4-5-1, 5-3-2 y 5-4-1 (también la posición alternativa de los multiposición) y se queda la de más puntos esperados en total. 4) Siempre 1 portero. El nombre o el precio del jugador NO cuentan, solo estos números."));
     [["POR", "Portero"], ["DEF", "Defensas"], ["CEN", "Centrocampistas"], ["DEL", "Delanteros"]].forEach((g) => {
       const arr = ideal.by[g[0]] || [];
       if (!arr.length) return;
