@@ -2903,7 +2903,6 @@
   }
   async function renderTeamsIndex() {
     const box = eqOpen(); if (!box) return;
-    const bar0 = el("div", "eq-backbar"); bar0.appendChild(backBtn("/futmondo/guiafantasy/inicio")); box.appendChild(bar0);
     const hero = el("div", "eqi-hero");
     hero.appendChild(el("h2", "eq-h1", "Equipos"));
     hero.appendChild(el("p", "eqi-sub", "Toca un club para ver su próximo partido, la alineación, el calendario y toda su plantilla."));
