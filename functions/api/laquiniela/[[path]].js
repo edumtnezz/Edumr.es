@@ -961,9 +961,13 @@ async function searchMercado(env, q) {
   try { season = await getSeasonMap(env, false); } catch (e) {}
   const seasonOn = Object.keys(season).length > 30;
   try {
-    const hist = await env.PORRA.get("fmhist", "json");
-    const days = (hist && hist.days) || [];
-    const first = days.length ? (days[0].v || {}) : {};
+    // El histórico (fmhist) pesa varios MB: solo se lee si no hay mapa de temporada (parsearlo en cada petición agotaba la CPU del plan gratis).
+    let first = {};
+    if (!seasonOn) {
+      const hist = await env.PORRA.get("fmhist", "json");
+      const days = (hist && hist.days) || [];
+      first = days.length ? (days[0].v || {}) : {};
+    }
     players = players.map((p) => {
       const val = Number(p.value) || 0;
       if (seasonOn) { const sv = season[p.name]; return { ...p, chgAll: sv != null ? val - Number(sv) : null }; }
@@ -1033,11 +1037,13 @@ async function ffMap(env) {
   }
 }
 
+const FF_IDX = new WeakMap();
 function ffPick(name, map) {
   const n = normKey(String(name || "").toLowerCase());
   if (!n) return null;
   if (map[n]) return map[n];
-  const keys = Object.keys(map);
+  let keys = FF_IDX.get(map);
+  if (!keys) { keys = Object.keys(map); FF_IDX.set(map, keys); }
   const words = n.split(" ");
   const last = words[words.length - 1];
   const hint = words.length > 1 && words[0].length === 1 ? words[0] : "";
@@ -3029,10 +3035,12 @@ function dstrMadrid(off) {
 async function snapshotMarket(env, players) {
   try {
     const today = dstrMadrid(0);
+    // Marcador diario pequeño: así no se descarga ni parsea el histórico entero en cada petición.
+    try { if ((await env.PORRA.get("fmhist:day", "text")) === today) return; } catch (e) {}
     let hist = await env.PORRA.get("fmhist", "json");
     if (!hist || !Array.isArray(hist.days)) hist = { days: [] };
     const last = hist.days[hist.days.length - 1];
-    if (last && last.d === today) return;
+    if (last && last.d === today) { try { await env.PORRA.put("fmhist:day", today, { expirationTtl: 86400 }); } catch (e) {} return; }
     const v = {}, p = {}, fi = {};
     (players || []).forEach((pl) => {
       if (!pl.name) return;
@@ -3044,6 +3052,7 @@ async function snapshotMarket(env, players) {
     hist.days.push({ d: today, v, p, fi });
     if (hist.days.length > 140) hist.days = hist.days.slice(-140);
     await env.PORRA.put("fmhist", JSON.stringify(hist));
+    try { await env.PORRA.put("fmhist:day", today, { expirationTtl: 86400 }); } catch (e) {}
   } catch (e) {}
 }
 
@@ -3598,7 +3607,33 @@ function withCacheKV(env) {
   } catch (e) { return env; }
 }
 
-export async function onRequestGet({ request, env: env0, params }) {
+// Caché de respuestas públicas (Cache API: sin coste ni límite). Evita recalcular en cada visita
+// y mantiene la CPU por petición por debajo del límite del plan gratis de Cloudflare.
+const EDGE_TTL = { mercado: 45, rachas: 60, equipos: 1800, portada: 60, jornada: 30, jugador: 120, once: 90, "alineaciones-confirmadas": 90, "alineaciones-estado": 90, noticias: 300, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90 };
+export async function onRequestGet(ctx) {
+  const path = (ctx.params.path || []).join("/");
+  const ttl = EDGE_TTL[path];
+  const url = new URL(ctx.request.url);
+  if (!ttl || typeof caches === "undefined" || !caches.default || url.searchParams.has("reset") || url.searchParams.has("run") || url.searchParams.has("raw")) return handleGet(ctx);
+  const key = new Request("https://edgecache.edumr.internal/v1" + url.pathname + url.search);
+  try {
+    const hit = await caches.default.match(key);
+    if (hit) return new Response(hit.body, { status: 200, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-edge": "hit" } });
+  } catch (e) {}
+  const res = await handleGet(ctx);
+  if (res.status === 200) {
+    try {
+      const txt = await res.clone().text();
+      if (txt.indexOf('"error"') < 0 && txt.length > 20) {
+        const put = caches.default.put(key, new Response(txt, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=" + ttl } }));
+        if (ctx.waitUntil) ctx.waitUntil(put.catch(() => {})); else await put.catch(() => {});
+      }
+    } catch (e) {}
+  }
+  return res;
+}
+
+async function handleGet({ request, env: env0, params }) {
   const env = withCacheKV(env0);
   const path = (params.path || []).join("/");
   const url = new URL(request.url);
