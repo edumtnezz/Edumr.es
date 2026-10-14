@@ -3624,7 +3624,8 @@ export async function onRequestGet(ctx) {
   if (res.status === 200) {
     try {
       const txt = await res.clone().text();
-      if (txt.indexOf('"error"') < 0 && txt.length > 20) {
+      // No se cachean respuestas vacías o fallidas (p. ej. jornada sin partidos cuando falla la fuente): si no, el fallo se "pegaría" varios segundos.
+      if (txt.indexOf('"error"') < 0 && txt.length > 20 && !/"(matches|players|teams|items)":\[\]/.test(txt) && !/"matchday":0[,}]/.test(txt)) {
         const put = caches.default.put(key, new Response(txt, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=" + ttl } }));
         if (ctx.waitUntil) ctx.waitUntil(put.catch(() => {})); else await put.catch(() => {});
       }

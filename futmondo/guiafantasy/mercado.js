@@ -2974,7 +2974,6 @@
       const ht = el("div", "eq-htxt");
       ht.appendChild(el("h2", "eq-h1", team.name));
       const fx = eqFacts(tc);
-      if (fx.n) ht.appendChild(el("div", "eq-hsub", fx.n + " jugadores en Futmondo"));
       if (next) {
         const home = teamCanon(next.home) === tc;
         const rival = home ? next.away : next.home;
