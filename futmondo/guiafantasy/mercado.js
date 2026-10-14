@@ -2867,7 +2867,9 @@
     const main = document.querySelector(".quiniela-main");
     if (!main) return null;
     main.classList.add("mpage-open");
-    document.querySelectorAll(".cx-sub").forEach((e) => e.classList.add("hidden"));
+    // La barra Inicio / Noticias / Mercado… se queda arriba también en las páginas de clubes.
+    document.querySelectorAll(".cx-sub").forEach((e) => e.classList.remove("hidden"));
+    document.querySelectorAll("#tabsNav .tab").forEach((e) => e.classList.remove("active"));
     document.querySelectorAll(".tab-panel").forEach((e) => e.classList.add("hidden"));
     const ch = $("cxChrome"); if (ch) ch.classList.add("hidden");
     const box = el("section", "panel mpage eq-page");
@@ -3129,7 +3131,7 @@
     } catch (e) { body.innerHTML = '<p class="muted small">No se pudo cargar el equipo.</p>'; }
   }
 
-  document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
+  document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { if (document.querySelector(".eq-page")) { location.href = "/futmondo/guiafantasy/" + t.dataset.tab; return; } switchTab(t.dataset.tab); }));
   setupMoreMenu();
   ensurePlayedJ();
   (function restoreTab() {
