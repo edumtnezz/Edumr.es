@@ -534,12 +534,16 @@ function renderSummary() {
   });
 }
 
+function sortedMatches() {
+  return (state.matches || []).slice().sort((x, y) => new Date(x.utcDate) - new Date(y.utcDate));
+}
+
 function renderParticipants() {
   const wrap = $("participantsList");
   wrap.innerHTML = "";
   const hitsOf = (p) => {
     let h = 0;
-    state.matches.forEach((m) => { const pk = p.picks && p.picks[m.id]; if (pk && m.result && pk === m.result) h++; });
+    sortedMatches().forEach((m) => { const pk = p.picks && p.picks[m.id]; if (pk && m.result && pk === m.result) h++; });
     return h;
   };
   const list = (state.participants || []).slice().sort((a, b) => hitsOf(b) - hitsOf(a) || String(a.name).localeCompare(String(b.name), "es"));
@@ -566,7 +570,7 @@ function renderParticipants() {
     let hits = 0;
     let played = 0;
     if (p.picks) {
-      state.matches.forEach((m) => {
+      sortedMatches().forEach((m) => {
         const pick = p.picks[m.id];
         if (pick && m.result) {
           played++;
@@ -619,7 +623,7 @@ function renderParticipants() {
     if (played) {
       const okList = [];
       const koList = [];
-      state.matches.forEach((m) => {
+      sortedMatches().forEach((m) => {
         const pick = p.picks && p.picks[m.id];
         if (!pick || !m.result) return;
         const label = `${m.home} - ${m.away}`;
@@ -647,7 +651,7 @@ function renderParticipants() {
     } else {
       const grid = document.createElement("div");
       grid.className = "participant-picks";
-      state.matches.forEach((m) => {
+      sortedMatches().forEach((m) => {
         const pick = p.picks[m.id];
         const chip = document.createElement("span");
         chip.className = "ppick";
@@ -862,9 +866,15 @@ async function loadState() {
   return res.json();
 }
 
-async function refresh() {
+let lastSig = "";
+async function refresh(auto) {
   try {
-    state = await loadState();
+    const fresh = await loadState();
+    const sig = JSON.stringify(fresh);
+    // Si no ha cambiado nada, no se repinta: así la página no "se reinicia" sola.
+    if (auto && state && sig === lastSig) return;
+    lastSig = sig;
+    state = fresh;
     if (currentJornada === null && !viewJornada) currentJornada = state.matchday;
     if (state.myName) apodo = state.myName;
     if (!picksDirty) {
@@ -1110,4 +1120,10 @@ adjustAppbar();
 window.addEventListener("resize", adjustAppbar);
 refresh();
 setInterval(updateCountdown, 1000);
-setInterval(refresh, 60000);
+setInterval(() => {
+  if (document.hidden) return;
+  const ae = document.activeElement;
+  if (ae && /INPUT|TEXTAREA|SELECT/.test(ae.tagName)) return;
+  if (picksDirty) return;
+  refresh(true);
+}, 60000);

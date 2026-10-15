@@ -371,10 +371,15 @@ async function guardar(m) {
   } catch (e) { if (err) err.textContent = e.message; }
 }
 
-async function load() {
+let lastSig = "";
+async function load(auto) {
   try {
     const res = await fetch(API + "/porra" + (viewJornada ? "?jornada=" + viewJornada : ""));
-    state = await res.json();
+    const fresh = await res.json();
+    const sig = JSON.stringify(fresh);
+    if (auto && sig === lastSig) { document.documentElement.classList.remove("auth-loading"); return; }
+    lastSig = sig;
+    state = fresh;
     render();
   } catch (e) {}
   document.documentElement.classList.remove("auth-loading");
@@ -386,5 +391,5 @@ setInterval(() => {
   const ae = document.activeElement;
   if (ae && ae.tagName === "INPUT") return;
   const dirty = Array.prototype.some.call(document.querySelectorAll(".porra-pred input"), (i) => i.value !== "" && i.dataset.saved !== i.value);
-  if (!dirty) load();
+  if (!dirty) load(true);
 }, 30000);
