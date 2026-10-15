@@ -419,7 +419,7 @@
       if (p.clChg != null || p.clUp) {
         const up = el("div", "claus-lastup" + (p.clUp ? " yes" : ""));
         const amtTxt = p.clUp ? (p.clUp.amt >= 1e6 ? (p.clUp.amt / 1e6).toFixed(1).replace(".", ",") + " M" : formatDots(Math.round(p.clUp.amt)) + " €") : "";
-        up.textContent = p.clUp ? "📈 Última subida +" + amtTxt + " · " + fmtDiaCorto(p.clUp.d) : "Sin subidas desde " + fmtDiaCorto(p.clSince);
+        up.textContent = p.clUp ? "📈 Subió +" + amtTxt + " · " + fmtDiaCorto(p.clUp.d) : "Sin subidas desde " + fmtDiaCorto(p.clSince);
         body.appendChild(up);
       }
       const playedPct = j0 ? Math.round(((Number(p.matches) || 0) / j0) * 100) : 0;

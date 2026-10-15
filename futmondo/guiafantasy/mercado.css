@@ -1477,3 +1477,4 @@ html { overflow-anchor: none; }
 .claus-grid .claus-lastup { font-size: .74rem; font-weight: 700; color: var(--muted); padding: 5px 12px; border-radius: 999px; background: rgba(127,127,127,.10); }
 .claus-grid .claus-lastup.yes { color: #b45309; background: rgba(245,158,11,.14); }
 .claus-grid .claus-lastup { white-space: nowrap; font-size: .7rem; padding: 6px 10px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+.claus-grid .claus-lastup { font-size: .6rem; padding: 6px 6px; letter-spacing: -.01em; width: 100%; box-sizing: border-box; }
