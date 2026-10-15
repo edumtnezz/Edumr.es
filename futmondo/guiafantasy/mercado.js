@@ -2970,8 +2970,12 @@
       const frag = document.createDocumentFragment();
       // Cabecera
       const hd = el("div", "eq-hero");
-      if (team.logo) { const bg = el("img", "eq-hero-bg"); bg.src = team.logo; bg.alt = ""; hd.appendChild(bg); }
-      if (team.logo) { const im = el("img", "eq-crest"); im.src = team.logo; im.alt = ""; hd.appendChild(im); }
+      // El logo de Futmondo es de solo 64 px y se ve borroso en grande: se usa el escudo de la fuente de partidos (football-data, nítido) si lo hay.
+      let hiCrest = "";
+      for (let q = 0; q < mine.length && !hiCrest; q++) hiCrest = (teamCanon(mine[q].home) === tc ? mine[q].homeCrest : mine[q].awayCrest) || "";
+      const crestSrc = hiCrest || team.logo;
+      if (crestSrc) { const bg = el("img", "eq-hero-bg"); bg.src = crestSrc; bg.alt = ""; hd.appendChild(bg); }
+      if (crestSrc) { const im = el("img", "eq-crest"); im.src = crestSrc; im.alt = ""; im.addEventListener("error", () => { if (team.logo && im.src !== team.logo) im.src = team.logo; }); hd.appendChild(im); }
       const ht = el("div", "eq-htxt");
       ht.appendChild(el("h2", "eq-h1", team.name));
       const fx = eqFacts(tc);
