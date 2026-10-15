@@ -302,6 +302,8 @@ async function fetchFootballData(env, matchday, hold) {
   matches.forEach((m) => {
     if (m.homeTeam && m.homeTeam.shortName === "Santander") m.homeTeam.shortName = "Racing de Santander";
     if (m.awayTeam && m.awayTeam.shortName === "Santander") m.awayTeam.shortName = "Racing de Santander";
+    if (m.homeTeam && (m.homeTeam.tla === "SAN" || m.homeTeam.shortName === "Racing de Santander")) m.homeTeam.tla = "RAC";
+    if (m.awayTeam && (m.awayTeam.tla === "SAN" || m.awayTeam.shortName === "Racing de Santander")) m.awayTeam.tla = "RAC";
   });
   return { matchday: md, source: "football-data", matches };
 }
