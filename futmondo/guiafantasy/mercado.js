@@ -2290,14 +2290,15 @@
       }
       if (!list.length && !(newsMineOnly && myTeam.length)) a.appendChild(el("p", "muted small", "Sin noticias ahora mismo."));
       let lastDate = "";
-      list.forEach((x) => {
+      list.forEach((x, idx) => {
         if (x.date && x.date !== lastDate) {
           lastDate = x.date;
           const dh = el("div", "news-day");
           dh.appendChild(el("span", "news-day-txt", "📅 " + x.date));
           a.appendChild(dh);
         }
-        const it = el("div", "newscard news-link");
+        const it = el("div", "newscard news-link" + (idx === 0 ? " news-hero" : ""));
+        it.style.animationDelay = Math.min(idx, 10) * 40 + "ms";
         it.addEventListener("click", () => openNoticiaInline(x.link, x.title));
         const th = el("div", "newscard-thumb" + (x.thumb ? "" : " ball"));
         const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = x.thumb || "/img/balon.svg";
@@ -2305,8 +2306,9 @@
         th.appendChild(im);
         it.appendChild(th);
         const bd = el("div", "newscard-body");
+        if (idx === 0) bd.appendChild(el("span", "news-badge", "🔥 Lo último"));
         bd.appendChild(el("div", "news-title", x.title));
-        bd.appendChild(el("div", "news-date", x.date + (x.time ? " · " + x.time : "")));
+        bd.appendChild(el("div", "news-date", "🕒 " + x.date + (x.time ? " · " + x.time : "")));
         it.appendChild(bd);
         a.appendChild(it);
       });
