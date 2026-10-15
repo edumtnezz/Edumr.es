@@ -90,9 +90,12 @@ function shortName(n) {
 
 function renderMatch(panel, m) {
   const card = el("div", "porra-card pc2");
-  const bgL = el("div", "pc-bg pc-bg-l"); if (m.homeCrest) bgL.style.backgroundImage = 'url("' + m.homeCrest + '")';
-  const bgR = el("div", "pc-bg pc-bg-r"); if (m.awayCrest) bgR.style.backgroundImage = 'url("' + m.awayCrest + '")';
-  card.appendChild(bgL); card.appendChild(bgR);
+  [[m.homeCrest, "pc-bg pc-bg-l"], [m.awayCrest, "pc-bg pc-bg-r"]].forEach((x) => {
+    if (!x[0]) return;
+    const im = el("img", x[1]); im.src = x[0]; im.alt = ""; im.setAttribute("aria-hidden", "true");
+    im.addEventListener("error", () => im.remove());
+    card.appendChild(im);
+  });
   const body = el("div", "pc-body");
   body.appendChild(el("div", "pc-comp", "LaLiga" + (m.matchday ? " · Jornada " + m.matchday : "")));
   body.appendChild(el("div", "pc-label", m.label));

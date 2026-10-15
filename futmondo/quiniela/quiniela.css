@@ -1517,3 +1517,24 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .pc2 .porra-locked { margin-top: 4px; font-size: .85rem; color: var(--muted); }
 .pc2 .partido-list { width: 100%; margin-top: 14px; text-align: left; }
 .pc2 .empty { text-align: center; font-size: .85rem; margin: 6px 0 0; }
+
+/* ---------- v5: escudos como imagen + barra de jornada plana ---------- */
+.pc-bg { top: 50%; bottom: auto; width: 170px; height: 170px; transform: translateY(-50%); object-fit: contain; opacity: .22; background: none; -webkit-mask-image: none; mask-image: none; filter: none; }
+.pc-bg-l { left: -46px; right: auto; }
+.pc-bg-r { right: -46px; left: auto; }
+.pc2 .empty { margin: 4px 0 0; padding: 0; }
+.pc2 .partido-list { margin-top: 10px; }
+.pc2 .porra-pred { margin-top: 4px; }
+.pc2 .pc-save { box-shadow: none; border-radius: 14px; }
+
+.jc-nav { grid-template-columns: 1fr auto 1fr; gap: 0; background: rgba(127,127,127,.1); border: 1px solid var(--border); border-radius: 18px; padding: 4px; }
+.jornada-card .jbtn { width: auto; height: 46px; flex-direction: row; justify-content: center; gap: 6px; padding: 0 12px; border-radius: 14px; background: none; }
+.jornada-card .jbtn i { width: auto; height: auto; background: none; box-shadow: none; padding: 0; color: var(--accent); font-size: 1.7rem; font-style: normal; }
+.jornada-card .jbtn span { font-size: .95rem; font-weight: 800; color: var(--text); letter-spacing: .02em; }
+.jornada-card .jbtn:hover:not(:disabled), .jornada-card .jbtn:active:not(:disabled) { background: rgba(34,197,94,.16); transform: none; }
+.jornada-card .jbtn:disabled { opacity: .3; }
+.jornada-card .jbtn:disabled i { background: none; }
+.jornada-card .jb-prev { justify-self: stretch; justify-content: flex-start; }
+.jornada-card .jb-next { justify-self: stretch; justify-content: flex-end; }
+.jc-jornada { flex-direction: row; gap: 6px; align-items: baseline; padding: 0 10px; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+.jc-jornada b { font-size: 1.6rem; margin: 0; }
