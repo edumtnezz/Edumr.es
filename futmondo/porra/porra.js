@@ -309,16 +309,30 @@ function renderParts() {
   if (!rank.length) { box.appendChild(el("p", "empty", "Todavía no hay participantes.")); return; }
   const medal = ["🥇", "🥈", "🥉"];
   rank.forEach((r, i) => {
-    const card = el("div", "porra-card hx");
-    card.appendChild(el("div", "hx-name", (finished ? (medal[i] || (i + 1) + "º") + " " : "") + r.name));
-    if (finished) card.appendChild(el("div", "hx-pred", money(r.prize) + " €"));
+    const card = el("div", "porra-card pp");
+    const head = el("div", "pp-head");
+    head.appendChild(el("span", "pp-av", initials(r.name)));
+    const hn = el("div", "pp-hn");
+    hn.appendChild(el("div", "pp-name", r.name));
+    if (finished) hn.appendChild(el("div", "pp-sub", (medal[i] || (i + 1) + "º") + " · " + money(r.prize) + " €"));
+    else hn.appendChild(el("div", "pp-sub", "Pronóstico de la jornada"));
+    head.appendChild(hn);
+    card.appendChild(head);
     state.matches.forEach((m) => {
       const e = r.byMatch[m.matchId];
-      const row = el("div", "hx-entry");
-      row.appendChild(el("div", "hx-why", m.label + " · " + shortName(m.home) + " - " + shortName(m.away)));
-      row.appendChild(el("div", "hx-pred", e ? e.home + " - " + e.away : "—"));
-      if (isSusp(m)) row.appendChild(el("div", "hx-why", "⏸ Partido suspendido o aplazado: no cuenta"));
-      else if (finished && e && e.prize != null && e.prize > 0) { row.classList.add(e.tipo === "exacto" ? "exacto" : "signo"); row.appendChild(el("div", "hx-why", "Ganó " + money(e.prize) + " €")); }
+      const row = el("div", "pp-match");
+      if (isSusp(m)) row.classList.add("susp");
+      else if (finished && e && e.prize > 0) row.classList.add(e.tipo === "exacto" ? "exacto" : "signo");
+      row.appendChild(el("div", "pp-lbl", m.label));
+      const line = el("div", "pp-line");
+      const l = el("div", "pp-t"); l.appendChild(crestEl(m.homeCrest, m.home)); l.appendChild(el("span", null, shortName(m.home)));
+      const rr = el("div", "pp-t"); rr.appendChild(crestEl(m.awayCrest, m.away)); rr.appendChild(el("span", null, shortName(m.away)));
+      line.appendChild(l);
+      line.appendChild(el("div", "pp-score", e ? e.home + " - " + e.away : "—"));
+      line.appendChild(rr);
+      row.appendChild(line);
+      if (isSusp(m)) row.appendChild(el("div", "pp-note", "⏸ Partido suspendido o aplazado: no cuenta"));
+      else if (finished && e && e.prize != null && e.prize > 0) row.appendChild(el("div", "pp-note ok", "Ganó " + money(e.prize) + " €"));
       card.appendChild(row);
     });
     box.appendChild(card);
