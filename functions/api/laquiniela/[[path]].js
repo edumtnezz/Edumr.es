@@ -3269,7 +3269,7 @@ async function placeBid(request, env, user) {
 
 const TEAM_RM = 86;
 const TEAM_BARCA = 81;
-const PORRA_FIX_KEY = "porra:fixtures";
+const PORRA_FIX_KEY = "porra:fixtures:v2";
 const PORRA_HIST_KEY = "porra:history";
 const PORRA_FIX_TTL = 30 * 60 * 1000;
 const PRIZE_EXACT = 1000000;
@@ -3279,45 +3279,79 @@ function porraSign(h, a) {
   return h > a ? 1 : h < a ? 2 : 0;
 }
 
-async function fetchTeamFixture(env, teamId) {
+// Instante (ms UTC) del lunes 23:59:59 (hora de Madrid) de la semana del partido: hasta entonces se deja
+// el partido (y su resultado) en la Porra; a partir de ahí se habilita el siguiente.
+function porraShowUntil(utcDate) {
+  const tz = "Europe/Madrid";
+  const t = new Date(utcDate).getTime();
+  const parts = (ms) => {
+    const o = {};
+    new Intl.DateTimeFormat("en-GB", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", weekday: "short", hourCycle: "h23" })
+      .formatToParts(new Date(ms)).forEach((x) => { o[x.type] = x.value; });
+    return o;
+  };
+  const pp = parts(t);
+  const wd = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 }[pp.weekday];
+  const add = (1 - wd + 7) % 7;
+  let guess = Date.UTC(Number(pp.year), Number(pp.month) - 1, Number(pp.day) + add, 23, 59, 59);
+  for (let i = 0; i < 2; i++) {
+    const q = parts(guess);
+    const asUtc = Date.UTC(Number(q.year), Number(q.month) - 1, Number(q.day), Number(q.hour), Number(q.minute), Number(q.second));
+    guess -= asUtc - Date.UTC(Number(pp.year), Number(pp.month) - 1, Number(pp.day) + add, 23, 59, 59);
+  }
+  return guess;
+}
+
+// Solo LaLiga (PD). Devuelve todos los partidos de liga del equipo en la ventana, ya normalizados.
+async function fetchTeamFixtures(env, teamId) {
   const token = env.FOOTBALL_API_KEY;
   if (!token) return null;
   const now = Date.now();
   const fmt = (ms) => new Date(ms).toISOString().slice(0, 10);
-  const url = `https://api.football-data.org/v4/teams/${teamId}/matches?dateFrom=${fmt(now - 3 * 86400000)}&dateTo=${fmt(now + 60 * 86400000)}`;
+  const url = `https://api.football-data.org/v4/teams/${teamId}/matches?competitions=PD&dateFrom=${fmt(now - 8 * 86400000)}&dateTo=${fmt(now + 60 * 86400000)}`;
   const res = await fetch(url, { headers: { "X-Auth-Token": token } });
   if (!res.ok) return null;
   const j = await res.json();
-  const list = (j.matches || []).filter((m) => m.utcDate);
-  const cutoff = now - 48 * 3600000;
-  const sorted = list.filter((m) => new Date(m.utcDate).getTime() >= cutoff).sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
-  const m = sorted[0] || list.sort((a, b) => new Date(b.utcDate) - new Date(a.utcDate))[0];
-  if (!m) return null;
-  const ft = (m.score && m.score.fullTime) || {};
-  const hasResult = m.status === "FINISHED" && ft.home != null && ft.away != null;
-  return {
-    matchId: m.id,
-    home: (m.homeTeam && m.homeTeam.name) || "",
-    away: (m.awayTeam && m.awayTeam.name) || "",
-    homeCrest: (m.homeTeam && m.homeTeam.crest) || "",
-    awayCrest: (m.awayTeam && m.awayTeam.crest) || "",
-    utcDate: m.utcDate,
-    competition: (m.competition && m.competition.name) || "",
-    status: m.status,
-    result: hasResult ? { home: ft.home, away: ft.away } : null,
-  };
+  return (j.matches || [])
+    .filter((m) => m.utcDate && (!m.competition || !m.competition.code || m.competition.code === "PD") && !["POSTPONED", "CANCELLED"].includes(m.status))
+    .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))
+    .map((m) => {
+      const ft = (m.score && m.score.fullTime) || {};
+      const hasResult = m.status === "FINISHED" && ft.home != null && ft.away != null;
+      return {
+        matchId: m.id,
+        home: (m.homeTeam && m.homeTeam.name) || "",
+        away: (m.awayTeam && m.awayTeam.name) || "",
+        homeCrest: (m.homeTeam && m.homeTeam.crest) || "",
+        awayCrest: (m.awayTeam && m.awayTeam.crest) || "",
+        utcDate: m.utcDate,
+        competition: (m.competition && m.competition.name) || "LaLiga",
+        status: m.status,
+        result: hasResult ? { home: ft.home, away: ft.away } : null,
+      };
+    });
+}
+
+// El partido que toca: el primero de liga cuyo "mostrar hasta" (lunes 23:59) aún no ha pasado.
+function pickPorraMatch(list, now) {
+  if (!list || !list.length) return null;
+  return list.find((f) => porraShowUntil(f.utcDate) > now) || null;
 }
 
 async function getPorraFixtures(env) {
-  const cached = await env.PORRA.get(PORRA_FIX_KEY, "json");
-  if (cached && cached.updatedAt && Date.now() - cached.updatedAt < PORRA_FIX_TTL) return cached.items;
-  const [rm, barca] = await Promise.all([fetchTeamFixture(env, TEAM_RM), fetchTeamFixture(env, TEAM_BARCA)]);
-  const items = { rm, barca };
-  if (rm || barca) {
-    await env.PORRA.put(PORRA_FIX_KEY, JSON.stringify({ updatedAt: Date.now(), items }), { expirationTtl: 3600 });
-    return items;
+  const now = Date.now();
+  let cached = null;
+  try { cached = await env.PORRA.get(PORRA_FIX_KEY, "json"); } catch (e) {}
+  let lists = cached && cached.lists;
+  if (!(cached && cached.updatedAt && now - cached.updatedAt < PORRA_FIX_TTL && lists)) {
+    const [rm, barca] = await Promise.all([fetchTeamFixtures(env, TEAM_RM).catch(() => null), fetchTeamFixtures(env, TEAM_BARCA).catch(() => null)]);
+    if (rm || barca) {
+      lists = { rm: rm || (lists && lists.rm) || [], barca: barca || (lists && lists.barca) || [] };
+      try { await env.PORRA.put(PORRA_FIX_KEY, JSON.stringify({ updatedAt: now, lists }), { expirationTtl: 3600 }); } catch (e) {}
+    }
   }
-  return (cached && cached.items) || items;
+  lists = lists || { rm: [], barca: [] };
+  return { rm: pickPorraMatch(lists.rm, now), barca: pickPorraMatch(lists.barca, now) };
 }
 
 async function getPorraState(env, user) {
