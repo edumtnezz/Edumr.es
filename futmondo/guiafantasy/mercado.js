@@ -2301,9 +2301,8 @@
         it.style.animationDelay = Math.min(idx, 10) * 40 + "ms";
         it.addEventListener("click", () => openNoticiaInline(x.link, x.title));
         const th = el("div", "newscard-thumb" + (x.thumb ? "" : " ball"));
-        const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = x.thumb || "/img/balon.svg";
-        im.addEventListener("error", () => { im.src = "/img/balon.svg"; it.querySelector(".newscard-thumb").classList.add("ball"); }, { once: true });
-        th.appendChild(im);
+        const setBg = (u, ball) => { th.style.backgroundImage = 'url("' + u + '")'; th.classList.toggle("ball", !!ball); };
+        if (x.thumb) { setBg(x.thumb, false); const t = new Image(); t.onerror = () => setBg("/img/balon.svg", true); t.src = x.thumb; } else setBg("/img/balon.svg", true);
         it.appendChild(th);
         const bd = el("div", "newscard-body");
         if (idx === 0) bd.appendChild(el("span", "news-badge", "🔥 Lo último"));
