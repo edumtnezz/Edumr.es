@@ -5,7 +5,6 @@ let state = null;
 let picks = {};
 let apodo = "";
 let authMode = "registro";
-let sortMode = "hora";
 let editing = false;
 let viewJornada = null;
 let currentJornada = null;
@@ -271,17 +270,11 @@ function renderMatches() {
   const locked = state.locked;
 
   const matches = state.matches.slice();
-  if (sortMode === "local") matches.sort((a, b) => a.home.localeCompare(b.home));
-  else if (sortMode === "visitante") matches.sort((a, b) => a.away.localeCompare(b.away));
-  else if (sortMode === "porjugar")
-    matches.sort(
-      (a, b) => (a.result ? 1 : 0) - (b.result ? 1 : 0) || new Date(a.utcDate) - new Date(b.utcDate)
-    );
-  else matches.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+  matches.sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
 
   let lastDay = null;
   matches.forEach((m) => {
-    if (sortMode === "hora" || sortMode === "porjugar") {
+    {
       const d = new Date(m.utcDate);
       const key = d.toDateString();
       if (key !== lastDay) {
@@ -314,10 +307,16 @@ function renderMatches() {
     info.appendChild(when);
     const teams = document.createElement("div");
     teams.className = "pc-teams";
-    const tl = document.createElement("span"); tl.className = "pc-t"; tl.textContent = m.home;
+    const colOf = (name, form) => {
+      const c = document.createElement("div"); c.className = "pc-col";
+      const n = document.createElement("span"); n.className = "pc-t"; n.textContent = name;
+      c.appendChild(n); c.appendChild(formEl(form));
+      return c;
+    };
+    const tl = colOf(m.home, m.homeForm);
     const tv = document.createElement("span"); tv.className = "pc-vs";
     tv.textContent = m.score && m.score.home !== null && m.score.home !== undefined ? `${m.score.home} - ${m.score.away}` : "VS";
-    const tr = document.createElement("span"); tr.className = "pc-t"; tr.textContent = m.away;
+    const tr = colOf(m.away, m.awayForm);
     teams.appendChild(tl); teams.appendChild(tv); teams.appendChild(tr);
     info.appendChild(teams);
 
@@ -1038,11 +1037,6 @@ if ($("authBtn")) {
 
 document.querySelectorAll(".tab").forEach((t) => {
   t.addEventListener("click", () => switchTab(t.dataset.tab));
-});
-
-$("sortSelect").addEventListener("change", (e) => {
-  sortMode = e.target.value;
-  if (state && state.myName) renderMatches();
 });
 
 /* El cambio de pestaña deslizando con el dedo se quitó: en móvil daba
