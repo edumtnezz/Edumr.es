@@ -84,42 +84,44 @@ function renderLogin(panel) {
   panel.appendChild(go);
 }
 
-function renderMatch(panel, m) {
-  const card = el("div", "porra-card");
-  const head = el("div", "porra-card-head");
-  head.appendChild(el("span", "porra-team-label", m.label));
-  const meta = m.started && m.result
-    ? "Resultado final"
-    : (m.utcDate ? fmtDate(m.utcDate).date + " · " + fmtDate(m.utcDate).time : "");
-  head.appendChild(el("span", "porra-comp", (m.competition ? m.competition + " · " : "") + meta));
-  card.appendChild(head);
+function shortName(n) {
+  return String(n || "").replace(/^(FC|RC|CA|UD|SD|CD|RCD)\s+/, "").replace(/\s+(CF|FC|SD|UD)$/, "");
+}
 
-  const row = el("div", "pm-row");
-  const home = el("span", "pm-team");
-  home.appendChild(crestEl(m.homeCrest, m.home));
-  home.appendChild(el("span", null, m.home));
-  const mid = el("span", "vs", m.result ? (m.result.home + " - " + m.result.away) : "VS");
-  const away = el("span", "pm-team");
-  away.appendChild(crestEl(m.awayCrest, m.away));
-  away.appendChild(el("span", null, m.away));
-  row.appendChild(home); row.appendChild(mid); row.appendChild(away);
-  card.appendChild(row);
+function renderMatch(panel, m) {
+  const card = el("div", "porra-card pc2");
+  const bgL = el("div", "pc-bg pc-bg-l"); if (m.homeCrest) bgL.style.backgroundImage = 'url("' + m.homeCrest + '")';
+  const bgR = el("div", "pc-bg pc-bg-r"); if (m.awayCrest) bgR.style.backgroundImage = 'url("' + m.awayCrest + '")';
+  card.appendChild(bgL); card.appendChild(bgR);
+  const body = el("div", "pc-body");
+  body.appendChild(el("div", "pc-comp", "LaLiga" + (m.matchday ? " · Jornada " + m.matchday : "")));
+  body.appendChild(el("div", "pc-label", m.label));
+  const when = m.started && m.result
+    ? "Resultado final"
+    : (m.utcDate ? new Date(m.utcDate).toLocaleDateString("es-ES", { weekday: "short", day: "2-digit", month: "2-digit" }).replace(",", "").toUpperCase() + " " + fmtDate(m.utcDate).time : "");
+  body.appendChild(el("div", "pc-when", when));
+  const row = el("div", "pc-teams");
+  row.appendChild(el("span", "pc-t", shortName(m.home)));
+  row.appendChild(el("span", "pc-vs", m.result ? (m.result.home + " - " + m.result.away) : "VS"));
+  row.appendChild(el("span", "pc-t", shortName(m.away)));
+  body.appendChild(row);
 
   if (!state.user) {
     // sin sesion no se pronostica
   } else if (m.started) {
-    card.appendChild(el("div", "porra-locked", m.result ? "Cerrado · ya jugado" : "Cerrado · en juego o empezado"));
+    body.appendChild(el("div", "porra-locked", m.result ? "Cerrado · ya jugado" : "Cerrado · en juego o empezado"));
   } else {
     const pred = el("div", "porra-pred");
-    const hi = el("input"); hi.type = "number"; hi.min = 0; hi.max = 30; hi.id = "poH" + m.matchId;
+    const hi = el("input"); hi.type = "number"; hi.min = 0; hi.max = 30; hi.id = "poH" + m.matchId; hi.inputMode = "numeric";
     hi.value = m.my ? m.my.home : "";
-    const lo = el("input"); lo.type = "number"; lo.min = 0; lo.max = 30; lo.id = "poA" + m.matchId;
+    const lo = el("input"); lo.type = "number"; lo.min = 0; lo.max = 30; lo.id = "poA" + m.matchId; lo.inputMode = "numeric";
     lo.value = m.my ? m.my.away : "";
-    const save = el("button", "btn-primary", "Guardar");
+    pred.appendChild(hi); pred.appendChild(el("span", "porra-dash", "-")); pred.appendChild(lo);
+    body.appendChild(pred);
+    const save = el("button", "btn-primary pc-save", m.my ? "Actualizar pronóstico" : "Guardar pronóstico");
     save.addEventListener("click", () => guardar(m));
-    pred.appendChild(hi); pred.appendChild(el("span", "porra-dash", "-")); pred.appendChild(lo); pred.appendChild(save);
-    card.appendChild(pred);
-    const err = el("p", "error"); err.id = "poErr" + m.matchId; card.appendChild(err);
+    body.appendChild(save);
+    const err = el("p", "error"); err.id = "poErr" + m.matchId; body.appendChild(err);
   }
 
   const list = el("div", "partido-list");
@@ -137,8 +139,8 @@ function renderMatch(panel, m) {
     list.appendChild(erow);
   });
   if (!(m.entries || []).length) list.appendChild(el("p", "empty", "Todavía no hay pronósticos."));
-  card.appendChild(list);
-
+  body.appendChild(list);
+  card.appendChild(body);
   panel.appendChild(card);
 }
 
