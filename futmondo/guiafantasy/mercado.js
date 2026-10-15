@@ -2956,7 +2956,6 @@
       tx.appendChild(el("b", null, t.name));
       const f = eqFacts(teamCanon(t.name));
       if (f.n) tx.appendChild(el("small", null, f.n + " jugadores · " + eqMoney(f.val)));
-      if (f.bajas) tx.appendChild(el("small", "eq-tile-bad", "❌ " + f.bajas + (f.bajas === 1 ? " baja" : " bajas")));
       a.appendChild(tx);
       a.appendChild(el("span", "eq-tile-go", "›"));
       a.dataset.n = stripAccents(t.name);
@@ -3038,7 +3037,7 @@
       frag.appendChild(hd);
       if (fx.n) {
         const stx = el("div", "eq-stats");
-        [[eqMoney(fx.val), "valor plantilla", ""], [String(fx.racha), "en racha", fx.racha ? "up" : ""], [String(fx.bajas), "bajas", fx.bajas ? "down" : ""], [String(fx.dudas), "dudas", fx.dudas ? "mid" : ""]].forEach((x) => {
+        [[eqMoney(fx.val), "valor plantilla", ""], [String(fx.racha), "en racha", fx.racha ? "up" : ""], [String(fx.dudas), "dudas", fx.dudas ? "mid" : ""]].forEach((x) => {
           const c = el("div", "eq-stat " + x[2]); c.appendChild(el("b", null, x[0])); c.appendChild(el("small", null, x[1])); stx.appendChild(c);
         });
         frag.appendChild(stx);
