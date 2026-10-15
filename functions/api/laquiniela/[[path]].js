@@ -3433,6 +3433,7 @@ async function getPorraState(env, user, jornadaReq) {
       status: f.status,
       result: f.result,
       started,
+      locked: !!(currentJornada && f.matchday && f.matchday > currentJornada),
       entries,
       my: my ? { home: my.home, away: my.away } : null,
     });
@@ -3467,6 +3468,9 @@ async function savePorraPred(request, env, user) {
   const items = await getPorraFixtures(env);
   const f = [].concat((items.lists && items.lists.rm) || [], (items.lists && items.lists.barca) || []).find((x) => x && x.matchId === matchId);
   if (!f) return json({ error: "Partido no valido." }, 400);
+  const curMds = [items.rm, items.barca].filter(Boolean).map((x) => x.matchday).filter(Boolean);
+  const curJ = curMds.length ? Math.min(...curMds) : null;
+  if (curJ && f.matchday && f.matchday > curJ) return json({ error: "Esa jornada aún está bloqueada: solo se puede pronosticar la jornada actual." }, 403);
   const started = Date.now() >= new Date(f.utcDate).getTime() || !["SCHEDULED", "TIMED"].includes(f.status);
   if (started) return json({ error: "El partido ya ha empezado." }, 403);
   const key = `porra:pred:${matchId}`;

@@ -112,6 +112,8 @@ function renderMatch(panel, m) {
 
   if (!state.user) {
     // sin sesion no se pronostica
+  } else if (m.locked) {
+    body.appendChild(el("div", "porra-locked pc-lock", "🔒 Bloqueada: podrás pronosticar cuando sea la jornada " + m.matchday + ". Ahora solo puedes verla."));
   } else if (m.started) {
     body.appendChild(el("div", "porra-locked", m.result ? "Cerrado · ya jugado" : "Cerrado · en juego o empezado"));
   } else {

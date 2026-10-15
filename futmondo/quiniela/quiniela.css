@@ -1584,3 +1584,5 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .total-box { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 12px; margin: 4px 0 14px; border-radius: 18px; border: 1px solid rgba(245,158,11,.5); background: rgba(245,158,11,.1); text-align: center; }
 .total-box small { font-size: .74rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
 .total-box b { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; font-weight: 900; color: #f59e0b; }
+
+.pc2 .pc-lock { margin: 6px 0 0; padding: 10px 14px; border-radius: 14px; border: 1px dashed var(--border); background: rgba(127,127,127,.1); font-weight: 700; font-size: .85rem; color: var(--muted); text-align: center; }
