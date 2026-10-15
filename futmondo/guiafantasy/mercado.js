@@ -3998,10 +3998,12 @@
     // gasta en el que de verdad lo necesita. Esto se calcula aquí con las
     // fechas reales de cada partido, en vez de depender de que la IA lo
     // acierte en el texto libre.
+    // Solo cubre de otra posición quien tiene multiposición (el suplente o el
+    // titular); el resto solo cubre su misma posición.
+    const covers = (sub, tit) => sub.pos === tit.pos || (sub.pos2 && sub.pos2 === tit.pos) || (tit.pos2 && tit.pos2 === sub.pos);
     function buildSwapPlan() {
       const pairs = [];
       const T = (p) => (p.fecha ? new Date(p.fecha).getTime() : null);
-      const covers = (sub, tit) => sub.pos === tit.pos || (sub.pos2 && sub.pos2 === tit.pos);
       const used = new Set();
       tits.slice().sort((a, b) => (T(a) == null ? Infinity : T(a)) - (T(b) == null ? Infinity : T(b))).forEach((tit) => {
         const tt = T(tit);
@@ -4017,7 +4019,7 @@
     const useless = sups.filter((sub) => {
       if (!sub.fecha) return false;
       const st = new Date(sub.fecha).getTime();
-      const tg = tits.filter((t) => (sub.pos === t.pos || (sub.pos2 && sub.pos2 === t.pos)) && t.fecha);
+      const tg = tits.filter((t) => covers(sub, t) && t.fecha);
       return tg.length > 0 && tg.every((t) => new Date(t.fecha).getTime() >= st);
     });
     const swapPairs = buildSwapPlan();
@@ -4062,6 +4064,10 @@
         row.appendChild(el("div", "swap-arrow", "🔁"));
         row.appendChild(side(sub, "swap-sub"));
         card.appendChild(row);
+        if (tit.pos !== sub.pos) {
+          const who = (sub.pos2 && sub.pos2 === tit.pos) ? (sub.last || sub.nombre) + " (" + sub.pos + "/" + sub.pos2 + ")" : (tit.last || tit.nombre) + " (" + tit.pos + "/" + tit.pos2 + ")";
+          card.appendChild(el("div", "swap-est", "🔀 Solo es posible por la multiposición de " + who));
+        }
         const estTxt = estAlineacion(tit.fecha);
         if (estTxt) card.appendChild(el("div", "swap-est", "⏱️ alineación estimada ~" + estTxt));
         card.addEventListener("click", () => swapPicker(tit));
