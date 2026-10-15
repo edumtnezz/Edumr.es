@@ -289,10 +289,10 @@
         for (let k = 0; k < fit.length; k++) {
           const v = Math.round(fit[fit.length - 1 - k]);
           const j = jLab(p.team, fit.length, k, j0);
-          const cls = v >= 6 ? " hi" : v >= 4 ? " mid" : v > 0 ? " lo" : " zero";
+          const cls = v >= 6 ? " hi" : v >= 4 ? " mid" : v > 0 ? " lo" : v < 0 ? " neg" : " zero";
           const cell = el("span", "racha-chip" + cls);
           if (j > 0) cell.appendChild(el("i", null, "J" + j));
-          cell.appendChild(el("b", null, v > 0 ? String(v) : "–"));
+          cell.appendChild(el("b", null, v !== 0 ? String(v) : "–"));
           scores.appendChild(cell);
         }
         row.appendChild(scores);
@@ -390,10 +390,10 @@
         for (let k = 0; k < n; k++) {
           const v = Math.round(fit[fit.length - 1 - k]);
           const j = jLab(p.team, fit.length, k, j0);
-          const cls = v >= 6 ? " hi" : v >= 4 ? " mid" : v > 0 ? " lo" : " zero";
+          const cls = v >= 6 ? " hi" : v >= 4 ? " mid" : v > 0 ? " lo" : v < 0 ? " neg" : " zero";
           const cell = el("span", "racha-chip" + cls);
           if (j > 0) cell.appendChild(el("i", null, "J" + j));
-          cell.appendChild(el("b", null, v > 0 ? String(v) : "–"));
+          cell.appendChild(el("b", null, v !== 0 ? String(v) : "–"));
           scores.appendChild(cell);
         }
         fitWrap.appendChild(scores);
@@ -3133,9 +3133,9 @@
           for (let k = 0; k < fit.length; k++) {
             const v = Math.round(fit[fit.length - 1 - k]);
             const j = jLab(p.team, fit.length, k, j0 > 0 ? j0 : 0);
-            const cell = el("span", "racha-chip" + (v >= 6 ? " hi" : v >= 4 ? " mid" : v > 0 ? " lo" : " zero"));
+            const cell = el("span", "racha-chip" + (v >= 6 ? " hi" : v >= 4 ? " mid" : v > 0 ? " lo" : v < 0 ? " neg" : " zero"));
             if (j > 0) cell.appendChild(el("i", null, "J" + j));
-            cell.appendChild(el("b", null, v > 0 ? String(v) : "–"));
+            cell.appendChild(el("b", null, v !== 0 ? String(v) : "–"));
             sc.appendChild(cell);
           }
           r.appendChild(sc);

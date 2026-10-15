@@ -1438,3 +1438,6 @@ html { overflow-anchor: none; }
   #newsAnuncios.news-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   #newsAnuncios .news-hero, #newsAnuncios .news-day { grid-column: 1 / -1; }
 }
+
+.racha-chip.neg { background: #dc2626; }
+.racha-chip.neg i { color: rgba(255,255,255,.8); }
