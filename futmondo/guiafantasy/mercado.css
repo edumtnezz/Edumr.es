@@ -1470,3 +1470,9 @@ html { overflow-anchor: none; }
 .claus-grid .claus-lock { width: 100%; text-align: center; padding: 7px 10px; border-radius: 12px; background: rgba(245,158,11,.14); border: 1px dashed rgba(245,158,11,.55); margin: 4px 0 0; font-size: .74rem; }
 .claus-grid .claus-newowner { margin: 0; padding: 3px 10px; border-radius: 999px; background: rgba(37,99,235,.12); }
 @media (max-width: 560px) { .claus-grid { grid-template-columns: 1fr 1fr; gap: 10px; } .claus-grid .claus-photo2 { width: 72px; height: 72px; margin-top: -40px; } .claus-grid .claus-card2::before { height: 58px; } .claus-grid .claus-name2 { font-size: 1rem; } .claus-grid .claus-body2 { padding: 0 8px 12px; } .claus-grid .claus-stat b { font-size: .9rem; } }
+
+.claus-grid .claus-stat.media { background: linear-gradient(135deg, #16a34a, #22c55e); border-radius: 12px; padding: 7px 2px; }
+.claus-grid .claus-stat.media b { color: #fff; font-size: 1rem; }
+.claus-grid .claus-stat.media small { color: rgba(255,255,255,.92); }
+.claus-grid .claus-lastup { font-size: .74rem; font-weight: 700; color: var(--muted); padding: 5px 12px; border-radius: 999px; background: rgba(127,127,127,.10); }
+.claus-grid .claus-lastup.yes { color: #b45309; background: rgba(245,158,11,.14); }

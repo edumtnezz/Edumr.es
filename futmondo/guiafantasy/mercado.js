@@ -416,26 +416,10 @@
       // Historial de la cláusula: sin tener que entrar en la ficha, para
       // ver de un vistazo si se la han ido subiendo (la están "defendiendo")
       // o lleva igual, directamente en la tarjeta.
-      if (p.clPrev != null || (p.clChg != null && p.clSince)) {
-        const fM = (n) => (Number(n) / 1e6).toFixed(1).replace(".", ",") + " M";
-        const histChip = (val, label) => {
-          const v = Number(val) || 0;
-          const cls = v > 0 ? "up" : v < 0 ? "down" : "flat";
-          const arrow = v > 0 ? "▲" : v < 0 ? "▼" : "•";
-          const chip = el("span", "claus-hist " + cls);
-          if (v === 0) {
-            chip.appendChild(el("b", null, "• Sin cambios"));
-            chip.appendChild(el("small", null, label + ": sigue en " + fM(p.clause)));
-          } else {
-            chip.appendChild(el("b", null, arrow + " " + fM(Number(p.clause) - v) + " → " + fM(p.clause)));
-            chip.appendChild(el("small", null, label + " · " + (v > 0 ? "sube " : "baja ") + fM(Math.abs(v))));
-          }
-          return chip;
-        };
-        const hrow = el("div", "claus-histrow");
-        if (p.clPrev != null) hrow.appendChild(histChip(p.clPrev, "Ayer"));
-        if (p.clChg != null && p.clSince) hrow.appendChild(histChip(p.clChg, "El " + fmtDiaCorto(p.clSince)));
-        body.appendChild(hrow);
+      if (p.clChg != null || p.clUp) {
+        const up = el("div", "claus-lastup" + (p.clUp ? " yes" : ""));
+        up.textContent = p.clUp ? "📈 Última subida: +" + (p.clUp.amt / 1e6).toFixed(1).replace(".", ",") + " M · " + fmtDiaCorto(p.clUp.d) : "Sin subidas desde " + fmtDiaCorto(p.clSince);
+        body.appendChild(up);
       }
       const playedPct = j0 ? Math.round(((Number(p.matches) || 0) / j0) * 100) : 0;
       body.appendChild(el("div", "claus-played", "Jugados: " + playedPct + "% de los partidos"));

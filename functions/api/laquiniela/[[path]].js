@@ -854,7 +854,7 @@ async function getAvatars(env) {
 }
 
 async function getClausulas(env) {
-  try { const c = await env.PORRA.get("clausulas:v14", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
+  try { const c = await env.PORRA.get("clausulas:v15", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
   let cache;
   try { cache = await getMarketPlayers(env); } catch (e) { return { players: [], updatedAt: null }; }
   let players = cache.players || [];
@@ -932,11 +932,16 @@ async function getClausulas(env) {
       if (first[p.name] != null) { p.clChg = p.clause - Number(first[p.name]); p.clSince = hist.days[0].d; }
       if (prevC[p.name] != null) p.clPrev = p.clause - Number(prevC[p.name]);
       if (prevO[p.name] && prevO[p.name] !== (p.owner || "")) p.clNewOwner = true;
+      // Última subida de la cláusula que hemos visto en los datos guardados (día y cuánto subió).
+      for (let i = hist.days.length - 1; i >= 1; i--) {
+        const a = hist.days[i].c && hist.days[i].c[p.name], b0 = hist.days[i - 1].c && hist.days[i - 1].c[p.name];
+        if (a != null && b0 != null && Number(a) > Number(b0)) { p.clUp = { d: hist.days[i].d, amt: Number(a) - Number(b0) }; break; }
+      }
     }
   } catch (e) {}
 
   const data = { updatedAt: Date.now(), me: myTeam, jornada, players: out.slice(0, 40) };
-  try { await env.PORRA.put("clausulas:v14", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
+  try { await env.PORRA.put("clausulas:v15", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
   return data;
 }
 
