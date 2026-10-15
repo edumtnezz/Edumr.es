@@ -3578,7 +3578,7 @@
     fetch(API + "/jugador?id=" + encodeURIComponent(p.id)).then((r) => r.json()).then((j) => { fmCache[p.id] = j; if (det.isConnected) draw(j); }).catch(() => { det.textContent = "No se pudo cargar el desglose."; });
   }
   // Toda la temporada de un jugador: cada partido con rival, minutos y lo que aportan AS, Marca y SofaScore (puntos de su tabla × 50% de tu liga).
-  function ssToggle(card, btn, p, pid) {
+  function ssToggle(card, btn, p, pid, ptsByJ) {
     const old = card.querySelector(".an-ss");
     if (old) { old.remove(); btn.textContent = "📅 Ver toda la temporada"; return; }
     btn.textContent = "🔼 Ocultar temporada";
@@ -3598,7 +3598,7 @@
       sum.appendChild(el("span", null, s60 + " con 60 min o más" + (sea ? " · media de la temporada " + f1e(sea.avg) + " pts por partido jugado" : "")));
       box.appendChild(sum);
       const tb = el("div", "an-ss-t");
-      const hd = el("div", "an-ss-r hd"); ["J", "Rival", "Min", "AS", "MARCA", "SOFA"].forEach((h) => hd.appendChild(el("span", null, h))); tb.appendChild(hd);
+      const hd = el("div", "an-ss-r hd"); ["J", "Rival", "Min", "PTS", "AS", "MARCA", "SOFA"].forEach((h) => hd.appendChild(el("span", null, h))); tb.appendChild(hd);
       ms.forEach((m) => {
         const played = (Number(m.mins) || 0) > 0;
         const home = teamCanon(m.home) === tc;
@@ -3606,12 +3606,14 @@
         r.appendChild(el("span", null, "J" + m.r));
         r.appendChild(el("span", "rv", (home ? "🏠 " : "✈️ ") + (home ? m.away : m.home)));
         r.appendChild(el("span", null, played ? m.mins + "'" : "–"));
+        const tp = ptsByJ ? ptsByJ[Number(m.r)] : undefined;
+        r.appendChild(el("span", tp !== undefined ? "pt" : "nd", tp !== undefined ? (tp === 0 ? "–" : String(tp)) : "n/d"));
         [m.as, m.marca, m.ss].forEach((v) => r.appendChild(el("span", null, played && v != null ? fmN((Number(v) || 0) / 2) : "–")));
         tb.appendChild(r);
       });
-      if (pl.length) { const av = el("div", "an-ss-r avg"); av.appendChild(el("span", null, "")); av.appendChild(el("span", "rv", "Media (partidos jugados)")); av.appendChild(el("span", null, "")); [avgOf("as"), avgOf("marca"), avgOf("ss")].forEach((v) => av.appendChild(el("span", null, fmN(v)))); tb.appendChild(av); }
+      if (pl.length) { const av = el("div", "an-ss-r avg"); av.appendChild(el("span", null, "")); av.appendChild(el("span", "rv", "Media (partidos jugados)")); av.appendChild(el("span", null, "")); av.appendChild(el("span", null, "")); [avgOf("as"), avgOf("marca"), avgOf("ss")].forEach((v) => av.appendChild(el("span", null, fmN(v)))); tb.appendChild(av); }
       box.appendChild(tb);
-      box.appendChild(el("div", "an-fm-dn", "AS, Marca y SofaScore: puntos de su tabla × 50% (tu liga), directos de Futmondo. Los puntos totales de cada jornada también incluyen minutos, goles, asistencias y tarjetas, que no se desglosan aquí para las jornadas antiguas."));
+      box.appendChild(el("div", "an-fm-dn", "PTS = puntos de tu liga en esa jornada. Futmondo solo da el total de sus últimos 5 partidos; en los anteriores sale «n/d» (no se inventa). AS, Marca y SofaScore: puntos de su tabla × 50% (tu liga), directos de Futmondo, para todos los partidos."));
     };
     if (fmCache[pid]) { draw(fmCache[pid]); return; }
     fetch(API + "/jugador?id=" + encodeURIComponent(pid)).then((r) => r.json()).then((j) => { fmCache[pid] = j; if (box.isConnected) draw(j); }).catch(() => { box.textContent = "No se pudo cargar la temporada."; });
@@ -3642,8 +3644,10 @@
       const f = (p.fitness || []).map(Number);
       const row = el("div", "an-fm-row");
       const len = f.length;
+      const ptsByJ = {};
       f.forEach((v, i) => {
         const jn = jLab(p.equipo, len, len - 1 - i, j0);
+        if (jn) ptsByJ[jn] = v;
         const op = jn && oppJ[teamCanon(p.equipo)] && oppJ[teamCanon(p.equipo)][jn];
         const c = el("div", "an-fm-chip " + (v === 0 ? "none" : v <= 3 ? "low" : v >= 10 ? "high" : "mid"));
         c.appendChild(el("div", "an-fm-j", jn ? "J" + jn : "–"));
@@ -3660,7 +3664,7 @@
       const pid = p.id || (seasonOf(p) && seasonOf(p).id);
       if (pid) {
         const sb = el("button", "an-ss-btn", "📅 Ver toda la temporada"); sb.type = "button";
-        sb.addEventListener("click", () => ssToggle(card, sb, p, pid));
+        sb.addEventListener("click", () => ssToggle(card, sb, p, pid, ptsByJ));
         card.appendChild(sb);
       }
       grid.appendChild(card);

@@ -1397,9 +1397,11 @@ html { overflow-anchor: none; }
 .an-ss{margin-top:8px;padding:10px;border-radius:14px;background:rgba(127,127,127,.1);font-size:.8rem}
 .an-ss-sum{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
 .an-ss-sum span{font-size:.72rem;opacity:.75}
-.an-ss-r{display:grid;grid-template-columns:34px 1fr 40px 38px 46px 40px;gap:4px;align-items:center;padding:6px 2px;border-top:1px solid rgba(127,127,127,.18);font-size:.74rem;text-align:right}
+.an-ss-r{display:grid;grid-template-columns:30px 1fr 36px 34px 32px 42px 36px;gap:3px;align-items:center;padding:6px 2px;border-top:1px solid rgba(127,127,127,.18);font-size:.74rem;text-align:right}
 .an-ss-r span:first-child,.an-ss-r .rv{text-align:left}
 .an-ss-r .rv{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .an-ss-r.hd{border-top:0;font-size:.62rem;font-weight:800;opacity:.6;letter-spacing:.04em}
 .an-ss-r.none{opacity:.45}
 .an-ss-r.avg{font-weight:800;border-top:2px solid rgba(127,127,127,.3)}
+.an-ss-r .pt{font-weight:800;color:#16a34a}.an-ss-r .nd{opacity:.45;font-size:.62rem}
+.an-ss-r{font-size:.7rem}
