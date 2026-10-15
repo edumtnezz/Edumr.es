@@ -1505,3 +1505,7 @@ html { overflow-anchor: none; }
 .fich2-link { align-self: flex-start; margin-top: 2px; border: 0; cursor: pointer; padding: 7px 16px; border-radius: 999px; background: linear-gradient(135deg, #16a34a, #22c55e); color: #fff; font: inherit; font-size: .78rem; font-weight: 800; box-shadow: 0 4px 12px rgba(34,197,94,.35); }
 .fich2-of { border-top: 3px solid #16a34a; }
 .fich2-neg { border-top: 3px solid #f59e0b; }
+
+.eq-stat-go { cursor: pointer; font: inherit; color: inherit; border: 1px solid rgba(34,197,94,.5); box-shadow: 0 0 0 2px rgba(34,197,94,.12); }
+.eq-stat-go small { color: var(--accent); font-weight: 700; }
+.eq-stat-go:active { transform: scale(.97); }

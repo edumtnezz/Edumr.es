@@ -3037,8 +3037,19 @@
       frag.appendChild(hd);
       if (fx.n) {
         const stx = el("div", "eq-stats");
-        [[eqMoney(fx.val), "valor plantilla", ""], [String(fx.racha), "en racha", fx.racha ? "up" : ""], [String(fx.dudas), "dudas", fx.dudas ? "mid" : ""]].forEach((x) => {
-          const c = el("div", "eq-stat " + x[2]); c.appendChild(el("b", null, x[0])); c.appendChild(el("small", null, x[1])); stx.appendChild(c);
+        [[eqMoney(fx.val), "valor plantilla", "", false], [String(fx.racha), "en racha ›", fx.racha ? "up" : "", true]].forEach((x) => {
+          const go = x[3] && fx.racha > 0 && squad[0];
+          const c = el(go ? "button" : "div", "eq-stat " + x[2] + (go ? " eq-stat-go" : ""));
+          c.appendChild(el("b", null, x[0])); c.appendChild(el("small", null, go ? x[1] : x[1].replace(" ›", "")));
+          if (go) {
+            c.type = "button";
+            c.title = "Ver los jugadores en racha de este equipo";
+            c.addEventListener("click", () => {
+              try { sessionStorage.setItem(MS_KEY, JSON.stringify({ q: "", sortMode: "all", quick: "racha", teamFilter: squad[0].team, role: "", rangeMin: 0, rangeMax: 0, shown: 18 })); } catch (e) {}
+              location.href = "/futmondo/guiafantasy/mercado";
+            });
+          }
+          stx.appendChild(c);
         });
         frag.appendChild(stx);
       }
