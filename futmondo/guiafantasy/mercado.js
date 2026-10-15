@@ -524,29 +524,32 @@
       box.innerHTML = "";
       if (!groups.length) { box.innerHTML = '<p class="muted small">Sin movimientos ahora mismo.</p>'; return; }
       groups.forEach((g) => {
-        if (g.date) box.appendChild(el("div", "fich-day", "🗓️ " + g.date));
-        g.items.forEach((x) => {
-          const card = el("div", "fich-card");
-          const main = fichImg([x.photo, x.clubCrest], "fich-photo");
+        if (g.date) { const dh = el("div", "fich-day"); dh.appendChild(el("span", "fich-day-txt", "🗓️ " + g.date)); box.appendChild(dh); }
+        const grid = el("div", "fich2-grid");
+        g.items.forEach((x, i) => {
+          const bc = x.badge ? badgeCls(x.badge) : "ot";
+          const card = el("div", "fich2 fich2-" + bc);
+          card.style.animationDelay = Math.min(i, 8) * 40 + "ms";
+          const ban = el("div", "fich2-ban");
+          if (x.thumb) { ban.style.backgroundImage = 'url("' + x.thumb + '")'; const t = new Image(); t.onerror = () => { ban.style.backgroundImage = ""; ban.classList.add("empty"); }; t.src = x.thumb; } else ban.classList.add("empty");
+          if (x.badge) ban.appendChild(el("span", "fich2-badge " + bc, x.badge));
+          if (x.time) ban.appendChild(el("span", "fich2-time", "🕒 " + x.time));
+          card.appendChild(ban);
+          const main = fichImg([x.photo, x.clubCrest], "fich2-photo");
           if (main) card.appendChild(main);
-          const body = el("div", "fich-body");
-          body.appendChild(el("div", "fich-title", x.title || ""));
-          const meta = el("div", "fich-meta");
-          if (x.badge) meta.appendChild(el("span", "fich-badge " + badgeCls(x.badge), x.badge));
+          const body = el("div", "fich2-body" + (main ? " has-ph" : ""));
+          body.appendChild(el("div", "fich2-title", x.title || ""));
           if (x.clubs && x.clubs.length) {
-            const rt = el("div", "fich-ruta");
-            x.clubs.forEach((c, i) => { if (i) rt.appendChild(el("span", "fich-arrow", "→")); rt.appendChild(el("span", "fich-club", c)); });
-            meta.appendChild(rt);
+            const rt = el("div", "fich2-ruta");
+            x.clubs.forEach((c, k) => { if (k) rt.appendChild(el("span", "fich2-arrow", "➜")); rt.appendChild(el("span", "fich2-club", c)); });
+            body.appendChild(rt);
           }
-          if (x.time) meta.appendChild(el("span", "fich-time", x.time));
-          body.appendChild(meta);
-          if (x.extract) body.appendChild(el("div", "fich-extract", x.extract));
-          if (x.link) { const a = el("button", "fich-link", "Ver noticia →"); a.type = "button"; a.addEventListener("click", () => openNoticia(x.link, x.title)); body.appendChild(a); }
+          if (x.extract) body.appendChild(el("div", "fich2-extract", x.extract));
+          if (x.link) { const a = el("button", "fich2-link", "Leer noticia →"); a.type = "button"; a.addEventListener("click", () => openNoticia(x.link, x.title)); body.appendChild(a); }
           card.appendChild(body);
-          const th = fichImg([x.thumb], "fich-thumb");
-          if (th) card.appendChild(th);
-          box.appendChild(card);
+          grid.appendChild(card);
         });
+        box.appendChild(grid);
       });
     } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar.</p>'; }
   }
