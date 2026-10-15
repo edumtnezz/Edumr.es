@@ -318,3 +318,31 @@ body.hub-page > * { position: relative; z-index: 1; }
   .ic-ripple { opacity: 0; }
   .ic-big .trend { stroke-dashoffset: 0; }
 }
+
+/* ---------- Hub v6: fondo malla, iconos a color ---------- */
+body.hub-page::before, body.hub-page::after { content: none; }
+body.hub-page {
+  background-color: #070a12;
+  background-image:
+    radial-gradient(48% 34% at 12% 6%, rgba(34, 197, 94, 0.34), transparent 70%),
+    radial-gradient(46% 34% at 92% 14%, rgba(99, 102, 241, 0.30), transparent 70%),
+    radial-gradient(46% 32% at 80% 80%, rgba(236, 72, 153, 0.16), transparent 70%),
+    radial-gradient(46% 32% at 6% 92%, rgba(14, 165, 233, 0.2), transparent 70%);
+  background-attachment: fixed;
+}
+[data-theme="light"] body.hub-page {
+  background-color: #f6f7fb;
+  background-image:
+    radial-gradient(48% 34% at 12% 6%, rgba(34, 197, 94, 0.26), transparent 70%),
+    radial-gradient(46% 34% at 92% 14%, rgba(99, 102, 241, 0.2), transparent 70%),
+    radial-gradient(46% 32% at 80% 80%, rgba(236, 72, 153, 0.12), transparent 70%),
+    radial-gradient(46% 32% at 6% 92%, rgba(14, 165, 233, 0.16), transparent 70%);
+}
+.hub-tile, .hub-tile .ic, .ic { overflow: visible; }
+.hub-tile { color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 10px 22px -8px var(--tg, rgba(34, 197, 94, 0.6)); }
+.t-amber .hub-tile { --tg: rgba(245, 158, 11, 0.75); background: linear-gradient(145deg, #fbbf24, #ea580c); }
+.t-rose .hub-tile { --tg: rgba(244, 63, 94, 0.7); background: linear-gradient(145deg, #fb7185, #be185d); }
+.t-sky .hub-tile { --tg: rgba(56, 189, 248, 0.7); background: linear-gradient(145deg, #38bdf8, #4f46e5); }
+[data-theme="light"] .hub-tile { color: #fff; }
+.ic-gavel { animation-name: ic-strike2; }
+@keyframes ic-strike2 { 0%, 62% { transform: rotate(0); } 72% { transform: rotate(-16deg); } 80% { transform: rotate(4deg); } 88% { transform: rotate(-1deg); } 100% { transform: rotate(0); } }
