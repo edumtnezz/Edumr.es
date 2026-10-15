@@ -1269,13 +1269,16 @@ async function ogThumb(env, url) {
   return img;
 }
 
+// Vídeos, directos y promos de creadores (Twitch/YouTube, "XI ideal ... por X", "RADAR FANTASY"): no se muestran.
+const FF_PROMO = /(^\s*v[ií]deo\s*:|twitch|youtube|multistream|radar fantasy|\bj\d+\b.*,\s*por\s|jornada\s*\d+.*,\s*por\s)/i;
 async function getFfNoticias(env) {
   try {
     const res = await fetch("https://www.futbolfantasy.com/laliga/home", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
     const html = await res.text();
     const out = [];
     const seen = {};
-    const EX = /(jerarqu|internacional|convoc|entrenador|t[eé]cnico|rueda de prensa|declaraci|palabras|gu[ií]a|onces?|alineaci|cr[oó]nica|amistoso|camiseta|equipaci|predicci|apuestas)/i;
+    const EX = FF_PROMO;
+    const EX_OLD = /(jerarqu|internacional|convoc|entrenador|t[eé]cnico|rueda de prensa|declaraci|palabras|gu[ií]a|onces?|alineaci|cr[oó]nica|amistoso|camiseta|equipaci|predicci|apuestas)/i;
     const re = /<a[^>]+href="(https:\/\/www\.futbolfantasy\.com\/laliga\/noticias\/[^"]+)"[^>]*class="[^"]*\bnoticia\b[^"]*"[^>]*>([\s\S]*?)<\/a>/g;
     let m;
     while ((m = re.exec(html))) {
@@ -1286,7 +1289,7 @@ async function getFfNoticias(env) {
       const thumb = (inner.match(/data-src="([^"]*fotos_noticias[^"]+)"/) || inner.match(/<img[^>]+src="([^"]*fotos_noticias[^"]+)"/) || [])[1] || "";
       const day = ((inner.match(/class="day">([^<]+)</) || [])[1] || "").trim();
       const time = ((inner.match(/class="time">([^<]+)</) || [])[1] || "").trim();
-      if (!link || !title || EX.test(title)) continue;
+      if (!link || !title || EX.test(title) || EX_OLD.test(title)) continue;
       seen[link] = 1;
       out.push({ date: day, time, link, title, thumb });
       if (out.length >= 24) break;
@@ -1554,6 +1557,7 @@ async function getNoticias(env) {
     // se corrigen también aquí, de paso (decodeEntities no hace nada sobre
     // texto que ya está limpio).
     if (x.title) x.title = decodeEntities(x.title);
+    if (x.title && FF_PROMO.test(x.title)) return;
     merged.push(x);
   });
   const trimmed = merged.slice(0, 80);
