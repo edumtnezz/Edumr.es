@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="theme.js?v=65"></script>
-  <link rel="stylesheet" href="futmondo.css?v=125">
+  <link rel="stylesheet" href="futmondo.css?v=126">
 </head>
 <body>
   <div class="hub-top">
@@ -38,35 +38,34 @@
     <p class="hub-warn">⚠️ Crear la cuenta es <b>obligatorio</b> para jugar a La Quiniela, La Porra y La Puja.</p>
   </div>
 
-  <h2 class="hub-sect">Acceso directo a funcionalidades</h2>
-  <main class="hub-grid">
-    <a class="hub-card" href="lapuja/">
-      <div class="hub-art"><span class="hub-emoji">💸</span></div>
-      <h2>La Puja</h2>
-      <p>Subastas de los martes: saca a un jugador y puja con tus compañeros. Con contador y ganador automático.</p>
-      <span class="hub-go">Entrar →</span>
-    </a>
+  <main class="hub-main">
+    <h2 class="hub-grp">Juegos</h2>
+    <nav class="hub-list" aria-label="Juegos">
+      <a class="hub-row" href="lapuja/">
+        <span class="hub-tile" aria-hidden="true">💸</span>
+        <span class="hub-tx"><b>La Puja</b><span>Subastas de los martes. Cierra a las 22:00.</span></span>
+        <svg class="hub-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+      </a>
+      <a class="hub-row" href="quiniela/">
+        <span class="hub-tile" aria-hidden="true">🎟️</span>
+        <span class="hub-tx"><b>La Quiniela</b><span>Los 10 partidos de la jornada, 1X2.</span></span>
+        <svg class="hub-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+      </a>
+      <a class="hub-row" href="porra/">
+        <span class="hub-tile" aria-hidden="true">🥅</span>
+        <span class="hub-tx"><b>La Porra</b><span>Marcador exacto de Madrid y Barça. Hasta 1.000.000 €.</span></span>
+        <svg class="hub-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+      </a>
+    </nav>
 
-    <a class="hub-card" href="quiniela/">
-      <div class="hub-art"><span class="hub-emoji">🎟️</span></div>
-      <h2>La Quiniela</h2>
-      <p>Quiniela semanal de LaLiga (1X2). Elige los 10 partidos de la jornada, con escudos, forma y clasificación automática.</p>
-      <span class="hub-go">Entrar →</span>
-    </a>
-
-    <a class="hub-card" href="porra/">
-      <div class="hub-art"><span class="hub-emoji">🥅</span></div>
-      <h2>La Porra</h2>
-      <p>Porra de resultado exacto por partido. Acierta el marcador y llévate la prima.</p>
-      <span class="hub-go">Entrar →</span>
-    </a>
-
-    <a class="hub-card" href="guiafantasy/inicio">
-      <div class="hub-art"><span class="hub-emoji">📊</span></div>
-      <h2>Guía Fantasy</h2>
-      <p>Valores de Futmondo Social: los que más suben y bajan, lesionados y sancionados, y comparador de jugadores.</p>
-      <span class="hub-go">Entrar →</span>
-    </a>
+    <h2 class="hub-grp">Herramientas</h2>
+    <nav class="hub-list" aria-label="Herramientas">
+      <a class="hub-row" href="guiafantasy/inicio">
+        <span class="hub-tile" aria-hidden="true">📊</span>
+        <span class="hub-tx"><b>Guía Fantasy</b><span>Mercado, lesionados y comparador de jugadores.</span></span>
+        <svg class="hub-chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+      </a>
+    </nav>
   </main>
 
   <script src="hub.js?v=7"></script>
