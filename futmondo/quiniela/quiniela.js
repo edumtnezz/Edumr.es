@@ -769,21 +769,32 @@ function renderPrizes() {
   ul.appendChild(li);
 }
 
+function jornadaChips(cur, lo, hi, pick) {
+  const box = $("jChips");
+  if (!box) return;
+  box.innerHTML = "";
+  if (!cur || !lo || !hi) return;
+  let a = Math.max(lo, cur - 2), b = Math.min(hi, a + 4);
+  a = Math.max(lo, b - 4);
+  for (let n = a; n <= b; n++) {
+    const c = document.createElement("button");
+    c.type = "button";
+    c.className = "jc-chip" + (n === cur ? " on" : "");
+    c.textContent = "J" + n;
+    c.addEventListener("click", () => { if (n !== cur) pick(n); });
+    box.appendChild(c);
+  }
+}
+
 function renderJornadaBar() {
   const jv = $("jView");
   if (jv) jv.textContent = state.matchday;
   const sg = $("segJNum");
   if (sg) sg.textContent = state.matchday;
   const isPast = currentJornada !== null && state.matchday < currentJornada;
-  const prev = $("jPrev");
-  const next = $("jNext");
   const note = $("jNote");
-  if (prev) prev.disabled = state.matchday <= 1;
-  if (next) next.disabled = currentJornada === null || state.matchday >= currentJornada;
   if (note) note.classList.toggle("hidden", !isPast);
-  const pn = $("jPrevN"), nn = $("jNextN");
-  if (pn) pn.textContent = state.matchday > 1 ? "J" + (state.matchday - 1) : "";
-  if (nn) nn.textContent = currentJornada !== null && state.matchday < currentJornada ? "J" + (state.matchday + 1) : "";
+  jornadaChips(state.matchday, 1, currentJornada || state.matchday, (n) => { viewJornada = n; refresh(); });
 }
 
 function updateCtas() {
@@ -1062,19 +1073,6 @@ $("segGlobal").addEventListener("click", () => {
   $("segGlobal").classList.add("active");
   $("segJornada").classList.remove("active");
   loadGlobal();
-});
-
-$("jPrev").addEventListener("click", () => {
-  if (!state) return;
-  viewJornada = Math.max(1, state.matchday - 1);
-  refresh();
-});
-$("jNext").addEventListener("click", () => {
-  if (!state || !currentJornada) return;
-  if (state.matchday < currentJornada) {
-    viewJornada = state.matchday + 1;
-    refresh();
-  }
 });
 
 $("copyBtn").addEventListener("click", async () => {

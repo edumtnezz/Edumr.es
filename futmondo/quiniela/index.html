@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="../theme.js?v=65"></script>
-  <link rel="stylesheet" href="quiniela.css?v=133">
+  <link rel="stylesheet" href="quiniela.css?v=134">
   <link rel="stylesheet" href="../edumr.css?v=58">
 </head>
 <body class="cx-page">
@@ -62,11 +62,8 @@
 
     <!-- Jornada + contador -->
     <section class="jornada-card" id="countdownPanel">
-      <div class="jc-nav">
-        <button class="jbtn jb-prev" id="jPrev" title="Jornada anterior"><i>‹</i><span id="jPrevN">J–</span></button>
-        <div class="jc-jornada">Jornada <b id="jView">–</b></div>
-        <button class="jbtn jb-next" id="jNext" title="Jornada siguiente"><span id="jNextN">J–</span><i>›</i></button>
-      </div>
+      <div class="jc-jornada">Jornada <b id="jView">–</b></div>
+      <div class="jc-chips" id="jChips"></div>
       <div class="jc-timer" id="cdTimer">--:--:--</div>
       <div class="jc-info" id="cdInfo">Cargando la jornada…</div>
       <span class="jnote hidden" id="jNote">Estás viendo otra jornada</span>
@@ -180,6 +177,6 @@
   <footer class="quiniela-footer"></footer>
 
   <script src="fondo.js?v=56"></script>
-  <script src="quiniela.js?v=117"></script>
+  <script src="quiniela.js?v=118"></script>
 </body>
 </html>

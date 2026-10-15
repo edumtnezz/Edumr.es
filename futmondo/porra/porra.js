@@ -169,21 +169,32 @@ function updateCountdown() {
   info.textContent = "Se cierra cuando empiece el primer partido";
 }
 
+function jornadaChips(cur, lo, hi, pick) {
+  const box = $("jChips");
+  if (!box) return;
+  box.innerHTML = "";
+  if (!cur || !lo || !hi) return;
+  let a = Math.max(lo, cur - 2), b = Math.min(hi, a + 4);
+  a = Math.max(lo, b - 4);
+  for (let n = a; n <= b; n++) {
+    const c = document.createElement("button");
+    c.type = "button";
+    c.className = "jc-chip" + (n === cur ? " on" : "");
+    c.textContent = "J" + n;
+    c.addEventListener("click", () => { if (n !== cur) pick(n); });
+    box.appendChild(c);
+  }
+}
+
 function renderJornadaBar() {
   const jv = $("jView");
   if (jv) jv.textContent = state.jornada || "–";
-  const prev = $("jPrev"), next = $("jNext"), note = $("jNote");
-  if (prev) prev.disabled = !state.jornada || state.jornada <= (state.minJornada || 1);
-  if (next) next.disabled = !state.jornada || state.jornada >= (state.maxJornada || state.jornada);
+  const note = $("jNote");
   if (note) note.classList.toggle("hidden", !state.jornada || state.jornada === state.currentJornada);
-  const pn = $("jPrevN"), nn = $("jNextN");
-  if (pn) pn.textContent = prev && !prev.disabled ? "J" + (state.jornada - 1) : "";
-  if (nn) nn.textContent = next && !next.disabled ? "J" + (state.jornada + 1) : "";
+  jornadaChips(state.jornada, state.minJornada, state.maxJornada, (n) => { viewJornada = n; load(); });
   updateCountdown();
 }
 
-$("jPrev").addEventListener("click", () => { if (state.jornada) { viewJornada = state.jornada - 1; load(); } });
-$("jNext").addEventListener("click", () => { if (state.jornada) { viewJornada = state.jornada + 1; load(); } });
 setInterval(updateCountdown, 1000);
 
 function render() {

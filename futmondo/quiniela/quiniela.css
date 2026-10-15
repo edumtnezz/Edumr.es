@@ -1538,3 +1538,18 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .jornada-card .jb-next { justify-self: stretch; justify-content: flex-end; }
 .jc-jornada { flex-direction: row; gap: 6px; align-items: baseline; padding: 0 10px; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
 .jc-jornada b { font-size: 1.6rem; margin: 0; }
+
+/* ---------- v6: selector de jornadas con chips + escudos degradados ---------- */
+.jc-jornada { border: 0; padding: 0; flex-direction: row; justify-content: center; gap: 8px; align-items: baseline; }
+.jc-chips { display: flex; justify-content: center; gap: 8px; flex-wrap: nowrap; }
+.jc-chip { min-width: 52px; height: 40px; padding: 0 10px; border-radius: 12px; border: 1px solid var(--border); background: rgba(127,127,127,.1); color: var(--muted); font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: .92rem; cursor: pointer; }
+.jc-chip.on { background: linear-gradient(145deg, #4ade80, #16a34a); border-color: transparent; color: #06210f; box-shadow: 0 4px 12px rgba(34,197,94,.35); }
+.jc-chip:active { transform: scale(.95); }
+
+.pc-bg { width: 68%; height: auto; aspect-ratio: 1; top: 50%; transform: translateY(-50%); opacity: .95; }
+.pc-bg-l { left: -22%; -webkit-mask-image: linear-gradient(90deg, #000 25%, transparent 92%); mask-image: linear-gradient(90deg, #000 25%, transparent 92%); }
+.pc-bg-r { right: -22%; -webkit-mask-image: linear-gradient(270deg, #000 25%, transparent 92%); mask-image: linear-gradient(270deg, #000 25%, transparent 92%); }
+.pc-t, .pc-vs { font-weight: 900; color: var(--text); letter-spacing: -.01em; }
+.pc-t { font-size: clamp(1.15rem, 5.6vw, 1.7rem); }
+.pc-vs { font-size: clamp(1.7rem, 8vw, 2.4rem); }
+.pc-teams { margin: 6px 0 18px; padding: 8px 0; }
