@@ -227,70 +227,43 @@ function renderHistory() {
     return;
   }
   let lastMd = "__";
+  const sgn = (x, y) => (x > y ? "H" : x < y ? "A" : "D");
+  const sgnTxt = (c, h) => (c === "D" ? "empate" : "victoria del " + shortName(c === "H" ? h.home : h.away));
   list.forEach((h) => {
     const md = h.matchday || null;
     if (md !== lastMd) {
       lastMd = md;
       box.appendChild(el("h3", "hist-jornada", md ? "Jornada " + md : "Otras jornadas"));
     }
-    const card = el("div", "porra-card");
-    const head = el("div", "porra-card-head");
-    const r = h.result ? h.result.home + " - " + h.result.away : "";
-    head.appendChild(el("span", "porra-team-label", h.home + (r ? "  " + r + "  " : " vs ") + h.away));
-    head.appendChild(el("span", "porra-comp", h.utcDate ? fmtDate(h.utcDate).date : ""));
-    card.appendChild(head);
-    const plist = el("div", "partido-list");
+    const card = el("div", "porra-card hx");
+    const day = h.utcDate ? new Date(h.utcDate).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }) : "";
+    if (day) card.appendChild(el("div", "hx-date", day));
+    const sc = el("div", "hx-score");
+    const tl = el("div", "hx-team"); if (h.homeCrest) { const im = el("img", "hx-crest"); im.src = h.homeCrest; im.alt = ""; im.addEventListener("error", () => im.remove()); tl.appendChild(im); }
+    tl.appendChild(el("span", null, shortName(h.home)));
+    const tr = el("div", "hx-team"); if (h.awayCrest) { const im = el("img", "hx-crest"); im.src = h.awayCrest; im.alt = ""; im.addEventListener("error", () => im.remove()); tr.appendChild(im); }
+    tr.appendChild(el("span", null, shortName(h.away)));
+    sc.appendChild(tl);
+    sc.appendChild(el("div", "hx-res", h.result ? h.result.home + " - " + h.result.away : "vs"));
+    sc.appendChild(tr);
+    card.appendChild(sc);
+    if (h.result) card.appendChild(el("div", "hx-final", "Resultado final · " + (h.result.home === h.result.away ? "empate" : sgnTxt(sgn(h.result.home, h.result.away), h))));
     (h.entries || []).forEach((e) => {
-      const row = el("div", "partido-entry");
-      if (e.prize != null && e.prize > 0) row.classList.add("winner");
-      row.appendChild(el("span", "pe-name", e.name));
-      row.appendChild(el("span", "pe-score", e.home + " - " + e.away));
-      const tag = el("span", "pe-tag");
-      if (e.prize != null && e.prize > 0) {
-        const pref = e.tipo === "exacto" ? "Exacto · " : e.tipo === "signo" ? "Signo · " : "";
-        tag.textContent = pref + money(e.prize) + " €";
+      const row = el("div", "hx-entry");
+      const won = e.prize != null && e.prize > 0;
+      row.classList.add(e.tipo === "exacto" ? "exacto" : won ? "signo" : "fallo");
+      row.appendChild(el("div", "hx-name", e.name));
+      row.appendChild(el("div", "hx-pred", "Puso " + e.home + " - " + e.away));
+      let why = "";
+      if (h.result) {
+        if (e.tipo === "exacto") why = "✅ Clavó el marcador exacto · " + money(e.prize) + " €";
+        else if (won) why = "🟡 Acertó " + sgnTxt(sgn(e.home, e.away), h) + ", pero no el marcador · " + money(e.prize) + " €";
+        else why = "❌ Falló: puso " + sgnTxt(sgn(e.home, e.away), h) + " y fue " + (h.result.home === h.result.away ? "empate" : sgnTxt(sgn(h.result.home, h.result.away), h));
       }
-      row.appendChild(tag);
-      plist.appendChild(row);
+      if (why) row.appendChild(el("div", "hx-why", why));
+      card.appendChild(row);
     });
-    card.appendChild(plist);
-    box.appendChild(card);
-  });
-}
-
-function renderParts() {
-  const box = $("porraParts");
-  const hint = $("porraPartsHint");
-  if (!box) return;
-  box.innerHTML = "";
-  const names = [];
-  const seen = {};
-  state.matches.forEach((m) => {
-    (m.entries || []).forEach((e) => {
-      if (!seen[e.name]) { seen[e.name] = true; names.push(e.name); }
-    });
-  });
-  const teams = state.matches.map((m) => m.home + " - " + m.away).join("   ·   ");
-  if (hint) hint.textContent = (teams ? "La porra de esta jornada es sobre: " + teams + ". " : "") + (names.length ? names.length + " participante" + (names.length === 1 ? "" : "s") + "." : "");
-  if (!names.length) {
-    box.appendChild(el("p", "empty", "Todavía no hay participantes."));
-    return;
-  }
-  names.forEach((n) => {
-    const card = el("div", "porra-card");
-    card.appendChild(el("div", "porra-team-label", n));
-    const list = el("div", "partido-list");
-    state.matches.forEach((m) => {
-      const e = (m.entries || []).find((x) => x.name === n);
-      const row = el("div", "partido-entry");
-      row.appendChild(el("span", "pe-name", m.label + " · " + m.home + " - " + m.away));
-      row.appendChild(el("span", "pe-score", e ? e.home + " - " + e.away : "—"));
-      const tag = el("span", "pe-tag");
-      if (e && e.prize != null && e.prize > 0) tag.textContent = money(e.prize) + " €";
-      row.appendChild(tag);
-      list.appendChild(row);
-    });
-    card.appendChild(list);
+    if (!(h.entries || []).length) card.appendChild(el("p", "empty", "Nadie pronosticó este partido."));
     box.appendChild(card);
   });
 }

@@ -3442,7 +3442,9 @@ async function getPorraState(env, user, jornadaReq) {
   history = (Array.isArray(history) ? history : []).slice().sort((a, b) => new Date(b.utcDate || 0) - new Date(a.utcDate || 0));
   const mdOf = {};
   [].concat(lists.rm || [], lists.barca || []).forEach((f) => { if (f.matchId && f.matchday) mdOf[f.matchId] = f.matchday; });
-  history = (history || []).map((h) => ({ ...h, matchday: h.matchday || mdOf[h.matchId] || null }))
+  const crOf = {};
+  [].concat(lists.rm || [], lists.barca || []).forEach((f) => { if (f.matchId) crOf[f.matchId] = f; });
+  history = (history || []).map((h) => ({ ...h, matchday: h.matchday || mdOf[h.matchId] || null, homeCrest: h.homeCrest || (crOf[h.matchId] || {}).homeCrest || "", awayCrest: h.awayCrest || (crOf[h.matchId] || {}).awayCrest || "" }))
     .sort((a, b) => (b.matchday || 0) - (a.matchday || 0) || new Date(b.utcDate || 0) - new Date(a.utcDate || 0));
   return { user: user ? { name: user.name } : null, matches, history, jornada, currentJornada, minJornada, maxJornada };
 }
