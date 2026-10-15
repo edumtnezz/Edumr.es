@@ -4039,7 +4039,7 @@
       sec.appendChild(el("div", "estado-title", "⚠️ Suplentes que no te sirven de cambio"));
       useless.forEach((p) => {
         const mp = p.pos2 ? " (multiposición " + p.pos + "/" + p.pos2 + ")" : "";
-        sec.appendChild(el("p", "muted small", "• " + (p.last || p.nombre) + mp + " juega " + whenShort(p.fecha) + ", antes que los titulares a los que podría sustituir. Si lo dejas en el banquillo, cuando empiece su partido ya no podrás meterlo. Si quieres que puntúe, ponlo de titular (y revisa la alineación oficial ~1 h antes)."));
+        sec.appendChild(el("p", "muted small", "• " + (p.last || p.nombre) + mp + " juega " + whenShort(p.fecha) + (p.prob != null ? " (" + p.prob + "% de jugar)" : "") + ", antes que los titulares a los que podría sustituir. Si lo dejas en el banquillo, cuando empiece su partido ya no podrás meterlo. Si es de los que casi seguro juegan, ponlo de titular (si a última hora no juega, lo cambias por uno que juegue más tarde). Si dudas de que juegue, el riesgo es el contrario: un titular que no juega y no tiene suplente que juegue después se queda en 0."));
       });
       out.appendChild(sec);
     }
