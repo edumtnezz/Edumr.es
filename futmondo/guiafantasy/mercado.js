@@ -3795,7 +3795,6 @@
         if (capRisky) body.appendChild(el("div", "an-cap-warn", "⚠️ ninguno de tus CEN/DEL tiene la titularidad asegurada esta jornada — este es el que más opciones tiene (" + (top.prob != null ? top.prob + "%" : "sin dato") + "), pero si al final no juega, el capitán no dobla nada"));
         else if (top.prob != null && top.prob < 95) body.appendChild(el("div", "an-cap-info", "✅ titularidad prácticamente asegurada (" + top.prob + "%)"));
         row.appendChild(body);
-        row.appendChild(el("div", "an-cap-score", capScoreOf(top) + "/100"));
         cap.appendChild(row);
         // Tú eliges: las 4 mejores opciones (recomendada + 3 alternativas). Tu elección se guarda en el histórico.
         const opts = capList.slice(0, 4);
@@ -3809,7 +3808,7 @@
             const ph = el("div", "an-cap-opt-ph"); ph.appendChild(photoImg(photoOf(p))); c.appendChild(ph);
             const tx = el("div", "an-cap-opt-tx");
             tx.appendChild(el("div", "an-cap-opt-n", p.last || p.nombre || ""));
-            tx.appendChild(el("div", "an-cap-opt-s", (i === 0 ? "⭐ Recomendado · " : "") + capScoreOf(p) + "/100"));
+            tx.appendChild(el("div", "an-cap-opt-s", (i === 0 ? "⭐ Recomendado" : (p.prob != null ? p.prob + "% de jugar" : ""))));
             c.appendChild(tx);
             c.addEventListener("click", async () => {
               if (!d.capJornada) { const m = $("anMsg"); if (m) m.textContent = "Vuelve a analizar para poder guardar tu capitán."; return; }
@@ -3849,7 +3848,6 @@
       }
     }
     if (d.formacion) out.appendChild(el("div", "an-form", "Formación detectada: " + d.formacion));
-    if (d.leido && d.leido.length && !anStale) out.appendChild(el("div", "an-leido", "🔎 La IA leyó: " + d.leido.join(", ")));
     if (anStale) {
       const bar = el("div", "an-tools");
       bar.appendChild(el("div", "an-stale", "✏️ Has cambiado jugadores. Vuelve a analizar:"));
@@ -3924,6 +3922,15 @@
       out.appendChild(bs);
       const myProj = projBox(tits, "📈 Puntuación probable de tu once");
       out.appendChild(myProj.box);
+    // Análisis guardados antes traían un "ONCE IDEAL" escrito por la IA: se quita (ahora va arriba con reglas fijas).
+    let aiTxt = String(d.analisis || "");
+    if (/\*\*ONCE IDEAL\*\*/i.test(aiTxt)) aiTxt = /\*\*(?:MULTIPOSICI|CLAVES)/i.test(aiTxt) ? aiTxt.replace(/\*\*ONCE IDEAL\*\*[\s\S]*?(?=\*\*(?:MULTIPOSICI|CLAVES))/i, "") : "";
+    if (aiTxt.trim()) {
+      const sec = el("div", "estado-sec an-ai-top");
+      sec.appendChild(el("div", "estado-title", "↔️ Multiposición y claves de tu once"));
+      sec.appendChild(renderAiText(aiTxt, [].concat(tits, sups)));
+      out.appendChild(sec);
+    }
       // Once ideal con reglas fijas (no lo decide la IA)
       const ideal = pickIdealXI(tits.concat(sups));
       if (ideal) {
@@ -3953,18 +3960,22 @@
             const tx = el("div", "an-sw-tx");
             tx.appendChild(el("b", null, p.last || p.nombre));
             const fo0 = formOf(p);
-            let why = (fo0.season ? "media de la temporada " : "media ") + f1e(fo0.base) + (p.prob != null ? " × " + p.prob + "% de jugar" : "");
+            const mediaTxt = (fo0.season ? "Media de la temporada: " : "Media de los últimos 5: ") + f1e(fo0.base) + " pts";
+            tx.appendChild(el("small", null, mediaTxt + (p.prob != null ? " · " + p.prob + "% de jugar" : "")));
+            tx.appendChild(el("small", null, "= " + f1e(expOf(p)) + " puntos esperados"));
             if (dir === "out") {
               const same = ideal.slots.filter((x) => x.pos === p.pos);
               const mn = same.length ? Math.min(...same.map((x) => expOf(x.p))) : null;
-              const nm = { POR: "portero", DEF: "defensas", CEN: "centrocampistas", DEL: "delanteros" }[p.pos] || p.pos;
-              if (mn != null) why += " · en " + nm + " entran " + same.length + " con " + f1e(mn) + " o más";
-              if (mn != null && mn - expOf(p) < 1) {
-                const hechos = [p.casa === true ? "juega en casa" : p.casa === false ? "juega fuera" : "", p.rival ? "rival " + p.rival : "", p.penal ? "penaltis: " + p.penal : ""].filter(Boolean);
-                why += " · ⚖️ casi empate (solo " + f1e(mn - expOf(p)) + " pts de diferencia)" + (hechos.length ? ": " + hechos.join(" · ") : "") + ". Puedes dejarlo tú si te convence más.";
+              const nm = { POR: "portero", DEF: "defensa", CEN: "centrocampista", DEL: "delantero" }[p.pos] || p.pos;
+              if (mn != null) {
+                const ns = same.length;
+                tx.appendChild(el("small", "an-sw-why", "Sale porque en el once ideal caben " + ns + " " + nm + (ns > 1 ? "s" : "") + " y " + (ns > 1 ? "el peor de ellos tiene" : "el que entra tiene") + " " + f1e(mn) + " esperados; él tiene " + f1e(expOf(p)) + "."));
+                if (mn - expOf(p) < 1) {
+                  const hechos = [p.casa === true ? "juega en casa" : p.casa === false ? "juega fuera" : "", p.rival ? "rival " + p.rival : "", p.penal ? "lanza penaltis (" + p.penal + ")" : ""].filter(Boolean);
+                  tx.appendChild(el("small", "an-sw-near", "⚖️ Casi empate (solo " + f1e(mn - expOf(p)) + " de diferencia)" + (hechos.length ? " · " + hechos.join(" · ") : "") + ". Si te convence más, déjalo tú."));
+                }
               }
             }
-            tx.appendChild(el("small", null, why));
             r.appendChild(tx);
             const ex = el("div", "an-sw-ex");
             const nb = el("div", "an-sw-n"); nb.appendChild(document.createTextNode(f1e(expOf(p)))); nb.appendChild(el("span", null, " pts"));
@@ -4074,14 +4085,6 @@
         grid.appendChild(card);
       });
       sec.appendChild(grid);
-      out.appendChild(sec);
-    }
-    // Análisis guardados antes traían un "ONCE IDEAL" escrito por la IA: se quita (ahora va arriba con reglas fijas).
-    let aiTxt = String(d.analisis || "");
-    if (/\*\*ONCE IDEAL\*\*/i.test(aiTxt)) aiTxt = /\*\*(?:MULTIPOSICI|CLAVES)/i.test(aiTxt) ? aiTxt.replace(/\*\*ONCE IDEAL\*\*[\s\S]*?(?=\*\*(?:MULTIPOSICI|CLAVES))/i, "") : "";
-    if (aiTxt.trim()) {
-      const sec = el("div", "estado-sec");
-      sec.appendChild(renderAiText(aiTxt, [].concat(tits, sups)));
       out.appendChild(sec);
     }
     clearInterval(anRefT); anRefT = setInterval(anRefresh, 300000);

@@ -1405,3 +1405,13 @@ html { overflow-anchor: none; }
 .an-ss-r.avg{font-weight:800;border-top:2px solid rgba(127,127,127,.3)}
 .an-ss-r .pt{font-weight:800;color:#16a34a}.an-ss-r .nd{opacity:.45;font-size:.62rem}
 .an-ss-r{font-size:.7rem}
+
+/* Multiposición y claves: arriba y más visible */
+.an-ai-top .an-sec { border-color: rgba(96,165,250,.55); background: linear-gradient(135deg, rgba(96,165,250,.14), var(--card-solid)); }
+.an-ai-top .an-mp-row { padding: 11px 12px; }
+.an-ai-top .an-mp-photo { width: 44px; height: 44px; }
+.an-ai-top .an-mp-name { font-size: .95rem; }
+.an-ai-top .an-mp-reason { font-size: .84rem; color: var(--text); opacity: .85; }
+.an-sw-tx small { display: block; }
+.an-sw-tx small.an-sw-why { margin-top: 3px; font-size: .7rem; opacity: .85; }
+.an-sw-tx small.an-sw-near { margin-top: 3px; font-size: .7rem; color: var(--accent); opacity: 1; }
