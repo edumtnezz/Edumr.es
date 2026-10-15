@@ -268,6 +268,43 @@ function renderHistory() {
   });
 }
 
+function renderParts() {
+  const box = $("porraParts");
+  const hint = $("porraPartsHint");
+  if (!box) return;
+  box.innerHTML = "";
+  const names = [];
+  const seen = {};
+  state.matches.forEach((m) => {
+    (m.entries || []).forEach((e) => {
+      if (!seen[e.name]) { seen[e.name] = true; names.push(e.name); }
+    });
+  });
+  const teams = state.matches.map((m) => m.home + " - " + m.away).join("   ·   ");
+  if (hint) hint.textContent = (teams ? "La porra de esta jornada es sobre: " + teams + ". " : "") + (names.length ? names.length + " participante" + (names.length === 1 ? "" : "s") + "." : "");
+  if (!names.length) {
+    box.appendChild(el("p", "empty", "Todavía no hay participantes."));
+    return;
+  }
+  names.forEach((n) => {
+    const card = el("div", "porra-card");
+    card.appendChild(el("div", "porra-team-label", n));
+    const list = el("div", "partido-list");
+    state.matches.forEach((m) => {
+      const e = (m.entries || []).find((x) => x.name === n);
+      const row = el("div", "partido-entry");
+      row.appendChild(el("span", "pe-name", m.label + " · " + m.home + " - " + m.away));
+      row.appendChild(el("span", "pe-score", e ? e.home + " - " + e.away : "—"));
+      const tag = el("span", "pe-tag");
+      if (e && e.prize != null && e.prize > 0) tag.textContent = money(e.prize) + " €";
+      row.appendChild(tag);
+      list.appendChild(row);
+    });
+    card.appendChild(list);
+    box.appendChild(card);
+  });
+}
+
 function switchTab(name, scroll) {
   if (scroll === undefined) scroll = true;
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
