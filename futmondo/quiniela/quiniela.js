@@ -297,30 +297,29 @@ function renderMatches() {
     row.className = "match-row";
     row.dataset.match = m.id;
 
+    row.classList.add("mr2");
+    [[m.homeCrest, "pc-bg pc-bg-l"], [m.awayCrest, "pc-bg pc-bg-r"]].forEach((x) => {
+      if (!x[0]) return;
+      const im = document.createElement("img");
+      im.className = x[1]; im.src = x[0]; im.alt = ""; im.setAttribute("aria-hidden", "true");
+      im.addEventListener("error", () => im.remove());
+      row.appendChild(im);
+    });
     const info = document.createElement("div");
-    info.className = "match-info";
-
-    const teams = document.createElement("div");
-    teams.className = "match-teams";
-    teams.appendChild(
-      teamEl("home", m, { name: m.home, crest: m.homeCrest, tla: m.homeTla })
-    );
-    teams.appendChild(vsEl());
-    teams.appendChild(
-      teamEl("away", m, { name: m.away, crest: m.awayCrest, tla: m.awayTla })
-    );
-
-    const meta = document.createElement("div");
-    meta.className = "match-meta";
+    info.className = "mr-body";
     const f = fmtDate(m.utcDate);
-    let metaHtml = `<span>${f.short}</span><span>${statusLabel(m.status)}</span>`;
-    if (m.score && m.score.home !== null && m.score.home !== undefined) {
-      metaHtml += `<span class="score-chip">${m.score.home} - ${m.score.away}</span>`;
-    }
-    meta.innerHTML = metaHtml;
-
+    const when = document.createElement("div");
+    when.className = "pc-when";
+    when.textContent = `${f.short} · ${statusLabel(m.status)}`;
+    info.appendChild(when);
+    const teams = document.createElement("div");
+    teams.className = "pc-teams";
+    const tl = document.createElement("span"); tl.className = "pc-t"; tl.textContent = m.home;
+    const tv = document.createElement("span"); tv.className = "pc-vs";
+    tv.textContent = m.score && m.score.home !== null && m.score.home !== undefined ? `${m.score.home} - ${m.score.away}` : "VS";
+    const tr = document.createElement("span"); tr.className = "pc-t"; tr.textContent = m.away;
+    teams.appendChild(tl); teams.appendChild(tv); teams.appendChild(tr);
     info.appendChild(teams);
-    info.appendChild(meta);
 
     const btns = document.createElement("div");
     btns.className = "pick-buttons";
@@ -343,8 +342,8 @@ function renderMatches() {
       btns.appendChild(b);
     });
 
+    info.appendChild(btns);
     row.appendChild(info);
-    row.appendChild(btns);
     list.appendChild(row);
   });
 
@@ -601,7 +600,7 @@ function renderParticipants() {
     if (played) {
       const badge = document.createElement("span");
       badge.className = "participant-badge";
-      badge.textContent = `${hits} pts`;
+      badge.textContent = `${money(hits * ((state && state.prizePerHit) || 150000))} €`;
       head.appendChild(badge);
     }
     const chev = document.createElement("span");
