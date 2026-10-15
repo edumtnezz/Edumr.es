@@ -4000,18 +4000,26 @@
     // acierte en el texto libre.
     function buildSwapPlan() {
       const pairs = [];
-      ["POR", "DEF", "CEN", "DEL"].forEach((pos) => {
-        const t = tits.filter((p) => p.pos === pos).slice().sort((a, b) => (a.fecha ? new Date(a.fecha) : Infinity) - (b.fecha ? new Date(b.fecha) : Infinity));
-        const s = sups.filter((p) => p.pos === pos).slice().sort((a, b) => (a.fecha ? new Date(a.fecha) : Infinity) - (b.fecha ? new Date(b.fecha) : Infinity));
-        const used = new Set();
-        t.forEach((tit) => {
-          const titTime = tit.fecha ? new Date(tit.fecha).getTime() : null;
-          const cand = s.find((sub) => !used.has(sub) && sub.fecha && (titTime == null || new Date(sub.fecha).getTime() > titTime));
-          if (cand) { used.add(cand); pairs.push({ pos, tit, sub: cand }); }
-        });
+      const T = (p) => (p.fecha ? new Date(p.fecha).getTime() : null);
+      const covers = (sub, tit) => sub.pos === tit.pos || (sub.pos2 && sub.pos2 === tit.pos);
+      const used = new Set();
+      tits.slice().sort((a, b) => (T(a) == null ? Infinity : T(a)) - (T(b) == null ? Infinity : T(b))).forEach((tit) => {
+        const tt = T(tit);
+        const cands = sups.filter((sub) => !used.has(sub) && T(sub) != null && covers(sub, tit) && (tt == null || T(sub) > tt));
+        cands.sort((a, b) => (a.pos === tit.pos ? 0 : 1) - (b.pos === tit.pos ? 0 : 1) || T(a) - T(b));
+        const cand = cands[0];
+        if (cand) { used.add(cand); pairs.push({ pos: tit.pos, tit, sub: cand }); }
       });
       return pairs;
     }
+    // Suplentes que juegan ANTES que todos los titulares a los que podrian
+    // sustituir: desde que empieza su partido ya no se pueden meter.
+    const useless = sups.filter((sub) => {
+      if (!sub.fecha) return false;
+      const st = new Date(sub.fecha).getTime();
+      const tg = tits.filter((t) => (sub.pos === t.pos || (sub.pos2 && sub.pos2 === t.pos)) && t.fecha);
+      return tg.length > 0 && tg.every((t) => new Date(t.fecha).getTime() >= st);
+    });
     const swapPairs = buildSwapPlan();
     // La alineación OFICIAL de cada equipo no se confirma hasta poco antes
     // del partido (normalmente ~1h antes, aunque puede variar), así que la
@@ -4024,10 +4032,19 @@
       if (!fecha) return "";
       try { return new Date(new Date(fecha).getTime() - 60 * 60000).toLocaleString("es-ES", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }); } catch (e) { return ""; }
     };
+    if (useless.length) {
+      const sec = el("div", "estado-sec");
+      sec.appendChild(el("div", "estado-title", "⚠️ Suplentes que no te sirven de cambio"));
+      useless.forEach((p) => {
+        const mp = p.pos2 ? " (multiposición " + p.pos + "/" + p.pos2 + ")" : "";
+        sec.appendChild(el("p", "muted small", "• " + (p.last || p.nombre) + mp + " juega " + whenShort(p.fecha) + ", antes que los titulares a los que podría sustituir. Si lo dejas en el banquillo, cuando empiece su partido ya no podrás meterlo. Si quieres que puntúe, ponlo de titular (y revisa la alineación oficial ~1 h antes)."));
+      });
+      out.appendChild(sec);
+    }
     if (swapPairs.length) {
       const sec = el("div", "estado-sec");
       sec.appendChild(el("div", "estado-title", "🔁 Plan de cambios por horario"));
-      sec.appendChild(el("p", "muted small", "Cambia las veces que quieras mientras nadie de tu equipo haya puntuado todavía — después solo te queda UN cambio de emergencia para el resto de la jornada. Alinea antes a los que juegan primero y guarda de \"segunda bala\" a quien juegue más tarde. Revisa la alineación OFICIAL justo antes de cada partido (hora ⏱️ estimada en cada tarjeta)."));
+      sec.appendChild(el("p", "muted small", "Reglas de Futmondo: 1) Un suplente puede entrar por un titular de su posición (o de su otra posición si es multiposición) las veces que quieras, siempre que NINGUNO de los dos haya jugado ya. Por eso el suplente tiene que jugar DESPUÉS que el titular al que cubre. 2) Cuando ya ha puntuado alguien, solo queda UN cambio: un jugador que ya puntuó por uno del banquillo que aún no. Revisa la alineación OFICIAL justo antes de cada partido (⏱️ hora estimada en cada tarjeta) para ver si el titular juega o no."));
       const grid = el("div", "swap-grid");
       const posIcon = { POR: "🧤", DEF: "🛡️", CEN: "🎯", DEL: "⚽" };
       swapPairs.forEach(({ pos, tit, sub }) => {
