@@ -350,11 +350,13 @@ async function getJornadaRaw(env, matchday, hold) {
 async function getFormMap(env) {
   const cacheKey = "form:PD";
   const cached = await env.PORRA.get(cacheKey, "json");
-  if (cached && cached.fetchedAt && Date.now() - cached.fetchedAt < FORM_TTL_MS) {
-    return cached.data;
-  }
-  let data = {};
+  const hasGood = cached && cached.data && Object.keys(cached.data).length > 0;
+  // Datos buenos recientes: se sirven. Si el último intento falló hace poco (football-data
+  // limita las peticiones), se sirve lo último bueno y no se reintenta hasta pasados 5 minutos.
+  if (hasGood && cached.fetchedAt && Date.now() - cached.fetchedAt < FORM_TTL_MS) return cached.data;
+  if (cached && cached.failedAt && Date.now() - cached.failedAt < 300000) return hasGood ? cached.data : {};
   const token = env.FOOTBALL_API_KEY;
+  let data = null;
   if (token) {
     try {
       const res = await fetch(
@@ -384,19 +386,26 @@ async function getFormMap(env) {
             });
           }
         }
+        const out = {};
         for (const [id, arr] of Object.entries(acc)) {
-          arr.sort((a, b) => b.d - a.d);
-          data[id] = arr.slice(0, 5).map((x) => ({ r: x.r, home: x.home }));
+          arr.sort((x, y) => y.d - x.d);
+          out[id] = arr.slice(0, 5).map((x) => ({ r: x.r, home: x.home }));
         }
+        if (Object.keys(out).length) data = out;
       }
     } catch (e) {
-      data = {};
+      data = null;
     }
   }
-  await env.PORRA.put(cacheKey, JSON.stringify({ fetchedAt: Date.now(), data }), {
-    expirationTtl: 3600,
-  });
-  return data;
+  if (data) {
+    await env.PORRA.put(cacheKey, JSON.stringify({ fetchedAt: Date.now(), data }), { expirationTtl: 7 * 86400 });
+    return data;
+  }
+  // Fallo: NO se guarda un "vacío" como si fuera bueno; se conserva lo último bueno y se anota el fallo.
+  try {
+    await env.PORRA.put(cacheKey, JSON.stringify({ fetchedAt: cached && cached.fetchedAt, data: hasGood ? cached.data : null, failedAt: Date.now() }), { expirationTtl: 7 * 86400 });
+  } catch (e) {}
+  return hasGood ? cached.data : {};
 }
 
 function lockTimeOf(matches) {
