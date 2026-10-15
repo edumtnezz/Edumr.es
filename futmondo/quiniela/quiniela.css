@@ -1580,3 +1580,7 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 
 .hist-chips { margin-bottom: 4px; }
 .jc-chip.hist-old { display: block; margin: 10px auto 0; }
+
+.total-box { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 14px 12px; margin: 4px 0 14px; border-radius: 18px; border: 1px solid rgba(245,158,11,.5); background: rgba(245,158,11,.1); text-align: center; }
+.total-box small { font-size: .74rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.total-box b { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; font-weight: 900; color: #f59e0b; }

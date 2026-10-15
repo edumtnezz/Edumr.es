@@ -310,6 +310,11 @@ function renderParts() {
   const susp = state.matches.filter((m) => /POSTPONED|SUSPENDED|CANCELLED/.test(m.status || ""));
   if (hint) hint.textContent = rank.length ? rank.length + " participante" + (rank.length === 1 ? "" : "s") + ", ordenados por lo que han ganado en total." + (susp.length ? " Los partidos suspendidos o aplazados no cuentan." : "") : "";
   if (!rank.length) { box.appendChild(el("p", "empty", "Todavía no hay participantes.")); return; }
+  const grand = rank.reduce((a, r) => a + r.prize, 0);
+  const tb = el("div", "total-box");
+  tb.appendChild(el("small", null, "Total repartido (suma de lo ganado por todos)"));
+  tb.appendChild(el("b", null, money(grand) + " €"));
+  box.appendChild(tb);
   const medal = ["🥇", "🥈", "🥉"];
   rank.forEach((r, i) => {
     const card = el("div", "porra-card hx");
