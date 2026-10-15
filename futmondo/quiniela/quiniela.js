@@ -547,6 +547,7 @@ function renderParticipants() {
     return h;
   };
   const list = (state.participants || []).slice().sort((a, b) => hitsOf(b) - hitsOf(a) || String(a.name).localeCompare(String(b.name), "es"));
+  const jornadaDone = state.matches.length > 0 && state.matches.every((m) => m.result || /POSTPONED|SUSPENDED|CANCELLED/.test(m.status || ""));
   const nSusp = state.matches.filter((m) => /POSTPONED|SUSPENDED|CANCELLED/.test(m.status || "")).length;
   $("participantsHint").textContent = `${list.length} participante${list.length === 1 ? "" : "s"}, ordenados por aciertos.` +
     (nSusp ? ` ${nSusp === 1 ? "Un partido está suspendido o aplazado y no cuenta." : nSusp + " partidos están suspendidos o aplazados y no cuentan."}` : "") +
@@ -598,7 +599,7 @@ function renderParticipants() {
     if (played) {
       const badge = document.createElement("span");
       badge.className = "participant-badge";
-      badge.textContent = `${money(hits * ((state && state.prizePerHit) || 150000))} €`;
+      badge.textContent = jornadaDone ? `${money(hits * ((state && state.prizePerHit) || 150000))} €` : `${hits} ✓`;
       head.appendChild(badge);
     }
     const chev = document.createElement("span");

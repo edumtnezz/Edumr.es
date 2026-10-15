@@ -291,33 +291,34 @@ function renderParts() {
   const hint = $("porraPartsHint");
   if (!box) return;
   box.innerHTML = "";
-  // Total ganado por participante: partidos ya archivados + los de esta jornada.
-  // Un partido sin resultado (aplazado/suspendido o sin jugar) no suma nada.
+  const isSusp = (m) => /POSTPONED|SUSPENDED|CANCELLED/.test(m.status || "");
+  // El premio solo se enseña cuando TODOS los partidos de la jornada han terminado
+  // (o están suspendidos/aplazados, que no cuentan). Antes, solo los pronósticos.
+  const finished = state.matches.length > 0 && state.matches.every((m) => m.result || isSusp(m));
   const tot = {};
-  const add = (e, played) => {
-    const t = tot[e.name] || (tot[e.name] = { name: e.name, prize: 0, ex: 0, sg: 0, played: 0 });
-    if (played) { t.played++; if (e.prize > 0) { t.prize += e.prize; if (e.tipo === "exacto") t.ex++; else t.sg++; } }
-  };
-  (state.history || []).forEach((h) => (h.entries || []).forEach((e) => add(e, !!h.result)));
-  const mine = {};
-  state.matches.forEach((m) => (m.entries || []).forEach((e) => { add(e, !!m.result); (mine[e.name] = mine[e.name] || {})[m.matchId] = e; }));
-  const rank = Object.values(tot).filter((t) => mine[t.name]).sort((x, y) => y.prize - x.prize || y.ex - x.ex || x.name.localeCompare(y.name, "es"));
-  const susp = state.matches.filter((m) => /POSTPONED|SUSPENDED|CANCELLED/.test(m.status || ""));
-  if (hint) hint.textContent = rank.length ? rank.length + " participante" + (rank.length === 1 ? "" : "s") + " con porra en esta jornada, ordenados por lo que han ganado." + (susp.length ? " Los partidos suspendidos o aplazados no cuentan." : "") : "";
+  state.matches.forEach((m) => (m.entries || []).forEach((e) => {
+    const t = tot[e.name] || (tot[e.name] = { name: e.name, prize: 0, ex: 0, byMatch: {} });
+    t.byMatch[m.matchId] = e;
+    if (!isSusp(m) && m.result && e.prize > 0) { t.prize += e.prize; if (e.tipo === "exacto") t.ex++; }
+  }));
+  const rank = Object.values(tot).sort((x, y) => (finished ? y.prize - x.prize || y.ex - x.ex : 0) || x.name.localeCompare(y.name, "es"));
+  const susp = state.matches.filter(isSusp);
+  if (hint) hint.textContent = rank.length
+    ? rank.length + " participante" + (rank.length === 1 ? "" : "s") + " con porra en esta jornada. " + (finished ? "Ordenados por lo que han ganado." : "Los premios se verán cuando termine la jornada.") + (susp.length ? " Los partidos suspendidos o aplazados no cuentan." : "")
+    : "";
   if (!rank.length) { box.appendChild(el("p", "empty", "Todavía no hay participantes.")); return; }
   const medal = ["🥇", "🥈", "🥉"];
   rank.forEach((r, i) => {
     const card = el("div", "porra-card hx");
-    card.appendChild(el("div", "hx-name", (medal[i] || (i + 1) + "º") + " " + r.name));
-    card.appendChild(el("div", "hx-pred", money(r.prize) + " €"));
+    card.appendChild(el("div", "hx-name", (finished ? (medal[i] || (i + 1) + "º") + " " : "") + r.name));
+    if (finished) card.appendChild(el("div", "hx-pred", money(r.prize) + " €"));
     state.matches.forEach((m) => {
-      const e = (mine[r.name] || {})[m.matchId];
+      const e = r.byMatch[m.matchId];
       const row = el("div", "hx-entry");
-      const suspended = /POSTPONED|SUSPENDED|CANCELLED/.test(m.status || "");
       row.appendChild(el("div", "hx-why", m.label + " · " + shortName(m.home) + " - " + shortName(m.away)));
       row.appendChild(el("div", "hx-pred", e ? e.home + " - " + e.away : "—"));
-      if (suspended) row.appendChild(el("div", "hx-why", "⏸ Partido suspendido o aplazado: no cuenta"));
-      else if (e && e.prize != null && e.prize > 0) { row.classList.add(e.tipo === "exacto" ? "exacto" : "signo"); row.appendChild(el("div", "hx-why", "Ganó " + money(e.prize) + " €")); }
+      if (isSusp(m)) row.appendChild(el("div", "hx-why", "⏸ Partido suspendido o aplazado: no cuenta"));
+      else if (finished && e && e.prize != null && e.prize > 0) { row.classList.add(e.tipo === "exacto" ? "exacto" : "signo"); row.appendChild(el("div", "hx-why", "Ganó " + money(e.prize) + " €")); }
       card.appendChild(row);
     });
     box.appendChild(card);
