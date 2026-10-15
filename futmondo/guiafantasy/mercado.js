@@ -424,9 +424,13 @@
       }
       const playedPct = j0 ? Math.round(((Number(p.matches) || 0) / j0) * 100) : 0;
       body.appendChild(el("div", "claus-played", "Jugados: " + playedPct + "% de los partidos"));
-      const sl = statusLabel(p.status);
-      const sc = p.status === "redcard" ? "red" : String(p.status || "").indexOf("injured") === 0 ? "inj" : p.status === "doubt" ? "doubt" : "ok";
-      body.appendChild(el("div", "claus-status " + sc, sl));
+      // Estado y % de jugar: se toman del mercado en vivo (se refresca solo) y, si no está, de lo guardado.
+      const live = (all || []).find((x) => String(x.id) === String(p.id)) || {};
+      const stt = live.status || p.status;
+      const prb = live.prob != null ? live.prob : p.prob;
+      const sl = statusLabel(stt);
+      const sc = stt === "redcard" ? "red" : String(stt || "").indexOf("injured") === 0 ? "inj" : stt === "doubt" ? "doubt" : "ok";
+      body.appendChild(el("div", "claus-status " + sc, sl + (sc !== "ok" && prb != null ? " · " + prb + "% de jugar" : "")));
       const blocked = p.unlock && new Date(p.unlock).getTime() > Date.now();
       if (blocked) body.appendChild(el("div", "claus-lock", "🔒 se libera el " + fmtDiaLargo(p.unlock)));
       card.appendChild(body);
