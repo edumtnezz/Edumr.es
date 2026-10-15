@@ -499,7 +499,7 @@ async function buildState(env, matchday, user) {
 
   const myEntry = user ? preds[user.key] : null;
 
-  const outMatches = matches.map((m) => {
+  const outMatches = matches.slice().sort((x, y) => new Date(x.utcDate) - new Date(y.utcDate)).map((m) => {
     const hid = m.homeTeam && m.homeTeam.id;
     const aid = m.awayTeam && m.awayTeam.id;
     return {
@@ -3437,6 +3437,7 @@ async function getPorraState(env, user, jornadaReq) {
       my: my ? { home: my.home, away: my.away } : null,
     });
   }
+  matches.sort((x, y) => new Date(x.utcDate) - new Date(y.utcDate));
   let history = [];
   try { history = await archivePorra(env, items.past); } catch (e) { history = (await env.PORRA.get(PORRA_HIST_KEY, "json")) || []; }
   history = (Array.isArray(history) ? history : []).slice().sort((a, b) => new Date(b.utcDate || 0) - new Date(a.utcDate || 0));

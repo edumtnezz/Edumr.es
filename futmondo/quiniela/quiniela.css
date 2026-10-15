@@ -1577,3 +1577,6 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .jc-arrow:disabled { opacity: .25; cursor: default; }
 .jc-arrow:active:not(:disabled) { transform: scale(.94); }
 .jc-chip { min-width: 48px; }
+
+.hist-chips { margin-bottom: 4px; }
+.jc-chip.hist-old { display: block; margin: 10px auto 0; }

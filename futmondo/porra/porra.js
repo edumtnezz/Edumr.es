@@ -11,6 +11,7 @@ document.documentElement.classList.add("auth-loading");
 
 let state = { user: null, matches: [] };
 let viewJornada = null;
+let histJ = null;
 
 function $(id) { return document.getElementById(id); }
 function escapeHtml(s) {
@@ -169,8 +170,8 @@ function updateCountdown() {
   info.textContent = "Se cierra cuando empiece el primer partido";
 }
 
-function jornadaChips(cur, lo, hi, pick) {
-  const box = $("jChips");
+function jornadaChips(cur, lo, hi, pick, boxId) {
+  const box = $(boxId || "jChips");
   if (!box) return;
   box.innerHTML = "";
   if (!cur || !lo || !hi) return;
@@ -234,15 +235,29 @@ function renderHistory() {
     box.appendChild(el("p", "empty", "Todavía no hay jornadas pasadas."));
     return;
   }
-  let lastMd = "__";
+  const mds = list.map((h) => h.matchday).filter(Boolean);
+  const hasOld = list.some((h) => !h.matchday);
+  if (histJ === null || (histJ !== 0 && mds.length && (histJ < Math.min.apply(null, mds) || histJ > Math.max.apply(null, mds)))) histJ = mds.length ? Math.max.apply(null, mds) : 0;
+  if (mds.length) {
+    const sel = el("div", "jc-chips hist-chips"); sel.id = "hChips";
+    box.appendChild(sel);
+    jornadaChips(histJ || Math.max.apply(null, mds), Math.min.apply(null, mds), Math.max.apply(null, mds), (n) => { histJ = n; renderHistory(); }, "hChips");
+    if (hasOld) {
+      const old = el("button", "jc-chip hist-old" + (histJ === 0 ? " on" : ""), "Anteriores");
+      old.type = "button";
+      old.addEventListener("click", () => { histJ = histJ === 0 ? Math.max.apply(null, mds) : 0; renderHistory(); });
+      box.appendChild(old);
+    }
+  }
+  const shown = list
+    .filter((h) => (histJ === 0 ? !h.matchday : h.matchday === histJ))
+    .sort((x, y) => new Date(x.utcDate || 0) - new Date(y.utcDate || 0));
+  box.appendChild(el("h3", "hist-jornada", histJ ? "Jornada " + histJ : "Jornadas anteriores"));
+  if (!shown.length) box.appendChild(el("p", "empty", "No hay partidos guardados de esta jornada."));
+  let lastMd = histJ;
   const sgn = (x, y) => (x > y ? "H" : x < y ? "A" : "D");
   const sgnTxt = (c, h) => (c === "D" ? "empate" : "victoria del " + shortName(c === "H" ? h.home : h.away));
-  list.forEach((h) => {
-    const md = h.matchday || null;
-    if (md !== lastMd) {
-      lastMd = md;
-      box.appendChild(el("h3", "hist-jornada", md ? "Jornada " + md : "Otras jornadas"));
-    }
+  shown.forEach((h) => {
     const card = el("div", "porra-card hx");
     const day = h.utcDate ? new Date(h.utcDate).toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" }) : "";
     if (day) card.appendChild(el("div", "hx-date", day));
