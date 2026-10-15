@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="../theme.js?v=65"></script>
-  <link rel="stylesheet" href="../quiniela/quiniela.css?v=130">
+  <link rel="stylesheet" href="../quiniela/quiniela.css?v=131">
   <link rel="stylesheet" href="../edumr.css?v=58">
 </head>
 <body class="page-simple cx-page">
@@ -47,17 +47,14 @@
   <main class="quiniela-main">
     <section class="tab-panel" id="tab-porra">
     <section class="jornada-card" id="countdownPanel">
-      <button class="jbtn" id="jPrev" title="Jornada anterior">◀</button>
-      <div class="jc-body">
-        <div class="jc-line">
-          <span class="jc-jornada">Jornada <b id="jView">–</b></span>
-          <span class="jc-timer" id="cdTimer">--:--:--</span>
-        </div>
-        <div class="jc-info" id="cdInfo">Cargando la jornada…</div>
-        <div class="jc-upc" id="jcUpcoming"></div>
-        <span class="jnote hidden" id="jNote">Estás viendo otra jornada</span>
+      <div class="jc-nav">
+        <button class="jbtn jb-prev" id="jPrev" title="Jornada anterior"><i>‹</i><span id="jPrevN">J–</span></button>
+        <div class="jc-jornada">Jornada <b id="jView">–</b></div>
+        <button class="jbtn jb-next" id="jNext" title="Jornada siguiente"><span id="jNextN">J–</span><i>›</i></button>
       </div>
-      <button class="jbtn" id="jNext" title="Jornada siguiente">▶</button>
+      <div class="jc-timer" id="cdTimer">--:--:--</div>
+      <div class="jc-info" id="cdInfo">Cargando la jornada…</div>
+      <span class="jnote hidden" id="jNote">Estás viendo otra jornada</span>
     </section>
       <section class="panel">
         <div id="porraAuth"></div>
@@ -103,6 +100,6 @@
 
   <footer class="quiniela-footer"></footer>
 
-  <script src="porra.js?v=119"></script>
+  <script src="porra.js?v=120"></script>
 </body>
 </html>

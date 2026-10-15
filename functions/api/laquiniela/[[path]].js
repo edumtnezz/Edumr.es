@@ -3385,7 +3385,7 @@ async function archivePorra(env, past) {
     const preds = (await env.PORRA.get(`porra:pred:${f.matchId}`, "json")) || {};
     const entries = porraBuildEntries(preds, f);
     if (!entries.length) continue;
-    hist.push({ matchId: f.matchId, home: f.home, away: f.away, utcDate: f.utcDate, competition: f.competition, result: f.result, entries });
+    hist.push({ matchId: f.matchId, matchday: f.matchday || null, home: f.home, away: f.away, utcDate: f.utcDate, competition: f.competition, result: f.result, entries });
     changed = true;
   }
   if (changed) {
@@ -3440,6 +3440,10 @@ async function getPorraState(env, user, jornadaReq) {
   let history = [];
   try { history = await archivePorra(env, items.past); } catch (e) { history = (await env.PORRA.get(PORRA_HIST_KEY, "json")) || []; }
   history = (Array.isArray(history) ? history : []).slice().sort((a, b) => new Date(b.utcDate || 0) - new Date(a.utcDate || 0));
+  const mdOf = {};
+  [].concat(lists.rm || [], lists.barca || []).forEach((f) => { if (f.matchId && f.matchday) mdOf[f.matchId] = f.matchday; });
+  history = (history || []).map((h) => ({ ...h, matchday: h.matchday || mdOf[h.matchId] || null }))
+    .sort((a, b) => (b.matchday || 0) - (a.matchday || 0) || new Date(b.utcDate || 0) - new Date(a.utcDate || 0));
   return { user: user ? { name: user.name } : null, matches, history, jornada, currentJornada, minJornada, maxJornada };
 }
 

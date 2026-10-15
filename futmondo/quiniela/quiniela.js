@@ -202,19 +202,6 @@ function vsEl() {
 
 /* ---------- Countdown ---------- */
 
-function upcomingHtml(list) {
-  const now = Date.now();
-  const up = list.filter((m) => new Date(m.utcDate).getTime() > now && !m.started).sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
-  const row = (lbl, m) => {
-    if (!m) return "";
-    const d = new Date(m.utcDate);
-    const day = d.toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" });
-    const t = d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
-    return `<div class="jc-row"><span class="jc-lbl">${lbl}</span><span class="jc-teams">${escapeHtml(m.home)} – ${escapeHtml(m.away)}</span><span class="jc-when">${day} · <b>${t}</b></span></div>`;
-  };
-  return row("Siguiente", up[0]) + row("Después", up[1]);
-}
-
 function updateCountdown() {
   if (!state) return;
   const box = $("countdownPanel");
@@ -225,7 +212,6 @@ function updateCountdown() {
     box.classList.add("closed");
     timer.textContent = "CERRADA";
     info.textContent = "Todos los partidos de esta jornada ya han empezado.";
-    const u0 = $("jcUpcoming"); if (u0) u0.innerHTML = "";
     return;
   }
 
@@ -251,7 +237,6 @@ function updateCountdown() {
   }
 
   info.textContent = "Se cierra cuando empiece el primer partido";
-  const u = $("jcUpcoming"); if (u) u.innerHTML = upcomingHtml(state.matches);
 }
 
 /* ---------- Render ---------- */
@@ -796,6 +781,9 @@ function renderJornadaBar() {
   if (prev) prev.disabled = state.matchday <= 1;
   if (next) next.disabled = currentJornada === null || state.matchday >= currentJornada;
   if (note) note.classList.toggle("hidden", !isPast);
+  const pn = $("jPrevN"), nn = $("jNextN");
+  if (pn) pn.textContent = state.matchday > 1 ? "J" + (state.matchday - 1) : "";
+  if (nn) nn.textContent = currentJornada !== null && state.matchday < currentJornada ? "J" + (state.matchday + 1) : "";
 }
 
 function updateCtas() {

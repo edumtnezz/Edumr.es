@@ -145,21 +145,13 @@ function renderMatch(panel, m) {
 function updateCountdown() {
   const box = $("countdownPanel");
   if (!box || !state.matches) return;
-  const timer = $("cdTimer"), info = $("cdInfo"), upc = $("jcUpcoming");
+  const timer = $("cdTimer"), info = $("cdInfo");
   const now = Date.now();
   const up = state.matches.filter((m) => !m.started && new Date(m.utcDate).getTime() > now).sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
-  const rowH = (lbl, m) => {
-    if (!m) return "";
-    const d = new Date(m.utcDate);
-    const day = d.toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" });
-    const t = d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
-    return '<div class="jc-row"><span class="jc-lbl">' + lbl + '</span><span class="jc-teams">' + escapeHtml(m.home) + ' – ' + escapeHtml(m.away) + '</span><span class="jc-when">' + day + ' · <b>' + t + '</b></span></div>';
-  };
   if (!up.length) {
     box.classList.add("closed");
     timer.textContent = state.matches.length ? "CERRADA" : "–";
     info.textContent = state.matches.length ? "Los partidos de esta jornada ya han empezado." : "Sin partidos de LaLiga en esta jornada.";
-    upc.innerHTML = "";
     return;
   }
   box.classList.remove("closed");
@@ -170,7 +162,6 @@ function updateCountdown() {
     timer.textContent = pad(Math.floor(sec / 3600)) + ":" + pad(Math.floor((sec % 3600) / 60)) + ":" + pad(sec % 60);
   }
   info.textContent = "Se cierra cuando empiece el primer partido";
-  upc.innerHTML = rowH("Siguiente", up[0]) + rowH("Después", up[1]);
 }
 
 function renderJornadaBar() {
@@ -180,6 +171,9 @@ function renderJornadaBar() {
   if (prev) prev.disabled = !state.jornada || state.jornada <= (state.minJornada || 1);
   if (next) next.disabled = !state.jornada || state.jornada >= (state.maxJornada || state.jornada);
   if (note) note.classList.toggle("hidden", !state.jornada || state.jornada === state.currentJornada);
+  const pn = $("jPrevN"), nn = $("jNextN");
+  if (pn) pn.textContent = prev && !prev.disabled ? "J" + (state.jornada - 1) : "";
+  if (nn) nn.textContent = next && !next.disabled ? "J" + (state.jornada + 1) : "";
   updateCountdown();
 }
 
@@ -216,7 +210,13 @@ function renderHistory() {
     box.appendChild(el("p", "empty", "Todavía no hay jornadas pasadas."));
     return;
   }
+  let lastMd = "__";
   list.forEach((h) => {
+    const md = h.matchday || null;
+    if (md !== lastMd) {
+      lastMd = md;
+      box.appendChild(el("h3", "hist-jornada", md ? "Jornada " + md : "Otras jornadas"));
+    }
     const card = el("div", "porra-card");
     const head = el("div", "porra-card-head");
     const r = h.result ? h.result.home + " - " + h.result.away : "";
