@@ -1385,3 +1385,21 @@ html { overflow-anchor: none; }
 .an-ti-m{display:flex;flex-direction:column;align-items:flex-end;flex:none;text-align:right;line-height:1.1}
 .an-ti-m b{font:800 1.35rem/1 'Space Grotesk',sans-serif;color:var(--ac)}
 .an-ti-m span{margin-top:3px;font-size:.62rem;font-weight:700;opacity:.7;max-width:96px}
+
+/* ===== Base de cálculo + temporada completa ===== */
+.an-base{margin:12px 0;padding:12px;border-radius:16px;border:1px solid var(--border);background:rgba(127,127,127,.06)}
+.an-base-k{font:800 .78rem 'Space Grotesk',sans-serif;margin-bottom:8px}
+.an-base-seg{display:flex;gap:6px;padding:4px;border-radius:14px;background:rgba(127,127,127,.14)}
+.an-base-b{flex:1;border:0;border-radius:11px;padding:10px 6px;background:transparent;color:inherit;font:600 .82rem inherit;cursor:pointer}
+.an-base-b.on{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff;font-weight:700;box-shadow:0 3px 10px rgba(34,197,94,.3)}
+.an-base-d{margin-top:8px;font-size:.72rem;line-height:1.4;opacity:.75}
+.an-ss-btn{display:block;width:100%;margin-top:8px;padding:10px;border-radius:12px;border:1.5px solid var(--border);background:transparent;color:inherit;font:700 .8rem inherit;cursor:pointer}
+.an-ss{margin-top:8px;padding:10px;border-radius:14px;background:rgba(127,127,127,.1);font-size:.8rem}
+.an-ss-sum{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
+.an-ss-sum span{font-size:.72rem;opacity:.75}
+.an-ss-r{display:grid;grid-template-columns:34px 1fr 40px 38px 46px 40px;gap:4px;align-items:center;padding:6px 2px;border-top:1px solid rgba(127,127,127,.18);font-size:.74rem;text-align:right}
+.an-ss-r span:first-child,.an-ss-r .rv{text-align:left}
+.an-ss-r .rv{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.an-ss-r.hd{border-top:0;font-size:.62rem;font-weight:800;opacity:.6;letter-spacing:.04em}
+.an-ss-r.none{opacity:.45}
+.an-ss-r.avg{font-weight:800;border-top:2px solid rgba(127,127,127,.3)}

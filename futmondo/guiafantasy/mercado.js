@@ -2022,6 +2022,34 @@
     } catch (e) {}
   }
 
+  // Base de cálculo del análisis: toda la temporada (media real de Futmondo por partido jugado) o solo los últimos 5.
+  let anBase = "temporada";
+  try { const sv = localStorage.getItem("merc_anbase"); if (sv === "ultimos5" || sv === "temporada") anBase = sv; } catch (e) {}
+  // Media de la temporada y partidos jugados de un jugador del análisis (dato del mercado de Futmondo).
+  function seasonOf(p) {
+    if (!p) return null;
+    if (p._s !== undefined && (p._s || (all && all.length))) return p._s;
+    let r = null;
+    try {
+      if (p.avg != null && p.matches != null && p.name) r = { avg: Number(p.avg), n: Number(p.matches), id: p.id };
+      else if (all && all.length) {
+        const tc = teamCanon(p.equipo || "");
+        const ro = all.filter((x) => teamCanon(x.team) === tc);
+        const nk = stripAccents(String(p.nombre || "").toLowerCase()).replace(/[^a-z0-9 ]/g, "").trim();
+        const key = (x) => stripAccents(String(x.name || "").toLowerCase()).replace(/[^a-z0-9 ]/g, "").trim();
+        let m = (p.id && ro.find((x) => String(x.id) === String(p.id))) || ro.find((x) => key(x) === nk);
+        if (!m && nk) {
+          const last = nk.split(" ").pop();
+          const c = ro.filter((x) => key(x) === last || key(x).split(" ").pop() === last || nk.indexOf(key(x)) >= 0);
+          if (c.length === 1) m = c[0];
+        }
+        if (m) r = { avg: Number(m.avg), n: Number(m.matches), id: m.id };
+      }
+    } catch (e) {}
+    if (r && !(r.avg > 0 && r.n > 0)) r = null;
+    p._s = r;
+    return r;
+  }
   // Forma: media REAL de los puntos de los últimos partidos que JUGÓ (Futmondo; un 0 = no jugó). Sin pesos inventados.
   function formOf(p) {
     const f = (p.fitness || []).map(Number).filter((x) => !isNaN(x));
@@ -2029,7 +2057,9 @@
     const avg = pl.length ? pl.reduce((a, b) => a + b, 0) / pl.length : 0;
     const l2 = f.slice(-2).filter((x) => x !== 0);
     const rec = l2.length ? l2.reduce((a, b) => a + b, 0) / l2.length : avg;
-    return { avg, rec, base: avg, trend: l2.length ? rec - avg : 0, played: pl.length, len: f.length, avgAll: f.length ? f.reduce((a, b) => a + b, 0) / f.length : 0 };
+    const ss = anBase === "temporada" ? seasonOf(p) : null;
+    const base = ss ? ss.avg : avg;
+    return { avg, rec, base, season: ss, trend: l2.length ? rec - base : 0, played: pl.length, len: f.length, avgAll: f.length ? f.reduce((a, b) => a + b, 0) / f.length : 0 };
   }
   function expOf(p) {
     const f = p.fitness || [];
@@ -3496,7 +3526,7 @@
       });
       box.appendChild(g);
     };
-    group("🔥", "En racha", "Llegan en su mejor momento: puntúan más en sus 2 últimos partidos.", "hot", hot, (p) => { const fo = formOf(p); return { v: "▲ " + f1d(fo.rec), c: "pts de media (últimos 2)", s: "Media al jugar: " + f1d(fo.avg) + " pts" }; });
+    group("🔥", "En racha", "Llegan en su mejor momento: puntúan más en sus 2 últimos partidos.", "hot", hot, (p) => { const fo = formOf(p); return { v: "▲ " + f1d(fo.rec), c: "pts de media (últimos 2)", s: fo.season ? "Media de la temporada: " + f1d(fo.season.avg) + " pts (" + fo.season.n + " partidos)" : "Media al jugar (últimos 5): " + f1d(fo.avg) + " pts" }; });
     const irr = ps.filter((p) => { const fo = formOf(p); return fo.len >= 3 && fo.len - fo.played >= 2 && fo.played >= 1; }).sort((a, b) => formOf(b).avg - formOf(a).avg).slice(0, 4);
     group("🎲", "Irregulares", "Puntúan bien cuando juegan, pero se pierden partidos.", "irr", irr, (p) => { const fo = formOf(p); return { v: f1d(fo.avg), c: "pts al jugar", s: "Ha jugado " + fo.played + " de sus últimos " + fo.len, bar: (fo.played / fo.len) * 100 }; });
     group("⚠️", "Dudas de jugar", "Probabilidad baja de ser titulares (según FutbolFantasy).", "risk", risk, (p) => ({ v: p.prob + "%", c: "de jugar", bar: p.prob }));
@@ -3547,11 +3577,50 @@
     if (fmCache[p.id]) { draw(fmCache[p.id]); return; }
     fetch(API + "/jugador?id=" + encodeURIComponent(p.id)).then((r) => r.json()).then((j) => { fmCache[p.id] = j; if (det.isConnected) draw(j); }).catch(() => { det.textContent = "No se pudo cargar el desglose."; });
   }
+  // Toda la temporada de un jugador: cada partido con rival, minutos y lo que aportan AS, Marca y SofaScore (puntos de su tabla × 50% de tu liga).
+  function ssToggle(card, btn, p, pid) {
+    const old = card.querySelector(".an-ss");
+    if (old) { old.remove(); btn.textContent = "📅 Ver toda la temporada"; return; }
+    btn.textContent = "🔼 Ocultar temporada";
+    const box = el("div", "an-ss", "Cargando temporada…");
+    btn.after(box);
+    const draw = (j) => {
+      box.innerHTML = "";
+      const ms = ((j && j.matches) || []).filter((m) => m.finished).sort((a, b) => Number(b.r) - Number(a.r));
+      if (!ms.length) { box.textContent = "Sin partidos terminados todavía."; return; }
+      const tc = teamCanon(p.equipo || "");
+      const pl = ms.filter((m) => (Number(m.mins) || 0) > 0);
+      const avgOf = (k) => (pl.length ? pl.reduce((s, m) => s + (Number(m[k]) || 0) / 2, 0) / pl.length : 0);
+      const s60 = pl.filter((m) => Number(m.mins) >= 60).length;
+      const sea = seasonOf(p);
+      const sum = el("div", "an-ss-sum");
+      sum.appendChild(el("b", null, "Jugó " + pl.length + " de " + ms.length + " partidos de su equipo"));
+      sum.appendChild(el("span", null, s60 + " con 60 min o más" + (sea ? " · media de la temporada " + f1e(sea.avg) + " pts por partido jugado" : "")));
+      box.appendChild(sum);
+      const tb = el("div", "an-ss-t");
+      const hd = el("div", "an-ss-r hd"); ["J", "Rival", "Min", "AS", "MARCA", "SOFA"].forEach((h) => hd.appendChild(el("span", null, h))); tb.appendChild(hd);
+      ms.forEach((m) => {
+        const played = (Number(m.mins) || 0) > 0;
+        const home = teamCanon(m.home) === tc;
+        const r = el("div", "an-ss-r" + (played ? "" : " none"));
+        r.appendChild(el("span", null, "J" + m.r));
+        r.appendChild(el("span", "rv", (home ? "🏠 " : "✈️ ") + (home ? m.away : m.home)));
+        r.appendChild(el("span", null, played ? m.mins + "'" : "–"));
+        [m.as, m.marca, m.ss].forEach((v) => r.appendChild(el("span", null, played && v != null ? fmN((Number(v) || 0) / 2) : "–")));
+        tb.appendChild(r);
+      });
+      if (pl.length) { const av = el("div", "an-ss-r avg"); av.appendChild(el("span", null, "")); av.appendChild(el("span", "rv", "Media (partidos jugados)")); av.appendChild(el("span", null, "")); [avgOf("as"), avgOf("marca"), avgOf("ss")].forEach((v) => av.appendChild(el("span", null, fmN(v)))); tb.appendChild(av); }
+      box.appendChild(tb);
+      box.appendChild(el("div", "an-fm-dn", "AS, Marca y SofaScore: puntos de su tabla × 50% (tu liga), directos de Futmondo. Los puntos totales de cada jornada también incluyen minutos, goles, asistencias y tarjetas, que no se desglosan aquí para las jornadas antiguas."));
+    };
+    if (fmCache[pid]) { draw(fmCache[pid]); return; }
+    fetch(API + "/jugador?id=" + encodeURIComponent(pid)).then((r) => r.json()).then((j) => { fmCache[pid] = j; if (box.isConnected) draw(j); }).catch(() => { box.textContent = "No se pudo cargar la temporada."; });
+  }
   // Forma de cada jugador: puntos de Futmondo en sus últimas 5 jornadas, con jornada y rival.
   function renderForma(box, players, d) {
     box.innerHTML = "";
     box.appendChild(el("div", "estado-title", "📊 Forma de tus jugadores"));
-    box.appendChild(el("p", "muted small", "Puntos de Futmondo en sus últimas 5 jornadas, con la más reciente a la derecha. «–» = no jugó. «Esperado» = media de los partidos que jugó × su probabilidad de jugar."));
+    box.appendChild(el("p", "muted small", "Puntos de Futmondo en sus últimas 5 jornadas, con la más reciente a la derecha. «–» = no jugó. «Esperado» = media (temporada o últimos 5, según lo elegido arriba) × su probabilidad de jugar. Toca «Ver toda la temporada» para ver todos sus partidos."));
     const j0 = d && d.capJornada ? d.capJornada - 1 : 0;
     const order = { POR: 0, DEF: 1, CEN: 2, DEL: 3 };
     const tits = (d && d.titulares) || [];
@@ -3588,6 +3657,12 @@
       if (!f.length) row.appendChild(el("div", "muted small", "Sin datos de sus últimos partidos."));
       card.appendChild(row);
       if (f.some((v) => v !== 0) && p.id) card.appendChild(el("div", "an-fm-hint", "👆 Toca una jornada para ver de dónde salen sus puntos"));
+      const pid = p.id || (seasonOf(p) && seasonOf(p).id);
+      if (pid) {
+        const sb = el("button", "an-ss-btn", "📅 Ver toda la temporada"); sb.type = "button";
+        sb.addEventListener("click", () => ssToggle(card, sb, p, pid));
+        card.appendChild(sb);
+      }
       grid.appendChild(card);
     });
     box.appendChild(grid);
@@ -3597,7 +3672,7 @@
     d.appendChild(el("summary", null, "¿Cómo se elige el once ideal?"));
     const ul = el("div", "an-rules-b");
     const f1 = (x) => x.toFixed(1).replace(".", ",");
-    ul.appendChild(el("p", "muted small", "Reglas: 1) Puntos esperados = media de los puntos reales de los últimos partidos que jugó (Futmondo; los guiones no cuentan) × probabilidad de ser titular (FutbolFantasy). No se suma ni se resta nada inventado (la racha y casa/fuera solo se muestran, no cuentan). 2) Sancionados o lesionados con menos de 10% valen 0. 3) Se prueban las formaciones 3-4-3, 3-5-2, 4-3-3, 4-4-2, 4-5-1, 5-3-2, 5-4-1, 3-3-4, 3-6-1, 4-2-4, 4-6-0 y 5-2-3 (las 12 formaciones de tu Futmondo) (también la posición alternativa de los multiposición) y se queda la de más puntos esperados en total. 4) Siempre 1 portero. El nombre o el precio del jugador NO cuentan, solo estos números."));
+    ul.appendChild(el("p", "muted small", "Reglas: 1) Puntos esperados = media de los puntos reales de Futmondo (según lo elegido arriba: toda la temporada o los últimos 5 partidos jugados; los guiones no cuentan) × probabilidad de ser titular (FutbolFantasy). No se suma ni se resta nada inventado (la racha y casa/fuera solo se muestran, no cuentan). 2) Sancionados o lesionados con menos de 10% valen 0. 3) Se prueban las formaciones 3-4-3, 3-5-2, 4-3-3, 4-4-2, 4-5-1, 5-3-2, 5-4-1, 3-3-4, 3-6-1, 4-2-4, 4-6-0 y 5-2-3 (las 12 formaciones de tu Futmondo) (también la posición alternativa de los multiposición) y se queda la de más puntos esperados en total. 4) Siempre 1 portero. El nombre o el precio del jugador NO cuentan, solo estos números."));
     [["POR", "Portero"], ["DEF", "Defensas"], ["CEN", "Centrocampistas"], ["DEL", "Delanteros"]].forEach((g) => {
       const arr = ideal.by[g[0]] || [];
       if (!arr.length) return;
@@ -3609,11 +3684,11 @@
         const out = (p.san || p.inj || /SANC|LESI/i.test(p.estado || "")) && (p.prob == null || p.prob < 10);
         const row = el("div", "an-rules-row" + (i < n ? " in" : " out"));
         row.appendChild(el("b", null, (i < n ? "✅ " : "▫️ ") + (p.last || p.nombre) + " → " + f1(expOf(p)) + " pts esperados"));
-        row.appendChild(el("div", "an-rules-d", out ? "Sancionado/lesionado: vale 0." : "media " + f1(fo.avg) + " en los " + fo.played + " partidos que jugó (últimos 5, de antiguo a reciente: " + ser + ") × " + (p.prob != null ? p.prob + "% de jugar" : "sin dato de probabilidad (se usa 60%)") + (p.casa === true ? " · juega en casa" : p.casa === false ? " · juega fuera" : "")));
+        row.appendChild(el("div", "an-rules-d", out ? "Sancionado/lesionado: vale 0." : (fo.season ? "media " + f1(fo.season.avg) + " en los " + fo.season.n + " partidos que ha jugado esta temporada (últimos 5, de antiguo a reciente: " + ser + ") × " : "media " + f1(fo.avg) + " en los " + fo.played + " partidos que jugó (últimos 5, de antiguo a reciente: " + ser + ") × ") + (p.prob != null ? p.prob + "% de jugar" : "sin dato de probabilidad (se usa 60%)") + (p.casa === true ? " · juega en casa" : p.casa === false ? " · juega fuera" : "")));
         ul.appendChild(row);
       });
     });
-    ul.appendChild(el("p", "muted small", "Formación elegida: " + ideal.formacion + " · ✅ entra, ▫️ se queda fuera (en cada puesto entran los de más puntos esperados). La racha de los últimos partidos NO cambia la cuenta: solo cuenta la media y la probabilidad de jugar."));
+    ul.appendChild(el("p", "muted small", "Formación elegida: " + ideal.formacion + " · ✅ entra, ▫️ se queda fuera (en cada puesto entran los de más puntos esperados). La racha NO cambia la cuenta: solo cuenta la media y la probabilidad de jugar."));
     d.appendChild(ul);
     return d;
   }
@@ -3831,6 +3906,17 @@
       const mine = window.EduAlineacion.card({ starters: tits.map((p) => toSide(p)), bench: [] }, "Tu equipo", "/img/avatar.svg", "", all, "probable", sups.map((p) => toSide(p)), cardOpts("Tu <b>once</b>"));
       hookSwap(mine);
       out.appendChild(mine);
+      const bs = el("div", "an-base");
+      bs.appendChild(el("div", "an-base-k", "📐 Calcular con"));
+      const seg = el("div", "an-base-seg");
+      [["temporada", "Toda la temporada"], ["ultimos5", "Últimos 5 partidos"]].forEach((o) => {
+        const b = el("button", "an-base-b" + (anBase === o[0] ? " on" : ""), o[1]); b.type = "button";
+        b.addEventListener("click", () => { if (anBase === o[0]) return; anBase = o[0]; try { localStorage.setItem("merc_anbase", anBase); } catch (e) {} const y = window.scrollY; renderAnalisis(anData); window.scrollTo(0, y); });
+        seg.appendChild(b);
+      });
+      bs.appendChild(seg);
+      bs.appendChild(el("div", "an-base-d", anBase === "temporada" ? "Puntos esperados = media de TODOS los partidos que ha jugado en la temporada (dato de Futmondo) × probabilidad de jugar. Los últimos 5 pueden ser suerte; la temporada entera es más estable." : "Puntos esperados = media de sus últimos 5 partidos jugados × probabilidad de jugar. Refleja la forma de ahora, pero 5 partidos pueden ser suerte."));
+      out.appendChild(bs);
       const myProj = projBox(tits, "📈 Puntuación probable de tu once");
       out.appendChild(myProj.box);
       // Once ideal con reglas fijas (no lo decide la IA)
@@ -3862,7 +3948,7 @@
             const tx = el("div", "an-sw-tx");
             tx.appendChild(el("b", null, p.last || p.nombre));
             const fo0 = formOf(p);
-            let why = "media " + f1e(fo0.avg) + (p.prob != null ? " × " + p.prob + "% de jugar" : "");
+            let why = (fo0.season ? "media de la temporada " : "media ") + f1e(fo0.base) + (p.prob != null ? " × " + p.prob + "% de jugar" : "");
             if (dir === "out") {
               const same = ideal.slots.filter((x) => x.pos === p.pos);
               const mn = same.length ? Math.min(...same.map((x) => expOf(x.p))) : null;
