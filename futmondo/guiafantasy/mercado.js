@@ -3789,7 +3789,7 @@
         if (fmax) why.push("en racha (pico " + fmax + "/10)");
         if (top.puntos != null) why.push(top.puntos + " pts esta temporada");
         if (top.prob != null) why.push(top.prob + "% de jugar");
-        if (top.casa === true) why.push("juega en casa"); else if (top.casa === false) why.push("juega fuera");
+        if (top.casa === true) why.push("🏠 juega en casa"); else if (top.casa === false) why.push("✈️ juega fuera");
         if (top.pos2) why.push("doble posición");
         body.appendChild(el("div", "an-cap-why", why.join(" · ") || "sin datos suficientes"));
         if (capRisky) body.appendChild(el("div", "an-cap-warn", "⚠️ ninguno de tus CEN/DEL tiene la titularidad asegurada esta jornada — este es el que más opciones tiene (" + (top.prob != null ? top.prob + "%" : "sin dato") + "), pero si al final no juega, el capitán no dobla nada"));
@@ -3971,7 +3971,7 @@
                 const ns = same.length;
                 tx.appendChild(el("small", "an-sw-why", "Sale porque en el once ideal caben " + ns + " " + nm + (ns > 1 ? "s" : "") + " y " + (ns > 1 ? "el peor de ellos tiene" : "el que entra tiene") + " " + f1e(mn) + " esperados; él tiene " + f1e(expOf(p)) + "."));
                 if (mn - expOf(p) < 1) {
-                  const hechos = [p.casa === true ? "juega en casa" : p.casa === false ? "juega fuera" : "", p.rival ? "rival " + p.rival : "", p.penal ? "lanza penaltis (" + p.penal + ")" : ""].filter(Boolean);
+                  const hechos = [p.casa === true ? "🏠 juega en casa" : p.casa === false ? "✈️ juega fuera" : "", p.rival ? "rival " + p.rival : "", p.penal ? "lanza penaltis (" + p.penal + ")" : ""].filter(Boolean);
                   tx.appendChild(el("small", "an-sw-near", "⚖️ Casi empate (solo " + f1e(mn - expOf(p)) + " de diferencia)" + (hechos.length ? " · " + hechos.join(" · ") : "") + ". Si te convence más, déjalo tú."));
                 }
               }
@@ -4065,7 +4065,7 @@
     }
     if (swapPairs.length) {
       const sec = el("div", "estado-sec");
-      sec.appendChild(el("div", "estado-title", "🔁 Plan de cambios por horario"));
+      sec.appendChild(el("div", "estado-title", "🔁 Plan B por horario (solo si el titular no juega)"));
       sec.appendChild(el("p", "muted small", "Reglas de Futmondo: 1) Un suplente puede entrar por un titular de su posición (o de su otra posición si es multiposición) las veces que quieras, siempre que NINGUNO de los dos haya jugado ya. Por eso el suplente tiene que jugar DESPUÉS que el titular al que cubre. 2) Cuando ya ha puntuado alguien, solo queda UN cambio: un jugador que ya puntuó por uno del banquillo que aún no. Revisa la alineación OFICIAL justo antes de cada partido (⏱️ hora estimada en cada tarjeta) para ver si el titular juega o no."));
       const grid = el("div", "swap-grid");
       const posIcon = { POR: "🧤", DEF: "🛡️", CEN: "🎯", DEL: "⚽" };
@@ -4084,6 +4084,8 @@
         row.appendChild(el("div", "swap-arrow", "🔁"));
         row.appendChild(side(sub, "swap-sub"));
         card.appendChild(row);
+        const pr = (q) => (q.prob != null ? q.prob + "%" : "?");
+        card.appendChild(el("div", "swap-est", "Solo si " + (tit.last || tit.nombre) + " NO sale en el once oficial (" + pr(tit) + " de jugar), entra " + (sub.last || sub.nombre) + " (" + pr(sub) + "). Si sale, no cambies nada."));
         if (tit.pos !== sub.pos) {
           const ps = Array.from(posCodes(sub)).join("/");
           card.appendChild(el("div", "swap-est", "🔀 Solo es posible por la multiposición de " + (sub.last || sub.nombre) + " (" + ps + ")"));
