@@ -3529,7 +3529,7 @@
     group("🔥", "En racha", "Llegan en su mejor momento: puntúan más en sus 2 últimos partidos.", "hot", hot, (p) => { const fo = formOf(p); return { v: "▲ " + f1d(fo.rec), c: "pts de media (últimos 2)", s: fo.season ? "Media de la temporada: " + f1d(fo.season.avg) + " pts (" + fo.season.n + " partidos)" : "Media al jugar (últimos 5): " + f1d(fo.avg) + " pts" }; });
     const irr = ps.filter((p) => { const fo = formOf(p); return fo.len >= 3 && fo.len - fo.played >= 2 && fo.played >= 1; }).sort((a, b) => formOf(b).avg - formOf(a).avg).slice(0, 4);
     group("🎲", "Irregulares", "Puntúan bien cuando juegan, pero se pierden partidos.", "irr", irr, (p) => { const fo = formOf(p); return { v: f1d(fo.avg), c: "pts al jugar", s: "Ha jugado " + fo.played + " de sus últimos " + fo.len, bar: (fo.played / fo.len) * 100 }; });
-    group("⚠️", "Dudas de jugar", "Probabilidad baja de ser titulares (según FutbolFantasy).", "risk", risk, (p) => ({ v: p.prob + "%", c: "de jugar", bar: p.prob }));
+    group("⚠️", "Dudas de jugar", "Probabilidad baja de ser titulares.", "risk", risk, (p) => ({ v: p.prob + "%", c: "de jugar", bar: p.prob }));
     return { box, total };
   }
   // Desglose de una jornada: AS, Marca y SofaScore (puntos de su tabla × 50% de tu liga), minutos y el resto
@@ -3885,11 +3885,45 @@
       root.appendChild(list);
       showModal(root);
     }
+    // Solo cubre de otra posición quien tiene multiposición (el suplente o el
+    // titular); el resto solo cubre su misma posición.
+    // Posiciones en las que puede jugar un jugador: la de la captura, y sus
+    // dos posiciones reales del mercado (la de la captura de tu once es donde
+    // LO HAS PUESTO tú, así que la del hueco que se libera es tit.pos).
+    const posCodes = (p) => {
+      const set = new Set([p.pos, p.pos2].filter(Boolean));
+      const q = (all || []).find((x) => String(x.id) === String(p.id));
+      if (q) [q.role, q.role2].forEach((r) => { const b = roleBadge(r); if (b) set.add(b === "MED" ? "CEN" : b); });
+      return set;
+    };
+    const covers = (sub, tit) => posCodes(sub).has(tit.pos);
+    function buildSwapPlan() {
+      const pairs = [];
+      const T = (p) => (p.fecha ? new Date(p.fecha).getTime() : null);
+      const used = new Set();
+      tits.slice().sort((a, b) => (T(a) == null ? Infinity : T(a)) - (T(b) == null ? Infinity : T(b))).forEach((tit) => {
+        const tt = T(tit);
+        const cands = sups.filter((sub) => !used.has(sub) && T(sub) != null && covers(sub, tit) && (tt == null || T(sub) > tt));
+        cands.sort((a, b) => (a.pos === tit.pos ? 0 : 1) - (b.pos === tit.pos ? 0 : 1) || T(a) - T(b));
+        const cand = cands[0];
+        if (cand) { used.add(cand); pairs.push({ pos: tit.pos, tit, sub: cand }); }
+      });
+      return pairs;
+    }
+    // Suplentes que juegan ANTES que todos los titulares a los que podrian
+    // sustituir: desde que empieza su partido ya no se pueden meter.
+    const useless = sups.filter((sub) => {
+      if (!sub.fecha) return false;
+      const st = new Date(sub.fecha).getTime();
+      const tg = tits.filter((t) => covers(sub, t) && t.fecha);
+      return tg.length > 0 && tg.every((t) => new Date(t.fecha).getTime() >= st);
+    });
+    const swapPairs = buildSwapPlan();
     // Campo y banquillo: EXACTAMENTE la misma plantilla que "Alineaciones
     // probables" (EduAlineacion.card): mismas fotos, % de titularidad, avisos
     // de duda/sancionado/lesionado y banquillo.
     const POSLAB = { POR: "Portero", DEF: "Defensa", CEN: "Mediocampista", DEL: "Delantero" };
-    const toSide = (p, pos) => ({ name: p.nombre, full: p.nombre, pos: POSLAB[pos || p.pos] || "Mediocampista", photo: p.photo || "", prob: p.prob != null ? p.prob : null, san: !!p.san || /SANC/i.test(p.estado || ""), inj: !!p.inj || /LESI/i.test(p.estado || ""), _p: p });
+    const toSide = (p, pos) => ({ name: p.nombre, full: p.nombre, pos: POSLAB[pos || p.pos] || "Mediocampista", photo: p.photo || "", prob: p.prob != null ? p.prob : null, san: !!p.san || /SANC/i.test(p.estado || ""), inj: !!p.inj || /LESI/i.test(p.estado || ""), _p: p, plan: (() => { const x = swapPairs.find((q) => q.tit === p); return x ? (x.sub.last || x.sub.nombre) : ""; })(), note: useless.indexOf(p) >= 0 ? "⚠️ juega pronto" : "" });
     const myIds = new Set([].concat(tits, sups).map((p) => String(p.id || "")).filter(Boolean));
     const pool = (all || []).filter((q) => myIds.has(String(q.id)));
     anPool = pool;
@@ -3909,6 +3943,7 @@
       const mine = window.EduAlineacion.card({ starters: tits.map((p) => toSide(p)), bench: [] }, "Tu equipo", "/img/avatar.svg", "", all, "probable", sups.map((p) => toSide(p)), cardOpts("Tu <b>once</b>"));
       hookSwap(mine);
       out.appendChild(mine);
+      if (swapPairs.length || useless.length) out.appendChild(el("p", "muted small", "🔁 Debajo de un titular: si NO sale en el once oficial (míralo ~1 h antes), entra ese suplente, que juega más tarde." + (useless.length ? " ⚠️ En el banquillo: juega antes que a quien cubriría, así que desde el banquillo no podrás meterlo." : "")));
       const bs = el("div", "an-base");
       bs.appendChild(el("div", "an-base-k", "📐 Calcular con"));
       const seg = el("div", "an-base-seg");
@@ -4009,95 +4044,6 @@
     // gasta en el que de verdad lo necesita. Esto se calcula aquí con las
     // fechas reales de cada partido, en vez de depender de que la IA lo
     // acierte en el texto libre.
-    // Solo cubre de otra posición quien tiene multiposición (el suplente o el
-    // titular); el resto solo cubre su misma posición.
-    // Posiciones en las que puede jugar un jugador: la de la captura, y sus
-    // dos posiciones reales del mercado (la de la captura de tu once es donde
-    // LO HAS PUESTO tú, así que la del hueco que se libera es tit.pos).
-    const posCodes = (p) => {
-      const set = new Set([p.pos, p.pos2].filter(Boolean));
-      const q = (all || []).find((x) => String(x.id) === String(p.id));
-      if (q) [q.role, q.role2].forEach((r) => { const b = roleBadge(r); if (b) set.add(b === "MED" ? "CEN" : b); });
-      return set;
-    };
-    const covers = (sub, tit) => posCodes(sub).has(tit.pos);
-    function buildSwapPlan() {
-      const pairs = [];
-      const T = (p) => (p.fecha ? new Date(p.fecha).getTime() : null);
-      const used = new Set();
-      tits.slice().sort((a, b) => (T(a) == null ? Infinity : T(a)) - (T(b) == null ? Infinity : T(b))).forEach((tit) => {
-        const tt = T(tit);
-        const cands = sups.filter((sub) => !used.has(sub) && T(sub) != null && covers(sub, tit) && (tt == null || T(sub) > tt));
-        cands.sort((a, b) => (a.pos === tit.pos ? 0 : 1) - (b.pos === tit.pos ? 0 : 1) || T(a) - T(b));
-        const cand = cands[0];
-        if (cand) { used.add(cand); pairs.push({ pos: tit.pos, tit, sub: cand }); }
-      });
-      return pairs;
-    }
-    // Suplentes que juegan ANTES que todos los titulares a los que podrian
-    // sustituir: desde que empieza su partido ya no se pueden meter.
-    const useless = sups.filter((sub) => {
-      if (!sub.fecha) return false;
-      const st = new Date(sub.fecha).getTime();
-      const tg = tits.filter((t) => covers(sub, t) && t.fecha);
-      return tg.length > 0 && tg.every((t) => new Date(t.fecha).getTime() >= st);
-    });
-    const swapPairs = buildSwapPlan();
-    // La alineación OFICIAL de cada equipo no se confirma hasta poco antes
-    // del partido (normalmente ~1h antes, aunque puede variar), así que la
-    // probabilidad de "titular" que manejamos hasta entonces es solo una
-    // estimación. Por eso, además del plan de cambios, se avisa de revisar
-    // la alineación oficial justo antes de que arranque cada partido (con
-    // una hora ESTIMADA de cuándo debería salir) para decidir si hace falta
-    // el cambio de verdad, en vez de fiarse solo del % de antes.
-    const estAlineacion = (fecha) => {
-      if (!fecha) return "";
-      try { return new Date(new Date(fecha).getTime() - 60 * 60000).toLocaleString("es-ES", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }); } catch (e) { return ""; }
-    };
-    if (useless.length) {
-      const sec = el("div", "estado-sec");
-      sec.appendChild(el("div", "estado-title", "⚠️ Suplentes que no te sirven de cambio"));
-      useless.forEach((p) => {
-        const mp = p.pos2 ? " (multiposición " + p.pos + "/" + p.pos2 + ")" : "";
-        sec.appendChild(el("p", "muted small", "• " + (p.last || p.nombre) + mp + " juega " + whenShort(p.fecha) + (p.prob != null ? " (" + p.prob + "% de jugar)" : "") + ", antes que los titulares a los que podría sustituir. Si lo dejas en el banquillo, cuando empiece su partido ya no podrás meterlo. Si es de los que casi seguro juegan, ponlo de titular (si a última hora no juega, lo cambias por uno que juegue más tarde). Si dudas de que juegue, el riesgo es el contrario: un titular que no juega y no tiene suplente que juegue después se queda en 0."));
-      });
-      out.appendChild(sec);
-    }
-    if (swapPairs.length) {
-      const sec = el("div", "estado-sec");
-      sec.appendChild(el("div", "estado-title", "🔁 Plan B por horario (solo si el titular no juega)"));
-      sec.appendChild(el("p", "muted small", "Reglas de Futmondo: 1) Un suplente puede entrar por un titular de su posición (o de su otra posición si es multiposición) las veces que quieras, siempre que NINGUNO de los dos haya jugado ya. Por eso el suplente tiene que jugar DESPUÉS que el titular al que cubre. 2) Cuando ya ha puntuado alguien, solo queda UN cambio: un jugador que ya puntuó por uno del banquillo que aún no. Revisa la alineación OFICIAL justo antes de cada partido (⏱️ hora estimada en cada tarjeta) para ver si el titular juega o no."));
-      const grid = el("div", "swap-grid");
-      const posIcon = { POR: "🧤", DEF: "🛡️", CEN: "🎯", DEL: "⚽" };
-      swapPairs.forEach(({ pos, tit, sub }) => {
-        const card = el("div", "swap-card clickable");
-        card.appendChild(el("span", "swap-pos", (posIcon[pos] || "") + " " + pos));
-        const side = (p, cls) => {
-          const s = el("div", "swap-side " + cls);
-          const ph = el("div", "swap-photo"); ph.appendChild(photoImg(photoOf(p))); s.appendChild(ph);
-          s.appendChild(el("div", "swap-name", p.last || p.nombre || ""));
-          s.appendChild(el("div", "swap-time", p.fecha ? whenShort(p.fecha) : "sin hora"));
-          return s;
-        };
-        const row = el("div", "swap-row");
-        row.appendChild(side(tit, "swap-tit"));
-        row.appendChild(el("div", "swap-arrow", "🔁"));
-        row.appendChild(side(sub, "swap-sub"));
-        card.appendChild(row);
-        const pr = (q) => (q.prob != null ? q.prob + "%" : "?");
-        card.appendChild(el("div", "swap-est", "Solo si " + (tit.last || tit.nombre) + " NO sale en el once oficial (" + pr(tit) + " de jugar), entra " + (sub.last || sub.nombre) + " (" + pr(sub) + "). Si sale, no cambies nada."));
-        if (tit.pos !== sub.pos) {
-          const ps = Array.from(posCodes(sub)).join("/");
-          card.appendChild(el("div", "swap-est", "🔀 Solo es posible por la multiposición de " + (sub.last || sub.nombre) + " (" + ps + ")"));
-        }
-        const estTxt = estAlineacion(tit.fecha);
-        if (estTxt) card.appendChild(el("div", "swap-est", "⏱️ alineación estimada ~" + estTxt));
-        card.addEventListener("click", () => swapPicker(tit));
-        grid.appendChild(card);
-      });
-      sec.appendChild(grid);
-      out.appendChild(sec);
-    }
     clearInterval(anRefT); anRefT = setInterval(anRefresh, 300000);
   }
 
