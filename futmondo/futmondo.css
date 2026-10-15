@@ -346,3 +346,14 @@ body.hub-page {
 [data-theme="light"] .hub-tile { color: #fff; }
 .ic-gavel { animation-name: ic-strike2; }
 @keyframes ic-strike2 { 0%, 62% { transform: rotate(0); } 72% { transform: rotate(-16deg); } 80% { transform: rotate(4deg); } 88% { transform: rotate(-1deg); } 100% { transform: rotate(0); } }
+
+/* Guía Fantasy: lista de secciones */
+.hub-feature { grid-template-areas: "i t" "l l" "g g"; }
+.hf-list { grid-area: l; position: relative; z-index: 1; list-style: none; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 2px 0 2px; }
+.hf-list li { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 10px 12px; border-radius: 14px; font-size: 0.86rem; font-weight: 700; line-height: 1.15; color: var(--text); background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.12); animation: hub-in 0.5s var(--ease-out) both; }
+.hf-list li:nth-child(1) { animation-delay: 120ms; } .hf-list li:nth-child(2) { animation-delay: 170ms; } .hf-list li:nth-child(3) { animation-delay: 220ms; } .hf-list li:nth-child(4) { animation-delay: 270ms; }
+.hf-list li svg { flex: none; color: #4ade80; }
+.hf-list li:nth-child(4) { grid-column: 1 / -1; }
+[data-theme="light"] .hf-list li { background: rgba(255, 255, 255, 0.7); border-color: rgba(15, 23, 42, 0.08); }
+[data-theme="light"] .hf-list li svg { color: #15803d; }
+@media (prefers-reduced-motion: reduce) { .hf-list li { animation: none; } }
