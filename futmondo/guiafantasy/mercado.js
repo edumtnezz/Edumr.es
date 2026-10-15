@@ -417,19 +417,24 @@
       // ver de un vistazo si se la han ido subiendo (la están "defendiendo")
       // o lleva igual, directamente en la tarjeta.
       if (p.clPrev != null || (p.clChg != null && p.clSince)) {
+        const fM = (n) => (Number(n) / 1e6).toFixed(1).replace(".", ",") + " M";
         const histChip = (val, label) => {
           const v = Number(val) || 0;
           const cls = v > 0 ? "up" : v < 0 ? "down" : "flat";
           const arrow = v > 0 ? "▲" : v < 0 ? "▼" : "•";
-          const amt = v === 0 ? "sin cambios" : (v > 0 ? "+" : "−") + formatDots(Math.abs(v)) + " €";
           const chip = el("span", "claus-hist " + cls);
-          chip.appendChild(el("b", null, arrow + " " + amt));
-          chip.appendChild(el("small", null, label));
+          if (v === 0) {
+            chip.appendChild(el("b", null, "• Sin cambios"));
+            chip.appendChild(el("small", null, label + ": sigue en " + fM(p.clause)));
+          } else {
+            chip.appendChild(el("b", null, arrow + " " + fM(Number(p.clause) - v) + " → " + fM(p.clause)));
+            chip.appendChild(el("small", null, label + " · " + (v > 0 ? "sube " : "baja ") + fM(Math.abs(v))));
+          }
           return chip;
         };
         const hrow = el("div", "claus-histrow");
-        if (p.clPrev != null) hrow.appendChild(histChip(p.clPrev, "desde ayer"));
-        if (p.clChg != null && p.clSince) hrow.appendChild(histChip(p.clChg, "desde " + fmtDiaCorto(p.clSince)));
+        if (p.clPrev != null) hrow.appendChild(histChip(p.clPrev, "Ayer"));
+        if (p.clChg != null && p.clSince) hrow.appendChild(histChip(p.clChg, "El " + fmtDiaCorto(p.clSince)));
         body.appendChild(hrow);
       }
       const playedPct = j0 ? Math.round(((Number(p.matches) || 0) / j0) * 100) : 0;
