@@ -236,25 +236,18 @@ function renderHistory() {
     return;
   }
   const mds = list.map((h) => h.matchday).filter(Boolean);
-  const hasOld = list.some((h) => !h.matchday);
-  if (histJ === null || (histJ !== 0 && mds.length && (histJ < Math.min.apply(null, mds) || histJ > Math.max.apply(null, mds)))) histJ = mds.length ? Math.max.apply(null, mds) : 0;
+  if (!mds.length) { box.appendChild(el("p", "empty", "Todavía no hay jornadas pasadas.")); return; }
+  if (histJ === null || (mds.length && (histJ < Math.min.apply(null, mds) || histJ > Math.max.apply(null, mds)))) histJ = mds.length ? Math.max.apply(null, mds) : 0;
   if (mds.length) {
     const sel = el("div", "jc-chips hist-chips"); sel.id = "hChips";
     box.appendChild(sel);
-    jornadaChips(histJ || Math.max.apply(null, mds), Math.min.apply(null, mds), Math.max.apply(null, mds), (n) => { histJ = n; renderHistory(); }, "hChips");
-    if (hasOld) {
-      const old = el("button", "jc-chip hist-old" + (histJ === 0 ? " on" : ""), "Anteriores");
-      old.type = "button";
-      old.addEventListener("click", () => { histJ = histJ === 0 ? Math.max.apply(null, mds) : 0; renderHistory(); });
-      box.appendChild(old);
-    }
+    jornadaChips(histJ, Math.min.apply(null, mds), Math.max.apply(null, mds), (n) => { histJ = n; renderHistory(); }, "hChips");
   }
   const shown = list
-    .filter((h) => (histJ === 0 ? !h.matchday : h.matchday === histJ))
+    .filter((h) => h.matchday === histJ)
     .sort((x, y) => new Date(x.utcDate || 0) - new Date(y.utcDate || 0));
-  box.appendChild(el("h3", "hist-jornada", histJ ? "Jornada " + histJ : "Jornadas anteriores"));
+  box.appendChild(el("h3", "hist-jornada", "Jornada " + histJ));
   if (!shown.length) box.appendChild(el("p", "empty", "No hay partidos guardados de esta jornada."));
-  let lastMd = histJ;
   const sgn = (x, y) => (x > y ? "H" : x < y ? "A" : "D");
   const sgnTxt = (c, h) => (c === "D" ? "empate" : "victoria del " + shortName(c === "H" ? h.home : h.away));
   shown.forEach((h) => {
@@ -306,9 +299,9 @@ function renderParts() {
   (state.history || []).forEach((h) => (h.entries || []).forEach((e) => add(e, !!h.result)));
   const mine = {};
   state.matches.forEach((m) => (m.entries || []).forEach((e) => { add(e, !!m.result); (mine[e.name] = mine[e.name] || {})[m.matchId] = e; }));
-  const rank = Object.values(tot).sort((x, y) => y.prize - x.prize || y.ex - x.ex || x.name.localeCompare(y.name, "es"));
+  const rank = Object.values(tot).filter((t) => mine[t.name]).sort((x, y) => y.prize - x.prize || y.ex - x.ex || x.name.localeCompare(y.name, "es"));
   const susp = state.matches.filter((m) => /POSTPONED|SUSPENDED|CANCELLED/.test(m.status || ""));
-  if (hint) hint.textContent = rank.length ? rank.length + " participante" + (rank.length === 1 ? "" : "s") + ", ordenados por lo que han ganado en total." + (susp.length ? " Los partidos suspendidos o aplazados no cuentan." : "") : "";
+  if (hint) hint.textContent = rank.length ? rank.length + " participante" + (rank.length === 1 ? "" : "s") + " con porra en esta jornada, ordenados por lo que han ganado." + (susp.length ? " Los partidos suspendidos o aplazados no cuentan." : "") : "";
   if (!rank.length) { box.appendChild(el("p", "empty", "Todavía no hay participantes.")); return; }
   const grand = rank.reduce((a, r) => a + r.prize, 0);
   const tb = el("div", "total-box");
@@ -320,7 +313,6 @@ function renderParts() {
     const card = el("div", "porra-card hx");
     card.appendChild(el("div", "hx-name", (medal[i] || (i + 1) + "º") + " " + r.name));
     card.appendChild(el("div", "hx-pred", money(r.prize) + " €"));
-    card.appendChild(el("div", "hx-why", r.ex + " exacto" + (r.ex === 1 ? "" : "s") + " · " + r.sg + " de signo · " + r.played + " partido" + (r.played === 1 ? "" : "s") + " jugado" + (r.played === 1 ? "" : "s")));
     state.matches.forEach((m) => {
       const e = (mine[r.name] || {})[m.matchId];
       const row = el("div", "hx-entry");
@@ -328,7 +320,7 @@ function renderParts() {
       row.appendChild(el("div", "hx-why", m.label + " · " + shortName(m.home) + " - " + shortName(m.away)));
       row.appendChild(el("div", "hx-pred", e ? e.home + " - " + e.away : "—"));
       if (suspended) row.appendChild(el("div", "hx-why", "⏸ Partido suspendido o aplazado: no cuenta"));
-      else if (e && e.prize != null && e.prize > 0) { row.classList.add(e.tipo === "exacto" ? "exacto" : "signo"); row.appendChild(el("div", "hx-why", (e.tipo === "exacto" ? "Exacto · " : "Signo · ") + money(e.prize) + " €")); }
+      else if (e && e.prize != null && e.prize > 0) { row.classList.add(e.tipo === "exacto" ? "exacto" : "signo"); row.appendChild(el("div", "hx-why", "Ganó " + money(e.prize) + " €")); }
       card.appendChild(row);
     });
     box.appendChild(card);
