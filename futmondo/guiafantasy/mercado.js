@@ -3455,38 +3455,51 @@
       const d = total - versus;
       box.appendChild(el("div", "an-proj-vs", (d >= 0.5 ? "▲ +" + f1(d) + " pts más que tu once actual" : d <= -0.5 ? "▼ " + f1(d) + " pts vs tu once actual" : "= igual que tu once actual")));
     }
-    const chips = el("div", "an-proj-chips");
-    [["POR", "🧤"], ["DEF", "🛡️"], ["CEN", "🎯"], ["DEL", "⚽"]].forEach((g) => {
+    // Reparto de puntos esperados por línea (mismo dato, en mosaico con barra)
+    const lines = [["POR", "🧤", "Portero"], ["DEF", "🛡️", "Defensas"], ["CEN", "🎯", "Medios"], ["DEL", "⚽", "Delanteros"]].map((g) => {
       const arr = ps.filter((p) => p.pos === g[0]);
-      if (arr.length) chips.appendChild(el("span", "an-proj-chip", g[1] + " " + g[0] + " " + f1(arr.reduce((a, p) => a + expOf(p), 0))));
+      return { k: g[0], ico: g[1], lab: g[2], v: arr.reduce((a, p) => a + expOf(p), 0), n: arr.length };
+    }).filter((x) => x.n);
+    const lmax = Math.max(1, ...lines.map((x) => x.v));
+    const chips = el("div", "an-lines");
+    lines.forEach((x) => {
+      const t = el("div", "an-line");
+      const hd = el("div", "an-line-h"); hd.appendChild(el("span", null, x.ico + " " + x.lab)); hd.appendChild(el("b", null, f1(x.v)));
+      t.appendChild(hd);
+      const bar = el("div", "an-line-bar"); const fill = el("i"); fill.style.width = Math.max(6, Math.round((x.v / lmax) * 100)) + "%"; bar.appendChild(fill); t.appendChild(bar);
+      chips.appendChild(t);
     });
     box.appendChild(chips);
     const hot = ps.filter((p) => expOf(p) > 0 && formOf(p).trend >= 1.5).sort((a, b) => formOf(b).trend - formOf(a).trend).slice(0, 4);
     const risk = ps.filter((p) => p.prob != null && p.prob < 70).sort((a, b) => a.prob - b.prob).slice(0, 4);
     const f1d = (x) => x.toFixed(1).replace(".", ",");
-    const group = (icon, label, cls, arr, sub) => {
+    // sub(p) → { v: cifra grande, c: qué significa, s: línea pequeña, bar: 0-100 opcional }
+    const group = (icon, label, desc, cls, arr, sub) => {
       if (!arr.length) return;
-      const g = el("div", "an-tr-group " + cls);
-      g.appendChild(el("div", "an-tr-h", icon + " " + label));
-      const row = el("div", "an-tr-row");
+      const g = el("div", "an-tg " + cls);
+      const h = el("div", "an-tg-h");
+      h.appendChild(el("span", "an-tg-pill", icon + " " + label));
+      g.appendChild(h);
+      g.appendChild(el("div", "an-tg-d", desc));
       arr.forEach((p) => {
-        const c = el("div", "an-tr-chip");
-        const ph = el("div", "an-tr-ph"); ph.appendChild(photoImg(photoOf(p))); c.appendChild(ph);
-        const tx = el("div", "an-tr-tx");
+        const it = el("div", "an-ti");
+        const ph = el("div", "an-ti-ph"); ph.appendChild(photoImg(photoOf(p))); it.appendChild(ph);
+        const tx = el("div", "an-ti-tx");
+        const info = sub(p);
         tx.appendChild(el("b", null, p.last || p.nombre));
-        const st = el("div", "an-tr-st");
-        sub(p).forEach((x) => { const i = el("div", "an-tr-s" + (x[2] ? " " + x[2] : "")); i.appendChild(el("b", null, x[0])); i.appendChild(el("span", null, x[1])); st.appendChild(i); });
-        tx.appendChild(st);
-        c.appendChild(tx);
-        row.appendChild(c);
+        if (info.s) tx.appendChild(el("small", null, info.s));
+        if (info.bar != null) { const br = el("div", "an-ti-bar"); const fl = el("i"); fl.style.width = Math.max(4, Math.min(100, info.bar)) + "%"; br.appendChild(fl); tx.appendChild(br); }
+        it.appendChild(tx);
+        const mt = el("div", "an-ti-m"); mt.appendChild(el("b", null, info.v)); mt.appendChild(el("span", null, info.c));
+        it.appendChild(mt);
+        g.appendChild(it);
       });
-      g.appendChild(row);
       box.appendChild(g);
     };
-    group("🔥", "En racha", "hot", hot, (p) => { const fo = formOf(p); return [["▲ " + f1d(fo.rec), "puntos de media en sus 2 últimos partidos", "up wide"]]; });
+    group("🔥", "En racha", "Llegan en su mejor momento: puntúan más en sus 2 últimos partidos.", "hot", hot, (p) => { const fo = formOf(p); return { v: "▲ " + f1d(fo.rec), c: "pts de media (últimos 2)", s: "Media al jugar: " + f1d(fo.avg) + " pts" }; });
     const irr = ps.filter((p) => { const fo = formOf(p); return fo.len >= 3 && fo.len - fo.played >= 2 && fo.played >= 1; }).sort((a, b) => formOf(b).avg - formOf(a).avg).slice(0, 4);
-    group("🎲", "Irregulares: puntúan al jugar, pero se pierden partidos", "irr", irr, (p) => { const fo = formOf(p); return [[fo.played + "/" + fo.len, "jugó", ""], [f1d(fo.avg), "pts al jugar", "up"]]; });
-    group("⚠️", "Dudas de jugar", "risk", risk, (p) => [[p.prob + "%", "de jugar", "down"]]);
+    group("🎲", "Irregulares", "Puntúan bien cuando juegan, pero se pierden partidos.", "irr", irr, (p) => { const fo = formOf(p); return { v: f1d(fo.avg), c: "pts al jugar", s: "Ha jugado " + fo.played + " de sus últimos " + fo.len, bar: (fo.played / fo.len) * 100 }; });
+    group("⚠️", "Dudas de jugar", "Probabilidad baja de ser titulares (según FutbolFantasy).", "risk", risk, (p) => ({ v: p.prob + "%", c: "de jugar", bar: p.prob }));
     return { box, total };
   }
   // Desglose de una jornada: AS, Marca y SofaScore (puntos de su tabla × 50% de tu liga), minutos y el resto

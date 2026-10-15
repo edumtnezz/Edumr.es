@@ -1360,3 +1360,28 @@ html { overflow-anchor: none; }
 .eq-backbar .pp-back{margin-bottom:6px}
 .eq-backbar .eq-back{margin:0 0 6px}
 
+
+/* ===== Puntuación probable: rediseño ===== */
+.an-lines{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+.an-line{padding:9px 11px;border-radius:14px;background:rgba(127,127,127,.1)}
+.an-line-h{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:.76rem;font-weight:700}
+.an-line-h b{font:800 1.05rem/1 'Space Grotesk',sans-serif}
+.an-line-bar{height:5px;border-radius:999px;background:rgba(127,127,127,.2);margin-top:7px;overflow:hidden}
+.an-line-bar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#16a34a,#4ade80)}
+.an-tg{--ac:#16a34a;margin-top:14px;padding:12px;border-radius:18px;border:1px solid rgba(127,127,127,.22);border-left:4px solid var(--ac);background:rgba(127,127,127,.06)}
+.an-tg.irr{--ac:#9333ea}
+.an-tg.risk{--ac:#d97706}
+.an-tg-pill{display:inline-block;padding:4px 11px;border-radius:999px;font:800 .78rem 'Space Grotesk',sans-serif;color:#fff;background:var(--ac)}
+.an-tg-d{margin:7px 0 4px;font-size:.76rem;line-height:1.35;opacity:.75}
+.an-ti{display:flex;align-items:center;gap:11px;padding:9px 0;border-top:1px solid rgba(127,127,127,.18)}
+.an-tg-d + .an-ti{border-top:0}
+.an-ti-ph{width:44px;height:44px;border-radius:50%;overflow:hidden;flex:none;background:rgba(127,127,127,.2);border:2px solid var(--ac)}
+.an-ti-ph img{width:100%;height:100%;object-fit:cover;object-position:top}
+.an-ti-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.an-ti-tx b{font-size:.95rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.an-ti-tx small{font-size:.72rem;opacity:.7;line-height:1.25}
+.an-ti-bar{height:5px;border-radius:999px;background:rgba(127,127,127,.22);overflow:hidden;margin-top:3px;max-width:150px}
+.an-ti-bar i{display:block;height:100%;border-radius:999px;background:var(--ac)}
+.an-ti-m{display:flex;flex-direction:column;align-items:flex-end;flex:none;text-align:right;line-height:1.1}
+.an-ti-m b{font:800 1.35rem/1 'Space Grotesk',sans-serif;color:var(--ac)}
+.an-ti-m span{margin-top:3px;font-size:.62rem;font-weight:700;opacity:.7;max-width:96px}
