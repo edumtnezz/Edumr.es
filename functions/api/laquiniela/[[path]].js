@@ -3351,7 +3351,45 @@ async function getPorraFixtures(env) {
     }
   }
   lists = lists || { rm: [], barca: [] };
-  return { rm: pickPorraMatch(lists.rm, now), barca: pickPorraMatch(lists.barca, now) };
+  // Partidos de liga ya terminados y fuera de plazo (pasado el lunes 23:59): van al historial.
+  const past = [].concat(lists.rm || [], lists.barca || []).filter((f) => f.result && porraShowUntil(f.utcDate) <= now);
+  return { rm: pickPorraMatch(lists.rm, now), barca: pickPorraMatch(lists.barca, now), past };
+}
+
+function porraBuildEntries(preds, f) {
+  return Object.values(preds || {})
+    .map((v) => {
+      let prize = null;
+      let tipo = "";
+      if (f.result) {
+        if (v.home === f.result.home && v.away === f.result.away) { prize = PRIZE_EXACT; tipo = "exacto"; }
+        else if (porraSign(v.home, v.away) === porraSign(f.result.home, f.result.away)) { prize = PRIZE_SIGN; tipo = "signo"; }
+        else prize = 0;
+      }
+      return { name: v.name, home: v.home, away: v.away, prize, tipo };
+    })
+    .sort((a, b) => (b.prize || 0) - (a.prize || 0) || String(a.name).localeCompare(String(b.name)));
+}
+
+// Pasa al historial los partidos terminados que ya salieron de la Porra (una sola vez por partido).
+async function archivePorra(env, past) {
+  let hist = (await env.PORRA.get(PORRA_HIST_KEY, "json")) || [];
+  if (!Array.isArray(hist)) hist = [];
+  const has = (f) => hist.some((h) => (h.matchId && h.matchId === f.matchId) || (h.home === f.home && h.away === f.away && h.utcDate && f.utcDate && String(h.utcDate).slice(0, 10) === String(f.utcDate).slice(0, 10)));
+  let changed = false;
+  for (const f of past || []) {
+    if (has(f)) continue;
+    const preds = (await env.PORRA.get(`porra:pred:${f.matchId}`, "json")) || {};
+    const entries = porraBuildEntries(preds, f);
+    if (!entries.length) continue;
+    hist.push({ matchId: f.matchId, home: f.home, away: f.away, utcDate: f.utcDate, competition: f.competition, result: f.result, entries });
+    changed = true;
+  }
+  if (changed) {
+    hist.sort((a, b) => new Date(b.utcDate || 0) - new Date(a.utcDate || 0));
+    try { await env.PORRA.put(PORRA_HIST_KEY, JSON.stringify(hist)); } catch (e) {}
+  }
+  return hist;
 }
 
 async function getPorraState(env, user) {
@@ -3401,7 +3439,9 @@ async function getPorraState(env, user) {
       my: my ? { home: my.home, away: my.away } : null,
     });
   }
-  const history = (await env.PORRA.get(PORRA_HIST_KEY, "json")) || [];
+  let history = [];
+  try { history = await archivePorra(env, items.past); } catch (e) { history = (await env.PORRA.get(PORRA_HIST_KEY, "json")) || []; }
+  history = (Array.isArray(history) ? history : []).slice().sort((a, b) => new Date(b.utcDate || 0) - new Date(a.utcDate || 0));
   return { user: user ? { name: user.name } : null, matches, history };
 }
 
