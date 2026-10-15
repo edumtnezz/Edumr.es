@@ -2962,7 +2962,9 @@
       const mine = [];
       jrs.forEach((j) => j.ms.forEach((m) => { if (teamCanon(m.home) === tc || teamCanon(m.away) === tc) mine.push(Object.assign({ jn: j.n }, m)); }));
       const stOf = (m) => (m.live && m.live.state) || "";
-      const upcoming = mine.filter((m) => stOf(m) !== "final");
+      // Un partido suspendido/aplazado no es el "próximo partido": se muestra aparte en el calendario como "Aplazado".
+      const upcoming = mine.filter((m) => stOf(m) !== "final" && stOf(m) !== "suspended");
+      const postponed = mine.filter((m) => stOf(m) === "suspended");
       const played = mine.filter((m) => stOf(m) === "final");
       const next = upcoming[0] || null;
       const last = played[played.length - 1] || null;
@@ -2973,9 +2975,11 @@
       // El logo de Futmondo es de solo 64 px y se ve borroso en grande: se usa el escudo de la fuente de partidos (football-data, nítido) si lo hay.
       let hiCrest = "";
       for (let q = 0; q < mine.length && !hiCrest; q++) hiCrest = (teamCanon(mine[q].home) === tc ? mine[q].homeCrest : mine[q].awayCrest) || "";
-      const crestSrc = hiCrest || team.logo;
+      // football-data también ofrece el escudo en vectorial (.svg): nítido a cualquier tamaño.
+      const crestSvg = /crests\.football-data\.org\/.+\.png$/i.test(hiCrest) ? hiCrest.replace(/\.png$/i, ".svg") : "";
+      const crestSrc = crestSvg || hiCrest || team.logo;
       if (crestSrc) { const bg = el("img", "eq-hero-bg"); bg.src = crestSrc; bg.alt = ""; hd.appendChild(bg); }
-      if (crestSrc) { const im = el("img", "eq-crest"); im.src = crestSrc; im.alt = ""; im.addEventListener("error", () => { if (team.logo && im.src !== team.logo) im.src = team.logo; }); hd.appendChild(im); }
+      if (crestSrc) { const im = el("img", "eq-crest"); im.src = crestSrc; im.alt = ""; let tried = 0; im.addEventListener("error", () => { tried++; if (tried === 1 && hiCrest && im.src !== hiCrest) im.src = hiCrest; else if (team.logo && im.src !== team.logo) im.src = team.logo; }); hd.appendChild(im); }
       const ht = el("div", "eq-htxt");
       ht.appendChild(el("h2", "eq-h1", team.name));
       const fx = eqFacts(tc);
@@ -3054,7 +3058,7 @@
       const cal = el("section", "eq-sec");
       cal.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "Calendario"));
       const rows = el("div", "eq-cal");
-      const calList = [].concat(last ? [last] : [], upcoming.slice(0, 3));
+      const calList = [].concat(last ? [last] : [], postponed, upcoming.slice(0, 3)).sort((a, b) => a.jn - b.jn);
       calList.forEach((m) => {
         const home = teamCanon(m.home) === tc;
         const st = stOf(m);
@@ -3065,7 +3069,7 @@
         const c = el("img"); c.src = (home ? m.awayCrest : m.homeCrest) || ""; c.alt = ""; c.loading = "lazy";
         a.appendChild(c);
         a.appendChild(el("span", "eq-calrival", home ? m.away : m.home));
-        const res = st === "final" || st === "live" ? ((m.live && m.live.score) || "") : [m.day, m.date, m.time].filter(Boolean).join(" ");
+        const res = st === "suspended" ? "Aplazado" : st === "final" || st === "live" ? ((m.live && m.live.score) || "") : [m.day, m.date, m.time].filter(Boolean).join(" ");
         a.appendChild(el("span", "eq-calres", (st === "live" ? "● " : "") + res));
         rows.appendChild(a);
       });
