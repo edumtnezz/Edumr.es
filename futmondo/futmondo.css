@@ -370,3 +370,5 @@ body.hub-page::before { content: ""; position: absolute; top: -210px; right: -23
 [data-theme="light"] .hub-feature { background: #dcf5e4; border-color: rgba(22, 163, 74, 0.35); }
 .hub-list { background: rgba(255, 255, 255, 0.04); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }
 [data-theme="light"] .hub-list { background: #fff; box-shadow: none; }
+
+.hub-feature { grid-template-areas: "i t" "g g"; }
