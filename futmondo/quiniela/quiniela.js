@@ -557,11 +557,6 @@ function renderParticipants() {
     return;
   }
 
-  const grand = list.reduce((a, p) => a + hitsOf(p), 0) * ((state && state.prizePerHit) || 150000);
-  const tb = document.createElement("div");
-  tb.className = "total-box";
-  tb.innerHTML = `<small>Total repartido en esta jornada (suma de lo ganado por todos)</small><b>${money(grand)} €</b>`;
-  wrap.appendChild(tb);
   list.forEach((p, idx) => {
     const card = document.createElement("div");
     card.className = "participant";
