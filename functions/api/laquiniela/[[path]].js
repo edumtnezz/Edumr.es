@@ -3269,7 +3269,7 @@ async function placeBid(request, env, user) {
 
 const TEAM_RM = 86;
 const TEAM_BARCA = 81;
-const PORRA_FIX_KEY = "porra:fixtures:v2";
+const PORRA_FIX_KEY = "porra:fixtures:v3";
 const PORRA_HIST_KEY = "porra:history";
 const PORRA_FIX_TTL = 30 * 60 * 1000;
 const PRIZE_EXACT = 1000000;
@@ -3308,7 +3308,9 @@ async function fetchTeamFixtures(env, teamId) {
   if (!token) return null;
   const now = Date.now();
   const fmt = (ms) => new Date(ms).toISOString().slice(0, 10);
-  const url = `https://api.football-data.org/v4/teams/${teamId}/matches?competitions=PD&dateFrom=${fmt(now - 8 * 86400000)}&dateTo=${fmt(now + 60 * 86400000)}`;
+  const nd = new Date(now);
+  const seasonStart = (nd.getUTCMonth() >= 6 ? nd.getUTCFullYear() : nd.getUTCFullYear() - 1) + "-08-01";
+  const url = `https://api.football-data.org/v4/teams/${teamId}/matches?competitions=PD&dateFrom=${seasonStart}&dateTo=${fmt(now + 60 * 86400000)}`;
   const res = await fetch(url, { headers: { "X-Auth-Token": token } });
   if (!res.ok) return null;
   const j = await res.json();
@@ -3320,6 +3322,7 @@ async function fetchTeamFixtures(env, teamId) {
       const hasResult = m.status === "FINISHED" && ft.home != null && ft.away != null;
       return {
         matchId: m.id,
+        matchday: m.matchday || null,
         home: (m.homeTeam && m.homeTeam.name) || "",
         away: (m.awayTeam && m.awayTeam.name) || "",
         homeCrest: (m.homeTeam && m.homeTeam.crest) || "",
@@ -3353,7 +3356,7 @@ async function getPorraFixtures(env) {
   lists = lists || { rm: [], barca: [] };
   // Partidos de liga ya terminados y fuera de plazo (pasado el lunes 23:59): van al historial.
   const past = [].concat(lists.rm || [], lists.barca || []).filter((f) => f.result && porraShowUntil(f.utcDate) <= now);
-  return { rm: pickPorraMatch(lists.rm, now), barca: pickPorraMatch(lists.barca, now), past };
+  return { rm: pickPorraMatch(lists.rm, now), barca: pickPorraMatch(lists.barca, now), past, lists };
 }
 
 function porraBuildEntries(preds, f) {
@@ -3392,40 +3395,35 @@ async function archivePorra(env, past) {
   return hist;
 }
 
-async function getPorraState(env, user) {
+async function getPorraState(env, user, jornadaReq) {
   const items = await getPorraFixtures(env);
   const now = Date.now();
+  const lists = items.lists || { rm: [], barca: [] };
+  const mds = [items.rm, items.barca].filter(Boolean).map((f) => f.matchday).filter(Boolean);
+  const currentJornada = mds.length ? Math.min(...mds) : null;
+  const allMd = [].concat(lists.rm || [], lists.barca || []).map((f) => f.matchday).filter(Boolean);
+  const minJornada = allMd.length ? Math.min(...allMd) : null;
+  const maxJornada = allMd.length ? Math.max(...allMd) : null;
+  let jornada = Number(jornadaReq) || currentJornada;
+  if (jornada && minJornada) jornada = Math.max(minJornada, Math.min(maxJornada, jornada));
+  const pickJ = (list, fallback) => (jornada ? (list || []).find((f) => f.matchday === jornada) || null : fallback);
   const defs = [
-    { key: "rm", label: "Real Madrid", fix: items.rm },
-    { key: "barca", label: "Barcelona", fix: items.barca },
+    { key: "rm", label: "Real Madrid", fix: pickJ(lists.rm, items.rm) },
+    { key: "barca", label: "Barcelona", fix: pickJ(lists.barca, items.barca) },
   ];
   const matches = [];
   for (const d of defs) {
     const f = d.fix;
     if (!f) continue;
     const preds = (await env.PORRA.get(`porra:pred:${f.matchId}`, "json")) || {};
-    const entries = Object.values(preds)
-      .map((v) => {
-        let prize = null;
-        let tipo = "";
-        if (f.result) {
-          if (v.home === f.result.home && v.away === f.result.away) {
-            prize = PRIZE_EXACT;
-            tipo = "exacto";
-          } else if (porraSign(v.home, v.away) === porraSign(f.result.home, f.result.away)) {
-            prize = PRIZE_SIGN;
-            tipo = "signo";
-          } else prize = 0;
-        }
-        return { name: v.name, home: v.home, away: v.away, prize, tipo };
-      })
-      .sort((a, b) => (b.prize || 0) - (a.prize || 0) || String(a.name).localeCompare(String(b.name)));
+    const entries = porraBuildEntries(preds, f);
     const started = now >= new Date(f.utcDate).getTime() || !["SCHEDULED", "TIMED"].includes(f.status);
     const my = user ? preds[user.key] : null;
     matches.push({
       key: d.key,
       label: d.label,
       matchId: f.matchId,
+      matchday: f.matchday || null,
       home: f.home,
       away: f.away,
       homeCrest: f.homeCrest,
@@ -3442,7 +3440,7 @@ async function getPorraState(env, user) {
   let history = [];
   try { history = await archivePorra(env, items.past); } catch (e) { history = (await env.PORRA.get(PORRA_HIST_KEY, "json")) || []; }
   history = (Array.isArray(history) ? history : []).slice().sort((a, b) => new Date(b.utcDate || 0) - new Date(a.utcDate || 0));
-  return { user: user ? { name: user.name } : null, matches, history };
+  return { user: user ? { name: user.name } : null, matches, history, jornada, currentJornada, minJornada, maxJornada };
 }
 
 async function savePorraPred(request, env, user) {
@@ -3460,7 +3458,7 @@ async function savePorraPred(request, env, user) {
     return json({ error: "Marcador invalido." }, 400);
   }
   const items = await getPorraFixtures(env);
-  const f = [items.rm, items.barca].find((x) => x && x.matchId === matchId);
+  const f = [].concat((items.lists && items.lists.rm) || [], (items.lists && items.lists.barca) || []).find((x) => x && x.matchId === matchId);
   if (!f) return json({ error: "Partido no valido." }, 400);
   const started = Date.now() >= new Date(f.utcDate).getTime() || !["SCHEDULED", "TIMED"].includes(f.status);
   if (started) return json({ error: "El partido ya ha empezado." }, 403);
@@ -3468,7 +3466,7 @@ async function savePorraPred(request, env, user) {
   const preds = (await env.PORRA.get(key, "json")) || {};
   preds[user.key] = { name: user.name, home, away, updatedAt: new Date().toISOString() };
   await env.PORRA.put(key, JSON.stringify(preds), { expirationTtl: 60 * 24 * 3600 });
-  return json({ ok: true, state: await getPorraState(env, user) });
+  return json({ ok: true, state: await getPorraState(env, user, body.jornada) });
 }
 
 async function getPartido(env) {
@@ -3805,7 +3803,7 @@ async function handleGet({ request, env: env0, params }) {
     return json(p);
   }
   if (path === "porra") {
-    return json(await getPorraState(env, user));
+    return json(await getPorraState(env, user, url.searchParams.get("jornada")));
   }
   if (path === "puja") {
     const stub = pujaStub(env);

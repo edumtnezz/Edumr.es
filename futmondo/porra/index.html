@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="../theme.js?v=65"></script>
-  <link rel="stylesheet" href="../quiniela/quiniela.css?v=129">
+  <link rel="stylesheet" href="../quiniela/quiniela.css?v=130">
   <link rel="stylesheet" href="../edumr.css?v=58">
 </head>
 <body class="page-simple cx-page">
@@ -46,9 +46,22 @@
 
   <main class="quiniela-main">
     <section class="tab-panel" id="tab-porra">
+    <section class="jornada-card" id="countdownPanel">
+      <button class="jbtn" id="jPrev" title="Jornada anterior">◀</button>
+      <div class="jc-body">
+        <div class="jc-line">
+          <span class="jc-jornada">Jornada <b id="jView">–</b></span>
+          <span class="jc-timer" id="cdTimer">--:--:--</span>
+        </div>
+        <div class="jc-info" id="cdInfo">Cargando la jornada…</div>
+        <div class="jc-upc" id="jcUpcoming"></div>
+        <span class="jnote hidden" id="jNote">Estás viendo otra jornada</span>
+      </div>
+      <button class="jbtn" id="jNext" title="Jornada siguiente">▶</button>
+    </section>
       <section class="panel">
         <div id="porraAuth"></div>
-        <p class="muted">Porra de resultado exacto: adivina el marcador de los próximos partidos de <b>Real Madrid</b> y <b>Barcelona</b>.</p>
+        <p class="muted">Porra de resultado exacto: adivina el marcador de los partidos de LaLiga de <b>Real Madrid</b> y <b>Barcelona</b>.</p>
         <ul class="prize-list partido-prizes">
           <li><span>Resultado exacto</span><b>1.000.000 €</b></li>
           <li><span>Ganador / empate (sin exacto)</span><b>500.000 €</b></li>
@@ -90,6 +103,6 @@
 
   <footer class="quiniela-footer"></footer>
 
-  <script src="porra.js?v=118"></script>
+  <script src="porra.js?v=119"></script>
 </body>
 </html>

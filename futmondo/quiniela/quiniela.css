@@ -1473,3 +1473,18 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
   .summary-row { grid-template-columns: 90px 1fr auto; }
   .match-meta { margin-top: 8px; }
 }
+/* ---------- Barra de jornada v2 (quiniela + porra) ---------- */
+.jornada-card { align-items: stretch; }
+.jornada-card .jbtn { align-self: center; flex: none; }
+.jc-jornada { font-size: 1rem; letter-spacing: 0.1em; }
+.jc-jornada b { font-size: 1.25rem; color: var(--accent); }
+.jc-info { font-size: 0.78rem; margin-top: 4px; }
+.jc-upc { display: grid; gap: 6px; margin-top: 12px; text-align: left; }
+.jc-row { display: grid; grid-template-columns: auto 1fr; grid-template-areas: "l t" "l w"; column-gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: rgba(127,127,127,.1); border: 1px solid var(--border); }
+.jc-lbl { grid-area: l; font-size: .62rem; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); background: rgba(34,197,94,.14); padding: 4px 8px; border-radius: 8px; }
+.jc-teams { grid-area: t; font-weight: 700; font-size: .9rem; color: var(--text); overflow-wrap: anywhere; }
+.jc-when { grid-area: w; font-size: .78rem; color: var(--muted); text-transform: capitalize; }
+.jc-when b { color: var(--text); }
+@media (min-width: 620px) {
+  .jc-row { grid-template-columns: auto 1fr auto; grid-template-areas: "l t w"; }
+}

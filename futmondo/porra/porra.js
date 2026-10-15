@@ -10,6 +10,7 @@ document.documentElement.classList.add("auth-loading");
 })();
 
 let state = { user: null, matches: [] };
+let viewJornada = null;
 
 function $(id) { return document.getElementById(id); }
 function escapeHtml(s) {
@@ -141,6 +142,51 @@ function renderMatch(panel, m) {
   panel.appendChild(card);
 }
 
+function updateCountdown() {
+  const box = $("countdownPanel");
+  if (!box || !state.matches) return;
+  const timer = $("cdTimer"), info = $("cdInfo"), upc = $("jcUpcoming");
+  const now = Date.now();
+  const up = state.matches.filter((m) => !m.started && new Date(m.utcDate).getTime() > now).sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+  const rowH = (lbl, m) => {
+    if (!m) return "";
+    const d = new Date(m.utcDate);
+    const day = d.toLocaleDateString("es-ES", { weekday: "short", day: "numeric", month: "short" });
+    const t = d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
+    return '<div class="jc-row"><span class="jc-lbl">' + lbl + '</span><span class="jc-teams">' + escapeHtml(m.home) + ' – ' + escapeHtml(m.away) + '</span><span class="jc-when">' + day + ' · <b>' + t + '</b></span></div>';
+  };
+  if (!up.length) {
+    box.classList.add("closed");
+    timer.textContent = state.matches.length ? "CERRADA" : "–";
+    info.textContent = state.matches.length ? "Los partidos de esta jornada ya han empezado." : "Sin partidos de LaLiga en esta jornada.";
+    upc.innerHTML = "";
+    return;
+  }
+  box.classList.remove("closed");
+  const sec = Math.floor((new Date(up[0].utcDate).getTime() - now) / 1000);
+  if (sec >= 86400) { const dd = Math.floor(sec / 86400); timer.textContent = dd + (dd === 1 ? " día" : " días"); }
+  else {
+    const pad = (n) => String(n).padStart(2, "0");
+    timer.textContent = pad(Math.floor(sec / 3600)) + ":" + pad(Math.floor((sec % 3600) / 60)) + ":" + pad(sec % 60);
+  }
+  info.textContent = "Se cierra cuando empiece el primer partido";
+  upc.innerHTML = rowH("Siguiente", up[0]) + rowH("Después", up[1]);
+}
+
+function renderJornadaBar() {
+  const jv = $("jView");
+  if (jv) jv.textContent = state.jornada || "–";
+  const prev = $("jPrev"), next = $("jNext"), note = $("jNote");
+  if (prev) prev.disabled = !state.jornada || state.jornada <= (state.minJornada || 1);
+  if (next) next.disabled = !state.jornada || state.jornada >= (state.maxJornada || state.jornada);
+  if (note) note.classList.toggle("hidden", !state.jornada || state.jornada === state.currentJornada);
+  updateCountdown();
+}
+
+$("jPrev").addEventListener("click", () => { if (state.jornada) { viewJornada = state.jornada - 1; load(); } });
+$("jNext").addEventListener("click", () => { if (state.jornada) { viewJornada = state.jornada + 1; load(); } });
+setInterval(updateCountdown, 1000);
+
 function render() {
   const panel = $("porraPanel");
   const auth = $("porraAuth");
@@ -149,8 +195,9 @@ function render() {
   if (auth) auth.innerHTML = "";
   renderUserBox();
 
+  renderJornadaBar();
   if (!state.matches.length) {
-    panel.appendChild(el("p", "muted", "Cargando partidos…"));
+    panel.appendChild(el("p", "muted", state.jornada ? "Esta jornada no tiene partido de Madrid ni Barça en LaLiga (o está aplazado)." : "Cargando partidos…"));
     return;
   }
   if (!state.user && auth) renderLogin(auth);
@@ -265,7 +312,7 @@ async function guardar(m) {
     const res = await fetch(API + "/porra/predecir", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ matchId: m.matchId, home: h.value, away: a.value }),
+      body: JSON.stringify({ matchId: m.matchId, home: h.value, away: a.value, jornada: state.jornada }),
     });
     const d = await res.json();
     if (!res.ok) throw new Error(d.error || "Error");
@@ -276,7 +323,7 @@ async function guardar(m) {
 
 async function load() {
   try {
-    const res = await fetch(API + "/porra");
+    const res = await fetch(API + "/porra" + (viewJornada ? "?jornada=" + viewJornada : ""));
     state = await res.json();
     render();
   } catch (e) {}
