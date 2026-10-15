@@ -3607,9 +3607,77 @@ function withCacheKV(env) {
   } catch (e) { return env; }
 }
 
+// ---- Histórico de puntos de la liga por jornada --------------------------------
+// Futmondo solo da los puntos de liga de los 5 últimos partidos de cada jugador (array "fitness"). Para que
+// con el tiempo se vea TODA la temporada, cada vez que un equipo termina un partido se guardan esos puntos
+// por jugador y jornada. Solo se guarda cuando hay partidos nuevos (pocas escrituras) y solo si la alineación
+// ventana-jornada se puede comprobar (si no cuadra con lo ya guardado, ese equipo se salta).
+const PTH_KEY = "pth:v1", PTH_META = "pth:meta:v1";
+async function recordPointsHistory(env) {
+  const out = { teams: 0, written: 0, skipped: [] };
+  let cur = 0;
+  try { cur = Number((await getJornada(env, null)).matchday) || 0; } catch (e) {}
+  if (!cur) return out;
+  const fin = {}; // teamKey -> [{n, t}]
+  for (let n = Math.max(1, cur - 6); n <= Math.min(38, cur + 1); n++) {
+    let jd = null;
+    try { jd = await getJornada(env, n); } catch (e) {}
+    ((jd && jd.matches) || []).forEach((m) => {
+      if (m.status !== "FINISHED" && m.status !== "AWARDED") return;
+      const t = Date.parse(m.utcDate) || 0;
+      [m.homeTeam, m.awayTeam].forEach((tm) => {
+        const k = teamKey((tm && (tm.shortName || tm.name)) || "");
+        if (!k) return;
+        (fin[k] = fin[k] || []).push({ n, t });
+      });
+    });
+  }
+  Object.keys(fin).forEach((k) => fin[k].sort((a, b) => a.t - b.t));
+  let meta = {};
+  try { meta = (await env.PORRA.get(PTH_META, "json")) || {}; } catch (e) {}
+  const pending = Object.keys(fin).filter((k) => {
+    const last = fin[k][fin[k].length - 1];
+    return meta[k] !== last.n;
+  });
+  if (!pending.length) return out;
+  const mk = await getMarketPlayers(env);
+  const players = (mk && mk.players) || [];
+  let hist = {};
+  try { hist = (await env.PORRA.get(PTH_KEY, "json")) || {}; } catch (e) {}
+  let changed = false;
+  for (const k of pending) {
+    const list = fin[k];
+    const last = list[list.length - 1];
+    // Futmondo tarda en repartir los puntos: hasta 3 h después del final no se da por bueno el dato
+    if (!(mk.at && mk.at >= last.t + (105 * 60 + 3 * 3600) * 1000)) { out.skipped.push(k + ":espera"); continue; }
+    const roster = players.filter((p) => { const pk = teamKey(p.team || ""); return pk && (pk === k || pk.indexOf(k) >= 0 || k.indexOf(pk) >= 0); });
+    let cmp = 0, bad = 0;
+    const plan = [];
+    roster.forEach((p) => {
+      const f = (p.fitness || []).map((x) => Number(x) || 0);
+      if (!f.length || f.length > list.length) return;
+      const h = hist[p.id] || {};
+      f.forEach((v, i) => {
+        const n = list[list.length - f.length + i].n;
+        if (h[n] !== undefined) { cmp++; if (h[n] !== v) bad++; }
+        plan.push([p.id, n, v]);
+      });
+    });
+    if (!plan.length) { out.skipped.push(k + ":sin-datos"); continue; }
+    if (cmp >= 8 && bad / cmp > 0.25) { out.skipped.push(k + ":no-cuadra"); continue; }
+    plan.forEach(([id, n, v]) => { (hist[id] = hist[id] || {})[n] = v; });
+    meta[k] = last.n; out.teams++; out.written += plan.length; changed = true;
+  }
+  if (changed) {
+    await env.PORRA.put(PTH_KEY, JSON.stringify(hist));
+    await env.PORRA.put(PTH_META, JSON.stringify(meta));
+  }
+  return out;
+}
+
 // Caché de respuestas públicas (Cache API: sin coste ni límite). Evita recalcular en cada visita
 // y mantiene la CPU por petición por debajo del límite del plan gratis de Cloudflare.
-const EDGE_TTL = { mercado: 45, rachas: 60, equipos: 1800, portada: 60, jornada: 30, jugador: 120, once: 90, "alineaciones-confirmadas": 90, "alineaciones-estado": 90, noticias: 300, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90 };
+const EDGE_TTL = { "historial-puntos": 120, mercado: 45, rachas: 60, equipos: 1800, portada: 60, jornada: 30, jugador: 120, once: 90, "alineaciones-confirmadas": 90, "alineaciones-estado": 90, noticias: 300, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90 };
 export async function onRequestGet(ctx) {
   const path = (ctx.params.path || []).join("/");
   const ttl = EDGE_TTL[path];
@@ -3894,6 +3962,18 @@ async function handleGet({ request, env: env0, params }) {
   // Puntos de MI liga Futmondo (modo stats) para los jugadores de un partido
   // y una jornada. La página de partido manda los ids resueltos y recibe
   // { "<id>": { p: puntos|null, f: terminado } } para pintar el campo.
+  if (path === "historial-puntos") {
+    if (url.searchParams.has("run")) {
+      try { return json({ ok: true, result: await recordPointsHistory(env) }); } catch (e) { return json({ ok: false, error: String(e).slice(0, 200) }); }
+    }
+    try {
+      const ids = String(url.searchParams.get("ids") || "").split(",").map((x) => x.trim()).filter((x) => /^[a-z0-9]{6,40}$/i.test(x)).slice(0, 40);
+      const hist = (await env.PORRA.get(PTH_KEY, "json")) || {};
+      const pts = {};
+      ids.forEach((id) => { if (hist[id]) pts[id] = hist[id]; });
+      return json({ pts });
+    } catch (e) { return json({ pts: {} }); }
+  }
   if (path === "puntos") {
     try {
       const j = Number(url.searchParams.get("jornada")) || 0;

@@ -22,6 +22,8 @@ export default {
       "https://edumr.es/api/laquiniela/equipos",
       "https://edumr.es/api/laquiniela/temporada",
       "https://edumr.es/api/laquiniela/fichajes",
+      // Guarda los puntos de liga por jornada cuando un equipo acaba un partido (histórico de la temporada).
+      "https://edumr.es/api/laquiniela/historial-puntos?run=1",
     ];
     await Promise.all(urls.map(async (u) => {
       try {

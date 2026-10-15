@@ -3613,10 +3613,11 @@
       });
       if (pl.length) { const av = el("div", "an-ss-r avg"); av.appendChild(el("span", null, "")); av.appendChild(el("span", "rv", "Media (partidos jugados)")); av.appendChild(el("span", null, "")); av.appendChild(el("span", null, "")); [avgOf("as"), avgOf("marca"), avgOf("ss")].forEach((v) => av.appendChild(el("span", null, fmN(v)))); tb.appendChild(av); }
       box.appendChild(tb);
-      box.appendChild(el("div", "an-fm-dn", "PTS = puntos de tu liga en esa jornada. Futmondo solo da el total de sus últimos 5 partidos; en los anteriores sale «n/d» (no se inventa). AS, Marca y SofaScore: puntos de su tabla × 50% (tu liga), directos de Futmondo, para todos los partidos."));
+      box.appendChild(el("div", "an-fm-dn", "PTS = puntos de tu liga en esa jornada. Futmondo solo da el total de sus últimos 5 partidos, así que la web los va guardando según se juegan (desde el 15/10); los partidos anteriores a eso salen «n/d» (no se inventa). AS, Marca y SofaScore: puntos de su tabla × 50% (tu liga), directos de Futmondo, para todos los partidos."));
     };
-    if (fmCache[pid]) { draw(fmCache[pid]); return; }
-    fetch(API + "/jugador?id=" + encodeURIComponent(pid)).then((r) => r.json()).then((j) => { fmCache[pid] = j; if (box.isConnected) draw(j); }).catch(() => { box.textContent = "No se pudo cargar la temporada."; });
+    const withHist = (j) => fetch(API + "/historial-puntos?ids=" + encodeURIComponent(pid)).then((r) => r.json()).then((h) => { const o = (h && h.pts && h.pts[pid]) || {}; Object.keys(o).forEach((n) => { if (ptsByJ && ptsByJ[n] === undefined) ptsByJ[n] = o[n]; }); return j; }).catch(() => j);
+    if (fmCache[pid]) { withHist(fmCache[pid]).then(draw); return; }
+    fetch(API + "/jugador?id=" + encodeURIComponent(pid)).then((r) => r.json()).then((j) => { fmCache[pid] = j; return withHist(j); }).then((j) => { if (box.isConnected) draw(j); }).catch(() => { box.textContent = "No se pudo cargar la temporada."; });
   }
   // Forma de cada jugador: puntos de Futmondo en sus últimas 5 jornadas, con jornada y rival.
   function renderForma(box, players, d) {
