@@ -4011,7 +4011,16 @@
     // acierte en el texto libre.
     // Solo cubre de otra posición quien tiene multiposición (el suplente o el
     // titular); el resto solo cubre su misma posición.
-    const covers = (sub, tit) => sub.pos === tit.pos || (sub.pos2 && sub.pos2 === tit.pos) || (tit.pos2 && tit.pos2 === sub.pos);
+    // Posiciones en las que puede jugar un jugador: la de la captura, y sus
+    // dos posiciones reales del mercado (la de la captura de tu once es donde
+    // LO HAS PUESTO tú, así que la del hueco que se libera es tit.pos).
+    const posCodes = (p) => {
+      const set = new Set([p.pos, p.pos2].filter(Boolean));
+      const q = (all || []).find((x) => String(x.id) === String(p.id));
+      if (q) [q.role, q.role2].forEach((r) => { const b = roleBadge(r); if (b) set.add(b === "MED" ? "CEN" : b); });
+      return set;
+    };
+    const covers = (sub, tit) => posCodes(sub).has(tit.pos);
     function buildSwapPlan() {
       const pairs = [];
       const T = (p) => (p.fecha ? new Date(p.fecha).getTime() : null);
@@ -4076,8 +4085,8 @@
         row.appendChild(side(sub, "swap-sub"));
         card.appendChild(row);
         if (tit.pos !== sub.pos) {
-          const who = (sub.pos2 && sub.pos2 === tit.pos) ? (sub.last || sub.nombre) + " (" + sub.pos + "/" + sub.pos2 + ")" : (tit.last || tit.nombre) + " (" + tit.pos + "/" + tit.pos2 + ")";
-          card.appendChild(el("div", "swap-est", "🔀 Solo es posible por la multiposición de " + who));
+          const ps = Array.from(posCodes(sub)).join("/");
+          card.appendChild(el("div", "swap-est", "🔀 Solo es posible por la multiposición de " + (sub.last || sub.nombre) + " (" + ps + ")"));
         }
         const estTxt = estAlineacion(tit.fecha);
         if (estTxt) card.appendChild(el("div", "swap-est", "⏱️ alineación estimada ~" + estTxt));
