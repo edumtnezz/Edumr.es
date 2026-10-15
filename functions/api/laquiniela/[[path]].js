@@ -3315,7 +3315,7 @@ async function fetchTeamFixtures(env, teamId) {
   if (!res.ok) return null;
   const j = await res.json();
   return (j.matches || [])
-    .filter((m) => m.utcDate && (!m.competition || !m.competition.code || m.competition.code === "PD") && !["POSTPONED", "CANCELLED"].includes(m.status))
+    .filter((m) => m.utcDate && (!m.competition || !m.competition.code || m.competition.code === "PD") && !["POSTPONED", "SUSPENDED", "CANCELLED"].includes(m.status))
     .sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate))
     .map((m) => {
       const ft = (m.score && m.score.fullTime) || {};

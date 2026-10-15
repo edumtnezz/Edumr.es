@@ -539,17 +539,23 @@ function renderSummary() {
 function renderParticipants() {
   const wrap = $("participantsList");
   wrap.innerHTML = "";
-  const list = state.participants || [];
-  $("participantsHint").textContent = `Aquí están los pronósticos de todos (${list.length} participante${
-    list.length === 1 ? "" : "s"
-  }). Se pueden ver desde el principio; solo se bloquean al empezar el primer partido.`;
+  const hitsOf = (p) => {
+    let h = 0;
+    state.matches.forEach((m) => { const pk = p.picks && p.picks[m.id]; if (pk && m.result && pk === m.result) h++; });
+    return h;
+  };
+  const list = (state.participants || []).slice().sort((a, b) => hitsOf(b) - hitsOf(a) || String(a.name).localeCompare(String(b.name), "es"));
+  const nSusp = state.matches.filter((m) => /POSTPONED|SUSPENDED|CANCELLED/.test(m.status || "")).length;
+  $("participantsHint").textContent = `${list.length} participante${list.length === 1 ? "" : "s"}, ordenados por aciertos.` +
+    (nSusp ? ` ${nSusp === 1 ? "Un partido está suspendido o aplazado y no cuenta." : nSusp + " partidos están suspendidos o aplazados y no cuentan."}` : "") +
+    " Los pronósticos se ven desde el principio; solo se bloquean al empezar el primer partido.";
 
   if (!list.length) {
     wrap.innerHTML = `<p class="empty">Todavía no hay participantes.</p>`;
     return;
   }
 
-  list.forEach((p) => {
+  list.forEach((p, idx) => {
     const card = document.createElement("div");
     card.className = "participant";
     card.dataset.pkey = p.key;
@@ -577,7 +583,7 @@ function renderParticipants() {
     info.className = "participant-info";
     const nm = document.createElement("span");
     nm.className = "participant-name";
-    nm.textContent = p.name;
+    nm.textContent = ((["🥇", "🥈", "🥉"])[idx] || (idx + 1) + "º") + " " + p.name;
     const meta = document.createElement("span");
     meta.className = "participant-meta";
     meta.textContent = p.picks
@@ -774,8 +780,15 @@ function jornadaChips(cur, lo, hi, pick) {
   if (!box) return;
   box.innerHTML = "";
   if (!cur || !lo || !hi) return;
-  let a = Math.max(lo, cur - 2), b = Math.min(hi, a + 4);
-  a = Math.max(lo, b - 4);
+  let a = Math.max(lo, cur - 1), b = Math.min(hi, a + 2);
+  a = Math.max(lo, b - 2);
+  const arrow = (txt, to, dis, title) => {
+    const c = document.createElement("button");
+    c.type = "button"; c.className = "jc-arrow"; c.textContent = txt; c.title = title; c.disabled = dis;
+    c.addEventListener("click", () => { if (!dis) pick(to); });
+    return c;
+  };
+  box.appendChild(arrow("‹", cur - 1, cur <= lo, "Jornada anterior"));
   for (let n = a; n <= b; n++) {
     const c = document.createElement("button");
     c.type = "button";
@@ -784,6 +797,7 @@ function jornadaChips(cur, lo, hi, pick) {
     c.addEventListener("click", () => { if (n !== cur) pick(n); });
     box.appendChild(c);
   }
+  box.appendChild(arrow("›", cur + 1, cur >= hi, "Jornada siguiente"));
 }
 
 function renderJornadaBar() {

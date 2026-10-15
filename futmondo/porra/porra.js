@@ -116,9 +116,9 @@ function renderMatch(panel, m) {
   } else {
     const pred = el("div", "porra-pred");
     const hi = el("input"); hi.type = "number"; hi.min = 0; hi.max = 30; hi.id = "poH" + m.matchId; hi.inputMode = "numeric";
-    hi.value = m.my ? m.my.home : "";
+    hi.value = m.my ? m.my.home : ""; hi.dataset.saved = hi.value;
     const lo = el("input"); lo.type = "number"; lo.min = 0; lo.max = 30; lo.id = "poA" + m.matchId; lo.inputMode = "numeric";
-    lo.value = m.my ? m.my.away : "";
+    lo.value = m.my ? m.my.away : ""; lo.dataset.saved = lo.value;
     pred.appendChild(hi); pred.appendChild(el("span", "porra-dash", "-")); pred.appendChild(lo);
     body.appendChild(pred);
     const save = el("button", "btn-primary pc-save", m.my ? "Actualizar pronóstico" : "Guardar pronóstico");
@@ -174,8 +174,15 @@ function jornadaChips(cur, lo, hi, pick) {
   if (!box) return;
   box.innerHTML = "";
   if (!cur || !lo || !hi) return;
-  let a = Math.max(lo, cur - 2), b = Math.min(hi, a + 4);
-  a = Math.max(lo, b - 4);
+  let a = Math.max(lo, cur - 1), b = Math.min(hi, a + 2);
+  a = Math.max(lo, b - 2);
+  const arrow = (txt, to, dis, title) => {
+    const c = document.createElement("button");
+    c.type = "button"; c.className = "jc-arrow"; c.textContent = txt; c.title = title; c.disabled = dis;
+    c.addEventListener("click", () => { if (!dis) pick(to); });
+    return c;
+  };
+  box.appendChild(arrow("‹", cur - 1, cur <= lo, "Jornada anterior"));
   for (let n = a; n <= b; n++) {
     const c = document.createElement("button");
     c.type = "button";
@@ -184,6 +191,7 @@ function jornadaChips(cur, lo, hi, pick) {
     c.addEventListener("click", () => { if (n !== cur) pick(n); });
     box.appendChild(c);
   }
+  box.appendChild(arrow("›", cur + 1, cur >= hi, "Jornada siguiente"));
 }
 
 function renderJornadaBar() {
@@ -273,34 +281,36 @@ function renderParts() {
   const hint = $("porraPartsHint");
   if (!box) return;
   box.innerHTML = "";
-  const names = [];
-  const seen = {};
-  state.matches.forEach((m) => {
-    (m.entries || []).forEach((e) => {
-      if (!seen[e.name]) { seen[e.name] = true; names.push(e.name); }
-    });
-  });
-  const teams = state.matches.map((m) => m.home + " - " + m.away).join("   ·   ");
-  if (hint) hint.textContent = (teams ? "La porra de esta jornada es sobre: " + teams + ". " : "") + (names.length ? names.length + " participante" + (names.length === 1 ? "" : "s") + "." : "");
-  if (!names.length) {
-    box.appendChild(el("p", "empty", "Todavía no hay participantes."));
-    return;
-  }
-  names.forEach((n) => {
-    const card = el("div", "porra-card");
-    card.appendChild(el("div", "porra-team-label", n));
-    const list = el("div", "partido-list");
+  // Total ganado por participante: partidos ya archivados + los de esta jornada.
+  // Un partido sin resultado (aplazado/suspendido o sin jugar) no suma nada.
+  const tot = {};
+  const add = (e, played) => {
+    const t = tot[e.name] || (tot[e.name] = { name: e.name, prize: 0, ex: 0, sg: 0, played: 0 });
+    if (played) { t.played++; if (e.prize > 0) { t.prize += e.prize; if (e.tipo === "exacto") t.ex++; else t.sg++; } }
+  };
+  (state.history || []).forEach((h) => (h.entries || []).forEach((e) => add(e, !!h.result)));
+  const mine = {};
+  state.matches.forEach((m) => (m.entries || []).forEach((e) => { add(e, !!m.result); (mine[e.name] = mine[e.name] || {})[m.matchId] = e; }));
+  const rank = Object.values(tot).sort((x, y) => y.prize - x.prize || y.ex - x.ex || x.name.localeCompare(y.name, "es"));
+  const susp = state.matches.filter((m) => /POSTPONED|SUSPENDED|CANCELLED/.test(m.status || ""));
+  if (hint) hint.textContent = rank.length ? rank.length + " participante" + (rank.length === 1 ? "" : "s") + ", ordenados por lo que han ganado en total." + (susp.length ? " Los partidos suspendidos o aplazados no cuentan." : "") : "";
+  if (!rank.length) { box.appendChild(el("p", "empty", "Todavía no hay participantes.")); return; }
+  const medal = ["🥇", "🥈", "🥉"];
+  rank.forEach((r, i) => {
+    const card = el("div", "porra-card hx");
+    card.appendChild(el("div", "hx-name", (medal[i] || (i + 1) + "º") + " " + r.name));
+    card.appendChild(el("div", "hx-pred", money(r.prize) + " €"));
+    card.appendChild(el("div", "hx-why", r.ex + " exacto" + (r.ex === 1 ? "" : "s") + " · " + r.sg + " de signo · " + r.played + " partido" + (r.played === 1 ? "" : "s") + " jugado" + (r.played === 1 ? "" : "s")));
     state.matches.forEach((m) => {
-      const e = (m.entries || []).find((x) => x.name === n);
-      const row = el("div", "partido-entry");
-      row.appendChild(el("span", "pe-name", m.label + " · " + m.home + " - " + m.away));
-      row.appendChild(el("span", "pe-score", e ? e.home + " - " + e.away : "—"));
-      const tag = el("span", "pe-tag");
-      if (e && e.prize != null && e.prize > 0) tag.textContent = money(e.prize) + " €";
-      row.appendChild(tag);
-      list.appendChild(row);
+      const e = (mine[r.name] || {})[m.matchId];
+      const row = el("div", "hx-entry");
+      const suspended = /POSTPONED|SUSPENDED|CANCELLED/.test(m.status || "");
+      row.appendChild(el("div", "hx-why", m.label + " · " + shortName(m.home) + " - " + shortName(m.away)));
+      row.appendChild(el("div", "hx-pred", e ? e.home + " - " + e.away : "—"));
+      if (suspended) row.appendChild(el("div", "hx-why", "⏸ Partido suspendido o aplazado: no cuenta"));
+      else if (e && e.prize != null && e.prize > 0) { row.classList.add(e.tipo === "exacto" ? "exacto" : "signo"); row.appendChild(el("div", "hx-why", (e.tipo === "exacto" ? "Exacto · " : "Signo · ") + money(e.prize) + " €")); }
+      card.appendChild(row);
     });
-    card.appendChild(list);
     box.appendChild(card);
   });
 }
@@ -357,4 +367,10 @@ async function load() {
 }
 
 load();
-setInterval(load, 60000);
+setInterval(() => {
+  if (document.hidden) return;
+  const ae = document.activeElement;
+  if (ae && ae.tagName === "INPUT") return;
+  const dirty = Array.prototype.some.call(document.querySelectorAll(".porra-pred input"), (i) => i.value !== "" && i.dataset.saved !== i.value);
+  if (!dirty) load();
+}, 30000);
