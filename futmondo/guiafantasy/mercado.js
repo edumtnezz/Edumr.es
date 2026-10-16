@@ -1623,7 +1623,7 @@
     const role = $("mjRole") ? $("mjRole").value : "";
     let list = all.filter((p) => {
       if (q && !stripAccents(p.name).includes(q)) return false;
-      if (team && p.team !== team) return false;
+      if (team && p.team !== team && teamCanon(p.team) !== teamCanon(team)) return false;
       if (role && p.role !== role) return false;
       const v = Number(p.value) || 0;
       if (v < rangeMin || v > rangeMax) return false;
