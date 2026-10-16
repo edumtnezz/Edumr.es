@@ -3443,7 +3443,7 @@
         const hd = el("div", "an-sec-head");
         hd.appendChild(el("span", "an-sec-ic", iconOf(title)));
         hd.appendChild(el("span", "an-sec-t", title));
-        sec.appendChild(hd);
+        if (!/^CLAVES/i.test(title)) sec.appendChild(hd);
         lineup = isLineup(title);
         multi = isMulti(title);
         body = el("div", "an-sec-body" + (multi ? " an-sec-body-col" : ""));
