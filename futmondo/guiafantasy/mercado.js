@@ -4011,6 +4011,7 @@
         hd.appendChild(el("div", "an-ideal-t", "Tu once ideal"));
         hd.appendChild(el("div", "an-ideal-s", "Formación " + ideal.formacion + " · el once que más puntos debería dar esta jornada"));
         wrap.appendChild(hd);
+        if (!ideal.starters.some((p) => tits.indexOf(p) < 0) && !tits.some((p) => ideal.starters.indexOf(p) < 0)) wrap.appendChild(el("p", "an-ideal-diff", "✅ Tienes el mejor once posible"));
         const rest = tits.concat(sups).filter((p) => ideal.starters.indexOf(p) < 0);
         const posOf = new Map(ideal.slots.map((x) => [x.p, x.pos]));
         const ic = window.EduAlineacion.card({ starters: ideal.starters.map((p) => toSide(p, posOf.get(p))), bench: [] }, "Once ideal", "/img/avatar.svg", "", all, "probable", rest.map((p) => toSide(p)), cardOpts("Once <b>ideal</b>"));
@@ -4042,7 +4043,7 @@
           entran.forEach((p) => sw.appendChild(mk(p, "in")));
           salen.forEach((p) => sw.appendChild(mk(p, "out")));
           wrap.appendChild(sw);
-        } else wrap.appendChild(el("p", "an-ideal-diff", "✅ Tienes el mejor once posible"));
+        }
         out.appendChild(wrap);
       }
       const fb = el("div", "an-forma");
