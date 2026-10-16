@@ -2387,6 +2387,17 @@ async function getJornadaStrip(env, matchday) {
         live = { state, label: cmM.statusText || "", minute: state === "live" ? cmM.sub : "", score: cmM.score };
       }
     }
+    // football-data a veces se queda con el partido "en juego" mucho después de acabar:
+    // si Comuniate ya lo da por finalizado, manda Comuniate; y si han pasado más de 3 h
+    // del saque inicial, un "en juego" no es creíble.
+    if (live && live.state === "live") {
+      const cmState = cmM ? cmLiveState(cmM.statusCls) : "";
+      if (cmState === "final" && cmM.score) live = { state: "final", label: "FINALIZADO", minute: "", score: cmM.score };
+      else {
+        const ko = new Date(p.m && p.m.utcDate).getTime();
+        if (ko && Date.now() - ko > 3 * 3600 * 1000) live = null;
+      }
+    }
     const confirmed = !!(cmE && cmE.confirmed);
 
     return { home: p.home, away: p.away, homeCrest: p.homeCrest, awayCrest: p.awayCrest, day: p.day, date: p.date, time: p.time, tv, live, confirmed };
