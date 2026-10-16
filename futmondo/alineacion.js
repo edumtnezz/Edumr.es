@@ -163,7 +163,14 @@
       if (last != null && last - p.y <= 7) rows[rows.length - 1].push(p); else rows.push([p]);
       last = p.y;
     });
-    return rows.length >= 2 && rows.length <= 4 ? rows : null;
+    if (rows.length < 2 || rows.length > 4) return null;
+    // Un 4-2-2-2 no se juega: se lee como 4-2-3-1. Del par de arriba, el más centrado es el
+    // punta (queda solo) y el otro baja a la línea de tres.
+    if (rows.length === 4 && rows[0].length === 4 && rows[1].length === 2 && rows[2].length === 2 && rows[3].length === 2) {
+      var top = rows[3].slice().sort(function (a, b) { return Math.abs((a.x == null ? 50 : a.x) - 50) - Math.abs((b.x == null ? 50 : b.x) - 50); });
+      rows = [rows[0], rows[1], rows[2].concat(top[1]), [top[0]]];
+    }
+    return rows;
   }
   // La etiqueta sale SIEMPRE de lo que se dibuja (mismas filas).
   function formacion(side) {
