@@ -3961,7 +3961,9 @@
     // probables" (EduAlineacion.card): mismas fotos, % de titularidad, avisos
     // de duda/sancionado/lesionado y banquillo.
     const POSLAB = { POR: "Portero", DEF: "Defensa", CEN: "Mediocampista", DEL: "Delantero" };
-    const toSide = (p, pos) => ({ name: p.nombre, full: p.nombre, pos: POSLAB[pos || p.pos] || "Mediocampista", photo: p.photo || "", prob: p.prob != null ? p.prob : null, san: !!p.san || /SANC/i.test(p.estado || ""), inj: !!p.inj || /LESI/i.test(p.estado || ""), _p: p, plan: (() => { const x = swapPairs.find((q) => q.tit === p); return x ? (x.sub.last || x.sub.nombre) : ""; })(), note: useless.indexOf(p) >= 0 ? "⏱ juega pronto" : (earlyDay && p.fecha && dayOf(p.fecha) === earlyDay ? "⏱ juega pronto" : "") });
+    const whenOf = (f) => { if (!f) return ""; const d = new Date(f); if (isNaN(d)) return ""; return d.toLocaleString("es-ES", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }).replace(",", ""); };
+    const matchOf = (p) => (p.rival ? { vs: (p.casa === false ? "@ " : "vs ") + p.rival, when: whenOf(p.fecha) } : null);
+    const toSide = (p, pos) => ({ match: tits.indexOf(p) >= 0 ? matchOf(p) : null, name: p.nombre, full: p.nombre, pos: POSLAB[pos || p.pos] || "Mediocampista", photo: p.photo || "", prob: p.prob != null ? p.prob : null, san: !!p.san || /SANC/i.test(p.estado || ""), inj: !!p.inj || /LESI/i.test(p.estado || ""), _p: p, plan: (() => { const x = swapPairs.find((q) => q.tit === p); return x ? (x.sub.last || x.sub.nombre) : ""; })(), note: useless.indexOf(p) >= 0 ? "⏱ juega pronto" : (earlyDay && p.fecha && dayOf(p.fecha) === earlyDay ? "⏱ juega pronto" : "") });
     const myIds = new Set([].concat(tits, sups).map((p) => String(p.id || "")).filter(Boolean));
     const pool = (all || []).filter((q) => myIds.has(String(q.id)));
     anPool = pool;
@@ -4016,7 +4018,7 @@
         if (!ideal.starters.some((p) => tits.indexOf(p) < 0) && !tits.some((p) => ideal.starters.indexOf(p) < 0)) wrap.appendChild(el("p", "an-ideal-diff", "✅ Tienes el mejor once posible"));
         const rest = tits.concat(sups).filter((p) => ideal.starters.indexOf(p) < 0);
         const posOf = new Map(ideal.slots.map((x) => [x.p, x.pos]));
-        const ic = window.EduAlineacion.card({ starters: ideal.starters.map((p) => toSide(p, posOf.get(p))), bench: [] }, "Once ideal", "/img/avatar.svg", "", all, "probable", rest.map((p) => toSide(p)), cardOpts("Once <b>ideal</b>"));
+        const ic = window.EduAlineacion.card({ starters: ideal.starters.map((p) => Object.assign(toSide(p, posOf.get(p)), { match: matchOf(p) })), bench: [] }, "Once ideal", "/img/avatar.svg", "", all, "probable", rest.map((p) => toSide(p)), cardOpts("Once <b>ideal</b>"));
         wrap.appendChild(ic);
         const idProj = projBox(ideal.starters, "📈 Puntuación probable del once ideal", myProj.total);
         idProj.box.classList.add("an-proj-dark");
