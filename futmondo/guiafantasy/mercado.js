@@ -4030,23 +4030,6 @@
             const ph = el("div", "an-sw-ph"); ph.appendChild(photoImg(photoOf(p))); r.appendChild(ph);
             const tx = el("div", "an-sw-tx");
             tx.appendChild(el("b", null, p.last || p.nombre));
-            const fo0 = formOf(p);
-            const mediaTxt = (fo0.season ? "Media de la temporada: " : "Media de los últimos 5: ") + f1e(fo0.base) + " pts";
-            tx.appendChild(el("small", null, mediaTxt + (p.prob != null ? " · " + p.prob + "% de jugar" : "")));
-            tx.appendChild(el("small", null, "= " + f1e(expOf(p)) + " puntos esperados"));
-            if (dir === "out") {
-              const same = ideal.slots.filter((x) => x.pos === p.pos);
-              const mn = same.length ? Math.min(...same.map((x) => expOf(x.p))) : null;
-              const nm = { POR: "portero", DEF: "defensa", CEN: "centrocampista", DEL: "delantero" }[p.pos] || p.pos;
-              if (mn != null) {
-                const ns = same.length;
-                tx.appendChild(el("small", "an-sw-why", "Sale porque en el once ideal caben " + ns + " " + nm + (ns > 1 ? "s" : "") + " y " + (ns > 1 ? "el peor de ellos tiene" : "el que entra tiene") + " " + f1e(mn) + " esperados; él tiene " + f1e(expOf(p)) + "."));
-                if (mn - expOf(p) < 1) {
-                  const hechos = [p.casa === true ? "🏠 juega en casa" : p.casa === false ? "✈️ juega fuera" : "", p.rival ? "rival " + p.rival : "", p.penal ? "lanza penaltis (" + p.penal + ")" : ""].filter(Boolean);
-                  tx.appendChild(el("small", "an-sw-near", "⚖️ Casi empate (solo " + f1e(mn - expOf(p)) + " de diferencia)" + (hechos.length ? " · " + hechos.join(" · ") : "") + ". Si te convence más, déjalo tú."));
-                }
-              }
-            }
             r.appendChild(tx);
             const ex = el("div", "an-sw-ex");
             const nb = el("div", "an-sw-n"); nb.appendChild(document.createTextNode(f1e(expOf(p)))); nb.appendChild(el("span", null, " pts"));
