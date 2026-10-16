@@ -1648,6 +1648,13 @@
     restoreMercState();
     saveMercState();
     grid.innerHTML = "";
+    // Venimos del botón "en racha" de un equipo: bajar hasta la lista ya filtrada.
+    try {
+      if (sessionStorage.getItem("merc_scroll") && grid.offsetParent !== null) {
+        sessionStorage.removeItem("merc_scroll");
+        setTimeout(() => { const g = $("marketGrid"); if (g) g.scrollIntoView({ block: "start" }); }, 450);
+      }
+    } catch (e) {}
     const _sq = $("mjSearch"), _rl = $("mjRole");
     if ((_sq && _sq.value.trim()) || quick || teamFilter || (_rl && _rl.value) || rangeMin > 0 || (rangeMax !== Infinity && rangeMax > 0 && document.querySelector("#mxPrice .mx-chip.active") && (Number(document.querySelector("#mxPrice .mx-chip.active").dataset.max) || 0)) || sortMode !== "all") {
       const rb = el("button", "btn-ghost mkt-reset", "✕ Quitar filtros y ver todos los jugadores"); rb.type = "button";
@@ -3071,7 +3078,7 @@
             c.type = "button";
             c.title = "Ver los jugadores en racha de este equipo";
             c.addEventListener("click", () => {
-              try { sessionStorage.setItem(MS_KEY, JSON.stringify({ q: "", sortMode: "all", quick: "racha", teamFilter: squad[0].team, role: "", rangeMin: 0, rangeMax: 0, shown: 18 })); } catch (e) {}
+              try { sessionStorage.setItem("merc_scroll", "1"); sessionStorage.setItem(MS_KEY, JSON.stringify({ q: "", sortMode: "all", quick: "racha", teamFilter: squad[0].team, role: "", rangeMin: 0, rangeMax: 0, shown: 18 })); } catch (e) {}
               location.href = "/futmondo/guiafantasy/mercado";
             });
           }
