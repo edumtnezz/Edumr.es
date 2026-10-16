@@ -4042,8 +4042,7 @@
           entran.forEach((p) => sw.appendChild(mk(p, "in")));
           salen.forEach((p) => sw.appendChild(mk(p, "out")));
           wrap.appendChild(sw);
-        } else wrap.appendChild(el("p", "an-ideal-diff", "✅ Tu once ya es el ideal según las reglas."));
-        wrap.appendChild(idealRules(ideal));
+        } else wrap.appendChild(el("p", "an-ideal-diff", "✅ Tienes el mejor once posible"));
         out.appendChild(wrap);
       }
       const fb = el("div", "an-forma");
