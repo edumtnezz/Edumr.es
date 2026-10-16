@@ -83,9 +83,9 @@
         if (s.red) inner += '<span class="pl-red" title="Expulsado"></span>';
         inner += '</div><div class="pl-nm">' + esc(name) + '</div>';
         if (s.sw) inner += '<div class="pl-sw ' + s.sw.dir + '"><i>' + (s.sw.dir === "in" ? "▲" : "▼") + "</i>" + esc(s.sw.min) + "'</div>" + (s.sw.with ? '<div class="pl-sw-who">' + (s.sw.dir === "in" ? "por " : "→ ") + esc(s.sw.with.map(function (o) { var f = match(o, pool); return f ? f.name : (o.name || o.full); }).join(" / ")) + "</div>" : "");
-        if (s.match) inner += '<div class="pl-match"><b>' + esc(s.match.vs) + '</b>' + (s.match.when ? '<span>' + esc(s.match.when) + '</span>' : '') + '</div>';
         if (s.plan) inner += '<div class="pl-plan">🔁 ' + esc(s.plan) + '</div>';
         if (s.note) inner += '<div class="pl-note">' + esc(s.note) + '</div>';
+        if (s.match) inner += '<div class="pl-match"><div class="pl-vs"><b>VS</b>' + (s.match.logo ? '<img src="' + esc(s.match.logo) + '" alt="' + esc(s.match.rival) + '" onerror="this.replaceWith(document.createTextNode(this.alt))">' : '<em>' + esc(s.match.rival) + '</em>') + '</div>' + (s.match.when ? '<span>' + esc(s.match.when) + '</span>' : '') + '</div>';
         if (alt) { var fa = match(alt, pool); inner += '<div class="pl-alt">' + esc(fa ? fa.name : (alt.name || alt.last)) + '</div>'; }
         return fm ? '<a class="pl" href="/jugador/' + encodeURIComponent(fm.id) + '/' + slug(fm.name) + '">' + inner + '</a>' : '<div class="pl">' + inner + '</div>';
   }

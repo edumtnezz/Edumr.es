@@ -61,3 +61,7 @@ a.pl:hover .pl-ph img { transform: scale(1.05); }
 .pl-match { margin-top: 2px; display: flex; flex-direction: column; align-items: center; line-height: 1.15; max-width: 88px; text-shadow: 0 1px 2px rgba(0,0,0,.55); }
 .pl-match b { font: 700 .58rem 'Plus Jakarta Sans', sans-serif; color: #fff; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pl-match span { font: 600 .55rem 'Plus Jakarta Sans', sans-serif; color: rgba(255,255,255,.82); white-space: nowrap; }
+.pl-vs { display: flex; align-items: center; gap: 4px; }
+.pl-vs b { font: 800 .56rem 'Plus Jakarta Sans', sans-serif; color: rgba(255,255,255,.9); letter-spacing: .06em; }
+.pl-vs img { width: 18px; height: 18px; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
+.pl-vs em { font: 700 .58rem 'Plus Jakarta Sans', sans-serif; color: #fff; font-style: normal; }
