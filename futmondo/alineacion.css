@@ -79,3 +79,6 @@ a.pl:hover .pl-ph img { transform: scale(1.05); }
 .pl-plan { margin-top: 2px; font-size: .52rem; padding: 1px 6px; }
 .pl-note { margin-top: 2px; font-size: .5rem; padding: 1px 5px; }
 .pl-nm + .pl-match, .pl-plan + .pl-match, .pl-note + .pl-match { margin-top: auto; }
+/* Sin hueco: el recuadro del rival va pegado al jugador */
+.line { align-items: flex-start; }
+.pl-match, .pl-nm + .pl-match, .pl-plan + .pl-match, .pl-note + .pl-match { margin-top: 3px; }
