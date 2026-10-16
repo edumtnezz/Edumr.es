@@ -486,7 +486,7 @@
       const list = (d && d.players) || [];
       const j0 = Number(d && d.jornada) || 0;
       const upd = $("clausUpdated");
-      if (upd) upd.textContent = "Se actualiza cada 30 min" + (d && d.updatedAt ? " · última: " + horaTxt(d.updatedAt) : "");
+      if (upd) upd.textContent = d && d.updatedAt ? "Actualizado " + horaTxt(d.updatedAt) + " · cada 30 min" : "Cada 30 min";
       clausAll = list; clausJ0 = j0; clausApply();
       try { localStorage.setItem("claus_cache", JSON.stringify({ at: Date.now(), jornada: j0, players: list })); } catch (e) {}
     } catch (e) { if (timer) clearInterval(timer); if (!(cached && cached.players)) box.innerHTML = '<p class="market-empty">No se pudo cargar.</p>'; }

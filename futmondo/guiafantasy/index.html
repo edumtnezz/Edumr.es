@@ -15,7 +15,7 @@
   <script src="/futmondo/swr.js?v=2"></script>
   <link rel="stylesheet" href="/futmondo/quiniela/quiniela.css?v=129">
   <link rel="stylesheet" href="/futmondo/edumr.css?v=62">
-  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=195">
+  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=196">
   <link rel="stylesheet" href="/futmondo/guiafantasy/jugador.css?v=9">
   <link rel="stylesheet" href="/futmondo/guiafantasy/partido.css?v=23">
   <link rel="stylesheet" href="/futmondo/alineacion.css?v=20">
@@ -172,10 +172,17 @@
 
     <section class="tab-panel hidden" id="tab-clausulazos">
       <section class="panel">
-        <h2>Clausulazo jugoso</h2>
-        <p class="muted small">Jugadores de otros a los que merece la pena pagar la cláusula para robárselos.</p>
-        <p class="muted small">Se ordenan por rendimiento esperado la próxima jornada (forma, probabilidad de jugar y si juega en casa). El "+X M por encima de su valor" es lo que te costaría de más la cláusula frente a lo que vale ahora el jugador.</p>
-        <p class="muted small" id="clausUpdated">Se actualiza cada 30 min.</p>
+        <header class="claus-hero">
+          <div class="claus-hero-top">
+            <h2>Clausulazo jugoso</h2>
+            <span class="claus-upd" id="clausUpdated">Cada 30 min</span>
+          </div>
+          <p class="claus-hero-sub">Jugadores de otros que merece la pena robar pagando su cláusula.</p>
+          <ul class="claus-how">
+            <li><b>Orden</b><span>Rendimiento esperado la próxima jornada: forma, probabilidad de jugar y campo.</span></li>
+            <li><b>+X M</b><span>Lo que pagas de más sobre su valor actual.</span></li>
+          </ul>
+        </header>
         <div class="claus-filters">
           <div class="claus-frow" id="clausPos">
             <button type="button" class="claus-chip active" data-pos="">Todas</button>
@@ -216,6 +223,6 @@
 
   <script src="/futmondo/chrome.js?v=30"></script>
   <script src="/futmondo/alineacion.js?v=25"></script>
-  <script src="/futmondo/guiafantasy/mercado.js?v=292"></script>
+  <script src="/futmondo/guiafantasy/mercado.js?v=293"></script>
 </body>
 </html>
