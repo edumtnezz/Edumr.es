@@ -1,6 +1,6 @@
 /* Partido: cabecera con escudos enormes a los bordes + resumen de eventos */
-.mpage-top { position: relative; overflow: hidden; border-radius: 22px; padding: 18px 16px 20px; background: linear-gradient(180deg, #f6f7f8, #eceff1); min-height: 210px; }
-[data-theme="dark"] .mpage-top { background: linear-gradient(180deg, #1b222c, #141a22); }
+.mpage-top { position: relative; overflow: hidden; border-radius: 22px; padding: 18px 16px 20px; background: linear-gradient(180deg, #1b222c, #141a22); min-height: 210px; }
+[data-theme="light"] .mpage-top { background: linear-gradient(180deg, #f6f7f8, #eceff1); }
 .mpage-top > * { position: relative; z-index: 1; }
 .mpage-bgcrest { position: absolute !important; z-index: 0 !important; top: 50%; width: min(190px, 42vw); height: auto; max-height: 120%; object-fit: contain; transform: translateY(-50%); opacity: .95; pointer-events: none; }
 .mpage-bgcrest.left { left: calc(min(190px, 42vw) / -2); }

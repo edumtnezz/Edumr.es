@@ -1297,11 +1297,11 @@
     const state = isLive ? (m.live.minute || "EN JUEGO") : d.state || ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim();
     const mkTeam = (name, crest, cls) => { const t = el("div", "mpage-team " + cls); t.appendChild(clubLink(el("span", null, name), name)); return t; };
     const teams = el("div", "mpage-teams");
-    if (d.score != null && d.scoreAway != null) teams.classList.add("mpage-hasscore");
+    if ((d.score != null && d.scoreAway != null) || (m.live && m.live.score && m.live.state !== "suspended")) teams.classList.add("mpage-hasscore");
     teams.appendChild(mkTeam(m.home, m.homeCrest, "home"));
     const mid = el("div", "mpage-mid");
     mid.appendChild(el("div", "mpage-state", state));
-    mid.appendChild(el("div", "mpage-score", (d.score != null && d.scoreAway != null) ? (d.score + " - " + d.scoreAway) : "vs"));
+    mid.appendChild(el("div", "mpage-score", (d.score != null && d.scoreAway != null) ? (d.score + " - " + d.scoreAway) : (m.live && m.live.score && m.live.state !== "suspended" ? m.live.score : "vs")));
     teams.appendChild(mid);
     teams.appendChild(mkTeam(m.away, m.awayCrest, "away"));
     head.appendChild(teams);
