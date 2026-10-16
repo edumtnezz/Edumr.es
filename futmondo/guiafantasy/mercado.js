@@ -510,6 +510,31 @@
     wrap.appendChild(im);
     return wrap;
   }
+  // Banner de marca para fichajes sin foto: degradado con los colores de los clubes (origen -> destino)
+  const CLUB_COL = [[/barc/, "#a50044"], [/real madrid/, "#1e3a8a"], [/atletico|atleti/, "#c8102e"], [/sevilla/, "#d71920"], [/betis/, "#0a7d3b"], [/valencia/, "#e8731a"], [/athletic|bilbao/, "#d4121a"], [/sociedad/, "#0067b1"], [/villarreal/, "#b58900"], [/celta/, "#2a7fbf"], [/osasuna/, "#c0102e"], [/getafe/, "#004fa3"], [/rayo/, "#d6101f"], [/espanyol/, "#0069b5"], [/mallorca/, "#c8102e"], [/alaves/, "#0052a5"], [/girona/, "#d6192b"], [/palmas/, "#b58900"], [/levante/, "#9b1030"], [/elche/, "#0c8a3f"], [/oviedo/, "#0b4aa2"], [/depor/, "#1d4ed8"], [/racing|santander/, "#0a7d3b"], [/malaga/, "#0b66c3"], [/tottenham|spurs/, "#132257"], [/psg|paris/, "#004170"], [/arsenal/, "#d4001e"], [/chelsea/, "#034694"], [/man.* city|manchester city/, "#1f6fa8"], [/man.* united|manchester united/, "#da291c"], [/liverpool/, "#c8102e"], [/bayern/, "#dc052d"], [/inter\b/, "#0a3a8c"], [/milan/, "#c8102e"], [/juventus/, "#1f2937"], [/napoli/, "#1e88e5"], [/dortmund/, "#b58900"], [/leverkusen/, "#c81d1d"], [/benfica/, "#c1001f"], [/porto/, "#003a8c"], [/ajax/, "#c8102e"], [/newcastle/, "#222222"], [/west ham/, "#7a263a"], [/aston villa/, "#670e36"], [/everton/, "#003399"], [/brighton/, "#0057b8"], [/sporting/, "#0b7a3b"], [/roma/, "#8b1c2c"], [/lazio/, "#6cb4e4"], [/atalanta/, "#1d4ed8"]];
+  function clubColor(name) {
+    const n = stripAccents(String(name || "").toLowerCase());
+    for (const [re, c] of CLUB_COL) if (re.test(n)) return c;
+    let h = 0; for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) % 360;
+    return "hsl(" + h + " 55% 32%)";
+  }
+  function clubLogo(name, fallback) {
+    const k = teamCanon(name);
+    const p = (all || []).find((x) => x.logo && teamCanon(x.team) === k);
+    return (p && p.logo) || fallback || "";
+  }
+  function brandBan(ban, clubs, soloCrest) {
+    const a = clubs[0] || "", b = clubs[1] || clubs[0] || "";
+    ban.style.backgroundImage = clubs.length ? "linear-gradient(105deg, " + clubColor(a) + " 0%, " + clubColor(b) + " 100%)" : "";
+    [[a, "l", clubs.length === 1 ? soloCrest : ""], [clubs.length > 1 ? b : "", "r", ""]].forEach((c) => {
+      if (!c[0]) return;
+      const wrap = el("div", "fich2-bc " + c[1]);
+      const src = clubLogo(c[0], c[2]);
+      if (src) { const im = el("img"); im.src = src; im.alt = ""; im.addEventListener("error", () => { im.remove(); wrap.textContent = String(c[0]).slice(0, 3).toUpperCase(); }); wrap.appendChild(im); }
+      else wrap.textContent = String(c[0]).slice(0, 3).toUpperCase();
+      ban.appendChild(wrap);
+    });
+  }
   let fichLoaded = false;
   async function renderFichajes() {
     const box = $("fichOut");
@@ -531,7 +556,8 @@
           const card = el("div", "fich2 fich2-" + bc);
           card.style.animationDelay = Math.min(i, 8) * 40 + "ms";
           const ban = el("div", "fich2-ban");
-          if (x.thumb) { ban.style.backgroundImage = 'url("' + x.thumb + '")'; const t = new Image(); t.onerror = () => { ban.style.backgroundImage = ""; ban.classList.add("empty"); }; t.src = x.thumb; } else ban.classList.add("empty");
+          const paintBrand = () => { ban.style.backgroundImage = ""; ban.classList.add("empty"); brandBan(ban, x.clubs || [], x.clubs && x.clubs.length === 1 ? x.clubCrest : ""); };
+          if (x.thumb) { ban.style.backgroundImage = 'url("' + x.thumb + '")'; const t = new Image(); t.onerror = paintBrand; t.src = x.thumb; } else paintBrand();
           if (x.badge) ban.appendChild(el("span", "fich2-badge " + bc, x.badge));
           if (x.time) ban.appendChild(el("span", "fich2-time", "🕒 " + x.time));
           card.appendChild(ban);

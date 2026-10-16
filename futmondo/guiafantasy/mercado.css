@@ -1509,3 +1509,11 @@ html { overflow-anchor: none; }
 .eq-stat-go { cursor: pointer; font: inherit; color: inherit; border: 1px solid rgba(34,197,94,.5); box-shadow: 0 0 0 2px rgba(34,197,94,.12); }
 .eq-stat-go small { color: var(--accent); font-weight: 700; }
 .eq-stat-go:active { transform: scale(.97); }
+
+/* Fichajes: banner de marca */
+.fich2-ban.empty { background-color: #0f766e; }
+.fich2-bc { position: absolute; z-index: 0; top: 50%; width: 150px; height: 150px; transform: translateY(-50%); display: grid; place-items: center; font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 3.4rem; letter-spacing: -.04em; color: rgba(255,255,255,.28); pointer-events: none; }
+.fich2-bc.l { left: -34px; -webkit-mask-image: linear-gradient(90deg, #000 30%, transparent); mask-image: linear-gradient(90deg, #000 30%, transparent); }
+.fich2-bc.r { right: -34px; -webkit-mask-image: linear-gradient(270deg, #000 30%, transparent); mask-image: linear-gradient(270deg, #000 30%, transparent); }
+.fich2-bc img { width: 100%; height: 100%; object-fit: contain; opacity: .5; filter: drop-shadow(0 6px 16px rgba(0,0,0,.35)); }
+.fich2-ban.empty::after { background: linear-gradient(180deg, rgba(2,6,23,.28) 0%, transparent 50%, rgba(2,6,23,.4) 100%); }
