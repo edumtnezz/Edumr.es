@@ -3998,7 +3998,7 @@
     if (/\*\*ONCE IDEAL\*\*/i.test(aiTxt)) aiTxt = /\*\*(?:MULTIPOSICI|CLAVES)/i.test(aiTxt) ? aiTxt.replace(/\*\*ONCE IDEAL\*\*[\s\S]*?(?=\*\*(?:MULTIPOSICI|CLAVES))/i, "") : "";
     if (aiTxt.trim()) {
       const sec = el("div", "estado-sec an-ai-top");
-      sec.appendChild(el("div", "estado-title", "↔️ Multiposición y claves de tu once"));
+      sec.appendChild(el("div", "estado-title", "🔑 Claves de tu once"));
       sec.appendChild(renderAiText(aiTxt, [].concat(tits, sups)));
       out.appendChild(sec);
     }
