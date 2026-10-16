@@ -14,7 +14,7 @@
 .al-dl svg, .al-btn svg { width: 17px; height: 17px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
 .pitch { position: relative; width: 100%; aspect-ratio: 5 / 8.2; background: #139245 url(campo.svg) center / cover no-repeat; display: flex; flex-direction: column; justify-content: space-evenly; padding: 14px 10px; }
-.line { display: flex; justify-content: space-around; align-items: flex-start; }
+.line { display: flex; justify-content: space-around; align-items: stretch; }
 .pl { width: 25%; max-width: 100px; display: flex; flex-direction: column; align-items: center; position: relative; text-align: center; }
 .line.fw .pl { width: 30%; }
 .pl-ph { position: relative; width: 58px; height: 58px; }
@@ -65,3 +65,8 @@ a.pl:hover .pl-ph img { transform: scale(1.05); }
 .pl-vs b { font: 800 .56rem 'Plus Jakarta Sans', sans-serif; color: rgba(255,255,255,.9); letter-spacing: .06em; }
 .pl-vs img { width: 18px; height: 18px; object-fit: contain; filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)); }
 .pl-vs em { font: 700 .58rem 'Plus Jakarta Sans', sans-serif; color: #fff; font-style: normal; }
+.pl-match { margin-top: auto; border-top: 5px solid transparent; background: rgba(8,40,18,.62); background-clip: padding-box; border-radius: 10px; padding: 3px 8px 4px; backdrop-filter: blur(2px); text-shadow: none; align-self: center; }
+.pl-vs { gap: 5px; }
+.pl-vs b { font-size: .62rem; color: #fff; }
+.pl-vs img { width: 20px; height: 20px; }
+.pl-match span { font-size: .62rem; font-weight: 700; color: #fff; }
