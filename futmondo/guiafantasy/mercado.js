@@ -1483,9 +1483,10 @@
       {
         try {
           const o = await (await fetch(API + "/once?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn), { cache: "no-store" })).json();
-          if (o && o.home && (((o.home.starters || []).length) || ((o.away.starters || []).length))) {
+          if (o && o.home && (((o.home.starters || []).length) || ((o.away.starters || []).length) || ((o.home.bench || []).length) || ((o.away.bench || []).length))) {
             ffData = o;
-            if (!finished && !xi) { xi = o; xiKind = "probable"; }
+            if (!(((o.home.starters || []).length) || ((o.away.starters || []).length))) ffData.benchOnly = true;
+            if (!finished && !xi && !o.benchOnly) { xi = o; xiKind = "probable"; }
           }
         } catch (e) {}
       }
@@ -3108,10 +3109,10 @@
           } catch (e) {}
           try {
             const o = await (await fetch(API + "/once?home=" + encodeURIComponent(next.home) + "&away=" + encodeURIComponent(next.away) + "&jornada=" + next.jn)).json();
-            if (o && o.home && ((o.home.starters || []).length || (o.away.starters || []).length)) ff = o[isHome ? "home" : "away"];
+            if (o && o.home && ((o.home.starters || []).length || (o.away.starters || []).length || (o.home.bench || []).length || (o.away.bench || []).length)) ff = o[isHome ? "home" : "away"];
           } catch (e) {}
           const sure = (o) => o && o.starters && o.starters.length >= 10 && o.starters.every((p) => p.prob === 100);
-          if (conf) { side = conf; kind = "confirmada"; } else if (ff) { side = ff; kind = sure(ff) ? "confirmada" : "probable"; }
+          if (conf) { side = conf; kind = "confirmada"; } else if (ff && (ff.starters || []).length) { side = ff; kind = sure(ff) ? "confirmada" : "probable"; }
           const h = el("div", "eq-sech");
           h.appendChild(el("h3", null, side ? (kind === "confirmada" ? "Alineación confirmada" : "Alineación probable") : "Alineación"));
           h.appendChild(link);
