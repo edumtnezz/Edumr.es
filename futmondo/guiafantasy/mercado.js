@@ -3962,7 +3962,7 @@
     // probables" (EduAlineacion.card): mismas fotos, % de titularidad, avisos
     // de duda/sancionado/lesionado y banquillo.
     const POSLAB = { POR: "Portero", DEF: "Defensa", CEN: "Mediocampista", DEL: "Delantero" };
-    const toSide = (p, pos) => ({ name: p.nombre, full: p.nombre, pos: POSLAB[pos || p.pos] || "Mediocampista", photo: p.photo || "", prob: p.prob != null ? p.prob : null, san: !!p.san || /SANC/i.test(p.estado || ""), inj: !!p.inj || /LESI/i.test(p.estado || ""), _p: p, plan: (() => { const x = swapPairs.find((q) => q.tit === p); return x ? (x.sub.last || x.sub.nombre) : ""; })(), note: useless.indexOf(p) >= 0 ? "⚠️ juega pronto" : (earlyDay && p.fecha && dayOf(p.fecha) === earlyDay ? "⏱ juega pronto" : "") });
+    const toSide = (p, pos) => ({ name: p.nombre, full: p.nombre, pos: POSLAB[pos || p.pos] || "Mediocampista", photo: p.photo || "", prob: p.prob != null ? p.prob : null, san: !!p.san || /SANC/i.test(p.estado || ""), inj: !!p.inj || /LESI/i.test(p.estado || ""), _p: p, plan: (() => { const x = swapPairs.find((q) => q.tit === p); return x ? (x.sub.last || x.sub.nombre) : ""; })(), note: useless.indexOf(p) >= 0 ? "⏱ juega pronto" : (earlyDay && p.fecha && dayOf(p.fecha) === earlyDay ? "⏱ juega pronto" : "") });
     const myIds = new Set([].concat(tits, sups).map((p) => String(p.id || "")).filter(Boolean));
     const pool = (all || []).filter((q) => myIds.has(String(q.id)));
     anPool = pool;
@@ -3982,7 +3982,7 @@
       const mine = window.EduAlineacion.card({ starters: tits.map((p) => toSide(p)), bench: [] }, "Tu equipo", "/img/avatar.svg", "", all, "probable", sups.map((p) => toSide(p)), cardOpts("Tu <b>once</b>"));
       hookSwap(mine);
       out.appendChild(mine);
-      if (swapPairs.length || useless.length) out.appendChild(el("p", "muted small", "🔁 Debajo de un titular: si NO sale en el once oficial (míralo ~1 h antes), entra ese suplente, que juega más tarde." + (useless.length ? " ⚠️ En el banquillo: juega antes que a quien cubriría, así que desde el banquillo no podrás meterlo." : "")));
+      if (swapPairs.length || useless.length) out.appendChild(el("p", "muted small", "🔁 Debajo de un titular: si NO sale en el once oficial (míralo ~1 h antes), entra ese suplente, que juega más tarde." + (useless.length ? " ⏱ En el banquillo: juega antes que a quien cubriría, así que desde el banquillo no podrás meterlo." : "")));
       const bs = el("div", "an-base");
       bs.appendChild(el("div", "an-base-k", "📐 Calcular con"));
       const seg = el("div", "an-base-seg");

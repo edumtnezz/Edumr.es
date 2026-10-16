@@ -56,5 +56,5 @@ a.pl:hover .pl-ph img { transform: scale(1.05); }
 /* Tarjetas dentro de "Analiza tu equipo": sin escudo */
 .al-nocrest .al-head img { display: none; }
 
-.pl-plan { margin-top: 3px; font: 700 .58rem 'Plus Jakarta Sans', sans-serif; color: #fff; background: rgba(37,99,235,.85); padding: 2px 6px; border-radius: 6px; line-height: 1.15; }
+.pl-plan { margin-top: 3px; font: 700 .58rem 'Plus Jakarta Sans', sans-serif; color: #14532d; background: rgba(255,255,255,.94); padding: 2px 7px; border-radius: 999px; line-height: 1.15; box-shadow: 0 1px 3px rgba(0,0,0,.28); }
 .pl-note { margin-top: 3px; font: 700 .56rem 'Plus Jakarta Sans', sans-serif; color: #1f2937; background: rgba(251,191,36,.92); padding: 2px 5px; border-radius: 6px; line-height: 1.15; }
