@@ -3955,11 +3955,14 @@
       return tg.length > 0 && tg.every((t) => new Date(t.fecha).getTime() >= st);
     });
     const swapPairs = buildSwapPlan();
+    // Los que juegan en el primer día de la jornada (de todo tu plantel): se avisa también en los titulares.
+    const dayOf = (f) => new Date(f).toLocaleDateString("sv-SE", { timeZone: "Europe/Madrid" });
+    const earlyDay = [].concat(tits, sups).filter((p) => p.fecha).map((p) => dayOf(p.fecha)).sort()[0] || "";
     // Campo y banquillo: EXACTAMENTE la misma plantilla que "Alineaciones
     // probables" (EduAlineacion.card): mismas fotos, % de titularidad, avisos
     // de duda/sancionado/lesionado y banquillo.
     const POSLAB = { POR: "Portero", DEF: "Defensa", CEN: "Mediocampista", DEL: "Delantero" };
-    const toSide = (p, pos) => ({ name: p.nombre, full: p.nombre, pos: POSLAB[pos || p.pos] || "Mediocampista", photo: p.photo || "", prob: p.prob != null ? p.prob : null, san: !!p.san || /SANC/i.test(p.estado || ""), inj: !!p.inj || /LESI/i.test(p.estado || ""), _p: p, plan: (() => { const x = swapPairs.find((q) => q.tit === p); return x ? (x.sub.last || x.sub.nombre) : ""; })(), note: useless.indexOf(p) >= 0 ? "⚠️ juega pronto" : "" });
+    const toSide = (p, pos) => ({ name: p.nombre, full: p.nombre, pos: POSLAB[pos || p.pos] || "Mediocampista", photo: p.photo || "", prob: p.prob != null ? p.prob : null, san: !!p.san || /SANC/i.test(p.estado || ""), inj: !!p.inj || /LESI/i.test(p.estado || ""), _p: p, plan: (() => { const x = swapPairs.find((q) => q.tit === p); return x ? (x.sub.last || x.sub.nombre) : ""; })(), note: useless.indexOf(p) >= 0 ? "⚠️ juega pronto" : (earlyDay && p.fecha && dayOf(p.fecha) === earlyDay ? "⏱ juega pronto" : "") });
     const myIds = new Set([].concat(tits, sups).map((p) => String(p.id || "")).filter(Boolean));
     const pool = (all || []).filter((q) => myIds.has(String(q.id)));
     anPool = pool;
