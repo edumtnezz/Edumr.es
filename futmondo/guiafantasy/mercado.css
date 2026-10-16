@@ -1538,3 +1538,6 @@ html { overflow-anchor: none; }
 .an-ss-r .pt{font-size:1rem}
 .an-ss-r .nd{font-size:.88rem}
 .an-ss-r.avg{font-size:.9rem}
+.an-ss-r{grid-template-columns:28px minmax(0,1fr) 34px 28px 28px 42px 34px;gap:2px;font-size:.84rem}
+.an-ss-r .rv{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.15}
+.an-ss-r.hd{font-size:.62rem}
