@@ -3634,7 +3634,7 @@
       sum.appendChild(el("span", null, s60 + " con 60 min o más" + (sea ? " · media de la temporada " + f1e(sea.avg) + " pts por partido jugado" : "")));
       box.appendChild(sum);
       const tb = el("div", "an-ss-t");
-      const hd = el("div", "an-ss-r hd"); ["J", "Rival", "Min", "PTS", "AS", "MARCA", "SOFA"].forEach((h) => hd.appendChild(el("span", null, h))); tb.appendChild(hd);
+      const hd = el("div", "an-ss-r hd"); ["J", "Rival", "Min", "Pts", "AS", "Marca", "Sofa"].forEach((h) => hd.appendChild(el("span", null, h))); tb.appendChild(hd);
       ms.forEach((m) => {
         const played = (Number(m.mins) || 0) > 0;
         const home = teamCanon(m.home) === tc;
@@ -3643,13 +3643,12 @@
         r.appendChild(el("span", "rv", (home ? "🏠 " : "✈️ ") + (home ? m.away : m.home)));
         r.appendChild(el("span", null, played ? m.mins + "'" : "–"));
         const tp = ptsByJ ? ptsByJ[Number(m.r)] : undefined;
-        r.appendChild(el("span", tp !== undefined ? "pt" : "nd", tp !== undefined ? (tp === 0 ? "–" : String(tp)) : "n/d"));
+        r.appendChild(el("span", tp !== undefined ? "pt" : "nd", tp !== undefined ? (tp === 0 ? "–" : String(tp)) : "–"));
         [m.as, m.marca, m.ss].forEach((v) => r.appendChild(el("span", null, played && v != null ? fmN((Number(v) || 0) / 2) : "–")));
         tb.appendChild(r);
       });
-      if (pl.length) { const av = el("div", "an-ss-r avg"); av.appendChild(el("span", null, "")); av.appendChild(el("span", "rv", "Media (partidos jugados)")); av.appendChild(el("span", null, "")); av.appendChild(el("span", null, "")); [avgOf("as"), avgOf("marca"), avgOf("ss")].forEach((v) => av.appendChild(el("span", null, fmN(v)))); tb.appendChild(av); }
+      if (pl.length) { const av = el("div", "an-ss-r avg"); av.appendChild(el("span", null, "")); av.appendChild(el("span", "rv", "Media")); av.appendChild(el("span", null, "")); av.appendChild(el("span", null, "")); [avgOf("as"), avgOf("marca"), avgOf("ss")].forEach((v) => av.appendChild(el("span", null, fmN(v)))); tb.appendChild(av); }
       box.appendChild(tb);
-      box.appendChild(el("div", "an-fm-dn", "PTS = puntos de tu liga en esa jornada. Futmondo solo da el total de sus últimos 5 partidos, así que la web los va guardando según se juegan (desde el 15/10); los partidos anteriores a eso salen «n/d» (no se inventa). AS, Marca y SofaScore: puntos de su tabla × 50% (tu liga), directos de Futmondo, para todos los partidos."));
     };
     const withHist = (j) => fetch(API + "/historial-puntos?ids=" + encodeURIComponent(pid)).then((r) => r.json()).then((h) => { const o = (h && h.pts && h.pts[pid]) || {}; Object.keys(o).forEach((n) => { if (ptsByJ && ptsByJ[n] === undefined) ptsByJ[n] = o[n]; }); return j; }).catch(() => j);
     if (fmCache[pid]) { withHist(fmCache[pid]).then(draw); return; }
