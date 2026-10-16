@@ -171,6 +171,10 @@
       var top = rows[3].slice().sort(function (a, b) { return Math.abs((a.x == null ? 50 : a.x) - 50) - Math.abs((b.x == null ? 50 : b.x) - 50); });
       rows = [rows[0], rows[1], rows[2].concat(top[1]), [top[0]]];
     }
+    // Un 3-3-2-2 tampoco: son tres centrales, cinco centrocampistas (3 + 2) y dos delanteros = 3-5-2.
+    if (rows.length === 4 && rows[0].length === 3 && rows[1].length === 3 && rows[2].length === 2 && rows[3].length === 2) {
+      rows = [rows[0], rows[1].concat(rows[2]), rows[3]];
+    }
     return rows;
   }
   // La etiqueta sale SIEMPRE de lo que se dibuja (mismas filas).
