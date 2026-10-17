@@ -4331,10 +4331,19 @@
       if (!players) { const d = await (await fetch(API + "/mercado")).json(); players = d.players || []; }
       pltPlayers = players;
     } catch (e) { pltInit = false; const l = $("pltList"); if (l) l.innerHTML = "<p class='muted'>No se pudo cargar la lista.</p>"; return; }
+    pltLoadState();
     renderPltControls();
     renderPltList();
   }
   const PLT_PER = [["chg7", "7 días"], ["chg30", "30 días"], ["chgAll", "Temporada"]];
+  function pltSave() { try { sessionStorage.setItem("pltState", JSON.stringify({ c: pltClub, p: pltPos, s: pltSort, d: pltDir, per: pltPeriod, n: pltShown })); } catch (e) {} }
+  function pltLoadState() {
+    try {
+      const s = JSON.parse(sessionStorage.getItem("pltState") || "null");
+      if (!s) return;
+      pltClub = s.c || ""; pltPos = s.p || ""; pltSort = s.s || "points"; pltDir = s.d === 1 ? 1 : -1; pltPeriod = s.per || "chg7"; pltShown = Number(s.n) > 0 ? Math.min(Number(s.n), 400) : 40;
+    } catch (e) {}
+  }
   function pltRerender() { pltShown = 40; renderPltControls(); renderPltList(); }
   function pltBtn(label, on, fn, cls) {
     const b = el("button", "plt-btn" + (cls ? " " + cls : "") + (on ? " on" : ""), label); b.type = "button";
@@ -4355,6 +4364,7 @@
       clubs.appendChild(b);
     });
     clubs.scrollLeft = keep;
+    if (!keep) { const onb = clubs.querySelector(".plt-club.on"); if (onb) clubs.scrollLeft = Math.max(0, onb.offsetLeft - 60); }
     pltArrows();
     pos.innerHTML = "";
     [["", "Todos"], ["portero", "Portero"], ["defensa", "Defensa"], ["centrocampista", "Medio"], ["delantero", "Delantero"]].forEach((x) => {
@@ -4397,6 +4407,7 @@
   function renderPltList() {
     const box = $("pltList");
     if (!box) return;
+    pltSave();
     const rise = pltSort === "rise";
     const key = rise ? pltPeriod : pltSort;
     let list = pltPlayers.filter((p) => (!pltClub || p.team === pltClub) && (!pltPos || String(p.role || "").toLowerCase() === pltPos));
