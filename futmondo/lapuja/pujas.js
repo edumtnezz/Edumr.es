@@ -346,7 +346,6 @@ function render() {
       const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
       b.addEventListener("click", () => doPujar(parseDots(inp.value)));
     } else {
-      panel.appendChild(el("p", "muted", "La subasta se abre el lunes a las 00:00 (hora de Madrid)."));
     }
   }
 
