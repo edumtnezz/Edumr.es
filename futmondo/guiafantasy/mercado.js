@@ -1578,6 +1578,7 @@
       lastD = d;
       draw(d, first);
       if (needAll) pl.then(() => { if (document.body.contains(box) && lastD) draw(lastD, false); });
+      if (first && !playedJ) ensurePlayedJ().then(() => { if (playedJ && document.body.contains(box) && lastD) draw(lastD, false); }).catch(() => {});
     };
     try { await paint(true); } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar la ficha.</p>'; }
     let swrP = null;
@@ -3237,7 +3238,8 @@
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { if (document.querySelector(".eq-page")) { location.href = "/futmondo/guiafantasy/" + t.dataset.tab; return; } switchTab(t.dataset.tab); }));
   setupMoreMenu();
   let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltPeriod = "chg7", pltDir = -1, pltShown = 40, pltPlayers = [];
-  ensurePlayedJ();
+  // En la ficha de jugador esto (14 peticiones de jornadas) se pide DESPUÉS de pintar, para no frenar la carga.
+  if (!/\/jugador(?:es)?\/[a-z0-9]{6,40}/i.test(location.pathname)) ensurePlayedJ();
   (function restoreTab() {
     try { const pm = location.pathname.match(/\/guiafantasy\/partido\/([a-z0-9-]+)/); if (pm) { renderMatchPage(pm[1]); return; } } catch (e) {}
     try { const pe = location.pathname.match(/^\/equipos\/([a-z0-9-]+)/); if (pe) { renderTeamPage(pe[1]); return; } if (/^\/equipos\/?$/.test(location.pathname)) { renderTeamsIndex(); return; } } catch (e) {}
