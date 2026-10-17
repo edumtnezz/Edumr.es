@@ -207,11 +207,7 @@ body.page-simple .appbar .tabs { margin: 6px 0 0; }
   letter-spacing: -0.02em;
   line-height: 1.15;
 }
-.grad {
-  background: linear-gradient(135deg, #22c55e, #10b981);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
+.grad { color: #22c55e; }
 .porra-sub { color: var(--muted); font-size: 0.9rem; }
 .porra-sub strong { color: var(--text); }
 

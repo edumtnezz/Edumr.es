@@ -303,7 +303,7 @@ function renderMatches() {
     const f = fmtDate(m.utcDate);
     const when = document.createElement("div");
     when.className = "pc-when";
-    when.textContent = `${f.short} · ${statusLabel(m.status)}`;
+    when.textContent = `${f.short} · ${(/^(IN_PLAY|PAUSED)$/.test(m.status || "") && m.utcDate && Date.now() - new Date(m.utcDate).getTime() > 3 * 3600 * 1000) ? "Pendiente de resultado" : statusLabel(m.status)}`;
     info.appendChild(when);
     const teams = document.createElement("div");
     teams.className = "pc-teams";
