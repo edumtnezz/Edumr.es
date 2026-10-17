@@ -1586,3 +1586,5 @@ html { overflow-anchor: none; }
 .plt-pts small { color: rgba(255,255,255,.6); }
 /* Tarjeta única: igual que el resto de la web */
 .an-sec { background: var(--card-solid); box-shadow: none; border-radius: 16px; }
+.merc-search-hero { border-radius: 16px; border: 1px solid var(--border); background: var(--card-solid); box-shadow: none; }
+.merc-search-hero .market-search { border-width: 1px; }
