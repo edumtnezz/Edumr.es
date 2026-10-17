@@ -2777,7 +2777,18 @@
               if (mm.live && mm.live.state === "live") {
                 nj.textContent = "En juego" + (mm.live.minute ? " · " + mm.live.minute : "");
                 njPts.textContent = "●"; njPts.className = "fm-pts fm-live"; njPts.title = "Partido en juego";
-              } else nj.textContent = "⏳ Aún no se ha jugado" + (mm.time ? " · " + mm.time : "");
+              } else {
+                let dia = "";
+                try {
+                  const q = String(mm.date || "").split("/").map(Number), now = new Date();
+                  if (q.length >= 2 && q[0] && q[1]) {
+                    let dt = new Date(now.getFullYear(), q[1] - 1, q[0]);
+                    if (dt.getTime() < now.getTime() - 180 * 864e5) dt = new Date(now.getFullYear() + 1, q[1] - 1, q[0]);
+                    dia = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"][dt.getDay()] + " " + q[0] + "/" + q[1];
+                  }
+                } catch (e) {}
+                nj.textContent = dia ? "Se juega el " + dia + (mm.time ? " · " + mm.time : "") : "Aún no se ha jugado" + (mm.time ? " · " + mm.time : "");
+              }
             }).catch(() => {});
           }
         }
