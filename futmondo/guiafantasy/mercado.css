@@ -1725,3 +1725,7 @@ html { overflow-anchor: none; }
 .dest-ratio b { font-family: var(--font-display, inherit); font-size: 1.05rem; }
 .dest-ratio small { font-size: .55rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; opacity: .9; }
 .dest-why { font-size: .68rem; line-height: 1.3; color: #4b5b63; }
+.dest-trend { width: 100%; display: flex; flex-direction: column; gap: 1px; }
+.dt-row { display: flex; justify-content: space-between; gap: 4px; font-size: .66rem; color: #5b6b73; }
+.dt-row b { font-weight: 700; }
+.dt-row.up b { color: #16a34a; } .dt-row.down b { color: #dc2626; } .dt-row.flat b { color: #5b6b73; }

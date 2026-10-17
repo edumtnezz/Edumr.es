@@ -282,6 +282,17 @@
       const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
       if (rb) { const pill = el("span", "plt-pill posb posb-" + posCls(p.role), rb + (rb2 ? " · " + rb2 : "")); splitBadge(pill); card.appendChild(pill); }
       card.appendChild(el("div", "dest-price", (Number(p.value) / 1e6).toFixed(1).replace(".", ",") + " M€"));
+      const cmp = (n) => { const a = Math.abs(n); return a >= 1e6 ? (a / 1e6).toFixed(1).replace(".", ",") + " M€" : Math.round(a / 1000) + " mil €"; };
+      const trend = el("div", "dest-trend");
+      [["Hoy", p.change], ["7 días", p.chg7]].forEach((x) => {
+        if (x[1] == null || x[1] === "") return;
+        const v = Number(x[1]) || 0;
+        const line = el("div", "dt-row " + (v > 0 ? "up" : v < 0 ? "down" : "flat"));
+        line.appendChild(el("span", null, x[0]));
+        line.appendChild(el("b", null, v === 0 ? "igual" : (v > 0 ? "▲ " : "▼ ") + cmp(v)));
+        trend.appendChild(line);
+      });
+      if (trend.children.length) card.appendChild(trend);
       const ratio = el("div", "dest-ratio");
       ratio.appendChild(el("b", null, (Number(p.avg) || 0).toFixed(1).replace(".", ",")));
       ratio.appendChild(el("small", null, "de media"));
