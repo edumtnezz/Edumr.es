@@ -2405,7 +2405,7 @@ async function getJornadaStrip(env, matchday) {
     // del saque inicial, un "en juego" no es creíble.
     if (live && live.state === "live") {
       const cmState = cmM ? cmLiveState(cmM.statusCls) : "";
-      if (cmM && cmState === "live" && live.label !== "Descanso") {
+      if (cmM && cmState !== "final" && live.label !== "Descanso") {
         const lab = liveMinuteLabel([cmM.sub, cmM.statusText]);
         if (lab) live.minute = lab;
       }
@@ -4031,6 +4031,9 @@ async function handleGet({ request, env: env0, params }) {
   }
   if (path === "alineaciones-estado") {
     try { return json(await getProbableFlags(env, url.searchParams.get("jornada") || null)); } catch (e) { return json({ matchday: 0, items: [] }); }
+  }
+  if (path === "cm-strip-debug") {
+    try { return json(await getComuniateStrip(env, url.searchParams.get("jornada") || "9")); } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "jornada") {
     try { return json(await getJornadaStrip(env, url.searchParams.get("jornada"))); } catch (e) { return json({ matchday: 0, matches: [] }); }
