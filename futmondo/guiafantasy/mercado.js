@@ -4406,6 +4406,7 @@
     const j0 = pltPlayers.reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0);
     list.slice(0, pltShown).forEach((p) => {
       const row = el("div", "plt-row"); row.addEventListener("click", () => openFicha(p));
+      row.addEventListener("pointerdown", () => { try { fetch(API + "/jugador?id=" + encodeURIComponent(p.id) + "&fast=1").catch(() => {}); } catch (e) {} }, { passive: true }); // calienta la ficha mientras se pulsa
       const ph = el("div", "plt-ph");
       const inn = el("div", "plt-in");
       if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); inn.appendChild(im); }
