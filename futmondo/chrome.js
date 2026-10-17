@@ -155,6 +155,19 @@
         if (jornada === n) markProb(set);
       }).catch(function () {});
   }
+  // Colores principales de cada club (camiseta); el 2.º valor = true si es
+  // claro (la mitad lleva el escudo sobre fondo oscuro igualmente).
+  var CLUB_COL = {
+    "deportivo": "#1d56a5", "levante": "#9b1b30", "espanyol": "#1565c0", "atleti": "#c8102e",
+    "villarreal": "#f2c500", "elche": "#1b8a3c", "real betis": "#0b9444", "barça": "#a50044",
+    "valencia": "#ee7203", "athletic": "#d6001c", "osasuna": "#c8102e", "racing de santander": "#1b8a3c",
+    "celta": "#5aa9df", "alavés": "#1a4fa0", "málaga": "#2a6ebb", "real sociedad": "#1d5cb5",
+    "real madrid": "#dfe3ea", "sevilla fc": "#d3202f", "getafe": "#1c4fa1", "rayo vallecano": "#d2232a"
+  };
+  function clubColor(name) {
+    var c = CLUB_COL[String(name || "").toLowerCase()];
+    return c ? [c, c === "#dfe3ea" || c === "#f2c500"] : null;
+  }
   function loadJornada(n) {
     var grid = document.getElementById("cxJGrid");
     var title = document.getElementById("cxJTitle");
@@ -200,20 +213,21 @@
             var stLabel = state === "final" ? "FINALIZADO" : (live.minute || "EN JUEGO");
             statusRow = '<div class="cx-jn-statusrow cx-jn-statusrow-' + state + '"><span class="cx-jn-dot"></span>' + esc(stLabel) + '</div>';
             cardCls += state === "final" ? " cx-jn-isfinal" : " cx-jn-islive";
-            mid = '<span class="cx-jn-score">' + esc(live.score || "") + '</span>' + tv;
+            mid = '<span class="cx-jn-score">' + esc(live.score || "") + '</span>';
           } else if (state === "suspended") {
             statusRow = '<div class="cx-jn-statusrow cx-jn-statusrow-suspended"><span class="cx-jn-dot"></span>SUSPENDIDO</div>';
-            mid = tv;
+            mid = '<span class="cx-jn-hora">—</span>';
           } else {
             if (m.confirmed) { statusRow = '<div class="cx-jn-statusrow cx-jn-statusrow-confirm">Once confirmado</div>'; cardCls += " cx-jn-confirmed"; }
-            mid = '<span class="cx-jn-time">' + esc(((m.day || "") + " " + (m.date || "")).trim()) + '</span><span class="cx-jn-hora">' + esc(m.time || "") + '</span>' + tv;
+            mid = '<span class="cx-jn-time">' + esc(((m.day || "") + " " + (m.date || "")).trim()) + '</span><span class="cx-jn-hora">' + esc(m.time || "") + '</span>';
           }
           return '<div class="' + cardCls + '" data-home="' + esc(m.home) + '" data-away="' + esc(m.away) + '" data-hcrest="' + esc(m.homeCrest) + '" data-acrest="' + esc(m.awayCrest) + '">' +
+            '<div class="cx-jn-tvtop">' + tv + '</div>' +
             statusRow +
             '<div class="cx-jn-row">' +
-              '<img class="cx-jn-crest" src="' + esc(m.homeCrest) + '" alt="' + esc(m.home) + '" title="' + esc(m.home) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
+              '<div class="cx-jn-side cx-jn-home"><img class="cx-jn-crest" src="' + esc(m.homeCrest) + '" alt="' + esc(m.home) + '" title="' + esc(m.home) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'"></div>' +
               '<div class="cx-jn-mid">' + mid + '</div>' +
-              '<img class="cx-jn-crest" src="' + esc(m.awayCrest) + '" alt="' + esc(m.away) + '" title="' + esc(m.away) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
+              '<div class="cx-jn-side cx-jn-away"><img class="cx-jn-crest" src="' + esc(m.awayCrest) + '" alt="' + esc(m.away) + '" title="' + esc(m.away) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'"></div>' +
             '</div>' +
             '</div>';
         }).join("");
@@ -223,6 +237,10 @@
         if (pv) pv.disabled = jornada <= 1;
         if (nx) nx.disabled = jornada >= 38;
         grid.querySelectorAll(".cx-jn").forEach(function (el, idx) {
+          var hs = el.querySelector(".cx-jn-home"), as = el.querySelector(".cx-jn-away");
+          var hc = clubColor(ms[idx] && ms[idx].home), ac = clubColor(ms[idx] && ms[idx].away);
+          if (hs && hc) { hs.style.setProperty("--side", hc[0]); hs.classList.toggle("cx-jn-lightside", !!hc[1]); }
+          if (as && ac) { as.style.setProperty("--side", ac[0]); as.classList.toggle("cx-jn-lightside", !!ac[1]); }
           el.addEventListener("click", function () {
             var m = ms[idx] || {};
             document.dispatchEvent(new CustomEvent("cx:once", { detail: {
