@@ -40,7 +40,10 @@
 .ficha-dem-main { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 9px; color: #fff; font-weight: 800; font-size: .82rem; background: #de1b1b; }
 .ficha-dem-ab { font-size: .7rem; opacity: .9; }
 .ficha-dem-sec { display: flex; align-items: center; justify-content: center; width: 34px; border-radius: 9px; color: #fff; font-weight: 800; font-size: .7rem; background: #10af00; }
-.ficha-dem-main.posb-por, .ficha-dem-main.posb-gk { background: #d97706; } .ficha-dem-main.posb-def, .ficha-dem-main.posb-df { background: #2563eb; } .ficha-dem-main.posb-med, .ficha-dem-main.posb-mc { background: #10af00; }
+.ficha-dem-main.posb-por, .ficha-dem-sec.posb-por { background: #16a34a; }
+.ficha-dem-main.posb-def, .ficha-dem-sec.posb-def { background: #b45309; }
+.ficha-dem-main.posb-med, .ficha-dem-sec.posb-med { background: #0891b2; }
+.ficha-dem-main.posb-del, .ficha-dem-sec.posb-del { background: #be123c; }
 /* Próximos partidos */
 .ficha-fix { width: 100%; background: var(--soft, rgba(127,127,127,.1)); border-radius: 14px; padding: 10px 8px; margin-top: 10px; }
 .ficha-fix-k { font-weight: 800; font-size: .8rem; text-align: center; margin-bottom: 8px; }
