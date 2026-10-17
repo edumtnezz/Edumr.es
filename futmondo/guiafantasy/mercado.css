@@ -1744,3 +1744,16 @@ html { overflow-anchor: none; }
 @media (min-width: 700px) and (max-width: 1099px) {
   .dest-grid { gap: 12px; padding: 6px 16px 18px; }
 }
+
+/* Botones "Volver" más pequeños */
+.pp-back, .playerpage .pp-back, .mpage .pp-back, .eq-backbar .pp-back { height: 32px !important; padding: 0 12px 0 10px !important; font-size: .85rem !important; margin-bottom: 8px !important; }
+.pp-back::after, .playerpage .pp-back::after, .mpage .pp-back::after { font-size: .8rem !important; }
+/* Partido en juego: cabecera comprimida */
+.mpage-top.mpage-top-live { min-height: 0 !important; padding: 8px 12px 10px !important; }
+.mpage-top-live .mpage-teams { margin: 4px 0 0 !important; }
+.mpage-top-live .mpage-team { transform: none !important; font-size: .95rem !important; }
+.mpage-top-live .mpage-score { font-size: clamp(1.6rem, 8vw, 2.2rem) !important; }
+.mpage-top-live .mpage-bgcrest { width: min(120px, 34vw) !important; }
+.mpage-top-live .mpage-bgcrest.left { left: calc(min(120px, 34vw) / -2.6) !important; }
+.mpage-top-live .mpage-bgcrest.right { right: calc(min(120px, 34vw) / -2.6) !important; }
+.mpage-top-live .mpage-topline { margin-bottom: 0; }

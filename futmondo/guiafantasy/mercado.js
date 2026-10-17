@@ -1313,13 +1313,13 @@
     teams.appendChild(mid);
     teams.appendChild(mkTeam(m.away, m.awayCrest, "away"));
     head.appendChild(teams);
+    if (isLive || mpLive) head.classList.add("mpage-top-live");
     box.appendChild(head);
     const evSlot = el("div"); box.appendChild(evSlot);
     if (finished) {
       const sec = el("section", "mpage-xi mpage-xi-done");
-      const hd = el("div", "mpage-xi-h");
-      hd.appendChild(el("span", "mpage-xi-title", mpLive ? "Partido en juego" : "Partido finalizado"));
-      sec.appendChild(hd);
+      // En juego no se repite el título (ya lo lleva cada alineación)
+      if (!mpLive) { const hd = el("div", "mpage-xi-h"); hd.appendChild(el("span", "mpage-xi-title", "Partido finalizado")); sec.appendChild(hd); }
       const idxH = xiEvIndex(d.homePlayers), idxA = xiEvIndex(d.awayPlayers);
       const home = xiFinishedSide(m.home, m.homeCrest, d.homePlayers, xiPhotoMap(ffData && ffData.home), mpConf && mpConf.home);
       const away = xiFinishedSide(m.away, m.awayCrest, d.awayPlayers, xiPhotoMap(ffData && ffData.away), mpConf && mpConf.away);
