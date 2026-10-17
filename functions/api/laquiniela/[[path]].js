@@ -3960,16 +3960,17 @@ async function handleGet({ request, env: env0, params }) {
   if (path === "ftest") {
     const out = {};
     try {
-      const r1 = await fetch("https://www.fotmob.com/es/matches/athletic-club-vs-valencia/2usrlk", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)", "accept-language": "es" } });
-      const h = await r1.text();
-      out.page = { status: r1.status, len: h.length };
-      const m = h.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
-      if (m) { const j = JSON.parse(m[1]); const c = (j.props && j.props.pageProps) || {}; out.keys = Object.keys(c); const g = c.general || {}; out.general = { started: g.started, finished: g.finished, home: g.homeTeam && g.homeTeam.name }; const ct = c.content || {}; out.contentKeys = Object.keys(ct); const mf = ct.matchFacts || {}; out.mfKeys = Object.keys(mf); out.events = ((mf.events && mf.events.events) || []).slice(0, 12).map((e) => [e.time, e.type, e.nameStr || (e.player && e.player.name)]); out.liveticker = JSON.stringify(ct.liveticker || null).slice(0, 400); out.statsKeys = ct.stats ? Object.keys(ct.stats) : null; }
+      const r2 = await fetch("https://www.fotmob.com/api/data/matchDetails?matchId=" + (url.searchParams.get("id") || "5868099"), { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+      const j = JSON.parse(await r2.text());
+      out.keys = Object.keys(j); out.general = { started: j.general && j.general.started, finished: j.general && j.general.finished, live: j.general && j.general.ongoing };
+      const c = j.content || {};
+      out.contentKeys = Object.keys(c);
+      out.liveticker = JSON.stringify(c.liveticker || null).slice(0, 600);
+      out.ev0 = JSON.stringify(((c.matchFacts || {}).events || {}).events || []).slice(0, 1800);
+      out.statsHead = JSON.stringify(c.stats || null).slice(0, 900);
+      out.header = JSON.stringify(j.header || null).slice(0, 700);
+      out.superlive = JSON.stringify(c.superlive || null).slice(0, 300);
     } catch (e) { out.err = String(e).slice(0, 200); }
-    try {
-      const r2 = await fetch("https://www.fotmob.com/api/data/matchDetails?matchId=5868099", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
-      out.api = { status: r2.status, head: (await r2.text()).slice(0, 200) };
-    } catch (e) { out.apiErr = String(e).slice(0, 200); }
     return json(out);
   }
   if (path === "directo") {
