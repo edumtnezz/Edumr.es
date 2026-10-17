@@ -3960,16 +3960,15 @@ async function handleGet({ request, env: env0, params }) {
   if (path === "ftest") {
     const out = {};
     try {
-      const r2 = await fetch("https://www.fotmob.com/api/data/matchDetails?matchId=" + (url.searchParams.get("id") || "5868099"), { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+      const r2 = await fetch("https://www.fotmob.com/api/data/matches?date=" + (url.searchParams.get("d") || "20261017") + "&timezone=Europe%2FMadrid&ccode3=ESP", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+      out.status = r2.status;
       const j = JSON.parse(await r2.text());
-      out.keys = Object.keys(j); out.general = { started: j.general && j.general.started, finished: j.general && j.general.finished, live: j.general && j.general.ongoing };
-      const c = j.content || {};
-      out.contentKeys = Object.keys(c);
-      out.liveticker = JSON.stringify(c.liveticker || null).slice(0, 600);
-      out.ev0 = JSON.stringify(((c.matchFacts || {}).events || {}).events || []).slice(0, 1800);
-      out.statsHead = JSON.stringify(c.stats || null).slice(0, 900);
-      out.header = JSON.stringify(j.header || null).slice(0, 700);
-      out.superlive = JSON.stringify(c.superlive || null).slice(0, 300);
+      out.keys = Object.keys(j);
+      const ls = j.leagues || [];
+      out.leagues = ls.map((l) => [l.id, l.name, l.ccode, (l.matches || []).length]).slice(0, 40);
+      const lg = ls.find((l) => l.id === 87) || ls.find((l) => /laliga/i.test(l.name || ""));
+      out.m0 = JSON.stringify(lg && lg.matches && lg.matches[0]).slice(0, 700);
+      out.laliga = lg ? lg.matches.map((m) => [m.id, m.home && m.home.name, m.away && m.away.name, m.status && m.status.started, m.status && m.status.finished]) : null;
     } catch (e) { out.err = String(e).slice(0, 200); }
     return json(out);
   }
