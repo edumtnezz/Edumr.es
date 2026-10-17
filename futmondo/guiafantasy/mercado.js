@@ -1560,16 +1560,24 @@
     const box = el("section", "panel playerpage");
     box.innerHTML = '<p class="muted small">Cargando ficha…</p>';
     main.appendChild(box);
-    const paint = async (first) => {
-      const pl = (!all || !all.length) ? load().catch(() => {}) : Promise.resolve();
-      const dp = fetch(API + "/jugador?id=" + encodeURIComponent(id)).then((r) => r.json());
-      const [d] = await Promise.all([dp, pl]);
+    const draw = (d, first) => {
       const p = (all || []).find((x) => String(x.id) === String(id)) || {};
       const y = window.scrollY;
       box.innerHTML = "";
       box.appendChild(backBtn("/futmondo/guiafantasy/mercado"));
       box.appendChild(renderFicha(d, p));
       if (!first) window.scrollTo(0, y);
+    };
+    let lastD = null;
+    const paint = async (first) => {
+      // La ficha se pinta en cuanto llega /jugador; el mercado completo (más pesado) se carga aparte y repinta después.
+      const needAll = !all || !all.length;
+      const pl = needAll ? load().catch(() => {}) : Promise.resolve();
+      const dp = fetch(API + "/jugador?id=" + encodeURIComponent(id)).then((r) => r.json());
+      const d = await dp;
+      lastD = d;
+      draw(d, first);
+      if (needAll) pl.then(() => { if (document.body.contains(box) && lastD) draw(lastD, false); });
     };
     try { await paint(true); } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar la ficha.</p>'; }
     let swrP = null;
