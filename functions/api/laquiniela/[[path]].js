@@ -3957,31 +3957,16 @@ async function handleGet({ request, env: env0, params }) {
   // Cambios de un partido (quién sale y quién entra), sacados de la crónica
   // minuto a minuto de la página del partido. Cada frase se lee con varios
   // patrones; lo que no encaje se ignora (el cliente lo cruza por eliminación).
-  if (path === "ftest") {
-    const out = {};
-    try {
-      const r2 = await fetch("https://www.fotmob.com/api/data/matchDetails?matchId=" + (url.searchParams.get("id") || "5868091"), { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
-      const j = JSON.parse(await r2.text());
-      const evs = (((j.content || {}).matchFacts || {}).events || {}).events || [];
-      const seen = {};
-      evs.forEach((e) => { const k = e.type + (e.card ? ":" + e.card : ""); if (!seen[k]) seen[k] = JSON.stringify(e).replace(/"(reactKey|profileUrl|eventId|firstName|lastName)":("[^"]*"|\d+|null|false|true),?/g, "").slice(0, 420); });
-      out.samples = seen;
-      out.status = JSON.stringify((j.header || {}).status).slice(0, 700);
-      const st = ((((j.content || {}).stats || {}).Periods || {}).All || {}).stats || [];
-      out.statGroups = st.map((g) => [g.title, (g.stats || []).map((x) => x.key + ":" + JSON.stringify(x.stats))]);
-      out.shot0 = JSON.stringify(((j.content || {}).shotmap || {}).shots && j.content.shotmap.shots[0]).slice(0, 500);
-      out.lineupKeys = Object.keys((j.content || {}).lineup || {});
-      out.potm = JSON.stringify(((j.content || {}).matchFacts || {}).playerOfTheMatch).slice(0, 300);
-    } catch (e) { out.err = String(e).slice(0, 200); }
-    return json(out);
-  }
   if (path === "directo") {
-    // Crónica minuto a minuto del partido (la que publica Comuniate), tal cual y sin guardar nada en KV (caché de borde corta).
+    // Directo de un partido: crónica de Comuniate + eventos y estadísticas de FotMob. Sin KV: caché de borde de 30 s.
     const hh = url.searchParams.get("home") || "", aa = url.searchParams.get("away") || "", jj = url.searchParams.get("jornada") || "";
-    const out = { entries: [], src: "Comuniate" };
-    try {
-      const d = await getPartidoFF(env, hh, aa, jj);
-      if (d && d.url) {
+    const dd = /^\d{8}$/.test(url.searchParams.get("date") || "") ? url.searchParams.get("date") : "";
+    const out = { entries: [], fm: null };
+    const UA = { "user-agent": "Mozilla/5.0 (compatible; edumr)" };
+    const cron = (async () => {
+      try {
+        const d = await getPartidoFF(env, hh, aa, jj);
+        if (!(d && d.url)) return;
         const html = await (await fetch(d.url, { headers: cmHeaders() })).text();
         const texts = [...new Set([...html.matchAll(/"articleBody":"([^"]*)"/g)].map((m) => m[1]))];
         for (const raw of texts) {
@@ -3990,8 +3975,50 @@ async function handleGet({ request, env: env0, params }) {
           out.entries.push({ min: Number(mm[1]), x: Number(mm[2]) || 0, t: mm[3].replace(/\s+/g, " ").trim() });
         }
         out.entries.sort((a, b) => (a.min + a.x / 100) - (b.min + b.x / 100));
-      }
-    } catch (e) {}
+      } catch (e) {}
+    })();
+    const fot = (async () => {
+      try {
+        if (!dd) return;
+        const STOP = new Set(["de", "la", "el", "club", "fc", "cf", "ud", "cd", "rcd", "sd", "rc", "real", "deportivo_"]);
+        const ALIAS = { atleti: "atletico madrid", barca: "barcelona", athletic: "athletic club" };
+        const toks = (n) => { let k = String(n || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim(); if (ALIAS[k]) k = ALIAS[k]; return k.split(" ").filter((w) => w && !STOP.has(w)); };
+        const same = (ours, theirs) => { const a = toks(ours), b = toks(theirs); if (!a.length || !b.length) return false; return a.some((w) => b.indexOf(w) >= 0); };
+        const lr = await fetch("https://www.fotmob.com/api/data/matches?date=" + dd + "&timezone=Europe%2FMadrid&ccode3=ESP", { headers: UA });
+        const lj = await lr.json();
+        let hit = null;
+        for (const lg of (lj.leagues || [])) {
+          for (const m of (lg.matches || [])) {
+            if (same(hh, m.home && (m.home.longName || m.home.name)) && same(aa, m.away && (m.away.longName || m.away.name))) { hit = m; break; }
+          }
+          if (hit) break;
+        }
+        if (!hit) return;
+        const dr = await fetch("https://www.fotmob.com/api/data/matchDetails?matchId=" + hit.id, { headers: UA });
+        const j = await dr.json();
+        const st = (j.header && j.header.status) || {};
+        const content = j.content || {};
+        const evs = ((content.matchFacts || {}).events || {}).events || [];
+        const events = [];
+        evs.forEach((e) => {
+          const base = { t: Number(e.time) || 0, x: Number(e.overloadTime) || 0, h: !!e.isHome };
+          if (e.type === "Goal") events.push(Object.assign(base, { k: "goal", name: e.nameStr || (e.player && e.player.name) || "", own: !!e.ownGoal, pen: /pen/i.test(String(e.goalDescription || "") + String(e.goalDescriptionKey || "")), assist: e.assistStr || "", sc: e.newScore ? e.newScore.join(" - ") : "" }));
+          else if (e.type === "Card") events.push(Object.assign(base, { k: "card", card: e.card || "", name: e.nameStr || (e.player && e.player.name) || "" }));
+          else if (e.type === "Substitution" && e.swap && e.swap.length === 2) events.push(Object.assign(base, { k: "sub", inn: e.swap[0].name || "", out: e.swap[1].name || "" }));
+          else if (e.type === "VAR") events.push(Object.assign(base, { k: "var", name: e.nameStr || (e.player && e.player.name) || "", txt: (((e.VAR || {}).decision || {}).value || []).join(" · ") }));
+          else if (e.type === "Half") events.push(Object.assign(base, { k: "half", txt: e.halfStrShort || "" }));
+        });
+        const LBL = [["BallPossesion", "Posesión", "%"], ["expected_goals", "Goles esperados (xG)"], ["total_shots", "Tiros"], ["ShotsOnTarget", "Tiros a puerta"], ["big_chance", "Ocasiones claras"], ["corners", "Córners"], ["touches_opp_box", "Toques en el área rival"], ["accurate_passes", "Pases precisos"], ["fouls", "Faltas"], ["yellow_cards", "Amarillas"], ["red_cards", "Rojas"], ["Offsides", "Fueras de juego"], ["keeper_saves", "Paradas"]];
+        const groups = ((((content.stats || {}).Periods || {}).All || {}).stats) || [];
+        const byKey = {};
+        groups.forEach((g) => (g.stats || []).forEach((x) => { if (x && x.stats && x.stats.length === 2 && x.stats[0] != null && !byKey[x.key]) byKey[x.key] = x.stats; }));
+        const stats = [];
+        LBL.forEach((l) => { const v = byKey[l[0]]; if (v) stats.push({ l: l[1], h: v[0], a: v[1], u: l[2] || "" }); });
+        const teams = (j.header && j.header.teams) || [];
+        out.fm = { id: hit.id, started: !!st.started, finished: !!st.finished, score: [teams[0] && teams[0].score, teams[1] && teams[1].score], events, stats, src: "FotMob" };
+      } catch (e) {}
+    })();
+    await Promise.all([cron, fot]);
     return json(out);
   }
   if (path === "cambios") {

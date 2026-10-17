@@ -1482,7 +1482,7 @@
     main.appendChild(box);
     let qj = ""; try { qj = new URLSearchParams(location.search).get("j") || ""; } catch (e) {}
     const matchUrl = "/futmondo/guiafantasy/partido/" + slug + (qj ? "?j=" + encodeURIComponent(qj) : "");
-    let timer = null;
+    let timer = null, lvTab = "";
     const kindOf = (t) => {
       if (/¡\s*gol\b|golazo/i.test(t) && !/anulad|malogr|ocasi[oó]n|fuera de juego/i.test(t)) return ["goal", "⚽"];
       if (/tarjeta roja|expuls|doble amarilla|segunda amarilla/i.test(t) && !/amarilla a|le muestra tarjeta amarilla/i.test(t)) return ["red", "🟥"];
@@ -1515,20 +1515,71 @@
       const expired = ko && now > ko + LIVE_WINDOW;
       if (expired) { box.appendChild(el("p", "muted small lv-note", "Este directo ya no está disponible (se retira 2 días después del partido).")); return false; }
       if (ko && now < ko) { box.appendChild(el("p", "lv-note", "El directo empieza a las " + (m.time || "") + ". Esta página se actualiza sola.")); return true; }
-      let entries = null;
-      try { const r = await (await fetch(API + "/directo?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json(); entries = (r && r.entries) || []; } catch (e) {}
-      if (!entries || !entries.length) { box.appendChild(el("p", "muted small lv-note", entries ? "Todavía no hay jugadas publicadas." : "No se pudo cargar el directo.")); return live.state !== "final"; }
-      const list = el("div", "lv-list");
-      entries.slice().reverse().forEach((e) => {
-        const [k, ic] = kindOf(e.t);
-        const row = el("div", "lv-row" + (k ? " lv-" + k : ""));
-        row.appendChild(el("span", "lv-min", e.min + "'" + (e.x ? "+" + e.x : "")));
-        row.appendChild(el("span", "lv-ic", ic));
-        row.appendChild(el("span", "lv-tx", e.t));
-        list.appendChild(row);
-      });
-      box.appendChild(list);
-      box.appendChild(el("p", "lv-src", "Crónica minuto a minuto: Comuniate · se actualiza cada 30 s"));
+      let entries = null, fm = null, ok = false;
+      let dstr = "";
+      try { const pp = {}; new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(ko || now)).forEach((x) => { pp[x.type] = x.value; }); dstr = pp.year + pp.month + pp.day; } catch (e) {}
+      try { const r = await (await fetch(API + "/directo?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn) + (dstr ? "&date=" + dstr : ""))).json(); entries = (r && r.entries) || []; fm = r && r.fm; ok = true; } catch (e) {}
+      const evs = (fm && fm.events) || [], sts = (fm && fm.stats) || [];
+      const tabs = [];
+      if (evs.length) tabs.push(["ev", "Eventos"]);
+      if (sts.length) tabs.push(["st", "Estadísticas"]);
+      tabs.push(["cr", "Crónica"]);
+      let cur = lvTab; if (!tabs.some((t) => t[0] === cur)) cur = tabs[0][0];
+      const bar = el("div", "lv-tabs");
+      tabs.forEach((t) => { const b = el("button", "lv-tab" + (t[0] === cur ? " on" : ""), t[1]); b.type = "button"; b.addEventListener("click", () => { lvTab = t[0]; paint(false); }); bar.appendChild(b); });
+      box.appendChild(bar);
+      const mm = (e) => e.t + "'" + (e.x ? "+" + e.x : "");
+      if (cur === "ev") {
+        const list = el("div", "lv-list");
+        evs.slice().reverse().forEach((e) => {
+          if (e.k === "half") { list.appendChild(el("div", "lv-half", e.txt || "")); return; }
+          const row = el("div", "lv-row lv-ev" + (e.h ? " home" : " away") + (e.k === "goal" ? " lv-goal" : e.k === "card" && /red/i.test(e.card) ? " lv-red" : ""));
+          row.appendChild(el("span", "lv-min", mm(e)));
+          let ic = "", tx = "";
+          if (e.k === "goal") { ic = "⚽"; tx = e.name + (e.own ? " (en propia)" : e.pen ? " (penalti)" : "") + (e.sc ? " · " + e.sc : "") + (e.assist ? " · asist. " + e.assist : ""); }
+          else if (e.k === "card") { ic = /red/i.test(e.card) ? "🟥" : "🟨"; tx = e.name; }
+          else if (e.k === "sub") { ic = "🔄"; tx = "Entra " + e.inn + " · sale " + e.out; }
+          else if (e.k === "var") { ic = "📺"; tx = "VAR" + (e.name ? " · " + e.name : "") + (e.txt ? " · " + e.txt : ""); }
+          row.appendChild(el("span", "lv-ic", ic));
+          row.appendChild(el("span", "lv-tx", tx));
+          list.appendChild(row);
+        });
+        box.appendChild(list);
+        box.appendChild(el("p", "lv-src", "Eventos: FotMob · se actualiza cada 30 s"));
+      } else if (cur === "st") {
+        const list = el("div", "lv-stats");
+        sts.forEach((x) => {
+          const hv = parseFloat(x.h), av = parseFloat(x.a);
+          const tot = (hv || 0) + (av || 0);
+          const row = el("div", "lv-stat");
+          const top = el("div", "lv-stat-top");
+          top.appendChild(el("b", null, String(x.h) + (x.u || "")));
+          top.appendChild(el("span", null, x.l));
+          top.appendChild(el("b", null, String(x.a) + (x.u || "")));
+          row.appendChild(top);
+          const bar2 = el("div", "lv-stat-bar");
+          const l = el("i"), r = el("i");
+          const pl = tot > 0 ? Math.round(hv / tot * 100) : 50;
+          l.style.setProperty("width", pl + "%"); r.style.setProperty("width", (100 - pl) + "%");
+          bar2.appendChild(l); bar2.appendChild(r); row.appendChild(bar2);
+          list.appendChild(row);
+        });
+        box.appendChild(list);
+        box.appendChild(el("p", "lv-src", "Estadísticas: FotMob"));
+      } else {
+        if (!entries || !entries.length) { box.appendChild(el("p", "muted small lv-note", ok ? "Todavía no hay jugadas publicadas." : "No se pudo cargar el directo.")); return live.state !== "final"; }
+        const list = el("div", "lv-list");
+        entries.slice().reverse().forEach((e) => {
+          const [k, ic] = kindOf(e.t);
+          const row = el("div", "lv-row" + (k ? " lv-" + k : ""));
+          row.appendChild(el("span", "lv-min", e.min + "'" + (e.x ? "+" + e.x : "")));
+          row.appendChild(el("span", "lv-ic", ic));
+          row.appendChild(el("span", "lv-tx", e.t));
+          list.appendChild(row);
+        });
+        box.appendChild(list);
+        box.appendChild(el("p", "lv-src", "Crónica minuto a minuto: Comuniate · se actualiza cada 30 s"));
+      }
       return live.state !== "final";
     };
     try {

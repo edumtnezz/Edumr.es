@@ -1786,3 +1786,18 @@ html { overflow-anchor: none; }
 .lv-row.lv-red { background: rgba(239,68,68,.12); }
 .lv-row.lv-mark { font-weight: 700; }
 .lv-src { margin-top: 12px; text-align: center; font-size: .72rem; color: #6b7a82; }
+
+.lv-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.lv-tab { flex: 1; padding: 9px 6px; border: 0; border-radius: 999px; background: var(--surface-2, #f1f4f5); color: inherit; font: inherit; font-weight: 800; font-size: .82rem; cursor: pointer; }
+.lv-tab.on { background: #0f766e; color: #fff; }
+.lv-half { text-align: center; font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #6b7a82; padding: 8px 0; }
+.lv-ev.away .lv-tx { text-align: right; }
+.lv-ev.away { grid-template-columns: 44px 22px 1fr; }
+.lv-stats { display: flex; flex-direction: column; gap: 12px; }
+.lv-stat-top { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; font-size: .86rem; }
+.lv-stat-top b:last-child { text-align: right; }
+.lv-stat-top span { color: #6b7a82; font-weight: 700; text-align: center; }
+.lv-stat-bar { display: flex; gap: 3px; height: 6px; margin-top: 4px; }
+.lv-stat-bar i { display: block; border-radius: 3px; }
+.lv-stat-bar i:first-child { background: #0f766e; }
+.lv-stat-bar i:last-child { background: #94a3b8; }
