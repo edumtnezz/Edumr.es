@@ -803,7 +803,7 @@
     const hm = String(t || "0:0").replace(":", "") * 1 || 0;
     return (((a[1] >= 7 ? a[1] : a[1] + 12) || 0) * 100 + (a[0] || 0)) * 10000 + hm;
   }
-  let playedJBusy = false;
+  let playedJBusy = false, liveJ = {};
   async function ensurePlayedJ() {
     if (playedJ || playedJBusy) return;
     playedJBusy = true;
@@ -812,6 +812,8 @@
       const cur = Number(jr && jr.matchday) || 0;
       if (!cur) return;
       const m = {};
+      liveJ = {};
+      ((jr && jr.matches) || []).forEach((x) => { if (x.live && x.live.state === "live") [x.home, x.away].forEach((t) => { liveJ[teamCanon(t)] = cur; }); });
       const rs = await Promise.all(Array.from({ length: cur }, (_, i) => i + 1).map((n) =>
         n === cur ? Promise.resolve({ n, ms: (jr && jr.matches) || [] }) :
         fetch(API + "/jornada?jornada=" + n).then((r) => r.json()).then((j) => ({ n, ms: (j && j.matches) || [] })).catch(() => null)));
@@ -4435,6 +4437,12 @@
         if (j > 0) cell.appendChild(el("i", null, "J" + j));
         cell.appendChild(el("b", null, ok ? String(v) : "–"));
         fit.insertBefore(cell, fit.firstChild);
+      }
+      const lj = liveJ[teamCanon(p.team)];
+      if (lj) {
+        const cell = el("span", "racha-chip live"); cell.title = "Partido en juego";
+        cell.appendChild(el("i", null, "J" + lj)); cell.appendChild(el("b", null, "●"));
+        fit.appendChild(cell);
       }
       side.appendChild(fit);
       row.appendChild(side);
