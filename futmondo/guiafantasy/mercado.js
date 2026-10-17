@@ -1901,7 +1901,7 @@
       if (finished) { try { const cj = await (await fetch(API + "/cambios?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json(); mpCambios = cj.subs || []; mpReds = cj.reds || []; mpGm = cj.gm || null; } catch (e) {} }
       // Nunca "probable" con % si el partido ya empezó o si todos están al 100% (= confirmada)
       const sure = (o) => o && o.starters && o.starters.length >= 10 && o.starters.every((p) => p.prob === 100);
-      if (xiKind === "probable" && xi && ((m.live && m.live.state === "live") || (sure(xi.home) && sure(xi.away)))) xiKind = "confirmada";
+      if (xiKind === "probable" && xi && ((m.live && m.live.state === "live") || (sure(xi.home) && sure(xi.away) && !(kickoffMs(m) && kickoffMs(m) - Date.now() > 3 * 3600 * 1000)))) xiKind = "confirmada";
       renderMatchDetail(box, m, d, jn, xi, xiKind, finished, ffData);
       box.appendChild(buildOtherMatches(ms, m, jn));
       // Los puntos de MI liga Futmondo se piden aparte (por jugador y con
@@ -3549,7 +3549,7 @@
             if (o && o.home && ((o.home.starters || []).length || (o.away.starters || []).length || (o.home.bench || []).length || (o.away.bench || []).length)) ff = o[isHome ? "home" : "away"];
           } catch (e) {}
           const sure = (o) => o && o.starters && o.starters.length >= 10 && o.starters.every((p) => p.prob === 100);
-          if (conf) { side = conf; kind = "confirmada"; } else if (ff && (ff.starters || []).length) { side = ff; kind = sure(ff) ? "confirmada" : "probable"; }
+          if (conf) { side = conf; kind = "confirmada"; } else if (ff && (ff.starters || []).length) { side = ff; kind = sure(ff) && !(kickoffMs(next) && kickoffMs(next) - Date.now() > 3 * 3600 * 1000) ? "confirmada" : "probable"; }
           const h = el("div", "eq-sech");
           h.appendChild(el("h3", null, side ? (kind === "confirmada" ? "Alineación confirmada" : "Alineación probable") : "Alineación"));
           h.appendChild(link);
