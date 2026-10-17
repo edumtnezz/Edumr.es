@@ -76,16 +76,15 @@ function posRingCls(elx, a, b) {
   return elx;
 }
 function statRow(p) {
-  const row = el("div", "mcard-stats");
+  const row = el("div", "mcard-stats mcard-stats2");
   const mk = (v, label, cls) => {
-    const s = el("div", "mstat" + (cls ? " " + cls : ""));
+    const s = el("div", "mstat2 " + cls);
     s.appendChild(el("b", null, String(v)));
     s.appendChild(el("small", null, label));
     return s;
   };
-  row.appendChild(mk(Number(p.points) || 0, "PTS", "pts"));
-  row.appendChild(mk(Number(p.matches) || 0, "PART", null));
-  row.appendChild(mk((Number(p.avg) || 0).toFixed(1).replace(".", ","), "MEDIA", null));
+  row.appendChild(mk(Number(p.points) || 0, "puntos", "pts"));
+  row.appendChild(mk((Number(p.avg) || 0).toFixed(1).replace(".", ","), "media", "avg"));
   return row;
 }
 function splitBadge(b) {

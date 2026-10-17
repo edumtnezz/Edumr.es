@@ -63,3 +63,12 @@
 .puja-admin-t { flex: 1 0 100%; font-size: 0.72rem; font-weight: 800; color: var(--muted, #69727d); text-transform: uppercase; letter-spacing: 0.03em; }
 .puja-admin .btn-ghost { font-size: 0.8rem; }
 .puja-admin-note { margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: rgba(34,197,94,0.12); border: 1px dashed #22c55e; color: var(--text, #0f172a); font-size: 0.78rem; font-weight: 700; }
+
+/* Tarjeta de jugador: puntos y media más visuales */
+.mcard-stats2 { display: grid !important; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+.mstat2 { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px 5px; border-radius: 12px; border: 1px solid var(--border); background: rgba(127,127,127,.08); }
+.mstat2 b { font-family: 'Space Grotesk', sans-serif; font-size: 1.15rem; font-weight: 900; line-height: 1; color: var(--text); }
+.mstat2 small { font-size: .6rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.mstat2.pts { background: linear-gradient(135deg, rgba(34,197,94,.22), rgba(34,197,94,.08)); border-color: rgba(34,197,94,.45); }
+.mstat2.pts b { color: #22c55e; }
+.mstat2.avg b { color: var(--text); }
