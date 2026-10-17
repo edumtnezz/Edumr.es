@@ -1439,7 +1439,9 @@
     const main = document.querySelector(".quiniela-main");
     if (!main) return;
     main.classList.add("mpage-open");
-    document.querySelectorAll(".cx-sub").forEach((e) => e.classList.add("hidden"));
+    // La barra Inicio / Noticias / Mercado se queda arriba también aquí (en toda la web).
+    document.querySelectorAll(".cx-sub").forEach((e) => e.classList.remove("hidden"));
+    document.querySelectorAll("#tabsNav .tab").forEach((e) => e.classList.remove("active"));
     document.querySelectorAll(".tab-panel").forEach((e) => e.classList.add("hidden"));
     const ch = $("cxChrome"); if (ch) ch.classList.add("hidden");
     const box = el("section", "panel mpage");
@@ -1560,7 +1562,9 @@
   async function renderPlayerPage(id) {
     const main = document.querySelector(".quiniela-main");
     if (!main) return;
-    document.querySelectorAll(".cx-sub").forEach((e) => e.classList.add("hidden"));
+    // La barra Inicio / Noticias / Mercado se queda arriba también aquí (en toda la web).
+    document.querySelectorAll(".cx-sub").forEach((e) => e.classList.remove("hidden"));
+    document.querySelectorAll("#tabsNav .tab").forEach((e) => e.classList.remove("active"));
     document.querySelectorAll(".tab-panel").forEach((e) => e.classList.add("hidden"));
     const ch = $("cxChrome"); if (ch) ch.classList.add("hidden");
     const box = el("section", "panel playerpage");
@@ -3262,7 +3266,7 @@
     } catch (e) { body.innerHTML = '<p class="muted small">No se pudo cargar el equipo.</p>'; }
   }
 
-  document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { if (document.querySelector(".eq-page")) { location.href = "/futmondo/guiafantasy/" + t.dataset.tab; return; } switchTab(t.dataset.tab); }));
+  document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { if (document.querySelector(".eq-page, .mpage, .playerpage")) { location.href = "/futmondo/guiafantasy/" + (t.dataset.tab === "plantillas" ? "mercado" : t.dataset.tab); return; } switchTab(t.dataset.tab); }));
   setupMoreMenu();
   let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltPeriod = "chg7", pltDir = -1, pltShown = 40, pltPlayers = [];
   // En la ficha de jugador esto (14 peticiones de jornadas) se pide DESPUÉS de pintar, para no frenar la carga.
