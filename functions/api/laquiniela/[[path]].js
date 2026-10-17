@@ -4008,12 +4008,18 @@ async function handleGet({ request, env: env0, params }) {
           else if (e.type === "VAR") events.push(Object.assign(base, { k: "var", name: e.nameStr || (e.player && e.player.name) || "", txt: (((e.VAR || {}).decision || {}).value || []).join(" · ") }));
           else if (e.type === "Half") events.push(Object.assign(base, { k: "half", txt: e.halfStrShort || "" }));
         });
-        const LBL = [["BallPossesion", "Posesión", "%"], ["expected_goals", "Goles esperados (xG)"], ["total_shots", "Tiros"], ["ShotsOnTarget", "Tiros a puerta"], ["big_chance", "Ocasiones claras"], ["corners", "Córners"], ["touches_opp_box", "Toques en el área rival"], ["accurate_passes", "Pases precisos"], ["fouls", "Faltas"], ["yellow_cards", "Amarillas"], ["red_cards", "Rojas"], ["Offsides", "Fueras de juego"], ["keeper_saves", "Paradas"]];
+        const LBL = [["BallPossesion", "Posesión", "%"], ["expected_goals", "Goles esperados (xG)"], ["total_shots", "Tiros totales"], ["ShotsOnTarget", "Tiros a puerta"], ["big_chance", "Ocasiones claras"], ["corners", "Córners"], ["touches_opp_box", "Toques en el área rival"], ["accurate_passes", "Pases precisos"], ["fouls", "Faltas"], ["yellow_cards", "Amarillas"], ["red_cards", "Rojas"], ["Offsides", "Fueras de juego"], ["keeper_saves", "Paradas"]];
         const groups = ((((content.stats || {}).Periods || {}).All || {}).stats) || [];
         const byKey = {};
         groups.forEach((g) => (g.stats || []).forEach((x) => { if (x && x.stats && x.stats.length === 2 && x.stats[0] != null && !byKey[x.key]) byKey[x.key] = x.stats; }));
         const stats = [];
-        LBL.forEach((l) => { const v = byKey[l[0]]; if (v) stats.push({ l: l[1], h: v[0], a: v[1], u: l[2] || "" }); });
+        LBL.forEach((l) => { const v = byKey[l[0]]; if (v) stats.push({ k: l[0], l: l[1], h: v[0], a: v[1], u: l[2] || "" }); });
+        const mf = content.matchFacts || {};
+        const pm = mf.playerOfTheMatch || null;
+        let mvp = null;
+        if (pm) { const nm = typeof pm.name === "string" ? pm.name : (pm.name && (pm.name.fullName || ((pm.name.firstName || "") + " " + (pm.name.lastName || "")).trim())) || ""; const rt = pm.rating && typeof pm.rating === "object" ? (pm.rating.num || pm.rating.value) : pm.rating; mvp = { id: pm.id, n: nm, team: pm.teamName || "", r: rt ? Number(rt) : null, raw: Object.keys(pm).join(",") }; }
+        const hlr = mf.highlights || null;
+        const hl = hlr && hlr.url ? { url: hlr.url, img: hlr.image || "", src: hlr.source || "" } : null;
         const lu = content.lineup || {};
         const mkSide = (t) => {
           if (!t || !t.starters) return null;
@@ -4029,7 +4035,7 @@ async function handleGet({ request, env: env0, params }) {
           table = all.map((x) => ({ i: x.idx, id: x.id, n: x.shortName || x.name, p: x.played, w: x.wins, d: x.draws, l: x.losses, gf: String(x.scoresStr || ""), dg: x.goalConDiff, pt: x.pts, q: x.qualColor || "" }));
         } catch (e) {}
         const teams = (j.header && j.header.teams) || [];
-        out.fm = { lineup, table, hid: teams[0] && teams[0].id, aid: teams[1] && teams[1].id, id: hit.id, started: !!st.started, finished: !!st.finished, score: [teams[0] && teams[0].score, teams[1] && teams[1].score], events, stats, src: "FotMob" };
+        out.fm = { mvp, hl, lineup, table, hid: teams[0] && teams[0].id, aid: teams[1] && teams[1].id, id: hit.id, started: !!st.started, finished: !!st.finished, score: [teams[0] && teams[0].score, teams[1] && teams[1].score], events, stats, src: "FotMob" };
       } catch (e) {}
     })();
     await Promise.all([cron, fot]);
