@@ -4265,26 +4265,27 @@
           if (h && h.issues && h.issues.length) {
             h.issues.forEach((it) => lines.push("⚠️ " + (it.detail || ("Fallo en " + it.source))));
           }
+          let freshNames = [];
           if (h && h.newAccounts && h.newAccounts.length) {
-            // Se avisa una sola vez por cuenta (se recuerda en este dispositivo).
+            // Se avisa una sola vez por cuenta (se recuerda en este dispositivo, al abrir el menú).
             let seen = [];
             try { seen = JSON.parse(localStorage.getItem("seen_new_accounts") || "[]"); } catch (e) {}
-            const fresh = h.newAccounts.map((a) => a.name).filter((n) => seen.indexOf(n) < 0);
-            if (fresh.length) {
-              lines.push("🆕 Cuenta(s) nueva(s) estos días: " + fresh.join(", ") + ". Revisa que no sea nadie ocupando el nombre de otro.");
-              try { localStorage.setItem("seen_new_accounts", JSON.stringify(seen.concat(fresh))); } catch (e) {}
-            }
+            freshNames = h.newAccounts.map((a) => a.name).filter((n) => seen.indexOf(n) < 0);
+            if (freshNames.length) lines.push("🆕 Cuenta(s) nueva(s) estos días: " + freshNames.join(", ") + ". Revisa que no sea nadie ocupando el nombre de otro.");
           }
           if (lines.length) {
-            const main = document.querySelector(".quiniela-main");
-            if (main) {
-              const bar = el("div", "ff-health-warn");
-              lines.forEach((t, i) => { if (i) bar.appendChild(el("br")); bar.appendChild(el("span", null, t)); });
-              const x = el("button", "ff-health-x", "✕"); x.type = "button";
-              x.addEventListener("click", () => bar.remove());
-              bar.appendChild(x);
-              main.insertBefore(bar, main.firstChild);
-            }
+            // Avisos de admin: un puntito rojo en el avatar y el detalle dentro del menú (no una barra roja en la página).
+            const av = chip.querySelector(".user-avatar");
+            if (av) av.classList.add("has-alert");
+            const box = el("div", "user-menu-alerts");
+            lines.forEach((t) => box.appendChild(el("p", null, t)));
+            menu.insertBefore(box, menu.firstChild);
+            chip.addEventListener("click", () => {
+              if (!freshNames.length) return;
+              try { const seen = JSON.parse(localStorage.getItem("seen_new_accounts") || "[]"); localStorage.setItem("seen_new_accounts", JSON.stringify(seen.concat(freshNames))); } catch (e) {}
+              freshNames = [];
+              if (!h.broken?.length && !(h.issues || []).length && av) av.classList.remove("has-alert");
+            });
           }
         } catch (e) {}
       }

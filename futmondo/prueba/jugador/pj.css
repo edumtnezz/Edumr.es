@@ -1,12 +1,12 @@
 :root { --bg:#eef1f5; --card:#fff; --ink:#0f172a; --muted:#64748b; --line:rgba(15,23,42,.09); --green:#16a34a; --red:#dc2626; --amber:#f59e0b; --soft:#f4f6f9; }
 [data-theme="dark"] { --bg:#0b0f16; --card:#151b25; --ink:#e8edf5; --muted:#8b97a8; --line:rgba(255,255,255,.09); --soft:#1c2430; }
 * { box-sizing: border-box; }
-body { margin:0; background:var(--bg); color:var(--ink); font-family:'Plus Jakarta Sans',system-ui,sans-serif; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:'Figtree',system-ui,sans-serif; }
 .pj { max-width:1120px; margin:0 auto; padding:14px 14px 40px; }
 .pj-load { color:var(--muted); text-align:center; padding:60px 0; }
-.pj h1,.pj h2 { font-family:'Space Grotesk',sans-serif; margin:0; }
+.pj h1,.pj h2 { font-family:'Bricolage Grotesque',sans-serif; margin:0; }
 .pj-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
-.pj-back { background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:999px; padding:10px 18px; font:800 .95rem 'Plus Jakarta Sans'; cursor:pointer; }
+.pj-back { background:var(--card); color:var(--ink); border:1px solid var(--line); border-radius:999px; padding:10px 18px; font:800 .95rem 'Figtree'; cursor:pointer; }
 .pj-tag { font-size:.7rem; font-weight:800; letter-spacing:.06em; color:var(--muted); }
 .pj-grid { display:grid; gap:14px; grid-template-columns:1fr; }
 @media (min-width:900px){ .pj-grid { grid-template-columns:1fr 1fr; align-items:start; } .pj-full{ grid-column:1/-1; } }
@@ -29,7 +29,7 @@ body { margin:0; background:var(--bg); color:var(--ink); font-family:'Plus Jakar
 .mini { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
 .mini .m { background:var(--soft); border-radius:14px; padding:10px 12px; }
 .mini .k { font-size:.68rem; font-weight:800; letter-spacing:.05em; color:var(--muted); text-transform:uppercase; }
-.mini .v { font:700 1.25rem 'Space Grotesk'; margin-top:2px; }
+.mini .v { font:700 1.25rem 'Bricolage Grotesque'; margin-top:2px; }
 .up { color:var(--green); font-weight:800; font-size:.8rem; } .down { color:var(--red); font-weight:800; font-size:.8rem; }
 .pos { display:flex; gap:6px; margin-top:6px; }
 .pos span { padding:6px 12px; border-radius:9px; font-weight:800; font-size:.8rem; color:#fff; }
@@ -43,7 +43,7 @@ body { margin:0; background:var(--bg); color:var(--ink); font-family:'Plus Jakar
 .nx .l { font-size:.66rem; font-weight:800; color:var(--muted); margin-top:4px; }
 /* Puntos */
 .tri { display:grid; grid-template-columns:repeat(3,1fr); text-align:center; gap:8px; margin-bottom:12px; }
-.tri .v { font:700 1.6rem 'Space Grotesk'; } .tri .k { font-size:.7rem; color:var(--muted); font-weight:700; }
+.tri .v { font:700 1.6rem 'Bricolage Grotesque'; } .tri .k { font-size:.7rem; color:var(--muted); font-weight:700; }
 .forma { display:flex; gap:6px; justify-content:center; margin-bottom:12px; }
 .pt { display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:30px; padding:0 6px; border-radius:8px; font-weight:800; color:#fff; font-size:.88rem; background:#9ca3af; }
 .pt.hi { background:#059248; } .pt.mid { background:#edbb28; color:#1a1a1a; } .pt.lo { background:#dc2626; } .pt.na { background:#9ca3af; }

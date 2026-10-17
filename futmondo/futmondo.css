@@ -27,7 +27,7 @@
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Figtree', -apple-system, BlinkMacSystemFont, sans-serif;
   background-color: var(--bg);
   background-image:
     radial-gradient(760px 420px at 12% -10%, rgba(34, 197, 94, 0.24), transparent 60%),
@@ -53,18 +53,18 @@ body {
 .hub-header { text-align: center; margin: 10px auto 34px; max-width: 720px; }
 .hub-ball { width: clamp(78px, 18vw, 120px); height: auto; filter: drop-shadow(0 12px 26px rgba(0, 0, 0, 0.45)); animation: bob 3.6s ease-in-out infinite; margin-bottom: 10px; }
 @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-.hub-header h1 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(1.7rem, 6vw, 2.6rem); letter-spacing: 0.05em; text-transform: uppercase; }
+.hub-header h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(1.7rem, 6vw, 2.6rem); letter-spacing: 0.05em; text-transform: uppercase; }
 .hub-title { display: flex; align-items: center; justify-content: center; gap: 10px; }
 .hub-title img { height: 1.1em; width: auto; }
 .hub-exit { padding: 9px 18px; border-radius: 999px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); font-weight: 700; font-size: 0.9rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
 .hub-exit:hover { border-color: var(--border-hover); transform: translateY(-1px); }
 .hub-userrow { text-align: center; margin: 6px auto 2px; }
 .hub-user { display: inline-flex; align-items: center; gap: 8px; background: rgba(34, 197, 94, 0.14); border: 1px solid rgba(34, 197, 94, 0.4); border-radius: 999px; padding: 5px 14px 5px 5px; font-weight: 700; }
-.hu-av { width: 32px; height: 32px; border-radius: 50%; background: #16a34a; color: #fff; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.78rem; }
+.hu-av { width: 32px; height: 32px; border-radius: 50%; background: #16a34a; color: #fff; display: flex; align-items: center; justify-content: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 0.78rem; }
 .hu-name { color: var(--text); font-size: 0.9rem; }
 .grad { color: #22c55e; }
 .hub-sub { color: var(--muted); font-size: 1rem; margin-top: 4px; }
-.hub-welcome { max-width: 720px; margin: 0 auto 28px; padding: 14px 20px; text-align: center; border-radius: 16px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.05rem; }
+.hub-welcome { max-width: 720px; margin: 0 auto 28px; padding: 14px 20px; text-align: center; border-radius: 16px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 1.05rem; }
 .hub-welcome:empty { display: none; }
 .hub-cta { text-align: center; margin: 0 auto 26px; }
 .auth-loading .hub-cta { display: none !important; }
@@ -106,9 +106,9 @@ body {
   box-shadow: 0 18px 45px rgba(15, 23, 42, 0.14);
 }
 .hub-art { display: flex; align-items: flex-start; justify-content: flex-end; min-height: 60px; }
-.hub-sect { text-align: center; font-family: 'Space Grotesk', sans-serif; font-size: 1.05rem; font-weight: 700; color: var(--text); margin: 6px auto 14px; max-width: 760px; }
+.hub-sect { text-align: center; font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.05rem; font-weight: 700; color: var(--text); margin: 6px auto 14px; max-width: 760px; }
 .hub-icon {
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Bricolage Grotesque', sans-serif;
   font-weight: 700;
   font-size: 1.15rem;
   color: var(--accent, #16a34a);
@@ -117,7 +117,7 @@ body {
   border-radius: 13px;
 }
 .hub-emoji { font-size: clamp(2.6rem, 10vw, 3.4rem); line-height: 1; }
-.hub-card h2 { font-family: 'Space Grotesk', sans-serif; font-size: 1.35rem; }
+.hub-card h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.35rem; }
 .hub-card p { color: var(--muted); font-size: 0.9rem; line-height: 1.5; flex: 1; }
 .hub-go {
   display: block;
@@ -127,7 +127,7 @@ body {
   border-radius: 999px;
   background: linear-gradient(135deg, #22c55e, #16a34a);
   color: #ffffff;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Bricolage Grotesque', sans-serif;
   font-weight: 700;
   box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
 }
@@ -173,7 +173,7 @@ body {
 .hub-top .theme-toggle { box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12); }
 .hub-top .user-wrap { position: relative; display: flex; align-items: center; }
 .hub-top .user-chip { display: inline-flex; align-items: center; gap: 7px; background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.45); border-radius: 999px; padding: 3px 11px 3px 3px; cursor: pointer; font-family: inherit; }
-.hub-top .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: #16a34a; color: #fff; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.7rem; }
+.hub-top .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: #16a34a; color: #fff; display: flex; align-items: center; justify-content: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 0.7rem; }
 .hub-top .user-name { color: var(--text); font-weight: 700; font-size: 0.85rem; }
 .hub-top .user-caret { color: var(--muted); font-size: 0.62rem; }
 .hub-top .user-menu { position: absolute; right: 0; top: calc(100% + 8px); background: var(--card-solid); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 10px 26px rgba(0, 0, 0, 0.25); min-width: 150px; padding: 6px; display: none; z-index: 80; }
@@ -217,7 +217,7 @@ body {
 .hub-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 22px; }
 .hub-tile { flex: none; width: 46px; height: 46px; display: grid; place-items: center; border-radius: 13px; font-size: 1.5rem; line-height: 1; background: rgba(34, 197, 94, 0.12); box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.24); }
 .hub-tx { flex: 1; min-width: 0; }
-.hub-tx b { display: block; font-family: 'Space Grotesk', sans-serif; font-size: 1.1rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
+.hub-tx b { display: block; font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.1rem; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
 .hub-tx span { display: block; margin-top: 2px; font-size: 0.86rem; line-height: 1.35; color: var(--muted); text-wrap: pretty; }
 .hub-chev { flex: none; color: var(--muted); opacity: 0.7; transition: transform 0.22s var(--ease-out), color 0.2s, opacity 0.2s; }
 @media (hover: hover) and (pointer: fine) {
@@ -273,7 +273,7 @@ body.hub-page > * { position: relative; z-index: 1; }
 .hub-feature::after { content: ""; position: absolute; right: -60px; top: -60px; width: 200px; height: 200px; border-radius: 50%; background: radial-gradient(closest-side, rgba(74, 222, 128, 0.35), transparent); pointer-events: none; }
 .hf-icon { grid-area: i; width: 68px; height: 68px; display: grid; place-items: center; border-radius: 20px; color: #052e16; background: linear-gradient(145deg, #4ade80, #16a34a); box-shadow: 0 10px 24px -8px rgba(34, 197, 94, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
 .hf-tx { grid-area: t; min-width: 0; position: relative; z-index: 1; }
-.hf-tx b { display: block; font-family: 'Space Grotesk', sans-serif; font-size: clamp(1.5rem, 6.4vw, 1.9rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; color: var(--text); }
+.hf-tx b { display: block; font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(1.5rem, 6.4vw, 1.9rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; color: var(--text); }
 .hf-tx span { display: block; margin-top: 6px; font-size: 0.92rem; line-height: 1.4; color: var(--muted); text-wrap: pretty; }
 .hf-go { grid-area: g; position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 6px; height: 50px; border-radius: 16px; font-weight: 800; font-size: 0.98rem; color: #052e16; background: linear-gradient(145deg, #4ade80, #22c55e); box-shadow: 0 10px 22px -10px rgba(34, 197, 94, 0.8); transition: transform 0.16s var(--ease-out); }
 .hf-go .hub-chev { color: inherit; opacity: 1; }

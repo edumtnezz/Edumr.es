@@ -49,12 +49,12 @@
 /* Lo más destacado: línea de tiempo con cada acción separada */
 .mpage-ev-sum { position: relative; display: flex; flex-direction: column; gap: 8px; margin: 14px 2px 6px; padding: 14px 10px 12px; border-radius: 18px; background: var(--card-solid, rgba(0,0,0,.04)); border: 1px solid var(--border); }
 .mpage-ev-sum::before { content: ""; position: absolute; top: 46px; bottom: 14px; left: 50%; width: 2px; margin-left: -1px; background: linear-gradient(180deg, transparent, rgba(34,197,94,.45) 12%, rgba(34,197,94,.45) 88%, transparent); }
-.mpage-ev-title { text-align: center; font: 800 .9rem 'Space Grotesk', sans-serif; letter-spacing: .04em; margin-bottom: 4px; }
+.mpage-ev-title { text-align: center; font: 800 .9rem 'Bricolage Grotesque', sans-serif; letter-spacing: .04em; margin-bottom: 4px; }
 .mpage-ev-row { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr); align-items: center; gap: 0; }
 .mpage-ev-cell { min-width: 0; display: flex; }
 .mpage-ev-cell.l { justify-content: flex-end; padding-right: 6px; }
 .mpage-ev-cell.r { justify-content: flex-start; padding-left: 6px; }
-.mpage-ev-min { justify-self: center; z-index: 1; background: #16a34a; color: #fff; font: 800 .72rem 'Space Grotesk', sans-serif; padding: 3px 0; width: 38px; text-align: center; border-radius: 999px; box-shadow: 0 0 0 3px var(--card-solid, #fff); }
+.mpage-ev-min { justify-self: center; z-index: 1; background: #16a34a; color: #fff; font: 800 .72rem 'Bricolage Grotesque', sans-serif; padding: 3px 0; width: 38px; text-align: center; border-radius: 999px; box-shadow: 0 0 0 3px var(--card-solid, #fff); }
 .mpage-ev-pill { display: flex; align-items: center; gap: 8px; max-width: 100%; padding: 6px 12px 6px 8px; border-radius: 14px; background: rgba(34,197,94,.10); border: 1px solid rgba(34,197,94,.28); }
 .mpage-ev-row.away .mpage-ev-pill { flex-direction: row-reverse; text-align: right; padding: 6px 8px 6px 12px; }
 .mpage-ev-ico { font-size: 1.35rem; line-height: 1; flex: 0 0 auto; }
@@ -97,7 +97,7 @@
 
 /* Resto de partidos de la jornada */
 .mpage-others { margin-top: 22px; padding: 14px; border-radius: 20px; background: var(--card-solid, rgba(127,127,127,.08)); border: 1px solid var(--border); }
-.mpage-others-h { font-family: 'Space Grotesk', sans-serif; font-size: 1rem; margin: 0 0 12px; text-align: center; }
+.mpage-others-h { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1rem; margin: 0 0 12px; text-align: center; }
 .mpage-others-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (min-width: 760px) { .mpage-others-grid { grid-template-columns: repeat(3, 1fr); } }
 .mo-card { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 9px 6px; border-radius: 14px; text-decoration: none; color: inherit; background: var(--card-solid, #fff); border: 1.5px solid var(--border); transition: transform .14s ease; }
@@ -109,7 +109,7 @@
 .mo-card.live .mo-st { color: #ef4444; } .mo-card.fin .mo-st { color: #6366f1; }
 .mo-row { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
 .mo-row img { width: 34px; height: 34px; object-fit: contain; }
-.mo-sc { font: 800 1.3rem 'Space Grotesk', sans-serif; white-space: nowrap; }
+.mo-sc { font: 800 1.3rem 'Bricolage Grotesque', sans-serif; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .mo-card.live { animation: none; } }
 
 /* Lo más destacado más compacto + gol con su asistencia en la misma tarjeta */
@@ -135,7 +135,7 @@
 
 /* MVP del partido */
 .mpage-mvp{margin:14px 0;padding:14px;border-radius:18px;border:1px solid rgba(234,179,8,.5);background:linear-gradient(135deg,rgba(250,204,21,.18),rgba(250,204,21,.04));text-align:center}
-.mvp-k{font:800 .8rem/1 'Space Grotesk',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#a16207;margin-bottom:10px}
+.mvp-k{font:800 .8rem/1 'Bricolage Grotesque',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#a16207;margin-bottom:10px}
 .mvp-list{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .mvp-it{display:flex;align-items:center;gap:12px;border:0;background:var(--cx-surface,#fff);color:inherit;font:inherit;padding:8px 14px 8px 8px;border-radius:999px;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.12)}
 .mvp-it > img{width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid #facc15}
@@ -143,29 +143,29 @@
 .mvp-tx b{font-size:1.02rem}
 .mvp-tx small{display:flex;align-items:center;gap:4px;color:var(--muted)}
 .mvp-tx small img{width:14px;height:14px;object-fit:contain}
-.mvp-pts{font:800 1.3rem/1 'Space Grotesk',sans-serif;background:#16a34a;color:#fff;border-radius:12px;padding:8px 10px;margin-left:4px}
+.mvp-pts{font:800 1.3rem/1 'Bricolage Grotesque',sans-serif;background:#16a34a;color:#fff;border-radius:12px;padding:8px 10px;margin-left:4px}
 .mvp-sub{margin-top:8px;font-size:.7rem;color:var(--muted)}
 
 /* ---- Páginas de club (/equipos) ---- */
 .eq-page{padding-bottom:28px}
 .eq-back{display:inline-block;margin:2px 0 10px;font-size:.85rem;font-weight:700;color:var(--muted);text-decoration:none}
-.eq-h1{margin:0;font:800 1.45rem/1.1 'Space Grotesk',sans-serif}
+.eq-h1{margin:0;font:800 1.45rem/1.1 'Bricolage Grotesque',sans-serif}
 .eq-head{display:flex;align-items:center;gap:14px;padding:14px;border-radius:20px;background:var(--card-solid,rgba(127,127,127,.08));border:1px solid var(--border)}
 .eq-crest{width:64px;height:64px;object-fit:contain;flex:none}
 .eq-hsub{margin-top:6px;font-size:.82rem;color:var(--muted);font-weight:600}
 .eq-sec{margin-top:16px;padding:14px 12px;border-radius:20px;background:var(--card-solid,rgba(127,127,127,.08));border:1px solid var(--border)}
 .eq-sech{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
-.eq-sech h3{margin:0;font:800 1rem/1.2 'Space Grotesk',sans-serif}
+.eq-sech h3{margin:0;font:800 1rem/1.2 'Bricolage Grotesque',sans-serif}
 .eq-more{font-size:.8rem;font-weight:700;color:var(--primary);text-decoration:none;white-space:nowrap}
 .eq-pitch{display:block}
 .eq-cal{display:flex;flex-direction:column;gap:6px}
 .eq-calrow{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:14px;border:1.5px solid var(--border);text-decoration:none;color:inherit;background:var(--card-solid,#fff)}
 .eq-calrow.fin{opacity:.85}
 .eq-calrow.live{border-color:#16a34a}
-.eq-calj{font:800 .72rem 'Space Grotesk',sans-serif;color:var(--muted);width:28px}
+.eq-calj{font:800 .72rem 'Bricolage Grotesque',sans-serif;color:var(--muted);width:28px}
 .eq-calrow img{width:24px;height:24px;object-fit:contain}
 .eq-calrival{flex:1;font-weight:700;font-size:.9rem;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.eq-calres{font:800 .82rem 'Space Grotesk',sans-serif;white-space:nowrap}
+.eq-calres{font:800 .82rem 'Bricolage Grotesque',sans-serif;white-space:nowrap}
 .eq-grp{margin:14px 2px 6px;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .eq-pl{display:flex;align-items:center;gap:10px;padding:8px;margin-bottom:6px;border-radius:14px;border:1.5px solid var(--border);text-decoration:none;color:inherit;background:var(--card-solid,#fff)}
 .eq-pimg{width:42px;height:42px;border-radius:50%;object-fit:cover;object-position:top;flex:none;background:rgba(127,127,127,.15)}
@@ -182,7 +182,7 @@
 .club-link:hover{text-decoration:underline}
 .eq-inicio{margin-top:12px}
 .eq-inicio:empty{display:none}
-.eq-inicio-h{display:flex;align-items:center;justify-content:space-between;font:800 1rem 'Space Grotesk',sans-serif;margin-bottom:6px}
+.eq-inicio-h{display:flex;align-items:center;justify-content:space-between;font:800 1rem 'Bricolage Grotesque',sans-serif;margin-bottom:6px}
 .eq-inicio-row .merc-club{text-decoration:none}
 .eq-calrow svg.ffx-ha{width:20px;height:20px;flex:none;margin:0}
 .eq-head{align-items:flex-start}
@@ -190,9 +190,9 @@
 .eq-next{margin-top:10px;padding:10px 12px;border-radius:14px;background:rgba(127,127,127,.1);border:1px solid var(--border)}
 .eq-next-k{font-size:.62rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
 .eq-next-row{display:flex;align-items:center;gap:8px;min-width:0}
-.eq-next-j{background:#0f172a;color:#fff;font:800 .72rem 'Space Grotesk',sans-serif;border-radius:6px;padding:3px 7px;flex:none}
+.eq-next-j{background:#0f172a;color:#fff;font:800 .72rem 'Bricolage Grotesque',sans-serif;border-radius:6px;padding:3px 7px;flex:none}
 .eq-next-crest{width:26px;height:26px;object-fit:contain;flex:none}
-.eq-next-rival{font:800 1.02rem/1.1 'Space Grotesk',sans-serif;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.eq-next-rival{font:800 1.02rem/1.1 'Bricolage Grotesque',sans-serif;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .eq-next svg.ffx-ha{width:20px;height:20px;flex:none;margin:0}
 .eq-next-when{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .eq-chip{font-size:.74rem;font-weight:700;padding:4px 9px;border-radius:999px;background:var(--card-solid,#fff);border:1px solid var(--border)}
@@ -210,7 +210,7 @@
 .eq-tile-cw{display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:16px;background:rgba(127,127,127,.1)}
 .eq-tile .eq-tile-cw img{width:42px;height:42px}
 .eq-tile-tx{display:flex;flex-direction:column;gap:2px;min-width:0;width:100%}
-.eq-tile-tx b{font:800 .95rem/1.15 'Space Grotesk',sans-serif}
+.eq-tile-tx b{font:800 .95rem/1.15 'Bricolage Grotesque',sans-serif}
 .eq-tile-tx small{font-size:.72rem;font-weight:600;color:var(--muted)}
 .eq-tile-tx small.eq-tile-bad{color:#c0261b}
 .eq-tile-go{position:absolute;top:12px;right:14px;font-size:1.3rem;color:var(--muted);opacity:.6}
@@ -223,7 +223,7 @@
 .eq-hero .eq-hsub{margin-top:4px}
 .eq-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
 .eq-stat{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px;border-radius:16px;border:1px solid var(--border);background:var(--card-solid,#fff);text-align:center}
-.eq-stat b{font:800 1rem/1 'Space Grotesk',sans-serif}
+.eq-stat b{font:800 1rem/1 'Bricolage Grotesque',sans-serif}
 .eq-stat small{font-size:.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .eq-stat.up b{color:#16a34a}.eq-stat.down b{color:#c0261b}.eq-stat.mid b{color:#d97706}
 .eq-sec{border-radius:22px}

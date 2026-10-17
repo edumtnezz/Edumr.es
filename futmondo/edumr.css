@@ -86,7 +86,7 @@ body {
   gap: 9px;
   color: #fff;
   text-decoration: none;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Bricolage Grotesque', sans-serif;
   font-weight: 700;
   font-size: 1.06rem;
   letter-spacing: -0.01em;
@@ -310,7 +310,7 @@ body {
 /* ---------- Franja de jornada ---------- */
 .cx-jornada { background: var(--cx-surface); border-bottom: 1px solid var(--cx-border); padding: 6px 12px; }
 .cx-jn-head { display: flex; align-items: center; justify-content: center; gap: 10px; max-width: 1140px; margin: 0 auto 5px; }
-.cx-jn-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.78rem; color: var(--cx-text); }
+.cx-jn-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 0.78rem; color: var(--cx-text); }
 .cx-jn-nav { width: 23px; height: 23px; border-radius: 50%; border: 1px solid var(--cx-border); background: var(--cx-surface); color: var(--cx-text); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; transition: all 0.15s ease; }
 .cx-jn-nav:hover:not(:disabled) { border-color: var(--cx-green); color: var(--cx-green); }
 .cx-jn-nav:disabled { opacity: 0.3; cursor: default; }
@@ -332,7 +332,7 @@ body {
 @media (max-width: 560px) { .cx-jn-grid { grid-template-columns: repeat(2, 1fr); } .cx-jn-time, .cx-jn-hora { font-size: 0.5rem; } }
 /* Resultado/estado en directo (copiado de Comuniate): un borde de color a
    la izquierda según el estado, igual que en su propia franja. */
-.cx-jn-score { font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 1.18rem; color: var(--cx-text); line-height: 1.1; letter-spacing: 0.01em; }
+.cx-jn-score { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 1.18rem; color: var(--cx-text); line-height: 1.1; letter-spacing: 0.01em; }
 /* Fila de estado a todo lo ancho, ENCIMA de los escudos (estilo
    jornadaperfecta: etiqueta FINALIZADO/EN JUEGO con puntito, en vez del
    borde de color que llevaba antes la tarjeta). */
@@ -382,7 +382,7 @@ body {
   gap: 6px;
   background: var(--cx-green);
   color: #fff;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Bricolage Grotesque', sans-serif;
   font-weight: 800;
   font-size: 0.74rem;
   letter-spacing: 0.03em;
@@ -468,7 +468,7 @@ body {
   gap: 6px;
   background: #064e2b;
   color: #2ee27a;
-  font-family: 'Space Grotesk', sans-serif;
+  font-family: 'Bricolage Grotesque', sans-serif;
   font-weight: 800;
   font-size: 0.66rem;
   letter-spacing: 0.04em;
@@ -607,7 +607,7 @@ body {
 .cx-tools { position: relative; }
 .cx-tools .user-wrap { position: relative; display: flex; align-items: center; }
 .cx-tools .user-chip { display: inline-flex; align-items: center; gap: 7px; background: rgba(34, 197, 94, 0.16); border: 1px solid rgba(34, 197, 94, 0.5); border-radius: 999px; padding: 3px 11px 3px 3px; cursor: pointer; font-family: inherit; }
-.cx-tools .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: #16a34a; color: #fff; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 0.7rem; }
+.cx-tools .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: #16a34a; color: #fff; display: flex; align-items: center; justify-content: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 0.7rem; }
 .cx-tools .user-name { color: #fff; font-weight: 700; font-size: 0.85rem; }
 .cx-tools .user-caret { color: rgba(255, 255, 255, 0.7); font-size: 0.62rem; }
 .cx-tools .user-menu { position: absolute; right: 0; top: calc(100% + 8px); background: var(--cx-surface); border: 1px solid var(--cx-border); border-radius: 12px; box-shadow: 0 10px 26px rgba(0,0,0,.35); min-width: 150px; padding: 6px; display: none; z-index: 80; }
@@ -702,3 +702,20 @@ body {
   .cx-sub .tabs { flex-wrap: nowrap; gap: 0; justify-content: space-between; }
   .cx-sub .tab { white-space: nowrap; padding: 12px 6px; font-size: 0.74rem; flex: 0 0 auto; }
 }
+
+/* ===== Estilo de tarjeta ÚNICO en toda la web: mismo radio, borde fino, fondo liso, sin sombras ni brillos ===== */
+.panel, .jornada-card, .participant, .porra-card, .porra-card.pc2, .mcard, .countdown, .prize-list li {
+  background: var(--card-solid);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.mcard { border-radius: 14px; }
+
+/* Aviso de admin: puntito rojo en el avatar + detalle dentro del menú */
+.cx-tools .user-avatar { position: relative; }
+.cx-tools .user-avatar.has-alert::after { content: ""; position: absolute; top: -1px; right: -1px; width: 10px; height: 10px; border-radius: 50%; background: #ef4444; border: 2px solid var(--cx-surface, #12161d); }
+.cx-tools .user-menu-alerts { padding: 8px 10px 6px; max-width: 250px; border-bottom: 1px solid var(--cx-border, rgba(127,127,127,.2)); margin-bottom: 4px; }
+.cx-tools .user-menu-alerts p { margin: 0 0 6px; font-size: .78rem; line-height: 1.35; color: var(--cx-text); font-weight: 600; }
+.cx-tools .user-menu { min-width: 190px; }

@@ -31,7 +31,7 @@
    borde iguales, los datos van en línea y solo PTS destaca en color. */
 .mcard-stats { display: flex; justify-content: center; flex-wrap: wrap; row-gap: 2px; column-gap: 13px; width: 100%; margin-top: 6px; }
 .mstat { flex: none; display: flex; flex-direction: row; align-items: baseline; gap: 4px; padding: 0; border: none; background: none; }
-.mstat b { font-family: 'Space Grotesk', sans-serif; font-size: 0.86rem; font-weight: 700; color: var(--text); line-height: 1; white-space: nowrap; }
+.mstat b { font-family: 'Bricolage Grotesque', sans-serif; font-size: 0.86rem; font-weight: 700; color: var(--text); line-height: 1; white-space: nowrap; }
 .mstat small { font-size: 0.64rem; font-weight: 600; letter-spacing: 0; color: var(--muted); text-transform: none; white-space: nowrap; }
 .mstat.pts b { color: var(--accent); }
 .wa-body { display: flex; flex-direction: column; gap: 8px; padding: 16px 12px; background: #0b141a; }
@@ -67,7 +67,7 @@
 /* Tarjeta de jugador: puntos y media más visuales */
 .mcard-stats2 { display: grid !important; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
 .mstat2 { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px 5px; border-radius: 12px; border: 1px solid var(--border); background: rgba(127,127,127,.08); }
-.mstat2 b { font-family: 'Space Grotesk', sans-serif; font-size: 1.15rem; font-weight: 900; line-height: 1; color: var(--text); }
+.mstat2 b { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.15rem; font-weight: 900; line-height: 1; color: var(--text); }
 .mstat2 small { font-size: .6rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .mstat2.pts { background: linear-gradient(135deg, rgba(34,197,94,.22), rgba(34,197,94,.08)); border-color: rgba(34,197,94,.45); }
 .mstat2.pts b { color: #22c55e; }
