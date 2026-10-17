@@ -751,3 +751,19 @@ button:not(:disabled):active, [role="button"]:active, .hub-feature:active, .hub-
 .cx-jn-mid .cx-jn-time { font-size: 0.5rem; }
 .cx-jn-mid .cx-jn-hora { font-size: 0.7rem; font-weight: 800; }
 .cx-jn-mid .cx-jn-score { font-size: 1rem; }
+
+/* Una línea completa por partido (marcador TV): NOMBRE escudo | marcador | escudo NOMBRE */
+.cx-jn-grid { grid-template-columns: 1fr !important; max-width: 720px; gap: 6px; }
+.cx-jn-tvtop { min-height: 16px; }
+.cx-jn-row { border-radius: 4px; }
+.cx-jn-side { gap: 7px; padding: 5px 8px; min-height: 40px; }
+.cx-jn-home { justify-content: flex-end; padding-right: 12px; }
+.cx-jn-away { justify-content: flex-start; padding-left: 12px; }
+.cx-jn-nm { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 0.8rem; line-height: 1.05; letter-spacing: 0.01em; text-transform: uppercase; color: #fff; min-width: 0; overflow-wrap: anywhere; }
+.cx-jn-home .cx-jn-nm { text-align: right; }
+.cx-jn-lightside .cx-jn-nm { color: #111; }
+.cx-jn-side .cx-jn-crest { width: 24px; height: 24px; flex: 0 0 auto; }
+.cx-jn-mid { min-width: 74px; padding: 3px 8px; }
+.cx-jn-sep { display: inline-block; width: 1px; height: 0.9em; margin: 0 7px; background: rgba(0,0,0,.45); vertical-align: -0.1em; }
+.cx-jn-mid .cx-jn-score { font-size: 1.15rem; white-space: nowrap; }
+@media (max-width: 380px) { .cx-jn-nm { font-size: 0.7rem; } .cx-jn-side { gap: 5px; padding: 5px 6px; } }
