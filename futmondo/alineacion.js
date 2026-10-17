@@ -21,7 +21,7 @@
   var ALIAS = { "alexander arnold": "trent", "trent alexander arnold": "trent" }; // nombre en Futmondo
   var sinPareja = (window.__sinPareja = []);
   function match(s, pool) {
-    var names = [strip(s.full), strip(s.name)].filter(Boolean);
+    var names = [strip(s.full), strip(s.name), strip(s.alt)].filter(Boolean);
     names.slice().forEach(function (n) { if (ALIAS[n]) names.push(ALIAS[n]); });
     var toks = {}; names.forEach(function (n) { n.split(" ").forEach(function (t) { toks[t] = 1; }); });
     var squash = names.map(function (n) { return n.replace(/ /g, ""); });

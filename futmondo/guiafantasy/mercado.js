@@ -947,7 +947,7 @@
     const POS = { portero: "Portero", defensas: "Defensa", medios: "Mediocampista", delanteros: "Delantero" };
     const starters = [];
     ["portero", "defensas", "medios", "delanteros"].forEach((k) => (g[k] || []).forEach((p) => {
-      starters.push({ name: p.name, full: p.full || ffFullFor(photoMap, p.name) || p.name, pos: POS[k], photo: (keepPhoto && p.photo) || ffPhotoFor(photoMap, p.full || p.name) || "" });
+      starters.push({ name: p.name, full: p.full || p.name, alt: ffFullFor(photoMap, p.full || p.name), pos: POS[k], photo: (keepPhoto && p.photo) || ffPhotoFor(photoMap, p.full || p.name) || "" });
     }));
     return { starters, bench: [], formation: [g.defensas.length, g.medios.length, g.delanteros.length].join("-") };
   }
@@ -1062,7 +1062,7 @@
       const q = stripAccents(String(p.pos || "").toLowerCase()).trim();
       const isSub = (p.hl || []).some((h) => /sign-in/.test(h.ico || ""));
       const mi = marketInfo(p.name, name);
-      const o = { pos: q, name: p.name, full: ffFullFor(photoMap, p.name) || p.name, last: String(p.name || "").split(/\s+/).pop(), photo: ffPhotoFor(photoMap, p.name) || (mi && mi.photo) || "" };
+      const o = { pos: q, name: p.name, full: p.name, alt: ffFullFor(photoMap, p.name), last: String(p.name || "").split(/\s+/).pop(), photo: ffPhotoFor(photoMap, p.name) || (mi && mi.photo) || "" };
       if (isSub) { g.subs.push(o); return; }
       const cr = (q === "pt" || /porter/.test(q)) ? "" : rowOf(p.name);
       if (cr) g[cr].push(o);
