@@ -4,7 +4,7 @@
 (function () {
   "use strict";
   var EPS = /^\/api\/laquiniela\/(mercado|jugador|jornada|rachas|equipos|portada|noticias|detallepartido|once|alineaciones-confirmadas|cambios|puntos|ultimahora)(\?|$)/;
-  var MAXAGE = 6 * 3600 * 1000, MAXBODY = 1500000, PFX = "swr2:";
+  var MAXAGE = 15 * 60 * 1000, MAXBODY = 1500000, PFX = "swr2:";
   var native = window.fetch.bind(window), inflight = {}, lastEv = {};
   function lsGet(k) { try { return JSON.parse(localStorage.getItem(PFX + k)); } catch (e) { return null; } }
   function lsPut(k, body) {
