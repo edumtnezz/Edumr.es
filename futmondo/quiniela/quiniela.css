@@ -1663,3 +1663,6 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .pc-bg { opacity: .5; width: 165px; height: 165px; }
 .pc-bg-l { left: -34px; }
 .pc-bg-r { right: -34px; }
+.pc-bg { opacity: .85; width: 180px; height: 180px; }
+.pc-bg-l { left: -28px; }
+.pc-bg-r { right: -28px; }
