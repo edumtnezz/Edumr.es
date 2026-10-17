@@ -169,7 +169,7 @@ function updateCountdown() {
     const pad = (n) => String(n).padStart(2, "0");
     timer.textContent = pad(Math.floor(sec / 3600)) + ":" + pad(Math.floor((sec % 3600) / 60)) + ":" + pad(sec % 60);
   }
-  info.textContent = "Se cierra cuando empiece el primer partido";
+  info.textContent = state.matches.some((m) => m.started) ? "Cuenta atrás hasta el próximo partido (los ya empezados están cerrados)" : "Se cierra cuando empiece el primer partido";
 }
 
 function jornadaChips(cur, lo, hi, pick, boxId) {
