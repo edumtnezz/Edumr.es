@@ -1709,3 +1709,7 @@ html { overflow-anchor: none; }
 .plt-tag { font-size: .6rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 1px; }
 .plt-tag.racha { color: #ea580c; }
 .plt-tag.best { color: #16a34a; }
+.dest-head { background: #fff; padding: 16px 14px 6px; display: block; border-radius: 16px 16px 0 0; }
+.dest-title { color: #14181a; }
+.plt-row.has-why { grid-template-areas: "ph mid rt" "ph side side" "ph why why"; }
+.plt-why { grid-area: why; font-size: .78rem; line-height: 1.4; color: #4b5b63; margin-top: 4px; }

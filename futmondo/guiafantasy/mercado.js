@@ -245,14 +245,23 @@
     const cand = all.filter((p) => p.fitness && p.fitness.length >= 3 && p.value > 0);
     return cand.slice().sort((a, b) => expOf(b) - expOf(a));
   }
-  let destFilter = "all", destList = [];
+  let destList = [];
+  function destWhy(p) {
+    const f = (p.fit || p.fitness || []).map(Number).filter((x) => !isNaN(x));
+    const last = f.slice(-3);
+    const avg = (Number(p.avg) || 0).toFixed(1).replace(".", ",");
+    if (p._k === "racha") {
+      return last.length >= 2 ? "Viene de " + last.slice(0, -1).join(", ") + " y " + last[last.length - 1] + " puntos en sus últimos " + last.length + " partidos. Media de la temporada: " + avg + "." : "";
+    }
+    const prob = p.prob != null ? Number(p.prob) : null;
+    return "Es de los 5 que más puntos se espera que sumen: media de " + avg + (last.length ? " y últimos partidos de " + last.join(", ") : "") + (prob != null && !isNaN(prob) ? ", con " + Math.round(prob) + "% de opciones de jugar" : "") + ".";
+  }
   function paintDest() {
     const lst = $("destList");
     if (!lst) return;
     lst.innerHTML = "";
-    const items = destList.filter((p) => destFilter === "all" || p._k === destFilter);
-    if (!items.length) { lst.appendChild(el("p", "muted small dest-empty", "Sin destacados ahora mismo.")); return; }
-    items.forEach((p) => lst.appendChild(pltBuildRow(p, { chg: Number(p.change) || 0, tag: p._k === "best" ? ["best", "Mejor fichaje"] : ["racha", "En racha"] })));
+    if (!destList.length) { lst.appendChild(el("p", "muted small dest-empty", "Sin destacados ahora mismo.")); return; }
+    destList.forEach((p) => lst.appendChild(pltBuildRow(p, { chg: Number(p.change) || 0, tag: p._k === "best" ? ["best", "Mejor fichaje"] : ["racha", "En racha"], why: destWhy(p) })));
   }
   async function renderRachas() {
     const box = $("rachasOut");
@@ -260,13 +269,6 @@
     box.innerHTML = "";
     const head = el("div", "dest-head");
     head.appendChild(el("span", "dest-title", "Destacados"));
-    const seg = el("div", "dest-seg");
-    [["all", "Todos"], ["racha", "En racha"], ["best", "Fichajes"]].forEach((x) => {
-      const b = el("button", "plt-btn" + (destFilter === x[0] ? " on" : ""), x[1]); b.type = "button";
-      b.addEventListener("click", () => { destFilter = x[0]; seg.querySelectorAll(".plt-btn").forEach((z) => z.classList.remove("on")); b.classList.add("on"); paintDest(); });
-      seg.appendChild(b);
-    });
-    head.appendChild(seg);
     box.appendChild(head);
     const lst = el("div", "plt-list dest-list"); lst.id = "destList";
     lst.appendChild(el("p", "muted small dest-empty", "Cargando…"));
@@ -1525,7 +1527,7 @@
       const p = (all || []).find((x) => String(x.id) === String(id)) || {};
       const y = window.scrollY;
       box.innerHTML = "";
-      box.appendChild(backBtn("/futmondo/guiafantasy/mercado"));
+      box.appendChild(backBtn("/futmondo/guiafantasy/plantillas"));
       box.appendChild(renderFicha(d, p));
       if (!first) window.scrollTo(0, y);
     };
@@ -1922,10 +1924,10 @@
     // La tira de escudos ahora también se ve desde Noticias; si no estamos ya
     // en Mercado hay que llevar ahí al usuario, si no el filtro "funciona"
     // pero no se ve nada (el grid queda oculto en la pestaña Noticias).
-    if (currentTab !== "mercado") switchTab("mercado");
-    renderGrid();
-    const grid = $("marketGrid");
-    if (grid && grid.scrollIntoView) grid.scrollIntoView({ behavior: "smooth", block: "start" });
+    pltClub = t || ""; pltPos = ""; pltShown = 40; pltSave();
+    if (currentTab !== "plantillas") switchTab("plantillas");
+    else if (pltInit) { renderPltControls(); renderPltList(); }
+    window.scrollTo(0, 0);
   }
 
   function syncClubActive() {
@@ -3073,8 +3075,8 @@
             c.type = "button";
             c.title = "Ver los jugadores en racha de este equipo";
             c.addEventListener("click", () => {
-              try { sessionStorage.setItem("merc_scroll", "1"); sessionStorage.setItem(MS_KEY, JSON.stringify({ q: "", sortMode: "all", quick: "racha", teamFilter: squad[0].team, role: "", rangeMin: 0, rangeMax: 0, shown: 18 })); } catch (e) {}
-              location.href = "/futmondo/guiafantasy/mercado";
+              try { sessionStorage.setItem("pltState", JSON.stringify({ c: squad[0].team, p: "", s: "points", d: -1, per: "chg7", n: 40 })); } catch (e) {}
+              location.href = "/futmondo/guiafantasy/plantillas";
             });
           }
           stx.appendChild(c);
@@ -3220,6 +3222,7 @@
       if (m) name = m[1];
     } catch (e) {}
     if (!name) { try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {} }
+    if (name === "mercado") name = "plantillas";
     if (!name || !$("tab-" + name)) name = "inicio";
     switchTab(name, true);
   })();
@@ -4418,6 +4421,7 @@
       }
       side.appendChild(fit);
       row.appendChild(side);
+      if (o.why) { row.classList.add("has-why"); row.appendChild(el("div", "plt-why", o.why)); }
       const rt = el("div", "plt-rt");
       const pts = el("div", "plt-pts"); pts.appendChild(el("b", null, String(Number(p.points) || 0))); pts.appendChild(el("small", null, "PTS"));
       const avg = el("div", "plt-avg"); avg.appendChild(el("b", null, (Number(p.avg) || 0).toFixed(1).replace(".", ","))); avg.appendChild(el("small", null, "MEDIA"));
