@@ -801,6 +801,7 @@ function switchTab(name, scroll) {
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.dataset.tab === name));
   document.querySelectorAll(".tab-panel").forEach((p) => p.classList.add("hidden"));
   const panel = $("tab-" + name);
+  if (name === "plantillas") initPlantillas();
   if (panel) {
     panel.classList.remove("hidden");
     if (scroll) {
@@ -924,3 +925,86 @@ async function loadActividad() {
   } catch (e) { l.innerHTML = '<p class="muted">No se pudo cargar la actividad.</p>'; }
 }
 loadActividad();
+
+
+/* ---------- Pestaña Plantillas: lista de jugadores filtrable por club y posición ---------- */
+let pltInit = false, pltClub = "", pltPos = "", pltSort = "points", pltDir = -1, pltShown = 40, pltPlayers = [];
+async function initPlantillas() {
+  if (pltInit) return;
+  pltInit = true;
+  try {
+    let players = marketData && marketData.players && marketData.players.length > 100 ? marketData.players : null;
+    if (!players) { const d = await (await fetch(API + "/mercado")).json(); players = d.players || []; }
+    pltPlayers = players;
+  } catch (e) { pltInit = false; const l = $("pltList"); if (l) l.innerHTML = "<p class='muted'>No se pudo cargar la lista.</p>"; return; }
+  renderPltControls();
+  renderPltList();
+}
+function renderPltControls() {
+  const clubs = $("pltClubs"), pos = $("pltPos"), sort = $("pltSort");
+  if (!clubs) return;
+  clubs.innerHTML = "";
+  const all = el("button", "plt-club all" + (pltClub ? "" : " on"), "Todos"); all.type = "button";
+  all.addEventListener("click", () => { pltClub = ""; pltShown = 40; renderPltControls(); renderPltList(); });
+  clubs.appendChild(all);
+  const seen = {};
+  pltPlayers.forEach((p) => { if (p.team && !seen[p.team]) seen[p.team] = p.logo || ""; });
+  Object.keys(seen).sort((a, b) => a.localeCompare(b)).forEach((t) => {
+    const b = el("button", "plt-club" + (pltClub === t ? " on" : "")); b.type = "button"; b.title = t;
+    if (seen[t]) { const im = el("img"); im.src = seen[t]; im.alt = t; im.loading = "lazy"; b.appendChild(im); } else b.textContent = t.slice(0, 3);
+    b.addEventListener("click", () => { pltClub = pltClub === t ? "" : t; pltShown = 40; renderPltControls(); renderPltList(); });
+    clubs.appendChild(b);
+  });
+  pos.innerHTML = "";
+  [["", "Todos"], ["portero", "Portero"], ["defensa", "Defensa"], ["centrocampista", "Medio"], ["delantero", "Delantero"]].forEach((x) => {
+    const b = el("button", "plt-tab" + (pltPos === x[0] ? " on" : ""), x[1]); b.type = "button";
+    b.addEventListener("click", () => { pltPos = x[0]; pltShown = 40; renderPltControls(); renderPltList(); });
+    pos.appendChild(b);
+  });
+  sort.innerHTML = "";
+  [["points", "Puntos"], ["value", "Precio"], ["avg", "Media"]].forEach((x) => {
+    const on = pltSort === x[0];
+    const b = el("button", "plt-sb" + (on ? " on" : ""), x[1] + (on ? (pltDir < 0 ? " ▼" : " ▲") : "")); b.type = "button";
+    b.addEventListener("click", () => { if (pltSort === x[0]) pltDir = -pltDir; else { pltSort = x[0]; pltDir = -1; } pltShown = 40; renderPltControls(); renderPltList(); });
+    sort.appendChild(b);
+  });
+}
+function renderPltList() {
+  const box = $("pltList");
+  if (!box) return;
+  let list = pltPlayers.filter((p) => (!pltClub || p.team === pltClub) && (!pltPos || String(p.role || "").toLowerCase() === pltPos));
+  list = list.slice().sort((a, b) => pltDir * ((Number(a[pltSort]) || 0) - (Number(b[pltSort]) || 0)));
+  box.innerHTML = "";
+  if (!list.length) { box.appendChild(el("p", "muted", "Sin jugadores.")); return; }
+  list.slice(0, pltShown).forEach((p) => {
+    const row = el("div", "plt-row");
+    const ph = el("div", "plt-ph");
+    if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); ph.appendChild(im); }
+    if (p.logo) { const lg = el("img", "plt-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; ph.appendChild(lg); }
+    posRingCls(ph, p.role, p.role2);
+    row.appendChild(ph);
+    const mid = el("div", "plt-mid");
+    mid.appendChild(el("div", "plt-name", p.name));
+    mid.appendChild(el("div", "plt-val", money(p.value) + " €"));
+    const chg = Number(p.change) || 0;
+    mid.appendChild(el("div", "plt-chg " + (chg > 0 ? "up" : chg < 0 ? "down" : "flat"), chg > 0 ? "▲ " + formatDots(chg) + " €" : chg < 0 ? "▼ " + formatDots(-chg) + " €" : "—"));
+    row.appendChild(mid);
+    const fit = el("div", "plt-fit");
+    (p.fitness || []).slice(-5).forEach((v) => {
+      const n = Number(v);
+      fit.appendChild(el("i", isNaN(n) ? "" : (n >= (Number(p.avg) || 0) ? "hi" : "lo"), isNaN(n) ? "–" : String(n)));
+    });
+    row.appendChild(fit);
+    const rt = el("div", "plt-rt");
+    const pts = el("div", "plt-pts"); pts.appendChild(el("b", null, String(Number(p.points) || 0))); pts.appendChild(el("small", null, "puntos"));
+    const avg = el("div", "plt-avg"); avg.appendChild(el("b", null, (Number(p.avg) || 0).toFixed(1).replace(".", ","))); avg.appendChild(el("small", null, "media"));
+    rt.appendChild(pts); rt.appendChild(avg);
+    row.appendChild(rt);
+    box.appendChild(row);
+  });
+  if (list.length > pltShown) {
+    const more = el("button", "btn-ghost market-more", "Ver más (" + (list.length - pltShown) + ")"); more.type = "button";
+    more.addEventListener("click", () => { pltShown += 40; renderPltList(); });
+    box.appendChild(more);
+  }
+}
