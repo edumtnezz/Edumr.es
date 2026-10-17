@@ -4388,7 +4388,6 @@
     box.innerHTML = "";
     if (!list.length) { box.appendChild(el("p", "muted", "Sin jugadores.")); return; }
     const j0 = pltPlayers.reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0);
-    const perLab = (PLT_PER.filter((x) => x[0] === pltPeriod)[0] || [0, ""])[1];
     list.slice(0, pltShown).forEach((p) => {
       const row = el("div", "plt-row"); row.addEventListener("click", () => openFicha(p));
       const ph = el("div", "plt-ph");
@@ -4418,7 +4417,7 @@
       mid.appendChild(el("div", "plt-val", money(p.value) + " €"));
       const chg = Number(rise ? p[pltPeriod] : p.change) || 0;
       const t = chg > 0 ? "▲ " + formatDots(chg) + " €" : chg < 0 ? "▼ " + formatDots(-chg) + " €" : "—";
-      mid.appendChild(el("div", "plt-chg " + (chg > 0 ? "up" : chg < 0 ? "down" : "flat"), t + (rise && chg ? " · " + perLab : "")));
+      mid.appendChild(el("div", "plt-chg " + (chg > 0 ? "up" : chg < 0 ? "down" : "flat"), t));
       row.appendChild(mid);
       const side = el("div", "plt-side");
       const fit = el("div", "plt-fit");
