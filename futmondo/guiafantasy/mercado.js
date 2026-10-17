@@ -1519,55 +1519,107 @@
       let dstr = "";
       try { const pp = {}; new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(ko || now)).forEach((x) => { pp[x.type] = x.value; }); dstr = pp.year + pp.month + pp.day; } catch (e) {}
       try { const r = await (await fetch(API + "/directo?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn) + (dstr ? "&date=" + dstr : ""))).json(); entries = (r && r.entries) || []; fm = r && r.fm; ok = true; } catch (e) {}
-      const evs = (fm && fm.events) || [], sts = (fm && fm.stats) || [];
-      const tabs = [];
-      if (evs.length) tabs.push(["ev", "Eventos"]);
-      if (sts.length) tabs.push(["st", "Estadísticas"]);
-      tabs.push(["cr", "Crónica"]);
-      let cur = lvTab; if (!tabs.some((t) => t[0] === cur)) cur = tabs[0][0];
-      const bar = el("div", "lv-tabs");
-      tabs.forEach((t) => { const b = el("button", "lv-tab" + (t[0] === cur ? " on" : ""), t[1]); b.type = "button"; b.addEventListener("click", () => { lvTab = t[0]; paint(false); }); bar.appendChild(b); });
-      box.appendChild(bar);
       const mm = (e) => e.t + "'" + (e.x ? "+" + e.x : "");
-      if (cur === "ev") {
-        const list = el("div", "lv-list");
+      const evs = (fm && fm.events) || [], sts = (fm && fm.stats) || [];
+      const sec = (title, src) => { const c = el("section", "lv-sec"); c.appendChild(el("h3", "lv-h", title)); box.appendChild(c); return [c, src]; };
+      const srcTag = (c, t) => c.appendChild(el("p", "lv-src", t));
+      const ln = fm && fm.lineup;
+      // 1) Campo en directo
+      if (ln && ln.h && ln.a) {
+        const [c] = sec("Alineaciones");
+        const top = el("div", "lv-ptop");
+        [[ln.h, "h"], [ln.a, "a"]].forEach(([t, w]) => { const d = el("div", "lv-pt " + w); d.appendChild(el("b", null, t.name)); d.appendChild(el("span", null, (t.f || "") + (t.r ? " · " + String(t.r).replace(".", ",") : ""))); top.appendChild(d); });
+        c.appendChild(top);
+        const pitch = el("div", "lv-pitch");
+        pitch.appendChild(el("div", "lv-mid-line"));
+        pitch.appendChild(el("div", "lv-circle"));
+        const place = (t, home) => (t.st || []).forEach((q) => {
+          if (q.x == null || q.y == null) return;
+          const pl = el("div", "lv-pl");
+          pl.style.setProperty("left", ((home ? q.x : 1 - q.x) * 100) + "%");
+          pl.style.setProperty("top", ((home ? q.y * 50 : 100 - q.y * 50)) + "%");
+          const ph = el("div", "lv-ph");
+          const im = el("img"); im.loading = "lazy"; im.alt = ""; im.src = "https://images.fotmob.com/image_resources/playerimages/" + q.id + ".png";
+          im.addEventListener("error", () => { im.remove(); ph.appendChild(el("span", "lv-ini", (q.n || "?").charAt(0))); });
+          ph.appendChild(im);
+          if (q.r) { const rb = el("i", "lv-rt " + (q.r >= 7 ? "g" : q.r >= 6.5 ? "o" : "r"), String(q.r.toFixed ? q.r.toFixed(1) : q.r).replace(".", ",")); ph.appendChild(rb); }
+          if (q.so) ph.appendChild(el("i", "lv-so", q.so + "'"));
+          const cds = q.ev || [];
+          if (cds.indexOf("redCard") >= 0 || cds.indexOf("yellowRedCard") >= 0) ph.appendChild(el("i", "lv-cd red"));
+          else if (cds.indexOf("yellowCard") >= 0) ph.appendChild(el("i", "lv-cd"));
+          const gl = cds.filter((x) => x === "goal").length; if (gl) ph.appendChild(el("i", "lv-gl", "⚽" + (gl > 1 ? gl : "")));
+          pl.appendChild(ph);
+          const sn = String(q.n || "").split(" ").slice(-1)[0];
+          pl.appendChild(el("span", "lv-nm", (q.no ? q.no + " " : "") + sn));
+          pitch.appendChild(pl);
+        });
+        place(ln.h, true); place(ln.a, false);
+        c.appendChild(pitch);
+        const bench = el("div", "lv-bench");
+        [[ln.h, "Suplentes · " + ln.h.name], [ln.a, "Suplentes · " + ln.a.name]].forEach(([t, ttl]) => {
+          if (!(t.sb || []).length) return;
+          const col = el("div", "lv-bcol"); col.appendChild(el("h4", null, ttl));
+          t.sb.forEach((q) => { const r = el("div", "lv-brow" + (q.si ? " in" : "")); r.appendChild(el("span", null, (q.no || "") + " " + q.n)); r.appendChild(el("em", null, q.si ? "Entra " + q.si + "'" : "")); col.appendChild(r); });
+          bench.appendChild(col);
+        });
+        c.appendChild(bench);
+        srcTag(c, "Alineaciones y notas: FotMob");
+      }
+      // 2) Eventos (del minuto más reciente al más antiguo)
+      if (evs.length) {
+        const [c] = sec("Eventos");
+        const list = el("div", "lv-evs");
         evs.slice().reverse().forEach((e) => {
-          if (e.k === "half") { list.appendChild(el("div", "lv-half", e.txt || "")); return; }
-          const row = el("div", "lv-row lv-ev" + (e.h ? " home" : " away") + (e.k === "goal" ? " lv-goal" : e.k === "card" && /red/i.test(e.card) ? " lv-red" : ""));
-          row.appendChild(el("span", "lv-min", mm(e)));
-          let ic = "", tx = "";
-          if (e.k === "goal") { ic = "⚽"; tx = e.name + (e.own ? " (en propia)" : e.pen ? " (penalti)" : "") + (e.sc ? " · " + e.sc : "") + (e.assist ? " · asist. " + e.assist : ""); }
-          else if (e.k === "card") { ic = /red/i.test(e.card) ? "🟥" : "🟨"; tx = e.name; }
-          else if (e.k === "sub") { ic = "🔄"; tx = "Entra " + e.inn + " · sale " + e.out; }
-          else if (e.k === "var") { ic = "📺"; tx = "VAR" + (e.name ? " · " + e.name : "") + (e.txt ? " · " + e.txt : ""); }
-          row.appendChild(el("span", "lv-ic", ic));
-          row.appendChild(el("span", "lv-tx", tx));
+          if (e.k === "half") { list.appendChild(el("div", "lv-half", e.txt === "HT" ? "Descanso · " + ((e.sc) || "") : e.txt === "FT" ? "Final del partido" : e.txt || "")); return; }
+          const row = el("div", "lv-evr" + (e.k === "goal" ? " goal" : ""));
+          const l = el("div", "lv-evl"), r = el("div", "lv-evr2");
+          const mn = el("span", "lv-evm", mm(e));
+          const body = el("div", "lv-evb");
+          if (e.k === "goal") {
+            body.appendChild(el("strong", null, "⚽ " + e.name + (e.own ? " (en propia)" : e.pen ? " (penalti)" : "")));
+            if (e.sc) body.appendChild(el("small", null, "Marcador " + e.sc + (e.assist ? " · Asistencia: " + e.assist : "")));
+          } else if (e.k === "card") {
+            const sq = el("i", "lv-sq" + (/red/i.test(e.card) ? " red" : "")); body.appendChild(sq);
+            body.appendChild(el("strong", null, e.name));
+            body.appendChild(el("small", null, /red/i.test(e.card) ? "Tarjeta roja" : "Tarjeta amarilla"));
+          } else if (e.k === "sub") {
+            body.appendChild(el("span", "lv-in", "↑ " + e.inn));
+            body.appendChild(el("span", "lv-out", "↓ " + e.out));
+          } else if (e.k === "var") {
+            body.appendChild(el("strong", null, "VAR" + (e.name ? " · " + e.name : "")));
+            if (e.txt) body.appendChild(el("small", null, e.txt));
+          }
+          (e.h ? l : r).appendChild(body);
+          row.appendChild(l); row.appendChild(mn); row.appendChild(r);
           list.appendChild(row);
         });
-        box.appendChild(list);
-        box.appendChild(el("p", "lv-src", "Eventos: FotMob · se actualiza cada 30 s"));
-      } else if (cur === "st") {
+        c.appendChild(list);
+        srcTag(c, "Eventos: FotMob · se actualiza cada 30 s");
+      }
+      // 3) Estadísticas
+      if (sts.length) {
+        const [c] = sec("Estadísticas");
         const list = el("div", "lv-stats");
         sts.forEach((x) => {
-          const hv = parseFloat(x.h), av = parseFloat(x.a);
-          const tot = (hv || 0) + (av || 0);
+          const hv = parseFloat(x.h), av = parseFloat(x.a), tot = (hv || 0) + (av || 0);
           const row = el("div", "lv-stat");
-          const top = el("div", "lv-stat-top");
-          top.appendChild(el("b", null, String(x.h) + (x.u || "")));
-          top.appendChild(el("span", null, x.l));
-          top.appendChild(el("b", null, String(x.a) + (x.u || "")));
-          row.appendChild(top);
-          const bar2 = el("div", "lv-stat-bar");
-          const l = el("i"), r = el("i");
-          const pl = tot > 0 ? Math.round(hv / tot * 100) : 50;
-          l.style.setProperty("width", pl + "%"); r.style.setProperty("width", (100 - pl) + "%");
-          bar2.appendChild(l); bar2.appendChild(r); row.appendChild(bar2);
+          const tp = el("div", "lv-stat-top");
+          tp.appendChild(el("b", null, String(x.h).replace(".", ",") + (x.u || "")));
+          tp.appendChild(el("span", null, x.l));
+          tp.appendChild(el("b", null, String(x.a).replace(".", ",") + (x.u || "")));
+          row.appendChild(tp);
+          const b2 = el("div", "lv-stat-bar"), l2 = el("i"), r2 = el("i");
+          const pl2 = tot > 0 ? Math.round(hv / tot * 100) : 50;
+          l2.style.setProperty("width", pl2 + "%"); r2.style.setProperty("width", (100 - pl2) + "%");
+          b2.appendChild(l2); b2.appendChild(r2); row.appendChild(b2);
           list.appendChild(row);
         });
-        box.appendChild(list);
-        box.appendChild(el("p", "lv-src", "Estadísticas: FotMob"));
-      } else {
-        if (!entries || !entries.length) { box.appendChild(el("p", "muted small lv-note", ok ? "Todavía no hay jugadas publicadas." : "No se pudo cargar el directo.")); return live.state !== "final"; }
+        c.appendChild(list);
+        srcTag(c, "Estadísticas: FotMob");
+      }
+      // 4) Crónica minuto a minuto
+      if (entries && entries.length) {
+        const [c] = sec("Crónica minuto a minuto");
         const list = el("div", "lv-list");
         entries.slice().reverse().forEach((e) => {
           const [k, ic] = kindOf(e.t);
@@ -1577,8 +1629,29 @@
           row.appendChild(el("span", "lv-tx", e.t));
           list.appendChild(row);
         });
-        box.appendChild(list);
-        box.appendChild(el("p", "lv-src", "Crónica minuto a minuto: Comuniate · se actualiza cada 30 s"));
+        c.appendChild(list);
+        srcTag(c, "Crónica: Comuniate · se actualiza cada 30 s");
+      } else if (!evs.length && !ln) {
+        box.appendChild(el("p", "muted small lv-note", ok ? "Todavía no hay jugadas publicadas." : "No se pudo cargar el directo."));
+      }
+      // 5) Clasificación
+      if (fm && fm.table && fm.table.length) {
+        const [c] = sec("Clasificación · LaLiga");
+        const tb = el("div", "lv-table");
+        const hd = el("div", "lv-trow lv-thead");
+        ["#", "Equipo", "J", "G", "E", "P", "+/-", "DG", "PTS"].forEach((h, i) => hd.appendChild(el("span", i === 1 ? "lv-tn" : "", h)));
+        tb.appendChild(hd);
+        fm.table.forEach((x) => {
+          const hl = x.id === fm.hid || x.id === fm.aid;
+          const r = el("div", "lv-trow" + (hl ? " me" : ""));
+          const pos = el("span", "lv-tp", String(x.i)); if (x.q) pos.style.setProperty("box-shadow", "inset 3px 0 0 " + x.q);
+          r.appendChild(pos);
+          const tn = el("span", "lv-tn"); const ci = el("img"); ci.alt = ""; ci.loading = "lazy"; ci.src = "https://images.fotmob.com/image_resources/logo/teamlogo/" + x.id + ".png"; tn.appendChild(ci); tn.appendChild(el("em", null, x.n)); r.appendChild(tn);
+          [x.p, x.w, x.d, x.l, x.gf, x.dg, x.pt].forEach((v, i) => r.appendChild(el("span", i === 6 ? "lv-pts" : "", String(v))));
+          tb.appendChild(r);
+        });
+        c.appendChild(tb);
+        srcTag(c, "Clasificación: FotMob");
       }
       return live.state !== "final";
     };

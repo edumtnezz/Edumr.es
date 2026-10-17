@@ -3957,12 +3957,6 @@ async function handleGet({ request, env: env0, params }) {
   // Cambios de un partido (quién sale y quién entra), sacados de la crónica
   // minuto a minuto de la página del partido. Cada frase se lee con varios
   // patrones; lo que no encaje se ignora (el cliente lo cruza por eliminación).
-  if (path === "ftest") {
-    const j = await (await fetch("https://www.fotmob.com/api/data/tltable?leagueId=87", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).json();
-    const d = j[0].data, tb = d.table;
-    const f = tb.form || d.form;
-    return json({ dk: Object.keys(d), tk: Object.keys(tb), formKeys: f ? Object.keys(f).slice(0, 3) : null, formSample: f ? f[Object.keys(f)[0]] : null, nx: tb.nextMatch ? Object.keys(tb.nextMatch).slice(0, 2) : null, row: tb.all[0] });
-  }
   if (path === "directo") {
     // Directo de un partido: crónica de Comuniate + eventos y estadísticas de FotMob. Sin KV: caché de borde de 30 s.
     const hh = url.searchParams.get("home") || "", aa = url.searchParams.get("away") || "", jj = url.searchParams.get("jornada") || "";
@@ -4020,8 +4014,22 @@ async function handleGet({ request, env: env0, params }) {
         groups.forEach((g) => (g.stats || []).forEach((x) => { if (x && x.stats && x.stats.length === 2 && x.stats[0] != null && !byKey[x.key]) byKey[x.key] = x.stats; }));
         const stats = [];
         LBL.forEach((l) => { const v = byKey[l[0]]; if (v) stats.push({ l: l[1], h: v[0], a: v[1], u: l[2] || "" }); });
+        const lu = content.lineup || {};
+        const mkSide = (t) => {
+          if (!t || !t.starters) return null;
+          const pl = (x) => { const pf = x.performance || {}; return { id: x.id, n: x.name, no: x.shirtNumber, r: pf.rating || null, ev: (pf.events || []).map((e) => e.type), so: ((pf.substitutionEvents || []).find((e) => e.type === "subOut") || {}).time || 0, si: ((pf.substitutionEvents || []).find((e) => e.type === "subIn") || {}).time || 0, c: !!x.isCaptain, x: x.verticalLayout ? x.verticalLayout.x : null, y: x.verticalLayout ? x.verticalLayout.y : null }; };
+          return { name: t.name, f: t.formation || "", r: t.rating || null, st: t.starters.map(pl), sb: (t.subs || []).map(pl), co: t.coach && t.coach.name || "" };
+        };
+        const lineup = { h: mkSide(lu.homeTeam), a: mkSide(lu.awayTeam) };
+        let table = null;
+        try {
+          const tr = await fetch("https://www.fotmob.com/api/data/tltable?leagueId=87", { headers: UA });
+          const tj = await tr.json();
+          const all = tj[0].data.table.all || [];
+          table = all.map((x) => ({ i: x.idx, id: x.id, n: x.shortName || x.name, p: x.played, w: x.wins, d: x.draws, l: x.losses, gf: String(x.scoresStr || ""), dg: x.goalConDiff, pt: x.pts, q: x.qualColor || "" }));
+        } catch (e) {}
         const teams = (j.header && j.header.teams) || [];
-        out.fm = { id: hit.id, started: !!st.started, finished: !!st.finished, score: [teams[0] && teams[0].score, teams[1] && teams[1].score], events, stats, src: "FotMob" };
+        out.fm = { lineup, table, hid: teams[0] && teams[0].id, aid: teams[1] && teams[1].id, id: hit.id, started: !!st.started, finished: !!st.finished, score: [teams[0] && teams[0].score, teams[1] && teams[1].score], events, stats, src: "FotMob" };
       } catch (e) {}
     })();
     await Promise.all([cron, fot]);
