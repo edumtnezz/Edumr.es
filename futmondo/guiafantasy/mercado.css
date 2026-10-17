@@ -484,7 +484,7 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 
 /* ---------- Pestaña Alineaciones (campo moderno) ---------- */
 .alin-jbar { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 2px 0 12px; }
-.alin-nav { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; font-size: 0.7rem; transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease; }
+.alin-nav { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; font-size: 0.7rem; transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease, opacity 0.15s ease; }
 @media (hover: hover) and (pointer: fine) { .alin-nav:hover:not(:disabled) { border-color: var(--accent, var(--primary)); color: var(--accent, var(--primary)); } }
 .alin-nav:disabled { opacity: 0.35; cursor: default; }
 .alin-jtitle { font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; }
@@ -648,7 +648,7 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
   border-radius: 12px;
   padding: 8px 12px;
   cursor: pointer;
-  transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease;
+  transition: color 0.16s ease, background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease, opacity 0.16s ease;
   font-family: inherit;
 }
 @media (hover: hover) and (pointer: fine) { .racha-row:hover { border-color: var(--accent); transform: translateY(-1px); } }
@@ -707,7 +707,7 @@ html { overflow-anchor: none; }
 /* ---------- Clausulazo jugoso ---------- */
 .claus-filters { display: flex; flex-direction: column; gap: 6px; margin: 12px 0 2px; }
 .claus-frow { display: flex; flex-wrap: wrap; gap: 6px; }
-.claus-chip { font: inherit; font-size: 0.72rem; font-weight: 700; padding: 4px 11px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--muted); cursor: pointer; transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease; }
+.claus-chip { font: inherit; font-size: 0.72rem; font-weight: 700; padding: 4px 11px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--muted); cursor: pointer; transition: color 0.14s ease, background-color 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease, opacity 0.14s ease; }
 @media (hover: hover) and (pointer: fine) { .claus-chip:hover { border-color: var(--accent); color: var(--text); } }
 .claus-chip.active { background: var(--accent); border-color: var(--accent); color: #05130a; }
 .claus-trend { font-size: 0.68rem; font-weight: 800; margin-top: 5px; }
@@ -715,7 +715,7 @@ html { overflow-anchor: none; }
 .claus-trend.up { color: #dc2626; }
 .claus-newowner { font-size: 0.62rem; font-weight: 800; color: #2563eb; margin-top: 4px; }
 .claus-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin-top: 12px; }
-.claus-card { display: flex; gap: 10px; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; cursor: pointer; transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease; }
+.claus-card { display: flex; gap: 10px; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; cursor: pointer; transition: color 0.16s ease, background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease, opacity 0.16s ease; }
 @media (hover: hover) and (pointer: fine) { .claus-card:hover { border-color: var(--accent); transform: translateY(-1px); } }
 .claus-photo { width: 46px; height: 46px; flex: 0 0 auto; border-radius: 50%; overflow: hidden; background: var(--bg-surface, #e2e8f0); }
 .claus-img { width: 100%; height: 100%; object-fit: cover; }
@@ -729,7 +729,7 @@ html { overflow-anchor: none; }
 .claus-free { font-size: 0.68rem; color: var(--primary); font-weight: 700; margin-top: 3px; }
 
 /* Clausulazo (apartado) */
-.claus-card2 { display: flex; flex-direction: column; align-items: center; text-align: center; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 10px; cursor: pointer; transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease; }
+.claus-card2 { display: flex; flex-direction: column; align-items: center; text-align: center; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 10px; cursor: pointer; transition: color 0.16s ease, background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease, opacity 0.16s ease; }
 @media (hover: hover) and (pointer: fine) { .claus-card2:hover { border-color: var(--accent); transform: translateY(-2px); } }
 .claus-photo2 { position: relative; width: 60px; height: 60px; margin-bottom: 6px; }
 .claus-photo2 .claus-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; background: var(--bg-surface, #e2e8f0); }
@@ -844,7 +844,7 @@ html { overflow-anchor: none; }
 .an-desc > b { display: block; margin-bottom: 6px; }
 .an-desc ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
 .an-desc li { font-size: 0.85rem; color: var(--text); }
-.an-drop { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; padding: 26px 18px; border: 2px dashed var(--border-hover, var(--accent)); border-radius: 16px; background: rgba(34, 197, 94, 0.06); cursor: pointer; transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease; margin-bottom: 14px; }
+.an-drop { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; padding: 26px 18px; border: 2px dashed var(--border-hover, var(--accent)); border-radius: 16px; background: rgba(34, 197, 94, 0.06); cursor: pointer; transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease; margin-bottom: 14px; }
 @media (hover: hover) and (pointer: fine) { .an-drop:hover { border-color: var(--accent); background: rgba(34, 197, 94, 0.12); } }
 .an-drop-ico { font-size: 1.8rem; }
 .an-drop-t { font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif; }

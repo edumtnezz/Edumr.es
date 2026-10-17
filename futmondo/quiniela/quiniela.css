@@ -66,7 +66,7 @@ body.page-simple .appbar .tabs { margin: 6px 0 0; }
   text-decoration: none;
     font-size: 0.82rem;
     font-weight: 700;
-    transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease;
+    transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 @media (hover: hover) and (pointer: fine) { .top-btn:hover { border-color: var(--accent); transform: translateY(-1px); } }
@@ -298,7 +298,7 @@ body.page-simple .appbar .tabs { margin: 6px 0 0; }
 .auth-tab {
   border: none; background: transparent; color: var(--muted);
   font-family: inherit; font-size: 0.85rem; font-weight: 700;
-  padding: 8px 18px; border-radius: 9px; cursor: pointer; transition: color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease, opacity .18s ease;
+  padding: 8px 18px; border-radius: 9px; cursor: pointer; transition: color 0.2s, background-color 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s;
 }
 .auth-tab.active { background: linear-gradient(135deg, #22c55e, #16a34a); color: #050b14; }
 .auth-form { display: grid; gap: 12px; margin-top: 16px; max-width: 440px; }
@@ -348,7 +348,7 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
   background: rgba(255, 255, 255, 0.04);
   color: var(--muted);
   font-size: 0.82rem; font-weight: 600; font-family: inherit;
-  cursor: pointer; transition: color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease, opacity .18s ease;
+  cursor: pointer; transition: color 0.2s, background-color 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s;
 }
 @media (hover: hover) and (pointer: fine) { .btn-ghost:hover { color: var(--text); border-color: var(--border-hover); } }
 .btn-ghost:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -385,7 +385,7 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
   min-width: 0;
   border: none; background: transparent; color: var(--muted);
   font-family: 'Bricolage Grotesque', sans-serif; font-size: 0.84rem; font-weight: 700;
-  padding: 10px 14px; border-radius: 9px; cursor: pointer; transition: color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease, opacity .18s ease;
+  padding: 10px 14px; border-radius: 9px; cursor: pointer; transition: color 0.2s, background-color 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s;
   white-space: nowrap;
 }
 @media (hover: hover) and (pointer: fine) { .tab:hover { color: var(--text); } }
@@ -521,7 +521,7 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
   background: rgba(255, 255, 255, 0.03);
   color: var(--muted);
   font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.05rem; font-weight: 700;
-  cursor: pointer; transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease;
+  cursor: pointer; transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
 }
 @media (hover: hover) and (pointer: fine) { .pick-btn:hover:not(:disabled) { border-color: var(--border-hover); color: var(--text); transform: translateY(-1px); } }
 .pick-btn.selected {
@@ -676,7 +676,7 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
   padding: 8px 16px;
   border-radius: 9px;
   cursor: pointer;
-  transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
   white-space: nowrap;
 }
 .seg-btn.active { background: linear-gradient(135deg, #22c55e, #10b981); color: #050b14; }
@@ -815,7 +815,7 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
   color: var(--text);
   cursor: pointer;
   font-size: 0.85rem;
-  transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
 }
 @media (hover: hover) and (pointer: fine) { .jbtn:hover:not(:disabled) { border-color: var(--accent); transform: scale(1.08); } }
 .jbtn:disabled { opacity: 0.3; cursor: not-allowed; }
@@ -999,7 +999,7 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease;
+  transition: color 0.25s ease, background-color 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease, opacity 0.25s ease;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
 }
 @media (hover: hover) and (pointer: fine) { .theme-toggle:hover { border-color: var(--accent); transform: scale(1.08); box-shadow: 0 0 16px rgba(34, 197, 94, 0.3); } }
@@ -1141,7 +1141,7 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 
 /* Pujas */
 .puja-countdown { text-align: center; margin-bottom: 18px; position: relative; }
-.puja-refresh { position: absolute; top: 0; right: 4px; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); cursor: pointer; font-size: 1.1rem; line-height: 1; display: flex; align-items: center; justify-content: center; transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease; }
+.puja-refresh { position: absolute; top: 0; right: 4px; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); cursor: pointer; font-size: 1.1rem; line-height: 1; display: flex; align-items: center; justify-content: center; transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease; }
 @media (hover: hover) and (pointer: fine) { .puja-refresh:hover { border-color: var(--accent); transform: rotate(90deg); } }
 .bid-row.mine.losing { border-color: rgba(239, 68, 68, 0.6); background: linear-gradient(90deg, rgba(239, 68, 68, 0.14), rgba(239, 68, 68, 0.02)); }
 .bid-row.mine.losing .bid-amount { color: #f87171; }
@@ -1180,7 +1180,7 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .market-search::placeholder { color: var(--muted); }
 .market-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.16), 0 3px 14px rgba(0, 0, 0, 0.12); }
 .market-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; margin-top: 12px; }
-.mcard { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 10px; border-radius: 14px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); cursor: pointer; transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease; text-align: center; }
+.mcard { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 10px; border-radius: 14px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); cursor: pointer; transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease; text-align: center; }
 @media (hover: hover) and (pointer: fine) { .mcard:hover { transform: translateY(-3px); border-color: var(--border-hover); box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25), 0 0 20px rgba(34, 197, 94, 0.18); } }
 .mcard-img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; background: var(--bg-surface); display: flex; align-items: center; justify-content: center; font-weight: 700; color: var(--muted); }
 .mcard-photo { position: relative; width: 72px; height: 72px; }
@@ -1337,7 +1337,7 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .puja-photo { margin-bottom: 8px; }
 .bid-lead { margin: 4px 0 10px; }
 .bid-list { gap: 8px; }
-#toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 30px); background: #10b981; color: #04120c; font-weight: 800; padding: 14px 22px; border-radius: 14px; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35); opacity: 0; pointer-events: none; transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease; z-index: 200; font-family: 'Bricolage Grotesque', sans-serif; max-width: 90vw; text-align: center; }
+#toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 30px); background: #10b981; color: #04120c; font-weight: 800; padding: 14px 22px; border-radius: 14px; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35); opacity: 0; pointer-events: none; transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease, opacity 0.3s ease; z-index: 200; font-family: 'Bricolage Grotesque', sans-serif; max-width: 90vw; text-align: center; }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 .winner-box { text-align: center; padding: 22px; border-radius: 16px; border: 1px solid rgba(16, 185, 129, 0.5); background: linear-gradient(135deg, rgba(16, 185, 129, 0.16), rgba(16, 185, 129, 0.03)); margin-top: 18px; }
 .winner-box .w-name { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.5rem; font-weight: 700; }
