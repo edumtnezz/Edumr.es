@@ -3957,12 +3957,6 @@ async function handleGet({ request, env: env0, params }) {
   // Cambios de un partido (quién sale y quién entra), sacados de la crónica
   // minuto a minuto de la página del partido. Cada frase se lee con varios
   // patrones; lo que no encaje se ignora (el cliente lo cruza por eliminación).
-  if (path === "ftest") {
-    const j = await (await fetch("https://www.fotmob.com/api/data/matchDetails?matchId=5868099", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).json();
-    const c = j.content || {}, mf = c.matchFacts || {};
-    const trim = (o, d) => { if (d > 5 || o == null) return o; if (Array.isArray(o)) return o.slice(0, 3).map((x) => trim(x, d + 1)); if (typeof o === "object") { const r = {}; Object.keys(o).slice(0, 30).forEach((k) => { r[k] = trim(o[k], d + 1); }); return r; } return typeof o === "string" && o.length > 90 ? o.slice(0, 90) : o; };
-    return json({ info: trim(mf.infoBox, 0), form: trim(mf.teamForm, 0), h2h: trim(c.h2h, 0), weather: trim(c.weather, 0), hdr: trim(j.header, 0), gen: trim(j.general, 0) });
-  }
   if (path === "directo") {
     // Directo de un partido: crónica de Comuniate + eventos y estadísticas de FotMob. Sin KV: caché de borde de 30 s.
     const hh = url.searchParams.get("home") || "", aa = url.searchParams.get("away") || "", jj = url.searchParams.get("jornada") || "";
@@ -4045,8 +4039,33 @@ async function handleGet({ request, env: env0, params }) {
         const potm = po && po.name ? { id: po.id, n: po.name.fullName || ((po.name.firstName || "") + " " + (po.name.lastName || "")).trim(), team: po.teamName || "", r: po.rating && po.rating.num ? po.rating.num : "", home: !!po.isHomeTeam } : null;
         const hl0 = mfx.highlights;
         const hlx = hl0 && /^https:\/\//.test(hl0.url || "") ? { url: hl0.url, image: /^https:\/\//.test(hl0.image || "") ? hl0.image : "" } : null;
+        const ib = mfx.infoBox || {};
+        const st0 = ib.Stadium || {}, rf = ib.Referee || {}, tr0 = ib.Tournament || {};
+        const rstat = {}; (rf.stats || []).forEach((x) => { if (x.valueType === "perMatch") rstat[x.type] = { v: x.value, avg: x.average, fill: x.fillPercentage, afill: x.averagePercentage }; });
+        const wx = content.weather || null;
+        const info = {
+          date: (ib["Match Date"] || {}).utcTime || "", round: tr0.round || tr0.roundName || "", league: tr0.leagueName || "",
+          stadium: st0.name ? { n: st0.name, city: st0.city || "", country: st0.country || "", cap: st0.capacity || 0, surface: st0.surface || "" } : null,
+          ref: rf.text ? { n: rf.text, country: rf.country || "", img: rf.imgUrl || "", stats: rstat } : null,
+          wx: wx && wx.temperature != null ? { t: wx.temperature, d: wx.defaultTitle || "", c: wx.iconCode } : null,
+        };
+        const fr = (arr) => (arr || []).map((x) => ({ r: x.resultString || "", sc: x.score || "", logo: x.imageUrl || "", hn: (x.home || {}).name || "", an: (x.away || {}).name || "", ourHome: !!(x.home || {}).isOurTeam, d: (x.date || {}).utcTime || "" }));
+        const tf = mfx.teamForm || [];
+        const form = [fr(tf[0]), fr(tf[1])];
+        const h2o = content.h2h || null;
+        const h2h = h2o && h2o.matches ? { sum: h2o.summary || [], m: h2o.matches.slice(0, 10).map((x) => ({ d: (x.time || {}).utcTime || "", lg: (x.league || {}).name || "", hn: (x.home || {}).name || "", an: (x.away || {}).name || "", sc: (x.status || {}).finished ? (x.status.scoreStr || "") : "", hid: (x.home || {}).id, aid: (x.away || {}).id })) } : null;
         const teams = (j.header && j.header.teams) || [];
-        out.fm = { potm, hl: hlx, mvp, hl, lineup, table, hid: teams[0] && teams[0].id, aid: teams[1] && teams[1].id, id: hit.id, started: !!st.started, finished: !!st.finished, score: [teams[0] && teams[0].score, teams[1] && teams[1].score], events, stats, src: "FotMob" };
+        const nextOf = async (tid) => {
+          try {
+            const r = await fetch("https://www.fotmob.com/api/data/teams?id=" + tid + "&ccode3=ESP", { headers: UA });
+            const tj = await r.json();
+            const nm = tj && tj.overview && tj.overview.nextMatch;
+            if (!nm) return null;
+            return { d: (nm.status || {}).utcTime || "", hn: (nm.home || {}).name || "", an: (nm.away || {}).name || "", hid: (nm.home || {}).id, aid: (nm.away || {}).id, lg: ((tj.overview.nextMatch.tournament || {}).name) || "" };
+          } catch (e) { return null; }
+        };
+        const nexts = await Promise.all([teams[0] ? nextOf(teams[0].id) : null, teams[1] ? nextOf(teams[1].id) : null]);
+        out.fm = { info, form, h2h, next: nexts, potm, hl: hlx, mvp, hl, lineup, table, hid: teams[0] && teams[0].id, aid: teams[1] && teams[1].id, id: hit.id, started: !!st.started, finished: !!st.finished, score: [teams[0] && teams[0].score, teams[1] && teams[1].score], events, stats, src: "FotMob" };
       } catch (e) {}
     })();
     await Promise.all([cron, fot]);

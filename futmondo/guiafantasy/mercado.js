@@ -1554,7 +1554,7 @@
           const im = el("img"); im.loading = "lazy"; im.alt = ""; im.src = "https://images.fotmob.com/image_resources/playerimages/" + q.id + ".png";
           im.addEventListener("error", () => { im.src = "/img/avatar.svg"; });
           ph.appendChild(im);
-          if (q.r) ph.appendChild(el("span", "pl-pts" + rcls(q.r), String(q.r.toFixed ? q.r.toFixed(1) : q.r).replace(".", ",")));
+          if (q.r) ph.appendChild(el("span", "pl-pts" + (fm.potm && fm.potm.id === q.id ? " mvp" : rcls(q.r)), String(q.r.toFixed ? q.r.toFixed(1) : q.r).replace(".", ",") + (fm.potm && fm.potm.id === q.id ? " ★" : "")));
           const cds = q.ev || [];
           if (cds.indexOf("redCard") >= 0 || cds.indexOf("yellowRedCard") >= 0) ph.appendChild(el("span", "pl-red"));
           else if (cds.indexOf("yellowCard") >= 0) ph.appendChild(el("span", "pl-yel"));
@@ -1654,6 +1654,70 @@
         });
         kEv.appendChild(list);
         }
+        const inf = fm && fm.info;
+        const FM_CREST = (id) => "https://images.fotmob.com/image_resources/logo/teamlogo/" + id + ".png";
+        const fdate = (iso, withTime) => { try { return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short", day: "numeric", month: "long", hour: withTime ? "2-digit" : undefined, minute: withTime ? "2-digit" : undefined }).format(new Date(iso)).replace(/^(\S+?)\.?,?\s/, "$1, "); } catch (e) { return ""; } };
+        const fhour = (iso) => { try { return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" }).format(new Date(iso)); } catch (e) { return ""; } };
+        const fshort = (iso) => { try { return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "numeric", month: "short" }).format(new Date(iso)).replace(".", ""); } catch (e) { return ""; } };
+        const PAIS = { Spain: "España", Portugal: "Portugal", France: "Francia", Italy: "Italia", Germany: "Alemania", England: "Inglaterra" };
+        const fm2 = fm && fm.form;
+        if (fm2 && (fm2[0] || []).length + (fm2[1] || []).length) {
+          const k = card("Forma");
+          const two = el("div", "lv-form");
+          [[ln && ln.h ? ln.h.name : m.home, fm2[0]], [ln && ln.a ? ln.a.name : m.away, fm2[1]]].forEach(([nm, arr]) => {
+            const col = el("div", "lv-fcol");
+            (arr || []).slice().reverse().forEach((x) => {
+              const r = el("div", "lv-frow");
+              const pill = el("span", "lv-fp " + (x.r === "W" ? "w" : x.r === "L" ? "l" : "d"), x.sc.replace(" - ", " - "));
+              r.appendChild(pill);
+              const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = x.logo; r.appendChild(im);
+              col.appendChild(r);
+            });
+            two.appendChild(col);
+          });
+          k.appendChild(two);
+        }
+        if (inf && inf.stadium) {
+          const k = card("Estadio");
+          const st = inf.stadium;
+          const r1 = el("div", "lv-inf"); r1.appendChild(el("b", null, st.n)); r1.appendChild(el("span", null, [st.city, PAIS[st.country] || st.country].filter(Boolean).join(", "))); k.appendChild(r1);
+          const line = (a, b) => { const r = el("div", "lv-kv"); r.appendChild(el("span", null, a)); r.appendChild(el("b", null, b)); k.appendChild(r); };
+          if (st.cap) line("Capacidad", Number(st.cap).toLocaleString("es-ES"));
+          if (st.surface) line("Superficie", /grass/i.test(st.surface) ? "Césped" : /artificial|turf/i.test(st.surface) ? "Césped artificial" : st.surface);
+          if (inf.wx) line("El tiempo", Math.round(inf.wx.t) + " °C");
+        }
+        if (inf && inf.ref) {
+          const k = card("Árbitro");
+          const rr = el("div", "lv-inf"); rr.appendChild(el("b", null, inf.ref.n)); rr.appendChild(el("span", null, PAIS[inf.ref.country] || inf.ref.country)); k.appendChild(rr);
+          const rs = inf.ref.stats || {};
+          const lab = (x) => (Math.abs(x.fill - x.afill) <= 5 ? "En la media" : x.fill > x.afill ? "Por encima de la media" : "Por debajo de la media");
+          [["yellowCards", "Tarjetas amarillas"], ["fouls", "Faltas"]].forEach(([key, nm]) => {
+            const x = rs[key]; if (!x) return;
+            const row = el("div", "lv-ref");
+            row.appendChild(el("span", "lv-ref-n", nm));
+            row.appendChild(el("b", null, String(x.v).replace(".", ",") + " / partido"));
+            const tr = el("div", "lv-ref-bar"); const f = el("i"); f.style.setProperty("width", Math.max(3, Math.min(100, x.fill)) + "%"); tr.appendChild(f); row.appendChild(tr);
+            row.appendChild(el("small", null, lab(x)));
+            k.appendChild(row);
+          });
+        }
+        if (inf && inf.date) {
+          const k = card("Fecha");
+          const r1 = el("div", "lv-kv"); r1.appendChild(el("span", null, "Día y hora")); r1.appendChild(el("b", null, fdate(inf.date, true))); k.appendChild(r1);
+          if (inf.league) { const r2 = el("div", "lv-kv"); r2.appendChild(el("span", null, inf.league)); r2.appendChild(el("b", null, inf.round ? "Jornada " + inf.round : "")); k.appendChild(r2); }
+        }
+        const nx = ((fm && fm.next) || []).filter((x) => x && x.d);
+        if (nx.length) {
+          const k = card("Partido siguiente");
+          nx.forEach((x) => {
+            const r = el("div", "lv-next");
+            const side = (id, nm) => { const d = el("div", "lv-ns"); const im = el("img"); im.alt = ""; im.src = FM_CREST(id); d.appendChild(im); d.appendChild(el("span", null, nm)); return d; };
+            r.appendChild(side(x.hid, x.hn));
+            const mid = el("div", "lv-nm2"); mid.appendChild(el("b", null, fhour(x.d))); mid.appendChild(el("small", null, fshort(x.d))); r.appendChild(mid);
+            r.appendChild(side(x.aid, x.an));
+            k.appendChild(r);
+          });
+        }
         if (hlv) {
           const k = card("Momentos destacados");
           const a2 = el("a", "lv-hl"); a2.href = hlv.url; a2.target = "_blank"; a2.rel = "noopener noreferrer";
@@ -1704,8 +1768,30 @@
         c.appendChild(tb);
         srcTag(c, "Clasificación: FotMob");
       }
+      const h2 = fm && fm.h2h;
+      if (h2 && h2.m && h2.m.length) {
+        const [c] = sec("Cara a Cara");
+        const k = el("div", "lv-card");
+        const sum = el("div", "lv-h2sum");
+        const hid = fm.hid, aid = fm.aid;
+        const crest = (id) => { const im = el("img"); im.alt = ""; im.src = "https://images.fotmob.com/image_resources/logo/teamlogo/" + id + ".png"; return im; };
+        sum.appendChild(crest(hid));
+        [["h", h2.sum[0], "Victorias"], ["d", h2.sum[1], "Empates"], ["a", h2.sum[2], "Victorias"]].forEach(([cl, n, lb]) => { const d = el("div", "lv-h2c"); d.appendChild(el("span", "lv-h2n " + cl, String(n))); d.appendChild(el("b", null, lb)); sum.appendChild(d); });
+        sum.appendChild(crest(aid));
+        k.appendChild(sum);
+        h2.m.forEach((x) => {
+          const r = el("div", "lv-h2r");
+          const top = el("div", "lv-h2top"); top.appendChild(el("span", null, (() => { try { return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "numeric", month: "long", year: "numeric" }).format(new Date(x.d)); } catch (e) { return ""; } })())); top.appendChild(el("span", null, x.lg)); r.appendChild(top);
+          const mt = el("div", "lv-h2m");
+          const l = el("span", "lv-h2t l"); l.appendChild(el("em", null, x.hn)); l.appendChild(crest(x.hid));
+          const rg = el("span", "lv-h2t r"); rg.appendChild(crest(x.aid)); rg.appendChild(el("em", null, x.an));
+          mt.appendChild(l); mt.appendChild(el("b", "lv-h2s", x.sc ? x.sc.replace(/\s/g, " ") : (() => { try { return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" }).format(new Date(x.d)); } catch (e) { return ""; } })())); mt.appendChild(rg);
+          r.appendChild(mt); k.appendChild(r);
+        });
+        c.appendChild(k);
+      }
       if (secs.length) {
-        const ORD = ["Hechos", "Alineación", "Estadísticas", "Clasificación"];
+        const ORD = ["Hechos", "Alineación", "Estadísticas", "Clasificación", "Cara"];
         secs.sort((x, y) => ORD.indexOf(x[0]) - ORD.indexOf(y[0]));
         secs.forEach(([k, c]) => box.appendChild(c));
         const srcTop = el("p", "lv-srctop", "Fuente de los datos: FotMob · se actualiza cada 30 s");
@@ -1713,7 +1799,7 @@
         let cur = lvTab; if (!secs.some((x) => x[0] === cur)) cur = secs[0][0];
         const bar = el("div", "lv-tabs");
         secs.forEach(([k, c]) => {
-          const b = el("button", "lv-tab" + (k === cur ? " on" : ""), k); b.type = "button";
+          const b = el("button", "lv-tab" + (k === cur ? " on" : ""), k === "Cara" ? "Cara a cara" : k); b.type = "button";
           b.addEventListener("click", () => { lvTab = k; bar.querySelectorAll(".lv-tab").forEach((x) => x.classList.toggle("on", x === b)); secs.forEach(([k2, c2]) => c2.classList.toggle("hidden", k2 !== k)); });
           bar.appendChild(b);
           c.classList.toggle("hidden", k !== cur);
