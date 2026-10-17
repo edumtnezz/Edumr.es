@@ -1697,3 +1697,15 @@ html { overflow-anchor: none; }
 .fm-pts.fm-live { background: #fff !important; color: #ef4444 !important; box-shadow: inset 0 0 0 1.5px #ef4444; animation: pltLive 1.6s ease-in-out infinite; }
 .fm-pend { font-weight: 700; }
 @media (prefers-reduced-motion: reduce) { .fm-pts.fm-live { animation: none; } }
+
+/* Destacados (inicio): una sola lista con racha + mejores fichajes */
+.dest-panel { margin-top: 14px; }
+.dest-head { background: #1d2b33; padding: 14px 12px 12px; display: flex; flex-direction: column; gap: 10px; border-radius: 16px 16px 0 0; }
+.dest-title { color: #fff; font-family: var(--font-display, inherit); font-size: 1.15rem; font-weight: 800; letter-spacing: -.01em; }
+.dest-seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.dest-seg .plt-btn { height: 34px; padding: 0 6px; border-radius: 8px; background: rgba(255,255,255,.08); color: #aebcc3; font-size: .8rem; }
+.dest-seg .plt-btn.on { background: #5b6b73; color: #fff; }
+.dest-empty { padding: 18px 12px; text-align: center; color: #5b6b73; }
+.plt-tag { font-size: .6rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 1px; }
+.plt-tag.racha { color: #ea580c; }
+.plt-tag.best { color: #16a34a; }
