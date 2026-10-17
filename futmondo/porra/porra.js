@@ -78,7 +78,7 @@ function el(tag, cls, txt) {
 function renderLogin(panel) {
   const intro = el("div", "auth-intro");
   intro.appendChild(el("h2", null, "Entra o crea tu cuenta"));
-  intro.appendChild(el("p", "muted", "Con un nombre y un código de 4 o 6 números juegas a La Porra, La Puja y La Quiniela. Si aún no tienes cuenta, se crea sola. Después entra siempre con lo mismo."));
+  intro.appendChild(el("p", "muted", "Nombre y código de 4 o 6 números. Si no tienes cuenta, se crea al entrar."));
   panel.appendChild(intro);
   const go = el("a", "btn-primary big", "Crear cuenta o entrar");
   go.href = "/futmondo/cuenta/?next=" + encodeURIComponent("/futmondo/porra/");

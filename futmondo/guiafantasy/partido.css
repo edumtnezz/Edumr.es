@@ -101,7 +101,7 @@
 .mpage-others-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (min-width: 760px) { .mpage-others-grid { grid-template-columns: repeat(3, 1fr); } }
 .mo-card { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 9px 6px; border-radius: 14px; text-decoration: none; color: inherit; background: var(--card-solid, #fff); border: 1.5px solid var(--border); transition: transform .14s ease; }
-.mo-card:hover { transform: translateY(-2px); }
+@media (hover: hover) and (pointer: fine) { .mo-card:hover { transform: translateY(-2px); } }
 .mo-card.cur { border-color: #16a34a; box-shadow: 0 0 0 1px rgba(34,197,94,.5); }
 .mo-card.fin { border-color: rgba(129,140,248,.7); }
 .mo-card.live { border-color: #ef4444; animation: cxJnLive 1.3s ease-in-out infinite; }
@@ -179,7 +179,7 @@
 @media(min-width:700px){.eq-grid{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:420px){.eq-pl .racha-chip{min-width:23px}.eq-pl .racha-chip b{padding:2px 3px}}
 .club-link{cursor:pointer}
-.club-link:hover{text-decoration:underline}
+@media (hover: hover) and (pointer: fine) { .club-link:hover{text-decoration:underline} }
 .eq-inicio{margin-top:12px}
 .eq-inicio:empty{display:none}
 .eq-inicio-h{display:flex;align-items:center;justify-content:space-between;font:800 1rem 'Bricolage Grotesque',sans-serif;margin-bottom:6px}
@@ -205,7 +205,7 @@
 .eq-grid{gap:12px;margin-top:0}
 .eq-tile{position:relative;flex-direction:column;align-items:flex-start;gap:10px;padding:14px;border-radius:20px;min-height:128px;overflow:hidden;transition:transform .12s,box-shadow .15s,border-color .15s;box-shadow:0 2px 10px rgba(0,0,0,.05)}
 .eq-tile:active{transform:scale(.97)}
-.eq-tile:hover{border-color:#22c55e;box-shadow:0 6px 18px rgba(34,197,94,.18)}
+@media (hover: hover) and (pointer: fine) { .eq-tile:hover{border-color:#22c55e;box-shadow:0 6px 18px rgba(34,197,94,.18)} }
 .eq-tile[hidden]{display:none}
 .eq-tile-cw{display:flex;align-items:center;justify-content:center;width:56px;height:56px;border-radius:16px;background:rgba(127,127,127,.1)}
 .eq-tile .eq-tile-cw img{width:42px;height:42px}

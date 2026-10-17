@@ -162,7 +162,7 @@ function render() {
   if (!user) {
     const intro = el("div", "auth-intro");
     intro.appendChild(el("h2", null, "Entra o crea tu cuenta"));
-    intro.appendChild(el("p", "muted", "Con un nombre y un código de 4 o 6 números juegas a La Puja, La Porra y La Quiniela. Si aún no tienes cuenta, se crea sola. Después entra siempre con lo mismo."));
+    intro.appendChild(el("p", "muted", "Nombre y código de 4 o 6 números. Si no tienes cuenta, se crea al entrar."));
     panel.appendChild(intro);
     const go = el("a", "btn-primary big", "Crear cuenta o entrar");
     go.href = "/futmondo/cuenta/?next=" + encodeURIComponent("/futmondo/lapuja/");
@@ -197,7 +197,7 @@ function render() {
 
   if (p) {
     if (p.status === "closed") panel.appendChild(el("div", "puja-sec", "Jugador subastado"));
-    if (p.status === "open") panel.appendChild(el("p", "bid-note", "⚠️ Al pujar no se puede retirar ni bajar la puja. Piénsalo antes de pujar."));
+    if (p.status === "open") panel.appendChild(el("p", "bid-note", "⚠️ Una puja no se puede retirar ni bajar."));
     const pcard = el("div", "puja-pcard");
     const pwrap = el("div", "puja-pcard-photo");
     const pbc = statusBorder(p.pstatus);
@@ -294,7 +294,7 @@ function render() {
     bs.addEventListener("input", () => { bs.value = formatDots(bs.value); });
     const hid = el("input"); hid.id = "pjPhoto"; hid.type = "hidden";
     f.appendChild(sw); f.appendChild(prev); f.appendChild(bi); f.appendChild(bs); f.appendChild(hid);
-    f.appendChild(el("p", "bid-note", "⚠️ Una vez alguien puje, no se puede retirar ni bajar la puja."));
+    f.appendChild(el("p", "bid-note", "⚠️ Una puja no se puede retirar ni bajar."));
     const b = el("button", "btn-primary big", "Sacar a subasta"); f.appendChild(b);
     panel.appendChild(f);
     const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);

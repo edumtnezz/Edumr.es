@@ -1312,7 +1312,7 @@
       const hd = el("div", "mpage-xi-h");
       hd.appendChild(el("span", "mpage-xi-title", mpLive ? "Partido en juego" : "Partido finalizado"));
       sec.appendChild(hd);
-      if (mpLive) sec.appendChild(el("p", "muted small mpage-live-note", "🔴 En directo · se actualiza solo cada minuto · puntos provisionales (los de tu liga llegan al acabar)"));
+      if (mpLive) sec.appendChild(el("p", "muted small mpage-live-note", "🔴 En directo · puntos provisionales"));
       const idxH = xiEvIndex(d.homePlayers), idxA = xiEvIndex(d.awayPlayers);
       const home = xiFinishedSide(m.home, m.homeCrest, d.homePlayers, xiPhotoMap(ffData && ffData.home), mpConf && mpConf.home);
       const away = xiFinishedSide(m.away, m.awayCrest, d.awayPlayers, xiPhotoMap(ffData && ffData.away), mpConf && mpConf.away);
@@ -1503,7 +1503,7 @@
       // Partido acabado pero sin puntos todavía: se sigue buscando cada minuto hasta que lleguen
       let pointsIn = true;
       if (finished) { try { const r = await fillMpPoints(box, d, jn); if (!mpLive) pointsIn = r !== false; } catch (e) { pointsIn = false; } }
-      if (finalNow && !pointsIn) { const h = box.querySelector(".mpage-xi-h"); if (h) h.insertAdjacentElement("afterend", el("p", "muted small mpage-live-note", "⏳ Esperando los puntos de Futmondo… se ponen solos en cuanto llegan")); }
+      if (finalNow && !pointsIn) { const h = box.querySelector(".mpage-xi-h"); if (h) h.insertAdjacentElement("afterend", el("p", "muted small mpage-live-note", "⏳ Esperando los puntos de Futmondo…")); }
       return !finalNow || !pointsIn;
     };
     // Si llegan datos nuevos distintos de lo que se pintó al instante (carga rápida), se repinta en el sitio
@@ -2970,7 +2970,7 @@
     const box = eqOpen(); if (!box) return;
     const hero = el("div", "eqi-hero");
     hero.appendChild(el("h2", "eq-h1", "Equipos"));
-    hero.appendChild(el("p", "eqi-sub", "Toca un club para ver su próximo partido, la alineación, el calendario y toda su plantilla."));
+    hero.appendChild(el("p", "eqi-sub", "Toca un club para ver su partido y su plantilla."));
     const inp = el("input", "market-search eqi-search"); inp.placeholder = "Buscar club…"; inp.autocomplete = "off";
     hero.appendChild(inp);
     box.appendChild(hero);
@@ -3100,7 +3100,6 @@
         if (stOf(next) === "live") {
           const h = el("div", "eq-sech"); h.appendChild(el("h3", null, "Partido en juego")); h.appendChild(link);
           sec.appendChild(h);
-          sec.appendChild(el("p", "muted small", "La alineación actual y los eventos están en la ficha del partido."));
         } else {
           let side = null, kind = "", ff = null, conf = null;
           try {
@@ -3668,7 +3667,6 @@
   function renderForma(box, players, d) {
     box.innerHTML = "";
     box.appendChild(el("div", "estado-title", "📊 Forma de tus jugadores"));
-    box.appendChild(el("p", "muted small", "Puntos de Futmondo en sus últimas 5 jornadas, con la más reciente a la derecha. «–» = no jugó. «Esperado» = media (temporada o últimos 5, según lo elegido arriba) × su probabilidad de jugar. Toca «Ver toda la temporada» para ver todos sus partidos."));
     const j0 = d && d.capJornada ? d.capJornada - 1 : 0;
     const order = { POR: 0, DEF: 1, CEN: 2, DEL: 3 };
     const tits = (d && d.titulares) || [];
@@ -3722,7 +3720,6 @@
     d.appendChild(el("summary", null, "¿Cómo se elige el once ideal?"));
     const ul = el("div", "an-rules-b");
     const f1 = (x) => x.toFixed(1).replace(".", ",");
-    ul.appendChild(el("p", "muted small", "Reglas: 1) Puntos esperados = media de los puntos reales de Futmondo (según lo elegido arriba: toda la temporada o los últimos 5 partidos jugados; los guiones no cuentan) × probabilidad de ser titular (FutbolFantasy). No se suma ni se resta nada inventado (la racha y casa/fuera solo se muestran, no cuentan). 2) Sancionados o lesionados con menos de 10% valen 0. 3) Se prueban las formaciones 3-4-3, 3-5-2, 4-3-3, 4-4-2, 4-5-1, 5-3-2, 5-4-1, 3-3-4, 3-6-1, 4-2-4, 4-6-0 y 5-2-3 (las 12 formaciones de tu Futmondo) (también la posición alternativa de los multiposición) y se queda la de más puntos esperados en total. 4) Siempre 1 portero. El nombre o el precio del jugador NO cuentan, solo estos números."));
     [["POR", "Portero"], ["DEF", "Defensas"], ["CEN", "Centrocampistas"], ["DEL", "Delanteros"]].forEach((g) => {
       const arr = ideal.by[g[0]] || [];
       if (!arr.length) return;
@@ -3738,7 +3735,6 @@
         ul.appendChild(row);
       });
     });
-    ul.appendChild(el("p", "muted small", "Formación elegida: " + ideal.formacion + " · ✅ entra, ▫️ se queda fuera (en cada puesto entran los de más puntos esperados). La racha NO cambia la cuenta: solo cuenta la media y la probabilidad de jugar."));
     d.appendChild(ul);
     return d;
   }
@@ -3787,7 +3783,6 @@
       const box = el("div", "an-nota");
       box.appendChild(el("div", "an-nota-num", nota + "/100"));
       box.appendChild(el("div", "an-nota-txt", "Nota de tu once · " + parts.join(" · ")));
-      box.appendChild(el("div", "an-nota-info", "Cada posición se puntúa sobre 100 con: su forma en los últimos partidos, su probabilidad de ser titular, +4 si juega en casa / -2 si juega fuera, y +2 si tiene doble posición. Si está lesionado, se queda en 5."));
       // Capitán: en el modo Full Mundo dobla los puntos que haga, así que lo
       // que de verdad importa no es la nota genérica del once (esa vale para
       // defensas y porteros, que rara vez interesan de capitán), sino quién
@@ -3837,7 +3832,7 @@
         if (top.casa === true) why.push("🏠 juega en casa"); else if (top.casa === false) why.push("✈️ juega fuera");
         if (top.pos2) why.push("doble posición");
         body.appendChild(el("div", "an-cap-why", why.join(" · ") || "sin datos suficientes"));
-        if (capRisky) body.appendChild(el("div", "an-cap-warn", "⚠️ ninguno de tus CEN/DEL tiene la titularidad asegurada esta jornada — este es el que más opciones tiene (" + (top.prob != null ? top.prob + "%" : "sin dato") + "), pero si al final no juega, el capitán no dobla nada"));
+        if (capRisky) body.appendChild(el("div", "an-cap-warn", "⚠️ Ningún CEN/DEL tuyo tiene la titularidad asegurada. El que más opciones tiene (" + (top.prob != null ? top.prob + "%" : "sin dato") + ")"));
         else if (top.prob != null && top.prob < 95) body.appendChild(el("div", "an-cap-info", "✅ titularidad prácticamente asegurada (" + top.prob + "%)"));
         row.appendChild(body);
         cap.appendChild(row);
@@ -3876,7 +3871,7 @@
       if (cla.length) {
         const cb = el("div", "an-clauses");
         cb.appendChild(el("div", "an-clauses-t", "🔒 Cláusulas bajas · súbeles la cláusula para no perderlos"));
-        cb.appendChild(el("div", "an-clauses-info", "Se consideran bajas las que están por debajo de 1,6 veces el valor de mercado del jugador: si alguien te la paga, la pierdes barata."));
+        cb.appendChild(el("div", "an-clauses-info", "Cláusulas bajas: menos de 1,6× el valor del jugador."));
         const grid = el("div", "an-clause-grid");
         cla.slice(0, 8).forEach((p) => {
           const c = el("div", "an-clause-card");
@@ -4096,7 +4091,6 @@
       box.innerHTML = "";
       const sec = el("div", "estado-sec an-caphist");
       sec.appendChild(el("div", "estado-title", "📊 Histórico de capitán"));
-      sec.appendChild(el("p", "muted small", "Tu capitán elegido de cada jornada (si no eliges, el recomendado) y los puntos que hizo de verdad (en cuanto termina su partido)."));
       let wins = 0, resolved = 0;
       hist.forEach((h) => {
         const results = h.results || [];

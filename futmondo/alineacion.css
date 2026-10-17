@@ -8,7 +8,7 @@
 .al-title b { font-weight: 800; }
 .al-bar { display: grid; grid-template-columns: auto minmax(0, 1fr) 42px; gap: 8px; padding: 6px 12px 12px; }
 .al-btn, .al-sel, .al-dl { height: 40px; border-radius: 12px; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.14); color: #fff; font: 800 .74rem 'Figtree', sans-serif; letter-spacing: .03em; text-transform: uppercase; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; min-width: 0; text-decoration: none; cursor: pointer; transition: background .15s ease, transform .15s ease; }
-.al-btn:hover, .al-dl:hover { background: rgba(255,255,255,.24); transform: translateY(-1px); }
+@media (hover: hover) and (pointer: fine) { .al-btn:hover, .al-dl:hover { background: rgba(255,255,255,.24); transform: translateY(-1px); } }
 .al-sel { appearance: none; -webkit-appearance: none; justify-content: flex-start; padding-right: 30px; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='7'><path d='M0 0l5 7 5-7z' fill='white'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; }
 .al-sel option { color: #10151c; }
 .al-dl svg, .al-btn svg { width: 17px; height: 17px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -27,7 +27,7 @@
 
 .al-msg { color: #fff; font-weight: 700; text-align: center; margin: auto; }
 a.pl { text-decoration: none; color: inherit; }
-a.pl:hover .pl-ph img { transform: scale(1.05); }
+@media (hover: hover) and (pointer: fine) { a.pl:hover .pl-ph img { transform: scale(1.05); } }
 .pl-ph img { transition: transform .15s ease; }
 .pl-prob.p90 { --pc: #4184ab; } .pl-prob.p80 { --pc: #41ab58; } .pl-prob.p60 { --pc: #ebcc34; color: #10151c; } .pl-prob.p40 { --pc: #cf8236; } .pl-prob.p0 { --pc: #cf4a36; }
 .pl-duda.bad { background: #ef4444; color: #fff; }

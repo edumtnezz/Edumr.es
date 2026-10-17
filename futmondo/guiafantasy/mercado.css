@@ -7,7 +7,7 @@
 .merc-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 0.86rem; border: 0; border-top: 1px solid var(--border); background: none; color: var(--text); width: 100%; text-align: left; cursor: pointer; font-family: inherit; transition: color 0.15s ease; }
 .merc-row-name { transition: color 0.15s ease; }
 .merc-row:first-of-type { border-top: none; }
-.merc-row:hover .merc-row-name { color: var(--accent); }
+@media (hover: hover) and (pointer: fine) { .merc-row:hover .merc-row-name { color: var(--accent); } }
 .merc-row-photo { position: relative; flex: 0 0 auto; width: 36px; height: 36px; }
 .merc-row-img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; background: var(--bg-surface); }
 .merc-row-role { position: absolute; left: -2px; bottom: -2px; font-size: 0.42rem; font-weight: 800; padding: 0 4px; line-height: 1.45; border-radius: 4px; letter-spacing: 0.02em; }
@@ -70,7 +70,7 @@
 .news-user { font-weight: 700; }
 .news-head .news-date { margin: 0; margin-left: auto; }
 .news-link { text-decoration: none; color: inherit; }
-.news-link:hover .news-title { color: var(--accent); }
+@media (hover: hover) and (pointer: fine) { .news-link:hover .news-title { color: var(--accent); } }
 .news-ico { width: 26px; height: 26px; flex: 0 0 auto; object-fit: contain; margin-top: 2px; }
 .merc-clubs-hint { font-size: 0.86rem; color: var(--muted); margin: 2px 0 6px; }
 
@@ -179,7 +179,7 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 .cmp-sug { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 60; background: #0d131d; border: 1px solid rgba(255,255,255,0.14); border-radius: 12px; max-height: 300px; overflow-y: auto; box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
 .cmp-sugrow { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; background: transparent; border: none; border-top: 1px solid rgba(255,255,255,0.06); color: #e9eef6; text-align: left; cursor: pointer; transition: background 0.15s ease; }
 .cmp-sugrow:first-child { border-top: none; }
-.cmp-sugrow:hover { background: rgba(255,255,255,0.06); }
+@media (hover: hover) and (pointer: fine) { .cmp-sugrow:hover { background: rgba(255,255,255,0.06); } }
 .cmp-sugphoto { width: 34px; height: 34px; border-radius: 50%; overflow: hidden; background: rgba(255,255,255,0.08); flex: 0 0 auto; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; color: var(--muted); }
 .cmp-sugphoto img { width: 100%; height: 100%; object-fit: cover; }
 .cmp-sugbody { flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden; }
@@ -220,7 +220,7 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 .mbh-s { font-size: 0.72rem; color: var(--muted); }
 .merc-bestrow { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
 .mbc { flex: 0 0 auto; width: 122px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px; border-radius: 12px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); cursor: pointer; transition: border-color 0.15s ease, transform 0.15s ease; }
-.mbc:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+@media (hover: hover) and (pointer: fine) { .mbc:hover { border-color: var(--border-hover); transform: translateY(-2px); } }
 .mbc-img { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; background: var(--bg-surface); }
 .mbc-photo { position: relative; width: 46px; height: 46px; }
 .mbc-photo .mcard-badge { width: 15px; height: 15px; font-size: 10px; border-width: 1.5px; right: 0; bottom: 0; }
@@ -293,7 +293,7 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 /* Página de jugador: botón de volver sutil (solo una flecha) y caja de
    estado arriba, como en Comuniate. */
 .pp-back { width: 38px; height: 38px; border-radius: 50%; padding: 0; font-size: 1.15rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 10px; opacity: 0.75; }
-.pp-back:hover { opacity: 1; }
+@media (hover: hover) and (pointer: fine) { .pp-back:hover { opacity: 1; } }
 .pp-status { display: flex; align-items: center; gap: 10px; border: 1px solid rgba(34, 197, 94, 0.4); background: rgba(34, 197, 94, 0.1); border-radius: 14px; padding: 10px 14px; margin-bottom: 14px; }
 .pp-status-ico { width: 30px; height: 30px; border-radius: 50%; background: #16a34a; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.95rem; flex: 0 0 auto; }
 .pp-status.bad { border-color: rgba(220, 38, 38, 0.4); background: rgba(220, 38, 38, 0.1); }
@@ -385,7 +385,7 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 /* Plan de cambios por horario: tarjetas gráficas titular -> recambio */
 .swap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
 .swap-card { position: relative; display: flex; flex-direction: column; gap: 8px; background: linear-gradient(180deg, var(--card) 0%, var(--card-solid) 100%); border: 1px solid var(--border); border-radius: 16px; padding: 14px 10px 10px; cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.08); transition: border-color .15s, transform .15s; }
-.swap-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+@media (hover: hover) and (pointer: fine) { .swap-card:hover { border-color: var(--accent); transform: translateY(-1px); } }
 .swap-pos { position: absolute; top: 8px; left: 10px; font-size: 0.64rem; font-weight: 800; color: var(--muted); letter-spacing: 0.04em; }
 .swap-row { display: flex; align-items: flex-start; justify-content: center; gap: 10px; margin-top: 8px; }
 .swap-side { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1 1 0; min-width: 0; }
@@ -467,7 +467,7 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 .fich-time { font-size: 0.68rem; color: var(--muted); margin-left: auto; }
 .fich-extract { font-size: 0.82rem; color: var(--muted); line-height: 1.4; }
 .fich-link { margin-top: 8px; background: none; border: none; color: var(--accent, var(--primary)); font: inherit; font-weight: 800; font-size: 0.8rem; cursor: pointer; padding: 0; }
-.fich-link:hover { text-decoration: underline; }
+@media (hover: hover) and (pointer: fine) { .fich-link:hover { text-decoration: underline; } }
 @media (max-width: 560px) { .fich-card { gap: 10px; padding: 10px; } .fich-photo { width: 46px; height: 46px; } .fich-title { font-size: 0.88rem; } }
 
 /* ---------- Alineaciones probables ---------- */
@@ -484,13 +484,13 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 
 /* ---------- Pestaña Alineaciones (campo moderno) ---------- */
 .alin-jbar { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 2px 0 12px; }
-.alin-nav { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; font-size: 0.7rem; transition: all 0.15s ease; }
-.alin-nav:hover:not(:disabled) { border-color: var(--accent, var(--primary)); color: var(--accent, var(--primary)); }
+.alin-nav { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--border); background: var(--card); color: var(--text); cursor: pointer; font-size: 0.7rem; transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease; }
+@media (hover: hover) and (pointer: fine) { .alin-nav:hover:not(:disabled) { border-color: var(--accent, var(--primary)); color: var(--accent, var(--primary)); } }
 .alin-nav:disabled { opacity: 0.35; cursor: default; }
 .alin-jtitle { font-weight: 800; font-family: 'Bricolage Grotesque', sans-serif; }
 .alin-jgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 6px; }
 .alin-jcard { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); cursor: pointer; font-family: inherit; transition: border-color 0.15s ease; }
-.alin-jcard:hover { border-color: var(--accent, var(--primary)); }
+@media (hover: hover) and (pointer: fine) { .alin-jcard:hover { border-color: var(--accent, var(--primary)); } }
 .alin-jcard.active { border-color: var(--accent, var(--primary)); box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.28); }
 .alin-jteam { display: flex; align-items: center; gap: 6px; }
 .alin-jteam img { width: 24px; height: 24px; object-fit: contain; }
@@ -562,18 +562,18 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
   .alin-pl-semi .alin-pct { font-size: 0.56rem; padding: 1px 5px; }
 }
 .newscard { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--cx-surface, #fff); cursor: pointer; transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 14px rgba(15, 23, 42, 0.05); }
-.newscard:hover { border-color: var(--border-hover, var(--accent)); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12); }
+@media (hover: hover) and (pointer: fine) { .newscard:hover { border-color: var(--border-hover, var(--accent)); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12); } }
 .newscard-thumb { width: 100%; aspect-ratio: 16 / 9; background: rgba(127, 127, 127, 0.12); overflow: hidden; }
 .newscard-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .newscard-thumb.ball img { object-fit: contain; padding: 22px; }
 .newscard-body { padding: 9px 11px 11px; }
 .newscard .news-title { font-weight: 700; font-size: 0.82rem; line-height: 1.25; }
 .newscard .news-date { color: var(--muted); font-size: 0.68rem; margin-top: 5px; }
-.newscard:hover .news-title { color: var(--accent); }
+@media (hover: hover) and (pointer: fine) { .newscard:hover .news-title { color: var(--accent); } }
 
 /* ---------- Inicio: feed de noticias tipo comuniate (grande + pequeñas apiladas) ---------- */
 .feat-hero { position: relative; border-radius: 16px; overflow: hidden; cursor: pointer; aspect-ratio: 4 / 3; background: rgba(127, 127, 127, 0.12); margin-bottom: 10px; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 14px rgba(15, 23, 42, 0.08); transition: transform 0.2s ease, box-shadow 0.2s ease; }
-.feat-hero:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16); }
+@media (hover: hover) and (pointer: fine) { .feat-hero:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16); } }
 .feat-hero img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .feat-hero-overlay { position: absolute; left: 0; right: 0; bottom: 0; padding: 46px 16px 16px; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.82) 100%); color: #fff; }
 .feat-hero-title { font-weight: 800; font-size: 1.3rem; line-height: 1.28; text-shadow: 0 1px 3px rgba(0,0,0,0.6); }
@@ -581,7 +581,7 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 
 .feat-sub { display: flex; flex-direction: column; gap: 10px; margin-bottom: 18px; }
 .feat-card-sm { position: relative; border-radius: 14px; overflow: hidden; cursor: pointer; aspect-ratio: 16 / 7; background: rgba(127, 127, 127, 0.12); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 3px 10px rgba(15, 23, 42, 0.07); transition: transform 0.2s ease, box-shadow 0.2s ease; }
-.feat-card-sm:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14); }
+@media (hover: hover) and (pointer: fine) { .feat-card-sm:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(15, 23, 42, 0.14); } }
 .feat-card-sm img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .feat-card-sm-overlay { position: absolute; left: 0; right: 0; bottom: 0; padding: 26px 13px 10px; background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.78) 100%); color: #fff; }
 .feat-card-sm-title { font-weight: 700; font-size: 0.86rem; line-height: 1.25; text-shadow: 0 1px 3px rgba(0,0,0,0.6); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -648,10 +648,10 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
   border-radius: 12px;
   padding: 8px 12px;
   cursor: pointer;
-  transition: all 0.16s ease;
+  transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease;
   font-family: inherit;
 }
-.racha-row:hover { border-color: var(--accent); transform: translateY(-1px); }
+@media (hover: hover) and (pointer: fine) { .racha-row:hover { border-color: var(--accent); transform: translateY(-1px); } }
 .racha-photo { position: relative; width: 38px; height: 38px; flex: 0 0 auto; }
 .racha-photo img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; background: var(--bg-surface, #e2e8f0); }
 .racha-info { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -707,16 +707,16 @@ html { overflow-anchor: none; }
 /* ---------- Clausulazo jugoso ---------- */
 .claus-filters { display: flex; flex-direction: column; gap: 6px; margin: 12px 0 2px; }
 .claus-frow { display: flex; flex-wrap: wrap; gap: 6px; }
-.claus-chip { font: inherit; font-size: 0.72rem; font-weight: 700; padding: 4px 11px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--muted); cursor: pointer; transition: all 0.14s ease; }
-.claus-chip:hover { border-color: var(--accent); color: var(--text); }
+.claus-chip { font: inherit; font-size: 0.72rem; font-weight: 700; padding: 4px 11px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); color: var(--muted); cursor: pointer; transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease; }
+@media (hover: hover) and (pointer: fine) { .claus-chip:hover { border-color: var(--accent); color: var(--text); } }
 .claus-chip.active { background: var(--accent); border-color: var(--accent); color: #05130a; }
 .claus-trend { font-size: 0.68rem; font-weight: 800; margin-top: 5px; }
 .claus-trend.down { color: var(--primary); }
 .claus-trend.up { color: #dc2626; }
 .claus-newowner { font-size: 0.62rem; font-weight: 800; color: #2563eb; margin-top: 4px; }
 .claus-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; margin-top: 12px; }
-.claus-card { display: flex; gap: 10px; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; cursor: pointer; transition: all 0.16s ease; }
-.claus-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.claus-card { display: flex; gap: 10px; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 10px; cursor: pointer; transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease; }
+@media (hover: hover) and (pointer: fine) { .claus-card:hover { border-color: var(--accent); transform: translateY(-1px); } }
 .claus-photo { width: 46px; height: 46px; flex: 0 0 auto; border-radius: 50%; overflow: hidden; background: var(--bg-surface, #e2e8f0); }
 .claus-img { width: 100%; height: 100%; object-fit: cover; }
 .claus-card .mcard-body { min-width: 0; }
@@ -729,8 +729,8 @@ html { overflow-anchor: none; }
 .claus-free { font-size: 0.68rem; color: var(--primary); font-weight: 700; margin-top: 3px; }
 
 /* Clausulazo (apartado) */
-.claus-card2 { display: flex; flex-direction: column; align-items: center; text-align: center; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 10px; cursor: pointer; transition: all 0.16s ease; }
-.claus-card2:hover { border-color: var(--accent); transform: translateY(-2px); }
+.claus-card2 { display: flex; flex-direction: column; align-items: center; text-align: center; background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px 10px; cursor: pointer; transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease; }
+@media (hover: hover) and (pointer: fine) { .claus-card2:hover { border-color: var(--accent); transform: translateY(-2px); } }
 .claus-photo2 { position: relative; width: 60px; height: 60px; margin-bottom: 6px; }
 .claus-photo2 .claus-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; background: var(--bg-surface, #e2e8f0); }
 .claus-body2 { width: 100%; }
@@ -844,8 +844,8 @@ html { overflow-anchor: none; }
 .an-desc > b { display: block; margin-bottom: 6px; }
 .an-desc ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
 .an-desc li { font-size: 0.85rem; color: var(--text); }
-.an-drop { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; padding: 26px 18px; border: 2px dashed var(--border-hover, var(--accent)); border-radius: 16px; background: rgba(34, 197, 94, 0.06); cursor: pointer; transition: all 0.2s ease; margin-bottom: 14px; }
-.an-drop:hover { border-color: var(--accent); background: rgba(34, 197, 94, 0.12); }
+.an-drop { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; padding: 26px 18px; border: 2px dashed var(--border-hover, var(--accent)); border-radius: 16px; background: rgba(34, 197, 94, 0.06); cursor: pointer; transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease; margin-bottom: 14px; }
+@media (hover: hover) and (pointer: fine) { .an-drop:hover { border-color: var(--accent); background: rgba(34, 197, 94, 0.12); } }
 .an-drop-ico { font-size: 1.8rem; }
 .an-drop-t { font-weight: 700; font-family: 'Bricolage Grotesque', sans-serif; }
 .an-drop-s { font-size: 0.8rem; color: var(--muted); }
@@ -860,7 +860,7 @@ html { overflow-anchor: none; }
 .mkt-row > :first-child { position: sticky; left: 0; z-index: 1; background: var(--cx-surface, #fff); box-shadow: 6px 0 8px -7px rgba(0, 0, 0, 0.25); }
 .mkt-head > :first-child { z-index: 3; background: #0b0e13; }
 .mkt-row { display: grid; grid-template-columns: minmax(180px, 1.7fr) 1fr 1fr 1.1fr 0.8fr 0.62fr 2.1fr; align-items: center; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--border); background: transparent; color: var(--text); text-align: left; cursor: pointer; font-family: inherit; font-size: 0.86rem; width: 100%; border-left: 0; border-right: 0; border-bottom: 0; transition: background 0.15s ease; }
-.mkt-row:not(.mkt-head):hover { background: rgba(127, 127, 127, 0.06); }
+@media (hover: hover) and (pointer: fine) { .mkt-row:not(.mkt-head):hover { background: rgba(127, 127, 127, 0.06); } }
 .mkt-head { background: #0b0e13; color: #fff; font-weight: 800; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em; border-top: none; cursor: default; border-radius: 12px 12px 0 0; }
 .mkt-head .mkt-h:nth-child(2), .mkt-head .mkt-h:nth-child(3), .mkt-head .mkt-h:nth-child(4) { text-align: right; }
 .mkt-head .mkt-h:nth-child(5), .mkt-head .mkt-h:nth-child(6) { text-align: center; }
@@ -925,7 +925,7 @@ html { overflow-anchor: none; }
 /* Escala de probabilidad de jugar (botón "?" + panel desplegable) */
 .prob-legend-wrap { margin: 6px 0 2px; }
 .prob-legend-btn { background: none; border: 1px dashed var(--border); border-radius: 999px; padding: 4px 11px; font-size: 0.72rem; font-weight: 700; color: var(--muted); cursor: pointer; font-family: inherit; }
-.prob-legend-btn:hover { border-color: var(--accent); color: var(--accent); }
+@media (hover: hover) and (pointer: fine) { .prob-legend-btn:hover { border-color: var(--accent); color: var(--accent); } }
 .prob-legend-panel { margin-top: 8px; display: flex; flex-direction: column; gap: 3px; background: var(--card-solid); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; }
 .prob-legend-row { display: flex; align-items: baseline; gap: 8px; font-size: 0.76rem; }
 .prob-legend-pct { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; min-width: 34px; flex: 0 0 auto; }
@@ -1104,7 +1104,7 @@ html { overflow-anchor: none; }
 .mkt-table{border:0;gap:8px;background:transparent}
 .mkt-row:not(.mkt-head){border:1px solid var(--border);border-radius:14px;background:var(--cx-surface,#fff)}
 .mkt-row:not(.mkt-head) > :first-child{background:var(--cx-surface,#fff);box-shadow:none;border-radius:14px 0 0 14px}
-.mkt-row:not(.mkt-head):hover{border-color:rgba(34,197,94,.6)}
+@media (hover: hover) and (pointer: fine) { .mkt-row:not(.mkt-head):hover{border-color:rgba(34,197,94,.6)} }
 .mkt-head{border-radius:12px}
 
 /* ===== Mercado rediseñado ===== */
@@ -1429,7 +1429,7 @@ html { overflow-anchor: none; }
 #newsAnuncios .newscard .news-date { margin: 0; font-size: .7rem; color: var(--muted); font-weight: 600; }
 #newsAnuncios .news-hero { display: block; position: relative; padding: 0; min-height: 300px; border: 0; border-radius: 22px; box-shadow: 0 16px 36px rgba(15,23,42,.30); }
 #newsAnuncios .news-hero .newscard-thumb { position: absolute; inset: 0; width: 100%; height: 100%; flex: none; border-radius: 0; background-position: center 20%; transition: transform .6s ease; }
-#newsAnuncios .news-hero:hover .newscard-thumb { transform: scale(1.05); }
+@media (hover: hover) and (pointer: fine) { #newsAnuncios .news-hero:hover .newscard-thumb { transform: scale(1.05); } }
 #newsAnuncios .news-hero .newscard-body { position: absolute; left: 0; right: 0; bottom: 0; padding: 70px 16px 16px; gap: 8px; background: linear-gradient(180deg, transparent 0%, rgba(2,6,23,.80) 60%, rgba(2,6,23,.95) 100%); }
 #newsAnuncios .news-hero .news-title { color: #fff; font-size: 1.25rem; line-height: 1.18; }
 #newsAnuncios .news-hero .news-date { color: rgba(255,255,255,.8); }

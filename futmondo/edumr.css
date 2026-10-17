@@ -123,9 +123,9 @@ body {
   padding: 7px 11px;
   border-radius: 999px;
   white-space: nowrap;
-  transition: all 0.18s ease;
+  transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease;
 }
-.cx-nav a:hover { color: #fff; background: rgba(255, 255, 255, 0.09); }
+@media (hover: hover) and (pointer: fine) { .cx-nav a:hover { color: #fff; background: rgba(255, 255, 255, 0.09); } }
 .cx-nav a.active { color: #fff; background: var(--cx-green); }
 /* La flechita ▾ junto a cada pestaña de arriba, como en Comuniate. */
 .cx-nav-caret { font-size: 0.62em; margin-left: 4px; opacity: 0.7; display: inline-block; transform: translateY(-1px); }
@@ -140,9 +140,9 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 999px;
   white-space: nowrap;
-  transition: all 0.18s ease;
+  transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease;
 }
-.cx-inicio:hover { color: #fff; border-color: rgba(255, 255, 255, 0.45); }
+@media (hover: hover) and (pointer: fine) { .cx-inicio:hover { color: #fff; border-color: rgba(255, 255, 255, 0.45); } }
 .cx-header .theme-toggle,
 .cx-top .theme-toggle {
   width: 38px; height: 38px;
@@ -151,7 +151,7 @@ body {
   color: #fff;
   box-shadow: none;
 }
-.cx-header .theme-toggle:hover { border-color: #fff; box-shadow: none; }
+@media (hover: hover) and (pointer: fine) { .cx-header .theme-toggle:hover { border-color: #fff; box-shadow: none; } }
 
 /* ---------- Submenú (neutro; pestaña activa en verde) ---------- */
 .cx-sub {
@@ -195,7 +195,7 @@ body {
   font-weight: 700;
   white-space: nowrap;
   border-bottom: 3px solid transparent;
-  transition: all 0.16s ease;
+  transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease;
 }
 @media (max-width: 640px) {
   .cx-sub .cx-sub-inner { padding: 8px 10px; }
@@ -203,7 +203,7 @@ body {
   .cx-sub .tab { padding: 7px 14px; font-size: 0.8rem; border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 999px; background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.85); }
   .cx-sub .tab.active { background: #fff; color: var(--cx-green); border-color: #fff; }
 }
-.cx-sub .tab:hover { color: var(--cx-text); }
+@media (hover: hover) and (pointer: fine) { .cx-sub .tab:hover { color: var(--cx-text); } }
 /* Menú "☰ Más": lo que no cabe en la barra principal de pestañas se mete
    aquí dentro en vez de obligar a deslizar o a poner flechas. Si la
    pestaña activa es una de las del menú, el propio botón se pone verde y
@@ -213,9 +213,9 @@ body {
   display: flex; align-items: center; gap: 6px;
   border: 1px solid rgba(255, 255, 255, 0.35); background: rgba(255, 255, 255, 0.1); color: #fff;
   border-radius: 999px; padding: 7px 14px; font-size: 0.8rem; font-weight: 700;
-  cursor: pointer; transition: all 0.15s ease; font-family: inherit;
+  cursor: pointer; transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease; font-family: inherit;
 }
-.cx-more-btn:hover { border-color: #fff; color: #fff; background: rgba(255, 255, 255, 0.18); }
+@media (hover: hover) and (pointer: fine) { .cx-more-btn:hover { border-color: #fff; color: #fff; background: rgba(255, 255, 255, 0.18); } }
 .cx-more-btn.active { background: #fff; color: var(--cx-green); border-color: #fff; }
 .cx-more-ico { font-size: 0.8rem; line-height: 1; }
 .cx-more-label { white-space: nowrap; }
@@ -232,7 +232,7 @@ body {
   font-family: inherit; font-size: 0.86rem; font-weight: 600;
   padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: background 0.15s ease;
 }
-.cx-more-item:hover { background: var(--cx-surface-2); }
+@media (hover: hover) and (pointer: fine) { .cx-more-item:hover { background: var(--cx-surface-2); } }
 .cx-more-item.active { color: var(--cx-green); background: var(--cx-surface-2); }
 .cx-sub .tab.active {
   color: #fff;
@@ -263,7 +263,7 @@ body {
 .cx-strip-track::-webkit-scrollbar { height: 8px; }
 .cx-strip-track::-webkit-scrollbar-track { background: var(--cx-surface-2); border-radius: 8px; }
 .cx-strip-track::-webkit-scrollbar-thumb { background: var(--cx-green); border-radius: 8px; }
-.cx-strip-track::-webkit-scrollbar-thumb:hover { background: var(--cx-green-dark, var(--cx-green)); }
+@media (hover: hover) and (pointer: fine) { .cx-strip-track::-webkit-scrollbar-thumb:hover { background: var(--cx-green-dark, var(--cx-green)); } }
 .cx-team {
   flex: 0 0 auto;
   display: flex;
@@ -274,9 +274,9 @@ body {
   padding: 4px 2px;
   border-radius: 10px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease;
 }
-.cx-team:hover { background: var(--cx-surface-2); }
+@media (hover: hover) and (pointer: fine) { .cx-team:hover { background: var(--cx-surface-2); } }
 .cx-team.active { background: var(--cx-green-soft); box-shadow: inset 0 0 0 1px var(--cx-green); }
 .cx-team-all { justify-content: center; }
 .cx-team-all-txt { font-size: 0.68rem; font-weight: 800; color: var(--cx-text); }
@@ -311,13 +311,13 @@ body {
 .cx-jornada { background: var(--cx-surface); border-bottom: 1px solid var(--cx-border); padding: 6px 12px; }
 .cx-jn-head { display: flex; align-items: center; justify-content: center; gap: 10px; max-width: 1140px; margin: 0 auto 5px; }
 .cx-jn-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 0.78rem; color: var(--cx-text); }
-.cx-jn-nav { width: 23px; height: 23px; border-radius: 50%; border: 1px solid var(--cx-border); background: var(--cx-surface); color: var(--cx-text); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; transition: all 0.15s ease; }
-.cx-jn-nav:hover:not(:disabled) { border-color: var(--cx-green); color: var(--cx-green); }
+.cx-jn-nav { width: 23px; height: 23px; border-radius: 50%; border: 1px solid var(--cx-border); background: var(--cx-surface); color: var(--cx-text); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.6rem; transition: color ease, background-color ease, border-color ease, box-shadow ease, transform ease, opacity ease; }
+@media (hover: hover) and (pointer: fine) { .cx-jn-nav:hover:not(:disabled) { border-color: var(--cx-green); color: var(--cx-green); } }
 .cx-jn-nav:disabled { opacity: 0.3; cursor: default; }
 .cx-jn-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 5px; max-width: 1140px; margin: 0 auto; }
 .cx-jn { display: flex; flex-direction: column; gap: 1px; padding: 3px 5px 2px; border: 1px solid var(--cx-border); border-radius: 7px; background: var(--cx-surface); box-shadow: var(--cx-shadow-sm); }
 .cx-jn-click { cursor: pointer; transition: border-color 0.14s ease, transform 0.14s ease; }
-.cx-jn-click:hover { border-color: var(--cx-green); transform: translateY(-1px); }
+@media (hover: hover) and (pointer: fine) { .cx-jn-click:hover { border-color: var(--cx-green); transform: translateY(-1px); } }
 .cx-jn-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 2px; }
 .cx-jn-crest { width: 34px; height: 34px; object-fit: contain; justify-self: center; }
 .cx-jn-mid { display: flex; flex-direction: column; align-items: center; gap: 0; min-width: 0; }
@@ -421,7 +421,7 @@ body {
   max-width: 460px;
   transition: color 0.16s;
 }
-.cx-live-item:hover { color: #fff; }
+@media (hover: hover) and (pointer: fine) { .cx-live-item:hover { color: #fff; } }
 .cx-live-item img {
   width: 28px; height: 20px;
   object-fit: cover;
@@ -495,7 +495,7 @@ body {
   animation: cx-marquee linear infinite;
 }
 .cx-ticker-track.cx-ticker-empty { animation: none !important; padding: 9px 14px; }
-.cx-ticker:hover .cx-ticker-track { animation-play-state: paused; }
+@media (hover: hover) and (pointer: fine) { .cx-ticker:hover .cx-ticker-track { animation-play-state: paused; } }
 @keyframes cx-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 .cx-ticker-item {
   display: inline-flex;
@@ -507,7 +507,7 @@ body {
   margin-right: 22px;
   padding: 6px 0;
 }
-.cx-ticker-item:hover .cx-ticker-txt { color: #fff; }
+@media (hover: hover) and (pointer: fine) { .cx-ticker-item:hover .cx-ticker-txt { color: #fff; } }
 .cx-ticker-ico {
   width: 24px; height: 24px;
   border-radius: 50%;
@@ -613,7 +613,7 @@ body {
 .cx-tools .user-menu { position: absolute; right: 0; top: calc(100% + 8px); background: var(--cx-surface); border: 1px solid var(--cx-border); border-radius: 12px; box-shadow: 0 10px 26px rgba(0,0,0,.35); min-width: 150px; padding: 6px; display: none; z-index: 80; }
 .cx-tools .user-menu.open { display: block; }
 .cx-tools .user-menu-exit { width: 100%; text-align: left; padding: 9px 12px; border: none; background: transparent; color: var(--cx-text); font-weight: 700; font-size: 0.88rem; border-radius: 8px; cursor: pointer; font-family: inherit; }
-.cx-tools .user-menu-exit:hover { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
+@media (hover: hover) and (pointer: fine) { .cx-tools .user-menu-exit:hover { background: rgba(239, 68, 68, 0.12); color: #ef4444; } }
 @media (max-width: 720px) {
   .cx-tools .user-name, .cx-tools .user-caret { display: none; }
   .cx-tools .user-chip { padding: 2px; border: none; background: transparent; }
@@ -627,19 +627,19 @@ body {
 /* --- Menú "Más": solo las 3 rayas, sin píldora, y items visibles --- */
 .cx-more-label { display: none !important; }
 .cx-more-btn { background: transparent !important; border: none !important; border-radius: 0 !important; padding: 4px 6px !important; color: var(--cx-text) !important; }
-.cx-more-btn:hover, .cx-more-btn.active { background: transparent !important; color: var(--cx-green) !important; }
+@media (hover: hover) and (pointer: fine) { .cx-more-btn:hover, .cx-more-btn.active { background: transparent !important; color: var(--cx-green) !important; } }
 .cx-more-ico { font-size: 1.5rem !important; line-height: 1; }
 .cx-sub .cx-more-menu { background: var(--cx-surface); border-color: var(--cx-border); }
 /* Los items del menú "Más" llevan también la clase ".tab", así que hay que
    ganar en especificidad a las reglas .cx-sub .tab:not(.active) / .tab.active
    (si no, en tema claro quedaba texto blanco sobre el menú blanco). */
 .cx-sub .cx-more-menu .cx-more-item { color: var(--cx-text) !important; background: transparent !important; border: none !important; }
-.cx-sub .cx-more-menu .cx-more-item:hover { background: var(--cx-surface-2) !important; }
+@media (hover: hover) and (pointer: fine) { .cx-sub .cx-more-menu .cx-more-item:hover { background: var(--cx-surface-2) !important; } }
 .cx-sub .cx-more-menu .cx-more-item.active { color: var(--cx-green) !important; background: var(--cx-surface-2) !important; }
 /* --- Pestañas sin borde/círculo (barra neutra, activa en verde) --- */
 .cx-sub .tab { border: none !important; background: transparent !important; border-radius: 0 !important; }
 .cx-sub .tab:not(.active):not(.cx-more-item) { color: var(--cx-muted) !important; }
-.cx-sub .tab:not(.active):not(.cx-more-item):hover { color: var(--cx-text) !important; }
+@media (hover: hover) and (pointer: fine) { .cx-sub .tab:not(.active):not(.cx-more-item):hover { color: var(--cx-text) !important; } }
 .cx-sub .tab.active:not(.cx-more-item) { background: transparent !important; color: var(--cx-green) !important; border-bottom: 2px solid var(--cx-green) !important; }
 
 /* --- Guía Fantasy: pestañas en UNA sola línea, a todo el ancho del móvil y
@@ -719,3 +719,13 @@ body {
 .cx-tools .user-menu-alerts { padding: 8px 10px 6px; max-width: 250px; border-bottom: 1px solid var(--cx-border, rgba(127,127,127,.2)); margin-bottom: 4px; }
 .cx-tools .user-menu-alerts p { margin: 0 0 6px; font-size: .78rem; line-height: 1.35; color: var(--cx-text); font-weight: 600; }
 .cx-tools .user-menu { min-width: 190px; }
+
+/* ===== Movimiento (criterios Emil Kowalski) ===== */
+/* Pulsar = respuesta inmediata; al soltar vuelve con la transición propia de cada elemento */
+button:not(:disabled):active, [role="button"]:active, .hub-feature:active, .hub-row:active, .tab:active, .racha-row:active, .claus-card:active, .mcard:active {
+  transform: scale(.97);
+  transition-duration: 100ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
