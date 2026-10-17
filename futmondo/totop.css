@@ -1,0 +1,7 @@
+.cx-totop { position: fixed; right: 14px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 900; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255,255,255,.14); background: #16a34a; color: #fff; display: grid; place-items: center; padding: 0; cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,.35); opacity: 0; transform: translateY(12px) scale(.9); pointer-events: none; transition: opacity .2s cubic-bezier(.23,1,.32,1), transform .2s cubic-bezier(.23,1,.32,1); -webkit-tap-highlight-color: transparent; }
+.cx-totop.show { opacity: 1; transform: none; pointer-events: auto; }
+.cx-totop svg { width: 22px; height: 22px; display: block; }
+.cx-totop:active { transform: scale(.93); }
+:root[data-theme="light"] .cx-totop { border-color: rgba(0,0,0,.08); box-shadow: 0 6px 18px rgba(0,0,0,.22); }
+@media (hover:hover) and (pointer:fine) { .cx-totop:hover { background: #15803d; } }
+@media (prefers-reduced-motion: reduce) { .cx-totop { transition: opacity .01s; transform: none; } }
