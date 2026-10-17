@@ -1598,3 +1598,12 @@ html { overflow-anchor: none; }
   .racha-val { font-size: 0.78rem; flex: 0 0 auto; }
   .racha-stats { gap: 8px; }
 }
+/* Clausulazo: últimos partidos siempre en UNA fila y la cláusula dentro de su cuadro */
+.claus-grid .claus-fit-scores { flex-wrap: nowrap; gap: 3px; }
+.claus-grid .claus-fit-scores .racha-chip { min-width: 0; flex: 1 1 0; max-width: 30px; }
+.claus-grid .claus-fit-scores .racha-chip b { padding: 2px 0; font-size: .74rem; }
+.claus-grid .claus-stats { grid-template-columns: minmax(0,.8fr) minmax(0,1fr) minmax(0,1.5fr); gap: 5px; }
+.claus-grid .claus-stat { min-width: 0; overflow: hidden; }
+.claus-grid .claus-stat b { font-size: .86rem; letter-spacing: -.02em; }
+.claus-grid .claus-stat.clause b { font-size: .8rem; }
+.claus-grid .claus-stat small { font-size: .52rem; }
