@@ -3992,7 +3992,6 @@
       const mine = window.EduAlineacion.card({ starters: tits.map((p) => toSide(p)), bench: [] }, "Tu equipo", "/img/avatar.svg", "", all, "probable", sups.map((p) => toSide(p)), cardOpts("Tu <b>once</b>"));
       hookSwap(mine);
       out.appendChild(mine);
-      if (swapPairs.length || useless.length) out.appendChild(el("p", "muted small", "🔁 Debajo de un titular: si NO sale en el once oficial (míralo ~1 h antes), entra ese suplente, que juega más tarde." + (useless.length ? " ⏱ En el banquillo: juega antes que a quien cubriría, así que desde el banquillo no podrás meterlo." : "")));
       const bs = el("div", "an-base");
       bs.appendChild(el("div", "an-base-k", "📐 Calcular con"));
       const seg = el("div", "an-base-seg");

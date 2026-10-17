@@ -549,9 +549,8 @@ function renderParticipants() {
   const list = (state.participants || []).slice().sort((a, b) => hitsOf(b) - hitsOf(a) || String(a.name).localeCompare(String(b.name), "es"));
   const jornadaDone = state.matches.length > 0 && state.matches.every((m) => m.result || /POSTPONED|SUSPENDED|CANCELLED/.test(m.status || ""));
   const nSusp = state.matches.filter((m) => /POSTPONED|SUSPENDED|CANCELLED/.test(m.status || "")).length;
-  $("participantsHint").textContent = `${list.length} participante${list.length === 1 ? "" : "s"}, ordenados por aciertos.` +
-    (nSusp ? ` ${nSusp === 1 ? "Un partido está suspendido o aplazado y no cuenta." : nSusp + " partidos están suspendidos o aplazados y no cuentan."}` : "") +
-    " Los pronósticos se ven desde el principio; solo se bloquean al empezar el primer partido.";
+  $("participantsHint").textContent = `${list.length} participante${list.length === 1 ? "" : "s"}.` +
+    (nSusp ? ` ${nSusp === 1 ? "Un partido suspendido o aplazado no cuenta." : nSusp + " partidos suspendidos o aplazados no cuentan."}` : "");
 
   if (!list.length) {
     wrap.innerHTML = `<p class="empty">Todavía no hay participantes.</p>`;
