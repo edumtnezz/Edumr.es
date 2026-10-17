@@ -3960,15 +3960,18 @@ async function handleGet({ request, env: env0, params }) {
   if (path === "ftest") {
     const out = {};
     try {
-      const r2 = await fetch("https://www.fotmob.com/api/data/matches?date=" + (url.searchParams.get("d") || "20261017") + "&timezone=Europe%2FMadrid&ccode3=ESP", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
-      out.status = r2.status;
+      const r2 = await fetch("https://www.fotmob.com/api/data/matchDetails?matchId=" + (url.searchParams.get("id") || "5868091"), { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
       const j = JSON.parse(await r2.text());
-      out.keys = Object.keys(j);
-      const ls = j.leagues || [];
-      out.leagues = ls.map((l) => [l.id, l.name, l.ccode, (l.matches || []).length]).slice(0, 40);
-      const lg = ls.find((l) => l.id === 87) || ls.find((l) => /laliga/i.test(l.name || ""));
-      out.m0 = JSON.stringify(lg && lg.matches && lg.matches[0]).slice(0, 700);
-      out.laliga = lg ? lg.matches.map((m) => [m.id, m.home && m.home.name, m.away && m.away.name, m.status && m.status.started, m.status && m.status.finished]) : null;
+      const evs = (((j.content || {}).matchFacts || {}).events || {}).events || [];
+      const seen = {};
+      evs.forEach((e) => { const k = e.type + (e.card ? ":" + e.card : ""); if (!seen[k]) seen[k] = JSON.stringify(e).replace(/"(reactKey|profileUrl|eventId|firstName|lastName)":("[^"]*"|\d+|null|false|true),?/g, "").slice(0, 420); });
+      out.samples = seen;
+      out.status = JSON.stringify((j.header || {}).status).slice(0, 700);
+      const st = ((((j.content || {}).stats || {}).Periods || {}).All || {}).stats || [];
+      out.statGroups = st.map((g) => [g.title, (g.stats || []).map((x) => x.key + ":" + JSON.stringify(x.stats))]);
+      out.shot0 = JSON.stringify(((j.content || {}).shotmap || {}).shots && j.content.shotmap.shots[0]).slice(0, 500);
+      out.lineupKeys = Object.keys((j.content || {}).lineup || {});
+      out.potm = JSON.stringify(((j.content || {}).matchFacts || {}).playerOfTheMatch).slice(0, 300);
     } catch (e) { out.err = String(e).slice(0, 200); }
     return json(out);
   }
