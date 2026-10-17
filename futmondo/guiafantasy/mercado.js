@@ -245,45 +245,52 @@
     const cand = all.filter((p) => p.fitness && p.fitness.length >= 3 && p.value > 0);
     return cand.slice().sort((a, b) => expOf(b) - expOf(a));
   }
-  let destList = [];
-  function destWhy(p) {
-    const f = (p.fit || p.fitness || []).map(Number).filter((x) => !isNaN(x));
-    const last = f.slice(-3);
-    const avg = (Number(p.avg) || 0).toFixed(1).replace(".", ",");
-    if (p._k === "racha") {
-      return last.length >= 2 ? "Viene de " + last.slice(0, -1).join(", ") + " y " + last[last.length - 1] + " puntos en sus últimos " + last.length + " partidos. Media de la temporada: " + avg + "." : "";
-    }
-    const prob = p.prob != null ? Number(p.prob) : null;
-    return "Es de los 5 que más puntos se espera que sumen: media de " + avg + (last.length ? " y últimos partidos de " + last.join(", ") : "") + (prob != null && !isNaN(prob) ? ", con " + Math.round(prob) + "% de opciones de jugar" : "") + ".";
+  // Destacados: los 3 con mejor calidad/precio = más puntos de media por millón de valor.
+  // Solo entran jugadores con partidos suficientes, media decente y sin lesión ni sanción.
+  function bestValue() {
+    const j0 = (all || []).reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0);
+    return (all || [])
+      .filter((p) => (Number(p.matches) || 0) >= Math.max(3, 0.6 * j0) && (Number(p.avg) || 0) >= 8 && !/injured|redcard/.test(p.status || "") && Number(p.value) > 0)
+      .map((p) => Object.assign({ _r: (Number(p.avg) || 0) / (Number(p.value) / 1e6) }, p))
+      .sort((a, b) => b._r - a._r)
+      .slice(0, 3);
   }
-  function paintDest() {
-    const lst = $("destList");
-    if (!lst) return;
-    lst.innerHTML = "";
-    if (!destList.length) { lst.appendChild(el("p", "muted small dest-empty", "Sin destacados ahora mismo.")); return; }
-    destList.forEach((p) => lst.appendChild(pltBuildRow(p, { chg: Number(p.change) || 0, tag: p._k === "best" ? ["best", "Mejor fichaje"] : ["racha", "En racha"], why: destWhy(p) })));
-  }
-  async function renderRachas() {
+  function renderRachas() {
     const box = $("rachasOut");
     if (!box) return;
     box.innerHTML = "";
     const head = el("div", "dest-head");
     head.appendChild(el("span", "dest-title", "Destacados"));
+    head.appendChild(el("span", "dest-sub", "Los 3 con mejor calidad/precio"));
     box.appendChild(head);
-    const lst = el("div", "plt-list dest-list"); lst.id = "destList";
-    lst.appendChild(el("p", "muted small dest-empty", "Cargando…"));
-    box.appendChild(lst);
-    try {
-      let d = rachasData;
-      if (!d) { d = await (await fetch(API + "/rachas")).json(); rachasData = d; }
-      const full = (p) => (all || []).find((x) => String(x.id) === String(p.id)) || (all || []).find((x) => x.name === p.name && x.team === p.team) || {};
-      const rl = ((d && d.players) || []).slice(0, 5).map((p) => Object.assign({}, p, full(p), { _k: "racha" }));
-      const key = (p) => stripAccents(String(p.name || "").toLowerCase()) + "|" + String(p.team || "").toLowerCase();
-      const used = new Set(rl.map(key));
-      const bl = bestPicks().filter((p) => !used.has(key(p))).slice(0, 5).map((p) => Object.assign({ _k: "best" }, p));
-      destList = rl.concat(bl);
-      paintDest();
-    } catch (e) { lst.innerHTML = ""; lst.appendChild(el("p", "muted small dest-empty", "No se pudo cargar.")); }
+    const grid = el("div", "dest-grid");
+    const list = bestValue();
+    if (!list.length) { grid.appendChild(el("p", "muted small dest-empty", "Cargando…")); box.appendChild(grid); return; }
+    list.forEach((p, i) => {
+      const card = el("div", "dest-card");
+      card.addEventListener("click", () => openFicha(p));
+      card.addEventListener("pointerdown", () => { try { fetch(API + "/jugador?id=" + encodeURIComponent(p.id) + "&fast=1").catch(() => {}); } catch (e) {} }, { passive: true });
+      card.appendChild(el("div", "dest-rank", String(i + 1)));
+      const ph = el("div", "plt-ph"), inn = el("div", "plt-in");
+      if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); inn.appendChild(im); }
+      ph.appendChild(inn); posRingCls(ph, p.role, p.role2);
+      const wrap = el("div", "plt-phw"); wrap.appendChild(ph);
+      if (p.logo) { const lg = el("img", "plt-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; wrap.appendChild(lg); }
+      const rst = statusInfo(p.status);
+      if (rst) wrap.appendChild(el("span", "plt-st " + rst.cls, rst.label));
+      card.appendChild(wrap);
+      card.appendChild(el("div", "dest-name", p.name));
+      const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
+      if (rb) { const pill = el("span", "plt-pill posb posb-" + posCls(p.role), rb + (rb2 ? " · " + rb2 : "")); splitBadge(pill); card.appendChild(pill); }
+      card.appendChild(el("div", "dest-price", (Number(p.value) / 1e6).toFixed(1).replace(".", ",") + " M€"));
+      const ratio = el("div", "dest-ratio");
+      ratio.appendChild(el("b", null, (Number(p.avg) || 0).toFixed(1).replace(".", ",")));
+      ratio.appendChild(el("small", null, "de media"));
+      card.appendChild(ratio);
+      card.appendChild(el("div", "dest-why", p._r.toFixed(2).replace(".", ",") + " pts de media por cada millón"));
+      grid.appendChild(card);
+    });
+    box.appendChild(grid);
   }
 
   function fmtDiaLargo(v) {
