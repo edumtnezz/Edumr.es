@@ -1690,3 +1690,6 @@ html { overflow-anchor: none; }
 .plt-pill { flex: none; font-size: .58rem; padding: 2px 8px; line-height: 1.5; border-radius: 7px; white-space: nowrap; box-shadow: 0 1px 0 rgba(0,0,0,.12); }
 .plt-pill.posb-dual { padding: 0; }
 .plt-pill.posb-dual > span { padding: 2px 7px; }
+.plt-panel { overflow: visible; }
+.plt-head { position: sticky; top: var(--plt-top, 109px); z-index: 20; background: #1d2b33; border-radius: 16px 16px 0 0; box-shadow: 0 6px 12px -8px rgba(0,0,0,.45); }
+.plt-list { border-radius: 0 0 16px 16px; overflow: hidden; }

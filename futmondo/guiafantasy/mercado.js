@@ -4376,6 +4376,10 @@
     w.classList.toggle("can-l", c.scrollLeft > 4);
     w.classList.toggle("can-r", c.scrollLeft + c.clientWidth < c.scrollWidth - 4);
   }
+  (function pltStickyTop() {
+    const set = () => { const hd = document.querySelector(".cx-header"); if (hd) document.documentElement.style.setProperty("--plt-top", hd.offsetHeight + "px"); };
+    set(); window.addEventListener("resize", set); window.addEventListener("load", set);
+  })();
   (function pltBindArrows() {
     const c = $("pltClubs"), w = $("pltClubWrap");
     if (!c || !w) return;
