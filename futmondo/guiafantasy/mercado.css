@@ -1673,3 +1673,7 @@ html { overflow-anchor: none; }
 .plt-pts { background: #14181a; } .plt-pts b { color: #fff; } .plt-pts small { color: rgba(255,255,255,.6); }
 .plt-avg { background: #22c55e; } .plt-avg b { color: #fff; } .plt-avg small { color: rgba(255,255,255,.85); }
 .plt-side { margin-top: 4px; }
+.plt-phc { grid-area: ph; display: flex; flex-direction: column; align-items: center; gap: 5px; align-self: start; width: 62px; }
+.plt-phc .plt-phw { grid-area: auto; }
+.plt-row { grid-template-areas: "ph mid rt" "ph side side"; }
+.plt-pill { border-radius: 999px; padding: 2px 7px; }

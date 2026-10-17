@@ -4391,17 +4391,19 @@
       if (p.logo) { const lg = el("img", "plt-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; wrap.appendChild(lg); }
       const rst = statusInfo(p.status);
       if (rst) wrap.appendChild(el("span", "plt-st " + rst.cls, rst.label));
-      row.appendChild(wrap);
-      const mid = el("div", "plt-mid");
-      const nm = el("div", "plt-nm");
-      nm.appendChild(el("span", "plt-name", p.name));
+      const phc = el("div", "plt-phc");
+      phc.appendChild(wrap);
       const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
       if (rb) {
         const pill = el("span", "plt-pill", rb + (rb2 ? " · " + rb2 : ""));
         const c1 = POSCOL_BY_CODE[rb], c2 = POSCOL_BY_CODE[rb2] || c1;
         if (c1) { pill.style.setProperty("--c1", c1); pill.style.setProperty("--c2", c2); }
-        nm.appendChild(pill);
+        phc.appendChild(pill);
       }
+      row.appendChild(phc);
+      const mid = el("div", "plt-mid");
+      const nm = el("div", "plt-nm");
+      nm.appendChild(el("span", "plt-name", p.name));
       mid.appendChild(nm);
       mid.appendChild(el("div", "plt-val", money(p.value) + " €"));
       const chg = Number(rise ? p[pltPeriod] : p.change) || 0;
