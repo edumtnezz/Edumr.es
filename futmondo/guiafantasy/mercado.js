@@ -3200,7 +3200,8 @@
         a.appendChild(c);
         a.appendChild(el("span", "eq-calrival", home ? m.away : m.home));
         const res = st === "suspended" ? "Aplazado" : st === "final" || st === "live" ? ((m.live && m.live.score) || "") : [m.day, m.date, m.time].filter(Boolean).join(" ");
-        a.appendChild(el("span", "eq-calres", (st === "live" ? "● " : "") + res));
+        if (st === "live") { const tg = el("span", "eq-livetag"); tg.appendChild(el("i")); tg.appendChild(document.createTextNode("En juego")); a.appendChild(tg); }
+        a.appendChild(el("span", "eq-calres", res));
         rows.appendChild(a);
       });
       if (!calList.length) rows.appendChild(el("p", "muted small", "Sin partidos próximos."));

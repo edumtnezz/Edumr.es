@@ -234,3 +234,10 @@
 .eq-pl:active{transform:scale(.985)}
 .eq-calrow{border-radius:16px}
 @media(max-width:420px){.eq-hero .eq-crest{width:64px;height:64px}.eq-hero .eq-h1{font-size:1.35rem}.eq-stat b{font-size:.88rem}}
+/* Partido en juego en el calendario del club: rojo */
+.eq-calrow.live{border-color:#ef4444;background:rgba(239,68,68,.07);box-shadow:0 0 0 1px rgba(239,68,68,.35)}
+.eq-calrow.live .eq-calres{color:#ef4444;margin-left:10px}
+.eq-livetag{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:.68rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#fff;background:#ef4444;border-radius:999px;padding:3px 9px 3px 7px}
+.eq-livetag i{width:6px;height:6px;border-radius:50%;background:#fff;animation:eqLive 1.3s ease-in-out infinite}
+@keyframes eqLive{50%{opacity:.3}}
+@media (prefers-reduced-motion:reduce){.eq-livetag i{animation:none}}
