@@ -245,7 +245,7 @@
     const cand = all.filter((p) => p.fitness && p.fitness.length >= 3 && p.value > 0);
     return cand.slice().sort((a, b) => expOf(b) - expOf(a));
   }
-  // Destacados: los 3 con mejor calidad/precio = más puntos de media por millón de valor.
+  // Destacados: los 6 con mejor calidad/precio = más puntos de media por millón de valor.
   // Solo entran jugadores con partidos suficientes, media decente y sin lesión ni sanción.
   function bestValue() {
     const j0 = (all || []).reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0);
@@ -253,7 +253,7 @@
       .filter((p) => (Number(p.matches) || 0) >= Math.max(3, 0.6 * j0) && (Number(p.avg) || 0) >= 8 && !/injured|redcard/.test(p.status || "") && Number(p.value) > 0)
       .map((p) => Object.assign({ _r: (Number(p.avg) || 0) / (Number(p.value) / 1e6) }, p))
       .sort((a, b) => b._r - a._r)
-      .slice(0, 3);
+      .slice(0, 6);
   }
   function renderRachas() {
     const box = $("rachasOut");
@@ -261,7 +261,7 @@
     box.innerHTML = "";
     const head = el("div", "dest-head");
     head.appendChild(el("span", "dest-title", "Destacados"));
-    head.appendChild(el("span", "dest-sub", "Los 3 con mejor calidad/precio"));
+    head.appendChild(el("span", "dest-sub", "Los 6 con mejor calidad/precio"));
     box.appendChild(head);
     const grid = el("div", "dest-grid");
     const list = bestValue();
@@ -270,7 +270,6 @@
       const card = el("div", "dest-card");
       card.addEventListener("click", () => openFicha(p));
       card.addEventListener("pointerdown", () => { try { fetch(API + "/jugador?id=" + encodeURIComponent(p.id) + "&fast=1").catch(() => {}); } catch (e) {} }, { passive: true });
-      card.appendChild(el("div", "dest-rank", String(i + 1)));
       const ph = el("div", "plt-ph"), inn = el("div", "plt-in");
       if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); inn.appendChild(im); }
       ph.appendChild(inn); posRingCls(ph, p.role, p.role2);
