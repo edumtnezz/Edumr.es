@@ -1143,6 +1143,16 @@
       const chunks = []; for (let i = 0; i < ids.length; i += 8) chunks.push(ids.slice(i, i + 8));
       const rs = await Promise.all(chunks.map((c) => fetch(API + "/puntos?jornada=" + encodeURIComponent(jn) + "&ids=" + c.join(","), { cache: "no-store" }).then((x) => x.json()).catch(() => null)));
       rs.forEach((r) => { if (r && r.points) Object.keys(r.points).forEach((k) => { if (r.points[k]) map[k] = r.points[k]; }); });
+      // Si algún trozo falló (el servidor limita las llamadas), se piden de nuevo los que faltan, de 4 en 4 y de uno en uno
+      for (let pass = 0; pass < 2; pass++) {
+        const miss = ids.filter((id) => !(map[id] && map[id].f === true));
+        if (!miss.length) break;
+        const size = pass === 0 ? 4 : 1;
+        for (let i = 0; i < miss.length; i += size) {
+          const r = await fetch(API + "/puntos?jornada=" + encodeURIComponent(jn) + "&ids=" + miss.slice(i, i + size).join(","), { cache: "no-store" }).then((x) => x.json()).catch(() => null);
+          if (r && r.points) Object.keys(r.points).forEach((k) => { if (r.points[k]) map[k] = r.points[k]; });
+        }
+      }
     } catch (e) {}
     const arrived = Object.keys(map).some((k) => map[k] && map[k].f === true && map[k].p != null);
     box.querySelectorAll(".mpage-xpts[data-full], .mpage-subpts[data-full], .pl-pts[data-full]").forEach((el2) => {
@@ -1151,6 +1161,8 @@
       if (rec && rec.f === true && rec.p != null) { el2.textContent = String(rec.p); el2.classList.add("on"); if (rec.p < 0) el2.classList.add("neg"); }
       else el2.remove();
     });
+    // Si faltan los puntos de alguien que sí tiene ficha en Futmondo, devuelve false para que se vuelva a intentar al minuto
+    const missing = ids.some((id) => !(map[id] && map[id].f === true));
     // MVP del partido: el que más puntos de Futmondo ha sacado
     try {
       const best = [];
@@ -1184,7 +1196,7 @@
     let max = null;
     box.querySelectorAll(".mpage-xpts.on, .pl-pts.on").forEach((e2) => { const v = Number(e2.textContent) || 0; if (max == null || v > max) max = v; });
     if (max != null && max >= 6) box.querySelectorAll(".mpage-xpts.on, .pl-pts.on").forEach((e2) => { if ((Number(e2.textContent) || 0) === max) e2.classList.add("top"); });
-    return arrived;
+    return arrived && !missing;
   }
   // Resumen compacto de lo más destacado: los del local a la izquierda y los del
   // visitante a la derecha. Goles, asistencias, rojas, penaltis fallados y cambios.
