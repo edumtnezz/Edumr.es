@@ -947,7 +947,7 @@
     const POS = { portero: "Portero", defensas: "Defensa", medios: "Mediocampista", delanteros: "Delantero" };
     const starters = [];
     ["portero", "defensas", "medios", "delanteros"].forEach((k) => (g[k] || []).forEach((p) => {
-      starters.push({ name: p.name, full: p.full || p.name, alt: ffFullFor(photoMap, p.full || p.name), pos: POS[k], photo: (keepPhoto && p.photo) || ffPhotoFor(photoMap, p.full || p.name) || "" });
+      starters.push({ name: p.name, full: p.full || p.name, alt: p.alt || ffFullFor(photoMap, p.full || p.name), pos: POS[k], photo: (keepPhoto && p.photo) || ffPhotoFor(photoMap, p.full || p.name) || "" });
     }));
     return { starters, bench: [], formation: [g.defensas.length, g.medios.length, g.delanteros.length].join("-") };
   }
