@@ -1384,15 +1384,24 @@ async function playerFicha(env, id) {
   const r = await futbolPost("/2/player/matches", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP });
   const a = r.answer || {};
   const pl = a.player || {};
+  // Todo lo que no depende de lo demás se pide A LA VEZ (antes iba uno detrás de otro y la ficha tardaba muchísimo).
+  // Las partes opcionales y lentas (futbolfantasy, transfermarkt) tienen tope de 3,5 s: si tardan, la ficha sale sin ellas.
+  const tmo = (p, ms, fb) => Promise.race([Promise.resolve(p).catch(() => fb), new Promise((res) => setTimeout(() => res(fb), ms))]);
+  const pMk = getMarketPlayers(env).catch(() => null);
+  const pScore = getScoreMap(env).catch(() => ({}));
+  const pLs = futbolPost("/2/player/lastseasons", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP }).catch(() => null);
+  const pTeams = getTeams(env).catch(() => null);
+  const pSerie = tmo(ffSeason(env, pl.name || ""), 4500, null);
+  const pTm = tmo(tmProfile(env, pl.name || "", (a.team && a.team.name) || pl.team || ""), 6000, null);
   let mp = null;
   let lJornada = 0;
   try {
-    const mk = await getMarketPlayers(env);
+    const mk = await pMk;
     const k = String(id);
     mp = (mk.players || []).find((x) => x.id === k) || (mk.players || []).find((x) => x.name && stripAccents(x.name) === stripAccents(pl.name || ""));
     lJornada = (mk.players || []).reduce((m, x) => Math.max(m, Number(x.matches) || 0), 0);
   } catch (e) {}
-  const smap = await getScoreMap(env);
+  const smap = (await pScore) || {};
   const matches = (a.matches || []).map((m) => {
     const po = (m.ps && m.ps.po) || [];
     const g = (mode) => { const z = po.find((k) => k.mode === mode); return z ? Number(z.p) || 0 : 0; };
@@ -1416,7 +1425,7 @@ async function playerFicha(env, id) {
   const todayVal = Number(pl.value) || 0;
   let temporadas = [];
   try {
-    const ls = await futbolPost("/2/player/lastseasons", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP });
+    const ls = await pLs;
     const arr = Array.isArray(ls.answer) ? ls.answer : ((ls.answer && (ls.answer.seasons || ls.answer.lastseasons)) || []);
     temporadas = arr.map((x) => {
       const lg = x.league || {};
@@ -1439,7 +1448,7 @@ async function playerFicha(env, id) {
     }).filter((x) => x.season).slice(0, 8);
   } catch (e) {}
   try {
-    const tms = await getTeams(env);
+    const tms = (await pTeams) || [];
     const findLogo = (nm) => { const k = teamKey(nm); if (!k) return ""; let loose = ""; for (const t of tms) { const tk = teamKey(t.name); if (!tk) continue; if (tk === k) return t.logo || ""; if (tk.indexOf(k) >= 0 || k.indexOf(tk) >= 0) loose = loose || (t.logo || ""); } return loose; };
     temporadas.forEach((x) => { if (!x.logo && x.team) x.logo = findLogo(x.team); });
   } catch (e) {}
@@ -1448,7 +1457,7 @@ async function playerFicha(env, id) {
   const order = [["Hoy", 0], ["Ayer", 1], ["2 días", 2], ["3 días", 3], ["5 días", 5], ["10 días", 10], ["14 días", 14], ["30 días", 30]];
   let serie = null, temporada = null;
   try {
-    serie = await ffSeason(env, pl.name || "");
+    serie = await pSerie;
     if (serie && serie.length >= 2) {
       const first = serie[0], last = serie[serie.length - 1];
       temporada = {
@@ -1498,7 +1507,7 @@ async function playerFicha(env, id) {
     byJornada: cats,
   };
   let fichaje = null;
-  try { fichaje = await tmProfile(env, pl.name || "", (a.team && a.team.name) || pl.team || ""); } catch (e) {}
+  try { fichaje = await pTm; } catch (e) {}
   // Edad: Futmondo la trae en el jugador; si no, se calcula de la fecha de
   // nacimiento (cualquiera de los nombres que usa la API).
   let age = Number(pl.age) || Number(pl.edad) || Number(mp && mp.age) || 0;
@@ -3835,7 +3844,7 @@ async function recordPointsHistory(env) {
 
 // Caché de respuestas públicas (Cache API: sin coste ni límite). Evita recalcular en cada visita
 // y mantiene la CPU por petición por debajo del límite del plan gratis de Cloudflare.
-const EDGE_TTL = { "historial-puntos": 120, mercado: 45, rachas: 60, equipos: 1800, portada: 60, jornada: 30, jugador: 120, once: 90, "alineaciones-confirmadas": 90, "alineaciones-estado": 90, noticias: 300, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90 };
+const EDGE_TTL = { "historial-puntos": 120, mercado: 45, rachas: 60, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 90, "alineaciones-confirmadas": 90, "alineaciones-estado": 90, noticias: 300, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90 };
 export async function onRequestGet(ctx) {
   const path = (ctx.params.path || []).join("/");
   const ttl = EDGE_TTL[path];
