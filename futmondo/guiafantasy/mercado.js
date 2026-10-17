@@ -3215,6 +3215,7 @@
 
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { if (document.querySelector(".eq-page")) { location.href = "/futmondo/guiafantasy/" + t.dataset.tab; return; } switchTab(t.dataset.tab); }));
   setupMoreMenu();
+  let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltDir = -1, pltShown = 40, pltPlayers = [];
   ensurePlayedJ();
   (function restoreTab() {
     try { const pm = location.pathname.match(/\/guiafantasy\/partido\/([a-z0-9-]+)/); if (pm) { renderMatchPage(pm[1]); return; } } catch (e) {}
@@ -4291,7 +4292,6 @@
   })();
 
 /* ---------- Pestaña Plantillas: lista de jugadores filtrable por club y posición ---------- */
-  let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltDir = -1, pltShown = 40, pltPlayers = [];
   async function initPlantillas() {
     if (pltInit) return;
     pltInit = true;
