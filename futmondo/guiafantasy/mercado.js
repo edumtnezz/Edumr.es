@@ -947,7 +947,7 @@
     const POS = { portero: "Portero", defensas: "Defensa", medios: "Mediocampista", delanteros: "Delantero" };
     const starters = [];
     ["portero", "defensas", "medios", "delanteros"].forEach((k) => (g[k] || []).forEach((p) => {
-      starters.push({ name: p.name, full: p.full || p.name, pos: POS[k], photo: (keepPhoto && p.photo) || ffPhotoFor(photoMap, p.full || p.name) || "" });
+      starters.push({ name: p.name, full: p.full || ffFullFor(photoMap, p.name) || p.name, pos: POS[k], photo: (keepPhoto && p.photo) || ffPhotoFor(photoMap, p.full || p.name) || "" });
     }));
     return { starters, bench: [], formation: [g.defensas.length, g.medios.length, g.delanteros.length].join("-") };
   }
@@ -1016,30 +1016,35 @@
   // Fotos recortadas de FutbolFantasy por equipo (clave = nombre normalizado
   // completo; también se busca por apellido).
   function xiPhotoMap(side) {
-    const map = {};
+    const map = {}, fulls = {};
     [].concat((side && side.starters) || [], (side && side.bench) || []).forEach((p) => {
       if (!p || !p.photo) return;
       const key = stripAccents(String(p.full || p.name || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").trim();
-      if (key) map[key] = p.photo;
+      if (key) { map[key] = p.photo; fulls[key] = String(p.full || p.name || ""); }
     });
+    // Nombre completo de futbolfantasy de cada clave (no enumerable para no mezclarse con las claves)
+    Object.defineProperty(map, "__full", { value: fulls, enumerable: false });
     return map;
   }
-  function ffPhotoFor(map, name) {
+  function ffKeyFor(map, name) {
     const q = stripAccents(String(name || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").trim();
     if (!q || !map) return "";
-    if (map[q]) return map[q];
+    if (map[q]) return q;
     const last = q.split(/\s+/).pop();
     if (last.length < 4) return "";
     const keys = Object.keys(map);
     const exact = keys.find((k) => k.split(/\s+/).pop() === last);
-    if (exact) return map[exact];
+    if (exact) return exact;
     // Pequeñas diferencias de una letra (Elliot vs Elliott).
     const pref = keys.find((k) => {
       const kl = k.split(/\s+/).pop();
       return kl.length >= 4 && Math.abs(kl.length - last.length) <= 1 && (kl.indexOf(last) === 0 || last.indexOf(kl) === 0);
     });
-    return pref ? map[pref] : "";
+    return pref || "";
   }
+  function ffPhotoFor(map, name) { const k = ffKeyFor(map, name); return k ? map[k] : ""; }
+  // Nombre completo (p. ej. "Iñaki Williams" para "Williams") para cruzar con la cara de Futmondo
+  function ffFullFor(map, name) { const k = ffKeyFor(map, name); return (k && map.__full && map.__full[k]) || ""; }
   // Jugadores que acabaron jugando el partido (tabla PUNTOS de Comuniate):
   // titulares = sin evento de entrada; suplentes que salieron = con "IN".
   function xiFinishedSide(name, crest, list, photoMap, conf) {
@@ -1054,7 +1059,7 @@
       const q = stripAccents(String(p.pos || "").toLowerCase()).trim();
       const isSub = (p.hl || []).some((h) => /sign-in/.test(h.ico || ""));
       const mi = marketInfo(p.name, name);
-      const o = { pos: q, name: p.name, full: p.name, last: String(p.name || "").split(/\s+/).pop(), photo: ffPhotoFor(photoMap, p.name) || (mi && mi.photo) || "" };
+      const o = { pos: q, name: p.name, full: ffFullFor(photoMap, p.name) || p.name, last: String(p.name || "").split(/\s+/).pop(), photo: ffPhotoFor(photoMap, p.name) || (mi && mi.photo) || "" };
       if (isSub) { g.subs.push(o); return; }
       const cr = (q === "pt" || /porter/.test(q)) ? "" : rowOf(p.name);
       if (cr) g[cr].push(o);
