@@ -3136,7 +3136,7 @@
             c.type = "button";
             c.title = "Ver los jugadores en racha de este equipo";
             c.addEventListener("click", () => {
-              try { sessionStorage.setItem("pltState", JSON.stringify({ c: squad[0].team, p: "", s: "points", d: -1, per: "chg7", n: 40 })); } catch (e) {}
+              try { sessionStorage.setItem("pltState", JSON.stringify({ c: squad[0].team, p: "", s: "rise", d: -1, per: "chg7", n: 40 })); } catch (e) {}
               location.href = "/futmondo/guiafantasy/mercado";
             });
           }
