@@ -1806,9 +1806,6 @@ html { overflow-anchor: none; }
 .livepage .lv-sec { margin-top: 18px; padding: 14px 10px; border-radius: 16px; background: var(--surface, #fff); border: 1px solid rgba(127,140,148,.22); }
 .lv-h { margin: 0 0 12px; font-size: 1rem; font-weight: 900; }
 .lv-ptop { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
-.lv-pt { display: flex; flex-direction: column; font-size: .8rem; }
-.lv-pt.a { text-align: right; }
-.lv-pt span { color: #6b7a82; font-weight: 700; }
 .lv-pitch { position: relative; width: 100%; aspect-ratio: 68 / 110; border-radius: 14px; overflow: hidden; background: repeating-linear-gradient(180deg, #17a05a 0 9%, #139552 9% 18%); border: 2px solid rgba(255,255,255,.55); }
 .lv-mid-line { position: absolute; left: 0; right: 0; top: 50%; height: 2px; background: rgba(255,255,255,.55); }
 .lv-circle { position: absolute; left: 50%; top: 50%; width: 22%; aspect-ratio: 1; transform: translate(-50%, -50%); border: 2px solid rgba(255,255,255,.55); border-radius: 50%; }
@@ -1849,3 +1846,28 @@ html { overflow-anchor: none; }
 .lv-pts { font-weight: 900; }
 .lv-tp { padding: 2px 0; }
 @media (max-width: 420px) { .lv-trow { grid-template-columns: 24px 1fr 18px 18px 18px 18px 40px 26px 28px; font-size: .72rem; } .lv-ph { width: 34px; height: 34px; } }
+
+/* Directo v3: campo y puntos como en nuestras alineaciones */
+.lv-ptop { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.lv-pt { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 14px; background: var(--surface-2, #f1f4f5); min-width: 0; }
+.lv-pt.a { flex-direction: row-reverse; text-align: right; }
+.lv-pt img { width: 34px; height: 34px; object-fit: contain; flex: none; }
+.lv-pt-tx { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.lv-pt-tx b { font-size: .86rem; line-height: 1.1; }
+.lv-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+.lv-pt.a .lv-chips { justify-content: flex-end; }
+.lv-chip { font: 800 .72rem 'Bricolage Grotesque', sans-serif; padding: 2px 8px; border-radius: 999px; background: #10151c; color: #fff; }
+.lv-rate { background: #fff; color: #10151c; border: 1.5px solid #16a34a; }
+.lv-rate.on { background: #16a34a; color: #fff; } .lv-rate.top { background: #facc15; color: #10151c; border-color: #facc15; } .lv-rate.neg { background: #ef4444; color: #fff; border-color: #ef4444; }
+.lv-pitch { position: relative; width: 100%; aspect-ratio: 5 / 9.4; border-radius: 16px; overflow: hidden; background: #139245 url(/futmondo/campo.svg) center / cover no-repeat; border: 0; }
+.lv-pitch .lv-mid-line, .lv-pitch .lv-circle { border-color: rgba(255,255,255,.7); }
+.lv-pitch .pl.lv-abs { position: absolute; transform: translate(-50%, -50%); width: 22%; max-width: 92px; }
+.lv-pitch .pl-ph { width: 46px; height: 46px; }
+.lv-pitch .pl-nm { font-size: .64rem; margin-top: 3px; }
+.lv-pitch .pl-pts { min-width: 20px; height: 20px; font-size: .68rem; right: -10px; top: -6px; }
+.lv-pitch .pl-sw { font-size: .6rem; }
+.pl-yel { position: absolute; left: 2px; bottom: 2px; width: 13px; height: 18px; border-radius: 3px; background: #facc15; border: 1.5px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
+.lv-ptag { position: absolute; left: 8px; display: flex; align-items: center; gap: 6px; padding: 3px 10px 3px 4px; border-radius: 999px; background: rgba(0,0,0,.45); color: #fff; font: 800 .7rem 'Figtree', sans-serif; z-index: 2; max-width: 60%; }
+.lv-ptag.h { top: 8px; } .lv-ptag.a { bottom: 8px; }
+.lv-ptag img { width: 20px; height: 20px; object-fit: contain; }
+.lv-ptag span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

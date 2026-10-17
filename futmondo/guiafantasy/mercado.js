@@ -1528,29 +1528,40 @@
       if (ln && ln.h && ln.a) {
         const [c] = sec("Alineaciones");
         const top = el("div", "lv-ptop");
-        [[ln.h, "h"], [ln.a, "a"]].forEach(([t, w]) => { const d = el("div", "lv-pt " + w); d.appendChild(el("b", null, t.name)); d.appendChild(el("span", null, (t.f || "") + (t.r ? " · " + String(t.r).replace(".", ",") : ""))); top.appendChild(d); });
+        const rcls = (r) => (r >= 8 ? " on top" : r >= 6.5 ? " on" : r && r < 6 ? " neg" : "");
+        [[ln.h, "h", m.homeCrest], [ln.a, "a", m.awayCrest]].forEach(([t, w, cr]) => {
+          const d = el("div", "lv-pt " + w);
+          const im = el("img"); im.alt = ""; im.src = cr || ""; d.appendChild(im);
+          const tx = el("div", "lv-pt-tx"); tx.appendChild(el("b", null, t.name));
+          const chips = el("div", "lv-chips");
+          if (t.f) chips.appendChild(el("span", "lv-chip", t.f));
+          if (t.r) chips.appendChild(el("span", "lv-chip lv-rate" + rcls(t.r), String(t.r.toFixed ? t.r.toFixed(1) : t.r).replace(".", ",")));
+          tx.appendChild(chips); d.appendChild(tx); top.appendChild(d);
+        });
         c.appendChild(top);
         const pitch = el("div", "lv-pitch");
         pitch.appendChild(el("div", "lv-mid-line"));
         pitch.appendChild(el("div", "lv-circle"));
+        [[ln.h, "h", m.homeCrest], [ln.a, "a", m.awayCrest]].forEach(([t, w, cr]) => {
+          const tg = el("div", "lv-ptag " + w); const im = el("img"); im.alt = ""; im.src = cr || ""; tg.appendChild(im); tg.appendChild(el("span", null, t.name)); pitch.appendChild(tg);
+        });
         const place = (t, home) => (t.st || []).forEach((q) => {
           if (q.x == null || q.y == null) return;
-          const pl = el("div", "lv-pl");
+          const pl = el("div", "pl lv-abs");
           pl.style.setProperty("left", ((home ? q.x : 1 - q.x) * 100) + "%");
-          pl.style.setProperty("top", ((home ? q.y * 50 : 100 - q.y * 50)) + "%");
-          const ph = el("div", "lv-ph");
+          pl.style.setProperty("top", ((home ? 5 + q.y * 45 : 95 - q.y * 45)) + "%");
+          const ph = el("div", "pl-ph");
           const im = el("img"); im.loading = "lazy"; im.alt = ""; im.src = "https://images.fotmob.com/image_resources/playerimages/" + q.id + ".png";
-          im.addEventListener("error", () => { im.remove(); ph.appendChild(el("span", "lv-ini", (q.n || "?").charAt(0))); });
+          im.addEventListener("error", () => { im.src = "/img/avatar.svg"; });
           ph.appendChild(im);
-          if (q.r) { const rb = el("i", "lv-rt " + (q.r >= 7 ? "g" : q.r >= 6.5 ? "o" : "r"), String(q.r.toFixed ? q.r.toFixed(1) : q.r).replace(".", ",")); ph.appendChild(rb); }
-          if (q.so) ph.appendChild(el("i", "lv-so", q.so + "'"));
+          if (q.r) ph.appendChild(el("span", "pl-pts" + rcls(q.r), String(q.r.toFixed ? q.r.toFixed(1) : q.r).replace(".", ",")));
           const cds = q.ev || [];
-          if (cds.indexOf("redCard") >= 0 || cds.indexOf("yellowRedCard") >= 0) ph.appendChild(el("i", "lv-cd red"));
-          else if (cds.indexOf("yellowCard") >= 0) ph.appendChild(el("i", "lv-cd"));
-          const gl = cds.filter((x) => x === "goal").length; if (gl) ph.appendChild(el("i", "lv-gl", "⚽" + (gl > 1 ? gl : "")));
+          if (cds.indexOf("redCard") >= 0 || cds.indexOf("yellowRedCard") >= 0) ph.appendChild(el("span", "pl-red"));
+          else if (cds.indexOf("yellowCard") >= 0) ph.appendChild(el("span", "pl-yel"));
+          const gl = cds.filter((x) => x === "goal").length; if (gl) ph.appendChild(el("span", "pl-evs", "⚽".repeat(gl)));
           pl.appendChild(ph);
-          const sn = String(q.n || "").split(" ").slice(-1)[0];
-          pl.appendChild(el("span", "lv-nm", (q.no ? q.no + " " : "") + sn));
+          pl.appendChild(el("div", "pl-nm", String(q.n || "").split(" ").slice(-1)[0]));
+          if (q.so) { const sw = el("div", "pl-sw out"); sw.appendChild(el("i", null, "▼")); sw.appendChild(document.createTextNode(q.so + "'")); pl.appendChild(sw); }
           pitch.appendChild(pl);
         });
         place(ln.h, true); place(ln.a, false);
