@@ -289,6 +289,7 @@
   }
   window.__cxTickerSync = tickerSyncDuration;
   // Alerta bajo la cinta: alineaciones confirmadas en las últimas horas
+  var cxCrestRows = [], cxCrestLoading = false;
   function renderConfAlert(items) {
     var tk = document.querySelector(".cx-ticker");
     if (!tk) return;
@@ -302,9 +303,25 @@
     });
     if (!list.length) { if (box) box.remove(); return; }
     if (!box) { box = document.createElement("div"); box.id = "cxConfAlert"; box.className = "cx-conf-alert"; tk.insertAdjacentElement("afterend", box); }
+    var crestOf = function (name) {
+      var best = null, bs = 0;
+      cxCrestRows.forEach(function (m) {
+        [[m.home, m.homeCrest], [m.away, m.awayCrest]].forEach(function (t) {
+          var sc = teamScore(t[0], name); if (sc > bs) { bs = sc; best = t[1]; }
+        });
+      });
+      return bs >= 2 || (bs >= 1 && best) ? best : "";
+    };
+    var img = function (n) { var c = crestOf(n); return c ? '<img class="cx-conf-crest" src="' + esc(c) + '" alt="" loading="lazy" onerror="this.remove()">' : ""; };
     box.innerHTML = list.slice(0, 4).map(function (x) {
-      return '<a class="cx-conf-pill" href="/futmondo/guiafantasy/partido/' + tickerSlug(x.home, x.away) + '"><span class="cx-conf-bell">🔔</span><span class="cx-conf-k">Alineación confirmada</span><span class="cx-conf-m">' + esc(x.home) + ' vs ' + esc(x.away) + '</span></a>';
+      return '<a class="cx-conf-pill" href="/futmondo/guiafantasy/partido/' + tickerSlug(x.home, x.away) + '"><span class="cx-conf-k">Alineación confirmada</span><span class="cx-conf-m">' + img(x.home) + esc(x.home) + ' vs ' + esc(x.away) + img(x.away) + '</span></a>';
     }).join("");
+    if (!cxCrestRows.length && !cxCrestLoading) {
+      cxCrestLoading = true;
+      fetch(API + "/jornada").then(function (r) { return r.json(); }).then(function (d) {
+        cxCrestRows = (d && d.matches) || []; if (cxCrestRows.length) renderConfAlert(items);
+      }).catch(function () {});
+    }
   }
   function renderTicker(items) {
     renderConfAlert(items);
