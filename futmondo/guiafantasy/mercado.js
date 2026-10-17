@@ -3188,7 +3188,7 @@
       const cal = el("section", "eq-sec");
       cal.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "Calendario"));
       const rows = el("div", "eq-cal");
-      const calList = [].concat(last ? [last] : [], postponed, upcoming.slice(0, 3)).sort((a, b) => a.jn - b.jn);
+      const calList = [].concat(last ? [last] : [], postponed, upcoming.slice(0, 3)).sort((a, b) => { const rk = (m) => { const s2 = stOf(m); return s2 === "live" ? 0 : s2 === "final" ? 2 : 1; }; return rk(a) - rk(b) || (rk(a) === 2 ? b.jn - a.jn : a.jn - b.jn); }); // en juego, luego lo próximo, y al final lo ya jugado
       calList.forEach((m) => {
         const home = teamCanon(m.home) === tc;
         const st = stOf(m);
