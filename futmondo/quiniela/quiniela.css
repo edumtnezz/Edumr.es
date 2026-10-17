@@ -1655,3 +1655,7 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
   .cx-sub .tabs::-webkit-scrollbar { display: none; }
   .cx-sub .tab { white-space: nowrap; padding: 12px 7px; font-size: 0.74rem; flex: 0 0 auto; }
 }
+/* Escudos de fondo de cada partido: bien visibles pero sin tapar nombres */
+.pc-bg { opacity: .26; width: 150px; height: 150px; }
+.pc-bg-l { left: -50px; }
+.pc-bg-r { right: -50px; }
