@@ -11,6 +11,7 @@
 /futmondo/guiafantasy/inicio /futmondo/guiafantasy/ 200
 /futmondo/guiafantasy/mercado /futmondo/guiafantasy/ 200
 /futmondo/guiafantasy/partido/* /futmondo/guiafantasy/ 200
+/futmondo/guiafantasy/directo/* /futmondo/guiafantasy/ 200
 /futmondo/guiafantasy/jugadores/* /futmondo/guiafantasy/ 200
 /futmondo/guiafantasy/jugador/* /futmondo/guiafantasy/ 200
 /jugador/* /futmondo/guiafantasy/ 200

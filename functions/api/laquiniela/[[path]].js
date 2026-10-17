@@ -3850,7 +3850,7 @@ async function recordPointsHistory(env) {
 
 // Caché de respuestas públicas (Cache API: sin coste ni límite). Evita recalcular en cada visita
 // y mantiene la CPU por petición por debajo del límite del plan gratis de Cloudflare.
-const EDGE_TTL = { "historial-puntos": 120, mercado: 45, rachas: 60, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 90, "alineaciones-confirmadas": 90, "alineaciones-estado": 90, noticias: 300, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90 };
+const EDGE_TTL = { "historial-puntos": 120, mercado: 45, rachas: 60, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 90, "alineaciones-confirmadas": 90, "alineaciones-estado": 90, noticias: 300, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 30 };
 export async function onRequestGet(ctx) {
   const path = (ctx.params.path || []).join("/");
   const ttl = EDGE_TTL[path];
@@ -3957,6 +3957,25 @@ async function handleGet({ request, env: env0, params }) {
   // Cambios de un partido (quién sale y quién entra), sacados de la crónica
   // minuto a minuto de la página del partido. Cada frase se lee con varios
   // patrones; lo que no encaje se ignora (el cliente lo cruza por eliminación).
+  if (path === "directo") {
+    // Crónica minuto a minuto del partido (la que publica Comuniate), tal cual y sin guardar nada en KV (caché de borde corta).
+    const hh = url.searchParams.get("home") || "", aa = url.searchParams.get("away") || "", jj = url.searchParams.get("jornada") || "";
+    const out = { entries: [], src: "Comuniate" };
+    try {
+      const d = await getPartidoFF(env, hh, aa, jj);
+      if (d && d.url) {
+        const html = await (await fetch(d.url, { headers: cmHeaders() })).text();
+        const texts = [...new Set([...html.matchAll(/"articleBody":"([^"]*)"/g)].map((m) => m[1]))];
+        for (const raw of texts) {
+          const mm = raw.match(/^(\d+)(?:\+(\d+))?'\s*[—-]\s*(.*)$/);
+          if (!mm) continue;
+          out.entries.push({ min: Number(mm[1]), x: Number(mm[2]) || 0, t: mm[3].replace(/\s+/g, " ").trim() });
+        }
+        out.entries.sort((a, b) => (a.min + a.x / 100) - (b.min + b.x / 100));
+      }
+    } catch (e) {}
+    return json(out);
+  }
   if (path === "cambios") {
     const hh = url.searchParams.get("home") || "", aa = url.searchParams.get("away") || "", jj = url.searchParams.get("jornada") || "";
     const ck = (url.searchParams.get("raw") ? "x" : "") + "cambios:v5:" + jj + ":" + normKey(hh.toLowerCase()) + "-" + normKey(aa.toLowerCase());

@@ -1315,6 +1315,21 @@
     head.appendChild(teams);
     if (isLive || mpLive) head.classList.add("mpage-top-live");
     box.appendChild(head);
+    // Botón central "Ver partido en directo": activo desde el inicio del partido y hasta 2 días después; antes del inicio sale apagado con la hora
+    try {
+      const ko = kickoffMs(m);
+      if (ko && Date.now() < ko + LIVE_WINDOW) {
+        const on = Date.now() >= ko;
+        const wrap = el("div", "mpage-livebtn-wrap");
+        const b = el(on ? "a" : "div", "mpage-livebtn" + (on ? "" : " off"));
+        if (on) b.href = "/futmondo/guiafantasy/directo/" + matchSlug(m.home, m.away) + (jn ? "?j=" + encodeURIComponent(jn) : "");
+        b.appendChild(el("i", "mlb-dot"));
+        b.appendChild(el("span", "mlb-t", on ? "Ver partido en directo" : "Directo · empieza a las " + (m.time || "")));
+        if (on) b.appendChild(el("span", "mlb-go", "›"));
+        wrap.appendChild(b);
+        box.appendChild(wrap);
+      }
+    } catch (e) {}
     const evSlot = el("div"); box.appendChild(evSlot);
     if (finished) {
       const sec = el("section", "mpage-xi mpage-xi-done");
@@ -1434,6 +1449,98 @@
     });
     sec.appendChild(grid);
     return sec;
+  }
+  // Hora de inicio (ms) de un partido de /jornada: día "17/10" + hora "21:00" en hora de Madrid
+  const LIVE_WINDOW = 2 * 24 * 3600 * 1000;
+  function kickoffMs(m) {
+    const dm = String((m && m.date) || "").match(/^(\d{1,2})\/(\d{1,2})$/), tm = String((m && m.time) || "").match(/^(\d{1,2}):(\d{2})$/);
+    if (!dm || !tm) return 0;
+    const now = new Date(), cands = [];
+    [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].forEach((y) => {
+      const guess = Date.UTC(y, Number(dm[2]) - 1, Number(dm[1]), Number(tm[1]), Number(tm[2]));
+      // La hora de Madrid es UTC+1 o +2: se prueba cuál da esa hora local
+      [2, 1].forEach((off) => {
+        const t = guess - off * 3600000;
+        const parts = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", hourCycle: "h23" }).format(new Date(t));
+        if (parts.indexOf(String(dm[1]).padStart(2, "0") + "/" + String(dm[2]).padStart(2, "0")) === 0 && parts.slice(-5) === String(tm[1]).padStart(2, "0") + ":" + tm[2]) cands.push(t);
+      });
+    });
+    cands.sort((a, b) => Math.abs(a - now.getTime()) - Math.abs(b - now.getTime()));
+    return cands[0] || 0;
+  }
+  // Página del directo: /futmondo/guiafantasy/directo/<slug>?j=N — crónica minuto a minuto (la de Comuniate), de la hora del partido hasta 2 días después
+  async function renderLivePage(slug) {
+    const main = document.querySelector(".quiniela-main");
+    if (!main) return;
+    main.classList.add("mpage-open");
+    document.querySelectorAll(".cx-sub").forEach((e) => e.classList.remove("hidden"));
+    document.querySelectorAll("#tabsNav .tab").forEach((e) => e.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach((e) => e.classList.add("hidden"));
+    const ch = $("cxChrome"); if (ch) ch.classList.add("hidden");
+    const box = el("section", "panel mpage livepage");
+    box.innerHTML = '<p class="muted small">Cargando directo…</p>';
+    main.appendChild(box);
+    let qj = ""; try { qj = new URLSearchParams(location.search).get("j") || ""; } catch (e) {}
+    const matchUrl = "/futmondo/guiafantasy/partido/" + slug + (qj ? "?j=" + encodeURIComponent(qj) : "");
+    let timer = null;
+    const kindOf = (t) => {
+      if (/¡\s*gol\b|golazo/i.test(t) && !/anulad|malogr|ocasi[oó]n|fuera de juego/i.test(t)) return ["goal", "⚽"];
+      if (/tarjeta roja|expuls|doble amarilla|segunda amarilla/i.test(t) && !/amarilla a|le muestra tarjeta amarilla/i.test(t)) return ["red", "🟥"];
+      if (/tarjeta amarilla|amonest/i.test(t)) return ["yellow", "🟨"];
+      if (/cambio|sustitu|entra en su lugar/i.test(t)) return ["sub", "🔄"];
+      if (/penalti/i.test(t)) return ["pen", "🎯"];
+      if (/var\b/i.test(t)) return ["var", "📺"];
+      if (/comenzado|comienza|descanso|final del partido|termina|segunda parte|primera parte/i.test(t)) return ["mark", "⏱️"];
+      return ["", ""];
+    };
+    const paint = async (first) => {
+      let jr = null;
+      try { jr = await (await fetch(API + "/jornada" + (qj ? "?jornada=" + encodeURIComponent(qj) : ""))).json(); } catch (e) {}
+      const m = ((jr && jr.matches) || []).find((x) => matchSlug(x.home, x.away) === slug);
+      if (!m) { if (first) box.innerHTML = '<p class="muted small">No se encontró este partido.</p>'; return false; }
+      const ko = kickoffMs(m), now = Date.now();
+      const jn = Number(jr && jr.matchday) || Number(qj) || 0;
+      const live = m.live || {};
+      box.innerHTML = "";
+      box.appendChild(backBtn(matchUrl, "mpage-back"));
+      const head = el("div", "lv-head");
+      const side = (name, crest) => { const t = el("div", "lv-team"); const im = el("img"); im.src = crest || ""; im.alt = ""; t.appendChild(im); t.appendChild(el("span", null, name)); return t; };
+      head.appendChild(side(m.home, m.homeCrest));
+      const mid = el("div", "lv-mid");
+      mid.appendChild(el("div", "lv-state" + (live.state === "live" ? " on" : ""), live.state === "live" ? (live.minute || "En juego") : live.state === "final" ? "Finalizado" : ((m.day || "") + " " + (m.date || "") + " · " + (m.time || "")).trim()));
+      mid.appendChild(el("div", "lv-score", live.score && live.state !== "suspended" ? live.score : "vs"));
+      head.appendChild(mid);
+      head.appendChild(side(m.away, m.awayCrest));
+      box.appendChild(head);
+      const expired = ko && now > ko + LIVE_WINDOW;
+      if (expired) { box.appendChild(el("p", "muted small lv-note", "Este directo ya no está disponible (se retira 2 días después del partido).")); return false; }
+      if (ko && now < ko) { box.appendChild(el("p", "lv-note", "El directo empieza a las " + (m.time || "") + ". Esta página se actualiza sola.")); return true; }
+      let entries = null;
+      try { const r = await (await fetch(API + "/directo?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json(); entries = (r && r.entries) || []; } catch (e) {}
+      if (!entries || !entries.length) { box.appendChild(el("p", "muted small lv-note", entries ? "Todavía no hay jugadas publicadas." : "No se pudo cargar el directo.")); return live.state !== "final"; }
+      const list = el("div", "lv-list");
+      entries.slice().reverse().forEach((e) => {
+        const [k, ic] = kindOf(e.t);
+        const row = el("div", "lv-row" + (k ? " lv-" + k : ""));
+        row.appendChild(el("span", "lv-min", e.min + "'" + (e.x ? "+" + e.x : "")));
+        row.appendChild(el("span", "lv-ic", ic));
+        row.appendChild(el("span", "lv-tx", e.t));
+        list.appendChild(row);
+      });
+      box.appendChild(list);
+      box.appendChild(el("p", "lv-src", "Crónica minuto a minuto: Comuniate · se actualiza cada 30 s"));
+      return live.state !== "final";
+    };
+    try {
+      const more = await paint(true);
+      if (more) timer = setInterval(async () => {
+        if (!document.body.contains(box)) { clearInterval(timer); return; }
+        if (document.hidden) return;
+        const y = window.scrollY;
+        try { const mo = await paint(false); if (!mo) clearInterval(timer); } catch (e) {}
+        window.scrollTo(0, y);
+      }, 30000);
+    } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar el directo.</p>'; }
   }
   async function renderMatchPage(slug) {
     const main = document.querySelector(".quiniela-main");
@@ -3266,12 +3373,13 @@
     } catch (e) { body.innerHTML = '<p class="muted small">No se pudo cargar el equipo.</p>'; }
   }
 
-  document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { if (document.querySelector(".eq-page, .mpage, .playerpage")) { location.href = "/futmondo/guiafantasy/" + (t.dataset.tab === "plantillas" ? "mercado" : t.dataset.tab); return; } switchTab(t.dataset.tab); }));
+  document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { if (document.querySelector(".eq-page, .mpage, .playerpage, .livepage")) { location.href = "/futmondo/guiafantasy/" + (t.dataset.tab === "plantillas" ? "mercado" : t.dataset.tab); return; } switchTab(t.dataset.tab); }));
   setupMoreMenu();
   let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltPeriod = "chg7", pltDir = -1, pltShown = 40, pltPlayers = [];
   // En la ficha de jugador esto (14 peticiones de jornadas) se pide DESPUÉS de pintar, para no frenar la carga.
   if (!/\/jugador(?:es)?\/[a-z0-9]{6,40}/i.test(location.pathname)) ensurePlayedJ();
   (function restoreTab() {
+    try { const pd = location.pathname.match(/\/guiafantasy\/directo\/([a-z0-9-]+)/); if (pd) { renderLivePage(pd[1]); return; } } catch (e) {}
     try { const pm = location.pathname.match(/\/guiafantasy\/partido\/([a-z0-9-]+)/); if (pm) { renderMatchPage(pm[1]); return; } } catch (e) {}
     try { const pe = location.pathname.match(/^\/equipos\/([a-z0-9-]+)/); if (pe) { renderTeamPage(pe[1]); return; } if (/^\/equipos\/?$/.test(location.pathname)) { renderTeamsIndex(); return; } } catch (e) {}
     try { const pj = location.pathname.match(/\/jugador(?:es)?\/([a-z0-9]{6,40})/i); if (pj) { renderPlayerPage(pj[1]); return; } } catch (e) {}
