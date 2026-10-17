@@ -1,4 +1,18 @@
 const API = "/api/laquiniela";
+// Minuto/parte de los partidos en juego (dato real de Comuniate vía /jornada), por escudo del local.
+const liveMinByCrest = {};
+async function refreshLiveMinutes() {
+  try {
+    const d = await (await fetch(API + "/jornada", { cache: "no-store" })).json();
+    (d.matches || []).forEach((x) => { if (x.live && x.live.state === "live" && x.live.minute && x.live.minute !== "EN JUEGO") liveMinByCrest[x.homeCrest] = x.live.minute; else delete liveMinByCrest[x.homeCrest]; });
+    document.querySelectorAll(".pc-when[data-crest]").forEach((w) => {
+      const lm = liveMinByCrest[w.dataset.crest];
+      if (lm) w.textContent = w.textContent.replace(/(En juego|Descanso|\d+ª parte( · Min\. \d+(\+\d+)?)?)$/, lm);
+    });
+  } catch (e) {}
+}
+refreshLiveMinutes();
+setInterval(refreshLiveMinutes, 60000);
 const THEME_KEY = "theme";
 window.__themeHandled = true;
 let state = null;
@@ -303,7 +317,9 @@ function renderMatches() {
     const f = fmtDate(m.utcDate);
     const when = document.createElement("div");
     when.className = "pc-when";
-    when.textContent = `${f.short} · ${(/^(IN_PLAY|PAUSED)$/.test(m.status || "") && m.utcDate && Date.now() - new Date(m.utcDate).getTime() > 3 * 3600 * 1000) ? "Pendiente de resultado" : statusLabel(m.status)}`;
+    when.dataset.crest = m.homeCrest || "";
+    const stale = /^(IN_PLAY|PAUSED)$/.test(m.status || "") && m.utcDate && Date.now() - new Date(m.utcDate).getTime() > 3 * 3600 * 1000;
+    when.textContent = `${f.short} · ${stale ? "Pendiente de resultado" : (/^IN_PLAY$/.test(m.status || "") && liveMinByCrest[m.homeCrest]) || statusLabel(m.status)}`;
     info.appendChild(when);
     const teams = document.createElement("div");
     teams.className = "pc-teams";

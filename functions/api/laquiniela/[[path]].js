@@ -2263,6 +2263,19 @@ function cmLiveState(cls) {
   if (/label-danger/.test(cls)) return "suspended";
   return "previa";
 }
+// Etiqueta "1ª parte · Min. 23" a partir del texto REAL que da Comuniate (nunca se calcula con el reloj).
+function liveMinuteLabel(texts) {
+  const t = (texts || []).filter(Boolean).join(" ").trim();
+  if (!t) return "";
+  if (/descanso|half/i.test(t)) return "Descanso";
+  const mm = t.match(/(\d{1,3})\s*(?:\+\s*(\d{1,2}))?\s*['’′]?/);
+  const half = /1\s*[ªa]|primera/i.test(t) ? 1 : /2\s*[ªa]|segunda/i.test(t) ? 2 : 0;
+  if (!mm && !half) return "";
+  const base = mm ? Number(mm[1]) : 0;
+  const h = half || (base > 45 ? 2 : 1);
+  const minTxt = mm ? " · Min. " + mm[1] + (mm[2] ? "+" + mm[2] : "") : "";
+  return h + "ª parte" + minTxt;
+}
 // Marcador/estado en directo desde football-data (ya viene dentro de la
 // jornada, es el mismo equipo que el resto de datos, y se actualiza al
 // minuto). Se usa como fuente principal y Comuniate queda de respaldo, así
@@ -2384,7 +2397,7 @@ async function getJornadaStrip(env, matchday) {
     if (!live && cmM && (cmM.score || cmM.statusCls)) {
       const state = cmLiveState(cmM.statusCls);
       if (cmM.score && (state === "final" || state === "live")) {
-        live = { state, label: cmM.statusText || "", minute: state === "live" ? cmM.sub : "", score: cmM.score };
+        live = { state, label: cmM.statusText || "", minute: state === "live" ? (liveMinuteLabel([cmM.sub, cmM.statusText]) || cmM.sub || "EN JUEGO") : "", score: cmM.score };
       }
     }
     // football-data a veces se queda con el partido "en juego" mucho después de acabar:
@@ -2392,6 +2405,10 @@ async function getJornadaStrip(env, matchday) {
     // del saque inicial, un "en juego" no es creíble.
     if (live && live.state === "live") {
       const cmState = cmM ? cmLiveState(cmM.statusCls) : "";
+      if (cmM && cmState === "live" && live.label !== "Descanso") {
+        const lab = liveMinuteLabel([cmM.sub, cmM.statusText]);
+        if (lab) live.minute = lab;
+      }
       if (cmState === "final" && cmM.score) live = { state: "final", label: "FINALIZADO", minute: "", score: cmM.score };
       else {
         const ko = new Date(p.m && p.m.utcDate).getTime();
