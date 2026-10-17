@@ -1859,7 +1859,7 @@ html { overflow-anchor: none; }
 .lv-chip { font: 800 .72rem 'Bricolage Grotesque', sans-serif; padding: 2px 8px; border-radius: 999px; background: #10151c; color: #fff; }
 .lv-rate { background: #fff; color: #10151c; border: 1.5px solid #16a34a; }
 .lv-rate.on { background: #16a34a; color: #fff; } .lv-rate.top { background: #facc15; color: #10151c; border-color: #facc15; } .lv-rate.neg { background: #ef4444; color: #fff; border-color: #ef4444; }
-.lv-pitch { position: relative; width: 100%; aspect-ratio: 5 / 9.4; border-radius: 16px; overflow: hidden; background: #139245 url(/futmondo/campo.svg) center / cover no-repeat; border: 0; }
+.lv-pitch { position: relative; width: 100%; aspect-ratio: 5 / 12.2; border-radius: 16px; overflow: hidden; background: #139245 url(/futmondo/campo.svg) center / cover no-repeat; border: 0; }
 .lv-pitch .lv-mid-line, .lv-pitch .lv-circle { border-color: rgba(255,255,255,.7); }
 .lv-pitch .pl.lv-abs { position: absolute; transform: translate(-50%, -50%); width: 22%; max-width: 92px; }
 .lv-pitch .pl-ph { width: 46px; height: 46px; }
