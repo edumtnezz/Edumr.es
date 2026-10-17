@@ -830,6 +830,7 @@
       try { if (anFormaRender) anFormaRender(); } catch (e) {}
       try { renderRachas(); } catch (e) {}
       try { if (typeof clausApply === "function") clausApply(); } catch (e) {}
+      try { if (pltInit && pltPlayers.length) renderPltList(); } catch (e) {}
     } catch (e) {} finally { playedJBusy = false; }
   }
   function marketInfo(name, team) {
@@ -4427,7 +4428,8 @@
         const raw = f[idx];
         const ok = !(raw === null || raw === undefined || raw === "" || raw === "-" || raw === "–");
         const v = Math.round(Number(raw) || 0);
-        const j = jLab(p.team, f.length, k, j0);
+        const pl = playedJ && playedJ[teamCanon(p.team)];
+        const j = pl && pl.length >= f.length ? pl[pl.length - 1 - k] : 0; // sin dato fiable, no se pone J
         const cls = !ok ? " zero" : v >= 6 ? " hi" : v >= 4 ? " mid" : v > 0 ? " lo" : v < 0 ? " neg" : " z0";
         const cell = el("span", "racha-chip" + cls);
         if (j > 0) cell.appendChild(el("i", null, "J" + j));
