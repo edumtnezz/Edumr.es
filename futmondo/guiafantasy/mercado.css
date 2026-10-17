@@ -1693,3 +1693,4 @@ html { overflow-anchor: none; }
 .plt-panel { overflow: visible; }
 .plt-head { position: sticky; top: var(--plt-top, 109px); z-index: 20; background: #1d2b33; border-radius: 16px 16px 0 0; box-shadow: 0 6px 12px -8px rgba(0,0,0,.45); }
 .plt-list { border-radius: 0 0 16px 16px; overflow: hidden; }
+.plt-arrow { background: none; border: 0; box-shadow: none; border-radius: 0; width: 24px; color: #fff; font-size: 1.7rem; font-weight: 300; padding: 0 0 4px; text-shadow: 0 0 6px #1d2b33, 0 0 6px #1d2b33; }
