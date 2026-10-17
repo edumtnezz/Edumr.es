@@ -1117,14 +1117,8 @@
   }
   async function fillMpPoints(box, d, jn) {
     if (mpLive) {
-      // En directo: puntos provisionales del partido (los de tu liga llegan al acabar)
-      const byName = {};
-      [].concat(d.homePlayers || [], d.awayPlayers || []).forEach((p) => { if (p && p.name) byName[p.name] = Number(p.pts) || 0; });
-      box.querySelectorAll(".pl-pts[data-full]").forEach((e2) => {
-        const v = byName[e2.getAttribute("data-full")];
-        if (v) { e2.textContent = String(v); e2.classList.add("on", "prov"); if (v < 0) e2.classList.add("neg"); }
-        else e2.remove();
-      });
+      // En directo no hay puntos: los de Futmondo llegan al acabar el partido
+      box.querySelectorAll(".pl-pts[data-full], .mpage-xpts[data-full], .mpage-subpts[data-full]").forEach((e2) => e2.remove());
       return;
     }
     const idByName = {}, teamOfName = {};
@@ -1326,7 +1320,6 @@
       const hd = el("div", "mpage-xi-h");
       hd.appendChild(el("span", "mpage-xi-title", mpLive ? "Partido en juego" : "Partido finalizado"));
       sec.appendChild(hd);
-      if (mpLive) sec.appendChild(el("p", "muted small mpage-live-note", "🔴 En directo · puntos provisionales"));
       const idxH = xiEvIndex(d.homePlayers), idxA = xiEvIndex(d.awayPlayers);
       const home = xiFinishedSide(m.home, m.homeCrest, d.homePlayers, xiPhotoMap(ffData && ffData.home), mpConf && mpConf.home);
       const away = xiFinishedSide(m.away, m.awayCrest, d.awayPlayers, xiPhotoMap(ffData && ffData.away), mpConf && mpConf.away);
