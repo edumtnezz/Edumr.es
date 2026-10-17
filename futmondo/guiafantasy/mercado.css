@@ -1684,3 +1684,4 @@ html { overflow-anchor: none; }
 .racha-chip.live b { color: #ef4444; animation: pltLive 1.6s ease-in-out infinite; }
 @keyframes pltLive { 50% { opacity: .25; } }
 @media (prefers-reduced-motion: reduce) { .racha-chip.live b { animation: none; } }
+.plt-row-btns.plt-per { padding-top: 10px; }
