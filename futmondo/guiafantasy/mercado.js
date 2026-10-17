@@ -1521,7 +1521,7 @@
       try { const r = await (await fetch(API + "/directo?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn) + (dstr ? "&date=" + dstr : ""))).json(); entries = (r && r.entries) || []; fm = r && r.fm; ok = true; } catch (e) {}
       const mm = (e) => e.t + "'" + (e.x ? "+" + e.x : "");
       const evs = (fm && fm.events) || [], sts = (fm && fm.stats) || [];
-      const sec = (title, src) => { const c = el("section", "lv-sec"); c.appendChild(el("h3", "lv-h", title)); box.appendChild(c); return [c, src]; };
+      const secs = []; const sec = (title) => { const c = el("section", "lv-sec"); c.appendChild(el("h3", "lv-h", title)); box.appendChild(c); secs.push([title.split(" ")[0], c]); return [c]; };
       const srcTag = (c, t) => c.appendChild(el("p", "lv-src", t));
       const ln = fm && fm.lineup;
       // 1) Campo en directo
@@ -1566,14 +1566,29 @@
         });
         place(ln.h, true); place(ln.a, false);
         c.appendChild(pitch);
-        const bench = el("div", "lv-bench");
-        [[ln.h, "Suplentes · " + ln.h.name], [ln.a, "Suplentes · " + ln.a.name]].forEach(([t, ttl]) => {
+        [[ln.h, ln.h.name], [ln.a, ln.a.name]].forEach(([t, nm]) => {
           if (!(t.sb || []).length) return;
-          const col = el("div", "lv-bcol"); col.appendChild(el("h4", null, ttl));
-          t.sb.forEach((q) => { const r = el("div", "lv-brow" + (q.si ? " in" : "")); r.appendChild(el("span", null, (q.no || "") + " " + q.n)); r.appendChild(el("em", null, q.si ? "Entra " + q.si + "'" : "")); col.appendChild(r); });
-          bench.appendChild(col);
+          const bn = el("div", "al-bench lv-benchbox");
+          bn.appendChild(el("div", "al-bench-h", "Suplentes · " + nm));
+          const row = el("div", "al-bench-row");
+          t.sb.forEach((q) => {
+            const pl = el("div", "pl" + (q.si ? "" : " lv-unused"));
+            const ph = el("div", "pl-ph");
+            const im = el("img"); im.loading = "lazy"; im.alt = ""; im.src = "https://images.fotmob.com/image_resources/playerimages/" + q.id + ".png";
+            im.addEventListener("error", () => { im.src = "/img/avatar.svg"; });
+            ph.appendChild(im);
+            if (q.r) ph.appendChild(el("span", "pl-pts" + rcls(q.r), String(q.r.toFixed ? q.r.toFixed(1) : q.r).replace(".", ",")));
+            const cds = q.ev || [];
+            if (cds.indexOf("redCard") >= 0 || cds.indexOf("yellowRedCard") >= 0) ph.appendChild(el("span", "pl-red"));
+            else if (cds.indexOf("yellowCard") >= 0) ph.appendChild(el("span", "pl-yel"));
+            const gl = cds.filter((x) => x === "goal").length; if (gl) ph.appendChild(el("span", "pl-evs", "⚽".repeat(gl)));
+            pl.appendChild(ph);
+            pl.appendChild(el("div", "pl-nm", String(q.n || "").split(" ").slice(-1)[0]));
+            if (q.si) { const sw = el("div", "pl-sw in"); sw.appendChild(el("i", null, "▲")); sw.appendChild(document.createTextNode(q.si + "'")); pl.appendChild(sw); }
+            row.appendChild(pl);
+          });
+          bn.appendChild(row); c.appendChild(bn);
         });
-        c.appendChild(bench);
         srcTag(c, "Alineaciones y notas: FotMob");
       }
       // 2) Eventos (del minuto más reciente al más antiguo)
@@ -1628,7 +1643,7 @@
         c.appendChild(list);
         srcTag(c, "Estadísticas: FotMob");
       }
-      if (!evs.length && !ln) box.appendChild(el("p", "muted small lv-note", ok ? "Todavía no hay datos del partido." : "No se pudo cargar el directo."));
+      if (!secs.length) box.appendChild(el("p", "muted small lv-note", ok ? "Todavía no hay datos del partido." : "No se pudo cargar el directo."));
       // 5) Clasificación
       if (fm && fm.table && fm.table.length) {
         const [c] = sec("Clasificación · LaLiga");
@@ -1647,6 +1662,17 @@
         });
         c.appendChild(tb);
         srcTag(c, "Clasificación: FotMob");
+      }
+      if (secs.length) {
+        let cur = lvTab; if (!secs.some((x) => x[0] === cur)) cur = secs[0][0];
+        const bar = el("div", "lv-tabs");
+        secs.forEach(([k, c]) => {
+          const b = el("button", "lv-tab" + (k === cur ? " on" : ""), k); b.type = "button";
+          b.addEventListener("click", () => { lvTab = k; bar.querySelectorAll(".lv-tab").forEach((x) => x.classList.toggle("on", x === b)); secs.forEach(([k2, c2]) => c2.classList.toggle("hidden", k2 !== k)); });
+          bar.appendChild(b);
+          c.classList.toggle("hidden", k !== cur);
+        });
+        box.insertBefore(bar, secs[0][1]);
       }
       return live.state !== "final";
     };

@@ -1871,3 +1871,13 @@ html { overflow-anchor: none; }
 .lv-ptag.h { top: 8px; } .lv-ptag.a { bottom: 8px; }
 .lv-ptag img { width: 20px; height: 20px; object-fit: contain; }
 .lv-ptag span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lv-sec.hidden { display: none; }
+.livepage .lv-sec .lv-h { display: none; }
+.livepage .lv-sec { margin-top: 0; }
+.lv-tabs { margin-top: 4px; }
+.lv-tab { font-size: .76rem; padding: 9px 2px; }
+.lv-benchbox { border-radius: 14px; margin-top: 12px; }
+.lv-benchbox .pl-ph { width: 46px; height: 46px; }
+.lv-benchbox .pl-pts { min-width: 20px; height: 20px; font-size: .68rem; right: -10px; top: -6px; }
+.lv-benchbox .pl-nm { font-size: .64rem; }
+.lv-benchbox .pl.lv-unused .pl-ph img { opacity: .6; filter: grayscale(.5); }
