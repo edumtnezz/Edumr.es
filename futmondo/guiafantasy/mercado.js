@@ -1580,10 +1580,15 @@
       // La ficha se pinta en cuanto llega /jugador; el mercado completo (más pesado) se carga aparte y repinta después.
       const needAll = !all || !all.length;
       const pl = needAll ? load().catch(() => {}) : Promise.resolve();
-      const dp = fetch(API + "/jugador?id=" + encodeURIComponent(id)).then((r) => r.json());
-      const d = await dp;
-      lastD = d;
-      draw(d, first);
+      const full = fetch(API + "/jugador?id=" + encodeURIComponent(id)).then((r) => r.json());
+      // Primero la ficha rápida (sin futbolfantasy/transfermarkt); en cuanto llega la completa se repinta.
+      let d = null;
+      if (first) {
+        try { d = await fetch(API + "/jugador?id=" + encodeURIComponent(id) + "&fast=1").then((r) => r.json()); } catch (e) {}
+        if (d && d.name) { lastD = d; draw(d, true); }
+        full.then((fd) => { if (fd && fd.name && document.body.contains(box)) { lastD = fd; draw(fd, false); } }).catch(() => {});
+        if (!(d && d.name)) { d = await full; lastD = d; draw(d, true); }
+      } else { d = await full; lastD = d; draw(d, false); }
       if (needAll) pl.then(() => { if (document.body.contains(box) && lastD) draw(lastD, false); });
       if (first && !playedJ) ensurePlayedJ().then(() => { if (playedJ && document.body.contains(box) && lastD) draw(lastD, false); }).catch(() => {});
     };

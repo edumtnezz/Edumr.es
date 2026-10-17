@@ -1378,7 +1378,7 @@ async function getScoreMap(env) {
   return map;
 }
 
-async function playerFicha(env, id) {
+async function playerFicha(env, id, fast) {
   if (!id) return { error: "falta id" };
   const header = await futbolHeader(env);
   const r = await futbolPost("/2/player/matches", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP });
@@ -1391,8 +1391,9 @@ async function playerFicha(env, id) {
   const pScore = getScoreMap(env).catch(() => ({}));
   const pLs = futbolPost("/2/player/lastseasons", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP }).catch(() => null);
   const pTeams = getTeams(env).catch(() => null);
-  const pSerie = tmo(ffSeason(env, pl.name || ""), 4500, null);
-  const pTm = tmo(tmProfile(env, pl.name || "", (a.team && a.team.name) || pl.team || ""), 6000, null);
+  // fast=1: ficha sin las partes lentas externas (futbolfantasy / transfermarkt); el cliente pide después la completa.
+  const pSerie = fast ? Promise.resolve(null) : tmo(ffSeason(env, pl.name || ""), 4500, null);
+  const pTm = fast ? Promise.resolve(null) : tmo(tmProfile(env, pl.name || "", (a.team && a.team.name) || pl.team || ""), 6000, null);
   let mp = null;
   let lJornada = 0;
   try {
@@ -4124,7 +4125,7 @@ async function handleGet({ request, env: env0, params }) {
     return json(await getNoticia(url.searchParams.get("u")));
   }
   if (path === "jugador") {
-    return json(await playerFicha(env, url.searchParams.get("id")));
+    return json(await playerFicha(env, url.searchParams.get("id"), url.searchParams.get("fast") === "1"));
   }
   // Puntos de MI liga Futmondo (modo stats) para los jugadores de un partido
   // y una jornada. La página de partido manda los ids resueltos y recibe
