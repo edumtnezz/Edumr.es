@@ -734,20 +734,3 @@ button:not(:disabled):active, [role="button"]:active, .hub-feature:active, .hub-
 .cx-conf-pill { animation: none; box-shadow: none; background: #16a34a; }
 .cx-conf-m { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; }
 .cx-conf-crest { width: 18px; height: 18px; object-fit: contain; flex: 0 0 auto; }
-
-/* Tarjeta de partido estilo marcador de televisión: mitades con el color de
-   cada club, caja central amarilla con hora o marcador y la cadena (DAZN /
-   Movistar) arriba en el centro. */
-.cx-jn-tvtop { display: flex; justify-content: center; align-items: center; min-height: 18px; padding-bottom: 2px; }
-.cx-jn-tvtop .cx-jn-tv { height: 13px; }
-.cx-jn-tvtop .cx-jn-tv-sq { height: 16px; }
-.cx-jn-row { display: flex; align-items: stretch; gap: 0; border-radius: 5px; overflow: hidden; }
-.cx-jn-side { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; padding: 4px 0; background: var(--side, var(--cx-border)); }
-.cx-jn-home { clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 100%, 0 100%); margin-right: -5px; padding-right: 5px; }
-.cx-jn-away { clip-path: polygon(7px 0, 100% 0, 100% 100%, 0 100%); margin-left: -5px; padding-left: 5px; }
-.cx-jn-side .cx-jn-crest { width: 28px; height: 28px; padding: 2px; border-radius: 50%; background: #fff; box-sizing: content-box; }
-.cx-jn-mid { flex: 0 0 auto; z-index: 1; min-width: 44px; justify-content: center; padding: 2px 6px; background: #ffd400; }
-.cx-jn-mid .cx-jn-time, .cx-jn-mid .cx-jn-hora, .cx-jn-mid .cx-jn-score { color: #111; }
-.cx-jn-mid .cx-jn-time { font-size: 0.5rem; }
-.cx-jn-mid .cx-jn-hora { font-size: 0.7rem; font-weight: 800; }
-.cx-jn-mid .cx-jn-score { font-size: 1rem; }
