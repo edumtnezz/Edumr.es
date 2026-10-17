@@ -4377,14 +4377,14 @@
     list = list.slice().sort((a, b) => pltDir * ((Number(a[key]) || 0) - (Number(b[key]) || 0)));
     box.innerHTML = "";
     if (!list.length) { box.appendChild(el("p", "muted", "Sin jugadores.")); return; }
-    let ownById = {};
-    try { const c = JSON.parse(localStorage.getItem("claus_cache") || "null"); ((c && c.players) || []).forEach((x) => { if (x.id && x.owner) ownById[x.id] = x.owner; }); } catch (e) {}
     const j0 = pltPlayers.reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0);
     const perLab = (PLT_PER.filter((x) => x[0] === pltPeriod)[0] || [0, ""])[1];
     list.slice(0, pltShown).forEach((p) => {
       const row = el("div", "plt-row"); row.addEventListener("click", () => openFicha(p));
       const ph = el("div", "plt-ph");
-      if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); ph.appendChild(im); }
+      const inn = el("div", "plt-in");
+      if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); inn.appendChild(im); }
+      ph.appendChild(inn);
       posRingCls(ph, p.role, p.role2);
       const wrap = el("div", "plt-phw");
       wrap.appendChild(ph);
@@ -4393,7 +4393,16 @@
       if (rst) wrap.appendChild(el("span", "plt-st " + rst.cls, rst.label));
       row.appendChild(wrap);
       const mid = el("div", "plt-mid");
-      mid.appendChild(el("div", "plt-name", p.name));
+      const nm = el("div", "plt-nm");
+      nm.appendChild(el("span", "plt-name", p.name));
+      const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
+      if (rb) {
+        const pill = el("span", "plt-pill", rb + (rb2 ? " · " + rb2 : ""));
+        const c1 = POSCOL_BY_CODE[rb], c2 = POSCOL_BY_CODE[rb2] || c1;
+        if (c1) { pill.style.setProperty("--c1", c1); pill.style.setProperty("--c2", c2); }
+        nm.appendChild(pill);
+      }
+      mid.appendChild(nm);
       mid.appendChild(el("div", "plt-val", money(p.value) + " €"));
       const chg = Number(rise ? p[pltPeriod] : p.change) || 0;
       const t = chg > 0 ? "▲ " + formatDots(chg) + " €" : chg < 0 ? "▼ " + formatDots(-chg) + " €" : "—";
@@ -4415,8 +4424,6 @@
         fit.insertBefore(cell, fit.firstChild);
       }
       side.appendChild(fit);
-      const own = p.computer ? "futmondo" : (ownById[p.id] || "");
-      if (own) side.appendChild(el("div", "plt-own", own));
       row.appendChild(side);
       const rt = el("div", "plt-rt");
       const pts = el("div", "plt-pts"); pts.appendChild(el("b", null, String(Number(p.points) || 0))); pts.appendChild(el("small", null, "PTS"));
