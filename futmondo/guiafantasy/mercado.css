@@ -1588,3 +1588,13 @@ html { overflow-anchor: none; }
 .an-sec { background: var(--card-solid); box-shadow: none; border-radius: 16px; }
 .merc-search-hero { border-radius: 16px; border: 1px solid var(--border); background: var(--card-solid); box-shadow: none; }
 .merc-search-hero .market-search { border-width: 1px; }
+/* En racha: nada se sale de la tarjeta (valor de subida y media) */
+.racha-row { overflow: hidden; box-sizing: border-box; }
+@media (max-width: 640px) {
+  .racha-row { grid-template-columns: 34px minmax(0, 1fr) auto; column-gap: 8px; }
+  .racha-info, .racha-scores { min-width: 0; }
+  .racha-scores { gap: 3px; }
+  .racha-chip { min-width: 0; flex: 1 1 0; max-width: 28px; }
+  .racha-val { font-size: 0.78rem; flex: 0 0 auto; }
+  .racha-stats { gap: 8px; }
+}
