@@ -3016,7 +3016,7 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
   // cambian (se guardan 30 días); mientras el partido no ha acabado se
   // guardan solo 2 minutos para no machacar la API de Futmondo desde la
   // página de cada partido.
-  const ck = "pjp:v3:" + playerId + ":" + (Number(jornada) || 0);
+  const ck = "pjp:v4:" + playerId + ":" + (Number(jornada) || 0);
   try {
     const c = await env.PORRA.get(ck, "json");
     if (c && (c.finished || Date.now() - (c.at || 0) < 120000)) return { finished: !!c.finished, points: c.finished ? c.points : null };
@@ -3051,14 +3051,19 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
           if (!(globalThis.__mkForceAt && Date.now() - globalThis.__mkForceAt < 30000)) { globalThis.__mkForceAt = Date.now(); globalThis.__mkForceP = getMarketPlayers(env, true).catch(() => null); }
           if (globalThis.__mkForceP) { const m2 = await globalThis.__mkForceP; if (m2 && m2.at) mk = m2; }
         }
-        mkFresh = okMk(mk) || matches.some((x) => Number(x.r) > Number(jornada) && x.st === "F");
         const mp = (mk.players || []).find((x) => String(x.id) === String(playerId));
         const fit = (mp && mp.fitness) || [];
-        // OJO: matches viene con el próximo partido (sin jugar) delante; el último valor de
-        // fitness es el último partido TERMINADO, así que solo cuentan los terminados posteriores.
-        const newerDone = matches.filter((x) => Number(x.r) > Number(jornada) && x.st === "F").length;
-        const k = fit.length - 1 - newerDone;
-        if (k >= 0 && k < fit.length && fit[k] != null) pts = Math.round(Number(fit[k]) || 0);
+        // Cuántos partidos del equipo tiene ya publicados Futmondo (máximo de "matches" entre
+        // sus jugadores) frente a cuántos han terminado hasta esta jornada: solo si ya están
+        // publicados es válido el último valor de fitness. Antes se fiaba de la hora del
+        // refresco del mercado y daba por buenos valores de la jornada anterior (se guardaban 30 días).
+        const pub = (mk.players || []).reduce((mx, x) => (mp && x.team === mp.team ? Math.max(mx, Number(x.matches) || 0) : mx), 0);
+        const nFinJ = matches.filter((x) => x.st === "F" && Number(x.r) <= Number(jornada)).length;
+        mkFresh = !!mp && pub >= nFinJ && nFinJ > 0;
+        if (mkFresh) {
+          const k = fit.length - 1 - (pub - nFinJ);
+          if (k >= 0 && k < fit.length && fit[k] != null) pts = Math.round(Number(fit[k]) || 0);
+        }
       } catch (e) {}
       if (!mkFresh) {
         // pendiente: se guarda solo 30 s para volver a mirar pronto
