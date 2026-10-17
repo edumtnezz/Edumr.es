@@ -773,7 +773,7 @@
   function jLab(team, len, k, j0) {
     const l = playedJ && playedJ[teamCanon(team)];
     if (l && l.length >= len) return l[l.length - 1 - k];
-    return j0 ? j0 - k : 0;
+    return 0; // sin las jornadas jugadas reales no se inventa la J (antes se contaba desde la última jornada y salía J9 con el partido aún en juego)
   }
   function dateKey(d, t) {
     const a = String(d || "").split("/").map(Number);
