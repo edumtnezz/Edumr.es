@@ -39,9 +39,13 @@
     return row;
   }
   function splitBadge(b) {
+    if (b.classList.contains("posb-dual")) return;
     const codes = String(b.textContent || "").split("·").map((s) => s.trim());
     if (codes.length === 2 && POSCOL_BY_CODE[codes[0]] && POSCOL_BY_CODE[codes[1]]) {
-      b.style.background = "linear-gradient(120deg, " + POSCOL_BY_CODE[codes[0]] + " 0%, " + POSCOL_BY_CODE[codes[1]] + " 100%)";
+      b.textContent = "";
+      b.classList.add("posb-dual");
+      b.style.background = "";
+      codes.forEach((c) => { const s = document.createElement("span"); s.textContent = c; s.style.background = POSCOL_BY_CODE[c]; b.appendChild(s); });
     }
   }
   function applySplits(root) {
@@ -4407,9 +4411,8 @@
       phc.appendChild(wrap);
       const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
       if (rb) {
-        const pill = el("span", "plt-pill", rb + (rb2 ? " · " + rb2 : ""));
-        const c1 = POSCOL_BY_CODE[rb], c2 = POSCOL_BY_CODE[rb2] || c1;
-        if (c1) { pill.style.setProperty("--c1", c1); pill.style.setProperty("--c2", c2); }
+        const pill = el("span", "plt-pill posb posb-" + posCls(p.role), rb + (rb2 ? " · " + rb2 : ""));
+        splitBadge(pill);
         phc.appendChild(pill);
       }
       row.appendChild(phc);

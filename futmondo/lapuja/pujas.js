@@ -88,9 +88,13 @@ function statRow(p) {
   return row;
 }
 function splitBadge(b) {
+  if (b.classList.contains("posb-dual")) return;
   var codes = String(b.textContent || "").split("·").map(function (s) { return s.trim(); });
   if (codes.length === 2 && POSCOL_BY_CODE[codes[0]] && POSCOL_BY_CODE[codes[1]]) {
-    b.style.background = "linear-gradient(120deg, " + POSCOL_BY_CODE[codes[0]] + " 0%, " + POSCOL_BY_CODE[codes[1]] + " 100%)";
+    b.textContent = "";
+    b.classList.add("posb-dual");
+    b.style.background = "";
+    codes.forEach(function (c) { var s = document.createElement("span"); s.textContent = c; s.style.background = POSCOL_BY_CODE[c]; b.appendChild(s); });
   }
 }
 function applySplits(root) {
