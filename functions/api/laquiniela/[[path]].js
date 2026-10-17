@@ -2427,7 +2427,8 @@ async function getJornadaStrip(env, matchday) {
       const s = teamScore(list[i].home, home) + teamScore(list[i].away, away);
       if (s > bs) { bs = s; bi = i; }
     }
-    return { home, away, homeCrest: (m.homeTeam && m.homeTeam.crest) || "", awayCrest: (m.awayTeam && m.awayTeam.crest) || "", day, date, time, dt: date + "|" + time, bi, bs, m };
+    const tbc = !isNaN(d.getTime()) && d.getUTCHours() === 0 && d.getUTCMinutes() === 0; // 00:00 UTC = hora aún sin fijar en football-data
+    return { home, away, homeCrest: (m.homeTeam && m.homeTeam.crest) || "", awayCrest: (m.awayTeam && m.awayTeam.crest) || "", day, date, time, tbc, dt: date + "|" + time, bi, bs, m };
   });
   prep.forEach((p) => { if (p.bs >= 4 && p.bi >= 0) used[p.bi] = true; });
 
@@ -2490,7 +2491,7 @@ async function getJornadaStrip(env, matchday) {
     }
     const confirmed = !!(cmE && cmE.confirmed);
 
-    return { home: p.home, away: p.away, homeCrest: p.homeCrest, awayCrest: p.awayCrest, day: p.day, date: p.date, time: p.time, tv, live, confirmed };
+    return { home: p.home, away: p.away, homeCrest: p.homeCrest, awayCrest: p.awayCrest, day: p.day, date: p.date, time: p.tbc ? "" : p.time, tbc: !!p.tbc, tv, live, confirmed };
   });
   if (accumChanged) { try { await env.PORRA.put(accumKey, JSON.stringify(accum), { expirationTtl: 10 * 24 * 3600 }); } catch (e) {} }
   return { matchday: jd.matchday || 0, matches };
