@@ -2803,14 +2803,18 @@
           const nj = el("span", "fm-match fm-nojugo", "No jugó");
           row.appendChild(nj);
           row.appendChild(el("span", "fm-tag", ""));
-          row.appendChild(el("span", "fm-pts", "—"));
+          const njPts = el("span", "fm-pts", "—");
+          row.appendChild(njPts);
           if (j === topJ && d.team) { // ¿de verdad no jugó, o su partido aún no ha acabado?
             fetch(API + "/jornada?jornada=" + j).then((r) => r.json()).then((jj) => {
-              const nn = (x) => stripAccents(String(x || "")).replace(/[^a-z0-9 ]/g, "").trim(), tn = nn(d.team);
-              const mm = (jj.matches || []).find((x) => { const a = nn(x.home), b = nn(x.away); return a === tn || b === tn || a.indexOf(tn) >= 0 || tn.indexOf(a) >= 0 || b.indexOf(tn) >= 0 || tn.indexOf(b) >= 0; });
+              const tc = teamCanon(d.team);
+              const mm = (jj.matches || []).find((x) => teamCanon(x.home) === tc || teamCanon(x.away) === tc);
               if (!mm || (mm.live && mm.live.state === "final")) return;
               nj.classList.remove("fm-nojugo"); nj.classList.add("fm-pend");
-              nj.textContent = mm.live && mm.live.state === "live" ? "🔴 En juego" : "⏳ Aún no se ha jugado" + (mm.time ? " · " + mm.time : "");
+              if (mm.live && mm.live.state === "live") {
+                nj.textContent = "En juego" + (mm.live.minute ? " · " + mm.live.minute : "");
+                njPts.textContent = "●"; njPts.className = "fm-pts fm-live"; njPts.title = "Partido en juego";
+              } else nj.textContent = "⏳ Aún no se ha jugado" + (mm.time ? " · " + mm.time : "");
             }).catch(() => {});
           }
         }

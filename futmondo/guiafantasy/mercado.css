@@ -1694,3 +1694,6 @@ html { overflow-anchor: none; }
 .plt-head { position: sticky; top: var(--plt-top, 109px); z-index: 20; background: #1d2b33; border-radius: 16px 16px 0 0; box-shadow: 0 6px 12px -8px rgba(0,0,0,.45); }
 .plt-list { border-radius: 0 0 16px 16px; overflow: hidden; }
 .plt-arrow { background: none; border: 0; box-shadow: none; border-radius: 0; width: 24px; color: #fff; font-size: 1.7rem; font-weight: 300; padding: 0 0 4px; text-shadow: 0 0 6px #1d2b33, 0 0 6px #1d2b33; }
+.fm-pts.fm-live { background: #fff !important; color: #ef4444 !important; box-shadow: inset 0 0 0 1.5px #ef4444; animation: pltLive 1.6s ease-in-out infinite; }
+.fm-pend { font-weight: 700; }
+@media (prefers-reduced-motion: reduce) { .fm-pts.fm-live { animation: none; } }
