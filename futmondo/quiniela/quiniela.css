@@ -1659,3 +1659,7 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .pc-bg { opacity: .26; width: 150px; height: 150px; }
 .pc-bg-l { left: -50px; }
 .pc-bg-r { right: -50px; }
+/* Escudos de fondo más visibles (antes muy transparentes) */
+.pc-bg { opacity: .5; width: 165px; height: 165px; }
+.pc-bg-l { left: -34px; }
+.pc-bg-r { right: -34px; }
