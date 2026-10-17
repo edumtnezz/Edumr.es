@@ -1942,3 +1942,8 @@ html { overflow-anchor: none; }
 .lv-h2s { min-width: 44px; text-align: center; font-variant-numeric: tabular-nums; }
 .lv-tabs { overflow-x: auto; scrollbar-width: none; } .lv-tabs::-webkit-scrollbar { display: none; }
 .lv-tab { flex: 0 0 auto; padding: 9px 12px; }
+/* En pantallas anchas el campo no se estira: mismo tamaño que en móvil, centrado */
+@media (min-width: 600px) {
+  .lv-ptop, .lv-pitch, .lv-benchbox { max-width: 480px; margin-left: auto; margin-right: auto; }
+  .lv-ptop { margin-bottom: 10px; }
+}
