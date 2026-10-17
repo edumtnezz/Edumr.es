@@ -1617,23 +1617,7 @@
         c.appendChild(list);
         srcTag(c, "Estadísticas: FotMob");
       }
-      // 4) Crónica minuto a minuto
-      if (entries && entries.length) {
-        const [c] = sec("Crónica minuto a minuto");
-        const list = el("div", "lv-list");
-        entries.slice().reverse().forEach((e) => {
-          const [k, ic] = kindOf(e.t);
-          const row = el("div", "lv-row" + (k ? " lv-" + k : ""));
-          row.appendChild(el("span", "lv-min", e.min + "'" + (e.x ? "+" + e.x : "")));
-          row.appendChild(el("span", "lv-ic", ic));
-          row.appendChild(el("span", "lv-tx", e.t));
-          list.appendChild(row);
-        });
-        c.appendChild(list);
-        srcTag(c, "Crónica: Comuniate · se actualiza cada 30 s");
-      } else if (!evs.length && !ln) {
-        box.appendChild(el("p", "muted small lv-note", ok ? "Todavía no hay jugadas publicadas." : "No se pudo cargar el directo."));
-      }
+      if (!evs.length && !ln) box.appendChild(el("p", "muted small lv-note", ok ? "Todavía no hay datos del partido." : "No se pudo cargar el directo."));
       // 5) Clasificación
       if (fm && fm.table && fm.table.length) {
         const [c] = sec("Clasificación · LaLiga");
@@ -1646,7 +1630,7 @@
           const r = el("div", "lv-trow" + (hl ? " me" : ""));
           const pos = el("span", "lv-tp", String(x.i)); if (x.q) pos.style.setProperty("box-shadow", "inset 3px 0 0 " + x.q);
           r.appendChild(pos);
-          const tn = el("span", "lv-tn"); const ci = el("img"); ci.alt = ""; ci.loading = "lazy"; ci.src = "https://images.fotmob.com/image_resources/logo/teamlogo/" + x.id + ".png"; tn.appendChild(ci); tn.appendChild(el("em", null, x.n)); r.appendChild(tn);
+          const tn = el("span", "lv-tn"); const ci = el("img"); ci.alt = ""; ci.loading = "lazy"; ci.src = "https://images.fotmob.com/image_resources/logo/teamlogo/" + x.id + ".png"; tn.appendChild(ci); tn.appendChild(el("em", null, x.n)); clubLink(tn, x.n); r.appendChild(tn);
           [x.p, x.w, x.d, x.l, x.gf, x.dg, x.pt].forEach((v, i) => r.appendChild(el("span", i === 6 ? "lv-pts" : "", String(v))));
           tb.appendChild(r);
         });
