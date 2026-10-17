@@ -770,10 +770,25 @@
   // últimos 5 partidos jugados, así que si un partido se suspende/aplaza (Rayo–Athletic) esa jornada
   // no cuenta y las etiquetas J deben saltársela.
   let playedJ = null, oppJ = {}, anFormaRender = null;
-  function jLab(team, len, k, j0) {
+  // Partidos de la plantilla con puntos YA publicados por Futmondo: el que más partidos suma entre los jugadores del equipo.
+  // Cuando un partido acaba, Futmondo tarda un rato en dar los puntos; mientras tanto el último partido
+  // terminado NO cuenta (si no, los puntos del partido anterior saldrían con la J nueva).
+  let pubMap = null, pubSrc = null;
+  function teamPub(team) {
+    const src = (all && all.length) ? all : pltPlayers;
+    if (!src || !src.length) return 0;
+    if (pubSrc !== src) {
+      pubMap = {}; pubSrc = src;
+      src.forEach((p) => { const k = teamCanon(p.team), m = Number(p.matches) || 0; if (m > (pubMap[k] || 0)) pubMap[k] = m; });
+    }
+    return pubMap[teamCanon(team)] || 0;
+  }
+  function jLab(team, len, k) {
     const l = playedJ && playedJ[teamCanon(team)];
-    if (l && l.length >= len) return l[l.length - 1 - k];
-    return 0; // sin las jornadas jugadas reales no se inventa la J (antes se contaba desde la última jornada y salía J9 con el partido aún en juego)
+    if (!l) return 0; // sin las jornadas jugadas reales no se inventa la J
+    const n = Math.min(l.length, teamPub(team) || l.length);
+    if (n < len) return 0;
+    return l[n - 1 - k];
   }
   function dateKey(d, t) {
     const a = String(d || "").split("/").map(Number);
@@ -4433,8 +4448,7 @@
         const raw = f[idx];
         const ok = !(raw === null || raw === undefined || raw === "" || raw === "-" || raw === "–");
         const v = Math.round(Number(raw) || 0);
-        const pl = playedJ && playedJ[teamCanon(p.team)];
-        const j = pl && pl.length >= f.length ? pl[pl.length - 1 - k] : 0; // sin dato fiable, no se pone J
+        const j = jLab(p.team, f.length, k);
         const cls = !ok ? " zero" : v >= 6 ? " hi" : v >= 4 ? " mid" : v > 0 ? " lo" : v < 0 ? " neg" : " z0";
         const cell = el("span", "racha-chip" + cls);
         if (j > 0) cell.appendChild(el("i", null, "J" + j));
