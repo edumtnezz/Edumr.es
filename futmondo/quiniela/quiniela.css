@@ -1666,3 +1666,8 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .pc-bg { opacity: .85; width: 180px; height: 180px; }
 .pc-bg-l { left: -28px; }
 .pc-bg-r { right: -28px; }
+@media (max-width: 560px) {
+  .pc-bg { opacity: .7; width: 115px; height: 115px; }
+  .pc-bg-l { left: -42px; }
+  .pc-bg-r { right: -42px; }
+}
