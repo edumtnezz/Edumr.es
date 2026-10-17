@@ -1729,3 +1729,4 @@ html { overflow-anchor: none; }
 .dt-row { display: flex; justify-content: space-between; gap: 4px; font-size: .66rem; color: #5b6b73; }
 .dt-row b { font-weight: 700; }
 .dt-row.up b { color: #16a34a; } .dt-row.down b { color: #dc2626; } .dt-row.flat b { color: #5b6b73; }
+.dest-trend { min-height: 2.5em; justify-content: flex-start; }

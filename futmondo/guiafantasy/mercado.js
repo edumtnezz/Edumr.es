@@ -246,11 +246,11 @@
     return cand.slice().sort((a, b) => expOf(b) - expOf(a));
   }
   // Destacados: los 6 con mejor calidad/precio = más puntos de media por millón de valor.
-  // Solo entran jugadores con partidos suficientes, media decente y sin lesión ni sanción.
+  // Solo entran jugadores con partidos suficientes, media decente, sin lesión ni sanción y que no estén bajando de valor (ni hoy ni en 7 días).
   function bestValue() {
     const j0 = (all || []).reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0);
     return (all || [])
-      .filter((p) => (Number(p.matches) || 0) >= Math.max(3, 0.6 * j0) && (Number(p.avg) || 0) >= 8 && !/injured|redcard/.test(p.status || "") && Number(p.value) > 0)
+      .filter((p) => (Number(p.matches) || 0) >= Math.max(3, 0.6 * j0) && (Number(p.avg) || 0) >= 8 && !/injured|redcard/.test(p.status || "") && Number(p.value) > 0 && (Number(p.change) || 0) >= 0 && !(p.chg7 != null && Number(p.chg7) < 0))
       .map((p) => Object.assign({ _r: (Number(p.avg) || 0) / (Number(p.value) / 1e6) }, p))
       .sort((a, b) => b._r - a._r)
       .slice(0, 6);
