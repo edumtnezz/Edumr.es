@@ -1677,3 +1677,5 @@ html { overflow-anchor: none; }
 .plt-phc .plt-phw { grid-area: auto; }
 .plt-row { grid-template-areas: "ph mid rt" "ph side side"; }
 .plt-pill { border-radius: 999px; padding: 2px 7px; }
+.plt-pill { white-space: nowrap; font-size: .56rem; padding: 2px 6px; letter-spacing: .02em; }
+.plt-phc { width: 64px; }
