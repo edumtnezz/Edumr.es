@@ -1581,3 +1581,6 @@ html { overflow-anchor: none; }
 .an-sw-row.in { border-left: 0; background: rgba(34,197,94,.08); }
 .an-sw-row.out { border-left: 0; background: rgba(239,68,68,.08); }
 .an-tg { border-left: 1px solid rgba(127,127,127,.22); }
+/* Plantillas: la caja negra de PUNTOS siempre con texto claro (en tema claro se leía negro sobre negro) */
+.plt-pts b { color: #fff; }
+.plt-pts small { color: rgba(255,255,255,.6); }
