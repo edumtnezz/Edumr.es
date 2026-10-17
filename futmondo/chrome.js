@@ -213,7 +213,7 @@
             var stLabel = state === "final" ? "FINALIZADO" : (live.minute || "EN JUEGO");
             statusRow = '<div class="cx-jn-statusrow cx-jn-statusrow-' + state + '"><span class="cx-jn-dot"></span>' + esc(stLabel) + '</div>';
             cardCls += state === "final" ? " cx-jn-isfinal" : " cx-jn-islive";
-            mid = '<span class="cx-jn-score">' + esc(live.score || "").replace(/\s*[-–]\s*/, '<i class="cx-jn-sep"></i>') + '</span>';
+            mid = '<span class="cx-jn-score">' + esc(live.score || "") + '</span>';
           } else if (state === "suspended") {
             statusRow = '<div class="cx-jn-statusrow cx-jn-statusrow-suspended"><span class="cx-jn-dot"></span>SUSPENDIDO</div>';
             mid = '<span class="cx-jn-hora">—</span>';
@@ -225,9 +225,9 @@
             '<div class="cx-jn-tvtop">' + tv + '</div>' +
             statusRow +
             '<div class="cx-jn-row">' +
-              '<div class="cx-jn-side cx-jn-home"><span class="cx-jn-nm">' + esc(m.home) + '</span><img class="cx-jn-crest" src="' + esc(m.homeCrest) + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'"></div>' +
+              '<div class="cx-jn-side cx-jn-home"><img class="cx-jn-crest" src="' + esc(m.homeCrest) + '" alt="' + esc(m.home) + '" title="' + esc(m.home) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'"></div>' +
               '<div class="cx-jn-mid">' + mid + '</div>' +
-              '<div class="cx-jn-side cx-jn-away"><img class="cx-jn-crest" src="' + esc(m.awayCrest) + '" alt="" loading="lazy" onerror="this.style.visibility=\'hidden\'"><span class="cx-jn-nm">' + esc(m.away) + '</span></div>' +
+              '<div class="cx-jn-side cx-jn-away"><img class="cx-jn-crest" src="' + esc(m.awayCrest) + '" alt="' + esc(m.away) + '" title="' + esc(m.away) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'"></div>' +
             '</div>' +
             '</div>';
         }).join("");
