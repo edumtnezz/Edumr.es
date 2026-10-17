@@ -1730,3 +1730,17 @@ html { overflow-anchor: none; }
 .dt-row b { font-weight: 700; }
 .dt-row.up b { color: #16a34a; } .dt-row.down b { color: #dc2626; } .dt-row.flat b { color: #5b6b73; }
 .dest-trend { min-height: 2.5em; justify-content: flex-start; }
+
+/* Destacados en pantallas anchas: 6 tarjetas en una fila (o 3 en tablet) y el cambio de precio pegado en vez de abierto de lado a lado */
+.dest-trend { max-width: 200px; margin-left: auto; margin-right: auto; }
+@media (min-width: 1100px) {
+  .dest-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; padding: 6px 16px 18px; }
+  .dest-card { padding: 16px 10px 14px; }
+  .dest-name { font-size: .95rem; }
+  .dest-price { font-size: 1rem; }
+  .dt-row { font-size: .72rem; }
+  .dest-why { font-size: .72rem; }
+}
+@media (min-width: 700px) and (max-width: 1099px) {
+  .dest-grid { gap: 12px; padding: 6px 16px 18px; }
+}
