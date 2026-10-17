@@ -3957,6 +3957,21 @@ async function handleGet({ request, env: env0, params }) {
   // Cambios de un partido (quién sale y quién entra), sacados de la crónica
   // minuto a minuto de la página del partido. Cada frase se lee con varios
   // patrones; lo que no encaje se ignora (el cliente lo cruza por eliminación).
+  if (path === "ftest") {
+    const out = {};
+    try {
+      const r1 = await fetch("https://www.fotmob.com/es/matches/athletic-club-vs-valencia/2usrlk", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)", "accept-language": "es" } });
+      const h = await r1.text();
+      out.page = { status: r1.status, len: h.length };
+      const m = h.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+      if (m) { const j = JSON.parse(m[1]); const c = (j.props && j.props.pageProps) || {}; out.keys = Object.keys(c); const g = c.general || {}; out.general = { started: g.started, finished: g.finished, home: g.homeTeam && g.homeTeam.name }; const ct = c.content || {}; out.contentKeys = Object.keys(ct); const mf = ct.matchFacts || {}; out.mfKeys = Object.keys(mf); out.events = ((mf.events && mf.events.events) || []).slice(0, 12).map((e) => [e.time, e.type, e.nameStr || (e.player && e.player.name)]); out.liveticker = JSON.stringify(ct.liveticker || null).slice(0, 400); out.statsKeys = ct.stats ? Object.keys(ct.stats) : null; }
+    } catch (e) { out.err = String(e).slice(0, 200); }
+    try {
+      const r2 = await fetch("https://www.fotmob.com/api/data/matchDetails?matchId=5868099", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+      out.api = { status: r2.status, head: (await r2.text()).slice(0, 200) };
+    } catch (e) { out.apiErr = String(e).slice(0, 200); }
+    return json(out);
+  }
   if (path === "directo") {
     // Crónica minuto a minuto del partido (la que publica Comuniate), tal cual y sin guardar nada en KV (caché de borde corta).
     const hh = url.searchParams.get("home") || "", aa = url.searchParams.get("away") || "", jj = url.searchParams.get("jornada") || "";
