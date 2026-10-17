@@ -218,7 +218,7 @@ async function fetchMatchday(headers, md) {
   );
   if (!res.ok) throw new Error("matches " + res.status);
   const data = await res.json();
-  return (data.matches || []).map((m) => ({
+  return patchStaleWithFotMob((data.matches || []).map((m) => ({
     id: m.id,
     utcDate: m.utcDate,
     status: m.status,
@@ -237,7 +237,46 @@ async function fetchMatchday(headers, md) {
       crest: m.awayTeam && m.awayTeam.crest,
     },
     score: m.score || { fullTime: { home: null, away: null } },
-  }));
+  })));
+}
+
+// football-data a veces tarda días en pasar un partido a FINISHED (visto con el Deportivo–Levante) y entonces
+// la quiniela lo deja "Por jugar" sin resultado. Si un partido lleva >3 h empezado y sigue sin cerrar, se
+// consulta FotMob (fuente real) y SOLO si dice que terminó, con marcador, se corrige estado y resultado.
+async function patchStaleWithFotMob(matches) {
+  try {
+    const now = Date.now();
+    const stale = matches.filter((m) => !["FINISHED", "POSTPONED", "SUSPENDED", "CANCELLED", "AWARDED"].includes(m.status) && now - new Date(m.utcDate).getTime() > 3 * 3600 * 1000);
+    if (!stale.length) return matches;
+    const STOP = new Set(["de", "la", "el", "club", "fc", "cf", "ud", "cd", "rcd", "sd", "rc", "ca", "real"]);
+    const toks = (n) => String(n || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]/g, " ").split(" ").filter((w) => w && !STOP.has(w));
+    const ov = (a, b) => { const tb = new Set(b); return a.filter((w) => tb.has(w)).length; };
+    const days = {};
+    for (const m of stale) {
+      const ymd = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(m.utcDate)).replace(/-/g, "");
+      if (!days[ymd]) {
+        try {
+          const r = await fetch("https://www.fotmob.com/api/data/matches?date=" + ymd + "&timezone=Europe%2FMadrid&ccode3=ESP", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+          const j = await r.json();
+          days[ymd] = [].concat(...((j.leagues || []).map((lg) => lg.matches || [])));
+        } catch (e) { days[ymd] = []; }
+      }
+      const th = toks((m.homeTeam.name || "") + " " + (m.homeTeam.shortName || "")), ta = toks((m.awayTeam.name || "") + " " + (m.awayTeam.shortName || ""));
+      let best = null, bs = 0;
+      for (const x of days[ymd]) {
+        const sh = ov(th, toks((x.home || {}).longName || (x.home || {}).name)), sa = ov(ta, toks((x.away || {}).longName || (x.away || {}).name));
+        if (sh > 0 && sa > 0 && sh + sa > bs) { bs = sh + sa; best = x; }
+      }
+      const st = best && best.status;
+      const mm = st && st.finished && !st.cancelled ? String(st.scoreStr || "").match(/^(\d+)\s*-\s*(\d+)$/) : null;
+      if (mm) {
+        const h = Number(mm[1]), a = Number(mm[2]);
+        m.status = "FINISHED";
+        m.score = { winner: h > a ? "HOME_TEAM" : h < a ? "AWAY_TEAM" : "DRAW", fullTime: { home: h, away: a } };
+      }
+    }
+  } catch (e) {}
+  return matches;
 }
 
 // Fin del día (23:59:59.999) en hora de Madrid del instante ms, con horario de verano/invierno correcto
