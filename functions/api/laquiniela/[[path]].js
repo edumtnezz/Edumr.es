@@ -2257,6 +2257,28 @@ async function getComuniateStrip(env, jornada) {
   try { if (data.length) await env.PORRA.put(cacheKey, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 180 }); } catch (e) {}
   return data;
 }
+// Minuto REAL de los partidos en juego: el widget de jornada de Comuniate pinta
+// <span class='live-dot'></span><span class='danger'>29' </span> bajo el marcador.
+async function getComuniateLiveMinutes(env, jornada) {
+  const key = "cm:livemin:v1:" + jornada;
+  try { const c = await env.PORRA.get(key, "json"); if (c && Date.now() - (c.at || 0) < 40 * 1000) return c.data; } catch (e) {}
+  const data = [];
+  try {
+    const body = "id_jornada=" + encodeURIComponent(jornada) + "&modo_alineaciones=jornada_actual";
+    const mh = await (await fetch("https://www.comuniate.com/ajax/partidos_jornada.php", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded" }), body })).text();
+    const parts = mh.split('<a href="/partido/');
+    for (let i = 1; i < parts.length; i++) {
+      const seg = parts[i].slice(0, 2600);
+      const mm = seg.match(/live-dot'?"?><\/span>\s*<span[^>]*>([^<]*)</);
+      if (!mm) continue;
+      const alts = [...seg.matchAll(/alt=['"]([^'"]+)['"]/g)].map((x) => stripHtml(x[1]).trim());
+      if (alts.length < 2) continue;
+      data.push({ home: alts[0], away: alts[1], text: stripHtml(mm[1]).trim() });
+    }
+  } catch (e) { return []; }
+  try { await env.PORRA.put(key, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 60 }); } catch (e) {}
+  return data;
+}
 function cmLiveState(cls) {
   if (/label-success/.test(cls)) return "final";
   if (/label-info/.test(cls)) return "live";
@@ -2332,9 +2354,10 @@ async function getJornadaStrip(env, matchday) {
   try { ffc = await ffTvMap(env); } catch (e) {}
   const list = (fl.list || []).concat(ffc.list || []);
   const jnum = jd.matchday || matchday || "";
-  let cmExtras = [], cmStrip = [];
+  let cmExtras = [], cmStrip = [], cmMin = [];
   try { cmExtras = await getComuniateExtras(env, jnum); } catch (e) {}
   try { cmStrip = await getComuniateStrip(env, jnum); } catch (e) {}
+  try { cmMin = await getComuniateLiveMinutes(env, jnum); } catch (e) {}
   const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
   const dtF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" });
   const tF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hour12: false });
@@ -2397,7 +2420,7 @@ async function getJornadaStrip(env, matchday) {
     if (!live && cmM && (cmM.score || cmM.statusCls)) {
       const state = cmLiveState(cmM.statusCls);
       if (cmM.score && (state === "final" || state === "live")) {
-        live = { state, label: cmM.statusText || "", minute: state === "live" ? (liveMinuteLabel([cmM.sub, cmM.statusText]) || cmM.sub || "EN JUEGO") : "", score: cmM.score };
+        live = { state, label: cmM.statusText || "", minute: state === "live" ? (liveMinuteLabel([(cmMin.find((e) => teamScore(e.home, p.home) + teamScore(e.away, p.away) >= 4) || {}).text, cmM.sub]) || "EN JUEGO") : "", score: cmM.score };
       }
     }
     // football-data a veces se queda con el partido "en juego" mucho después de acabar:
@@ -2405,8 +2428,9 @@ async function getJornadaStrip(env, matchday) {
     // del saque inicial, un "en juego" no es creíble.
     if (live && live.state === "live") {
       const cmState = cmM ? cmLiveState(cmM.statusCls) : "";
-      if (cmM && cmState !== "final" && live.label !== "Descanso") {
-        const lab = liveMinuteLabel([cmM.sub, cmM.statusText]);
+      if (cmState !== "final" && live.label !== "Descanso") {
+        const lm = cmMin.find((e) => teamScore(e.home, p.home) + teamScore(e.away, p.away) >= 4);
+        const lab = lm ? liveMinuteLabel([lm.text]) : "";
         if (lab) live.minute = lab;
       }
       if (cmState === "final" && cmM.score) live = { state: "final", label: "FINALIZADO", minute: "", score: cmM.score };
@@ -4031,16 +4055,6 @@ async function handleGet({ request, env: env0, params }) {
   }
   if (path === "alineaciones-estado") {
     try { return json(await getProbableFlags(env, url.searchParams.get("jornada") || null)); } catch (e) { return json({ matchday: 0, items: [] }); }
-  }
-  if (path === "cm-raw-debug") {
-    try {
-      const mh = await (await fetch("https://www.comuniate.com/ajax/partidos_jornada.php", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded" }), body: "id_jornada=9&modo_alineaciones=jornada_actual" })).text();
-      const i = mh.search(/\d+'/);
-      return json({ len: mh.length, snip: mh.slice(Math.max(0, i - 1200), i + 300) });
-    } catch (e) { return json({ error: String(e) }); }
-  }
-  if (path === "cm-strip-debug") {
-    try { return json(await getComuniateStrip(env, url.searchParams.get("jornada") || "9")); } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "jornada") {
     try { return json(await getJornadaStrip(env, url.searchParams.get("jornada"))); } catch (e) { return json({ matchday: 0, matches: [] }); }
