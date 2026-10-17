@@ -691,3 +691,10 @@ body {
 .cx-prob-t { opacity: .85; font-weight: 700; letter-spacing: 0; }
 
 .cx-sub a.cx-more-item { text-decoration: none; border-bottom: 0; }
+
+/* Móvil estrecho: el menú de arriba cabe entero (sin logo) y no se corta por la izquierda */
+@media (max-width: 480px) {
+  .cx-logo { display: none; }
+  .cx-nav { justify-content: space-between; }
+  .cx-nav a { padding: 6px 6px; font-size: 0.7rem; }
+}
