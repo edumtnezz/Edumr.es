@@ -261,7 +261,6 @@
     box.innerHTML = "";
     const head = el("div", "dest-head");
     head.appendChild(el("span", "dest-title", "Destacados"));
-    head.appendChild(el("span", "dest-sub", "Los 6 con mejor calidad/precio"));
     box.appendChild(head);
     const grid = el("div", "dest-grid");
     const list = bestValue();
