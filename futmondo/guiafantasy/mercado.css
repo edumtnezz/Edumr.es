@@ -1626,3 +1626,6 @@ html { overflow-anchor: none; }
 .plt-pts small, .plt-avg small { font-size: .55rem; font-weight: 700; color: var(--muted); letter-spacing: .04em; }
 .plt-pts { background: rgba(34,197,94,.16); } .plt-pts b { color: #16a34a; }
 @media (max-width: 400px) { .plt-pts, .plt-avg { min-width: 40px; } .plt-fit .racha-chip { min-width: 27px; } }
+#pltPos, #pltSort { flex-wrap: nowrap; }
+#pltPos .plt-btn, #pltSort .plt-btn { flex: 1 1 0; min-width: 0; padding: 0 6px; font-size: .78rem; }
+.plt-lbl { display: none; }
