@@ -628,14 +628,20 @@ function renderParticipants() {
       });
       const sum = document.createElement("div");
       sum.className = "participant-summary";
-      const okSpan = document.createElement("span");
-      okSpan.className = "ps-ok";
-      okSpan.innerHTML = `<b>✓ Acertó</b> ${okList.length ? escapeHtml(okList.join(" · ")) : "—"}`;
-      const koSpan = document.createElement("span");
-      koSpan.className = "ps-ko";
-      koSpan.innerHTML = `<b>✗ Falló</b> ${koList.length ? escapeHtml(koList.join(" · ")) : "—"}`;
-      sum.appendChild(okSpan);
-      sum.appendChild(koSpan);
+      const pills = (list) => list.map((t) => `<i>${escapeHtml(t)}</i>`).join("");
+      if (okList.length) {
+        const okSpan = document.createElement("span");
+        okSpan.className = "ps-ok";
+        okSpan.innerHTML = `<b>✓ Acertó</b><em class="ps-pills">${pills(okList)}</em>`;
+        sum.appendChild(okSpan);
+      }
+      if (koList.length) {
+        const koSpan = document.createElement("span");
+        koSpan.className = "ps-ko";
+        koSpan.innerHTML = `<b>✗ Falló</b><em class="ps-pills">${pills(koList)}</em>`;
+        sum.appendChild(koSpan);
+      }
+      if (!okList.length && !koList.length) sum.classList.add("hidden");
       bodyEl.appendChild(sum);
     }
 
