@@ -4334,12 +4334,15 @@
     list = list.slice().sort((a, b) => pltDir * ((Number(a[pltSort]) || 0) - (Number(b[pltSort]) || 0)));
     box.innerHTML = "";
     if (!list.length) { box.appendChild(el("p", "muted", "Sin jugadores.")); return; }
+    let ownById = {};
+    try { const c = JSON.parse(localStorage.getItem("claus_cache") || "null"); ((c && c.players) || []).forEach((x) => { if (x.id && x.owner) ownById[x.id] = x.owner; }); } catch (e) {}
     list.slice(0, pltShown).forEach((p) => {
       const row = el("div", "plt-row"); row.addEventListener("click", () => openFicha(p));
       const ph = el("div", "plt-ph");
       if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); ph.appendChild(im); }
       if (p.logo) { const lg = el("img", "plt-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; ph.appendChild(lg); }
-      
+      const rst = statusInfo(p.status);
+      if (rst) ph.appendChild(el("span", "plt-st " + rst.cls, rst.label));
       row.appendChild(ph);
       const mid = el("div", "plt-mid");
       mid.appendChild(el("div", "plt-name", p.name));
@@ -4347,15 +4350,19 @@
       const chg = Number(p.change) || 0;
       mid.appendChild(el("div", "plt-chg " + (chg > 0 ? "up" : chg < 0 ? "down" : "flat"), chg > 0 ? "▲ " + formatDots(chg) + " €" : chg < 0 ? "▼ " + formatDots(-chg) + " €" : "—"));
       row.appendChild(mid);
+      const side = el("div", "plt-side");
       const fit = el("div", "plt-fit");
       (p.fitness || []).slice(-5).forEach((v) => {
         const n = Number(v);
         fit.appendChild(el("i", isNaN(n) ? "" : (n >= (Number(p.avg) || 0) ? "hi" : "lo"), isNaN(n) ? "–" : String(n)));
       });
-      row.appendChild(fit);
+      side.appendChild(fit);
+      const own = p.computer ? "futmondo" : (ownById[p.id] || "");
+      if (own) side.appendChild(el("div", "plt-own", own));
+      row.appendChild(side);
       const rt = el("div", "plt-rt");
-      const pts = el("div", "plt-pts"); pts.appendChild(el("b", null, String(Number(p.points) || 0))); pts.appendChild(el("small", null, "puntos"));
-      const avg = el("div", "plt-avg"); avg.appendChild(el("b", null, (Number(p.avg) || 0).toFixed(1).replace(".", ","))); avg.appendChild(el("small", null, "media"));
+      const pts = el("div", "plt-pts"); pts.appendChild(el("b", null, String(Number(p.points) || 0)));
+      const avg = el("div", "plt-avg"); avg.appendChild(el("b", null, (Number(p.avg) || 0).toFixed(1).replace(".", ",")));
       rt.appendChild(pts); rt.appendChild(avg);
       row.appendChild(rt);
       box.appendChild(row);

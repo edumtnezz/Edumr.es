@@ -1607,3 +1607,44 @@ html { overflow-anchor: none; }
 .claus-grid .claus-stat b { font-size: .86rem; letter-spacing: -.02em; }
 .claus-grid .claus-stat.clause b { font-size: .8rem; }
 .claus-grid .claus-stat small { font-size: .52rem; }
+
+/* ===== Plantillas: réplica del estilo de la lista de Futmondo ===== */
+.plt-panel { padding: 0; overflow: hidden; background: #fff; border-radius: 16px; }
+.plt-clubs, .plt-pos, .plt-sort { background: #1d2b33; margin: 0; }
+.plt-clubs { padding: 10px 10px 8px; gap: 10px; }
+.plt-club { width: 38px; height: 38px; border: 0; background: none; border-radius: 10px; }
+.plt-club img { width: 34px; height: 34px; }
+.plt-club.all { width: auto; padding: 0 12px; color: #cfd8dc; background: #3a4a52; font-size: .78rem; }
+.plt-club.on { background: rgba(255,255,255,.18); }
+.plt-pos { gap: 0; padding: 0 6px 8px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.plt-tab { color: #aebcc3; font: 700 .78rem 'Figtree', sans-serif; padding: 11px 0; border-radius: 4px; }
+.plt-tab.on { background: #5b6b73; color: #fff; }
+.plt-sort { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; padding: 0 0 2px; }
+.plt-sb { border: 0; background: none; border-radius: 0; color: #aebcc3; font: 700 .78rem 'Figtree', sans-serif; padding: 12px 4px; }
+.plt-sb.on { background: none; color: #fff; border: 0; box-shadow: inset 0 -2px 0 #22c55e; }
+.plt-list { background: #fff; }
+.plt-row { grid-template-columns: 62px minmax(0, 1fr) auto auto; grid-template-areas: "ph mid side rt"; background: #fff; border-top: 0; border-bottom: 3px solid #e3e8ea; padding: 10px 10px; gap: 10px; cursor: pointer; }
+.plt-ph { grid-area: ph; width: 56px; height: 56px; box-shadow: 0 0 0 2px #d9e0e3; }
+.plt-ph > img:not(.plt-crest) { background: #eef1f2; }
+.plt-st { position: absolute; left: -4px; top: -4px; width: 20px; height: 20px; border-radius: 50%; background: #ef4444; color: #fff; font: 800 .8rem/20px 'Figtree', sans-serif; text-align: center; }
+.plt-st.st-doubt { background: #eab308; }
+.plt-mid { grid-area: mid; min-width: 0; }
+.plt-name { color: #14181a; font: 500 .98rem 'Figtree', sans-serif; }
+.plt-val { color: #16a34a; font: 600 1.12rem 'Figtree', sans-serif; letter-spacing: -.01em; }
+.plt-chg { font: 600 .74rem 'Figtree', sans-serif; }
+.plt-side { grid-area: side; display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.plt-fit i { min-width: 24px; padding: 5px 2px; border-radius: 2px; font: 700 .74rem 'Figtree', sans-serif; }
+.plt-fit i.hi { background: #1f8f4e; } .plt-fit i.lo { background: #e0463f; }
+.plt-own { color: #3b4750; font: 500 .8rem 'Figtree', sans-serif; }
+.plt-rt { grid-area: rt; gap: 3px; min-width: 40px; }
+.plt-pts, .plt-avg { border-radius: 3px; padding: 7px 4px; border: 0; }
+.plt-pts { background: #181b1d; }
+.plt-avg { background: #22b05a; }
+.plt-pts b, .plt-avg b { color: #fff; font: 700 1.05rem 'Figtree', sans-serif; letter-spacing: -.01em; }
+@media (hover: hover) and (pointer: fine) { .plt-row:hover { background: #f6f9f7; } }
+@media (max-width: 520px) {
+  .plt-row { grid-template-columns: 58px minmax(0, 1fr) auto; grid-template-areas: "ph mid rt" "ph side rt"; row-gap: 4px; }
+  .plt-side { align-items: flex-start; }
+  .plt-fit i { min-width: 22px; padding: 4px 1px; font-size: .7rem; }
+  .plt-ph { width: 52px; height: 52px; }
+}
