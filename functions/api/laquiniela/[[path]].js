@@ -3959,8 +3959,9 @@ async function handleGet({ request, env: env0, params }) {
   // patrones; lo que no encaje se ignora (el cliente lo cruza por eliminación).
   if (path === "ftest") {
     const j = await (await fetch("https://www.fotmob.com/api/data/matchDetails?matchId=5868099", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).json();
-    const mf = (j.content || {}).matchFacts || {};
-    return json({ keys: Object.keys(mf), potm: mf.playerOfTheMatch, hl: mf.highlights, infoKeys: mf.infoBox ? Object.keys(mf.infoBox) : null });
+    const c = j.content || {}, mf = c.matchFacts || {};
+    const trim = (o, d) => { if (d > 5 || o == null) return o; if (Array.isArray(o)) return o.slice(0, 3).map((x) => trim(x, d + 1)); if (typeof o === "object") { const r = {}; Object.keys(o).slice(0, 30).forEach((k) => { r[k] = trim(o[k], d + 1); }); return r; } return typeof o === "string" && o.length > 90 ? o.slice(0, 90) : o; };
+    return json({ info: trim(mf.infoBox, 0), form: trim(mf.teamForm, 0), h2h: trim(c.h2h, 0), weather: trim(c.weather, 0), hdr: trim(j.header, 0), gen: trim(j.general, 0) });
   }
   if (path === "directo") {
     // Directo de un partido: crónica de Comuniate + eventos y estadísticas de FotMob. Sin KV: caché de borde de 30 s.
@@ -4039,8 +4040,13 @@ async function handleGet({ request, env: env0, params }) {
           const all = tj[0].data.table.all || [];
           table = all.map((x) => ({ i: x.idx, id: x.id, n: x.shortName || x.name, p: x.played, w: x.wins, d: x.draws, l: x.losses, gf: String(x.scoresStr || ""), dg: x.goalConDiff, pt: x.pts, q: x.qualColor || "" }));
         } catch (e) {}
+        const mfx = (content.matchFacts) || {};
+        const po = mfx.playerOfTheMatch;
+        const potm = po && po.name ? { id: po.id, n: po.name.fullName || ((po.name.firstName || "") + " " + (po.name.lastName || "")).trim(), team: po.teamName || "", r: po.rating && po.rating.num ? po.rating.num : "", home: !!po.isHomeTeam } : null;
+        const hl0 = mfx.highlights;
+        const hlx = hl0 && /^https:\/\//.test(hl0.url || "") ? { url: hl0.url, image: /^https:\/\//.test(hl0.image || "") ? hl0.image : "" } : null;
         const teams = (j.header && j.header.teams) || [];
-        out.fm = { mvp, hl, lineup, table, hid: teams[0] && teams[0].id, aid: teams[1] && teams[1].id, id: hit.id, started: !!st.started, finished: !!st.finished, score: [teams[0] && teams[0].score, teams[1] && teams[1].score], events, stats, src: "FotMob" };
+        out.fm = { potm, hl: hlx, mvp, hl, lineup, table, hid: teams[0] && teams[0].id, aid: teams[1] && teams[1].id, id: hit.id, started: !!st.started, finished: !!st.finished, score: [teams[0] && teams[0].score, teams[1] && teams[1].score], events, stats, src: "FotMob" };
       } catch (e) {}
     })();
     await Promise.all([cron, fot]);

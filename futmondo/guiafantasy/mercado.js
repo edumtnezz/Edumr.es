@@ -1522,11 +1522,11 @@
       const mm = (e) => e.t + "'" + (e.x ? "+" + e.x : "");
       const evs = (fm && fm.events) || [], sts = (fm && fm.stats) || [];
       const secs = []; const sec = (title) => { const c = el("section", "lv-sec"); c.appendChild(el("h3", "lv-h", title)); box.appendChild(c); secs.push([title.split(" ")[0], c]); return [c]; };
-      const srcTag = (c, t) => c.appendChild(el("p", "lv-src", t));
+      const srcTag = () => {};
       const ln = fm && fm.lineup;
       // 1) Campo en directo
       if (ln && ln.h && ln.a) {
-        const [c] = sec("Alineaciones");
+        const [c] = sec("Alineación");
         const top = el("div", "lv-ptop");
         const rcls = (r) => (r >= 8 ? " on top" : r >= 6.5 ? " on" : r && r < 6 ? " neg" : "");
         [[ln.h, "h", m.homeCrest], [ln.a, "a", m.awayCrest]].forEach(([t, w, cr]) => {
@@ -1591,9 +1591,42 @@
         });
         srcTag(c, "Alineaciones y notas: FotMob");
       }
-      // 2) Eventos (del minuto más reciente al más antiguo)
-      if (evs.length) {
-        const [c] = sec("Eventos");
+      // 2) Hechos: top estadísticas, jugador del partido, eventos (del minuto más reciente al más antiguo) y momentos destacados
+      const potm = fm && fm.potm, hlv = fm && fm.hl;
+      const stBy = {}; sts.forEach((x) => { stBy[x.l] = x; });
+      if (evs.length || potm || hlv || sts.length) {
+        const [c] = sec("Hechos");
+        const card = (t) => { const k = el("div", "lv-card"); k.appendChild(el("h4", "lv-card-h", t)); c.appendChild(k); return k; };
+        const pos = stBy["Posesión"];
+        if (pos || stBy["Goles esperados (xG)"] || stBy["Tiros"] || stBy["Toques en el área rival"]) {
+          const k = card("Top estadísticas");
+          if (pos) {
+            k.appendChild(el("div", "lv-pos-l", "Posesión"));
+            const bar = el("div", "lv-pos"); const l = el("b", "h", String(pos.h) + "%"), r = el("b", "a", String(pos.a) + "%");
+            l.style.setProperty("width", Math.max(14, Number(pos.h) || 50) + "%"); r.style.setProperty("width", Math.max(14, Number(pos.a) || 50) + "%");
+            bar.appendChild(l); bar.appendChild(r); k.appendChild(bar);
+          }
+          ["Goles esperados (xG)", "Tiros", "Toques en el área rival"].forEach((nm) => {
+            const x = stBy[nm]; if (!x) return;
+            const hv = parseFloat(x.h), av = parseFloat(x.a);
+            const row = el("div", "lv-tsr");
+            row.appendChild(el("span", "lv-tsv" + (hv > av ? " win h" : ""), String(x.h).replace(".", ",")));
+            row.appendChild(el("span", "lv-tsl", nm === "Tiros" ? "Tiros totales" : nm));
+            row.appendChild(el("span", "lv-tsv" + (av > hv ? " win a" : ""), String(x.a).replace(".", ",")));
+            k.appendChild(row);
+          });
+        }
+        if (potm) {
+          const k = card("Jugador del partido");
+          const row = el("div", "lv-potm");
+          const im = el("img"); im.alt = ""; im.src = "https://images.fotmob.com/image_resources/playerimages/" + potm.id + ".png"; im.addEventListener("error", () => { im.src = "/img/avatar.svg"; });
+          row.appendChild(im);
+          const tx = el("div", "lv-potm-tx"); tx.appendChild(el("b", null, potm.n)); tx.appendChild(el("span", null, potm.team)); row.appendChild(tx);
+          if (potm.r) row.appendChild(el("span", "lv-potm-r", String(potm.r).replace(".", ",") + " ★"));
+          k.appendChild(row);
+        }
+        if (evs.length) {
+        const kEv = card("Eventos");
         const list = el("div", "lv-evs");
         evs.slice().reverse().forEach((e) => {
           if (e.k === "half") { list.appendChild(el("div", "lv-half", e.txt === "HT" ? "Descanso" : e.txt === "FT" ? "Final del partido" : e.txt || "")); return; }
@@ -1619,8 +1652,16 @@
           row.appendChild(l); row.appendChild(mn); row.appendChild(r);
           list.appendChild(row);
         });
-        c.appendChild(list);
-        srcTag(c, "Eventos: FotMob · se actualiza cada 30 s");
+        kEv.appendChild(list);
+        }
+        if (hlv) {
+          const k = card("Momentos destacados");
+          const a2 = el("a", "lv-hl"); a2.href = hlv.url; a2.target = "_blank"; a2.rel = "noopener noreferrer";
+          if (hlv.image) { const im = el("img"); im.alt = "Momentos destacados"; im.loading = "lazy"; im.src = hlv.image; a2.appendChild(im); }
+          a2.appendChild(el("span", "lv-play", "▶"));
+          k.appendChild(a2);
+          k.appendChild(el("p", "lv-hl-src", "Vídeo oficial · YouTube"));
+        }
       }
       // 3) Estadísticas
       if (sts.length) {
@@ -1664,6 +1705,11 @@
         srcTag(c, "Clasificación: FotMob");
       }
       if (secs.length) {
+        const ORD = ["Hechos", "Alineación", "Estadísticas", "Clasificación"];
+        secs.sort((x, y) => ORD.indexOf(x[0]) - ORD.indexOf(y[0]));
+        secs.forEach(([k, c]) => box.appendChild(c));
+        const srcTop = el("p", "lv-srctop", "Fuente de los datos: FotMob · se actualiza cada 30 s");
+        box.insertBefore(srcTop, secs[0][1]);
         let cur = lvTab; if (!secs.some((x) => x[0] === cur)) cur = secs[0][0];
         const bar = el("div", "lv-tabs");
         secs.forEach(([k, c]) => {
