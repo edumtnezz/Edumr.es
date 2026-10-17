@@ -1035,6 +1035,9 @@
     const keys = Object.keys(map);
     const exact = keys.find((k) => k.split(/\s+/).pop() === last);
     if (exact) return exact;
+    // Nombre suelto que es una palabra del nombre completo (Johaneko → Johaneko Louis-Jean)
+    const word = keys.filter((k) => k.split(/\s+/).indexOf(last) >= 0);
+    if (word.length === 1) return word[0];
     // Pequeñas diferencias de una letra (Elliot vs Elliott).
     const pref = keys.find((k) => {
       const kl = k.split(/\s+/).pop();
