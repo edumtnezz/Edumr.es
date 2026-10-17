@@ -1577,7 +1577,7 @@
       const p = (all || []).find((x) => String(x.id) === String(id)) || {};
       const y = window.scrollY;
       box.innerHTML = "";
-      box.appendChild(backBtn("/futmondo/guiafantasy/plantillas"));
+      box.appendChild(backBtn("/futmondo/guiafantasy/mercado"));
       box.appendChild(renderFicha(d, p));
       if (!first) window.scrollTo(0, y);
     };
@@ -2091,7 +2091,7 @@
     if (name === "analiza") renderCapHistorial();
     try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
     try {
-      const url = "/futmondo/guiafantasy/" + name;
+      const url = "/futmondo/guiafantasy/" + (name === "plantillas" ? "mercado" : name);
       if (fromPop) history.replaceState({ tab: name }, "", url);
       else history.pushState({ tab: name }, "", url);
     } catch (e) {}
@@ -3137,7 +3137,7 @@
             c.title = "Ver los jugadores en racha de este equipo";
             c.addEventListener("click", () => {
               try { sessionStorage.setItem("pltState", JSON.stringify({ c: squad[0].team, p: "", s: "points", d: -1, per: "chg7", n: 40 })); } catch (e) {}
-              location.href = "/futmondo/guiafantasy/plantillas";
+              location.href = "/futmondo/guiafantasy/mercado";
             });
           }
           stx.appendChild(c);

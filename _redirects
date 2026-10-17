@@ -9,7 +9,7 @@
 /futmondo/mercado /futmondo/guiafantasy/ 301
 /futmondo/guiafantasy /futmondo/guiafantasy/ 301
 /futmondo/guiafantasy/inicio /futmondo/guiafantasy/ 200
-/futmondo/guiafantasy/mercado /futmondo/guiafantasy/plantillas 301
+/futmondo/guiafantasy/mercado /futmondo/guiafantasy/ 200
 /futmondo/guiafantasy/partido/* /futmondo/guiafantasy/ 200
 /futmondo/guiafantasy/jugadores/* /futmondo/guiafantasy/ 200
 /futmondo/guiafantasy/jugador/* /futmondo/guiafantasy/ 200
@@ -20,7 +20,7 @@
 /futmondo/guiafantasy/noticias /futmondo/guiafantasy/ 200
 /futmondo/guiafantasy/analiza /futmondo/guiafantasy/ 200
 /futmondo/guiafantasy/clausulazos /futmondo/guiafantasy/ 200
-/futmondo/guiafantasy/plantillas /futmondo/guiafantasy/ 200
+/futmondo/guiafantasy/plantillas /futmondo/guiafantasy/mercado 301
 /futmondo/guiafantasy/confirmadas /futmondo/guiafantasy/inicio 301
 /equipos /futmondo/guiafantasy/ 200
 /equipos/* /futmondo/guiafantasy/ 200
