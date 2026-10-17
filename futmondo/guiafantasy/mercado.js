@@ -1570,7 +1570,7 @@
         const [c] = sec("Eventos");
         const list = el("div", "lv-evs");
         evs.slice().reverse().forEach((e) => {
-          if (e.k === "half") { list.appendChild(el("div", "lv-half", e.txt === "HT" ? "Descanso · " + ((e.sc) || "") : e.txt === "FT" ? "Final del partido" : e.txt || "")); return; }
+          if (e.k === "half") { list.appendChild(el("div", "lv-half", e.txt === "HT" ? "Descanso" : e.txt === "FT" ? "Final del partido" : e.txt || "")); return; }
           const row = el("div", "lv-evr" + (e.k === "goal" ? " goal" : ""));
           const l = el("div", "lv-evl"), r = el("div", "lv-evr2");
           const mn = el("span", "lv-evm", mm(e));
