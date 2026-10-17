@@ -1647,3 +1647,11 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 
 /* Sin rayas de color en paneles y participantes */
 .panel::before, .participant::before { display: none; }
+
+/* Pulido de móvil: escudos de fondo más suaves (no pelean con el texto) y pestañas en una sola línea */
+.pc-bg { opacity: .1; width: 140px; height: 140px; }
+@media (max-width: 480px) {
+  .cx-sub .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .cx-sub .tabs::-webkit-scrollbar { display: none; }
+  .cx-sub .tab { white-space: nowrap; padding: 12px 7px; font-size: 0.74rem; flex: 0 0 auto; }
+}
