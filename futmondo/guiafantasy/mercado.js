@@ -4266,8 +4266,14 @@
             h.issues.forEach((it) => lines.push("⚠️ " + (it.detail || ("Fallo en " + it.source))));
           }
           if (h && h.newAccounts && h.newAccounts.length) {
-            const names = h.newAccounts.map((a) => a.name).join(", ");
-            lines.push("🆕 Cuenta(s) nueva(s) estos días: " + names + ". Revisa que no sea nadie ocupando el nombre de otro.");
+            // Se avisa una sola vez por cuenta (se recuerda en este dispositivo).
+            let seen = [];
+            try { seen = JSON.parse(localStorage.getItem("seen_new_accounts") || "[]"); } catch (e) {}
+            const fresh = h.newAccounts.map((a) => a.name).filter((n) => seen.indexOf(n) < 0);
+            if (fresh.length) {
+              lines.push("🆕 Cuenta(s) nueva(s) estos días: " + fresh.join(", ") + ". Revisa que no sea nadie ocupando el nombre de otro.");
+              try { localStorage.setItem("seen_new_accounts", JSON.stringify(seen.concat(fresh))); } catch (e) {}
+            }
           }
           if (lines.length) {
             const main = document.querySelector(".quiniela-main");
