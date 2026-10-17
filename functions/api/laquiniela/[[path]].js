@@ -3958,19 +3958,10 @@ async function handleGet({ request, env: env0, params }) {
   // minuto a minuto de la página del partido. Cada frase se lee con varios
   // patrones; lo que no encaje se ignora (el cliente lo cruza por eliminación).
   if (path === "ftest") {
-    const H = { "user-agent": "Mozilla/5.0 (compatible; edumr)" };
-    const res = {};
-    for (const u of ["https://data.fotmob.com/tables.ext.87.fot.gz", "https://www.fotmob.com/api/data/tltable?leagueId=87", "https://www.fotmob.com/api/data/leagues?id=87&ccode3=ESP"]) {
-      try {
-        const r = await fetch(u, { headers: H });
-        let txt = "";
-        const ab = await r.arrayBuffer();
-        const u8 = new Uint8Array(ab);
-        if (u8[0] === 0x1f && u8[1] === 0x8b) txt = await new Response(new Blob([ab]).stream().pipeThrough(new DecompressionStream("gzip"))).text(); else txt = new TextDecoder().decode(u8);
-        res[u] = { st: r.status, len: txt.length, head: txt.slice(0, 1500) };
-      } catch (e) { res[u] = String(e); }
-    }
-    return json(res);
+    const j = await (await fetch("https://www.fotmob.com/api/data/tltable?leagueId=87", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).json();
+    const d = j[0].data, tb = d.table;
+    const f = tb.form || d.form;
+    return json({ dk: Object.keys(d), tk: Object.keys(tb), formKeys: f ? Object.keys(f).slice(0, 3) : null, formSample: f ? f[Object.keys(f)[0]] : null, nx: tb.nextMatch ? Object.keys(tb.nextMatch).slice(0, 2) : null, row: tb.all[0] });
   }
   if (path === "directo") {
     // Directo de un partido: crónica de Comuniate + eventos y estadísticas de FotMob. Sin KV: caché de borde de 30 s.
