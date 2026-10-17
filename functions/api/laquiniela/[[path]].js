@@ -3957,6 +3957,11 @@ async function handleGet({ request, env: env0, params }) {
   // Cambios de un partido (quién sale y quién entra), sacados de la crónica
   // minuto a minuto de la página del partido. Cada frase se lee con varios
   // patrones; lo que no encaje se ignora (el cliente lo cruza por eliminación).
+  if (path === "ftest") {
+    const j = await (await fetch("https://www.fotmob.com/api/data/matchDetails?matchId=5868099", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).json();
+    const mf = (j.content || {}).matchFacts || {};
+    return json({ keys: Object.keys(mf), potm: mf.playerOfTheMatch, hl: mf.highlights, infoKeys: mf.infoBox ? Object.keys(mf.infoBox) : null });
+  }
   if (path === "directo") {
     // Directo de un partido: crónica de Comuniate + eventos y estadísticas de FotMob. Sin KV: caché de borde de 30 s.
     const hh = url.searchParams.get("home") || "", aa = url.searchParams.get("away") || "", jj = url.searchParams.get("jornada") || "";
