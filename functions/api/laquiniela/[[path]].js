@@ -4032,6 +4032,13 @@ async function handleGet({ request, env: env0, params }) {
   if (path === "alineaciones-estado") {
     try { return json(await getProbableFlags(env, url.searchParams.get("jornada") || null)); } catch (e) { return json({ matchday: 0, items: [] }); }
   }
+  if (path === "cm-raw-debug") {
+    try {
+      const mh = await (await fetch("https://www.comuniate.com/ajax/partidos_jornada.php", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded" }), body: "id_jornada=9&modo_alineaciones=jornada_actual" })).text();
+      const i = mh.search(/\d+'/);
+      return json({ len: mh.length, snip: mh.slice(Math.max(0, i - 1200), i + 300) });
+    } catch (e) { return json({ error: String(e) }); }
+  }
   if (path === "cm-strip-debug") {
     try { return json(await getComuniateStrip(env, url.searchParams.get("jornada") || "9")); } catch (e) { return json({ error: String(e) }); }
   }
