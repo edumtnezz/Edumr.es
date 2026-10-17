@@ -3228,7 +3228,7 @@
 
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { if (document.querySelector(".eq-page")) { location.href = "/futmondo/guiafantasy/" + t.dataset.tab; return; } switchTab(t.dataset.tab); }));
   setupMoreMenu();
-  let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltDir = -1, pltShown = 40, pltPlayers = [];
+  let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltPeriod = "chg7", pltDir = -1, pltShown = 40, pltPlayers = [];
   ensurePlayedJ();
   (function restoreTab() {
     try { const pm = location.pathname.match(/\/guiafantasy\/partido\/([a-z0-9-]+)/); if (pm) { renderMatchPage(pm[1]); return; } } catch (e) {}
@@ -4312,71 +4312,115 @@
     renderPltControls();
     renderPltList();
   }
+  const PLT_PER = [["chg7", "7 días"], ["chg30", "30 días"], ["chgAll", "Temporada"]];
+  function pltRerender() { pltShown = 40; renderPltControls(); renderPltList(); }
+  function pltBtn(label, on, fn, cls) {
+    const b = el("button", "plt-btn" + (cls ? " " + cls : "") + (on ? " on" : ""), label); b.type = "button";
+    b.addEventListener("click", fn);
+    return b;
+  }
   function renderPltControls() {
-    const clubs = $("pltClubs"), pos = $("pltPos"), sort = $("pltSort");
+    const clubs = $("pltClubs"), pos = $("pltPos"), sort = $("pltSort"), per = $("pltPeriod");
     if (!clubs) return;
+    const keep = clubs.scrollLeft;
     clubs.innerHTML = "";
-    const all = el("button", "plt-club all" + (pltClub ? "" : " on"), "Todos"); all.type = "button";
-    all.addEventListener("click", () => { pltClub = ""; pltShown = 40; renderPltControls(); renderPltList(); });
-    clubs.appendChild(all);
+    clubs.appendChild(pltBtn("Todos", !pltClub, () => { pltClub = ""; pltRerender(); }, "plt-all"));
     const seen = {};
     pltPlayers.forEach((p) => { if (p.team && !seen[p.team]) seen[p.team] = p.logo || ""; });
     Object.keys(seen).sort((a, b) => a.localeCompare(b)).forEach((t) => {
-      const b = el("button", "plt-club" + (pltClub === t ? " on" : "")); b.type = "button"; b.title = t;
+      const b = pltBtn("", pltClub === t, () => { pltClub = pltClub === t ? "" : t; pltRerender(); }, "plt-club"); b.title = t;
       if (seen[t]) { const im = el("img"); im.src = seen[t]; im.alt = t; im.loading = "lazy"; b.appendChild(im); } else b.textContent = t.slice(0, 3);
-      b.addEventListener("click", () => { pltClub = pltClub === t ? "" : t; pltShown = 40; renderPltControls(); renderPltList(); });
       clubs.appendChild(b);
     });
+    clubs.scrollLeft = keep;
+    pltArrows();
     pos.innerHTML = "";
     [["", "Todos"], ["portero", "Portero"], ["defensa", "Defensa"], ["centrocampista", "Medio"], ["delantero", "Delantero"]].forEach((x) => {
-      const b = el("button", "plt-tab" + (pltPos === x[0] ? " on" : ""), x[1]); b.type = "button";
-      b.addEventListener("click", () => { pltPos = x[0]; pltShown = 40; renderPltControls(); renderPltList(); });
-      pos.appendChild(b);
+      pos.appendChild(pltBtn(x[1], pltPos === x[0], () => { pltPos = x[0]; pltRerender(); }));
     });
     sort.innerHTML = "";
-    [["points", "Puntos"], ["value", "Precio"], ["avg", "Media"]].forEach((x) => {
+    sort.appendChild(el("span", "plt-lbl", "Ordenar"));
+    [["points", "Puntos"], ["value", "Precio"], ["avg", "Media"], ["rise", "Subidas"]].forEach((x) => {
       const on = pltSort === x[0];
-      const b = el("button", "plt-sb" + (on ? " on" : ""), x[1] + (on ? (pltDir < 0 ? " ▼" : " ▲") : "")); b.type = "button";
-      b.addEventListener("click", () => { if (pltSort === x[0]) pltDir = -pltDir; else { pltSort = x[0]; pltDir = -1; } pltShown = 40; renderPltControls(); renderPltList(); });
-      sort.appendChild(b);
+      sort.appendChild(pltBtn(x[1] + (on ? (pltDir < 0 ? " ↓" : " ↑") : ""), on, () => {
+        if (pltSort === x[0]) pltDir = -pltDir; else { pltSort = x[0]; pltDir = -1; }
+        pltRerender();
+      }));
     });
+    per.innerHTML = "";
+    per.hidden = pltSort !== "rise";
+    if (pltSort === "rise") {
+      PLT_PER.forEach((x) => per.appendChild(pltBtn(x[1], pltPeriod === x[0], () => { pltPeriod = x[0]; pltRerender(); }, "plt-per-b")));
+    }
   }
+  function pltArrows() {
+    const c = $("pltClubs"), w = $("pltClubWrap");
+    if (!c || !w) return;
+    w.classList.toggle("can-l", c.scrollLeft > 4);
+    w.classList.toggle("can-r", c.scrollLeft + c.clientWidth < c.scrollWidth - 4);
+  }
+  (function pltBindArrows() {
+    const c = $("pltClubs"), w = $("pltClubWrap");
+    if (!c || !w) return;
+    c.addEventListener("scroll", pltArrows, { passive: true });
+    window.addEventListener("resize", pltArrows);
+    w.querySelectorAll(".plt-arrow").forEach((a) => a.addEventListener("click", () => {
+      c.scrollBy({ left: (a.dataset.dir === "l" ? -1 : 1) * Math.max(160, c.clientWidth * 0.7), behavior: "smooth" });
+    }));
+  })();
   function renderPltList() {
     const box = $("pltList");
     if (!box) return;
+    const rise = pltSort === "rise";
+    const key = rise ? pltPeriod : pltSort;
     let list = pltPlayers.filter((p) => (!pltClub || p.team === pltClub) && (!pltPos || String(p.role || "").toLowerCase() === pltPos));
-    list = list.slice().sort((a, b) => pltDir * ((Number(a[pltSort]) || 0) - (Number(b[pltSort]) || 0)));
+    list = list.slice().sort((a, b) => pltDir * ((Number(a[key]) || 0) - (Number(b[key]) || 0)));
     box.innerHTML = "";
     if (!list.length) { box.appendChild(el("p", "muted", "Sin jugadores.")); return; }
     let ownById = {};
     try { const c = JSON.parse(localStorage.getItem("claus_cache") || "null"); ((c && c.players) || []).forEach((x) => { if (x.id && x.owner) ownById[x.id] = x.owner; }); } catch (e) {}
+    const j0 = pltPlayers.reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0);
+    const perLab = (PLT_PER.filter((x) => x[0] === pltPeriod)[0] || [0, ""])[1];
     list.slice(0, pltShown).forEach((p) => {
       const row = el("div", "plt-row"); row.addEventListener("click", () => openFicha(p));
       const ph = el("div", "plt-ph");
       if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); ph.appendChild(im); }
-      if (p.logo) { const lg = el("img", "plt-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; ph.appendChild(lg); }
+      posRingCls(ph, p.role, p.role2);
+      const wrap = el("div", "plt-phw");
+      wrap.appendChild(ph);
+      if (p.logo) { const lg = el("img", "plt-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; wrap.appendChild(lg); }
       const rst = statusInfo(p.status);
-      if (rst) ph.appendChild(el("span", "plt-st " + rst.cls, rst.label));
-      row.appendChild(ph);
+      if (rst) wrap.appendChild(el("span", "plt-st " + rst.cls, rst.label));
+      row.appendChild(wrap);
       const mid = el("div", "plt-mid");
       mid.appendChild(el("div", "plt-name", p.name));
       mid.appendChild(el("div", "plt-val", money(p.value) + " €"));
-      const chg = Number(p.change) || 0;
-      mid.appendChild(el("div", "plt-chg " + (chg > 0 ? "up" : chg < 0 ? "down" : "flat"), chg > 0 ? "▲ " + formatDots(chg) + " €" : chg < 0 ? "▼ " + formatDots(-chg) + " €" : "—"));
+      const chg = Number(rise ? p[pltPeriod] : p.change) || 0;
+      const t = chg > 0 ? "▲ " + formatDots(chg) + " €" : chg < 0 ? "▼ " + formatDots(-chg) + " €" : "—";
+      mid.appendChild(el("div", "plt-chg " + (chg > 0 ? "up" : chg < 0 ? "down" : "flat"), t + (rise && chg ? " · " + perLab : "")));
       row.appendChild(mid);
       const side = el("div", "plt-side");
       const fit = el("div", "plt-fit");
-      (p.fitness || []).slice(-5).forEach((v) => {
-        const n = Number(v);
-        fit.appendChild(el("i", isNaN(n) ? "" : (n >= (Number(p.avg) || 0) ? "hi" : "lo"), isNaN(n) ? "–" : String(n)));
-      });
+      const f = (p.fit || p.fitness || []).slice(-5);
+      for (let k = 0; k < f.length; k++) {
+        const idx = f.length - 1 - k;
+        const raw = f[idx];
+        const ok = !(raw === null || raw === undefined || raw === "" || raw === "-" || raw === "–");
+        const v = Math.round(Number(raw) || 0);
+        const j = jLab(p.team, f.length, k, j0);
+        const cls = !ok ? " zero" : v >= 6 ? " hi" : v >= 4 ? " mid" : v > 0 ? " lo" : v < 0 ? " neg" : " z0";
+        const cell = el("span", "racha-chip" + cls);
+        if (j > 0) cell.appendChild(el("i", null, "J" + j));
+        cell.appendChild(el("b", null, ok ? String(v) : "–"));
+        fit.insertBefore(cell, fit.firstChild);
+      }
       side.appendChild(fit);
       const own = p.computer ? "futmondo" : (ownById[p.id] || "");
       if (own) side.appendChild(el("div", "plt-own", own));
       row.appendChild(side);
       const rt = el("div", "plt-rt");
-      const pts = el("div", "plt-pts"); pts.appendChild(el("b", null, String(Number(p.points) || 0)));
-      const avg = el("div", "plt-avg"); avg.appendChild(el("b", null, (Number(p.avg) || 0).toFixed(1).replace(".", ",")));
+      const pts = el("div", "plt-pts"); pts.appendChild(el("b", null, String(Number(p.points) || 0))); pts.appendChild(el("small", null, "PTS"));
+      const avg = el("div", "plt-avg"); avg.appendChild(el("b", null, (Number(p.avg) || 0).toFixed(1).replace(".", ","))); avg.appendChild(el("small", null, "MEDIA"));
       rt.appendChild(pts); rt.appendChild(avg);
       row.appendChild(rt);
       box.appendChild(row);
@@ -4387,7 +4431,6 @@
       box.appendChild(more);
     }
   }
-  
 
   loadNoticias();
   load();
