@@ -284,14 +284,13 @@ function render() {
     // dentro de esa ventana.
     const canOpen = data.inWindow || data.admin;
     if (!open && canOpen) {
-    panel.appendChild(el("p", "muted", "Elige el jugador a subasta y el precio de salida. El resto verá la subasta y podrá pujar."));
-    if (!data.inWindow && data.admin) panel.appendChild(el("p", "puja-admin-note", "🛠️ Fuera del horario habitual — solo tú puedes abrirla ahora (modo admin)."));
+    if (!data.inWindow && data.admin) panel.appendChild(el("p", "puja-admin-note", "🛠️ Modo admin"));
     const f = el("div", "auth-form");
     const pl = el("input"); pl.id = "pjPlayer"; pl.placeholder = "Escribe el jugador (ej. Diomande)"; pl.autocomplete = "off";
     const sug = el("div", "pj-suggest hidden"); sug.id = "pjSuggest";
     const sw = el("div", "pj-suggest-wrap"); sw.appendChild(pl); sw.appendChild(sug);
     const prev = el("div", "pj-preview"); prev.id = "pjPreview";
-    const bi = el("div", "pj-base-info"); bi.id = "pjBaseInfo"; bi.textContent = "Escribe o elige un jugador abajo.";
+    const bi = el("div", "pj-base-info"); bi.id = "pjBaseInfo"; bi.hidden = true;
     const bs = el("input"); bs.id = "pjBase"; bs.type = "text"; bs.inputMode = "numeric"; bs.placeholder = "Precio de la puja (p. ej. 45.500.000)";
     bs.addEventListener("input", () => { bs.value = formatDots(bs.value); });
     const hid = el("input"); hid.id = "pjPhoto"; hid.type = "hidden";
@@ -658,7 +657,7 @@ function elegirJugador(p) {
   const hid = $("pjPhoto"); if (hid) hid.value = p.photo || "";
   const chg = Number(p.change) || 0;
   const bi = $("pjBaseInfo");
-  if (bi) bi.textContent = "El precio de salida no puede ser menor que su valor.";
+  if (bi) { bi.hidden = false; bi.textContent = "El precio de salida no puede ser menor que su valor."; }
   const prev = $("pjPreview");
   if (prev) {
     prev.innerHTML = "";
