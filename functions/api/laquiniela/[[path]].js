@@ -3006,7 +3006,7 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
   // cambian (se guardan 30 días); mientras el partido no ha acabado se
   // guardan solo 2 minutos para no machacar la API de Futmondo desde la
   // página de cada partido.
-  const ck = "pjp:v2:" + playerId + ":" + (Number(jornada) || 0);
+  const ck = "pjp:v3:" + playerId + ":" + (Number(jornada) || 0);
   try {
     const c = await env.PORRA.get(ck, "json");
     if (c && (c.finished || Date.now() - (c.at || 0) < 120000)) return { finished: !!c.finished, points: c.finished ? c.points : null };
@@ -3044,7 +3044,10 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
         mkFresh = okMk(mk) || matches.some((x) => Number(x.r) > Number(jornada) && x.st === "F");
         const mp = (mk.players || []).find((x) => String(x.id) === String(playerId));
         const fit = (mp && mp.fitness) || [];
-        const k = fit.length - 1 - idx;
+        // OJO: matches viene con el próximo partido (sin jugar) delante; el último valor de
+        // fitness es el último partido TERMINADO, así que solo cuentan los terminados posteriores.
+        const newerDone = matches.filter((x) => Number(x.r) > Number(jornada) && x.st === "F").length;
+        const k = fit.length - 1 - newerDone;
         if (k >= 0 && k < fit.length && fit[k] != null) pts = Math.round(Number(fit[k]) || 0);
       } catch (e) {}
       if (!mkFresh) {

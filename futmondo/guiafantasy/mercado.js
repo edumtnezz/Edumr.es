@@ -1442,25 +1442,39 @@
     let timer = null;
     const run = async (first) => {
       let qj = ""; try { qj = new URLSearchParams(location.search).get("j") || ""; } catch (e) {}
-      let jr = await (await fetch(API + "/jornada" + (qj ? "?jornada=" + encodeURIComponent(qj) : ""), { cache: "no-store" })).json();
+      // Pide un JSON con reintentos: la API a veces falla o devuelve la jornada vacía un instante
+      // (límite de football-data) y antes eso se veía como "No se encontró el partido".
+      const getJ = async (u, okFn) => {
+        for (let t = 0; t < 3; t++) {
+          try { const r = await (await fetch(u)).json(); if (!okFn || okFn(r)) return r; } catch (e) {}
+          await new Promise((res) => setTimeout(res, 500 * (t + 1)));
+        }
+        return null;
+      };
+      const hasMs = (r) => !!(r && r.matches && r.matches.length);
+      let jr = await getJ(API + "/jornada" + (qj ? "?jornada=" + encodeURIComponent(qj) : ""), hasMs);
       let ms = (jr && jr.matches) || [];
       if (!ms.some((x) => matchSlug(x.home, x.away) === slug) && !qj) {
-        // Sin ?j=: busca en las 3 jornadas siguientes
+        // Sin ?j=: busca en las jornadas cercanas, de varias en varias a la vez (antes una a una = lentísimo)
         const cur = Number(jr && jr.matchday) || 0;
-        const tryJ = async (n) => {
-          try { const j2 = await (await fetch(API + "/jornada?jornada=" + n)).json(); if ((j2.matches || []).some((x) => matchSlug(x.home, x.away) === slug)) { jr = j2; ms = j2.matches; return true; } } catch (e) {}
+        const tryBatch = async (list) => {
+          const rs = await Promise.all(list.filter((n) => n >= 1 && n <= 38).map((n) => getJ(API + "/jornada?jornada=" + n, hasMs)));
+          for (const j2 of rs) { if (j2 && (j2.matches || []).some((x) => matchSlug(x.home, x.away) === slug)) { jr = j2; ms = j2.matches; return true; } }
           return false;
         };
-        let found = false;
-        for (let k = 1; k <= 3 && !found && cur && cur + k <= 38; k++) found = await tryJ(cur + k);
-        // Partidos ya jugados: la jornada actual avanza y el enlace sin ?j= ya no lo encontraba
-        for (let n = cur - 1; n >= 1 && !found && n >= cur - 12; n--) found = await tryJ(n);
+        if (cur) { (await tryBatch([cur - 1, cur + 1, cur - 2, cur + 2])) || (await tryBatch([cur + 3, cur - 3, cur - 4, cur - 5, cur - 6, cur - 7])); }
       }
       const jn = Number(jr && jr.matchday) || 0;
       const m = ms.find((x) => matchSlug(x.home, x.away) === slug);
-      if (!m) { if (first) box.innerHTML = '<p class="muted small">No se encontró el partido.</p>'; return false; }
-      const d = await (await fetch(API + "/detallepartido?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn))).json();
-      if (!all || !all.length) { try { await load(); } catch (e) {} }
+      if (!m) { if (first) box.innerHTML = '<p class="muted small">No se pudo cargar el partido. <a href="" onclick="location.reload();return false">Reintentar</a></p>'; return false; }
+      // Todo lo del partido a la vez (antes iba una petición detrás de otra)
+      const enc = encodeURIComponent;
+      const pD = getJ(API + "/detallepartido?home=" + enc(m.home) + "&away=" + enc(m.away) + "&jornada=" + enc(jn), (r) => !!r && !r.error);
+      const pC = fetch(API + "/alineaciones-confirmadas?jornada=" + enc(jn), { cache: "no-store" }).then((r) => r.json()).catch(() => null);
+      const pO = fetch(API + "/once?home=" + enc(m.home) + "&away=" + enc(m.away) + "&jornada=" + enc(jn), { cache: "no-store" }).then((r) => r.json()).catch(() => null);
+      const pL = (!all || !all.length) ? load().catch(() => {}) : Promise.resolve();
+      const [d, cPre, oPre] = await Promise.all([pD, pC, pO, pL]);
+      if (!d) { if (first) box.innerHTML = '<p class="muted small">No se pudo cargar el partido. <a href="" onclick="location.reload();return false">Reintentar</a></p>'; return false; }
       const finalNow = (m.live && m.live.state === "final") || /finaliz/i.test(String(d.state || ""));
       // En juego: se enseña lo que hay ahora en el campo (tabla de jugadores) en vez de la probable
       mpLive = !!(!finalNow && d.homePlayers && d.homePlayers.length >= 11 && d.awayPlayers && d.awayPlayers.length >= 11);
@@ -1475,14 +1489,14 @@
       mpConf = null;
       {
         try {
-          const c = await (await fetch(API + "/alineaciones-confirmadas?jornada=" + encodeURIComponent(jn), { cache: "no-store" })).json();
+          const c = cPre;
           const cm = findXiMatch((c && c.matches) || [], m.home, m.away);
           if (cm) { mpConf = cm; if (!finished) { xi = cm; xiKind = "confirmada"; } }
         } catch (e) {}
       }
       {
         try {
-          const o = await (await fetch(API + "/once?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn), { cache: "no-store" })).json();
+          const o = oPre;
           if (o && o.home && (((o.home.starters || []).length) || ((o.away.starters || []).length) || ((o.home.bench || []).length) || ((o.away.bench || []).length))) {
             ffData = o;
             if (!(((o.home.starters || []).length) || ((o.away.starters || []).length))) ffData.benchOnly = true;
