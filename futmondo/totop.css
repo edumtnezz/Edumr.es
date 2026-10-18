@@ -5,3 +5,11 @@
 :root[data-theme="light"] .cx-totop { border-color: rgba(0,0,0,.08); box-shadow: 0 6px 18px rgba(0,0,0,.22); }
 @media (hover:hover) and (pointer:fine) { .cx-totop:hover { background: #15803d; } }
 @media (prefers-reduced-motion: reduce) { .cx-totop { transition: opacity .01s; transform: none; } }
+
+.cx-refresh { position: fixed; right: 18px; bottom: calc(70px + env(safe-area-inset-bottom, 0px)); z-index: 900; width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(255,255,255,.16); background: rgba(22,28,36,.72); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: #e8edf2; display: grid; place-items: center; padding: 0; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.3); -webkit-tap-highlight-color: transparent; transition: transform .2s cubic-bezier(.23,1,.32,1), background .2s; }
+.cx-refresh svg { width: 18px; height: 18px; display: block; transition: transform .5s cubic-bezier(.23,1,.32,1); }
+.cx-refresh:active { transform: scale(.92); }
+.cx-refresh.spin svg { transform: rotate(360deg); }
+:root[data-theme="light"] .cx-refresh { background: rgba(255,255,255,.85); color: #1f2933; border-color: rgba(0,0,0,.08); box-shadow: 0 4px 14px rgba(0,0,0,.16); }
+@media (hover:hover) and (pointer:fine) { .cx-refresh:hover { background: #16a34a; color: #fff; } }
+@media (prefers-reduced-motion: reduce) { .cx-refresh svg { transition: none; } }
