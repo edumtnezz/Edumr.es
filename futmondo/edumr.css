@@ -734,3 +734,7 @@ button:not(:disabled):active, [role="button"]:active, .hub-feature:active, .hub-
 .cx-conf-pill { animation: none; box-shadow: none; background: #16a34a; }
 .cx-conf-m { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; }
 .cx-conf-crest { width: 18px; height: 18px; object-fit: contain; flex: 0 0 auto; }
+
+/* "Todos" de la tira de escudos: mas pequeño y pegado a la izquierda */
+.cx-team.cx-team-all { width: 38px; padding: 4px 0; margin-left: -10px; margin-right: -2px; }
+.cx-team-all-txt { font-size: 0.6rem; }
