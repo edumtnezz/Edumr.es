@@ -1529,6 +1529,23 @@
       let dstr = "";
       try { const pp = {}; new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(ko || now)).forEach((x) => { pp[x.type] = x.value; }); dstr = pp.year + pp.month + pp.day; } catch (e) {}
       try { const r = await (await fetch(API + "/directo?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn) + (dstr ? "&date=" + dstr : ""))).json(); entries = (r && r.entries) || []; fm = r && r.fm; ok = true; } catch (e) {}
+      // Cuenta atrás del descanso (hora real del final de la 1ª parte según FotMob + 15 min reglamentarios)
+      try {
+        const hf = fm && fm.halfs;
+        const toMs = (v) => { const q = String(v || "").match(/^(\d{2})\.(\d{2})\.(\d{4}) (\d{2}):(\d{2}):(\d{2})$/); if (!q) return 0; const u = Date.UTC(+q[3], +q[2] - 1, +q[1], +q[4], +q[5], +q[6]); const off = Date.parse(new Date(u).toLocaleString("en-US", { timeZone: "Europe/Madrid" })) - Date.parse(new Date(u).toLocaleString("en-US", { timeZone: "UTC" })); return u - off; };
+        const t1 = hf && hf.firstHalfEnded && !hf.secondHalfStarted && !fm.finished ? toMs(hf.firstHalfEnded) : 0;
+        if (t1 && Date.now() - t1 < 40 * 60 * 1000) {
+          const ht = el("div", "lv-ht"); const big = el("b", null, ""); const sm = el("span", null, ""); ht.appendChild(big); ht.appendChild(sm); mid.appendChild(ht);
+          let seen = false, tries = 0;
+          const tick = () => {
+            if (ht.isConnected) seen = true; else if (seen || ++tries > 40) { clearInterval(iv); return; }
+            const left = t1 + 15 * 60 * 1000 - Date.now();
+            if (left > 0) { const t = Math.ceil(left / 1000); big.textContent = String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"); sm.textContent = "hasta la segunda parte"; }
+            else { big.textContent = ""; sm.textContent = "La segunda parte va a empezar"; }
+          };
+          const iv = setInterval(tick, 1000); tick();
+        }
+      } catch (e) {}
       const mm = (e) => e.t + "'" + (e.x ? "+" + e.x : "");
       const evs = (fm && fm.events) || [], sts = (fm && fm.stats) || [];
       let fechaCard = null; const secs = []; const sec = (title) => { const c = el("section", "lv-sec"); c.appendChild(el("h3", "lv-h", title)); box.appendChild(c); secs.push([title.split(" ")[0], c]); return [c]; };
