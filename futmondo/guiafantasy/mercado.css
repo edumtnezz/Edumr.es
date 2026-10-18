@@ -2088,3 +2088,16 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 .pp-back:active { transform: scale(.94) !important; }
 .mpage > .pp-back:first-child, .eq-backbar { margin-top: 0; }
 .mpage.panel, .playerpage.panel { padding-top: 10px; }
+
+/* Notas de la alineación: rojo <7, amarillo 7-8, verde fuerte 8+ */
+.pl-pts.rt-lo, .lv-rate.rt-lo { background: #ef4444; color: #fff; border-color: #fff; }
+.pl-pts.rt-mid, .lv-rate.rt-mid { background: #facc15; color: #10151c; border-color: #fff; }
+.pl-pts.rt-hi, .lv-rate.rt-hi { background: #15803d; color: #fff; border-color: #fff; }
+.lv-rate.rt-lo { border-color: #ef4444; } .lv-rate.rt-mid { border-color: #facc15; } .lv-rate.rt-hi { border-color: #15803d; }
+/* Evento de VAR */
+.lv-var { display: flex; align-items: center; gap: 9px; }
+.lv-evl .lv-var { flex-direction: row-reverse; text-align: right; }
+.lv-varb { flex: none; display: inline-flex; align-items: center; justify-content: center; padding: 3px 7px 4px; border-radius: 6px; background: #1e293b; color: #fff; font: 900 .62rem 'Bricolage Grotesque', sans-serif; letter-spacing: .08em; box-shadow: inset 0 -2px 0 #38bdf8; }
+.lv-var-t { display: flex; flex-direction: column; min-width: 0; }
+.lv-evl .lv-var, .lv-evr2 .lv-var { align-items: center; }
+.lv-evl .lv-var-t { align-items: flex-end; } .lv-evr2 .lv-var-t { align-items: flex-start; }

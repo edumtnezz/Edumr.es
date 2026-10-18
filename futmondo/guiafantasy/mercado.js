@@ -1478,9 +1478,9 @@
     document.querySelectorAll("#tabsNav .tab").forEach((e) => e.classList.remove("active"));
     document.querySelectorAll(".tab-panel").forEach((e) => e.classList.add("hidden"));
     const ch = $("cxChrome"); if (ch) ch.classList.add("hidden");
-    const box = el("section", "panel mpage livepage");
-    box.innerHTML = '<p class="muted small">Cargando directo…</p>';
-    main.appendChild(box);
+    const boxR = el("section", "panel mpage livepage");
+    boxR.innerHTML = '<p class="muted small">Cargando directo…</p>';
+    main.appendChild(boxR);
     let qj = ""; try { qj = new URLSearchParams(location.search).get("j") || ""; } catch (e) {}
     const matchUrl = "/futmondo/guiafantasy/partido/" + slug + (qj ? "?j=" + encodeURIComponent(qj) : "");
     let timer = null, lvTab = "";
@@ -1494,7 +1494,7 @@
       if (/comenzado|comienza|descanso|final del partido|termina|segunda parte|primera parte/i.test(t)) return ["mark", "⏱️"];
       return ["", ""];
     };
-    const paint = async (first) => {
+    const paint = async (first, box = boxR) => {
       let jr = null;
       try { jr = await (await fetch(API + "/jornada" + (qj ? "?jornada=" + encodeURIComponent(qj) : ""))).json(); } catch (e) {}
       const m = ((jr && jr.matches) || []).find((x) => matchSlug(x.home, x.away) === slug);
@@ -1557,7 +1557,7 @@
         };
         const [c] = sec("Alineación");
         const top = el("div", "lv-ptop");
-        const rcls = (r) => (r >= 8 ? " on top" : r >= 6.5 ? " on" : r && r < 6 ? " neg" : "");
+        const rcls = (r) => (r >= 8 ? " rt-hi" : r >= 7 ? " rt-mid" : r ? " rt-lo" : "");
         [[ln.h, "h", m.homeCrest], [ln.a, "a", m.awayCrest]].forEach(([t, w, cr]) => {
           const d = el("div", "lv-pt " + w);
           const im = el("img"); im.alt = ""; im.src = cr || ""; d.appendChild(im);
@@ -1680,8 +1680,12 @@
             body.appendChild(el("span", "lv-in", "↑ " + e.inn));
             body.appendChild(el("span", "lv-out", "↓ " + e.out));
           } else if (e.k === "var") {
-            body.appendChild(el("strong", null, "VAR" + (e.name ? " · " + e.name : "")));
-            if (e.txt) body.appendChild(el("small", null, varEs(e.txt)));
+            body.classList.add("lv-var");
+            const vb = el("span", "lv-varb", "VAR"); body.appendChild(vb);
+            const vt = el("div", "lv-var-t");
+            vt.appendChild(el("strong", null, e.txt ? varEs(e.txt) : "Revisión del VAR"));
+            if (e.name) vt.appendChild(el("small", null, e.name));
+            body.appendChild(vt);
           }
           (e.h ? l : r).appendChild(body);
           row.appendChild(l); row.appendChild(mn); row.appendChild(r);
@@ -1930,13 +1934,22 @@
     try {
       const more = await paint(true);
       if (more) timer = setInterval(async () => {
-        if (!document.body.contains(box)) { clearInterval(timer); return; }
+        if (!document.body.contains(boxR)) { clearInterval(timer); return; }
         if (document.hidden) return;
         const y = window.scrollY;
-        try { const mo = await paint(false); if (!mo) clearInterval(timer); } catch (e) {}
+        try {
+          // Se prepara la página nueva aparte y se cambia de golpe: sin parpadeos ni saltos
+          const tmp = el("div"); const mo = await paint(false, tmp);
+          if (tmp.childNodes.length) {
+            const tb = boxR.querySelector(".lv-tabs"), sl = tb ? tb.scrollLeft : 0;
+            boxR.replaceChildren(...tmp.childNodes);
+            const tb2 = boxR.querySelector(".lv-tabs"); if (tb2) tb2.scrollLeft = sl;
+          }
+          if (!mo) clearInterval(timer);
+        } catch (e) {}
         window.scrollTo(0, y);
       }, 30000);
-    } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar el directo.</p>'; }
+    } catch (e) { boxR.innerHTML = '<p class="muted small">No se pudo cargar el directo.</p>'; }
   }
   async function renderMatchPage(slug) {
     const main = document.querySelector(".quiniela-main");

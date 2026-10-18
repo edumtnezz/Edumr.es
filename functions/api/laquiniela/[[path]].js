@@ -4126,7 +4126,7 @@ async function handleGet({ request, env: env0, params }) {
           } catch (e) { return null; }
         };
         const nexts = await Promise.all([teams[0] ? nextOf(teams[0].id) : null, teams[1] ? nextOf(teams[1].id) : null]);
-        out.fm = { info, form, h2h, next: nexts, potm, hl: hlx, lineup, table, hid: teams[0] && teams[0].id, aid: teams[1] && teams[1].id, id: hit.id, started: !!st.started, finished: !!st.finished, score: [teams[0] && teams[0].score, teams[1] && teams[1].score], events, stats, src: "FotMob" };
+        out.fm = { info, form, h2h, next: nexts, potm, hl: hlx, lineup, table, hid: teams[0] && teams[0].id, aid: teams[1] && teams[1].id, id: hit.id, started: !!st.started, finished: !!st.finished, halfs: st.halfs || null, lt: st.liveTime || null, score: [teams[0] && teams[0].score, teams[1] && teams[1].score], events, stats, src: "FotMob" };
       } catch (e) {}
     })();
     await Promise.all([cron, fot]);
