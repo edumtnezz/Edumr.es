@@ -134,6 +134,14 @@
     b.addEventListener("click", () => goBack(fallback));
     return b;
   }
+  // Botón pequeño de actualizar (arriba a la derecha en las páginas de partido)
+  function refreshBtn() {
+    const b = el("button", "pp-refresh");
+    b.type = "button"; b.setAttribute("aria-label", "Actualizar");
+    b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>';
+    b.addEventListener("click", () => { if (b.classList.contains("spin")) return; b.classList.add("spin"); setTimeout(() => location.reload(), 450); });
+    return b;
+  }
   function money(n) { return Number(n || 0).toLocaleString("es-ES"); }
   function horaTxt(v) { try { return new Date(v).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }); } catch (e) { return ""; } }
   function el(tag, cls, txt) {
@@ -1291,7 +1299,7 @@
   }
   function renderMatchDetail(box, m, d, jn, xi, xiKind, finished, ffData) {
     box.innerHTML = "";
-    box.appendChild(backBtn("/futmondo/guiafantasy/inicio", "mpage-back"));
+    box.appendChild(backBtn("/futmondo/guiafantasy/inicio", "mpage-back")); box.appendChild(refreshBtn());
     const head = el("div", "mpage-top");
     [[m.homeCrest, "left"], [m.awayCrest, "right"]].forEach((x) => { if (!x[0]) return; const bg = el("img", "mpage-bgcrest " + x[1]); window.EduAlineacion ? window.EduAlineacion.setCrest(bg, x[0]) : (bg.src = x[0]); bg.alt = ""; head.appendChild(bg); });
     const tl = el("div", "mpage-topline");
@@ -1515,7 +1523,7 @@
       const jn = Number(jr && jr.matchday) || Number(qj) || 0;
       const live = m.live || {};
       box.innerHTML = "";
-      box.appendChild(backBtn(matchUrl, "mpage-back"));
+      box.appendChild(backBtn(matchUrl, "mpage-back")); box.appendChild(refreshBtn());
       const head = el("div", "lv-head");
       const side = (name, crest) => { const t = el("div", "lv-team"); const im = el("img"); im.src = crest || ""; im.alt = ""; t.appendChild(im); t.appendChild(el("span", null, name)); return t; };
       head.appendChild(side(m.home, m.homeCrest));

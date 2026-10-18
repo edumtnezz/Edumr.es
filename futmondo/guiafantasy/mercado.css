@@ -2110,3 +2110,11 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 /* Varios goles: un solo balon con el numero, para que no tape la nota */
 .pl-evs { letter-spacing: 0; align-items: center; gap: 1px; }
 .pl-evs i { font-style: normal; font-size: .58rem; font-weight: 900; line-height: 1; background: #0f172a; color: #fff; border-radius: 6px; padding: 1px 4px; margin-left: -2px; align-self: flex-end; }
+
+.pp-refresh{float:right;width:40px;height:40px;margin-top:2px;border-radius:50%;border:1px solid var(--cx-line,rgba(255,255,255,.16));background:rgba(22,28,36,.6);color:inherit;display:inline-grid;place-items:center;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .2s cubic-bezier(.23,1,.32,1),background .2s}
+.pp-refresh svg{width:18px;height:18px;display:block;transition:transform .5s cubic-bezier(.23,1,.32,1)}
+.pp-refresh:active{transform:scale(.92)}
+.pp-refresh.spin svg{transform:rotate(360deg)}
+:root[data-theme="light"] .pp-refresh{background:#fff;border-color:rgba(0,0,0,.1);color:#1f2933}
+@media (hover:hover) and (pointer:fine){.pp-refresh:hover{background:#16a34a;color:#fff}}
+@media (prefers-reduced-motion:reduce){.pp-refresh svg{transition:none}}
