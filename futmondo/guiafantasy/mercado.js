@@ -1534,12 +1534,13 @@
       let fechaCard = null; const secs = []; const sec = (title) => { const c = el("section", "lv-sec"); c.appendChild(el("h3", "lv-h", title)); box.appendChild(c); secs.push([title.split(" ")[0], c]); return [c]; };
       const srcTag = () => {};
       const ln = fm && fm.lineup;
+      let ourHrefG = null;
       // 1) Campo en directo
       if (ln && ln.h && ln.a) {
         if (!all || !all.length) { try { await load(); } catch (e) {} }
         const fnorm = (x) => stripAccents(String(x || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
         // Jugador de FotMob -> su ficha en nuestra web (mismo equipo; nombre completo o, si es único, el apellido)
-        const ourHref = (full, team) => {
+        ourHrefG = (full, team) => {
           const tk = teamCanon(team);
           const pool = (all || []).filter((p) => p.id && teamCanon(p.team) === tk);
           const ft = fnorm(full).split(" ").filter(Boolean);
@@ -1575,7 +1576,7 @@
         });
         const place = (t, home) => (t.st || []).forEach((q) => {
           if (q.x == null || q.y == null) return;
-          const hrf = ourHref(q.n, t.name);
+          const hrf = ourHrefG(q.n, t.name);
           const pl = el(hrf ? "a" : "div", "pl lv-abs"); if (hrf) pl.href = hrf;
           pl.style.setProperty("left", ((home ? q.x : 1 - q.x) * 100) + "%");
           pl.style.setProperty("top", ((home ? 6 + q.y * 40 : 94 - q.y * 40)) + "%");
@@ -1601,7 +1602,7 @@
           const bh = el("div", "lv-bench-h"); if (cr) { const ci = el("img"); ci.alt = ""; ci.src = cr; bh.appendChild(ci); } const bt = el("div", "lv-bench-t"); bt.appendChild(el("small", null, "Banquillo")); bt.appendChild(el("b", null, nm)); bh.appendChild(bt); bn.appendChild(bh);
           const row = el("div", "al-bench-row");
           t.sb.forEach((q) => {
-            const hrf2 = ourHref(q.n, t.name);
+            const hrf2 = ourHrefG(q.n, t.name);
             const pl = el(hrf2 ? "a" : "div", "pl" + (q.si ? "" : " lv-unused")); if (hrf2) pl.href = hrf2;
             const ph = el("div", "pl-ph");
             const im = el("img"); im.loading = "lazy"; im.alt = ""; im.src = "https://images.fotmob.com/image_resources/playerimages/" + q.id + ".png";
@@ -1628,6 +1629,7 @@
       try { if (fm) { const nj = await (await fetch(API + "/noticias")).json(); news = (nj && nj.noticias) || []; } } catch (e) {}
       if (evs.length || potm || hlv || sts.length) {
         const [c] = sec("Hechos");
+        const varEs = (t) => String(t || "").split("·").map((p) => { const q = p.trim().toLowerCase(); const M = { "goal ruled out": "Gol anulado", "goal awarded": "Gol concedido", "goal confirmed": "Gol confirmado", "goal stands": "Gol válido", "offside": "Fuera de juego", "foul": "Falta", "handball": "Mano", "penalty awarded": "Penalti concedido", "penalty cancelled": "Penalti anulado", "penalty not awarded": "Penalti no concedido", "penalty overturned": "Penalti anulado", "no penalty": "Sin penalti", "red card": "Tarjeta roja", "red card given": "Tarjeta roja", "red card cancelled": "Roja anulada", "red card overturned": "Roja anulada", "no red card": "Sin roja", "card upgrade": "Tarjeta cambiada", "card upgraded": "Tarjeta cambiada", "yellow card": "Tarjeta amarilla", "mistaken identity": "Error de identidad", "no goal": "Gol anulado", "goal disallowed": "Gol anulado", "goal cancelled": "Gol anulado", "no foul": "Sin falta", "no offside": "Sin fuera de juego", "foul by attacker": "Falta del atacante", "offside in build-up": "Fuera de juego previo", "offside in buildup": "Fuera de juego previo", "ball out of play": "Balón fuera", "var check": "Revisión del VAR", "penalty": "Penalti" }; return M[q] || p.trim(); }).join(" · ");
         const cardsMap = {}; const card = (t, cls) => { const k = el("div", "lv-card" + (cls ? " " + cls : "")); if (t.charAt(0) !== "_") k.appendChild(el("h4", "lv-card-h", t)); cardsMap[t] = k; return k; };
         const pos = stBy["Posesión"];
         if (pos || stBy["Goles esperados (xG)"] || stBy["Tiros totales"] || stBy["Toques en el área rival"]) {
@@ -1650,7 +1652,8 @@
         }
         if (potm) {
           const k = card("Jugador del partido");
-          const row = el("div", "lv-potm");
+          const phref = (ourHrefG && ourHrefG(potm.n, potm.team)) || "";
+          const row = el(phref ? "a" : "div", "lv-potm"); if (phref) row.href = phref;
           const im = el("img"); im.alt = ""; im.src = "https://images.fotmob.com/image_resources/playerimages/" + potm.id + ".png"; im.addEventListener("error", () => { im.src = "/img/avatar.svg"; });
           row.appendChild(im);
           const tx = el("div", "lv-potm-tx"); tx.appendChild(el("b", null, potm.n)); tx.appendChild(el("span", null, potm.team)); row.appendChild(tx);
@@ -1668,7 +1671,7 @@
           const body = el("div", "lv-evb");
           if (e.k === "goal") {
             body.appendChild(el("strong", null, "⚽ " + e.name + (e.own ? " (en propia)" : e.pen ? " (penalti)" : "")));
-            if (e.sc) body.appendChild(el("small", null, "Marcador " + e.sc + (e.assist ? " · Asistencia: " + e.assist : "")));
+            if (e.sc) body.appendChild(el("small", null, "Marcador " + e.sc + (e.assist ? " · Asistencia: " + String(e.assist).replace(/^\s*assist(?:ed)? by\s*/i, "") : "")));
           } else if (e.k === "card") {
             const sq = el("i", "lv-sq" + (/red/i.test(e.card) ? " red" : "")); body.appendChild(sq);
             body.appendChild(el("strong", null, e.name));
@@ -1678,7 +1681,7 @@
             body.appendChild(el("span", "lv-out", "↓ " + e.out));
           } else if (e.k === "var") {
             body.appendChild(el("strong", null, "VAR" + (e.name ? " · " + e.name : "")));
-            if (e.txt) body.appendChild(el("small", null, e.txt));
+            if (e.txt) body.appendChild(el("small", null, varEs(e.txt)));
           }
           (e.h ? l : r).appendChild(body);
           row.appendChild(l); row.appendChild(mn); row.appendChild(r);
@@ -1718,7 +1721,7 @@
               const r = el("div", "lv-frow");
               r.appendChild(el("span", "lv-fd", x.d ? fdm(x.d) : ""));
               r.appendChild(el("span", "lv-fp " + (x.r === "W" ? "w" : x.r === "L" ? "l" : "d"), x.sc));
-              const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = x.logo; r.appendChild(im);
+              const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = x.logo; clubLink(im, x.ourHome ? x.an : x.hn); r.appendChild(im);
               col.appendChild(r);
             });
             two.appendChild(col);
@@ -1816,7 +1819,7 @@
           const k = card("Partido siguiente");
           nx.forEach((x) => {
             const r = el("div", "lv-next");
-            const side = (id, nm) => { const d = el("div", "lv-ns"); const im = el("img"); im.alt = ""; im.src = FM_CREST(id); d.appendChild(im); d.appendChild(el("span", null, nm)); return d; };
+            const side = (id, nm) => { const d = el("div", "lv-ns"); const im = el("img"); im.alt = ""; im.src = FM_CREST(id); d.appendChild(im); d.appendChild(el("span", null, nm)); clubLink(d, nm); return d; };
             const tp = el("div", "lv-next-lg"); tp.appendChild(el("span", "lv-lgchip", COMP[x.lg] || x.lg || "")); tp.appendChild(el("span", null, fshort(x.d))); r.appendChild(tp);
             const row = el("div", "lv-next-row");
             row.appendChild(side(x.hid, x.hn));
