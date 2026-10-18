@@ -1299,8 +1299,8 @@
   }
   function renderMatchDetail(box, m, d, jn, xi, xiKind, finished, ffData) {
     box.innerHTML = "";
-    box.appendChild(backBtn("/futmondo/guiafantasy/inicio", "mpage-back")); box.appendChild(refreshBtn());
-    const head = el("div", "mpage-top");
+    box.appendChild(backBtn("/futmondo/guiafantasy/inicio", "mpage-back"));
+    const head = el("div", "mpage-top"); head.appendChild(refreshBtn());
     [[m.homeCrest, "left"], [m.awayCrest, "right"]].forEach((x) => { if (!x[0]) return; const bg = el("img", "mpage-bgcrest " + x[1]); window.EduAlineacion ? window.EduAlineacion.setCrest(bg, x[0]) : (bg.src = x[0]); bg.alt = ""; head.appendChild(bg); });
     const tl = el("div", "mpage-topline");
     tl.appendChild(el("span", "mpage-comp", "LaLiga" + (jn ? " · Jornada " + jn : "")));
@@ -1523,8 +1523,8 @@
       const jn = Number(jr && jr.matchday) || Number(qj) || 0;
       const live = m.live || {};
       box.innerHTML = "";
-      box.appendChild(backBtn(matchUrl, "mpage-back")); box.appendChild(refreshBtn());
-      const head = el("div", "lv-head");
+      box.appendChild(backBtn(matchUrl, "mpage-back"));
+      const head = el("div", "lv-head"); head.appendChild(refreshBtn());
       const side = (name, crest) => { const t = el("div", "lv-team"); const im = el("img"); im.src = crest || ""; im.alt = ""; t.appendChild(im); t.appendChild(el("span", null, name)); return t; };
       head.appendChild(side(m.home, m.homeCrest));
       const mid = el("div", "lv-mid");
