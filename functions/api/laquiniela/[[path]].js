@@ -2526,7 +2526,7 @@ async function getJornadaStrip(env, matchday) {
         const sc = String(fs.scoreStr).replace(/\s*-\s*/, " - ");
         if (fs.finished) { if (!live || live.state !== "final") live = { state: "final", label: "FINALIZADO", minute: "", score: sc }; else live.score = sc; }
         else if (!(live && live.state === "final")) {
-          const ht = fs.reason && /^(HT|Descanso)/i.test(String(fs.reason.short || ""));
+          const htRe = /^(HT|half|desc)/i; const ht = !!((fs.reason && (htRe.test(String(fs.reason.short || "")) || htRe.test(String(fs.reason.long || "")))) || (fs.liveTime && (htRe.test(String(fs.liveTime.short || "")) || htRe.test(String(fs.liveTime.long || "")))));
           const mn = String((fs.liveTime && (fs.liveTime.short || fs.liveTime.long)) || "").replace(/\s+/g, "");
           live = { state: "live", label: ht ? "Descanso" : "EN JUEGO", minute: ht ? "Descanso" : (mn && /\d/.test(mn) ? mn : "EN JUEGO"), score: sc };
         }
