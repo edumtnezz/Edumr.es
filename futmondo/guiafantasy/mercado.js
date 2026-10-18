@@ -1660,7 +1660,7 @@
         if (evs.length) {
         const kEv = card("Eventos");
         const list = el("div", "lv-evs");
-        evs.slice().reverse().forEach((e) => {
+        (() => { const ts = evs.filter((e) => e.k !== "half" && typeof e.t === "number"); const asc = !ts.length || ts[0].t <= ts[ts.length - 1].t; return asc ? evs.slice().reverse() : evs.slice(); })().forEach((e) => {
           if (e.k === "half") { list.appendChild(el("div", "lv-half", e.txt === "HT" ? "Descanso" : e.txt === "FT" ? "Final del partido" : e.txt || "")); return; }
           const row = el("div", "lv-evr" + (e.k === "goal" ? " goal" : ""));
           const l = el("div", "lv-evl"), r = el("div", "lv-evr2");
