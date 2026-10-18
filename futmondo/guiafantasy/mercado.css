@@ -2026,3 +2026,5 @@ html { overflow-anchor: none; }
 
 /* Modo oscuro del directo: las tarjetas usan las variables de la web (antes caían a blanco) */
 .livepage { --surface: var(--cx-surface, #fff); --surface-2: var(--cx-surface-2, #f1f4f5); }
+:root:not([data-theme="light"]) .lv-pos b.a, :root:not([data-theme="light"]) .lv-tsv.win.a, :root:not([data-theme="light"]) .lv-h2n.a, :root:not([data-theme="light"]) .lv-chip { background: #3b4656; color: #fff; border-color: #3b4656; }
+:root:not([data-theme="light"]) .lv-benchbox.a { border-top-color: #64748b; }
