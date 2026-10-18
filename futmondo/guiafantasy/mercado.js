@@ -1722,7 +1722,7 @@
           const st = inf.stadium;
           const row = (ic, main, sub, extra) => { const r = el("div", "lv-std-r"); r.appendChild(el("span", "lv-std-ic", ic)); const t = el("div", "lv-std-tx"); t.appendChild(main); if (sub) t.appendChild(sub); r.appendChild(t); if (extra) r.appendChild(extra); k.appendChild(r); return t; };
           let mapBtn = null;
-          if (st.lat != null && st.lng != null) { mapBtn = el("a", "lv-std-map", "📍"); mapBtn.href = "https://www.google.com/maps?q=" + st.lat + "," + st.lng; mapBtn.target = "_blank"; mapBtn.rel = "noopener noreferrer"; mapBtn.title = "Ver en el mapa"; }
+          if (st.lat != null && st.lng != null) { mapBtn = el("a", "lv-std-map"); mapBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>'; mapBtn.href = "https://www.google.com/maps?q=" + st.lat + "," + st.lng; mapBtn.target = "_blank"; mapBtn.rel = "noopener noreferrer"; mapBtn.title = "Ver en el mapa"; }
           row("🏟️", el("b", null, st.n), el("span", "lv-std-s", [st.city, PAIS[st.country] || st.country].filter(Boolean).join(", ")), mapBtn);
           if (st.cap) {
             const t = row("👥", el("div", "lv-kv2", ""), null);
