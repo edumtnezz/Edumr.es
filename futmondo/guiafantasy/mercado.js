@@ -1453,6 +1453,18 @@
   }
   // Hora de inicio (ms) de un partido de /jornada: día "17/10" + hora "21:00" en hora de Madrid
   const LIVE_WINDOW = 2 * 24 * 3600 * 1000;
+  // Banquillo real (convocatoria) según FotMob: se usa siempre que lo tenga, porque el de FutbolFantasy se queda corto
+  async function fmBenchFor(m, jn) {
+    try {
+      const ko = kickoffMs(m); if (!ko) return null;
+      const pp = {}; new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(ko)).forEach((x) => { pp[x.type] = x.value; });
+      const r = await (await fetch(API + "/directo?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn || "") + "&date=" + pp.year + pp.month + pp.day)).json();
+      const ln = r && r.fm && r.fm.lineup; if (!ln) return null;
+      const mk = (t) => ((t && t.sb) || []).map((q) => ({ name: q.n, full: q.n, last: String(q.n || "").split(" ").slice(-1)[0], photo: "https://images.fotmob.com/image_resources/playerimages/" + q.id + ".png", pos: "", prob: null }));
+      const h = mk(ln.h), a = mk(ln.a);
+      return (h.length || a.length) ? { home: h, away: a } : null;
+    } catch (e) { return null; }
+  }
   function kickoffMs(m) {
     const dm = String((m && m.date) || "").match(/^(\d{1,2})\/(\d{1,2})$/), tm = String((m && m.time) || "").match(/^(\d{1,2}):(\d{2})$/);
     if (!dm || !tm) return 0;
@@ -2081,6 +2093,10 @@
       // Nunca "probable" con % si el partido ya empezó o si todos están al 100% (= confirmada)
       const sure = (o) => o && o.starters && o.starters.length >= 10 && o.starters.every((p) => p.prob === 100);
       if (xiKind === "probable" && xi && ((m.live && m.live.state === "live") || (sure(xi.home) && sure(xi.away) && !(kickoffMs(m) && kickoffMs(m) - Date.now() > 3 * 3600 * 1000)))) xiKind = "confirmada";
+      if (xiKind === "confirmada" && !finished) {
+        const fb = await fmBenchFor(m, jn);
+        if (fb) { ffData = ffData || { home: {}, away: {} }; ffData.home = ffData.home || {}; ffData.away = ffData.away || {}; if (fb.home.length) ffData.home.bench = fb.home; if (fb.away.length) ffData.away.bench = fb.away; }
+      }
       renderMatchDetail(box, m, d, jn, xi, xiKind, finished, ffData);
       box.appendChild(buildOtherMatches(ms, m, jn));
       // Los puntos de MI liga Futmondo se piden aparte (por jugador y con
@@ -3735,7 +3751,12 @@
           sec.appendChild(h);
           if (side && window.EduAlineacion) {
             const wrap = el("div", "alin-pitches mpage-xipitches eq-pitch");
-            if (kind === "confirmada") wrap.appendChild(mpNewCard(side, name, crest, sub, "confirmed", xiPhotoMap(ff), (ff && ff.bench) || []));
+            if (kind === "confirmada") {
+              let bn = (ff && ff.bench) || [];
+              const fbn = await fmBenchFor(next, next.jn);
+              if (fbn) { const x = fbn[isHome ? "home" : "away"]; if (x && x.length) bn = x; }
+              wrap.appendChild(mpNewCard(side, name, crest, sub, "confirmed", xiPhotoMap(ff), bn));
+            }
             else wrap.appendChild(window.EduAlineacion.card(side, name, crest, sub, all, "probable", (side && side.bench) || []));
             sec.appendChild(wrap);
           } else {
