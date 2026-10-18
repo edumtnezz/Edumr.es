@@ -1508,7 +1508,16 @@
       const side = (name, crest) => { const t = el("div", "lv-team"); const im = el("img"); im.src = crest || ""; im.alt = ""; t.appendChild(im); t.appendChild(el("span", null, name)); return t; };
       head.appendChild(side(m.home, m.homeCrest));
       const mid = el("div", "lv-mid");
-      mid.appendChild(el("div", "lv-state" + (live.state === "live" ? " on" : ""), live.state === "live" ? (live.minute || "En juego") : live.state === "final" ? "Finalizado" : ((m.day || "") + " " + (m.date || "") + " · " + (m.time || "")).trim()));
+      if (live.state === "live") {
+        const lb = el("div", "lv-livebox");
+        const pill = el("span", "lv-livepill"); pill.appendChild(el("i")); pill.appendChild(document.createTextNode("En directo")); lb.appendChild(pill);
+        const lbl = String(live.minute || "");
+        const mn = lbl.match(/(\d+(?:\+\d+)?)\s*$/);
+        const per = lbl.split("·")[0].replace(/min\.?.*$/i, "").trim();
+        if (mn) { const ln2 = el("div", "lv-liveline"); ln2.appendChild(el("b", null, mn[1] + "'")); if (per && per !== lbl) ln2.appendChild(el("span", null, per)); lb.appendChild(ln2); }
+        else if (lbl) lb.appendChild(el("div", "lv-liveline", lbl));
+        mid.appendChild(lb);
+      } else mid.appendChild(el("div", "lv-state", live.state === "final" ? "Finalizado" : ((m.day || "") + " " + (m.date || "") + " · " + (m.time || "")).trim()));
       mid.appendChild(el("div", "lv-score", live.score && live.state !== "suspended" ? live.score : "vs"));
       head.appendChild(mid);
       head.appendChild(side(m.away, m.awayCrest));
@@ -1522,7 +1531,7 @@
       try { const r = await (await fetch(API + "/directo?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&jornada=" + encodeURIComponent(jn) + (dstr ? "&date=" + dstr : ""))).json(); entries = (r && r.entries) || []; fm = r && r.fm; ok = true; } catch (e) {}
       const mm = (e) => e.t + "'" + (e.x ? "+" + e.x : "");
       const evs = (fm && fm.events) || [], sts = (fm && fm.stats) || [];
-      const secs = []; const sec = (title) => { const c = el("section", "lv-sec"); c.appendChild(el("h3", "lv-h", title)); box.appendChild(c); secs.push([title.split(" ")[0], c]); return [c]; };
+      let fechaCard = null; const secs = []; const sec = (title) => { const c = el("section", "lv-sec"); c.appendChild(el("h3", "lv-h", title)); box.appendChild(c); secs.push([title.split(" ")[0], c]); return [c]; };
       const srcTag = () => {};
       const ln = fm && fm.lineup;
       // 1) Campo en directo
@@ -1829,7 +1838,7 @@
           const cap = el("span", "lv-hl-cap"); cap.appendChild(el("b", null, "Resumen del partido")); cap.appendChild(el("small", null, "Ver en YouTube")); a2.appendChild(cap);
           k.appendChild(a2);
         }
-        ["_fecha", "Top estadísticas", "Jugador del partido", "Eventos", "Últimos partidos", "Estadio", "Árbitro", "Noticias del partido", "Partido siguiente", "Momentos destacados"].forEach((n) => { if (cardsMap[n]) c.appendChild(cardsMap[n]); });
+        fechaCard = cardsMap["_fecha"] || null; ["Eventos", "Top estadísticas", "Jugador del partido", "Últimos partidos", "Estadio", "Árbitro", "Noticias del partido", "Partido siguiente", "Momentos destacados"].forEach((n) => { if (cardsMap[n]) c.appendChild(cardsMap[n]); });
       }
       // 3) Estadísticas
       if (sts.length) {
@@ -1911,6 +1920,7 @@
           c.classList.toggle("hidden", k !== cur);
         });
         box.insertBefore(bar, secs[0][1]);
+        if (fechaCard) { fechaCard.classList.add("top"); box.insertBefore(fechaCard, head); }
       }
       return live.state !== "final";
     };
