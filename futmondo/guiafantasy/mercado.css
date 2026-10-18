@@ -2028,3 +2028,10 @@ html { overflow-anchor: none; }
 .livepage { --surface: var(--cx-surface, #fff); --surface-2: var(--cx-surface-2, #f1f4f5); }
 :root:not([data-theme="light"]) .lv-pos b.a, :root:not([data-theme="light"]) .lv-tsv.win.a, :root:not([data-theme="light"]) .lv-h2n.a, :root:not([data-theme="light"]) .lv-chip { background: #3b4656; color: #fff; border-color: #3b4656; }
 :root:not([data-theme="light"]) .lv-benchbox.a { border-top-color: #64748b; }
+
+.lv-svg { display: inline-flex; align-items: center; justify-content: center; line-height: 0; }
+.lv-std-ic { color: #0f766e; font-size: 0; }
+.lv-svg.sm svg { width: 16px; height: 16px; }
+.lv-wx { display: inline-flex; align-items: center; gap: 6px; }
+.lv-ycard { display: inline-block; width: 11px; height: 15px; border-radius: 2px; background: #facc15; }
+.lv-ref-h > .lv-svg { color: #6b7a82; }

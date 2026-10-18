@@ -1717,15 +1717,30 @@
           k.appendChild(two);
         }
         // Estadio
+        const SVG = (p) => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + p + '</svg>';
+        const ICO = {
+          stadium: SVG('<ellipse cx="12" cy="8" rx="8" ry="3.5"/><path d="M4 8v8c0 1.9 3.6 3.5 8 3.5s8-1.6 8-3.5V8"/><path d="M8 11.5v6M12 12v7M16 11.5v6"/>'),
+          users: SVG('<circle cx="9" cy="8" r="3"/><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"/><path d="M16 5.5a3 3 0 0 1 0 5.5M18 14c2 .7 3 2.4 3 5"/>'),
+          pitch: SVG('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.5"/>'),
+          temp: SVG('<path d="M10 14.5V5a2 2 0 0 1 4 0v9.5a4 4 0 1 1-4 0z"/><path d="M12 9v7"/>'),
+          sun: SVG('<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>'),
+          cloud: SVG('<path d="M7 18a4 4 0 0 1-.6-7.96A5.5 5.5 0 0 1 17 9.5 4.3 4.3 0 0 1 17 18z"/>'),
+          rain: SVG('<path d="M7 14a4 4 0 0 1-.6-7.96A5.5 5.5 0 0 1 17 5.5 4.3 4.3 0 0 1 17 14z"/><path d="M8 17l-1 3M12 17l-1 3M16 17l-1 3"/>'),
+          snow: SVG('<path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9"/>'),
+          storm: SVG('<path d="M7 14a4 4 0 0 1-.6-7.96A5.5 5.5 0 0 1 17 5.5 4.3 4.3 0 0 1 17 14z"/><path d="M12 13l-2 4h3l-2 4"/>'),
+          fog: SVG('<path d="M4 9h16M6 13h14M4 17h12"/>'),
+          foul: SVG('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5M12 16v.5"/>')
+        };
+        const icoEl = (n, cls) => { const e = el("span", cls || "lv-svg"); e.innerHTML = ICO[n] || ""; return e; };
         if (inf && inf.stadium) {
           const k = card("Estadio");
           const st = inf.stadium;
-          const row = (ic, main, sub, extra) => { const r = el("div", "lv-std-r"); r.appendChild(el("span", "lv-std-ic", ic)); const t = el("div", "lv-std-tx"); t.appendChild(main); if (sub) t.appendChild(sub); r.appendChild(t); if (extra) r.appendChild(extra); k.appendChild(r); return t; };
+          const row = (ic, main, sub, extra) => { const r = el("div", "lv-std-r"); const ie = el("span", "lv-std-ic"); ie.appendChild(icoEl(ic)); r.appendChild(ie); const t = el("div", "lv-std-tx"); t.appendChild(main); if (sub) t.appendChild(sub); r.appendChild(t); if (extra) r.appendChild(extra); k.appendChild(r); return t; };
           let mapBtn = null;
           if (st.lat != null && st.lng != null) { mapBtn = el("a", "lv-std-map"); mapBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>'; mapBtn.href = "https://www.google.com/maps?q=" + st.lat + "," + st.lng; mapBtn.target = "_blank"; mapBtn.rel = "noopener noreferrer"; mapBtn.title = "Ver en el mapa"; }
-          row("🏟️", el("b", null, st.n), el("span", "lv-std-s", [st.city, PAIS[st.country] || st.country].filter(Boolean).join(", ")), mapBtn);
+          row("stadium", el("b", null, st.n), el("span", "lv-std-s", [st.city, PAIS[st.country] || st.country].filter(Boolean).join(", ")), mapBtn);
           if (st.cap) {
-            const t = row("👥", el("div", "lv-kv2", ""), null);
+            const t = row("users", el("div", "lv-kv2", ""), null);
             const l1 = t.firstChild; l1.appendChild(el("span", null, "Capacidad")); l1.appendChild(el("b", null, Number(st.cap).toLocaleString("es-ES")));
             if (inf.att) {
               const l2 = el("div", "lv-kv2"); l2.appendChild(el("span", null, "Asistencia")); l2.appendChild(el("b", null, Number(inf.att).toLocaleString("es-ES"))); t.appendChild(l2);
@@ -1733,11 +1748,11 @@
               const bar = el("div", "lv-att"); const f = el("i"); f.style.setProperty("width", pc + "%"); bar.appendChild(f); bar.appendChild(el("em", null, pc + " %")); t.appendChild(bar);
             }
           }
-          if (st.surface) { const t = row("🌱", el("div", "lv-kv2", ""), null); t.firstChild.appendChild(el("span", null, "Superficie")); t.firstChild.appendChild(el("b", null, /grass/i.test(st.surface) ? "Césped" : /artificial|turf/i.test(st.surface) ? "Césped artificial" : st.surface)); }
+          if (st.surface) { const t = row("pitch", el("div", "lv-kv2", ""), null); t.firstChild.appendChild(el("span", null, "Superficie")); t.firstChild.appendChild(el("b", null, /grass/i.test(st.surface) ? "Césped" : /artificial|turf/i.test(st.surface) ? "Césped artificial" : st.surface)); }
           if (inf.wx) {
             const d0 = String(inf.wx.d || "").toLowerCase();
-            const wi = /thunder|storm/.test(d0) ? "⛈️" : /snow/.test(d0) ? "❄️" : /rain|shower|drizzle/.test(d0) ? "🌧️" : /fog|mist|haze/.test(d0) ? "🌫️" : /partly|mostly cloudy|cloud|overcast/.test(d0) ? "☁️" : /clear|sunny/.test(d0) ? "☀️" : "";
-            const t = row("🌡️", el("div", "lv-kv2", ""), null); t.firstChild.appendChild(el("span", null, "El tiempo")); t.firstChild.appendChild(el("b", null, Math.round(inf.wx.t) + " °C" + (wi ? " " + wi : "")));
+            const wi = /thunder|storm/.test(d0) ? "storm" : /snow/.test(d0) ? "snow" : /rain|shower|drizzle/.test(d0) ? "rain" : /fog|mist|haze/.test(d0) ? "fog" : /partly|mostly cloudy|cloud|overcast/.test(d0) ? "cloud" : /clear|sunny/.test(d0) ? "sun" : "";
+            const t = row("temp", el("div", "lv-kv2", ""), null); t.firstChild.appendChild(el("span", null, "El tiempo")); { const wb = el("b", "lv-wx", Math.round(inf.wx.t) + " °C"); if (wi) wb.appendChild(icoEl(wi, "lv-svg sm")); t.firstChild.appendChild(wb); }
           }
         }
         // Árbitro
@@ -1750,10 +1765,10 @@
           const rs = inf.ref.stats || {};
           const lab = (x) => (Math.abs(x.fill - x.afill) <= 5 ? ["En la media", ""] : x.fill > x.afill ? ["Por encima de la media", "hi"] : ["Por debajo de la media", "lo"]);
           const grid = el("div", "lv-ref-grid");
-          [["yellowCards", "Tarjetas amarillas", "🟨"], ["fouls", "Faltas", "🚫"]].forEach(([key, nm, ic]) => {
+          [["yellowCards", "Tarjetas amarillas", "card"], ["fouls", "Faltas", "foul"]].forEach(([key, nm, ic]) => {
             const x = rs[key]; if (!x) return;
             const cell = el("div", "lv-ref-c");
-            const h = el("div", "lv-ref-h"); h.appendChild(el("span", null, ic)); h.appendChild(el("b", null, nm)); cell.appendChild(h);
+            const h = el("div", "lv-ref-h"); h.appendChild(ic === "card" ? el("span", "lv-ycard") : icoEl(ic, "lv-svg sm")); h.appendChild(el("b", null, nm)); cell.appendChild(h);
             const v = el("div", "lv-ref-v"); v.appendChild(el("strong", null, String(x.v).replace(".", ","))); v.appendChild(el("small", null, " / Partido")); cell.appendChild(v);
             const tr = el("div", "lv-ref-bar");
             const f = el("i"); f.style.setProperty("width", Math.max(2, Math.min(100, x.fill)) + "%"); tr.appendChild(f);
