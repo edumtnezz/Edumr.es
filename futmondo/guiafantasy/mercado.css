@@ -2106,3 +2106,7 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 .lv-ht b { font-family: var(--font-display, inherit); font-size: 1.05rem; font-weight: 900; font-variant-numeric: tabular-nums; color: #0f766e; }
 .lv-ht span { font-size: .66rem; font-weight: 800; letter-spacing: .02em; color: #6b7a82; text-transform: uppercase; }
 :root:not([data-theme="light"]) .lv-ht b { color: #5eead4; }
+
+/* Varios goles: un solo balon con el numero, para que no tape la nota */
+.pl-evs { letter-spacing: 0; align-items: center; gap: 1px; }
+.pl-evs i { font-style: normal; font-size: .58rem; font-weight: 900; line-height: 1; background: #0f172a; color: #fff; border-radius: 6px; padding: 1px 4px; margin-left: -2px; align-self: flex-end; }

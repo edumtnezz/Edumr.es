@@ -1635,7 +1635,7 @@
           const cds = q.ev || [];
           if (cds.indexOf("redCard") >= 0 || cds.indexOf("yellowRedCard") >= 0) ph.appendChild(el("span", "pl-red"));
           else if (cds.indexOf("yellowCard") >= 0) ph.appendChild(el("span", "pl-yel"));
-          const gl = cds.filter((x) => x === "goal").length; if (gl) ph.appendChild(el("span", "pl-evs", "⚽".repeat(gl)));
+          const gl = cds.filter((x) => x === "goal").length; if (gl) { const ev = el("span", "pl-evs", "⚽"); if (gl > 1) ev.appendChild(el("i", null, String(gl))); ph.appendChild(ev); }
           pl.appendChild(ph);
           pl.appendChild(el("div", "pl-nm", String(q.n || "").split(" ").slice(-1)[0]));
           if (q.so) { const sw = el("div", "pl-sw out"); sw.appendChild(el("i", null, "▼")); sw.appendChild(document.createTextNode(q.so + "'")); pl.appendChild(sw); }
@@ -1659,7 +1659,7 @@
             const cds = q.ev || [];
             if (cds.indexOf("redCard") >= 0 || cds.indexOf("yellowRedCard") >= 0) ph.appendChild(el("span", "pl-red"));
             else if (cds.indexOf("yellowCard") >= 0) ph.appendChild(el("span", "pl-yel"));
-            const gl = cds.filter((x) => x === "goal").length; if (gl) ph.appendChild(el("span", "pl-evs", "⚽".repeat(gl)));
+            const gl = cds.filter((x) => x === "goal").length; if (gl) { const ev = el("span", "pl-evs", "⚽"); if (gl > 1) ev.appendChild(el("i", null, String(gl))); ph.appendChild(ev); }
             pl.appendChild(ph);
             pl.appendChild(el("div", "pl-nm", String(q.n || "").split(" ").slice(-1)[0]));
             if (q.si) { const sw = el("div", "pl-sw in"); sw.appendChild(el("i", null, "▲")); sw.appendChild(document.createTextNode(q.si + "'")); pl.appendChild(sw); }
