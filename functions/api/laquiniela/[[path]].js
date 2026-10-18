@@ -1992,6 +1992,18 @@ async function getAlineacionesConfirmadas(env, matchdayParam) {
       };
     }));
     out.matches = results.filter(Boolean);
+    // Lista persistente de partidos ya confirmados (la sigue usando la ficha de la
+    // jornada aunque la caché de arriba se vacíe por un fallo puntual de Comuniate).
+    if (out.matches.length && out.matchday) {
+      try {
+        const sk = "cm:confset:v1:" + out.matchday;
+        const prev = (await env.PORRA.get(sk, "json")) || [];
+        const add = out.matches.map((x) => [x.home.name, x.away.name]);
+        const merged = prev.slice();
+        add.forEach((p) => { if (!merged.some((q) => q[0] === p[0] && q[1] === p[1])) merged.push(p); });
+        if (merged.length !== prev.length) await env.PORRA.put(sk, JSON.stringify(merged), { expirationTtl: 7 * 24 * 3600 });
+      } catch (e) {}
+    }
     // Hora en que se detectó por primera vez cada alineación confirmada.
     // Se guarda fuera de la caché (que dura 10 min) para poder fechar los
     // avisos de la cinta de "Última hora" de la portada: una vez fijada,
@@ -2445,6 +2457,10 @@ async function getJornadaStrip(env, matchday) {
   // evita que la ficha vaya por detrás por la caché de 10 min de los extras.
   let cfList = [];
   try { cfList = ((await getAlineacionesConfirmadas(env, jnum || null)) || {}).matches || []; } catch (e) {}
+  try {
+    const st = (await env.PORRA.get("cm:confset:v1:" + jnum, "json")) || [];
+    st.forEach((p) => cfList.push({ home: { name: p[0] }, away: { name: p[1] } }));
+  } catch (e) {}
   const matches = prep.map((p) => {
     const key = wkey(p.home).join(" ") + "|" + wkey(p.away).join(" ");
     let tv = [];
