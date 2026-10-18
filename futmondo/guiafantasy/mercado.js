@@ -1892,7 +1892,7 @@
           const cap = el("span", "lv-hl-cap"); cap.appendChild(el("b", null, "Resumen del partido")); cap.appendChild(el("small", null, "Ver en YouTube")); a2.appendChild(cap);
           k.appendChild(a2);
         }
-        fechaCard = cardsMap["_fecha"] || null; ["Eventos", "Top estadísticas", "Jugador del partido", "Últimos partidos", "Estadio", "Árbitro", "Noticias del partido", "Partido siguiente", "Momentos destacados"].forEach((n) => { if (cardsMap[n]) c.appendChild(cardsMap[n]); });
+        fechaCard = cardsMap["_fecha"] || null; ["Jugador del partido", "Eventos", "Top estadísticas", "Últimos partidos", "Estadio", "Árbitro", "Noticias del partido", "Partido siguiente", "Momentos destacados"].forEach((n) => { if (cardsMap[n]) c.appendChild(cardsMap[n]); });
       }
       // 3) Estadísticas
       if (sts.length) {
