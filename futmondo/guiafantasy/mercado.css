@@ -2043,3 +2043,4 @@ html { overflow-anchor: none; }
 .lv-ref-bar em { position: absolute; bottom: 14px; transform: translateX(-50%); font-style: normal; font-size: .68rem; font-weight: 800; color: #10151c; background: rgba(127,140,148,.22); padding: 1px 6px; border-radius: 6px; white-space: nowrap; }
 :root:not([data-theme="light"]) .lv-ref-bar s { background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.6); }
 :root:not([data-theme="light"]) .lv-ref-bar em { color: #e8edf2; background: rgba(255,255,255,.12); }
+.lv-ref-bar { overflow: visible; }
