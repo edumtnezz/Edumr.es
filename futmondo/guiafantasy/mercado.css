@@ -2023,3 +2023,6 @@ html { overflow-anchor: none; }
 .lv-fd { min-width: 42px; text-align: right; font-size: .72rem; font-weight: 700; color: #6b7a82; }
 .lv-std-map { color: #0ea5a4; background: rgba(14,165,164,.1); border-color: rgba(14,165,164,.35); }
 .lv-next-lg { flex-direction: column; justify-content: center; gap: 4px; text-align: center; }
+
+/* Modo oscuro del directo: las tarjetas usan las variables de la web (antes caían a blanco) */
+.livepage { --surface: var(--cx-surface, #fff); --surface-2: var(--cx-surface-2, #f1f4f5); }
