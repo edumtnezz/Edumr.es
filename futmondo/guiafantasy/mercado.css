@@ -1947,3 +1947,4 @@ html { overflow-anchor: none; }
   .lv-ptop, .lv-pitch, .lv-benchbox { max-width: 480px; margin-left: auto; margin-right: auto; }
   .lv-ptop { margin-bottom: 10px; }
 }
+.dest-upd { color: #6b7a82; font-size: .74rem; font-weight: 700; }

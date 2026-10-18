@@ -261,6 +261,7 @@
     box.innerHTML = "";
     const head = el("div", "dest-head");
     head.appendChild(el("span", "dest-title", "Destacados"));
+    head.appendChild(el("span", "dest-upd", (lastMarketAt ? "Actualizado " + horaTxt(lastMarketAt) + " · " : "") + "se renueva cada 10 min"));
     box.appendChild(head);
     const grid = el("div", "dest-grid");
     const list = bestValue();
