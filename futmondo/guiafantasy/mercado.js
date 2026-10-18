@@ -1923,7 +1923,7 @@
           c.classList.toggle("hidden", k !== cur);
         });
         box.insertBefore(bar, secs[0][1]);
-        if (fechaCard) { fechaCard.classList.add("top"); box.insertBefore(fechaCard, head); }
+        if (fechaCard) { fechaCard.classList.add("in"); head.appendChild(fechaCard); }
       }
       return live.state !== "final";
     };
