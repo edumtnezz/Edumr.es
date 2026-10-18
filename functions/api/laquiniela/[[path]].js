@@ -3910,7 +3910,7 @@ async function recordPointsHistory(env) {
 
 // Caché de respuestas públicas (Cache API: sin coste ni límite). Evita recalcular en cada visita
 // y mantiene la CPU por petición por debajo del límite del plan gratis de Cloudflare.
-const EDGE_TTL = { "historial-puntos": 120, mercado: 45, rachas: 60, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 90, "alineaciones-confirmadas": 90, "alineaciones-estado": 90, noticias: 300, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 30 };
+const EDGE_TTL = { "historial-puntos": 120, mercado: 45, rachas: 60, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 90, "alineaciones-confirmadas": 90, "alineaciones-estado": 90, noticias: 300, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10 };
 export async function onRequestGet(ctx) {
   const path = (ctx.params.path || []).join("/");
   const ttl = EDGE_TTL[path];

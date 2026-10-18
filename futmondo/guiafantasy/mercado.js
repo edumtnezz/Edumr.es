@@ -1546,6 +1546,36 @@
           const iv = setInterval(tick, 1000); tick();
         }
       } catch (e) {}
+      // Marcador y minuto de la cabecera con los datos de FotMob (van más rápido que los de la jornada)
+      let fmDone = false;
+      try {
+        if (fm && fm.started && Array.isArray(fm.score) && fm.score[0] != null && fm.score[1] != null && live.state !== "suspended") {
+          const se = mid.querySelector(".lv-score"); if (se) se.textContent = fm.score[0] + " - " + fm.score[1];
+          const hf = fm.halfs || {};
+          const tM = (v) => { const q = String(v || "").match(/^(\d{2})\.(\d{2})\.(\d{4}) (\d{2}):(\d{2}):(\d{2})$/); if (!q) return 0; const u = Date.UTC(+q[3], +q[2] - 1, +q[1], +q[4], +q[5], +q[6]); const off = Date.parse(new Date(u).toLocaleString("en-US", { timeZone: "Europe/Madrid" })) - Date.parse(new Date(u).toLocaleString("en-US", { timeZone: "UTC" })); return u - off; };
+          if (fm.finished) {
+            fmDone = true;
+            const lbx = mid.querySelector(".lv-livebox");
+            if (lbx) { const st = el("div", "lv-state", "Finalizado"); lbx.replaceWith(st); }
+            else { const stx = mid.querySelector(".lv-state"); if (stx) stx.textContent = "Finalizado"; }
+          } else {
+            let lbx = mid.querySelector(".lv-livebox");
+            if (!lbx) { const stx = mid.querySelector(".lv-state"); if (stx) { lbx = el("div", "lv-livebox"); const pl = el("span", "lv-livepill"); pl.appendChild(el("i")); pl.appendChild(document.createTextNode("En directo")); lbx.appendChild(pl); stx.replaceWith(lbx); } }
+            if (lbx) {
+              const fh = tM(hf.firstHalfStarted), fe = tM(hf.firstHalfEnded), sh = tM(hf.secondHalfStarted), se2 = tM(hf.secondHalfEnded);
+              const mk = (n, base) => (n > base ? base + "+" + (n - base) : String(n)) + "'";
+              let ml = "", per = "";
+              if (sh && !se2) { ml = mk(45 + Math.floor((Date.now() - sh) / 60000) + 1, 90); per = "2ª parte"; }
+              else if (fh && !fe) { ml = mk(Math.floor((Date.now() - fh) / 60000) + 1, 45); per = "1ª parte"; }
+              else if (fe && !sh) { ml = ""; per = "Descanso"; }
+              if (per) {
+                const old = lbx.querySelector(".lv-liveline"); if (old) old.remove();
+                const ln3 = el("div", "lv-liveline"); if (ml) ln3.appendChild(el("b", null, ml)); ln3.appendChild(el("span", null, per)); lbx.appendChild(ln3);
+              }
+            }
+          }
+        }
+      } catch (e) {}
       const mm = (e) => e.t + "'" + (e.x ? "+" + e.x : "");
       const evs = (fm && fm.events) || [], sts = (fm && fm.stats) || [];
       let fechaCard = null; const secs = []; const sec = (title) => { const c = el("section", "lv-sec"); c.appendChild(el("h3", "lv-h", title)); box.appendChild(c); secs.push([title.split(" ")[0], c]); return [c]; };
@@ -1933,7 +1963,7 @@
         const ORD = ["Hechos", "Alineación", "Estadísticas", "Cara", "Clasificación"];
         secs.sort((x, y) => ORD.indexOf(x[0]) - ORD.indexOf(y[0]));
         secs.forEach(([k, c]) => box.appendChild(c));
-        const srcTop = el("p", "lv-srctop", "Fuente de los datos: FotMob · se actualiza cada 30 s");
+        const srcTop = el("p", "lv-srctop", "Fuente de los datos: FotMob · se actualiza cada 10 s");
         box.insertBefore(srcTop, secs[0][1]);
         let cur = lvTab; if (!secs.some((x) => x[0] === cur)) cur = secs[0][0];
         const bar = el("div", "lv-tabs");
@@ -1946,7 +1976,7 @@
         box.insertBefore(bar, secs[0][1]);
         if (fechaCard) { fechaCard.classList.add("in"); head.appendChild(fechaCard); }
       }
-      return live.state !== "final";
+      return live.state !== "final" && !fmDone;
     };
     try {
       const more = await paint(true);
@@ -1965,7 +1995,7 @@
           if (!mo) clearInterval(timer);
         } catch (e) {}
         window.scrollTo(0, y);
-      }, 30000);
+      }, 10000);
     } catch (e) { boxR.innerHTML = '<p class="muted small">No se pudo cargar el directo.</p>'; }
   }
   async function renderMatchPage(slug) {
