@@ -2035,3 +2035,5 @@ html { overflow-anchor: none; }
 .lv-wx { display: inline-flex; align-items: center; gap: 6px; }
 .lv-ycard { display: inline-block; width: 11px; height: 15px; border-radius: 2px; background: #facc15; }
 .lv-ref-h > .lv-svg { color: #6b7a82; }
+:root:not([data-theme="light"]) .lv-std-ic { color: #2dd4bf; background: rgba(45,212,191,.12); }
+:root:not([data-theme="light"]) .lv-ref-h > .lv-svg { color: #94a3b8; }
