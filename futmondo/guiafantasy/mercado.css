@@ -2004,7 +2004,7 @@ html { overflow-anchor: none; }
 .lv-hl:active .lv-play { transform: translate(-50%, -50%) scale(.96); }
 .lv-hl-cap { position: absolute; left: 14px; bottom: 12px; display: flex; flex-direction: column; color: #fff; text-shadow: 0 1px 6px rgba(0,0,0,.6); }
 .lv-hl-cap small { opacity: .85; font-weight: 700; }
-.lv-pitch { aspect-ratio: 5 / 13.4; }
+.lv-pitch { aspect-ratio: 5 / 14.6; }
 .lv-pitch a.pl { text-decoration: none; }
 .lv-benchbox { margin-top: 22px; position: relative; }
 .lv-benchbox.h { border-top: 4px solid #0f766e; } .lv-benchbox.a { border-top: 4px solid #10151c; }
