@@ -2037,3 +2037,9 @@ html { overflow-anchor: none; }
 .lv-ref-h > .lv-svg { color: #6b7a82; }
 :root:not([data-theme="light"]) .lv-std-ic { color: #2dd4bf; background: rgba(45,212,191,.12); }
 :root:not([data-theme="light"]) .lv-ref-h > .lv-svg { color: #94a3b8; }
+
+.lv-ref-bar { margin-top: 22px; }
+.lv-ref-bar s { top: -5px; height: 16px; width: 3px; border-radius: 2px; background: #10151c; box-shadow: 0 0 0 1px rgba(255,255,255,.7); }
+.lv-ref-bar em { position: absolute; bottom: 14px; transform: translateX(-50%); font-style: normal; font-size: .68rem; font-weight: 800; color: #10151c; background: rgba(127,140,148,.22); padding: 1px 6px; border-radius: 6px; white-space: nowrap; }
+:root:not([data-theme="light"]) .lv-ref-bar s { background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.6); }
+:root:not([data-theme="light"]) .lv-ref-bar em { color: #e8edf2; background: rgba(255,255,255,.12); }

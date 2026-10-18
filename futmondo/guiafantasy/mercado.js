@@ -1773,7 +1773,9 @@
             const tr = el("div", "lv-ref-bar");
             const f = el("i"); f.style.setProperty("width", Math.max(2, Math.min(100, x.fill)) + "%"); tr.appendChild(f);
             const dot = el("u"); dot.style.setProperty("left", Math.max(2, Math.min(98, x.fill)) + "%"); tr.appendChild(dot);
-            const tk = el("s"); tk.style.setProperty("left", Math.max(2, Math.min(98, x.afill)) + "%"); tr.appendChild(tk);
+            const tk = el("s"); const al = Math.max(2, Math.min(98, x.afill)); tk.style.setProperty("left", al + "%");
+            if (x.avg != null) { const tl = el("em", null, "Media " + String(x.avg).replace(".", ",")); tl.style.setProperty("left", Math.max(18, Math.min(82, al)) + "%"); tr.appendChild(tl); }
+            tr.appendChild(tk);
             cell.appendChild(tr);
             const lb = lab(x); cell.appendChild(el("span", "lv-ref-l " + lb[1], lb[0]));
             grid.appendChild(cell);
