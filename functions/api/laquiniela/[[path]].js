@@ -2441,6 +2441,10 @@ async function getJornadaStrip(env, matchday) {
   try { accum = (await env.PORRA.get(accumKey, "json")) || {}; } catch (e) {}
   let accumChanged = false;
 
+  // Alineaciones confirmadas ya detectadas (misma fuente que el aviso de la portada);
+  // evita que la ficha vaya por detrás por la caché de 10 min de los extras.
+  let cfList = [];
+  try { cfList = ((await getAlineacionesConfirmadas(env, jnum || null)) || {}).matches || []; } catch (e) {}
   const matches = prep.map((p) => {
     const key = wkey(p.home).join(" ") + "|" + wkey(p.away).join(" ");
     let tv = [];
@@ -2489,7 +2493,7 @@ async function getJornadaStrip(env, matchday) {
         if (ko && Date.now() - ko > 3 * 3600 * 1000) live = null;
       }
     }
-    const confirmed = !!(cmE && cmE.confirmed);
+    const confirmed = !!(cmE && cmE.confirmed) || cfList.some((c) => teamScore(c.home.name, p.home) + teamScore(c.away.name, p.away) >= 4);
 
     return { home: p.home, away: p.away, homeCrest: p.homeCrest, awayCrest: p.awayCrest, day: p.day, date: p.date, time: p.tbc ? "" : p.time, tbc: !!p.tbc, tv, live, confirmed };
   });
