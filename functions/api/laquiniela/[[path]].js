@@ -2461,8 +2461,18 @@ async function getJornadaStrip(env, matchday) {
     const st = (await env.PORRA.get("cm:confset:v1:" + jnum, "json")) || [];
     st.forEach((p) => cfList.push({ home: { name: p[0] }, away: { name: p[1] } }));
   } catch (e) {}
+  // FotMob: lo más fresco para partidos que están jugándose ahora (la lista de Comuniate/football-data va con retraso)
+  let fmList = [];
+  try {
+    const now0 = Date.now(), dset = new Set();
+    prep.forEach((p) => { const ko = new Date(p.m && p.m.utcDate).getTime(); if (ko && ko <= now0 + 120000 && now0 - ko < 4 * 3600 * 1000) { const pp = {}; new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(ko)).forEach((x) => { pp[x.type] = x.value; }); dset.add(pp.year + pp.month + pp.day); } });
+    for (const dd of [...dset].slice(0, 2)) {
+      const lj = await (await fetch("https://www.fotmob.com/api/data/matches?date=" + dd + "&timezone=Europe%2FMadrid&ccode3=ESP", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).json();
+      (lj.leagues || []).forEach((lg) => (lg.matches || []).forEach((m) => { if (m && m.status && m.home && m.away) fmList.push(m); }));
+    }
+  } catch (e) {}
   const matches = prep.map((p) => {
-    const key = wkey(p.home).join(" ") + "|" + wkey(p.away).join(" ");
+    const key = wkey(p.home).join(" ") + "|" + wkey(p.away).join(" ") + "|" + wkey(p.away).join(" ");
     let tv = [];
     // 1) Canal: primero Comuniate, que lo enseña siempre (jugado o no).
     const cmE = cmExtras.find((e) => teamScore(e.home, p.home) + teamScore(e.away, p.away) >= 4);
@@ -2509,6 +2519,19 @@ async function getJornadaStrip(env, matchday) {
         if (ko && Date.now() - ko > 3 * 3600 * 1000) live = null;
       }
     }
+    try {
+      const fmM = fmList.find((x) => teamScore(x.home.longName || x.home.name, p.home) + teamScore(x.away.longName || x.away.name, p.away) >= 4);
+      const fs = fmM && fmM.status;
+      if (fs && fs.started && /^\d+\s*-\s*\d+$/.test(String(fs.scoreStr || "").trim())) {
+        const sc = String(fs.scoreStr).replace(/\s*-\s*/, " - ");
+        if (fs.finished) { if (!live || live.state !== "final") live = { state: "final", label: "FINALIZADO", minute: "", score: sc }; else live.score = sc; }
+        else if (!(live && live.state === "final")) {
+          const ht = fs.reason && /^(HT|Descanso)/i.test(String(fs.reason.short || ""));
+          const mn = String((fs.liveTime && (fs.liveTime.short || fs.liveTime.long)) || "").replace(/\s+/g, "");
+          live = { state: "live", label: ht ? "Descanso" : "EN JUEGO", minute: ht ? "Descanso" : (mn && /\d/.test(mn) ? mn : "EN JUEGO"), score: sc };
+        }
+      }
+    } catch (e) {}
     const confirmed = !!(cmE && cmE.confirmed) || cfList.some((c) => teamScore(c.home.name, p.home) + teamScore(c.away.name, p.away) >= 4);
 
     return { home: p.home, away: p.away, homeCrest: p.homeCrest, awayCrest: p.awayCrest, day: p.day, date: p.date, time: p.tbc ? "" : p.time, tbc: !!p.tbc, tv, live, confirmed };
