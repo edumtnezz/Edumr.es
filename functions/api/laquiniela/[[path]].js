@@ -4048,12 +4048,12 @@ async function handleGet({ request, env: env0, params }) {
           else if (e.type === "VAR") events.push(Object.assign(base, { k: "var", name: e.nameStr || (e.player && e.player.name) || "", txt: (((e.VAR || {}).decision || {}).value || []).join(" · ") }));
           else if (e.type === "Half") events.push(Object.assign(base, { k: "half", txt: e.halfStrShort || "" }));
         });
-        const LBL = [["BallPossesion", "Posesión", "%"], ["expected_goals", "Goles esperados (xG)"], ["total_shots", "Tiros totales"], ["ShotsOnTarget", "Tiros a puerta"], ["big_chance", "Ocasiones claras"], ["corners", "Córners"], ["touches_opp_box", "Toques en el área rival"], ["accurate_passes", "Pases precisos"], ["fouls", "Faltas"], ["yellow_cards", "Amarillas"], ["red_cards", "Rojas"], ["Offsides", "Fueras de juego"], ["keeper_saves", "Paradas"]];
+        const LBL = [["BallPossesion", "Posesión", "%", "Ataque"], ["expected_goals", "Goles esperados (xG)", "", "Ataque"], ["total_shots", "Tiros totales", "", "Ataque"], ["ShotsOnTarget", "Tiros a puerta", "", "Ataque"], ["big_chance", "Ocasiones claras", "", "Ataque"], ["corners", "Córners", "", "Ataque"], ["touches_opp_box", "Toques en el área rival", "", "Ataque"], ["accurate_passes", "Pases precisos", "", "Juego"], ["keeper_saves", "Paradas", "", "Defensa"], ["fouls", "Faltas", "", "Disciplina"], ["yellow_cards", "Amarillas", "", "Disciplina"], ["red_cards", "Rojas", "", "Disciplina"], ["Offsides", "Fueras de juego", "", "Disciplina"]];
         const groups = ((((content.stats || {}).Periods || {}).All || {}).stats) || [];
         const byKey = {};
         groups.forEach((g) => (g.stats || []).forEach((x) => { if (x && x.stats && x.stats.length === 2 && x.stats[0] != null && !byKey[x.key]) byKey[x.key] = x.stats; }));
         const stats = [];
-        LBL.forEach((l) => { const v = byKey[l[0]]; if (v) stats.push({ k: l[0], l: l[1], h: v[0], a: v[1], u: l[2] || "" }); });
+        LBL.forEach((l) => { const v = byKey[l[0]]; if (v) stats.push({ k: l[0], l: l[1], h: v[0], a: v[1], u: l[2] || "", g: l[3] || "" }); });
         const mf = content.matchFacts || {};
         const pm = mf.playerOfTheMatch || null;
         let mvp = null;
@@ -4085,7 +4085,8 @@ async function handleGet({ request, env: env0, params }) {
         const wx = content.weather || null;
         const info = {
           date: (ib["Match Date"] || {}).utcTime || "", round: tr0.round || tr0.roundName || "", league: tr0.leagueName || "",
-          stadium: st0.name ? { n: st0.name, city: st0.city || "", country: st0.country || "", cap: st0.capacity || 0, surface: st0.surface || "" } : null,
+          stadium: st0.name ? { n: st0.name, city: st0.city || "", country: st0.country || "", cap: st0.capacity || 0, surface: st0.surface || "", lat: st0.lat || null, lng: st0.long || null } : null,
+          att: (() => { const a = ib.Attendance; const n = typeof a === "number" ? a : a && (a.attendance || a.value) || 0; return Number(n) || 0; })(),
           ref: rf.text ? { n: rf.text, country: rf.country || "", img: rf.imgUrl || "", stats: rstat } : null,
           wx: wx && wx.temperature != null ? { t: wx.temperature, d: wx.defaultTitle || "", c: wx.iconCode } : null,
         };
@@ -4105,7 +4106,7 @@ async function handleGet({ request, env: env0, params }) {
           } catch (e) { return null; }
         };
         const nexts = await Promise.all([teams[0] ? nextOf(teams[0].id) : null, teams[1] ? nextOf(teams[1].id) : null]);
-        out.fm = { info, form, h2h, next: nexts, potm, hl: hlx, mvp, hl, lineup, table, hid: teams[0] && teams[0].id, aid: teams[1] && teams[1].id, id: hit.id, started: !!st.started, finished: !!st.finished, score: [teams[0] && teams[0].score, teams[1] && teams[1].score], events, stats, src: "FotMob" };
+        out.fm = { info, form, h2h, next: nexts, potm, hl: hlx, lineup, table, hid: teams[0] && teams[0].id, aid: teams[1] && teams[1].id, id: hit.id, started: !!st.started, finished: !!st.finished, score: [teams[0] && teams[0].score, teams[1] && teams[1].score], events, stats, src: "FotMob" };
       } catch (e) {}
     })();
     await Promise.all([cron, fot]);

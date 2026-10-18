@@ -1527,6 +1527,24 @@
       const ln = fm && fm.lineup;
       // 1) Campo en directo
       if (ln && ln.h && ln.a) {
+        if (!all || !all.length) { try { await load(); } catch (e) {} }
+        const fnorm = (x) => stripAccents(String(x || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+        // Jugador de FotMob -> su ficha en nuestra web (mismo equipo; nombre completo o, si es único, el apellido)
+        const ourHref = (full, team) => {
+          const tk = teamCanon(team);
+          const pool = (all || []).filter((p) => p.id && teamCanon(p.team) === tk);
+          const ft = fnorm(full).split(" ").filter(Boolean);
+          if (!ft.length) return "";
+          let best = null, bs = 0, tie = false;
+          pool.forEach((p) => {
+            const pt = fnorm(p.name).split(" ").filter((w) => w.length > 1);
+            if (pt.length && pt.every((w) => ft.indexOf(w) >= 0)) { if (pt.length > bs) { bs = pt.length; best = p; tie = false; } else if (pt.length === bs && best && best.id !== p.id) tie = true; }
+          });
+          if (best && !tie) return "/jugador/" + encodeURIComponent(best.id) + "/" + nameSlug(best.name);
+          const last = ft[ft.length - 1];
+          const same = pool.filter((p) => { const pt = fnorm(p.name).split(" "); return pt[pt.length - 1] === last; });
+          return same.length === 1 ? "/jugador/" + encodeURIComponent(same[0].id) + "/" + nameSlug(same[0].name) : "";
+        };
         const [c] = sec("Alineación");
         const top = el("div", "lv-ptop");
         const rcls = (r) => (r >= 8 ? " on top" : r >= 6.5 ? " on" : r && r < 6 ? " neg" : "");
@@ -1548,9 +1566,10 @@
         });
         const place = (t, home) => (t.st || []).forEach((q) => {
           if (q.x == null || q.y == null) return;
-          const pl = el("div", "pl lv-abs");
+          const hrf = ourHref(q.n, t.name);
+          const pl = el(hrf ? "a" : "div", "pl lv-abs"); if (hrf) pl.href = hrf;
           pl.style.setProperty("left", ((home ? q.x : 1 - q.x) * 100) + "%");
-          pl.style.setProperty("top", ((home ? 5 + q.y * 45 : 95 - q.y * 45)) + "%");
+          pl.style.setProperty("top", ((home ? 6 + q.y * 40 : 94 - q.y * 40)) + "%");
           const ph = el("div", "pl-ph");
           const im = el("img"); im.loading = "lazy"; im.alt = ""; im.src = "https://images.fotmob.com/image_resources/playerimages/" + q.id + ".png";
           im.addEventListener("error", () => { im.src = "/img/avatar.svg"; });
@@ -1567,13 +1586,14 @@
         });
         place(ln.h, true); place(ln.a, false);
         c.appendChild(pitch);
-        [[ln.h, ln.h.name], [ln.a, ln.a.name]].forEach(([t, nm]) => {
+        [[ln.h, ln.h.name, m.homeCrest, "h"], [ln.a, ln.a.name, m.awayCrest, "a"]].forEach(([t, nm, cr, w]) => {
           if (!(t.sb || []).length) return;
-          const bn = el("div", "al-bench lv-benchbox");
-          bn.appendChild(el("div", "al-bench-h", "Suplentes · " + nm));
+          const bn = el("div", "al-bench lv-benchbox " + w);
+          const bh = el("div", "lv-bench-h"); if (cr) { const ci = el("img"); ci.alt = ""; ci.src = cr; bh.appendChild(ci); } const bt = el("div", "lv-bench-t"); bt.appendChild(el("small", null, "Banquillo")); bt.appendChild(el("b", null, nm)); bh.appendChild(bt); bn.appendChild(bh);
           const row = el("div", "al-bench-row");
           t.sb.forEach((q) => {
-            const pl = el("div", "pl" + (q.si ? "" : " lv-unused"));
+            const hrf2 = ourHref(q.n, t.name);
+            const pl = el(hrf2 ? "a" : "div", "pl" + (q.si ? "" : " lv-unused")); if (hrf2) pl.href = hrf2;
             const ph = el("div", "pl-ph");
             const im = el("img"); im.loading = "lazy"; im.alt = ""; im.src = "https://images.fotmob.com/image_resources/playerimages/" + q.id + ".png";
             im.addEventListener("error", () => { im.src = "/img/avatar.svg"; });
@@ -1595,11 +1615,13 @@
       // 2) Hechos: top estadísticas, jugador del partido, eventos (del minuto más reciente al más antiguo) y momentos destacados
       const potm = fm && fm.potm, hlv = fm && fm.hl;
       const stBy = {}; sts.forEach((x) => { stBy[x.l] = x; });
+      let news = [];
+      try { if (fm) { const nj = await (await fetch(API + "/noticias")).json(); news = (nj && nj.noticias) || []; } } catch (e) {}
       if (evs.length || potm || hlv || sts.length) {
         const [c] = sec("Hechos");
-        const card = (t) => { const k = el("div", "lv-card"); k.appendChild(el("h4", "lv-card-h", t)); c.appendChild(k); return k; };
+        const cardsMap = {}; const card = (t, cls) => { const k = el("div", "lv-card" + (cls ? " " + cls : "")); if (t.charAt(0) !== "_") k.appendChild(el("h4", "lv-card-h", t)); cardsMap[t] = k; return k; };
         const pos = stBy["Posesión"];
-        if (pos || stBy["Goles esperados (xG)"] || stBy["Tiros"] || stBy["Toques en el área rival"]) {
+        if (pos || stBy["Goles esperados (xG)"] || stBy["Tiros totales"] || stBy["Toques en el área rival"]) {
           const k = card("Top estadísticas");
           if (pos) {
             k.appendChild(el("div", "lv-pos-l", "Posesión"));
@@ -1607,12 +1629,12 @@
             l.style.setProperty("width", Math.max(14, Number(pos.h) || 50) + "%"); r.style.setProperty("width", Math.max(14, Number(pos.a) || 50) + "%");
             bar.appendChild(l); bar.appendChild(r); k.appendChild(bar);
           }
-          ["Goles esperados (xG)", "Tiros", "Toques en el área rival"].forEach((nm) => {
+          ["Goles esperados (xG)", "Tiros totales", "Toques en el área rival"].forEach((nm) => {
             const x = stBy[nm]; if (!x) return;
             const hv = parseFloat(x.h), av = parseFloat(x.a);
             const row = el("div", "lv-tsr");
             row.appendChild(el("span", "lv-tsv" + (hv > av ? " win h" : ""), String(x.h).replace(".", ",")));
-            row.appendChild(el("span", "lv-tsl", nm === "Tiros" ? "Tiros totales" : nm));
+            row.appendChild(el("span", "lv-tsl", nm));
             row.appendChild(el("span", "lv-tsv" + (av > hv ? " win a" : ""), String(x.a).replace(".", ",")));
             k.appendChild(row);
           });
@@ -1657,20 +1679,36 @@
         }
         const inf = fm && fm.info;
         const FM_CREST = (id) => "https://images.fotmob.com/image_resources/logo/teamlogo/" + id + ".png";
-        const fdate = (iso, withTime) => { try { return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short", day: "numeric", month: "long", hour: withTime ? "2-digit" : undefined, minute: withTime ? "2-digit" : undefined }).format(new Date(iso)).replace(/^(\S+?)\.?,?\s/, "$1, "); } catch (e) { return ""; } };
+        const fdate = (iso) => { try { return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "long", day: "numeric", month: "long" }).format(new Date(iso)); } catch (e) { return ""; } };
         const fhour = (iso) => { try { return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" }).format(new Date(iso)); } catch (e) { return ""; } };
-        const fshort = (iso) => { try { return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "numeric", month: "short" }).format(new Date(iso)).replace(".", ""); } catch (e) { return ""; } };
+        const fshort = (iso) => { try { return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short", day: "numeric", month: "short" }).format(new Date(iso)).replace(/\./g, ""); } catch (e) { return ""; } };
+        const fdm = (iso) => { try { return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "numeric", month: "short" }).format(new Date(iso)).replace(/\./g, ""); } catch (e) { return ""; } };
         const PAIS = { Spain: "España", Portugal: "Portugal", France: "Francia", Italy: "Italia", Germany: "Alemania", England: "Inglaterra" };
+        const COMP = { "UEFA Champions League": "Champions League", "UEFA Europa League": "Europa League", "UEFA Conference League": "Conference League", "UEFA Europa Conference League": "Conference League", "Copa del Rey": "Copa del Rey", "Supercopa": "Supercopa" };
+        // Fecha (arriba del todo)
+        if (inf && inf.date) {
+          const k = card("_fecha", "lv-when");
+          const l = el("div", "lv-when-l");
+          const chips = el("div", "lv-when-chips");
+          if (inf.league) chips.appendChild(el("span", "lv-wchip", inf.league));
+          if (inf.round) chips.appendChild(el("span", "lv-wchip alt", "Jornada " + inf.round));
+          l.appendChild(chips);
+          const dd = fdate(inf.date); l.appendChild(el("div", "lv-when-d", dd.charAt(0).toUpperCase() + dd.slice(1)));
+          k.appendChild(l);
+          k.appendChild(el("div", "lv-when-t", fhour(inf.date)));
+        }
+        // Forma: últimos resultados con su fecha
         const fm2 = fm && fm.form;
         if (fm2 && (fm2[0] || []).length + (fm2[1] || []).length) {
-          const k = card("Forma");
+          const k = card("Últimos partidos");
           const two = el("div", "lv-form");
-          [[ln && ln.h ? ln.h.name : m.home, fm2[0]], [ln && ln.a ? ln.a.name : m.away, fm2[1]]].forEach(([nm, arr]) => {
+          [[ln && ln.h ? ln.h.name : m.home, fm2[0], m.homeCrest], [ln && ln.a ? ln.a.name : m.away, fm2[1], m.awayCrest]].forEach(([nm, arr, cr]) => {
             const col = el("div", "lv-fcol");
+            const hd = el("div", "lv-fhead"); if (cr) { const ci = el("img"); ci.alt = ""; ci.src = cr; hd.appendChild(ci); } hd.appendChild(el("span", null, nm)); col.appendChild(hd);
             (arr || []).slice().reverse().forEach((x) => {
               const r = el("div", "lv-frow");
-              const pill = el("span", "lv-fp " + (x.r === "W" ? "w" : x.r === "L" ? "l" : "d"), x.sc.replace(" - ", " - "));
-              r.appendChild(pill);
+              r.appendChild(el("span", "lv-fd", x.d ? fdm(x.d) : ""));
+              r.appendChild(el("span", "lv-fp " + (x.r === "W" ? "w" : x.r === "L" ? "l" : "d"), x.sc));
               const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = x.logo; r.appendChild(im);
               col.appendChild(r);
             });
@@ -1678,61 +1716,111 @@
           });
           k.appendChild(two);
         }
+        // Estadio
         if (inf && inf.stadium) {
           const k = card("Estadio");
           const st = inf.stadium;
-          const r1 = el("div", "lv-inf"); r1.appendChild(el("b", null, st.n)); r1.appendChild(el("span", null, [st.city, PAIS[st.country] || st.country].filter(Boolean).join(", "))); k.appendChild(r1);
-          const line = (a, b) => { const r = el("div", "lv-kv"); r.appendChild(el("span", null, a)); r.appendChild(el("b", null, b)); k.appendChild(r); };
-          if (st.cap) line("Capacidad", Number(st.cap).toLocaleString("es-ES"));
-          if (st.surface) line("Superficie", /grass/i.test(st.surface) ? "Césped" : /artificial|turf/i.test(st.surface) ? "Césped artificial" : st.surface);
-          if (inf.wx) line("El tiempo", Math.round(inf.wx.t) + " °C");
+          const row = (ic, main, sub, extra) => { const r = el("div", "lv-std-r"); r.appendChild(el("span", "lv-std-ic", ic)); const t = el("div", "lv-std-tx"); t.appendChild(main); if (sub) t.appendChild(sub); r.appendChild(t); if (extra) r.appendChild(extra); k.appendChild(r); return t; };
+          let mapBtn = null;
+          if (st.lat != null && st.lng != null) { mapBtn = el("a", "lv-std-map", "📍"); mapBtn.href = "https://www.google.com/maps?q=" + st.lat + "," + st.lng; mapBtn.target = "_blank"; mapBtn.rel = "noopener noreferrer"; mapBtn.title = "Ver en el mapa"; }
+          row("🏟️", el("b", null, st.n), el("span", "lv-std-s", [st.city, PAIS[st.country] || st.country].filter(Boolean).join(", ")), mapBtn);
+          if (st.cap) {
+            const t = row("👥", el("div", "lv-kv2", ""), null);
+            const l1 = t.firstChild; l1.appendChild(el("span", null, "Capacidad")); l1.appendChild(el("b", null, Number(st.cap).toLocaleString("es-ES")));
+            if (inf.att) {
+              const l2 = el("div", "lv-kv2"); l2.appendChild(el("span", null, "Asistencia")); l2.appendChild(el("b", null, Number(inf.att).toLocaleString("es-ES"))); t.appendChild(l2);
+              const pc = Math.max(1, Math.min(100, Math.round(inf.att / st.cap * 100)));
+              const bar = el("div", "lv-att"); const f = el("i"); f.style.setProperty("width", pc + "%"); bar.appendChild(f); bar.appendChild(el("em", null, pc + " %")); t.appendChild(bar);
+            }
+          }
+          if (st.surface) { const t = row("🌱", el("div", "lv-kv2", ""), null); t.firstChild.appendChild(el("span", null, "Superficie")); t.firstChild.appendChild(el("b", null, /grass/i.test(st.surface) ? "Césped" : /artificial|turf/i.test(st.surface) ? "Césped artificial" : st.surface)); }
+          if (inf.wx) {
+            const d0 = String(inf.wx.d || "").toLowerCase();
+            const wi = /thunder|storm/.test(d0) ? "⛈️" : /snow/.test(d0) ? "❄️" : /rain|shower|drizzle/.test(d0) ? "🌧️" : /fog|mist|haze/.test(d0) ? "🌫️" : /partly|mostly cloudy|cloud|overcast/.test(d0) ? "☁️" : /clear|sunny/.test(d0) ? "☀️" : "";
+            const t = row("🌡️", el("div", "lv-kv2", ""), null); t.firstChild.appendChild(el("span", null, "El tiempo")); t.firstChild.appendChild(el("b", null, Math.round(inf.wx.t) + " °C" + (wi ? " " + wi : "")));
+          }
         }
+        // Árbitro
         if (inf && inf.ref) {
           const k = card("Árbitro");
-          const rr = el("div", "lv-inf"); rr.appendChild(el("b", null, inf.ref.n)); rr.appendChild(el("span", null, PAIS[inf.ref.country] || inf.ref.country)); k.appendChild(rr);
+          const top = el("div", "lv-ref-top");
+          if (inf.ref.img) { const fi = el("img"); fi.alt = ""; fi.src = inf.ref.img; top.appendChild(fi); }
+          const rt = el("div", "lv-ref-id"); rt.appendChild(el("b", null, inf.ref.n)); rt.appendChild(el("span", null, PAIS[inf.ref.country] || inf.ref.country)); top.appendChild(rt);
+          k.appendChild(top);
           const rs = inf.ref.stats || {};
-          const lab = (x) => (Math.abs(x.fill - x.afill) <= 5 ? "En la media" : x.fill > x.afill ? "Por encima de la media" : "Por debajo de la media");
-          [["yellowCards", "Tarjetas amarillas"], ["fouls", "Faltas"]].forEach(([key, nm]) => {
+          const lab = (x) => (Math.abs(x.fill - x.afill) <= 5 ? ["En la media", ""] : x.fill > x.afill ? ["Por encima de la media", "hi"] : ["Por debajo de la media", "lo"]);
+          const grid = el("div", "lv-ref-grid");
+          [["yellowCards", "Tarjetas amarillas", "🟨"], ["fouls", "Faltas", "🚫"]].forEach(([key, nm, ic]) => {
             const x = rs[key]; if (!x) return;
-            const row = el("div", "lv-ref");
-            row.appendChild(el("span", "lv-ref-n", nm));
-            row.appendChild(el("b", null, String(x.v).replace(".", ",") + " / partido"));
-            const tr = el("div", "lv-ref-bar"); const f = el("i"); f.style.setProperty("width", Math.max(3, Math.min(100, x.fill)) + "%"); tr.appendChild(f); row.appendChild(tr);
-            row.appendChild(el("small", null, lab(x)));
-            k.appendChild(row);
+            const cell = el("div", "lv-ref-c");
+            const h = el("div", "lv-ref-h"); h.appendChild(el("span", null, ic)); h.appendChild(el("b", null, nm)); cell.appendChild(h);
+            const v = el("div", "lv-ref-v"); v.appendChild(el("strong", null, String(x.v).replace(".", ","))); v.appendChild(el("small", null, " / Partido")); cell.appendChild(v);
+            const tr = el("div", "lv-ref-bar");
+            const f = el("i"); f.style.setProperty("width", Math.max(2, Math.min(100, x.fill)) + "%"); tr.appendChild(f);
+            const dot = el("u"); dot.style.setProperty("left", Math.max(2, Math.min(98, x.fill)) + "%"); tr.appendChild(dot);
+            const tk = el("s"); tk.style.setProperty("left", Math.max(2, Math.min(98, x.afill)) + "%"); tr.appendChild(tk);
+            cell.appendChild(tr);
+            const lb = lab(x); cell.appendChild(el("span", "lv-ref-l " + lb[1], lb[0]));
+            grid.appendChild(cell);
           });
+          k.appendChild(grid);
+          if (inf.league) k.appendChild(el("div", "lv-ref-foot", inf.league));
         }
-        if (inf && inf.date) {
-          const k = card("Fecha");
-          const r1 = el("div", "lv-kv"); r1.appendChild(el("span", null, "Día y hora")); r1.appendChild(el("b", null, fdate(inf.date, true))); k.appendChild(r1);
-          if (inf.league) { const r2 = el("div", "lv-kv"); r2.appendChild(el("span", null, inf.league)); r2.appendChild(el("b", null, inf.round ? "Jornada " + inf.round : "")); k.appendChild(r2); }
+        // Noticias relacionadas con el partido
+        if (news.length) {
+          const nrmN = (x) => stripAccents(String(x || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+          const ALI = { fcb: ["barca", "barcelona"], atm: ["atletico", "atleti"], ath: ["athletic", "bilbao"], rma: ["real madrid", "madridista"], bet: ["betis"], rso: ["real sociedad", "sociedad"], cel: ["celta"], dep: ["depor", "coruna"], ray: ["rayo"], esp: ["espanyol", "espanol"], get: ["getafe"], ala: ["alaves"], elc: ["elche"], osa: ["osasuna"], vil: ["villarreal"], val: ["valencia"], sev: ["sevilla"], lev: ["levante"], mal: ["malaga"], rac: ["racing"] };
+          const keysOf = (nm) => { const a = ALI[teamCanon(nm)]; return a || [nrmN(nm).split(" ")[0]]; };
+          const hk = keysOf(m.home), ak = keysOf(m.away);
+          const hit = (t, ks) => ks.some((q) => q && new RegExp("\\b" + q).test(t));
+          const sc = news.map((x, i) => { const t = nrmN(x.title); const a = hit(t, hk), b = hit(t, ak); return { x, i, s: (a ? 1 : 0) + (b ? 1 : 0) }; }).filter((r) => r.s > 0).sort((p, q) => q.s - p.s || p.i - q.i).slice(0, 5);
+          if (sc.length) {
+            const k = card("Noticias del partido");
+            sc.forEach((r) => {
+              const a = el("a", "lv-nw"); a.href = r.x.link; a.target = "_blank"; a.rel = "noopener noreferrer";
+              if (r.x.thumb) { const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = r.x.thumb; im.addEventListener("error", () => im.remove()); a.appendChild(im); }
+              const t = el("div", "lv-nw-t"); t.appendChild(el("b", null, r.x.title)); t.appendChild(el("small", null, (r.x.date || "") + (r.x.time ? " · " + r.x.time : ""))); a.appendChild(t);
+              k.appendChild(a);
+            });
+          }
         }
+        // Partido siguiente (con su competición)
         const nx = ((fm && fm.next) || []).filter((x) => x && x.d);
         if (nx.length) {
           const k = card("Partido siguiente");
           nx.forEach((x) => {
             const r = el("div", "lv-next");
             const side = (id, nm) => { const d = el("div", "lv-ns"); const im = el("img"); im.alt = ""; im.src = FM_CREST(id); d.appendChild(im); d.appendChild(el("span", null, nm)); return d; };
-            r.appendChild(side(x.hid, x.hn));
-            const mid = el("div", "lv-nm2"); mid.appendChild(el("b", null, fhour(x.d))); mid.appendChild(el("small", null, fshort(x.d))); r.appendChild(mid);
-            r.appendChild(side(x.aid, x.an));
+            const tp = el("div", "lv-next-lg"); tp.appendChild(el("span", "lv-lgchip", COMP[x.lg] || x.lg || "")); tp.appendChild(el("span", null, fshort(x.d))); r.appendChild(tp);
+            const row = el("div", "lv-next-row");
+            row.appendChild(side(x.hid, x.hn));
+            const mid = el("div", "lv-nm2"); mid.appendChild(el("b", null, fhour(x.d))); row.appendChild(mid);
+            row.appendChild(side(x.aid, x.an));
+            r.appendChild(row);
             k.appendChild(r);
           });
         }
+        // Momentos destacados (abajo del todo) con miniatura de YouTube
         if (hlv) {
           const k = card("Momentos destacados");
           const a2 = el("a", "lv-hl"); a2.href = hlv.url; a2.target = "_blank"; a2.rel = "noopener noreferrer";
-          if (hlv.image) { const im = el("img"); im.alt = "Momentos destacados"; im.loading = "lazy"; im.src = hlv.image; a2.appendChild(im); }
-          a2.appendChild(el("span", "lv-play", "▶"));
+          const yid = (String(hlv.url).match(/[?&]v=([\w-]{6,})/) || String(hlv.url).match(/youtu\.be\/([\w-]{6,})/) || [])[1];
+          const thumb = yid ? "https://i.ytimg.com/vi/" + yid + "/hqdefault.jpg" : (hlv.image || hlv.img || "");
+          if (thumb) { const im = el("img"); im.alt = "Resumen del partido"; im.loading = "lazy"; im.src = thumb; im.addEventListener("error", () => { const alt = hlv.image || hlv.img; if (alt && im.src !== alt) im.src = alt; }); a2.appendChild(im); }
+          a2.appendChild(el("span", "lv-hl-shade"));
+          const pb = el("span", "lv-play"); pb.appendChild(el("i")); a2.appendChild(pb);
+          const cap = el("span", "lv-hl-cap"); cap.appendChild(el("b", null, "Resumen del partido")); cap.appendChild(el("small", null, "Ver en YouTube")); a2.appendChild(cap);
           k.appendChild(a2);
-          k.appendChild(el("p", "lv-hl-src", "Vídeo oficial · YouTube"));
         }
+        ["_fecha", "Top estadísticas", "Jugador del partido", "Eventos", "Últimos partidos", "Estadio", "Árbitro", "Noticias del partido", "Partido siguiente", "Momentos destacados"].forEach((n) => { if (cardsMap[n]) c.appendChild(cardsMap[n]); });
       }
       // 3) Estadísticas
       if (sts.length) {
         const [c] = sec("Estadísticas");
         const list = el("div", "lv-stats");
+        let lastG = "";
         sts.forEach((x) => {
+          if (x.g && x.g !== lastG) { list.appendChild(el("div", "lv-stat-g", x.g)); lastG = x.g; }
           const hv = parseFloat(x.h), av = parseFloat(x.a), tot = (hv || 0) + (av || 0);
           const row = el("div", "lv-stat");
           const tp = el("div", "lv-stat-top");
@@ -1792,7 +1880,7 @@
         c.appendChild(k);
       }
       if (secs.length) {
-        const ORD = ["Hechos", "Alineación", "Estadísticas", "Clasificación", "Cara"];
+        const ORD = ["Hechos", "Alineación", "Estadísticas", "Cara", "Clasificación"];
         secs.sort((x, y) => ORD.indexOf(x[0]) - ORD.indexOf(y[0]));
         secs.forEach(([k, c]) => box.appendChild(c));
         const srcTop = el("p", "lv-srctop", "Fuente de los datos: FotMob · se actualiza cada 30 s");
