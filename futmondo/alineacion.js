@@ -95,7 +95,7 @@
     if (subs && mode !== "played") {
       var out = function (s) { return !!(s.san || s.inj); };
       subs = subs.filter(function (s) { return s.prob == null || s.prob >= 10 || out(s); });
-      subs = subs.filter(function (s) { return !out(s); }).concat(subs.filter(out));
+      subs = subs.filter(function (s) { return !out(s); }).concat(mode === "confirmed" ? [] : subs.filter(out));
     }
     if (!subs || !subs.length) return "";
     var played = mode === "played", probable = !mode || mode === "probable";
