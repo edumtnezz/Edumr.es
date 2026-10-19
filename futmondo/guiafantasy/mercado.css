@@ -2358,3 +2358,5 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 /* Escudos de clubes más juntos */
 .plt-panel .plt-clubs { gap: 1px; }
 .plt-panel .plt-btn.plt-club { width: 44px; }
+.plt-panel .plt-clubs { align-items: center; }
+.plt-panel .plt-btn.plt-all { align-self: center; margin-right: 4px; }
