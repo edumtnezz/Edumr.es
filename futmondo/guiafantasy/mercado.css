@@ -2333,3 +2333,6 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 @media (hover: hover) and (pointer: fine) { #tab-fichajes .fx:hover { background-color: var(--fx-hover); } }
 @media (max-width: 420px) { #tab-fichajes .fx-date { font-size: 1.7rem; } #tab-fichajes .fx-title { font-size: 1.22rem; } #tab-fichajes .fx { padding-inline: 8px; margin-inline: -8px; } }
 @media (prefers-reduced-motion: reduce) { #tab-fichajes .fx { transition: none; } }
+
+/* Móvil: escudos de clubes del filtro más grandes */
+@media (max-width: 760px) { .plt-btn.plt-club { width: 46px; height: 46px; } .plt-btn.plt-club img { width: 32px; height: 32px; } .plt-clubs { gap: 8px; } }
