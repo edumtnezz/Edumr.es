@@ -2,7 +2,7 @@
 .ico { flex: 0 0 auto; vertical-align: -3px; }
 
 /* barra de jornada compacta */
-#tab-porra #countdownPanel { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "chips timer" "info timer"; align-items: center; gap: 4px 12px; text-align: left; padding: 12px 14px; border-radius: 16px; margin-bottom: 12px; }
+#tab-porra #countdownPanel { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "chips chips" "info timer"; align-items: center; gap: 4px 12px; text-align: left; padding: 12px 14px; border-radius: 16px; margin-bottom: 12px; }
 #tab-porra .jc-jornada { display: none; }
 #tab-porra .jc-chips { grid-area: chips; justify-content: flex-start; }
 #tab-porra .jc-timer { grid-area: timer; font-size: 1.35rem; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; line-height: 1; margin: 0; }
