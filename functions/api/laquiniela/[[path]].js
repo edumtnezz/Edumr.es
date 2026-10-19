@@ -2944,8 +2944,10 @@ async function handleAnaliza(request, env, user) {
       fitness: p ? (p.fitness || []) : [],
       photo: p ? p.photo : "",
       logo: p ? (p.logo || "") : "",
-      rival: (ffe && ffe.rival) ? ffe.rival : (mt ? mt.rival : ""),
-      casa: (ffe && ffe.casa != null) ? ffe.casa : (mt ? mt.home : null),
+      // Rival, casa/fuera y fecha del MISMO partido (el calendario): mezclar el rival de
+      // FutbolFantasy con la fecha del calendario daba rival de una jornada y hora de otra.
+      rival: mt ? mt.rival : ((ffe && ffe.rival) ? ffe.rival : ""),
+      casa: mt ? mt.home : ((ffe && ffe.casa != null) ? ffe.casa : null),
       fecha: mt ? mt.date : "",
     };
   });
