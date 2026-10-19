@@ -3650,7 +3650,7 @@
     box.appendChild(body);
     body.appendChild(el("p", "muted small", "Cargando equipo…"));
     let timer = null;
-    const eqSq = { pos: "all", q: "", sort: "points" };
+    const eqSq = { pos: "delantero", q: "", sort: "points" };
     const run = async (first) => {
       const teams = await eqTeams();
       const team = teams.find((t) => teamSlug(t.name) === slug);
@@ -3802,16 +3802,12 @@
       const plRow = (p) => {
         const r = el("a", "sq3-row");
         r.href = "/jugador/" + encodeURIComponent(p.id) + "/" + nameSlug(p.name);
-        const top = el("div", "sq3-top");
-        top.appendChild(photoImg(p.photo, "sq3-img"));
+        r.appendChild(photoImg(p.photo, "sq3-img"));
         const mid = el("div", "sq3-mid");
         const nm = el("div", "sq3-name"); nm.appendChild(el("b", null, p.name));
         const st = statusInfo(p.status); if (st) nm.appendChild(el("span", "sq3-st " + st.cls, p.status === "redcard" ? "Sancionado" : p.status === "doubt" ? "Duda" : "Lesión"));
         mid.appendChild(nm);
         mid.appendChild(el("div", "sq3-sub", [money(p.value) + " €", Number(p.avg) > 0 ? "Media " + Number(p.avg).toFixed(1).replace(".", ",") : "", p.prob != null ? p.prob + "% jugar" : ""].filter(Boolean).join(" · ")));
-        top.appendChild(mid);
-        top.appendChild(el("span", "sq3-go", "›"));
-        r.appendChild(top);
         const fit = (p.fitness || []).map((x) => Number(x) || 0);
         if (fit.length) {
           const sc = el("div", "sq3-pts");
@@ -3820,25 +3816,38 @@
             const idx = fit.length - 1 - k, v = Math.round(fit[idx]);
             const j = jLab(p.team, fit.length, k, j0 > 0 ? j0 : 0);
             const cell = el("span", "sq3-pt " + (v >= 6 ? "hi" : v >= 4 ? "mid" : v > 0 ? "lo" : v < 0 ? "neg" : fitPlayed(p, idx) ? "z0" : "zero"));
+            if (j > 0) cell.title = "Jornada " + j;
             cell.appendChild(el("i", null, j > 0 ? "J" + j : ""));
             cell.appendChild(el("b", null, v !== 0 ? String(v) : fitPlayed(p, idx) ? "0" : "–"));
             sc.appendChild(cell);
           }
-          r.appendChild(sc);
+          mid.appendChild(sc);
         }
+        r.appendChild(mid);
         return r;
       };
       const sqS = el("section", "eq-sec sq3");
-      sqS.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "Plantilla · puntos de las últimas 5 jornadas"));
-      const GR = [["portero", "Porteros"], ["defensa", "Defensas"], ["centrocampista", "Centrocampistas"], ["delantero", "Delanteros"]];
-      GR.forEach((g) => {
-        const list = squad.filter((p) => String(p.role || "").toLowerCase() === g[0]).sort((x, y) => (Number(y.points) || 0) - (Number(x.points) || 0));
-        if (!list.length) return;
-        const h = el("div", "sq3-grp"); h.appendChild(el("span", null, g[1])); h.appendChild(el("em", null, String(list.length)));
-        sqS.appendChild(h);
-        list.forEach((p) => sqS.appendChild(plRow(p)));
-      });
+      sqS.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "Plantilla"));
+      const GR = [["portero", "POR", "Portero"], ["defensa", "DEF", "Defensa"], ["centrocampista", "MC", "Centrocampista"], ["delantero", "DL", "Delantero"]].filter((g) => squad.some((p) => String(p.role || "").toLowerCase() === g[0]));
+      if (GR.length && !GR.some((g) => g[0] === eqSq.pos)) eqSq.pos = GR[0][0];
+      const bar = el("div", "sq4-bar"); bar.setAttribute("role", "tablist");
+      const lst = el("div", "sq4-list");
+      const paintSq = () => {
+        bar.replaceChildren();
+        GR.forEach((g) => {
+          const on = eqSq.pos === g[0];
+          const b = el("button", "sq4-seg sq4-" + g[1] + (on ? " on" : "")); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", on ? "true" : "false");
+          b.appendChild(el("span", "sq4-code", g[1]));
+          if (on) b.appendChild(el("b", null, g[2]));
+          b.addEventListener("click", () => { eqSq.pos = g[0]; paintSq(); });
+          bar.appendChild(b);
+        });
+        lst.replaceChildren();
+        squad.filter((p) => String(p.role || "").toLowerCase() === eqSq.pos).sort((x, y) => (Number(y.points) || 0) - (Number(x.points) || 0)).forEach((p) => lst.appendChild(plRow(p)));
+      };
+      sqS.appendChild(bar); sqS.appendChild(lst);
       if (!squad.length) sqS.appendChild(el("p", "muted small", "Plantilla no disponible ahora mismo."));
+      else paintSq();
       frag.appendChild(sqS);
       // Jugadores en racha (3 partidos seguidos puntuando)
       try {
