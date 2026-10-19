@@ -2265,3 +2265,6 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 #newsAnuncios .news-badge { padding: 5px 12px 5px 9px; font-size: .66rem; letter-spacing: .1em; background: rgba(255,255,255,.14); }
 #newsAnuncios .news-badge .ic { color: #fbbf24; }
 @media (prefers-reduced-motion: reduce) { #tab-noticias .news-updated::before { animation: none; } }
+
+/* Web: fila de clubes centrada (si no cabe, se desplaza desde el principio) */
+@media (min-width: 761px) { .plt-clubs, .plt-row-btns { justify-content: safe center; } }
