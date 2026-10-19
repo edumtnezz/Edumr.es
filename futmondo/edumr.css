@@ -747,4 +747,4 @@ button:not(:disabled):active, [role="button"]:active, .hub-feature:active, .hub-
 
 /* Tarjetas de la tira de jornada: todas del mismo tamaño */
 .cx-jn-grid { grid-auto-rows: 1fr; }
-.cx-jn { justify-content: center; min-height: 88px; }
+.cx-jn { justify-content: center; }
