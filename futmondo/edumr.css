@@ -754,3 +754,12 @@ button:not(:disabled):active, [role="button"]:active, .hub-feature:active, .hub-
 .cx-scrollbar::before { content: ""; position: absolute; inset: -12px -4px; }
 .cx-scrollbar-thumb { position: relative; }
 .cx-scrollbar:active { cursor: grabbing; }
+
+/* Tira de jornada: contenido interior algo más grande */
+.cx-jn { padding: 5px 6px 4px; gap: 2px; }
+.cx-jn-crest { width: 40px; height: 40px; }
+.cx-jn-score { font-size: 1.4rem; }
+.cx-jn-time { font-size: .66rem; }
+.cx-jn-tv { height: 15px; max-width: 58px; }
+.cx-jn-tv-sq { height: 20px; max-width: 44px; }
+.cx-jn-statusrow, .cx-jn-statusrow-prob { font-size: .6rem; }
