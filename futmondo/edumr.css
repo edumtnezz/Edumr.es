@@ -763,3 +763,7 @@ button:not(:disabled):active, [role="button"]:active, .hub-feature:active, .hub-
 .cx-jn-tv { height: 15px; max-width: 58px; }
 .cx-jn-tv-sq { height: 20px; max-width: 44px; }
 .cx-jn-statusrow, .cx-jn-statusrow-prob { font-size: .6rem; }
+
+/* Las píldoras "Once probable/confirmado" conservan su tamaño y nunca se salen de la tarjeta */
+.cx-jn .cx-jn-statusrow-prob, .cx-jn .cx-jn-statusrow-confirm { font-size: 0.42rem; max-width: 100%; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; }
+.cx-jn { min-width: 0; overflow: hidden; }
