@@ -3773,6 +3773,30 @@
         }
         frag.appendChild(sec);
       }
+      // Once ideal del club: el mejor once posible con los puntos de Futmondo de la temporada (dato real, sin estimaciones)
+      try {
+        const grp = (p) => posGroup(p.role);
+        const by = { Portero: [], Defensa: [], Mediocampista: [], Delantero: [] };
+        squad.forEach((p) => { if (by[grp(p)]) by[grp(p)].push(p); });
+        Object.keys(by).forEach((k) => by[k].sort((a, b) => (Number(b.points) || 0) - (Number(a.points) || 0)));
+        let best = null;
+        IDEAL_FORMS.forEach((f) => {
+          if (!by.Portero.length || by.Defensa.length < f[0] || by.Mediocampista.length < f[1] || by.Delantero.length < f[2]) return;
+          const sel = [by.Portero[0]].concat(by.Defensa.slice(0, f[0]), by.Mediocampista.slice(0, f[1]), by.Delantero.slice(0, f[2]));
+          const tot = sel.reduce((a, q) => a + (Number(q.points) || 0), 0);
+          if (!best || tot > best.tot) best = { f, sel, tot };
+        });
+        if (best && best.tot > 0 && window.EduAlineacion) {
+          const sec = el("section", "eq-sec");
+          sec.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "Once ideal del club"));
+          const side = { starters: best.sel.map((q) => ({ name: q.name, full: q.name, pos: grp(q), photo: q.photo || "", prob: null })), bench: [] };
+          const wrap = el("div", "alin-pitches mpage-xipitches eq-pitch");
+          wrap.appendChild(window.EduAlineacion.card(side, team.name, hiCrest || "", "Por puntos Futmondo · " + best.f.join("-"), all, "confirmed", [], { title: "Once <b>ideal</b>", noAuto: true }));
+          sec.appendChild(wrap);
+          sec.appendChild(el("p", "muted small", "Formación con más puntos de la temporada entre los jugadores del club (" + best.tot + " pts). Sin estimaciones."));
+          frag.appendChild(sec);
+        }
+      } catch (e) {}
       // Calendario
       const cal = el("section", "eq-sec");
       cal.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "Calendario"));
