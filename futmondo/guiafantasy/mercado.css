@@ -2299,3 +2299,37 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 .fx-thumb { width: 88px; height: 88px; border-radius: 12px; background-size: cover; background-position: center top; background-color: rgba(127,127,127,.15); }
 @media (max-width: 420px) { .fx { gap: 12px; } .fx-thumb { width: 72px; height: 72px; } .fx-photo { width: 44px; height: 44px; } .fx-title { font-size: 1rem; } }
 @media (prefers-reduced-motion: reduce) { #tab-fichajes #fichUpdated::before { animation: none; } }
+
+/* ===== Fichajes · ajustes: medida de lectura, estados, contenedor, contraste y carácter ===== */
+#tab-fichajes { --fx-ok: #15803d; --fx-wip: #b45309; --fx-mute: #475569; --fx-no: #b91c1c; --fx-sub: #334155; --fx-hover: rgba(15,23,42,.045); }
+:root:not([data-theme="light"]) #tab-fichajes { --fx-ok: #4ade80; --fx-wip: #fbbf24; --fx-mute: #a8b3c4; --fx-no: #f87171; --fx-sub: #c3cdda; --fx-hover: rgba(255,255,255,.06); }
+/* 3 · contenedor centrado, miniatura pegada al texto */
+#tab-fichajes .fx-day { max-width: 780px; margin-inline: auto; }
+#tab-fichajes .fx { padding-inline: 12px; margin-inline: -12px; border-radius: 14px; transition: background-color .18s ease; }
+#tab-fichajes .fx-list .fx:last-child { border-bottom: 0; }
+/* 1 · medida de lectura ~66 caracteres, alineado a la izquierda */
+#tab-fichajes .fx-body { max-width: 68ch; text-align: left; }
+#tab-fichajes .fx-title { max-width: 40ch; text-wrap: balance; }
+#tab-fichajes .fx-extract { max-width: 66ch; }
+/* 2 · color de estado: punto + etiqueta */
+#tab-fichajes .fx-st { color: var(--fx-mute); }
+#tab-fichajes .fx-st .fx-dot { background: currentColor; }
+#tab-fichajes .fx-t-ok .fx-st { color: var(--fx-ok); }
+#tab-fichajes .fx-t-wip .fx-st { color: var(--fx-wip); }
+#tab-fichajes .fx-t-mute .fx-st { color: var(--fx-mute); }
+#tab-fichajes .fx-t-no .fx-st { color: var(--fx-no); }
+/* 4 · tamaños y grises con contraste AA */
+#tab-fichajes .fx-st { font-size: .74rem; font-weight: 800; letter-spacing: .07em; }
+#tab-fichajes .fx-dot { width: 8px; height: 8px; }
+#tab-fichajes .fx-time { font-size: .8rem; font-weight: 600; color: var(--fx-sub); }
+#tab-fichajes .fx-extract { font-size: .95rem; line-height: 1.5; color: var(--fx-sub); }
+#tab-fichajes .fx-club { font-size: .86rem; }
+#tab-fichajes .fx-arr { color: var(--fx-sub); }
+#tab-fichajes .fx-link { font-size: .86rem; }
+/* 5 · carácter: Fira Sans Condensed (ya cargada en la página) para titulares y cabeceras de día */
+#tab-fichajes .fx-date { margin: 34px 0 6px; padding-top: 10px; border-top: 3px solid var(--text); font: 900 2rem/1 'Fira Sans Condensed', 'Bricolage Grotesque', sans-serif; letter-spacing: .005em; text-transform: uppercase; color: var(--text); }
+#tab-fichajes .fx-day:first-of-type .fx-date { margin-top: 18px; }
+#tab-fichajes .fx-title { font: 700 1.38rem/1.1 'Fira Sans Condensed', 'Bricolage Grotesque', sans-serif; letter-spacing: 0; }
+@media (hover: hover) and (pointer: fine) { #tab-fichajes .fx:hover { background-color: var(--fx-hover); } }
+@media (max-width: 420px) { #tab-fichajes .fx-date { font-size: 1.7rem; } #tab-fichajes .fx-title { font-size: 1.22rem; } #tab-fichajes .fx { padding-inline: 8px; margin-inline: -8px; } }
+@media (prefers-reduced-motion: reduce) { #tab-fichajes .fx { transition: none; } }

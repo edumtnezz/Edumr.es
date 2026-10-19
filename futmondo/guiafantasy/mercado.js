@@ -485,6 +485,14 @@
     if (s.indexOf("rumor") >= 0) return "rum";
     return "ot";
   }
+  // Color del estado de un fichaje (valores reales de la fuente: Oficial, Cerrado, Acuerdo, Negociación, Interés, Rumor, Cedible, Cancelado)
+  function fxTone(b) {
+    const t = stripAccents(String(b || "").toLowerCase());
+    if (/oficial|cerrado/.test(t)) return "ok";
+    if (/acuerdo|negociac|interes/.test(t)) return "wip";
+    if (/cancelad/.test(t)) return "no";
+    return "mute";
+  }
   function fichImg(urls, cls) {
     const list = (urls || []).filter(Boolean);
     if (!list.length) return null;
@@ -540,7 +548,7 @@
         const list = el("div", "fx-list");
         g.items.forEach((x, i) => {
           const bc = x.badge ? badgeCls(x.badge) : "ot";
-          const row = el("article", "fx fx-" + bc);
+          const row = el("article", "fx fx-" + bc + " fx-t-" + fxTone(x.badge));
           row.style.animationDelay = Math.min(i, 8) * 40 + "ms";
           const main = fichImg([x.photo, x.clubCrest], "fx-photo");
           if (main) row.appendChild(main);
