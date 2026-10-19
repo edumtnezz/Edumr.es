@@ -304,7 +304,7 @@
       if (trend.children.length) card.appendChild(trend);
       const ratio = el("div", "dest-ratio");
       ratio.appendChild(el("b", null, (Number(p.avg) || 0).toFixed(1).replace(".", ",")));
-      ratio.appendChild(el("small", null, "de media"));
+      ratio.appendChild(el("small", null, "puntos de media"));
       card.appendChild(ratio);
       card.appendChild(el("div", "dest-why", p._r.toFixed(2).replace(".", ",") + " pts de media por cada millón"));
       grid.appendChild(card);
