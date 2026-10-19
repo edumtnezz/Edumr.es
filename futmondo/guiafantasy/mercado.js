@@ -273,7 +273,7 @@
     box.appendChild(head);
     const grid = el("div", "dest-grid");
     const list = bestValue();
-    if (!list.length) { grid.appendChild(el("p", "muted small dest-empty", "Cargando…")); box.appendChild(grid); return; }
+    if (!list.length) { grid.appendChild(el("div", "cx-sk")); box.appendChild(grid); return; }
     list.forEach((p, i) => {
       const card = el("div", "dest-card");
       card.addEventListener("click", () => openFicha(p));
@@ -2198,7 +2198,7 @@
 
   function openMatchFicha(m, jn) {
     const w = el("div");
-    w.appendChild(el("p", "muted small", "Cargando alineaciones…"));
+    w.appendChild(el("div", "cx-sk"));
     showModal(w);
     try { history.pushState({ tab: currentTab, ficha: 1 }, "", location.href); } catch (e) {}
     (async () => {
@@ -3097,7 +3097,7 @@
 
   function openNoticia(url, title) {
     const w = el("div");
-    w.appendChild(el("h2", "ficha-name", "Cargando noticia…"));
+    w.appendChild(el("div", "cx-sk"));
     showModal(w);
     fetch(API + "/noticia?u=" + encodeURIComponent(url || ""))
       .then((r) => r.json())
@@ -3169,7 +3169,7 @@
   function openFicha(p) {
     if (p && p.id) { try { sessionStorage.setItem("scrollBack:" + location.pathname, String(window.scrollY || 0)); } catch (e) {} location.href = "/jugador/" + encodeURIComponent(p.id) + "/" + nameSlug(p.name); return; }
     const w = el("div");
-    w.appendChild(el("p", "muted small", "Cargando ficha…"));
+    w.appendChild(el("div", "cx-sk"));
     showModal(w);
     try { history.pushState({ tab: currentTab, ficha: 1 }, "", location.href); } catch (e) {}
     fetch(API + "/jugador?id=" + encodeURIComponent(p.id || ""))
@@ -4273,7 +4273,7 @@
     if (old) old.remove();
     if (same) return;
     chip.classList.add("sel");
-    const det = el("div", "an-fm-det", "Cargando…");
+    const det = el("div", "an-fm-det cx-sk");
     row.after(det);
     const draw = (j) => {
       det.innerHTML = "";
@@ -4311,7 +4311,7 @@
     const old = card.querySelector(".an-ss");
     if (old) { old.remove(); btn.textContent = "📅 Ver toda la temporada"; return; }
     btn.textContent = "🔼 Ocultar temporada";
-    const box = el("div", "an-ss", "Cargando temporada…");
+    const box = el("div", "an-ss cx-sk");
     btn.after(box);
     const draw = (j) => {
       box.innerHTML = "";

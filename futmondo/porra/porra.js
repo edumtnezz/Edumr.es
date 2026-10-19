@@ -218,7 +218,7 @@ function render() {
 
   renderJornadaBar();
   if (!state.matches.length) {
-    panel.appendChild(el("p", "muted", state.jornada ? "Esta jornada no tiene partido de Madrid ni Barça en LaLiga (o está aplazado)." : "Cargando partidos…"));
+    panel.appendChild(el("p", "muted", state.jornada ? "Esta jornada no tiene partido de Madrid ni Barça en LaLiga (o está aplazado)." : ""));
     return;
   }
   if (!state.user && auth) renderLogin(auth);

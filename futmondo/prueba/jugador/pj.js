@@ -93,7 +93,7 @@
       '<div class="m"><div class="k">Valor</div><div class="v">' + eur(d.value) + '</div><span class="' + (d.change >= 0 ? "up" : "down") + '">' + (d.change >= 0 ? "▲ " : "▼ ") + eur(Math.abs(d.change || 0)) + "</span></div>" +
       '<div class="m"><div class="k">Edad</div><div class="v">' + esc(d.age || "—") + '</div></div>' +
       '<div class="m" style="grid-column:1/-1"><div class="k">Demarcación</div><div class="pos"><span class="p-' + role + '">' + esc(ROLE[role] || role) + "</span>" + (role2 ? '<span class="p-' + role2 + '">' + esc(ABR[role2] || role2) + "</span>" : "") + "</div></div></div>" +
-      '<h2 style="margin-top:14px">Próximos partidos</h2><div id="pjNext"><p class="empty">Cargando…</p></div></section>' +
+      '<h2 style="margin-top:14px">Próximos partidos</h2><div id="pjNext"><div class="cx-sk"></div></div></section>' +
       '<section class="card"><h2>Puntos</h2><div class="tri"><div><div class="v">' + esc(d.points || 0) + '</div><div class="k">Total</div></div><div><div class="v">' + String(d.average || 0).replace(".", ",") + '</div><div class="k">Media</div></div><div><div class="v">' + esc(d.matches5 || ms.length) + '</div><div class="k">Partidos</div></div></div>' +
       '<div class="k pj-tag" style="text-align:center;margin-bottom:6px">FORMA</div><div class="forma">' + forma + "</div></section>" +
       '<section class="card"><h2>Últimos partidos</h2><div class="games">' + (games || '<p class="empty">Sin partidos.</p>') + "</div></section>" +

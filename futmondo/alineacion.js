@@ -188,7 +188,7 @@
 
   function cardHtml() {
     return '<div class="al-head"><img src="/img/avatar.svg" alt=""><span class="al-title">Alineación <b>probable</b></span></div>' +
-      '<div class="pitch"><p class="al-msg">Cargando alineación…</p></div><div class="al-foot">EduMR · Guía Fantasy</div>';
+      '<div class="pitch"><p class="al-msg"></p></div><div class="al-foot">EduMR · Guía Fantasy</div>';
   }
 
   // API para otras páginas (Guía Fantasy): devuelve una tarjeta .al ya pintada.

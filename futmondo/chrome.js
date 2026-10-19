@@ -65,17 +65,17 @@
       '<div class="cx-ticker" id="cxTicker">' +
         '<span class="cx-ticker-tag">Última hora</span>' +
         '<div class="cx-ticker-view" id="cxTickerView">' +
-          '<div class="cx-ticker-track" id="cxTickerTrack"><span class="cx-ticker-load">Cargando…</span></div>' +
+          '<div class="cx-ticker-track" id="cxTickerTrack"></div>' +
         '</div>' +
       '</div>' +
-      '<div class="cx-strip"><div class="cx-strip-track" id="cxStrip"><span class="cx-strip-load">Cargando equipos…</span></div><div class="cx-scrollbar" id="cxStripBar"><div class="cx-scrollbar-thumb"></div></div></div>' +
+      '<div class="cx-strip"><div class="cx-strip-track" id="cxStrip"><span class="cx-sk cx-sk-strip"></span></div><div class="cx-scrollbar" id="cxStripBar"><div class="cx-scrollbar-thumb"></div></div></div>' +
       '<div class="cx-jornada">' +
         '<div class="cx-jn-head">' +
           '<button class="cx-jn-nav" id="cxJPrev" aria-label="Jornada anterior">◀</button>' +
           '<span class="cx-jn-title" id="cxJTitle">Jornada</span>' +
           '<button class="cx-jn-nav" id="cxJNext" aria-label="Jornada siguiente">▶</button>' +
         '</div>' +
-        '<div class="cx-jn-grid" id="cxJGrid"><span class="cx-strip-load">Cargando jornada…</span></div>' +
+        '<div class="cx-jn-grid" id="cxJGrid"><span class="cx-sk cx-sk-strip"></span></div>' +
       '</div>';
     var pv = document.getElementById("cxJPrev"), nx = document.getElementById("cxJNext");
     if (pv) pv.addEventListener("click", function () { loadJornada(jornada - 1); });
@@ -167,7 +167,7 @@
     // vaciarla primero y dejar que se desplome a una sola línea.
     var prevH = grid.offsetHeight;
     if (prevH) grid.style.minHeight = prevH + "px";
-    grid.innerHTML = '<span class="cx-strip-load">Cargando jornada…</span>';
+    grid.innerHTML = '<span class="cx-sk cx-sk-strip"></span>';
     fetch(url, { cache: "no-store" })
       .then(function (r) { return r.json(); })
       .then(function (d) {
