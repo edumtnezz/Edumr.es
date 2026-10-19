@@ -744,3 +744,7 @@ button:not(:disabled):active, [role="button"]:active, .hub-feature:active, .hub-
 .cx-sk.cx-sk-strip { display: inline-block; width: 100%; min-height: 56px; }
 @keyframes cxsk { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 @media (prefers-reduced-motion: reduce) { .cx-sk { animation: none; } }
+
+/* Tarjetas de la tira de jornada: todas del mismo tamaño */
+.cx-jn-grid { grid-auto-rows: 1fr; }
+.cx-jn { justify-content: center; min-height: 88px; }
