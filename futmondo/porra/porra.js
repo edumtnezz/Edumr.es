@@ -85,68 +85,87 @@ function renderLogin(panel) {
   panel.appendChild(go);
 }
 
+var ICO = {
+  lock: '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  check: '<path d="M20 6L9 17l-5-5"/>',
+  minus: '<path d="M5 12h14"/>',
+  x: '<path d="M18 6L6 18M6 6l12 12"/>',
+  pause: '<path d="M8 5v14M16 5v14"/>',
+  chev: '<path d="M6 9l6 6 6-6"/>',
+  ball: '<circle cx="12" cy="12" r="9"/><path d="M12 7l4 3-1.5 5h-5L8 10z"/>'
+};
+function ico(name, cls) {
+  return '<svg class="ico ' + (cls || "") + '" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICO[name] + '</svg>';
+}
 function shortName(n) {
   return String(n || "").replace(/^(FC|RC|CA|UD|SD|CD|RCD)\s+/, "").replace(/\s+(CF|FC|SD|UD)$/, "");
 }
 
+function teamCol(name, crest, side) {
+  const c = el("div", "pc3-team pc3-" + side);
+  c.appendChild(crestEl(crest, name));
+  c.appendChild(el("span", "pc3-name", shortName(name)));
+  return c;
+}
+
 function renderMatch(panel, m) {
-  const card = el("div", "porra-card pc2");
-  [[m.homeCrest, "pc-bg pc-bg-l"], [m.awayCrest, "pc-bg pc-bg-r"]].forEach((x) => {
-    if (!x[0]) return;
-    const im = el("img", x[1]); im.src = x[0]; im.alt = ""; im.setAttribute("aria-hidden", "true");
-    im.addEventListener("error", () => im.remove());
-    card.appendChild(im);
-  });
-  const body = el("div", "pc-body");
-  body.appendChild(el("div", "pc-comp", "LaLiga" + (m.matchday ? " · Jornada " + m.matchday : "")));
-  body.appendChild(el("div", "pc-label", m.label));
+  const card = el("div", "porra-card pc3");
+  const head = el("div", "pc3-head");
+  head.appendChild(el("span", "pc3-comp", "LaLiga" + (m.matchday ? " · J" + m.matchday : "")));
   const when = m.started && m.result
-    ? "Resultado final"
-    : (m.utcDate ? new Date(m.utcDate).toLocaleDateString("es-ES", { weekday: "short", day: "2-digit", month: "2-digit" }).replace(",", "").toUpperCase() + " " + fmtDate(m.utcDate).time : "");
-  body.appendChild(el("div", "pc-when", when));
-  const row = el("div", "pc-teams");
-  row.appendChild(el("span", "pc-t", shortName(m.home)));
-  row.appendChild(el("span", "pc-vs", m.result ? (m.result.home + " - " + m.result.away) : "VS"));
-  row.appendChild(el("span", "pc-t", shortName(m.away)));
-  body.appendChild(row);
+    ? "Final"
+    : (m.utcDate ? new Date(m.utcDate).toLocaleDateString("es-ES", { weekday: "short", day: "2-digit", month: "2-digit" }).replace(",", "").toUpperCase() + " · " + fmtDate(m.utcDate).time : "");
+  head.appendChild(el("span", "pc3-when" + (m.started && m.result ? " done" : ""), when));
+  card.appendChild(head);
+
+  const row = el("div", "pc3-row");
+  row.appendChild(teamCol(m.home, m.homeCrest, "h"));
+  const mid = el("div", "pc3-mid");
+  const canPredict = state.user && !m.locked && !m.started;
+  if (m.result) {
+    mid.appendChild(el("div", "pc3-score", m.result.home + " - " + m.result.away));
+  } else if (canPredict) {
+    const pred = el("div", "porra-pred pc3-pred");
+    const hi = el("input"); hi.type = "number"; hi.min = 0; hi.max = 30; hi.id = "poH" + m.matchId; hi.inputMode = "numeric"; hi.setAttribute("aria-label", "Goles de " + m.home);
+    hi.value = m.my ? m.my.home : ""; hi.dataset.saved = hi.value;
+    const lo = el("input"); lo.type = "number"; lo.min = 0; lo.max = 30; lo.id = "poA" + m.matchId; lo.inputMode = "numeric"; lo.setAttribute("aria-label", "Goles de " + m.away);
+    lo.value = m.my ? m.my.away : ""; lo.dataset.saved = lo.value;
+    pred.appendChild(hi); pred.appendChild(el("span", "porra-dash", "-")); pred.appendChild(lo);
+    mid.appendChild(pred);
+  } else {
+    mid.appendChild(el("div", "pc3-vs", "VS"));
+  }
+  row.appendChild(mid);
+  row.appendChild(teamCol(m.away, m.awayCrest, "a"));
+  card.appendChild(row);
 
   if (!state.user) {
     // sin sesion no se pronostica
   } else if (m.locked) {
-    body.appendChild(el("div", "porra-locked pc-lock", "🔒 Bloqueada: podrás pronosticar cuando sea la jornada " + m.matchday + ". Ahora solo puedes verla."));
+    const l = el("div", "pc3-note"); l.innerHTML = ico("lock") + "<span>Se abre en la jornada " + escapeHtml(m.matchday) + "</span>"; card.appendChild(l);
   } else if (m.started) {
-    body.appendChild(el("div", "porra-locked", m.result ? "Cerrado · ya jugado" : "Cerrado · en juego o empezado"));
+    const l = el("div", "pc3-note"); l.innerHTML = ico("lock") + "<span>" + (m.result ? "Cerrado · ya jugado" : "Cerrado · en juego") + "</span>"; card.appendChild(l);
   } else {
-    const pred = el("div", "porra-pred");
-    const hi = el("input"); hi.type = "number"; hi.min = 0; hi.max = 30; hi.id = "poH" + m.matchId; hi.inputMode = "numeric";
-    hi.value = m.my ? m.my.home : ""; hi.dataset.saved = hi.value;
-    const lo = el("input"); lo.type = "number"; lo.min = 0; lo.max = 30; lo.id = "poA" + m.matchId; lo.inputMode = "numeric";
-    lo.value = m.my ? m.my.away : ""; lo.dataset.saved = lo.value;
-    pred.appendChild(hi); pred.appendChild(el("span", "porra-dash", "-")); pred.appendChild(lo);
-    body.appendChild(pred);
     const save = el("button", "btn-primary pc-save", m.my ? "Actualizar pronóstico" : "Guardar pronóstico");
     save.addEventListener("click", () => guardar(m));
-    body.appendChild(save);
-    const err = el("p", "error"); err.id = "poErr" + m.matchId; body.appendChild(err);
+    card.appendChild(save);
+    const err = el("p", "error"); err.id = "poErr" + m.matchId; card.appendChild(err);
   }
 
-  const list = el("div", "partido-list");
+  const list = el("div", "pe3-list");
   (m.entries || []).forEach((e) => {
-    const erow = el("div", "partido-entry");
-    if (e.prize != null && e.prize > 0) erow.classList.add("winner");
-    erow.appendChild(el("span", "pe-name", e.name));
-    erow.appendChild(el("span", "pe-score", e.home + " - " + e.away));
-    const tag = el("span", "pe-tag");
-    if (e.prize != null && e.prize > 0) {
-      const pref = e.tipo === "exacto" ? "Exacto · " : e.tipo === "signo" ? "Signo · " : "";
-      tag.textContent = pref + money(e.prize) + " €";
-    }
+    const erow = el("div", "pe3");
+    const won = e.prize != null && e.prize > 0;
+    if (won) erow.classList.add(e.tipo === "exacto" ? "exacto" : "signo");
+    erow.appendChild(el("span", "pe3-name", e.name));
+    erow.appendChild(el("span", "pe3-score", e.home + " - " + e.away));
+    const tag = el("span", "pe3-tag");
+    if (won) tag.textContent = (e.tipo === "exacto" ? "Exacto · " : e.tipo === "signo" ? "Signo · " : "") + money(e.prize) + " €";
     erow.appendChild(tag);
     list.appendChild(erow);
   });
   if (!(m.entries || []).length) list.appendChild(el("p", "empty", "Todavía no hay pronósticos."));
-  body.appendChild(list);
-  card.appendChild(body);
+  card.appendChild(list);
   panel.appendChild(card);
 }
 
@@ -158,8 +177,8 @@ function updateCountdown() {
   const up = state.matches.filter((m) => !m.started && new Date(m.utcDate).getTime() > now).sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
   if (!up.length) {
     box.classList.add("closed");
-    timer.textContent = state.matches.length ? "CERRADA" : "–";
-    info.textContent = state.matches.length ? "Los partidos de esta jornada ya han empezado." : "Sin partidos de LaLiga en esta jornada.";
+    timer.textContent = state.matches.length ? "Cerrada" : "–";
+    info.textContent = state.matches.length ? "Ya han empezado los partidos" : "Sin partidos de LaLiga en esta jornada.";
     return;
   }
   box.classList.remove("closed");
@@ -169,7 +188,7 @@ function updateCountdown() {
     const pad = (n) => String(n).padStart(2, "0");
     timer.textContent = pad(Math.floor(sec / 3600)) + ":" + pad(Math.floor((sec % 3600) / 60)) + ":" + pad(sec % 60);
   }
-  info.textContent = state.matches.some((m) => m.started) ? "Cuenta atrás hasta el próximo partido (los ya empezados están cerrados)" : "Se cierra cuando empiece el primer partido";
+  info.textContent = state.matches.some((m) => m.started) ? "Hasta el próximo partido" : "Se cierra al empezar el primer partido";
 }
 
 function jornadaChips(cur, lo, hi, pick, boxId) {
@@ -274,11 +293,11 @@ function renderHistory() {
       row.appendChild(el("div", "hx-pred", "Puso " + e.home + " - " + e.away));
       let why = "";
       if (h.result) {
-        if (e.tipo === "exacto") why = "✅ Clavó el marcador exacto · " + money(e.prize) + " €";
-        else if (won) why = "🟡 Acertó " + sgnTxt(sgn(e.home, e.away), h) + ", pero no el marcador · " + money(e.prize) + " €";
-        else why = "❌ Falló: puso " + sgnTxt(sgn(e.home, e.away), h) + " y fue " + (h.result.home === h.result.away ? "empate" : sgnTxt(sgn(h.result.home, h.result.away), h));
+        if (e.tipo === "exacto") why = ico("check", "ok") + "<span>Clavó el marcador · " + money(e.prize) + " €</span>";
+        else if (won) why = ico("minus", "mid") + "<span>Acertó " + escapeHtml(sgnTxt(sgn(e.home, e.away), h)) + " · " + money(e.prize) + " €</span>";
+        else why = ico("x", "ko") + "<span>Falló: puso " + escapeHtml(sgnTxt(sgn(e.home, e.away), h)) + "</span>";
       }
-      if (why) row.appendChild(el("div", "hx-why", why));
+      if (why) { const w = el("div", "hx-why"); w.innerHTML = why; row.appendChild(w); }
       card.appendChild(row);
     });
     if (!(h.entries || []).length) card.appendChild(el("p", "empty", "Nadie pronosticó este partido."));
@@ -307,7 +326,7 @@ function renderParts() {
     ? rank.length + " participante" + (rank.length === 1 ? "" : "s") + " con porra en esta jornada. " + (finished ? "Ordenados por lo que han ganado." : "Los premios se verán cuando termine la jornada.") + (susp.length ? " Los partidos suspendidos o aplazados no cuentan." : "")
     : "";
   if (!rank.length) { box.appendChild(el("p", "empty", "Todavía no hay participantes.")); return; }
-  const medal = ["🥇", "🥈", "🥉"];
+  const medal = ["1º", "2º", "3º"];
   rank.forEach((r, i) => {
     const card = el("div", "porra-card pp");
     const head = el("div", "pp-head");
@@ -331,7 +350,7 @@ function renderParts() {
       line.appendChild(el("div", "pp-score", e ? e.home + " - " + e.away : "—"));
       line.appendChild(rr);
       row.appendChild(line);
-      if (isSusp(m)) row.appendChild(el("div", "pp-note", "⏸ Partido suspendido o aplazado: no cuenta"));
+      if (isSusp(m)) { const pn = el("div", "pp-note"); pn.innerHTML = ico("pause") + "<span>Suspendido o aplazado: no cuenta</span>"; row.appendChild(pn); }
       else if (finished && e && e.prize != null && e.prize > 0) row.appendChild(el("div", "pp-note ok", "Ganó " + money(e.prize) + " €"));
       card.appendChild(row);
     });

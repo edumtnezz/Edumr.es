@@ -13,6 +13,7 @@
   <script src="../theme.js?v=65"></script>
   <link rel="stylesheet" href="../quiniela/quiniela.css?v=151">
   <link rel="stylesheet" href="../edumr.css?v=82">
+  <link rel="stylesheet" href="porra.css?v=1">
 </head>
 <body class="page-simple cx-page">
   <header class="appbar cx-header">
@@ -55,11 +56,10 @@
     </section>
       <section class="panel">
         <div id="porraAuth"></div>
-        <p class="muted">Porra de resultado exacto: adivina el marcador de los partidos de LaLiga de <b>Real Madrid</b> y <b>Barcelona</b>.</p>
-        <ul class="prize-list partido-prizes">
-          <li><span>Resultado exacto</span><b>1.000.000 €</b></li>
-          <li><span>Ganador / empate (sin exacto)</span><b>500.000 €</b></li>
-        </ul>
+        <div class="pz-row" aria-label="Premios">
+          <div class="pz"><small>Resultado exacto</small><b>1.000.000 €</b></div>
+          <div class="pz"><small>Solo ganador / empate</small><b>500.000 €</b></div>
+        </div>
         <div id="porraPanel"></div>
       </section>
     </section>
@@ -96,7 +96,7 @@
 
   <footer class="quiniela-footer"></footer>
 
-  <script src="porra.js?v=137"></script>
+  <script src="porra.js?v=138"></script>
   <script src="/futmondo/totop.js?v=3" defer></script>
   <script src="/futmondo/fresh.js?v=2" defer></script>
 </body>
