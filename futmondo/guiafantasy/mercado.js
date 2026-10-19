@@ -3798,34 +3798,56 @@
       if (!calList.length) rows.appendChild(el("p", "muted small", "Sin partidos próximos."));
       cal.appendChild(rows);
       frag.appendChild(cal);
+      // Plantilla completa por posiciones (cada jugador es una fila entera tocable, con sus puntos de las últimas 5 jornadas)
+      const plRow = (p) => {
+        const r = el("a", "sq3-row");
+        r.href = "/jugador/" + encodeURIComponent(p.id) + "/" + nameSlug(p.name);
+        const top = el("div", "sq3-top");
+        top.appendChild(photoImg(p.photo, "sq3-img"));
+        const mid = el("div", "sq3-mid");
+        const nm = el("div", "sq3-name"); nm.appendChild(el("b", null, p.name));
+        const st = statusInfo(p.status); if (st) nm.appendChild(el("span", "sq3-st " + st.cls, p.status === "redcard" ? "Sancionado" : p.status === "doubt" ? "Duda" : "Lesión"));
+        mid.appendChild(nm);
+        mid.appendChild(el("div", "sq3-sub", [money(p.value) + " €", Number(p.avg) > 0 ? "Media " + Number(p.avg).toFixed(1).replace(".", ",") : "", p.prob != null ? p.prob + "% jugar" : ""].filter(Boolean).join(" · ")));
+        top.appendChild(mid);
+        top.appendChild(el("span", "sq3-go", "›"));
+        r.appendChild(top);
+        const fit = (p.fitness || []).map((x) => Number(x) || 0);
+        if (fit.length) {
+          const sc = el("div", "sq3-pts");
+          const j0 = (Number(p.jornadaFf) || 0) - 1;
+          for (let k = 0; k < fit.length; k++) {
+            const idx = fit.length - 1 - k, v = Math.round(fit[idx]);
+            const j = jLab(p.team, fit.length, k, j0 > 0 ? j0 : 0);
+            const cell = el("span", "sq3-pt " + (v >= 6 ? "hi" : v >= 4 ? "mid" : v > 0 ? "lo" : v < 0 ? "neg" : fitPlayed(p, idx) ? "z0" : "zero"));
+            cell.appendChild(el("i", null, j > 0 ? "J" + j : ""));
+            cell.appendChild(el("b", null, v !== 0 ? String(v) : fitPlayed(p, idx) ? "0" : "–"));
+            sc.appendChild(cell);
+          }
+          r.appendChild(sc);
+        }
+        return r;
+      };
+      const sqS = el("section", "eq-sec sq3");
+      sqS.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "Plantilla · puntos de las últimas 5 jornadas"));
+      const GR = [["portero", "Porteros"], ["defensa", "Defensas"], ["centrocampista", "Centrocampistas"], ["delantero", "Delanteros"]];
+      GR.forEach((g) => {
+        const list = squad.filter((p) => String(p.role || "").toLowerCase() === g[0]).sort((x, y) => (Number(y.points) || 0) - (Number(x.points) || 0));
+        if (!list.length) return;
+        const h = el("div", "sq3-grp"); h.appendChild(el("span", null, g[1])); h.appendChild(el("em", null, String(list.length)));
+        sqS.appendChild(h);
+        list.forEach((p) => sqS.appendChild(plRow(p)));
+      });
+      if (!squad.length) sqS.appendChild(el("p", "muted small", "Plantilla no disponible ahora mismo."));
+      frag.appendChild(sqS);
       // Jugadores en racha (3 partidos seguidos puntuando)
       try {
         const hot = squad.filter((p) => { const f = (p.fitness || []).slice(-3); return f.length === 3 && f.every((x) => Number(x) > 0); })
           .sort((x, y) => { const m = (p) => (p.fitness || []).slice(-3).reduce((a, v) => a + Number(v), 0); return m(y) - m(x); });
-        const rs = el("section", "eq-sec sq2");
+        const rs = el("section", "eq-sec sq3");
         rs.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "🔥 Jugadores en racha"));
         if (!hot.length) rs.appendChild(el("p", "muted small", "Ningún jugador del club lleva 3 partidos seguidos puntuando."));
-        const lb = el("div", "sq2-list");
-        hot.forEach((p) => {
-          const r = el("a", "sq2-row");
-          r.href = "/jugador/" + encodeURIComponent(p.id) + "/" + nameSlug(p.name);
-          r.appendChild(photoImg(p.photo, "sq2-img"));
-          const mid = el("div", "sq2-mid");
-          const nm = el("div", "sq2-name"); nm.appendChild(el("b", null, p.name)); mid.appendChild(nm);
-          const sub = el("div", "sq2-sub");
-          const rb = roleBadge(p.role); if (rb) sub.appendChild(el("span", "sq2-pos posb-" + posCls(p.role), rb));
-          sub.appendChild(document.createTextNode([money(p.value) + " €", Number(p.avg) > 0 ? "Media " + Number(p.avg).toFixed(1).replace(".", ",") : ""].filter(Boolean).join(" · ")));
-          mid.appendChild(sub); r.appendChild(mid);
-          const dots = el("div", "sq2-dots");
-          const fit = (p.fitness || []).map((x) => Number(x) || 0);
-          for (let k = 0; k < fit.length; k++) {
-            const idx = fit.length - 1 - k, v = Math.round(fit[idx]);
-            dots.appendChild(el("i", "sq2-dot " + (v >= 6 ? "hi" : v >= 4 ? "mid" : v > 0 ? "lo" : v < 0 ? "neg" : fitPlayed(p, idx) ? "z0" : "zero"), v !== 0 ? String(v) : fitPlayed(p, idx) ? "0" : ""));
-          }
-          r.appendChild(dots);
-          lb.appendChild(r);
-        });
-        if (hot.length) rs.appendChild(lb);
+        hot.forEach((p) => rs.appendChild(plRow(p)));
         frag.appendChild(rs);
       } catch (e) {}
       // Pinta en el sitio (sin mover el scroll)
