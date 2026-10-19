@@ -1339,6 +1339,7 @@
         box.appendChild(wrap);
       }
     } catch (e) {}
+    if (d && d.__quick) return; // pintado instantáneo: solo cabecera, el resto llega después
     const evSlot = el("div"); box.appendChild(evSlot);
     if (finished) {
       const sec = el("section", "mpage-xi mpage-xi-done");
@@ -2028,7 +2029,7 @@
     document.querySelectorAll(".tab-panel").forEach((e) => e.classList.add("hidden"));
     const ch = $("cxChrome"); if (ch) ch.classList.add("hidden");
     const box = el("section", "panel mpage");
-    box.innerHTML = '<p class="muted small">Cargando partido…</p>';
+    box.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i><i class="s"></i></div>';
     main.appendChild(box);
     let timer = null;
     const run = async (first) => {
@@ -2058,6 +2059,8 @@
       const jn = Number(jr && jr.matchday) || 0;
       const m = ms.find((x) => matchSlug(x.home, x.away) === slug);
       if (!m) { if (first) box.innerHTML = '<p class="muted small">No se pudo cargar el partido. <a href="" onclick="location.reload();return false">Reintentar</a></p>'; return false; }
+      // Cabecera al instante con lo que ya se sabe; lo demás se rellena al llegar
+      if (first) { try { renderMatchDetail(box, m, { __quick: true }, jn, null, "", false, null); box.appendChild(Object.assign(document.createElement("div"), { className: "mpage-skel", innerHTML: '<i></i><i class="s"></i>' })); } catch (e) {} }
       // Todo lo del partido a la vez (antes iba una petición detrás de otra)
       const enc = encodeURIComponent;
       const pD = getJ(API + "/detallepartido?home=" + enc(m.home) + "&away=" + enc(m.away) + "&jornada=" + enc(jn), (r) => !!r && !r.error);

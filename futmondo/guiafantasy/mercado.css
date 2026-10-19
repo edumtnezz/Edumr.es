@@ -2182,3 +2182,10 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 .sq3-pt i{font-style:normal;font-size:.5rem;font-weight:700;opacity:.8;min-height:.6rem}
 .sq3-pt b{font-size:.82rem;font-weight:800;font-variant-numeric:tabular-nums}
 .sq3-pt.hi{background:#16a34a}.sq3-pt.mid{background:#0891b2}.sq3-pt.lo{background:#64748b}.sq3-pt.neg{background:#dc2626}.sq3-pt.z0{background:#475569}
+
+/* Esqueleto de carga del partido (en vez del texto "Cargando partido…") */
+.mpage-skel{display:grid;gap:12px;padding:14px 0}
+.mpage-skel i{display:block;height:76px;border-radius:18px;background:linear-gradient(100deg,rgba(127,127,127,.12) 30%,rgba(127,127,127,.24) 50%,rgba(127,127,127,.12) 70%);background-size:200% 100%;animation:mpskel 1.2s linear infinite}
+.mpage-skel i.h{height:150px}.mpage-skel i.s{height:44px;width:70%}
+@keyframes mpskel{from{background-position:200% 0}to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.mpage-skel i{animation:none}}
