@@ -2398,3 +2398,11 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 :root:not([data-theme="light"]) #clausPos .claus-chip[data-pos="centrocampista"] { --pc: #22d3ee; }
 :root:not([data-theme="light"]) #clausPos .claus-chip[data-pos="delantero"] { --pc: #fb7185; }
 :root:not([data-theme="light"]) #clausPos .claus-chip[data-pos]:not([data-pos=""]).active { color: #0b1220; }
+
+/* Clausulazo: posiciones como las etiquetas DEL/MED de las tarjetas (relleno sólido, texto blanco) */
+#clausPos .claus-chip[data-pos]:not([data-pos=""]), :root:not([data-theme="light"]) #clausPos .claus-chip[data-pos]:not([data-pos=""]) { background: var(--pc); color: #fff; font-weight: 800; letter-spacing: .03em; margin: 0 1px; padding: 6px 12px; box-shadow: none; opacity: .88; }
+#clausPos .claus-chip[data-pos="portero"], :root:not([data-theme="light"]) #clausPos .claus-chip[data-pos="portero"] { --pc: #16a34a; }
+#clausPos .claus-chip[data-pos="defensa"], :root:not([data-theme="light"]) #clausPos .claus-chip[data-pos="defensa"] { --pc: #b45309; }
+#clausPos .claus-chip[data-pos="centrocampista"], :root:not([data-theme="light"]) #clausPos .claus-chip[data-pos="centrocampista"] { --pc: #0891b2; }
+#clausPos .claus-chip[data-pos="delantero"], :root:not([data-theme="light"]) #clausPos .claus-chip[data-pos="delantero"] { --pc: #be123c; }
+#clausPos .claus-chip[data-pos]:not([data-pos=""]).active, :root:not([data-theme="light"]) #clausPos .claus-chip[data-pos]:not([data-pos=""]).active { opacity: 1; color: #fff; box-shadow: 0 0 0 2px var(--card-solid, #fff), 0 0 0 4px var(--pc); }
