@@ -2336,3 +2336,5 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 
 /* Móvil: escudos de clubes del filtro más grandes */
 @media (max-width: 760px) { .plt-btn.plt-club { width: 46px; height: 46px; } .plt-btn.plt-club img { width: 32px; height: 32px; } .plt-clubs { gap: 8px; } }
+/* Cabecera alineada con el contenedor centrado de la lista */
+#tab-fichajes .panel-head { max-width: 780px; margin-inline: auto; }
