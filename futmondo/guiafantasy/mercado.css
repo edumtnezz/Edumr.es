@@ -2429,3 +2429,5 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 .bk-link .gi { display: none; }
 .eq-backbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 8px; }
 .eq-backbar .bk { margin: 0; }
+.pl-evs .gi, .mpage-ev-ico .gi { width: 15px; height: 15px; color: #fff; filter: drop-shadow(0 0 1px rgba(0,0,0,.8)); }
+.pl-evs .gi.card.red { color: #ef4444; } .pl-evs .gi.card.yellow { color: #facc15; }
