@@ -13,6 +13,26 @@ let data = { puja: null, user: null, nextTuesday: null };
 let timerId = null;
 
 function $(id) { return document.getElementById(id); }
+var ICO = {
+  refresh: '<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>',
+  trophy: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>',
+  alert: '<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+  bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>',
+  tool: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
+  trash: '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
+  share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/>',
+  chev: '<path d="M6 9l6 6 6-6"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'
+};
+function ico(name, cls) {
+  return '<svg class="ico ' + (cls || "") + '" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICO[name] + '</svg>';
+}
+function icoBtn(cls, name, txt) {
+  var b = el("button", cls); b.type = "button";
+  b.innerHTML = ico(name) + (txt ? "<span>" + escapeHtml(txt) + "</span>" : "");
+  return b;
+}
 function money(n) { return Number(n || 0).toLocaleString("es-ES"); }
 
 function el(tag, cls, txt) {
@@ -174,21 +194,23 @@ function render() {
   }
 
   // Contador (siempre visible)
-  const cd = el("div", "puja-countdown");
-  const timer = el("div", "puja-timer"); timer.id = "pjTimer";
+  const cd = el("div", "puja-countdown pj-bar" + (p && p.status === "open" ? " is-open" : ""));
+  const txtc = el("div", "pj-bar-txt");
   const sub = el("div", "puja-sub"); sub.id = "pjSub";
-  const refresh = el("button", "puja-refresh", "⟳");
+  const timer = el("div", "puja-timer"); timer.id = "pjTimer";
+  txtc.appendChild(sub);
+  txtc.appendChild(timer);
+  const refresh = icoBtn("puja-refresh", "refresh");
   refresh.title = "Actualizar subasta";
   refresh.setAttribute("aria-label", "Actualizar subasta");
-  refresh.addEventListener("click", async () => { await load(true); toast("Subasta actualizada ✅"); });
-  cd.appendChild(timer);
-  cd.appendChild(sub);
+  refresh.addEventListener("click", async () => { refresh.classList.add("spin"); await load(true); toast("Subasta actualizada"); });
+  cd.appendChild(txtc);
   cd.appendChild(refresh);
   panel.appendChild(cd);
 
   if (p && p.status === "closed") {
     const won = el("div", "puja-won");
-    won.appendChild(el("div", "pw-ico", "🏆"));
+    const wi = el("div", "pw-ico"); wi.innerHTML = ico("trophy"); won.appendChild(wi);
     if (p.winner) {
       won.appendChild(el("div", "pw-txt", "Puja ganada por"));
       won.appendChild(el("div", "pw-name", p.winner.user));
@@ -201,8 +223,7 @@ function render() {
 
   if (p) {
     if (p.status === "closed") panel.appendChild(el("div", "puja-sec", "Jugador subastado"));
-    if (p.status === "open") panel.appendChild(el("p", "bid-note", "⚠️ Una puja no se puede retirar ni bajar."));
-    const pcard = el("div", "puja-pcard");
+    const pcard = el("div", "puja-pcard" + (p.status === "open" ? " pj-hero" : ""));
     const pwrap = el("div", "puja-pcard-photo");
     const pbc = statusBorder(p.pstatus);
     if (p.photo) {
@@ -220,7 +241,9 @@ function render() {
     if (prb) {
       const pr = el("div", "puja-pcard-roles");
       const full = [roleFull(p.role), roleFull(p.role2)].filter(Boolean).join(" · ");
-      pr.appendChild(el("span", "pos-badge posb posb-" + posCls(p.role) + (prb2 ? " multi" : ""), "Posición: " + (full || prb) + (prb2 ? " (multiposición)" : "")));
+      const hb = el("span", "pos-badge posb posb-" + posCls(p.role) + (prb2 ? " multi" : ""), prb + (prb2 ? " · " + prb2 : ""));
+      hb.title = full;
+      pr.appendChild(hb);
       pcard.appendChild(pr);
     }
     if (p.team) {
@@ -230,30 +253,31 @@ function render() {
       pcard.appendChild(tr);
     }
     if (p.value) {
-      const vv = el("div", "puja-pcard-val", "Valor: " + money(p.value) + " €");
+      const vv = el("div", "puja-pcard-val", "Valor " + money(p.value) + " €");
       const chg = Number(p.change) || 0;
       if (chg > 0) vv.appendChild(el("span", "up", "   ▲ " + formatDots(chg) + " €"));
       else if (chg < 0) vv.appendChild(el("span", "down", "   ▼ " + formatDots(-chg) + " €"));
       pcard.appendChild(vv);
     }
-    panel.appendChild(pcard);
     if (p.status === "open") {
-      const baseTxt = el("div", "puja-base");
-      baseTxt.innerHTML = "Precio de salida: <b>" + money(p.base) + " €</b> · la saca <b>" + escapeHtml(p.creator) + "</b>";
-      panel.appendChild(baseTxt);
+      const lb = ((p.bids || []).slice().sort((a, b) => b.amount - a.amount))[0];
+      const hs = el("div", "pj-hero-stats");
+      const c1 = el("div", "pj-hs");
+      c1.innerHTML = "<small>" + (lb ? "Puja líder" : "Salida") + "</small><b>" + money(lb ? lb.amount : p.base) + " €</b><span>" + (lb ? escapeHtml(lb.user) : "la saca " + escapeHtml(p.creator)) + "</span>";
+      hs.appendChild(c1);
+      pcard.appendChild(hs);
     }
+    panel.appendChild(pcard);
     if (data.admin && p) {
       const adm = el("div", "puja-admin");
-      adm.appendChild(el("div", "puja-admin-t", "🛠️ Panel de administrador"));
-      const be = el("button", "btn-ghost", "✏️ Editar jugador / precio"); be.type = "button";
+      const at = el("div", "puja-admin-t"); at.innerHTML = ico("tool") + "<span>Panel de administrador</span>"; adm.appendChild(at);
+      const be = icoBtn("btn-ghost", "edit", "Editar jugador / precio");
       be.addEventListener("click", () => adminEdit(p));
-      const bd = el("button", "btn-ghost", "🗑️ Borrar subasta"); bd.type = "button";
+      const bd = icoBtn("btn-ghost", "trash", "Borrar subasta");
       bd.addEventListener("click", adminReset);
       adm.appendChild(be); adm.appendChild(bd);
       panel.appendChild(adm);
     }
-  } else {
-    panel.appendChild(el("div", "puja-player", "Sin subasta activa"));
   }
 
   // Pujas (clasificación en vivo)
@@ -287,7 +311,7 @@ function render() {
     // dentro de esa ventana.
     const canOpen = data.inWindow || data.admin;
     if (!open && canOpen) {
-    if (!data.inWindow && data.admin) panel.appendChild(el("p", "puja-admin-note", "🛠️ Modo admin"));
+    if (!data.inWindow && data.admin) { const an = el("p", "puja-admin-note"); an.innerHTML = ico("tool") + "<span>Modo admin</span>"; panel.appendChild(an); }
     const f = el("div", "auth-form");
     const pl = el("input"); pl.id = "pjPlayer"; pl.placeholder = "Escribe el jugador (ej. Diomande)"; pl.autocomplete = "off";
     const sug = el("div", "pj-suggest hidden"); sug.id = "pjSuggest";
@@ -298,7 +322,7 @@ function render() {
     bs.addEventListener("input", () => { bs.value = formatDots(bs.value); });
     const hid = el("input"); hid.id = "pjPhoto"; hid.type = "hidden";
     f.appendChild(sw); f.appendChild(prev); f.appendChild(bi); f.appendChild(bs); f.appendChild(hid);
-    f.appendChild(el("p", "bid-note", "⚠️ Una puja no se puede retirar ni bajar."));
+    { const bn = el("p", "bid-note"); bn.innerHTML = ico("alert") + "<span>Una puja no se puede retirar ni bajar.</span>"; f.appendChild(bn); }
     const b = el("button", "btn-primary big", "Sacar a subasta"); f.appendChild(b);
     panel.appendChild(f);
     const err = el("p", "error"); err.id = "pjErr"; panel.appendChild(err);
@@ -315,20 +339,19 @@ function render() {
       const myBid = (p.bids || []).find((b) => data.user && b.user === data.user.name) || null;
       if (data.user && leader && myBid && !iLead && !suppressOutbid) {
         const ob = el("div", "outbid");
-        ob.appendChild(el("div", "outbid-title", "🔔 ¡Te han superado!"));
+        const ot = el("div", "outbid-title"); ot.innerHTML = ico("bell") + "<span>¡Te han superado!</span>"; ob.appendChild(ot);
         panel.appendChild(ob);
       }
       iWasLeading = iLead;
       suppressOutbid = false;
 
       panel.appendChild(el("div", "puja-sep"));
-      panel.appendChild(el("div", "puja-sec", "Pujar"));
       const lead = el("div", "bid-lead");
       if (leader) lead.innerHTML = "Va primero <b>" + escapeHtml(leader.user) + "</b> con <b>" + money(leader.amount) + " €</b>";
       else lead.textContent = "Aún no hay pujas. ¡Sé el primero!";
       panel.appendChild(lead);
 
-      const big = el("button", "btn-primary big", "Pujar " + money(min) + " €");
+      const big = el("button", "btn-primary big bid-cta", "Pujar " + money(min) + " €");
       big.addEventListener("click", () => doPujar(min));
       panel.appendChild(big);
 
@@ -339,6 +362,7 @@ function render() {
         extras.appendChild(eb);
       });
       panel.appendChild(extras);
+      { const bn = el("p", "bid-note"); bn.innerHTML = ico("alert") + "<span>Una puja no se puede retirar ni bajar.</span>"; panel.appendChild(bn); }
 
       panel.appendChild(el("p", "muted small", "O escribe otra cantidad:"));
       const f = el("div", "bid-form");
@@ -354,11 +378,11 @@ function render() {
   }
 
   if (p && p.status === "closed") {
-    const wb = el("button", "btn-primary big share-btn", "📲 Enviar resultado por WhatsApp");
+    const wb = icoBtn("btn-primary big share-btn", "share", "Enviar resultado por WhatsApp");
     wb.addEventListener("click", () => shareWhatsApp(p));
     panel.appendChild(wb);
   } else if (p && p.status === "open") {
-    const shareBtn = el("button", "btn-ghost share-btn", "📲 Compartir por WhatsApp");
+    const shareBtn = icoBtn("btn-ghost share-btn", "share", "Compartir por WhatsApp");
     shareBtn.addEventListener("click", () => shareWhatsApp(p));
     panel.appendChild(shareBtn);
   }
@@ -381,39 +405,36 @@ function renderHistory() {
     box.appendChild(el("p", "empty", "Todavía no hay subastas cerradas."));
     return;
   }
-  const wrap = el("div", "hist-list");
+  const wrap = el("div", "hist-list hl2");
   list.forEach((h) => {
-    const card = el("div", "hist-card");
+    const card = el("div", "hist-card hc2");
     if (h.winner) card.classList.add("winner");
-    const fecha = fmtFechaLarga(h.closedAt);
-    if (fecha) card.appendChild(el("div", "hist-date", fecha));
-    const main = el("div", "hist-main");
-    const imgCol = el("div", "hist-imgcol");
+    const head = el("button", "hc2-row"); head.type = "button";
+    head.setAttribute("aria-expanded", "false");
+    const ph = el("div", "hc2-ph");
     if (h.photo) {
       const im = el("img", "hist-img");
-      im.src = h.photo;
-      im.alt = h.player;
-      im.loading = "lazy";
+      im.src = h.photo; im.alt = ""; im.loading = "lazy";
       im.addEventListener("error", () => { if (im.parentNode) im.parentNode.replaceChild(el("div", "hist-img", initials(h.player)), im); });
-      imgCol.appendChild(posRing(im, h.role, h.role2));
-    } else {
-      imgCol.appendChild(el("div", "hist-img", initials(h.player)));
-    }
+      ph.appendChild(posRing(im, h.role, h.role2));
+    } else ph.appendChild(el("div", "hist-img", initials(h.player)));
+    head.appendChild(ph);
+    const mid = el("div", "hc2-mid");
+    mid.appendChild(el("div", "hc2-name", h.player));
+    const sub = el("div", "hc2-sub");
+    const fecha = fmtFechaLarga(h.closedAt);
+    sub.innerHTML = (h.winner ? "<b>" + escapeHtml(h.winner) + "</b>" : "Sin pujas") + (fecha ? " · " + escapeHtml(fecha) : "");
+    mid.appendChild(sub);
+    head.appendChild(mid);
+    head.appendChild(el("div", "hc2-amt", h.amount ? money(h.amount) + " €" : "—"));
+    const cv = el("span", "hc2-chev"); cv.innerHTML = ico("chev"); head.appendChild(cv);
+    card.appendChild(head);
+    const det = el("div", "hc2-det"); det.hidden = true;
     const hrb = roleBadge(h.role), hrb2 = roleBadge(h.role2);
-    if (hrb) imgCol.appendChild(el("div", "hist-pos posb posb-" + posCls(h.role), hrb + (hrb2 ? " · " + hrb2 : "")));
-    main.appendChild(imgCol);
-    const body = el("div", "hist-body");
-    body.appendChild(el("div", "hist-player", h.player));
-    if (h.value) body.appendChild(el("div", "hist-line", "Valor de mercado: " + money(h.value) + " €"));
-    const wl = el("div", "hist-line");
-    if (h.winner) wl.innerHTML = "Se lo llevó <b>" + escapeHtml(h.winner) + "</b>";
-    else wl.textContent = "Nadie pujó.";
-    body.appendChild(wl);
-    const nb = (h.bids || []).length;
-    body.appendChild(el("div", "hist-tag", nb > 1 ? nb + " pujas" : nb === 1 ? "1 puja" : "sin pujas"));
-    main.appendChild(body);
-    main.appendChild(el("div", "hist-amount", h.amount ? money(h.amount) + " €" : "—"));
-    card.appendChild(main);
+    const meta = el("div", "hc2-meta");
+    if (hrb) meta.appendChild(el("span", "posb posb-" + posCls(h.role), hrb + (hrb2 ? " · " + hrb2 : "")));
+    if (h.value) meta.appendChild(el("span", "hc2-val", "Valor de mercado " + money(h.value) + " €"));
+    if (meta.childNodes.length) det.appendChild(meta);
     const hbids = (h.bids || []).slice().sort((a, b) => b.amount - a.amount);
     if (hbids.length) {
       const bl = el("div", "hist-bids");
@@ -425,8 +446,17 @@ function renderHistory() {
         row.appendChild(el("span", "hb-amt", money(bd.amount) + " €"));
         bl.appendChild(row);
       });
-      card.appendChild(bl);
+      det.appendChild(bl);
     }
+    card.appendChild(det);
+    if (!det.childNodes.length) cv.style.visibility = "hidden";
+    head.addEventListener("click", () => {
+      if (!det.childNodes.length) return;
+      const on = det.hidden;
+      det.hidden = !on;
+      card.classList.toggle("open", on);
+      head.setAttribute("aria-expanded", on ? "true" : "false");
+    });
     wrap.appendChild(card);
   });
   box.appendChild(wrap);
@@ -442,9 +472,9 @@ function startTimer() {
     const p = data.puja;
     const open = p && p.status === "open";
     let target, txt;
-    if (open) { target = p.closesAt; txt = p.extended ? "En prórroga (se amplía con cada puja)" : "Termina a las 22:00 (hora de Madrid)"; }
-    else if (data.inWindow) { target = data.nextTuesday; txt = "Elige el jugador — cierra el martes a las 22:00 (hora de Madrid)"; }
-    else { target = data.nextWindow; txt = "La subasta se abre el lunes a las 00:00 (hora de Madrid)"; }
+    if (open) { target = p.closesAt; txt = p.extended ? "En prórroga · se amplía con cada puja" : "Cierra a las 22:00 · hora de Madrid"; }
+    else if (data.inWindow) { target = data.nextTuesday; txt = "Elige jugador · cierra el martes 22:00"; }
+    else { target = data.nextWindow; txt = "Próxima subasta · lunes 00:00"; }
     if (sub) sub.textContent = txt;
     if (!target) { t.textContent = "--:--:--"; return; }
     const diff = target - Date.now();
@@ -544,12 +574,9 @@ function renderMarket() {
       teamRow.appendChild(el("span", null, p.team));
       body.appendChild(teamRow);
     }
-    body.appendChild(statRow(p));
     body.appendChild(el("div", "mcard-val", money(p.value) + " €"));
-    const chg = Number(p.change) || 0;
-    if (chg > 0) body.appendChild(el("div", "mcard-trend up", "▲ " + formatDots(chg) + " €"));
-    else if (chg < 0) body.appendChild(el("div", "mcard-trend down", "▼ " + formatDots(-chg) + " €"));
-    else body.appendChild(el("div", "mcard-trend flat", "—"));
+    const avg = Number(p.avg) || 0;
+    if (avg) body.appendChild(el("div", "mcard-avg", "Media " + avg.toFixed(1).replace(".", ",")));
     card.appendChild(body);
     card.addEventListener("click", () => elegirDesdeMercado(p));
     grid.appendChild(card);
