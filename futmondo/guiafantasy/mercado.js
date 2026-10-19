@@ -535,33 +535,41 @@
       box.innerHTML = "";
       if (!groups.length) { box.innerHTML = '<p class="muted small">Sin movimientos ahora mismo.</p>'; return; }
       groups.forEach((g) => {
-        if (g.date) { const dh = el("div", "fich-day"); dh.appendChild(el("span", "fich-day-txt", "🗓️ " + g.date)); box.appendChild(dh); }
-        const grid = el("div", "fich2-grid");
+        const sec = el("section", "fx-day");
+        if (g.date) sec.appendChild(el("h3", "fx-date", g.date));
+        const list = el("div", "fx-list");
         g.items.forEach((x, i) => {
           const bc = x.badge ? badgeCls(x.badge) : "ot";
-          const card = el("div", "fich2 fich2-" + bc);
-          card.style.animationDelay = Math.min(i, 8) * 40 + "ms";
-          const ban = el("div", "fich2-ban");
-          const paintBrand = () => { ban.style.backgroundImage = ""; ban.classList.add("empty"); brandBan(ban, x.clubs || [], x.clubs && x.clubs.length === 1 ? x.clubCrest : ""); };
-          if (x.thumb) { ban.style.backgroundImage = 'url("' + x.thumb + '")'; const t = new Image(); t.onerror = paintBrand; t.src = x.thumb; } else paintBrand();
-          if (x.badge) ban.appendChild(el("span", "fich2-badge " + bc, x.badge));
-          if (x.time) ban.appendChild(el("span", "fich2-time", "🕒 " + x.time));
-          card.appendChild(ban);
-          const main = fichImg([x.photo, x.clubCrest], "fich2-photo");
-          if (main) card.appendChild(main);
-          const body = el("div", "fich2-body" + (main ? " has-ph" : ""));
-          body.appendChild(el("div", "fich2-title", x.title || ""));
+          const row = el("article", "fx fx-" + bc);
+          row.style.animationDelay = Math.min(i, 8) * 40 + "ms";
+          const main = fichImg([x.photo, x.clubCrest], "fx-photo");
+          if (main) row.appendChild(main);
+          const body = el("div", "fx-body");
+          const meta = el("div", "fx-meta");
+          if (x.badge) { const st = el("span", "fx-st"); st.appendChild(el("i", "fx-dot")); st.appendChild(document.createTextNode(x.badge)); meta.appendChild(st); }
+          if (x.time) { const tm = el("span", "fx-time"); tm.appendChild(ico("clock")); tm.appendChild(document.createTextNode(x.time)); meta.appendChild(tm); }
+          body.appendChild(meta);
+          body.appendChild(el("h4", "fx-title", x.title || ""));
           if (x.clubs && x.clubs.length) {
-            const rt = el("div", "fich2-ruta");
-            x.clubs.forEach((c, k) => { if (k) rt.appendChild(el("span", "fich2-arrow", "➜")); rt.appendChild(el("span", "fich2-club", c)); });
+            const rt = el("div", "fx-ruta");
+            x.clubs.forEach((c, k) => {
+              if (k) rt.appendChild(ico("arrow", "fx-arr"));
+              const chip = el("span", "fx-club");
+              const src = clubLogo(c, x.clubs.length === 1 ? x.clubCrest : "");
+              if (src) { const im = el("img"); im.src = src; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); chip.appendChild(im); }
+              chip.appendChild(document.createTextNode(c));
+              rt.appendChild(chip);
+            });
             body.appendChild(rt);
           }
-          if (x.extract) body.appendChild(el("div", "fich2-extract", x.extract));
-          if (x.link) { const a = el("button", "fich2-link", "Leer noticia →"); a.type = "button"; a.addEventListener("click", () => openNoticia(x.link, x.title)); body.appendChild(a); }
-          card.appendChild(body);
-          grid.appendChild(card);
+          if (x.extract) body.appendChild(el("p", "fx-extract", x.extract));
+          if (x.link) { const a = el("button", "fx-link"); a.type = "button"; a.appendChild(document.createTextNode("Leer noticia")); a.appendChild(ico("arrow")); a.addEventListener("click", () => openNoticia(x.link, x.title)); body.appendChild(a); }
+          row.appendChild(body);
+          if (x.thumb) { const th = el("div", "fx-thumb"); th.style.backgroundImage = 'url("' + x.thumb + '")'; const t = new Image(); t.onerror = () => th.remove(); t.src = x.thumb; row.appendChild(th); }
+          list.appendChild(row);
         });
-        box.appendChild(grid);
+        sec.appendChild(list);
+        box.appendChild(sec);
       });
     } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar.</p>'; }
   }

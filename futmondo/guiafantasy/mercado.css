@@ -2268,3 +2268,34 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 
 /* Web: fila de clubes centrada (si no cabe, se desplaza desde el principio) */
 @media (min-width: 761px) { .plt-clubs, .plt-row-btns { justify-content: safe center; } }
+
+/* ===== Fichajes: lista editorial, sin banners ni degradados ===== */
+#tab-fichajes .panel-head { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 6px; }
+#tab-fichajes .panel-head h2 { font-size: 2rem; line-height: 1; font-weight: 800; letter-spacing: -.04em; margin: 0; }
+#tab-fichajes #fichUpdated { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px; background: rgba(127,127,127,.12); font-size: .7rem; font-weight: 700; }
+#tab-fichajes #fichUpdated:not(:empty)::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #22c55e; animation: destPulse 2s ease-out infinite; }
+.fx-date { margin: 26px 0 4px; font: 800 1.25rem 'Bricolage Grotesque', sans-serif; letter-spacing: -.02em; text-transform: capitalize; }
+.fx-list { display: flex; flex-direction: column; }
+.fx { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 14px; align-items: start; padding: 16px 0; border-bottom: 1px solid var(--border); animation: newsIn .3s ease both; }
+.fx:last-child { border-bottom: 0; }
+.fx-photo { width: 52px; height: 52px; border-radius: 50%; overflow: hidden; background: rgba(127,127,127,.15); margin-top: 2px; }
+.fx-photo img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+.fx:not(:has(.fx-photo)) { grid-template-columns: minmax(0, 1fr) auto; }
+.fx-body { min-width: 0; display: flex; flex-direction: column; gap: 7px; }
+.fx-meta { display: flex; align-items: center; gap: 12px; font-size: .72rem; font-weight: 700; color: var(--muted); }
+.fx-st { display: inline-flex; align-items: center; gap: 6px; color: var(--text); text-transform: uppercase; letter-spacing: .06em; font-size: .66rem; }
+.fx-dot { width: 7px; height: 7px; border-radius: 50%; background: #94a3b8; }
+.fx-of .fx-dot { background: #22c55e; } .fx-neg .fx-dot { background: #f59e0b; }
+.fx-time { display: inline-flex; align-items: center; gap: 4px; font-weight: 600; }
+.fx-title { margin: 0; font: 800 1.08rem/1.2 'Bricolage Grotesque', sans-serif; letter-spacing: -.015em; }
+.fx-ruta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; }
+.fx-club { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; font-weight: 700; }
+.fx-club img { width: 20px; height: 20px; object-fit: contain; }
+.fx-arr { width: 14px; height: 14px; color: var(--muted); }
+.fx-extract { margin: 0; font-size: .86rem; line-height: 1.45; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.fx-link { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: none; color: var(--text); font: inherit; font-size: .8rem; font-weight: 800; cursor: pointer; border-bottom: 2px solid #22c55e; padding-bottom: 1px; }
+.fx-link .ic { width: 14px; height: 14px; transition: transform .15s; }
+@media (hover: hover) and (pointer: fine) { .fx-link:hover .ic { transform: translateX(3px); } }
+.fx-thumb { width: 88px; height: 88px; border-radius: 12px; background-size: cover; background-position: center top; background-color: rgba(127,127,127,.15); }
+@media (max-width: 420px) { .fx { gap: 12px; } .fx-thumb { width: 72px; height: 72px; } .fx-photo { width: 44px; height: 44px; } .fx-title { font-size: 1rem; } }
+@media (prefers-reduced-motion: reduce) { #tab-fichajes #fichUpdated::before { animation: none; } }
