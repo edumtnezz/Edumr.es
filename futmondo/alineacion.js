@@ -90,7 +90,7 @@
         return fm ? '<a class="pl" href="/jugador/' + encodeURIComponent(fm.id) + '/' + slug(fm.name) + '">' + inner + '</a>' : '<div class="pl">' + inner + '</div>';
   }
 
-  function benchHtml(subs, pool, mode) {
+  function benchHtml(subs, pool, mode, title) {
     // Con un 0% por sanción (roja) o lesión se enseñan igualmente, marcados, al final del banquillo
     if (subs && mode !== "played") {
       var out = function (s) { return !!(s.san || s.inj); };
@@ -99,7 +99,7 @@
     }
     if (!subs || !subs.length) return "";
     var played = mode === "played", probable = !mode || mode === "probable";
-    return '<div class="al-bench"><div class="al-bench-h">' + (played ? "Desde el banquillo" : "Banquillo") + '</div><div class="al-bench-row">' + subs.map(function (s) {
+    return '<div class="al-bench"><div class="al-bench-h">' + (title || (played ? "Desde el banquillo" : "Banquillo")) + '</div><div class="al-bench-row">' + subs.map(function (s) {
       var o = played ? s : Object.assign({}, s, { bench: true });
       return playerHtml(o, pool, played ? "played" : mode, probable, null);
     }).join("") + '</div></div>';
@@ -218,7 +218,7 @@
       setCrest(card.querySelector(".al-head img"), crest);
       var pool = opts.pool || (players || []).filter(function (p) { return teamScore(p.team, teamName) >= 1; });
       card.querySelector(".pitch").innerHTML = render(side, pool, side.bench || [], mode);
-      if (subs && subs.length) card.querySelector(".pitch").insertAdjacentHTML("afterend", benchHtml(subs, pool, mode));
+      if (subs && subs.length) card.querySelector(".pitch").insertAdjacentHTML("afterend", benchHtml(subs, pool, mode, opts.benchTitle));
       card.querySelector(".al-foot").textContent = teamName + (subtitle ? " · " + subtitle : "") + " · " + formacion(side);
       return card;
     }

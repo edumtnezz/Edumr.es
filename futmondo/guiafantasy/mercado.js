@@ -3729,8 +3729,8 @@
         });
         frag.appendChild(stx);
       }
-      // Alineación (probable / confirmada) del próximo partido
-      if (next) {
+      // (Quitado a petición de Edu: en el club solo va el once ideal)
+      if (false && next) {
         const sec = el("section", "eq-sec");
         const isHome = teamCanon(next.home) === tc;
         const name = isHome ? next.home : next.away;
@@ -3790,11 +3790,14 @@
         if (best && best.tot > 0 && window.EduAlineacion) {
           const sec = el("section", "eq-sec");
           sec.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "Once ideal del club"));
-          const side = { starters: best.sel.map((q) => ({ name: q.name, full: q.name, pos: grp(q), photo: q.photo || "", prob: null })), bench: [] };
+          const mkP = (q) => ({ name: q.name, full: q.name, pos: grp(q), photo: q.photo || "", prob: null });
+          const side = { starters: best.sel.map(mkP), bench: [] };
+          const ordR = { Portero: 0, Defensa: 1, Mediocampista: 2, Delantero: 3 };
+          const resto = squad.filter((q) => best.sel.indexOf(q) < 0 && ordR[grp(q)] != null).sort((x, y) => ordR[grp(x)] - ordR[grp(y)] || (Number(y.points) || 0) - (Number(x.points) || 0)).map(mkP);
           const wrap = el("div", "alin-pitches mpage-xipitches eq-pitch");
-          wrap.appendChild(window.EduAlineacion.card(side, team.name, hiCrest || "", "Por puntos Futmondo · " + best.f.join("-"), all, "confirmed", [], { title: "Once <b>ideal</b>", noAuto: true }));
+          wrap.appendChild(window.EduAlineacion.card(side, team.name, hiCrest || "", "Por puntos Futmondo · " + best.f.join("-"), all, "confirmed", resto, { title: "Once <b>ideal</b>", noAuto: true, benchTitle: "Resto de la plantilla" }));
           sec.appendChild(wrap);
-          sec.appendChild(el("p", "muted small", "Formación con más puntos de la temporada entre los jugadores del club (" + best.tot + " pts). Sin estimaciones."));
+          sec.appendChild(el("p", "muted small", "Formación con más puntos de la temporada entre los jugadores del club (" + best.tot + " pts). Toca un jugador para ver su ficha."));
           frag.appendChild(sec);
         }
       } catch (e) {}
@@ -3821,79 +3824,6 @@
       if (!calList.length) rows.appendChild(el("p", "muted small", "Sin partidos próximos."));
       cal.appendChild(rows);
       frag.appendChild(cal);
-      // Plantilla: buscador + filtro por posición + orden, filas compactas (un jugador se encuentra en segundos)
-      const sq = el("section", "eq-sec sq2");
-      sq.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "Plantilla"));
-      const ROLES = [["all", "Todos"], ["portero", "POR"], ["defensa", "DEF"], ["centrocampista", "CEN"], ["delantero", "DEL"]];
-      const SORTS = [["points", "Puntos"], ["avg", "Media"], ["value", "Valor"], ["prob", "% jugar"]];
-      const ordR = { portero: 0, defensa: 1, centrocampista: 2, delantero: 3 };
-      const roleOf = (p) => String(p.role || "").toLowerCase();
-      const tools = el("div", "sq2-tools");
-      const sbox = el("label", "sq2-search");
-      sbox.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
-      const inp = el("input"); inp.type = "search"; inp.placeholder = "Buscar jugador"; inp.setAttribute("aria-label", "Buscar jugador"); inp.autocomplete = "off"; inp.value = eqSq.q;
-      sbox.appendChild(inp); tools.appendChild(sbox);
-      const chipsR = el("div", "sq2-chips");
-      const chipsS = el("div", "sq2-sort");
-      chipsS.appendChild(el("span", "sq2-sortl", "Ordenar"));
-      tools.appendChild(chipsR); tools.appendChild(chipsS);
-      sq.appendChild(tools);
-      const listBox = el("div", "sq2-list");
-      sq.appendChild(listBox);
-      const val = (p) => eqSq.sort === "avg" ? Number(p.avg) || 0 : eqSq.sort === "value" ? Number(p.value) || 0 : eqSq.sort === "prob" ? (p.prob != null ? Number(p.prob) : -1) : Number(p.points) || 0;
-      const keyTxt = (p) => eqSq.sort === "avg" ? (Number(p.avg) > 0 ? Number(p.avg).toFixed(1).replace(".", ",") : "–") : eqSq.sort === "value" ? (Number(p.value) >= 1e6 ? (Number(p.value) / 1e6).toFixed(1).replace(".", ",") + " M" : Math.round(Number(p.value || 0) / 1e3) + " K") : eqSq.sort === "prob" ? (p.prob != null ? p.prob + "%" : "–") : String(Number(p.points) || 0);
-      const keyLbl = { points: "pts", avg: "media", value: "€", prob: "jugar" };
-      const paintList = () => {
-        const q = stripAccents(eqSq.q.trim().toLowerCase());
-        const list = squad.filter((p) => (eqSq.pos === "all" || roleOf(p) === eqSq.pos) && (!q || stripAccents(String(p.name || "").toLowerCase()).indexOf(q) >= 0))
-          .sort((x, y) => (eqSq.pos === "all" && eqSq.sort === "points" ? (ordR[roleOf(x)] - ordR[roleOf(y)]) : 0) || val(y) - val(x));
-        listBox.replaceChildren();
-        if (!list.length) { listBox.appendChild(el("p", "muted small sq2-empty", squad.length ? "Ningún jugador con ese nombre." : "Plantilla no disponible ahora mismo.")); return; }
-        list.forEach((p) => {
-          const r = el("a", "sq2-row");
-          r.href = "/jugador/" + encodeURIComponent(p.id) + "/" + nameSlug(p.name);
-          r.appendChild(photoImg(p.photo, "sq2-img"));
-          const mid = el("div", "sq2-mid");
-          const nm = el("div", "sq2-name"); nm.appendChild(el("b", null, p.name));
-          const st = statusInfo(p.status); if (st) nm.appendChild(el("span", "sq2-st " + st.cls, p.status === "redcard" ? "Sancionado" : p.status === "doubt" ? "Duda" : "Lesión"));
-          mid.appendChild(nm);
-          const sub = el("div", "sq2-sub");
-          const rb = roleBadge(p.role); if (rb) sub.appendChild(el("span", "sq2-pos posb-" + posCls(p.role), rb));
-          sub.appendChild(document.createTextNode([money(p.value) + " €", Number(p.avg) > 0 ? "Media " + Number(p.avg).toFixed(1).replace(".", ",") : "", p.prob != null ? p.prob + "% jugar" : ""].filter(Boolean).join(" · ")));
-          mid.appendChild(sub);
-          r.appendChild(mid);
-          const dots = el("div", "sq2-dots");
-          const fit = (p.fitness || []).map((x) => Number(x) || 0);
-          for (let k = 0; k < fit.length; k++) {
-            const idx = fit.length - 1 - k, v = Math.round(fit[idx]);
-            dots.appendChild(el("i", "sq2-dot " + (v >= 6 ? "hi" : v >= 4 ? "mid" : v > 0 ? "lo" : v < 0 ? "neg" : fitPlayed(p, idx) ? "z0" : "zero"), v !== 0 ? String(v) : fitPlayed(p, idx) ? "0" : ""));
-          }
-          r.appendChild(dots);
-          const key = el("div", "sq2-key"); key.appendChild(el("b", null, keyTxt(p))); key.appendChild(el("small", null, keyLbl[eqSq.sort]));
-          r.appendChild(key);
-          listBox.appendChild(r);
-        });
-      };
-      const paintChips = () => {
-        chipsR.replaceChildren();
-        ROLES.forEach((o) => {
-          const n = o[0] === "all" ? squad.length : squad.filter((p) => roleOf(p) === o[0]).length;
-          if (!n && o[0] !== "all") return;
-          const b = el("button", "sq2-chip" + (eqSq.pos === o[0] ? " on" : "")); b.type = "button";
-          b.appendChild(document.createTextNode(o[1])); b.appendChild(el("em", null, String(n)));
-          b.addEventListener("click", () => { eqSq.pos = o[0]; paintChips(); paintList(); });
-          chipsR.appendChild(b);
-        });
-        while (chipsS.children.length > 1) chipsS.removeChild(chipsS.lastChild);
-        SORTS.forEach((o) => {
-          const b = el("button", "sq2-s" + (eqSq.sort === o[0] ? " on" : ""), o[1]); b.type = "button";
-          b.addEventListener("click", () => { eqSq.sort = o[0]; paintChips(); paintList(); });
-          chipsS.appendChild(b);
-        });
-      };
-      inp.addEventListener("input", () => { eqSq.q = inp.value; paintList(); });
-      paintChips(); paintList();
-      frag.appendChild(sq);
       // Pinta en el sitio (sin mover el scroll)
       const y = window.scrollY;
       body.innerHTML = "";
