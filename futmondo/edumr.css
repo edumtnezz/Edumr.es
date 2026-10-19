@@ -767,3 +767,5 @@ button:not(:disabled):active, [role="button"]:active, .hub-feature:active, .hub-
 /* Las píldoras "Once probable/confirmado" conservan su tamaño y nunca se salen de la tarjeta */
 .cx-jn .cx-jn-statusrow-prob, .cx-jn .cx-jn-statusrow-confirm { font-size: 0.42rem; max-width: 100%; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; }
 .cx-jn { min-width: 0; overflow: hidden; }
+.cx-jn-line { display: flex; align-items: center; justify-content: center; gap: 5px; }
+.cx-jn-line .cx-jn-hora { font-size: .7rem; }
