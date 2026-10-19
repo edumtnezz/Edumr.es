@@ -525,7 +525,7 @@
     const box = $("fichOut");
     if (!box || fichLoaded) return;
     fichLoaded = true;
-    box.innerHTML = '<p class="muted small">Cargando mercado de fichajes…</p>';
+    box.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>';
     try {
       const d = await (await fetch(API + "/fichajes")).json();
       const groups = (d && d.groups) || [];
@@ -1500,7 +1500,7 @@
     document.querySelectorAll(".tab-panel").forEach((e) => e.classList.add("hidden"));
     const ch = $("cxChrome"); if (ch) ch.classList.add("hidden");
     const boxR = el("section", "panel mpage livepage");
-    boxR.innerHTML = '<p class="muted small">Cargando directo…</p>';
+    boxR.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>';
     main.appendChild(boxR);
     let qj = ""; try { qj = new URLSearchParams(location.search).get("j") || ""; } catch (e) {}
     const matchUrl = "/futmondo/guiafantasy/partido/" + slug + (qj ? "?j=" + encodeURIComponent(qj) : "");
@@ -2158,7 +2158,7 @@
     document.querySelectorAll(".tab-panel").forEach((e) => e.classList.add("hidden"));
     const ch = $("cxChrome"); if (ch) ch.classList.add("hidden");
     const box = el("section", "panel playerpage");
-    box.innerHTML = '<p class="muted small">Cargando ficha…</p>';
+    box.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>';
     main.appendChild(box);
     const draw = (d, first) => {
       const p = (all || []).find((x) => String(x.id) === String(id)) || {};
@@ -3029,7 +3029,7 @@
     const box = $("inicioFeatured");
     if (!box) return;
     const list = (lastNews && lastNews.noticias) || [];
-    if (!list.length) { box.innerHTML = '<p class="muted small">Cargando noticias…</p>'; return; }
+    if (!list.length) { box.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>'; return; }
     box.innerHTML = "";
     const open = (x) => { switchTab("noticias"); openNoticiaInline(x.link, x.title); };
     const hero = list[0];
@@ -3128,7 +3128,7 @@
     if (!box) return;
     const list = $("newsAnuncios");
     const h3 = document.querySelector("#tab-noticias .estado-title");
-    box.innerHTML = '<p class="muted small">Cargando noticia…</p>';
+    box.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>';
     box.classList.remove("hidden");
     if (list) list.classList.add("hidden");
     if (h3) h3.classList.add("hidden");
@@ -3651,16 +3651,18 @@
     eqBack(box);
     const body = el("div", "eq-body");
     box.appendChild(body);
-    body.appendChild(el("p", "muted small", "Cargando equipo…"));
+    body.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>';
     let timer = null;
     const eqSq = { pos: "delantero", q: "", sort: "points" };
     const run = async (first) => {
-      const teams = await eqTeams();
+      // Todo en paralelo (antes iba una cosa detrás de otra)
+      const pTeams = eqTeams(), pAll = (!all || !all.length) ? load().catch(() => {}) : Promise.resolve(), pJr = fetch(API + "/jornada").then((r) => r.json());
+      const teams = await pTeams;
       const team = teams.find((t) => teamSlug(t.name) === slug);
       if (!team) { if (first) body.innerHTML = '<p class="muted small">No se encontró ese equipo.</p>'; return false; }
       const tc = teamCanon(team.name);
-      if (!all || !all.length) { try { await load(); } catch (e) {} }
-      const jr = await (await fetch(API + "/jornada")).json();
+      await pAll;
+      const jr = await pJr;
       const cur = Number(jr && jr.matchday) || 0;
       const jrs = [{ n: cur, ms: (jr && jr.matches) || [] }];
       await Promise.all([cur - 1, cur + 1, cur + 2, cur + 3].filter((n) => n >= 1 && n <= 38).map(async (n) => {
@@ -3745,6 +3747,8 @@
           const h = el("div", "eq-sech"); h.appendChild(el("h3", null, "Partido en juego")); h.appendChild(link);
           sec.appendChild(h);
         } else {
+          sec.appendChild(Object.assign(document.createElement("div"), { className: "mpage-skel", innerHTML: '<i class="h"></i>' }));
+          (async () => {
           let side = null, kind = "", ff = null, conf = null, benchEl = null;
           try {
             const c = await (await fetch(API + "/alineaciones-confirmadas?jornada=" + next.jn, { cache: "no-store" })).json();
@@ -3757,6 +3761,7 @@
           } catch (e) {}
           const sure = (o) => o && o.starters && o.starters.length >= 10 && o.starters.every((p) => p.prob === 100);
           if (conf) { side = conf; kind = "confirmada"; } else if (ff && (ff.starters || []).length) { side = ff; kind = sure(ff) && !(kickoffMs(next) && kickoffMs(next) - Date.now() > 3 * 3600 * 1000) ? "confirmada" : "probable"; }
+          sec.replaceChildren();
           const h = el("div", "eq-sech");
           h.appendChild(el("h3", null, side ? (kind === "confirmada" ? "Alineación confirmada" : "Alineación probable") : "Alineación"));
           h.appendChild(link);
@@ -3775,6 +3780,7 @@
           } else {
             sec.appendChild(el("p", "muted small", "Aún no hay alineación publicada para este partido."));
           }
+          })().catch(() => {});
         }
         frag.appendChild(sec);
       }
@@ -4761,7 +4767,7 @@
     const box = $("anCapHist");
     if (!box || capHistLoaded) return;
     capHistLoaded = true;
-    box.innerHTML = '<p class="muted small">Cargando histórico…</p>';
+    box.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>';
     try {
       const d = await (await fetch(API + "/capitan-historial", { cache: "no-store" })).json();
       const hist = (d && d.historial) || [];
