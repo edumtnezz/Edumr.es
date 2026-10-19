@@ -269,7 +269,8 @@
     box.innerHTML = "";
     const head = el("div", "dest-head");
     head.appendChild(el("span", "dest-title", "Destacados"));
-    head.appendChild(el("span", "dest-upd", (lastMarketAt ? "Actualizado " + horaTxt(lastMarketAt) + " · " : "") + "se renueva cada 10 min"));
+    const upd = el("span", "dest-upd"); upd.appendChild(el("i", "dest-dot")); upd.appendChild(document.createTextNode((lastMarketAt ? "Actualizado " + horaTxt(lastMarketAt) + " · " : "") + "se renueva cada 10 min"));
+    head.appendChild(upd);
     box.appendChild(head);
     const grid = el("div", "dest-grid");
     const list = bestValue();
@@ -1203,6 +1204,15 @@
   }
   // Resumen compacto de lo más destacado: los del local a la izquierda y los del
   // visitante a la derecha. Goles, asistencias, rojas, penaltis fallados y cambios.
+  function ico(name, cls) {
+    const NS = "http://www.w3.org/2000/svg";
+    const P = { cal: "M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z", clock: "M12 7v5l3 2M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z", bolt: "M13 3 5 13.5h6L10 21l8-10.5h-6L13 3z", arrow: "M5 12h14M13 6l6 6-6 6", ball: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8l3.5 2.5-1.3 4h-4.4l-1.3-4L12 8z" };
+    const sv = document.createElementNS(NS, "svg");
+    sv.setAttribute("viewBox", "0 0 24 24"); sv.setAttribute("class", "ic " + (cls || "")); sv.setAttribute("aria-hidden", "true");
+    sv.setAttribute("fill", "none"); sv.setAttribute("stroke", "currentColor"); sv.setAttribute("stroke-width", "1.8"); sv.setAttribute("stroke-linecap", "round"); sv.setAttribute("stroke-linejoin", "round");
+    const p = document.createElementNS(NS, "path"); p.setAttribute("d", P[name]); sv.appendChild(p); return sv;
+  }
+  function icoTxt(name, txt, cls) { const s = el("span", cls || "ic-txt"); s.appendChild(ico(name)); s.appendChild(document.createTextNode(txt)); return s; }
   function haIcon(home) {
     const NS = "http://www.w3.org/2000/svg";
     const sv = document.createElementNS(NS, "svg");
@@ -2956,7 +2966,7 @@
         if (x.date && x.date !== lastDate) {
           lastDate = x.date;
           const dh = el("div", "news-day");
-          dh.appendChild(el("span", "news-day-txt", "📅 " + x.date));
+          dh.appendChild(el("span", "news-day-txt", x.date));
           a.appendChild(dh);
         }
         const it = el("div", "newscard news-link" + (idx === 0 ? " news-hero" : ""));
@@ -2967,9 +2977,9 @@
         if (x.thumb) { setBg(x.thumb, false); const t = new Image(); t.onerror = () => setBg("/img/balon.svg", true); t.src = x.thumb; } else setBg("/img/balon.svg", true);
         it.appendChild(th);
         const bd = el("div", "newscard-body");
-        if (idx === 0) bd.appendChild(el("span", "news-badge", "🔥 Lo último"));
+        if (idx === 0) bd.appendChild(icoTxt("bolt", "Lo último", "news-badge"));
         bd.appendChild(el("div", "news-title", x.title));
-        bd.appendChild(el("div", "news-date", "🕒 " + x.date + (x.time ? " · " + x.time : "")));
+        const nd = el("div", "news-date"); nd.appendChild(ico("clock")); nd.appendChild(document.createTextNode(x.date + (x.time ? " · " + x.time : ""))); bd.appendChild(nd);
         it.appendChild(bd);
         a.appendChild(it);
       });
@@ -3698,20 +3708,27 @@
         const rival = home ? next.away : next.home;
         const rcrest = home ? next.awayCrest : next.homeCrest;
         const liveNow = stOf(next) === "live";
-        const nx = el("div", "eq-next");
-        nx.appendChild(el("div", "eq-next-k", liveNow ? "● En juego ahora" : "Próximo partido"));
-        const r1 = el("div", "eq-next-row");
-        r1.appendChild(el("span", "eq-next-j", "J" + next.jn));
-        r1.appendChild(haIcon(home));
-        if (rcrest) { const im = el("img", "eq-next-crest"); im.src = rcrest; im.alt = ""; r1.appendChild(im); }
-        r1.appendChild(el("b", "eq-next-rival", rival));
-        nx.appendChild(r1);
-        const r2 = el("div", "eq-next-when");
-        r2.appendChild(el("span", "eq-chip", home ? "En casa" : "Fuera"));
+        const nx = el("a", "eq-ticket" + (liveNow ? " live" : ""));
+        nx.href = "/futmondo/guiafantasy/partido/" + matchSlug(next.home, next.away) + "?j=" + next.jn;
+        const tk = el("div", "eq-tk-top");
+        tk.appendChild(el("span", "eq-tk-k", (liveNow ? "En juego · " : "Próximo · ") + "J" + next.jn));
+        tk.appendChild(el("span", "eq-tk-ha", home ? "En casa" : "Fuera"));
+        nx.appendChild(tk);
+        const vs = el("div", "eq-tk-vs");
+        const mkSide = (nm, cr) => { const d = el("div", "eq-tk-side"); if (cr) { const im = el("img"); im.src = cr; im.alt = ""; d.appendChild(im); } d.appendChild(el("b", null, nm)); return d; };
+        const myCrest = home ? next.homeCrest : next.awayCrest;
+        vs.appendChild(mkSide(team.name, myCrest || crestSrc));
+        vs.appendChild(el("span", "eq-tk-x", "vs"));
+        vs.appendChild(mkSide(rival, rcrest));
+        nx.appendChild(vs);
+        const ft = el("div", "eq-tk-foot");
         const dd = [next.day, next.date].filter(Boolean).join(" ");
-        if (dd) r2.appendChild(el("span", "eq-chip", "📅 " + dd));
-        if (next.time) r2.appendChild(el("span", "eq-chip", "🕒 " + next.time));
-        nx.appendChild(r2);
+        const when = el("div", "eq-tk-when");
+        if (dd) when.appendChild(icoTxt("cal", dd));
+        if (next.time) when.appendChild(icoTxt("clock", next.time));
+        ft.appendChild(when);
+        const go = el("span", "eq-tk-go"); go.appendChild(document.createTextNode("Ver partido")); go.appendChild(ico("arrow")); ft.appendChild(go);
+        nx.appendChild(ft);
         ht.appendChild(nx);
       }
       hd.appendChild(ht);

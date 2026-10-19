@@ -2189,3 +2189,65 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 .mpage-skel i.h{height:150px}.mpage-skel i.s{height:44px;width:70%}
 @keyframes mpskel{from{background-position:200% 0}to{background-position:-200% 0}}
 @media (prefers-reduced-motion:reduce){.mpage-skel i{animation:none}}
+
+/* ===== Destacados: título centrado y tarjetas de jugador más limpias ===== */
+.dest-panel .dest-head { align-items: center; text-align: center; gap: 6px; padding: 24px 14px 10px; background: transparent; }
+.dest-panel .dest-title { font-size: 2rem; line-height: 1; font-weight: 800; letter-spacing: -.035em; color: #0f172a; }
+.dest-panel .dest-upd { display: inline-flex; align-items: center; gap: 7px; padding: 5px 12px; border-radius: 999px; background: #f1f5f2; color: #526057; font-size: .72rem; font-weight: 700; }
+.dest-dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 0 0 rgba(34,197,94,.55); animation: destPulse 2s ease-out infinite; }
+@keyframes destPulse { 0% { box-shadow: 0 0 0 0 rgba(34,197,94,.55); } 80%, 100% { box-shadow: 0 0 0 7px rgba(34,197,94,0); } }
+.dest-panel .dest-grid { gap: 10px; padding: 8px 10px 16px; }
+.dest-panel .dest-card { border: 0; border-radius: 20px; padding: 16px 6px 12px; gap: 6px; background: linear-gradient(180deg, rgba(34,197,94,.13), rgba(34,197,94,0) 42%), #fff; box-shadow: 0 1px 0 rgba(15,23,42,.04), 0 10px 24px rgba(15,40,25,.11); transition: transform .18s cubic-bezier(.23,1,.32,1), box-shadow .18s; -webkit-tap-highlight-color: transparent; }
+.dest-panel .dest-card:active { transform: scale(.97); }
+@media (hover: hover) and (pointer: fine) { .dest-panel .dest-card:hover { transform: translateY(-3px); box-shadow: 0 1px 0 rgba(15,23,42,.04), 0 16px 30px rgba(15,40,25,.16); } }
+.dest-panel .dest-name { font-size: .92rem; font-weight: 800; letter-spacing: -.01em; }
+.dest-panel .dest-price { font-size: 1.05rem; font-weight: 800; color: #0f172a; letter-spacing: -.02em; }
+.dest-panel .dest-trend { gap: 3px; margin-top: 2px; }
+.dest-panel .dt-row { font-size: .64rem; padding: 2px 6px; border-radius: 7px; background: rgba(15,23,42,.045); }
+.dest-panel .dt-row.up { background: rgba(34,197,94,.12); } .dest-panel .dt-row.down { background: rgba(220,38,38,.1); }
+.dest-panel .dest-ratio { margin-top: 4px; width: calc(100% - 10px); padding: 6px 4px 5px; border-radius: 12px; background: #0f1d16; color: #fff; }
+.dest-panel .dest-ratio b { font-size: 1.3rem; line-height: 1; color: #4ade80; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.dest-panel .dest-ratio small { font-size: .55rem; letter-spacing: .1em; opacity: .75; }
+.dest-panel .dest-why { font-size: .62rem; color: #6b7a72; }
+@media (prefers-reduced-motion: reduce) { .dest-dot { animation: none; } .dest-panel .dest-card { transition: none; } }
+
+/* ===== Noticias: sin emojis, cabeceras de día sobrias, "Lo último" discreto ===== */
+.ic { width: 1em; height: 1em; flex: none; vertical-align: -.14em; }
+#newsAnuncios .news-day { margin: 18px 0 0; }
+#newsAnuncios .news-day-txt { padding: 0; background: none; color: var(--muted); box-shadow: none; font-size: .72rem; font-weight: 800; letter-spacing: .08em; }
+#newsAnuncios .newscard { border: 0; border-radius: 16px; box-shadow: 0 0 0 1px var(--border); gap: 14px; padding: 8px; }
+#newsAnuncios .newscard-thumb { flex-basis: 92px; width: 92px; height: 92px; border-radius: 11px; }
+#newsAnuncios .newscard .news-title { font-weight: 700; font-size: .93rem; letter-spacing: -.005em; }
+#newsAnuncios .newscard .news-date, #newsAnuncios .news-hero .news-date { display: inline-flex; align-items: center; gap: 5px; font-weight: 500; }
+#newsAnuncios .news-hero { border-radius: 18px; min-height: 280px; box-shadow: 0 12px 30px rgba(15,23,42,.22); }
+#newsAnuncios .news-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,.16); color: #fff; box-shadow: none; border: 1px solid rgba(255,255,255,.28); backdrop-filter: blur(6px); letter-spacing: .06em; padding: 4px 10px 4px 8px; }
+
+/* ===== Club: cabecera limpia con "entrada" al próximo partido ===== */
+.eq-hero { flex-wrap: wrap; gap: 14px; padding: 18px 16px 16px; border-radius: 22px; background: var(--card-solid, #fff); border: 0; box-shadow: 0 0 0 1px var(--border); }
+.eq-hero .eq-hero-bg { display: none; }
+.eq-hero .eq-htxt { display: contents; }
+.eq-hero .eq-crest { width: 64px; height: 64px; filter: none; }
+.eq-hero .eq-h1 { flex: 1; min-width: 0; font-size: 1.9rem; line-height: 1.02; letter-spacing: -.035em; }
+.eq-ticket { flex: 1 0 100%; display: block; text-decoration: none; color: #fff; background: #0f1d16; border-radius: 16px; padding: 12px 14px 12px; -webkit-tap-highlight-color: transparent; transition: transform .15s; }
+.eq-ticket:active { transform: scale(.985); }
+.eq-ticket.live { background: #3a1212; box-shadow: 0 0 0 1.5px #ef4444; }
+.eq-tk-top { display: flex; justify-content: space-between; align-items: center; font-size: .7rem; font-weight: 700; color: rgba(255,255,255,.7); }
+.eq-tk-ha { padding: 2px 8px; border-radius: 999px; border: 1px solid rgba(255,255,255,.25); }
+.eq-tk-vs { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; margin: 12px 0; }
+.eq-tk-side { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; text-align: center; }
+.eq-tk-side img { width: 42px; height: 42px; object-fit: contain; }
+.eq-tk-side b { font: 800 .82rem/1.1 'Bricolage Grotesque', sans-serif; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eq-tk-x { font-size: .72rem; font-weight: 700; color: rgba(255,255,255,.5); text-transform: uppercase; }
+.eq-tk-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.12); }
+.eq-tk-when { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .76rem; font-weight: 600; color: rgba(255,255,255,.85); }
+.ic-txt { display: inline-flex; align-items: center; gap: 5px; }
+.eq-tk-go { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; background: #4ade80; color: #0f1d16; font-size: .78rem; font-weight: 800; white-space: nowrap; }
+.eq-tk-go .ic { width: 15px; height: 15px; }
+.eq-stats { gap: 0; margin-top: 10px; border-radius: 18px; box-shadow: 0 0 0 1px var(--border); background: var(--card-solid, #fff); overflow: hidden; }
+.eq-stats .eq-stat { border: 0; border-radius: 0; background: none; box-shadow: none; padding: 12px 4px; }
+.eq-stats .eq-stat + .eq-stat { border-left: 1px solid var(--border); }
+.eq-stats { grid-template-columns: repeat(2, 1fr); }
+:root:not([data-theme="light"]) .dest-panel .dest-title { color: #f1f5f9; }
+:root:not([data-theme="light"]) .dest-panel .dest-card { background: linear-gradient(180deg, rgba(34,197,94,.16), rgba(34,197,94,0) 42%), #17211b; box-shadow: 0 10px 24px rgba(0,0,0,.35); }
+:root:not([data-theme="light"]) .dest-panel .dest-price { color: #f1f5f9; }
+:root:not([data-theme="light"]) .dest-panel .dest-upd { background: rgba(255,255,255,.07); color: #a7b5ac; }
