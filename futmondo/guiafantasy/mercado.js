@@ -3729,8 +3729,8 @@
         });
         frag.appendChild(stx);
       }
-      // (Quitado a petición de Edu: en el club solo va el once ideal)
-      if (false && next) {
+      // Alineación (probable / confirmada) del próximo partido, con el banquillo aparte
+      if (next) {
         const sec = el("section", "eq-sec");
         const isHome = teamCanon(next.home) === tc;
         const name = isHome ? next.home : next.away;
@@ -3742,7 +3742,7 @@
           const h = el("div", "eq-sech"); h.appendChild(el("h3", null, "Partido en juego")); h.appendChild(link);
           sec.appendChild(h);
         } else {
-          let side = null, kind = "", ff = null, conf = null;
+          let side = null, kind = "", ff = null, conf = null, benchEl = null;
           try {
             const c = await (await fetch(API + "/alineaciones-confirmadas?jornada=" + next.jn, { cache: "no-store" })).json();
             const cm = findXiMatch((c && c.matches) || [], next.home, next.away);
@@ -3760,47 +3760,21 @@
           sec.appendChild(h);
           if (side && window.EduAlineacion) {
             const wrap = el("div", "alin-pitches mpage-xipitches eq-pitch");
+            let bn = (kind === "confirmada" ? (ff && ff.bench) : (side && side.bench)) || [];
             if (kind === "confirmada") {
-              let bn = (ff && ff.bench) || [];
               const fbn = await fmBenchFor(next, next.jn);
               if (fbn) { const x = fbn[isHome ? "home" : "away"]; if (x && x.length) bn = x; }
-              wrap.appendChild(mpNewCard(side, name, crest, sub, "confirmed", xiPhotoMap(ff), bn));
-            }
-            else wrap.appendChild(window.EduAlineacion.card(side, name, crest, sub, all, "probable", (side && side.bench) || []));
+              wrap.appendChild(mpNewCard(side, name, crest, sub, "confirmed", xiPhotoMap(ff), []));
+            } else wrap.appendChild(window.EduAlineacion.card(side, name, crest, sub, all, "probable", []));
+            benchEl = bn.length && window.EduAlineacion.bench ? window.EduAlineacion.bench(bn, name, all, kind === "confirmada" ? "confirmed" : "probable") : null;
             sec.appendChild(wrap);
+            if (benchEl) sec.appendChild(benchEl);
           } else {
             sec.appendChild(el("p", "muted small", "Aún no hay alineación publicada para este partido."));
           }
         }
         frag.appendChild(sec);
       }
-      // Once ideal del club: el mejor once posible con los puntos de Futmondo de la temporada (dato real, sin estimaciones)
-      try {
-        const grp = (p) => posGroup(p.role);
-        const by = { Portero: [], Defensa: [], Mediocampista: [], Delantero: [] };
-        squad.forEach((p) => { if (by[grp(p)]) by[grp(p)].push(p); });
-        Object.keys(by).forEach((k) => by[k].sort((a, b) => (Number(b.points) || 0) - (Number(a.points) || 0)));
-        let best = null;
-        IDEAL_FORMS.forEach((f) => {
-          if (!by.Portero.length || by.Defensa.length < f[0] || by.Mediocampista.length < f[1] || by.Delantero.length < f[2]) return;
-          const sel = [by.Portero[0]].concat(by.Defensa.slice(0, f[0]), by.Mediocampista.slice(0, f[1]), by.Delantero.slice(0, f[2]));
-          const tot = sel.reduce((a, q) => a + (Number(q.points) || 0), 0);
-          if (!best || tot > best.tot) best = { f, sel, tot };
-        });
-        if (best && best.tot > 0 && window.EduAlineacion) {
-          const sec = el("section", "eq-sec");
-          sec.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "Once ideal del club"));
-          const mkP = (q) => ({ name: q.name, full: q.name, pos: grp(q), photo: q.photo || "", prob: null });
-          const side = { starters: best.sel.map(mkP), bench: [] };
-          const ordR = { Portero: 0, Defensa: 1, Mediocampista: 2, Delantero: 3 };
-          const resto = squad.filter((q) => best.sel.indexOf(q) < 0 && ordR[grp(q)] != null).sort((x, y) => ordR[grp(x)] - ordR[grp(y)] || (Number(y.points) || 0) - (Number(x.points) || 0)).map(mkP);
-          const wrap = el("div", "alin-pitches mpage-xipitches eq-pitch");
-          wrap.appendChild(window.EduAlineacion.card(side, team.name, hiCrest || "", "Por puntos Futmondo · " + best.f.join("-"), all, "confirmed", resto, { title: "Once <b>ideal</b>", noAuto: true, benchTitle: "Resto de la plantilla" }));
-          sec.appendChild(wrap);
-          sec.appendChild(el("p", "muted small", "Formación con más puntos de la temporada entre los jugadores del club (" + best.tot + " pts). Toca un jugador para ver su ficha."));
-          frag.appendChild(sec);
-        }
-      } catch (e) {}
       // Calendario
       const cal = el("section", "eq-sec");
       cal.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "Calendario"));
@@ -3824,6 +3798,36 @@
       if (!calList.length) rows.appendChild(el("p", "muted small", "Sin partidos próximos."));
       cal.appendChild(rows);
       frag.appendChild(cal);
+      // Jugadores en racha (3 partidos seguidos puntuando)
+      try {
+        const hot = squad.filter((p) => { const f = (p.fitness || []).slice(-3); return f.length === 3 && f.every((x) => Number(x) > 0); })
+          .sort((x, y) => { const m = (p) => (p.fitness || []).slice(-3).reduce((a, v) => a + Number(v), 0); return m(y) - m(x); });
+        const rs = el("section", "eq-sec sq2");
+        rs.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "🔥 Jugadores en racha"));
+        if (!hot.length) rs.appendChild(el("p", "muted small", "Ningún jugador del club lleva 3 partidos seguidos puntuando."));
+        const lb = el("div", "sq2-list");
+        hot.forEach((p) => {
+          const r = el("a", "sq2-row");
+          r.href = "/jugador/" + encodeURIComponent(p.id) + "/" + nameSlug(p.name);
+          r.appendChild(photoImg(p.photo, "sq2-img"));
+          const mid = el("div", "sq2-mid");
+          const nm = el("div", "sq2-name"); nm.appendChild(el("b", null, p.name)); mid.appendChild(nm);
+          const sub = el("div", "sq2-sub");
+          const rb = roleBadge(p.role); if (rb) sub.appendChild(el("span", "sq2-pos posb-" + posCls(p.role), rb));
+          sub.appendChild(document.createTextNode([money(p.value) + " €", Number(p.avg) > 0 ? "Media " + Number(p.avg).toFixed(1).replace(".", ",") : ""].filter(Boolean).join(" · ")));
+          mid.appendChild(sub); r.appendChild(mid);
+          const dots = el("div", "sq2-dots");
+          const fit = (p.fitness || []).map((x) => Number(x) || 0);
+          for (let k = 0; k < fit.length; k++) {
+            const idx = fit.length - 1 - k, v = Math.round(fit[idx]);
+            dots.appendChild(el("i", "sq2-dot " + (v >= 6 ? "hi" : v >= 4 ? "mid" : v > 0 ? "lo" : v < 0 ? "neg" : fitPlayed(p, idx) ? "z0" : "zero"), v !== 0 ? String(v) : fitPlayed(p, idx) ? "0" : ""));
+          }
+          r.appendChild(dots);
+          lb.appendChild(r);
+        });
+        if (hot.length) rs.appendChild(lb);
+        frag.appendChild(rs);
+      } catch (e) {}
       // Pinta en el sitio (sin mover el scroll)
       const y = window.scrollY;
       body.innerHTML = "";

@@ -193,6 +193,7 @@
 
   // API para otras páginas (Guía Fantasy): devuelve una tarjeta .al ya pintada.
   window.EduAlineacion = {
+    bench: function (subs, teamName, players, mode) { var pool = (players || []).filter(function (p) { return teamScore(p.team, teamName) >= 1; }); var d = document.createElement("div"); d.innerHTML = benchHtml(subs, pool, mode, "Banquillo"); return d.firstChild; },
     setCrest: setCrest,
     nameOf: function (o, teamName, players) {
       var pool = (players || []).filter(function (p) { return teamScore(p.team, teamName) >= 1; });
