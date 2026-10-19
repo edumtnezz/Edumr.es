@@ -3391,7 +3391,7 @@
           const v = valByR[j] != null ? valByR[j] : null;
           const stPts = Number(m.stats) || 0;
           const pts = v != null ? String(v) : (stPts !== 0 ? String(stPts) : "—");
-          row.appendChild(el("span", "fm-pts " + (v != null ? "pt-" + ptClass(v) : "pt-st"), pts));
+          row.appendChild(el("span", "fm-pts " + (v != null ? "pt-" + ptClass(v) : (stPts !== 0 ? "pt-" + ptClass(stPts) : "pt-st")), pts));
         } else {
           const nj = el("span", "fm-match fm-nojugo", "No jugó");
           row.appendChild(nj);
