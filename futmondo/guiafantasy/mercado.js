@@ -3650,6 +3650,7 @@
     box.appendChild(body);
     body.appendChild(el("p", "muted small", "Cargando equipo…"));
     let timer = null;
+    const eqSq = { pos: "all", q: "", sort: "points" };
     const run = async (first) => {
       const teams = await eqTeams();
       const team = teams.find((t) => teamSlug(t.name) === slug);
@@ -3820,42 +3821,78 @@
       if (!calList.length) rows.appendChild(el("p", "muted small", "Sin partidos próximos."));
       cal.appendChild(rows);
       frag.appendChild(cal);
-      // Plantilla
-      const sq = el("section", "eq-sec");
-      sq.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "Plantilla · últimos 5 partidos"));
-      const ord = { portero: 0, defensa: 1, centrocampista: 2, delantero: 3 };
-      const lab = { portero: "Porteros", defensa: "Defensas", centrocampista: "Centrocampistas", delantero: "Delanteros" };
-      Object.keys(ord).forEach((role) => {
-        const list = squad.filter((p) => String(p.role || "").toLowerCase() === role)
-          .sort((a, b) => (Number(b.points) || 0) - (Number(a.points) || 0));
-        if (!list.length) return;
-        sq.appendChild(el("div", "eq-grp", lab[role]));
+      // Plantilla: buscador + filtro por posición + orden, filas compactas (un jugador se encuentra en segundos)
+      const sq = el("section", "eq-sec sq2");
+      sq.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "Plantilla"));
+      const ROLES = [["all", "Todos"], ["portero", "POR"], ["defensa", "DEF"], ["centrocampista", "CEN"], ["delantero", "DEL"]];
+      const SORTS = [["points", "Puntos"], ["avg", "Media"], ["value", "Valor"], ["prob", "% jugar"]];
+      const ordR = { portero: 0, defensa: 1, centrocampista: 2, delantero: 3 };
+      const roleOf = (p) => String(p.role || "").toLowerCase();
+      const tools = el("div", "sq2-tools");
+      const sbox = el("label", "sq2-search");
+      sbox.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>';
+      const inp = el("input"); inp.type = "search"; inp.placeholder = "Buscar jugador"; inp.setAttribute("aria-label", "Buscar jugador"); inp.autocomplete = "off"; inp.value = eqSq.q;
+      sbox.appendChild(inp); tools.appendChild(sbox);
+      const chipsR = el("div", "sq2-chips");
+      const chipsS = el("div", "sq2-sort");
+      chipsS.appendChild(el("span", "sq2-sortl", "Ordenar"));
+      tools.appendChild(chipsR); tools.appendChild(chipsS);
+      sq.appendChild(tools);
+      const listBox = el("div", "sq2-list");
+      sq.appendChild(listBox);
+      const val = (p) => eqSq.sort === "avg" ? Number(p.avg) || 0 : eqSq.sort === "value" ? Number(p.value) || 0 : eqSq.sort === "prob" ? (p.prob != null ? Number(p.prob) : -1) : Number(p.points) || 0;
+      const keyTxt = (p) => eqSq.sort === "avg" ? (Number(p.avg) > 0 ? Number(p.avg).toFixed(1).replace(".", ",") : "–") : eqSq.sort === "value" ? (Number(p.value) >= 1e6 ? (Number(p.value) / 1e6).toFixed(1).replace(".", ",") + " M" : Math.round(Number(p.value || 0) / 1e3) + " K") : eqSq.sort === "prob" ? (p.prob != null ? p.prob + "%" : "–") : String(Number(p.points) || 0);
+      const keyLbl = { points: "pts", avg: "media", value: "€", prob: "jugar" };
+      const paintList = () => {
+        const q = stripAccents(eqSq.q.trim().toLowerCase());
+        const list = squad.filter((p) => (eqSq.pos === "all" || roleOf(p) === eqSq.pos) && (!q || stripAccents(String(p.name || "").toLowerCase()).indexOf(q) >= 0))
+          .sort((x, y) => (eqSq.pos === "all" && eqSq.sort === "points" ? (ordR[roleOf(x)] - ordR[roleOf(y)]) : 0) || val(y) - val(x));
+        listBox.replaceChildren();
+        if (!list.length) { listBox.appendChild(el("p", "muted small sq2-empty", squad.length ? "Ningún jugador con ese nombre." : "Plantilla no disponible ahora mismo.")); return; }
         list.forEach((p) => {
-          const r = el("a", "eq-pl");
+          const r = el("a", "sq2-row");
           r.href = "/jugador/" + encodeURIComponent(p.id) + "/" + nameSlug(p.name);
-          const ph = photoImg(p.photo, "eq-pimg");
-          r.appendChild(ph);
-          const mid = el("div", "eq-pmid");
-          mid.appendChild(el("div", "eq-pname", p.name));
-          const st = statusInfo(p.status);
-          mid.appendChild(el("div", "eq-pval", [money(p.value) + " €", Number(p.avg) > 0 ? "Media " + Number(p.avg).toFixed(1).replace(".", ",") : "", p.prob != null ? p.prob + "% de jugar" : "", st ? st.label : ""].filter(Boolean).join(" · ")));
+          r.appendChild(photoImg(p.photo, "sq2-img"));
+          const mid = el("div", "sq2-mid");
+          const nm = el("div", "sq2-name"); nm.appendChild(el("b", null, p.name));
+          const st = statusInfo(p.status); if (st) nm.appendChild(el("span", "sq2-st " + st.cls, p.status === "redcard" ? "Sancionado" : p.status === "doubt" ? "Duda" : "Lesión"));
+          mid.appendChild(nm);
+          const sub = el("div", "sq2-sub");
+          const rb = roleBadge(p.role); if (rb) sub.appendChild(el("span", "sq2-pos posb-" + posCls(p.role), rb));
+          sub.appendChild(document.createTextNode([money(p.value) + " €", Number(p.avg) > 0 ? "Media " + Number(p.avg).toFixed(1).replace(".", ",") : "", p.prob != null ? p.prob + "% jugar" : ""].filter(Boolean).join(" · ")));
+          mid.appendChild(sub);
           r.appendChild(mid);
-          const sc = el("div", "racha-scores");
+          const dots = el("div", "sq2-dots");
           const fit = (p.fitness || []).map((x) => Number(x) || 0);
-          const j0 = (Number(p.jornadaFf) || 0) - 1;
           for (let k = 0; k < fit.length; k++) {
-            const v = Math.round(fit[fit.length - 1 - k]);
-            const j = jLab(p.team, fit.length, k, j0 > 0 ? j0 : 0);
-            const cell = el("span", "racha-chip" + (v >= 6 ? " hi" : v >= 4 ? " mid" : v > 0 ? " lo" : v < 0 ? " neg" : (fitPlayed(p, fit.length - 1 - k) ? " z0" : " zero")));
-            if (j > 0) cell.appendChild(el("i", null, "J" + j));
-            cell.appendChild(el("b", null, v !== 0 ? String(v) : (fitPlayed(p, fit.length - 1 - k) ? "0" : "–")));
-            sc.appendChild(cell);
+            const idx = fit.length - 1 - k, v = Math.round(fit[idx]);
+            dots.appendChild(el("i", "sq2-dot " + (v >= 6 ? "hi" : v >= 4 ? "mid" : v > 0 ? "lo" : v < 0 ? "neg" : fitPlayed(p, idx) ? "z0" : "zero"), v !== 0 ? String(v) : fitPlayed(p, idx) ? "0" : ""));
           }
-          r.appendChild(sc);
-          sq.appendChild(r);
+          r.appendChild(dots);
+          const key = el("div", "sq2-key"); key.appendChild(el("b", null, keyTxt(p))); key.appendChild(el("small", null, keyLbl[eqSq.sort]));
+          r.appendChild(key);
+          listBox.appendChild(r);
         });
-      });
-      if (!squad.length) sq.appendChild(el("p", "muted small", "Plantilla no disponible ahora mismo."));
+      };
+      const paintChips = () => {
+        chipsR.replaceChildren();
+        ROLES.forEach((o) => {
+          const n = o[0] === "all" ? squad.length : squad.filter((p) => roleOf(p) === o[0]).length;
+          if (!n && o[0] !== "all") return;
+          const b = el("button", "sq2-chip" + (eqSq.pos === o[0] ? " on" : "")); b.type = "button";
+          b.appendChild(document.createTextNode(o[1])); b.appendChild(el("em", null, String(n)));
+          b.addEventListener("click", () => { eqSq.pos = o[0]; paintChips(); paintList(); });
+          chipsR.appendChild(b);
+        });
+        while (chipsS.children.length > 1) chipsS.removeChild(chipsS.lastChild);
+        SORTS.forEach((o) => {
+          const b = el("button", "sq2-s" + (eqSq.sort === o[0] ? " on" : ""), o[1]); b.type = "button";
+          b.addEventListener("click", () => { eqSq.sort = o[0]; paintChips(); paintList(); });
+          chipsS.appendChild(b);
+        });
+      };
+      inp.addEventListener("input", () => { eqSq.q = inp.value; paintList(); });
+      paintChips(); paintList();
       frag.appendChild(sq);
       // Pinta en el sitio (sin mover el scroll)
       const y = window.scrollY;
