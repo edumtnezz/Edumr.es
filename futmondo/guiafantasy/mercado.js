@@ -129,7 +129,7 @@
     if (same && history.length > 1) history.back(); else location.href = fallback || "/futmondo/guiafantasy/inicio";
   }
   function backBtn(fallback, extra) {
-    const b = el("button", "btn-ghost noti-back pp-back" + (extra ? " " + extra : ""), "←");
+    const b = el("button", "bk" + (extra ? " " + extra : ""), "← Volver");
     b.type = "button"; b.setAttribute("aria-label", "Volver");
     b.addEventListener("click", () => goBack(fallback));
     return b;
@@ -3167,7 +3167,7 @@
     const box = $("noticiaView");
     if (!box) return;
     box.innerHTML = "";
-    const back = el("button", "btn-ghost noti-back", "← Volver a noticias");
+    const back = el("button", "bk", "← Volver a noticias");
     back.type = "button";
     back.addEventListener("click", closeNoticiaInline);
     box.appendChild(back);
@@ -3612,7 +3612,7 @@
   function eqBack(box) {
     const bar = el("div", "eq-backbar");
     bar.appendChild(backBtn("/equipos"));
-    const a = el("a", "eq-back", "Todos los equipos");
+    const a = el("a", "bk bk-link", "Todos los equipos");
     a.href = "/equipos";
     bar.appendChild(a);
     box.appendChild(bar);

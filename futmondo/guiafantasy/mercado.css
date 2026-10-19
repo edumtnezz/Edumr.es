@@ -2406,3 +2406,26 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 #clausPos .claus-chip[data-pos="centrocampista"], :root:not([data-theme="light"]) #clausPos .claus-chip[data-pos="centrocampista"] { --pc: #0891b2; }
 #clausPos .claus-chip[data-pos="delantero"], :root:not([data-theme="light"]) #clausPos .claus-chip[data-pos="delantero"] { --pc: #be123c; }
 #clausPos .claus-chip[data-pos]:not([data-pos=""]).active, :root:not([data-theme="light"]) #clausPos .claus-chip[data-pos]:not([data-pos=""]).active { opacity: 1; color: #fff; box-shadow: 0 0 0 2px var(--card-solid, #fff), 0 0 0 4px var(--pc); }
+
+/* ===== Iconos SVG (icons.js) ===== */
+.gi { display: inline-block; width: 1.05em; height: 1.05em; vertical-align: -.2em; flex: none; }
+.gi.tri { width: .62em; height: .62em; vertical-align: .02em; stroke-width: 1px; }
+.gi.card { width: .8em; height: 1.05em; stroke: none; }
+.gi.card.red { color: #ef4444; } .gi.card.yellow { color: #facc15; }
+.gi.star { color: #f59e0b; } .gi.flame { color: #f97316; }
+.gi.up, .up > .gi:not(.tri) { color: #22c55e; } .gi.down { color: #ef4444; }
+.gi.ok { color: #22c55e; } .gi.ko { color: #ef4444; } .gi.warn { color: #f59e0b; }
+.gi.dot { width: .8em; height: .8em; } .gi.orange { color: #f59e0b; }
+.gi.dim { opacity: .55; } .gi.flip { transform: scaleY(-1); }
+.cx-more-ico .gi { width: 1.2em; height: 1.2em; }
+
+/* ===== Botón Volver: pastilla clara, un solo estilo en todas las vistas ===== */
+.bk { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px 0 10px; margin: 0 0 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--card-solid); color: var(--text); font: inherit; font-size: .84rem; font-weight: 700; line-height: 1; cursor: pointer; text-decoration: none; -webkit-tap-highlight-color: transparent; transition: transform .12s ease, border-color .15s ease, background .15s ease; }
+.bk .gi { width: 16px; height: 16px; vertical-align: 0; }
+.bk:active { transform: scale(.96); }
+.bk:focus-visible { outline: 2px solid #22c55e; outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) { .bk:hover { border-color: rgba(34,197,94,.55); background: rgba(34,197,94,.08); } }
+.bk-link { margin-left: 0; color: var(--muted); }
+.bk-link .gi { display: none; }
+.eq-backbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 8px; }
+.eq-backbar .bk { margin: 0; }
