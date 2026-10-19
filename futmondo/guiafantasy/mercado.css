@@ -2385,3 +2385,16 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 #tab-clausulazos .claus-filters { align-items: center; margin: 18px 0 6px; gap: 10px; }
 #tab-clausulazos .claus-frow { justify-content: center; }
 @media (prefers-reduced-motion: reduce) { #tab-clausulazos .claus-upd::before { animation: none; } }
+
+/* Clausulazo: filtros de posición con el color de cada posición */
+#clausPos .claus-chip[data-pos="portero"] { --pc: #16a34a; }
+#clausPos .claus-chip[data-pos="defensa"] { --pc: #b45309; }
+#clausPos .claus-chip[data-pos="centrocampista"] { --pc: #0891b2; }
+#clausPos .claus-chip[data-pos="delantero"] { --pc: #be123c; }
+#clausPos .claus-chip[data-pos]:not([data-pos=""]) { color: var(--pc); font-weight: 800; }
+#clausPos .claus-chip[data-pos]:not([data-pos=""]).active { background: var(--pc); color: #fff; box-shadow: 0 2px 8px color-mix(in srgb, var(--pc) 45%, transparent); }
+:root:not([data-theme="light"]) #clausPos .claus-chip[data-pos="portero"] { --pc: #22c55e; }
+:root:not([data-theme="light"]) #clausPos .claus-chip[data-pos="defensa"] { --pc: #f59e0b; }
+:root:not([data-theme="light"]) #clausPos .claus-chip[data-pos="centrocampista"] { --pc: #22d3ee; }
+:root:not([data-theme="light"]) #clausPos .claus-chip[data-pos="delantero"] { --pc: #fb7185; }
+:root:not([data-theme="light"]) #clausPos .claus-chip[data-pos]:not([data-pos=""]).active { color: #0b1220; }
