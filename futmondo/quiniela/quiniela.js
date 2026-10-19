@@ -305,33 +305,41 @@ function renderMatches() {
     row.dataset.match = m.id;
     const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
     const hasScore = m.score && m.score.home !== null && m.score.home !== undefined;
-    // Talón con el número del partido (como en el boleto de papel)
-    const stub = mk("div", "bq-stub");
-    stub.appendChild(mk("small", null, "Partido"));
-    stub.appendChild(mk("b", null, String(matches.indexOf(m) + 1).padStart(2, "0")));
-    row.appendChild(stub);
     const main = mk("div", "bq-main");
     const f = fmtDate(m.utcDate);
     const stale = /^(IN_PLAY|PAUSED)$/.test(m.status || "") && m.utcDate && Date.now() - new Date(m.utcDate).getTime() > 3 * 3600 * 1000;
-    const stTxt = stale ? "Pendiente de resultado" : (/^IN_PLAY$/.test(m.status || "") && liveMinByCrest[m.homeCrest]) || statusLabel(m.status);
+    const myPickM = picks[m.id];
+    const verdict = m.result && myPickM ? (myPickM === m.result ? "hit" : "miss") : "";
+    if (verdict) row.classList.add(verdict);
+    const stTxt = verdict === "hit" ? "Acertado" : verdict === "miss" ? "Fallado" : stale ? "Pendiente de resultado" : (/^IN_PLAY$/.test(m.status || "") && liveMinByCrest[m.homeCrest]) || statusLabel(m.status);
+    // Cabecera tocable: abre el detalle (forma de los equipos y pronósticos de todos)
+    const head = mk("button", "bq-head");
+    head.type = "button";
+    head.setAttribute("aria-expanded", "false");
     const meta = mk("div", "bq-meta");
     meta.dataset.crest = m.homeCrest || "";
     meta.appendChild(mk("span", "bq-time", f.short));
     const live = /^(IN_PLAY|PAUSED)$/.test(m.status || "") && !stale;
-    meta.appendChild(mk("span", "bq-st" + (live ? " live" : m.result ? " fin" : ""), stTxt));
-    main.appendChild(meta);
+    const stEl = mk("span", "bq-st" + (live ? " live" : verdict ? " " + verdict : m.result ? " fin" : ""), stTxt);
+    meta.appendChild(stEl);
+    const chev = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    chev.setAttribute("viewBox", "0 0 24 24"); chev.setAttribute("class", "bq-chev"); chev.setAttribute("aria-hidden", "true");
+    chev.setAttribute("fill", "none"); chev.setAttribute("stroke", "currentColor"); chev.setAttribute("stroke-width", "2.2"); chev.setAttribute("stroke-linecap", "round"); chev.setAttribute("stroke-linejoin", "round");
+    const chp = document.createElementNS("http://www.w3.org/2000/svg", "path"); chp.setAttribute("d", "M6 9l6 6 6-6"); chev.appendChild(chp);
+    meta.appendChild(chev);
+    head.appendChild(meta);
     const teams = mk("div", "bq-teams");
-    const side = (name, crest, tla, form, cls) => {
+    const side = (name, crest, tla, cls) => {
       const t = mk("div", "bq-team " + cls);
-      const cr = crestEl(crest, tla || name); t.appendChild(cr);
+      t.appendChild(crestEl(crest, tla || name));
       t.appendChild(mk("span", "bq-name", name));
-      t.appendChild(formEl(form));
       return t;
     };
-    teams.appendChild(side(m.home, m.homeCrest, m.homeTla, m.homeForm, "h"));
+    teams.appendChild(side(m.home, m.homeCrest, m.homeTla, "h"));
     teams.appendChild(mk("div", "bq-mid" + (hasScore ? " score" : ""), hasScore ? `${m.score.home} - ${m.score.away}` : "VS"));
-    teams.appendChild(side(m.away, m.awayCrest, m.awayTla, m.awayForm, "a"));
-    main.appendChild(teams);
+    teams.appendChild(side(m.away, m.awayCrest, m.awayTla, "a"));
+    head.appendChild(teams);
+    main.appendChild(head);
     const btns = mk("div", "bq-picks");
     [["1", "Local"], ["X", "Empate"], ["2", "Visitante"]].forEach(([opt, lab]) => {
       const b = mk("button", "bq-pick");
@@ -352,6 +360,31 @@ function renderMatches() {
       btns.appendChild(b);
     });
     main.appendChild(btns);
+    // Detalle plegado
+    const more = mk("div", "bq-more");
+    const fr = mk("div", "bq-forms");
+    [[m.homeTla || m.home, m.homeForm], [m.awayTla || m.away, m.awayForm]].forEach(([nm, fm]) => {
+      const c = mk("div", "bq-form"); c.appendChild(mk("span", "bq-form-n", nm)); c.appendChild(formEl(fm)); fr.appendChild(c);
+    });
+    more.appendChild(fr);
+    more.appendChild(mk("p", "bq-form-note", "Últimos 5 partidos, el más reciente a la derecha."));
+    const others = (state.participants || []).filter((p) => p.picks && p.picks[m.id]);
+    if (others.length) {
+      const ow = mk("div", "bq-others");
+      others.forEach((p) => {
+        const pk = p.picks[m.id];
+        const chip = mk("span", "bq-oth" + (m.result ? (pk === m.result ? " ok" : " ko") : ""));
+        chip.appendChild(mk("span", "bq-oth-n", p.name));
+        chip.appendChild(mk("b", null, pk));
+        ow.appendChild(chip);
+      });
+      more.appendChild(ow);
+    }
+    main.appendChild(more);
+    head.addEventListener("click", () => {
+      const on = row.classList.toggle("open");
+      head.setAttribute("aria-expanded", on ? "true" : "false");
+    });
     row.appendChild(main);
     list.appendChild(row);
   });
@@ -364,10 +397,10 @@ function renderMatches() {
   $("saveBtn").disabled = false;
 
   if (!canEdit) {
-    $("picksHint").textContent = hasPred
-      ? "La jornada ya ha empezado: tus pronósticos quedan cerrados."
-      : "La jornada ya ha empezado y no registraste pronóstico.";
+    $("picksHint").textContent = hasPred ? "" : "No registraste pronóstico en esta jornada.";
+    $("picksHint").hidden = !!hasPred;
   } else {
+    $("picksHint").hidden = false;
     $("picksHint").textContent = hasPred
       ? "Puedes cambiar los partidos que aún no han empezado y volver a guardar."
       : "Elige 1, X o 2 en los partidos que aún no han empezado. Pulsa Guardar al terminar.";
@@ -406,7 +439,7 @@ function renderRanking() {
   const myKey = apodo ? apodo.toLowerCase() : null;
   const medals = ["🥇", "🥈", "🥉"];
   const top = list.slice(0, 3);
-  [1, 0, 2].forEach((idx) => {
+  (list.length >= 3 ? [1, 0, 2] : []).forEach((idx) => {
     const s = top[idx];
     if (!s) return;
     const place = idx + 1;
@@ -443,10 +476,41 @@ function renderRanking() {
       <span class="rank-score">
         <span class="rank-prize">${money(s.prize)}<small>prima</small></span>
       </span>`;
-    cards.appendChild(card);
-    card.title = "Ver sus aciertos y fallos";
-    card.addEventListener("click", () => openParticipant(s.key));
+    const wrapC = document.createElement("div");
+    wrapC.className = "rank-item";
+    wrapC.dataset.pkey = s.key;
+    wrapC.appendChild(card);
+    const det = document.createElement("div");
+    det.className = "rank-det hidden";
+    wrapC.appendChild(det);
+    cards.appendChild(wrapC);
+    card.title = "Ver sus pronósticos";
+    card.addEventListener("click", () => {
+      if (det.classList.contains("hidden") && !det.firstChild) det.appendChild(picksGrid((state.participants || []).find((p) => p.key === s.key)));
+      det.classList.toggle("hidden");
+      card.classList.toggle("open", !det.classList.contains("hidden"));
+    });
   });
+}
+
+/* Pronósticos de un participante: acierto en verde, fallo en rojo */
+function picksGrid(p) {
+  const grid = document.createElement("div");
+  grid.className = "participant-picks";
+  if (!p || !p.picks) { const n = document.createElement("div"); n.className = "hidden-note"; n.textContent = "Sin pronóstico en esta jornada."; return n; }
+  sortedMatches().forEach((m) => {
+    const pick = p.picks[m.id];
+    const chip = document.createElement("span");
+    chip.className = "ppick";
+    if (m.result && pick) chip.classList.add(pick === m.result ? "ok" : "ko");
+    const c1 = crestEl(m.homeCrest, m.homeTla); c1.classList.add("pc");
+    const c2 = crestEl(m.awayCrest, m.awayTla); c2.classList.add("pc");
+    const txt = document.createElement("span"); txt.className = "pt"; txt.textContent = `${m.homeTla || ""} - ${m.awayTla || ""}`;
+    const val = document.createElement("span"); val.className = "pv"; val.textContent = pick || "–";
+    chip.appendChild(c1); chip.appendChild(txt); chip.appendChild(c2); chip.appendChild(val);
+    grid.appendChild(chip);
+  });
+  return grid;
 }
 
 async function loadGlobal() {
@@ -544,12 +608,34 @@ function renderSummary() {
   });
 }
 
+
+/* Resumen de tu jornada: aciertos, premio y puesto de un vistazo */
+function renderMyRecap() {
+  const panel = $("picksPanel");
+  if (!panel) return;
+  let box = $("myRecap");
+  if (!box) { box = document.createElement("div"); box.id = "myRecap"; box.className = "my-recap"; panel.insertBefore(box, panel.firstChild); }
+  box.innerHTML = "";
+  const key = (apodo || "").toLowerCase();
+  const list = state.standings || [];
+  const idx = list.findIndex((x) => x.key === key);
+  const played = state.matches.filter((m) => m.result).length;
+  if (idx < 0 || !played) { box.hidden = true; return; }
+  box.hidden = false;
+  const me = list[idx];
+  const cell = (big, small) => { const c = document.createElement("div"); c.className = "rc-cell"; const b = document.createElement("b"); b.textContent = big; const sm = document.createElement("small"); sm.textContent = small; c.appendChild(b); c.appendChild(sm); return c; };
+  box.appendChild(cell(`${me.hits}/${played}`, "aciertos"));
+  box.appendChild(cell(money(me.prize), "prima"));
+  box.appendChild(cell(`${idx + 1}º de ${list.length}`, "puesto"));
+}
+
 function sortedMatches() {
   return (state.matches || []).slice().sort((x, y) => new Date(x.utcDate) - new Date(y.utcDate));
 }
 
 function renderParticipants() {
   const wrap = $("participantsList");
+  if (!wrap) return;
   wrap.innerHTML = "";
   const hitsOf = (p) => {
     let h = 0;
@@ -849,7 +935,7 @@ function renderAll() {
     tabInitialized = true;
     switchTab("miQuiniela", false);
   }
-  if (logged) renderMatches();
+  if (logged) { renderMatches(); renderMyRecap(); }
   if (rankMode === "global") loadGlobal();
   else {
     renderRanking();
@@ -1008,20 +1094,10 @@ function switchTab(name, scroll) {
 }
 
 function openParticipant(key) {
-  switchTab("participantes");
+  switchTab("clasificacion");
   setTimeout(() => {
-    const card = document.querySelector('.participant[data-pkey="' + key + '"]');
-    if (!card) return;
-    const head = card.querySelector(".participant-head");
-    const body = card.querySelector(".participant-body");
-    if (body) {
-      body.classList.remove("hidden");
-      if (head) head.classList.add("open");
-    }
-    const bar = document.querySelector(".appbar");
-    const off = (bar ? bar.offsetHeight : 0) + 12;
-    const y = card.getBoundingClientRect().top + window.scrollY - off;
-    window.scrollTo({ top: Math.max(0, y), behavior: "smooth" });
+    const it = document.querySelector('.rank-item[data-pkey="' + key + '"] .rank-card');
+    if (it && !it.classList.contains("open")) it.click();
   }, 160);
 }
 

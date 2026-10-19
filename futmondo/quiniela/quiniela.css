@@ -1734,3 +1734,70 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .match-row.bq.missing .bq-picks { outline: 2px solid rgba(239,68,68,.7); outline-offset: 4px; border-radius: 16px; }
 @media (max-width: 380px) { .bq-stub { width: 54px; } .bq-stub b { font-size: 1.5rem; } .bq-team .crest, .bq-team .crest-fallback { width: 46px; height: 46px; } .bq-pick small { display: none; } .bq-pick { height: 50px; } }
 @media (prefers-reduced-motion: reduce) { .bq-pick { transition: none; } }
+
+/* ======================================================================
+   QUINIELA · rediseño v2: boleto compacto (sin talón), escudos grandes,
+   acierto/fallo a todo color, detalle plegable, resumen de tu jornada
+   ====================================================================== */
+.match-row.bq {
+  --bq-paper: #131c2c; --bq-ink: #f3f6fa; --bq-mute: #9aa9be; --bq-line: rgba(255,255,255,.12); --bq-box: rgba(255,255,255,.05);
+  display: block; border-radius: 22px; background: var(--bq-paper); border: 1px solid var(--bq-line);
+  -webkit-mask: none; mask: none; box-shadow: 0 10px 26px rgba(0,0,0,.28); overflow: hidden;
+  transition: background-color .2s ease, box-shadow .2s ease;
+}
+[data-theme="light"] .match-row.bq { --bq-paper: #ffffff; --bq-ink: #111827; --bq-mute: #5b6677; --bq-line: rgba(15,23,42,.12); --bq-box: rgba(15,23,42,.045); box-shadow: 0 1px 2px rgba(15,23,42,.06), 0 10px 24px rgba(15,23,42,.08); }
+.match-row.bq.hit { background: linear-gradient(180deg, rgba(34,197,94,.16), rgba(34,197,94,.05)), var(--bq-paper); border-color: rgba(34,197,94,.6); }
+.match-row.bq.miss { background: linear-gradient(180deg, rgba(239,68,68,.14), rgba(239,68,68,.04)), var(--bq-paper); border-color: rgba(239,68,68,.55); }
+.bq-stub { display: none; }
+.bq-main { padding: 14px 14px 14px; gap: 12px; }
+.bq-head { display: flex; flex-direction: column; gap: 10px; width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.bq-meta { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 8px; font-size: .78rem; font-weight: 700; color: var(--bq-mute); text-align: left; }
+.bq-st { padding: 3px 10px; border-radius: 999px; background: var(--bq-box); border: 1px solid var(--bq-line); font-size: .7rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--bq-ink); }
+.bq-st.hit { background: #16a34a; border-color: #16a34a; color: #fff; }
+.bq-st.miss { background: #dc2626; border-color: #dc2626; color: #fff; }
+.bq-chev { width: 18px; height: 18px; color: var(--bq-mute); transition: transform .2s cubic-bezier(.23,1,.32,1); }
+.match-row.bq.open .bq-chev { transform: rotate(180deg); }
+.bq-teams { grid-template-columns: 1fr auto 1fr; gap: 6px; align-items: center; }
+.bq-team { gap: 8px; }
+.bq-team .crest, .bq-team .crest-fallback { width: 68px; height: 68px; }
+.bq-name { font-size: .95rem; font-weight: 800; }
+.bq-mid { font-size: .8rem; color: var(--bq-mute); }
+.bq-mid.score { font-size: 2.1rem; font-weight: 800; color: var(--bq-ink); }
+.bq-picks { gap: 8px; }
+.bq-pick { min-height: 54px; border-radius: 14px; }
+.bq-more { display: none; padding-top: 12px; border-top: 1px solid var(--bq-line); }
+.match-row.bq.open .bq-more { display: block; animation: bqOpen .2s cubic-bezier(.23,1,.32,1); }
+@keyframes bqOpen { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+.bq-forms { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.bq-form { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.bq-form-n { font-size: .78rem; font-weight: 800; color: var(--bq-ink); letter-spacing: .04em; }
+.bq-form-note { margin: 8px 0 0; text-align: center; font-size: .7rem; color: var(--bq-mute); }
+.bq-others { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 12px; }
+.bq-oth { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: var(--bq-box); border: 1px solid var(--bq-line); font-size: .78rem; color: var(--bq-ink); }
+.bq-oth b { font-weight: 800; }
+.bq-oth.ok { background: rgba(34,197,94,.18); border-color: rgba(34,197,94,.55); }
+.bq-oth.ko { background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.5); }
+@media (max-width: 380px) { .bq-team .crest, .bq-team .crest-fallback { width: 58px; height: 58px; } .bq-mid.score { font-size: 1.8rem; } }
+@media (prefers-reduced-motion: reduce) { .match-row.bq.open .bq-more { animation: none; } .bq-chev { transition: none; } }
+
+/* Resumen de tu jornada */
+.my-recap { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.my-recap[hidden] { display: none; }
+.rc-cell { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 12px 6px; border-radius: 16px; background: rgba(127,127,127,.12); text-align: center; min-width: 0; }
+.rc-cell b { font: 800 1.2rem/1 'Bricolage Grotesque', sans-serif; letter-spacing: -.02em; white-space: nowrap; }
+.rc-cell:nth-child(2) b { color: #16a34a; }
+.rc-cell small { font-size: .66rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
+/* Cabecera de jornada más compacta */
+.jornada-card { padding: 12px 14px; gap: 8px; }
+.jornada-card .jc-timer { font-size: clamp(1.5rem, 6vw, 2rem); }
+.jornada-card.closed .jc-timer { font-size: .76rem; letter-spacing: .16em; text-transform: uppercase; padding: 4px 12px; border-radius: 999px; background: rgba(239,68,68,.14); width: fit-content; margin: 0 auto; }
+.jornada-card.closed .jc-info { display: none; }
+
+/* Clasificación: sin texto de ayuda, podio solo con 3+, filas desplegables */
+#rankingHint { display: none; }
+.podium:empty { display: none; }
+.rank-item { display: flex; flex-direction: column; }
+.rank-det { padding: 10px 2px 4px; }
+.rank-det.hidden { display: none; }
+.rank-card { cursor: pointer; }
