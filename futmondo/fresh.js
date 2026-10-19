@@ -10,7 +10,11 @@
     if (stale()) location.reload();
     hiddenAt = 0;
   });
+  // Al volver atrás el navegador restaura la página de memoria: solo se recarga si llevaba rato fuera
+  // (antes recargaba siempre y se veía un parpadeo raro al volver a Inicio).
+  var leftAt = 0;
+  window.addEventListener("pagehide", function () { leftAt = Date.now(); });
   window.addEventListener("pageshow", function (e) {
-    if (e.persisted) location.reload();
+    if (e.persisted && leftAt && Date.now() - leftAt > AWAY && !busy()) location.reload();
   });
 })();
