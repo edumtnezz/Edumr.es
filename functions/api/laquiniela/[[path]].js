@@ -3578,9 +3578,14 @@ async function getPorraState(env, user, jornadaReq) {
     { key: "barca", label: "Barcelona", fix: pickJ(lists.barca, items.barca) },
   ];
   const matches = [];
+  const seenFix = new Set();
   for (const d of defs) {
     const f = d.fix;
     if (!f) continue;
+    // Madrid-Barça (o Barça-Madrid) sale en las dos listas: se muestra una sola vez.
+    const fk = f.matchId || (f.home + "|" + f.away + "|" + String(f.utcDate).slice(0, 10));
+    if (seenFix.has(fk)) continue;
+    seenFix.add(fk);
     const preds = (await env.PORRA.get(`porra:pred:${f.matchId}`, "json")) || {};
     const entries = porraBuildEntries(preds, f);
     const started = now >= new Date(f.utcDate).getTime() || !["SCHEDULED", "TIMED"].includes(f.status);
