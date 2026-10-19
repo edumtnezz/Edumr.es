@@ -116,6 +116,19 @@
       thumb.style.width = thumbW + "px";
       thumb.style.transform = "translateX(" + (pos * (trackW - thumbW)) + "px)";
     }
+    // La barra se puede arrastrar (o tocar) con el dedo/ratón para desplazar la tira
+    function seek(ev) {
+      var r = barEl.getBoundingClientRect();
+      var max = scrollEl.scrollWidth - scrollEl.clientWidth;
+      var thumbW = thumb.offsetWidth;
+      var rel = (ev.clientX - r.left - thumbW / 2) / Math.max(r.width - thumbW, 1);
+      scrollEl.scrollLeft = Math.min(1, Math.max(0, rel)) * max;
+    }
+    var drag = false;
+    barEl.addEventListener("pointerdown", function (ev) { drag = true; try { barEl.setPointerCapture(ev.pointerId); } catch (e) {} seek(ev); ev.preventDefault(); });
+    barEl.addEventListener("pointermove", function (ev) { if (drag) seek(ev); });
+    barEl.addEventListener("pointerup", function () { drag = false; });
+    barEl.addEventListener("pointercancel", function () { drag = false; });
     scrollEl.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
     scrollEl.dataset.barUpdate = "1";

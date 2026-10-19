@@ -748,3 +748,9 @@ button:not(:disabled):active, [role="button"]:active, .hub-feature:active, .hub-
 /* Tarjetas de la tira de jornada: todas del mismo tamaño */
 .cx-jn-grid { grid-auto-rows: 1fr; }
 .cx-jn { justify-content: center; }
+
+/* Barra de scroll de la tira: se puede arrastrar; zona táctil más grande que lo visible */
+.cx-scrollbar { position: relative; overflow: visible; touch-action: none; cursor: grab; }
+.cx-scrollbar::before { content: ""; position: absolute; inset: -12px -4px; }
+.cx-scrollbar-thumb { position: relative; }
+.cx-scrollbar:active { cursor: grabbing; }
