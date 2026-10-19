@@ -5,9 +5,9 @@ async function refreshLiveMinutes() {
   try {
     const d = await (await fetch(API + "/jornada", { cache: "no-store" })).json();
     (d.matches || []).forEach((x) => { if (x.live && x.live.state === "live" && x.live.minute && x.live.minute !== "EN JUEGO") liveMinByCrest[x.homeCrest] = x.live.minute; else delete liveMinByCrest[x.homeCrest]; });
-    document.querySelectorAll(".pc-when[data-crest]").forEach((w) => {
-      const lm = liveMinByCrest[w.dataset.crest];
-      if (lm) w.textContent = w.textContent.replace(/(En juego|Descanso|\d+ª parte( · Min\. \d+(\+\d+)?)?)$/, lm);
+    document.querySelectorAll(".bq-meta[data-crest]").forEach((w) => {
+      const lm = liveMinByCrest[w.dataset.crest], st = w.querySelector(".bq-st");
+      if (lm && st && /(En juego|Descanso|ª parte|Min\.)/.test(st.textContent)) st.textContent = lm;
     });
   } catch (e) {}
 }
@@ -301,47 +301,42 @@ function renderMatches() {
     }
 
     const row = document.createElement("div");
-    row.className = "match-row";
+    row.className = "match-row bq";
     row.dataset.match = m.id;
-
-    row.classList.add("mr2");
-    [[m.homeCrest, "pc-bg pc-bg-l"], [m.awayCrest, "pc-bg pc-bg-r"]].forEach((x) => {
-      if (!x[0]) return;
-      const im = document.createElement("img");
-      im.className = x[1]; im.src = x[0]; im.alt = ""; im.setAttribute("aria-hidden", "true");
-      im.addEventListener("error", () => im.remove());
-      row.appendChild(im);
-    });
-    const info = document.createElement("div");
-    info.className = "mr-body";
+    const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+    const hasScore = m.score && m.score.home !== null && m.score.home !== undefined;
+    // Talón con el número del partido (como en el boleto de papel)
+    const stub = mk("div", "bq-stub");
+    stub.appendChild(mk("small", null, "Partido"));
+    stub.appendChild(mk("b", null, String(matches.indexOf(m) + 1).padStart(2, "0")));
+    row.appendChild(stub);
+    const main = mk("div", "bq-main");
     const f = fmtDate(m.utcDate);
-    const when = document.createElement("div");
-    when.className = "pc-when";
-    when.dataset.crest = m.homeCrest || "";
     const stale = /^(IN_PLAY|PAUSED)$/.test(m.status || "") && m.utcDate && Date.now() - new Date(m.utcDate).getTime() > 3 * 3600 * 1000;
-    when.textContent = `${f.short} · ${stale ? "Pendiente de resultado" : (/^IN_PLAY$/.test(m.status || "") && liveMinByCrest[m.homeCrest]) || statusLabel(m.status)}`;
-    info.appendChild(when);
-    const teams = document.createElement("div");
-    teams.className = "pc-teams";
-    const colOf = (name, form) => {
-      const c = document.createElement("div"); c.className = "pc-col";
-      const n = document.createElement("span"); n.className = "pc-t"; n.textContent = name;
-      c.appendChild(n); c.appendChild(formEl(form));
-      return c;
+    const stTxt = stale ? "Pendiente de resultado" : (/^IN_PLAY$/.test(m.status || "") && liveMinByCrest[m.homeCrest]) || statusLabel(m.status);
+    const meta = mk("div", "bq-meta");
+    meta.dataset.crest = m.homeCrest || "";
+    meta.appendChild(mk("span", "bq-time", f.short));
+    const live = /^(IN_PLAY|PAUSED)$/.test(m.status || "") && !stale;
+    meta.appendChild(mk("span", "bq-st" + (live ? " live" : m.result ? " fin" : ""), stTxt));
+    main.appendChild(meta);
+    const teams = mk("div", "bq-teams");
+    const side = (name, crest, tla, form, cls) => {
+      const t = mk("div", "bq-team " + cls);
+      const cr = crestEl(crest, tla || name); t.appendChild(cr);
+      t.appendChild(mk("span", "bq-name", name));
+      t.appendChild(formEl(form));
+      return t;
     };
-    const tl = colOf(m.home, m.homeForm);
-    const tv = document.createElement("span"); tv.className = "pc-vs";
-    tv.textContent = m.score && m.score.home !== null && m.score.home !== undefined ? `${m.score.home} - ${m.score.away}` : "VS";
-    const tr = colOf(m.away, m.awayForm);
-    teams.appendChild(tl); teams.appendChild(tv); teams.appendChild(tr);
-    info.appendChild(teams);
-
-    const btns = document.createElement("div");
-    btns.className = "pick-buttons";
-    ["1", "X", "2"].forEach((opt) => {
-      const b = document.createElement("button");
-      b.className = "pick-btn";
-      b.textContent = opt;
+    teams.appendChild(side(m.home, m.homeCrest, m.homeTla, m.homeForm, "h"));
+    teams.appendChild(mk("div", "bq-mid" + (hasScore ? " score" : ""), hasScore ? `${m.score.home} - ${m.score.away}` : "VS"));
+    teams.appendChild(side(m.away, m.awayCrest, m.awayTla, m.awayForm, "a"));
+    main.appendChild(teams);
+    const btns = mk("div", "bq-picks");
+    [["1", "Local"], ["X", "Empate"], ["2", "Visitante"]].forEach(([opt, lab]) => {
+      const b = mk("button", "bq-pick");
+      b.type = "button";
+      b.appendChild(mk("b", null, opt)); b.appendChild(mk("small", null, lab));
       b.dataset.match = m.id;
       b.dataset.pick = opt;
       const myPick = picks[m.id] === opt;
@@ -356,9 +351,8 @@ function renderMatches() {
       b.addEventListener("click", () => selectPick(m.id, opt));
       btns.appendChild(b);
     });
-
-    info.appendChild(btns);
-    row.appendChild(info);
+    main.appendChild(btns);
+    row.appendChild(main);
     list.appendChild(row);
   });
 
@@ -388,7 +382,7 @@ function selectPick(matchId, opt) {
   picksDirty = true;
   const row = document.querySelector(`.match-row[data-match="${matchId}"]`);
   if (row) row.classList.remove("missing");
-  document.querySelectorAll(`.pick-btn[data-match="${matchId}"]`).forEach((b) => {
+  document.querySelectorAll(`.bq-pick[data-match="${matchId}"]`).forEach((b) => {
     b.classList.toggle("selected", b.dataset.pick === opt);
   });
   $("saveMsg").textContent = "";
