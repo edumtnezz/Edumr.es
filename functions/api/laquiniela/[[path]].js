@@ -1831,7 +1831,7 @@ async function getFFTeam(env, name) {
 // desde aquí.
 const FF_TEAMS = ["alaves", "athletic", "atletico", "barcelona", "betis", "celta", "deportivo", "elche", "espanyol", "getafe", "levante", "malaga", "osasuna", "racing", "rayo-vallecano", "real-madrid", "real-sociedad", "sevilla", "valencia", "villarreal"];
 async function checkFFHealth(env, force) {
-  const key = "ff:health:v1";
+  const key = "ff:health:v2";
   if (!force) {
     try { const c = await env.PORRA.get(key, "json"); if (c && Date.now() - (c.at || 0) < 20 * 3600 * 1000) return c; } catch (e) {}
   }
@@ -1839,7 +1839,7 @@ async function checkFFHealth(env, force) {
   await Promise.all(FF_TEAMS.map(async (slug) => {
     try {
       const d = await getFFTeam(env, slug);
-      if (!d || !d.starters || !d.starters.length) broken.push(slug);
+      if (!d || !((d.starters && d.starters.length) || (d.bench && d.bench.length))) broken.push(slug); // sin once ni banquillo = página rota (tras jugar, FF vacía el once pero no el banquillo)
     } catch (e) { broken.push(slug); }
   }));
   const result = { at: Date.now(), total: FF_TEAMS.length, broken };
