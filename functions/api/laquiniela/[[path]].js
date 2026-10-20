@@ -2774,6 +2774,28 @@ async function getTableStats(env) {
   }
 }
 
+// Clasificación de LaLiga de FotMob (la misma de la página de cada partido); si falla, la calculada con resultados reales
+async function getLeagueTable(env) {
+  let teams = null;
+  const ck = "fmtable:v1";
+  try { const c = await env.PORRA.get(ck, "json"); if (c && c.at && Date.now() - c.at < 20 * 60000 && c.teams && c.teams.length) teams = c.teams; } catch (e) {}
+  if (!teams) {
+    try {
+      const tr = await fetch("https://www.fotmob.com/api/data/tltable?leagueId=87", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+      const tj = await tr.json();
+      const all = tj[0].data.table.all || [];
+      const t2 = all.map((x) => ({ pos: x.idx, id: x.id, name: x.shortName || x.name, pj: x.played, w: x.wins, d: x.draws, l: x.losses, gf: String(x.scoresStr || ""), dg: x.goalConDiff, pts: x.pts, q: x.qualColor || "" }));
+      if (t2.length) { teams = t2; try { await env.PORRA.put(ck, JSON.stringify({ at: Date.now(), teams })); } catch (e) {} }
+    } catch (e) {}
+  }
+  if (!teams) { try { const c = await env.PORRA.get(ck, "json"); if (c && c.teams) teams = c.teams; } catch (e) {} }
+  if (!teams) {
+    const ts = await getTableStats(env);
+    teams = (ts || []).map((t) => ({ pos: t.pos, id: null, name: t.name, pj: t.pj, w: t.w, d: t.d, l: t.l, gf: t.gf + "-" + t.ga, dg: t.gf - t.ga, pts: t.pts, q: "" }));
+  }
+  return teams;
+}
+
 // Dificultad estimada del rival para un jugador. Atacantes (CEN/DEL): cuánto encaja el rival;
 // defensas/portero: cuánto marca el rival. Se usa el campo en el que jugará el rival (casa/fuera).
 function rivalDifficulty(teams, rivalName, pos, playerAtHome) {
@@ -3000,12 +3022,15 @@ async function handleAnaliza(request, env, user) {
   let tableTeams = null;
   try { tableTeams = await getTableStats(env); } catch (e) {}
   [].concat(titulares, suplentes).forEach((p) => { p.dificultad = rivalDifficulty(tableTeams, p.rival, p.pos, p.casa); });
+  let leagueT = null;
+  try { leagueT = await getLeagueTable(env); } catch (e) {}
   [].concat(titulares, suplentes).forEach((p) => {
-    if (!tableTeams || !p.rival) return;
+    if (!leagueT || !leagueT.length || !p.rival) return;
     const rk = teamKey(p.rival);
-    const r = tableTeams.find((t) => teamKey(t.name) === rk) || tableTeams.find((t) => { const k = teamKey(t.name); return k && rk && (k.includes(rk) || rk.includes(k)); });
-    if (r) { p.rivalPos = r.pos; p.rivalPts = r.pts; p.rivalPj = r.pj; p.rivalN = tableTeams.length; }
+    const r = leagueT.find((t) => teamKey(t.name) === rk) || leagueT.find((t) => { const k = teamKey(t.name); return k && rk && (k.includes(rk) || rk.includes(k)); });
+    if (r) { p.rivalPos = r.pos; p.rivalPts = r.pts; p.rivalPj = r.pj; p.rivalN = leagueT.length; }
   });
+
   // Las fotos del mercado de Futmondo son una cara de carné pequeña; para que
   // el campo de "Analiza tu equipo" se vea igual que "Alineaciones probables"
   // (recorte de cuerpo entero de futbolfantasy.com) buscamos la foto de cada
@@ -4326,25 +4351,7 @@ async function handleGet({ request, env: env0, params }) {
     } catch (e) { return json({ updatedAt: Date.now(), items: [], error: String(e) }); }
   }
   if (path === "tabla") {
-    // Clasificación de LaLiga de FotMob (la misma de la página de cada partido); si falla, la calculada con resultados reales
-    let teams = null;
-    const ck = "fmtable:v1";
-    try { const c = await env.PORRA.get(ck, "json"); if (c && c.at && Date.now() - c.at < 20 * 60000 && c.teams && c.teams.length) teams = c.teams; } catch (e) {}
-    if (!teams) {
-      try {
-        const tr = await fetch("https://www.fotmob.com/api/data/tltable?leagueId=87", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
-        const tj = await tr.json();
-        const all = tj[0].data.table.all || [];
-        const t2 = all.map((x) => ({ pos: x.idx, id: x.id, name: x.shortName || x.name, pj: x.played, w: x.wins, d: x.draws, l: x.losses, gf: String(x.scoresStr || ""), dg: x.goalConDiff, pts: x.pts, q: x.qualColor || "" }));
-        if (t2.length) { teams = t2; try { await env.PORRA.put(ck, JSON.stringify({ at: Date.now(), teams })); } catch (e) {} }
-      } catch (e) {}
-    }
-    if (!teams) { try { const c = await env.PORRA.get(ck, "json"); if (c && c.teams) teams = c.teams; } catch (e) {} }
-    if (!teams) {
-      const ts = await getTableStats(env);
-      teams = (ts || []).map((t) => ({ pos: t.pos, id: null, name: t.name, pj: t.pj, w: t.w, d: t.d, l: t.l, gf: t.gf + "-" + t.ga, dg: t.gf - t.ga, pts: t.pts, q: "" }));
-    }
-    return json({ teams: teams || [] });
+    return json({ teams: (await getLeagueTable(env)) || [] });
   }
   if (path === "rachas") {
     try { return json(await getRachas(env)); } catch (e) { return json({ players: [] }); }
