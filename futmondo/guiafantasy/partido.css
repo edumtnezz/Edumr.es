@@ -241,3 +241,14 @@
 .eq-livetag i{width:6px;height:6px;border-radius:50%;background:#fff;animation:eqLive 1.3s ease-in-out infinite}
 @keyframes eqLive{50%{opacity:.3}}
 @media (prefers-reduced-motion:reduce){.eq-livetag i{animation:none}}
+
+.eq-calcap{font:800 .68rem 'Bricolage Grotesque',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#6b7280);margin:10px 2px 2px}
+.eq-cal>.eq-calcap:first-child{margin-top:2px}
+.eq-calrow.fin{opacity:1;border-left-width:5px}
+.eq-calrow.fin.win{border-left-color:#16a34a;background:rgba(22,163,74,.06)}
+.eq-calrow.fin.draw{border-left-color:#9ca3af}
+.eq-calrow.fin.loss{border-left-color:#ef4444;background:rgba(239,68,68,.05)}
+.eq-calscore{margin-left:auto;font-weight:800;padding:3px 10px;border-radius:999px;background:rgba(0,0,0,.07);white-space:nowrap}
+.eq-calrow.fin.win .eq-calscore{background:#16a34a;color:#fff}
+.eq-calrow.fin.loss .eq-calscore{background:#ef4444;color:#fff}
+.eq-calrow.fin.draw .eq-calscore{background:#9ca3af;color:#fff}

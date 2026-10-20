@@ -3866,11 +3866,16 @@
       const cal = el("section", "eq-sec");
       cal.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "Calendario"));
       const rows = el("div", "eq-cal");
-      const calList = [].concat(last ? [last] : [], postponed, upcoming.slice(0, 3)).sort((a, b) => { const rk = (m) => { const s2 = stOf(m); return s2 === "live" ? 0 : s2 === "final" ? 2 : 1; }; return rk(a) - rk(b) || (rk(a) === 2 ? b.jn - a.jn : a.jn - b.jn); }); // en juego, luego lo próximo, y al final lo ya jugado
+      const calList = [].concat(last ? [last] : [], postponed, upcoming.slice(0, 3)).sort((a, b) => { const rk = (m) => { const s2 = stOf(m); return s2 === "live" ? 0 : s2 === "final" ? -1 : 1; }; return rk(a) - rk(b) || (rk(a) === -1 ? b.jn - a.jn : a.jn - b.jn); }); // lo ya jugado (más reciente primero), en juego y lo próximo
+      let capShown = "";
       calList.forEach((m) => {
         const home = teamCanon(m.home) === tc;
         const st = stOf(m);
-        const a = el("a", "eq-calrow" + (st === "final" ? " fin" : st === "live" ? " live" : ""));
+        const cap = st === "final" ? "Último partido · finalizado" : st === "live" ? "" : "Próximos partidos";
+        if (cap && cap !== capShown) { rows.appendChild(el("div", "eq-calcap", cap)); capShown = cap; }
+        let outc = "";
+        if (st === "final") { const mm = String((m.live && m.live.score) || "").match(/(\d+)\D+(\d+)/); if (mm) { const gh = +mm[1], ga = +mm[2], mine = home ? gh - ga : ga - gh; outc = mine > 0 ? " win" : mine < 0 ? " loss" : " draw"; } }
+        const a = el("a", "eq-calrow" + (st === "final" ? " fin" + outc : st === "live" ? " live" : ""));
         a.href = "/futmondo/guiafantasy/partido/" + matchSlug(m.home, m.away) + "?j=" + m.jn;
         a.appendChild(el("span", "eq-calj", "J" + m.jn));
         a.appendChild(haIcon(home));
@@ -3879,7 +3884,7 @@
         a.appendChild(el("span", "eq-calrival", home ? m.away : m.home));
         const res = st === "suspended" ? "Aplazado" : st === "final" || st === "live" ? ((m.live && m.live.score) || "") : [m.day, m.date, m.time].filter(Boolean).join(" ");
         if (st === "live") { const tg = el("span", "eq-livetag"); tg.appendChild(el("i")); tg.appendChild(document.createTextNode("En juego")); a.appendChild(tg); }
-        a.appendChild(el("span", "eq-calres", res));
+        a.appendChild(el("span", "eq-calres" + (st === "final" ? " eq-calscore" : ""), res));
         rows.appendChild(a);
       });
       if (!calList.length) rows.appendChild(el("p", "muted small", "Sin partidos próximos."));
