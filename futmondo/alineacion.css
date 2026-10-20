@@ -82,3 +82,8 @@ a.pl { text-decoration: none; color: inherit; }
 /* Sin hueco: el recuadro del rival va pegado al jugador */
 .line { align-items: flex-start; }
 .pl-match, .pl-nm + .pl-match, .pl-plan + .pl-match, .pl-note + .pl-match { margin-top: 3px; }
+
+/* Porcentaje de titularidad más pequeño (v-small) */
+.pl-prob { font-size: .56rem; padding: 1px 5px; left: -6px; bottom: -2px; border-width: 1.2px; }
+.pl-prob.pl-out { font-size: .46rem; }
+.al-bench-row .pl-prob:not(.pl-out) { font-size: .48rem; padding: 0 4px; left: 50%; transform: translateX(-50%); bottom: -7px; border-width: 1px; box-shadow: 0 1px 3px rgba(0,0,0,.35); }
