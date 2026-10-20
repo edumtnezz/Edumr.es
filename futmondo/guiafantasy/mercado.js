@@ -4907,17 +4907,6 @@
     rd.onload = () => { anImg = rd.result; const pv = $("anPreview"); if (pv) { pv.src = anImg; pv.classList.remove("hidden"); } const m = $("anMsg"); if (m) m.textContent = ""; };
     rd.readAsDataURL(f);
   });
-  const anDemo = $("anDemo");
-  if (anDemo) anDemo.addEventListener("click", async () => {
-    const m = $("anMsg");
-    try {
-      const b = await (await fetch("/futmondo/guiafantasy/ejemplo-equipo.jpg")).blob();
-      anImg = await new Promise((res, rej) => { const rd = new FileReader(); rd.onload = () => res(rd.result); rd.onerror = rej; rd.readAsDataURL(b); });
-      const pv = $("anPreview"); if (pv) { pv.src = anImg; pv.classList.remove("hidden"); }
-      if (m) m.textContent = "";
-      const bt = $("anBtn"); if (bt) bt.click();
-    } catch (e) { if (m) m.textContent = "No se pudo cargar la captura de ejemplo."; }
-  });
   const anBtn = $("anBtn");
   if (anBtn) anBtn.addEventListener("click", async () => {
     if (!anImg) { $("anMsg").textContent = "Elige primero una captura de tu equipo."; return; }

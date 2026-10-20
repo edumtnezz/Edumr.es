@@ -2522,4 +2522,3 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 #tab-clausulazos .claus-grid { margin-top: 8px; }
 #tab-clausulazos .claus-grid .claus-status, #tab-clausulazos .claus-grid .claus-lastup { margin: 0; }
 
-.an-demo { display: block; width: 100%; margin-top: 8px; padding: 10px 12px; border-radius: 12px; border: 1px dashed rgba(127,127,127,.5); background: transparent; color: var(--muted); font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer; }
