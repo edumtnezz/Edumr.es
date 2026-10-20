@@ -367,7 +367,7 @@ async function getJornadaRaw(env, matchday, hold) {
   const raw = await kv.get(cacheKey, "json");
   // Una jornada con todos los partidos terminados ya no cambia: se guarda horas. Si no, 1 minuto.
   const okRaw = raw && raw.data && raw.data.source === "football-data" ? raw : null;
-  if (okRaw && okRaw.fetchedAt && Date.now() - okRaw.fetchedAt < (okRaw.final ? 6 * 3600 * 1000 : CACHE_TTL_MS)) {
+  if (okRaw && okRaw.fetchedAt && Date.now() - okRaw.fetchedAt < (okRaw.final ? 6 * 3600 * 1000 : (okRaw.ttlMs || CACHE_TTL_MS))) {
     return okRaw.data;
   }
   let data = null;
@@ -382,8 +382,11 @@ async function getJornadaRaw(env, matchday, hold) {
     return okRaw ? okRaw.data : null;
   }
   const final = !!matchday && data.matches.every((m) => m.status === "FINISHED");
-  await kv.put(cacheKey, JSON.stringify({ fetchedAt: Date.now(), final, data }), {
-    expirationTtl: final ? 6 * 3600 : 3600,
+  // Jornada futura (todos los partidos por jugar): cambia poco, 3 h. Así navegar por las jornadas no agota el
+  // límite de football-data (10/min) y no salen "Sin jornada". La copia vieja se conserva 7 días por si falla.
+  const allFuture = !!matchday && data.matches.every((m) => m.status === "SCHEDULED" || m.status === "TIMED");
+  await kv.put(cacheKey, JSON.stringify({ fetchedAt: Date.now(), final, ttlMs: allFuture ? 3 * 3600 * 1000 : 0, data }), {
+    expirationTtl: 7 * 24 * 3600,
   });
   return data;
 }

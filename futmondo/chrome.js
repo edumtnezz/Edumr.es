@@ -195,11 +195,17 @@
     if (!(cached && cached.matches && cached.matches.length)) grid.innerHTML = '<span class="cx-sk cx-sk-strip"></span>';
     var renderJ = function (d) {
         var ms = (d && d.matches) || [];
-        jornada = Number(d && d.matchday) || 0;
+        jornada = Number(d && d.matchday) || (n > 0 ? n : 0);
         lastJornadaMatches = ms;
         renderTeamDots();
         if (title) title.textContent = jornada ? ("Jornada " + jornada) : "Jornada";
-        if (!ms.length) { grid.innerHTML = '<span class="cx-strip-load">Sin jornada.</span>'; grid.style.minHeight = ""; return; }
+        if (!ms.length) {
+          grid.innerHTML = '<span class="cx-strip-load">No se pudo cargar la jornada. <a href="#" class="cx-retry">Reintentar</a></span>'; grid.style.minHeight = "";
+          var rb = grid.querySelector(".cx-retry"); if (rb) rb.addEventListener("click", function (ev) { ev.preventDefault(); loadJornada(n); });
+          var pv0 = document.getElementById("cxJPrev"), nx0 = document.getElementById("cxJNext");
+          if (pv0) pv0.disabled = jornada <= 1; if (nx0) nx0.disabled = jornada >= 38;
+          return;
+        }
         grid.innerHTML = ms.map(function (m) {
           var tv;
           if (m.tv && m.tv[0]) {
@@ -207,7 +213,7 @@
               ? '<img class="cx-jn-tv' + (/dazn/i.test(m.tv[0].name) ? " cx-jn-tv-sq" : "") + '" src="' + esc(m.tv[0].logo) + '" alt="' + esc(m.tv[0].name) + '" title="' + esc(m.tv[0].name) + '" loading="lazy" onerror="this.remove()">'
               : '<span class="cx-jn-tv-name" title="' + esc(m.tv[0].name) + '">' + esc(m.tv[0].name) + '</span>';
           } else {
-            tv = '<span class="cx-jn-tv-ph" title="Canal por confirmar">por confirmar</span>';
+            tv = m.tbc ? "" : '<span class="cx-jn-tv-ph" title="Canal por confirmar">por confirmar</span>';
           }
           // Marcador/estado en directo (copiado tal cual de Comuniate): si el
           // partido ya se juega o ya acabó, arriba del todo (ancho completo,
@@ -229,7 +235,8 @@
             mid = '';
           } else {
             if (m.confirmed) { statusRow = '<div class="cx-jn-statusrow cx-jn-statusrow-confirm">Once confirmado</div>'; cardCls += " cx-jn-confirmed"; }
-            mid = '<span class="cx-jn-time">' + esc(((m.day || "") + " " + (m.date || "")).trim()) + '</span><span class="cx-jn-hora">' + esc(m.time || "") + '</span>';
+            if (m.tbc) mid = '<span class="cx-jn-time">Fecha</span><span class="cx-jn-hora cx-jn-tbc">por confirmar</span>';
+            else mid = '<span class="cx-jn-time">' + esc(((m.day || "") + " " + (m.date || "")).trim()) + '</span><span class="cx-jn-hora">' + esc(m.time || "") + '</span>';
           }
           return '<div class="' + cardCls + '" data-home="' + esc(m.home) + '" data-away="' + esc(m.away) + '" data-hcrest="' + esc(m.homeCrest) + '" data-acrest="' + esc(m.awayCrest) + '">' +
             statusRow +
@@ -260,13 +267,23 @@
       renderJ(cached);
       try { var cj = Number(cached.matchday) || 0; if (cj) { var cp = localStorage.getItem("cx_prob_" + cj); if (!cp) applyProb(cj); } } catch (e) {}
     }
-    fetch(url, { cache: "no-store" })
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
-        if (d && d.matches && d.matches.length) { try { d.__t = Date.now(); localStorage.setItem(lsKey, JSON.stringify(d)); } catch (e) {} }
-        renderJ(d);
-      })
-      .catch(function () { if (!(cached && cached.matches && cached.matches.length)) { grid.innerHTML = '<span class="cx-strip-load">No disponible.</span>'; grid.style.minHeight = ""; } });
+    // Si la API devuelve vacío o falla (límite de football-data, despliegue en curso) se reintenta solo, 2 veces.
+    var reqId = (loadJornada._id = (loadJornada._id || 0) + 1);
+    var getJ = function (tries) {
+      return fetch(url, { cache: "no-store" })
+        .then(function (r) { return r.json(); })
+        .catch(function () { return null; })
+        .then(function (d) {
+          if (d && d.matches && d.matches.length) return d;
+          if (tries > 0) return new Promise(function (res) { setTimeout(res, 1800); }).then(function () { return getJ(tries - 1); });
+          return d;
+        });
+    };
+    getJ(2).then(function (d) {
+      if (reqId !== loadJornada._id) return; // el usuario ya pidió otra jornada
+      if (d && d.matches && d.matches.length) { try { d.__t = Date.now(); localStorage.setItem(lsKey, JSON.stringify(d)); } catch (e) {} renderJ(d); }
+      else if (!(cached && cached.matches && cached.matches.length)) renderJ(d || { matches: [] });
+    });
   }
   function loadTeams() {
     var box = document.getElementById("cxStrip");

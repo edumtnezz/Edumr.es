@@ -824,3 +824,6 @@ button:not(:disabled):active, [role="button"]:active, .hub-feature:active, .hub-
   .cx-jn-mid .cx-jn-hora { font-size: .98rem; }
   .cx-jn-crest { width: 32px; height: 32px; }
 }
+
+.cx-jn-hora.cx-jn-tbc { font-size: .66rem; font-weight: 800; color: var(--cx-muted); text-transform: uppercase; letter-spacing: .02em; line-height: 1.15; text-align: center; }
+.cx-strip-load .cx-retry { color: var(--cx-green); font-weight: 800; margin-left: 6px; }
