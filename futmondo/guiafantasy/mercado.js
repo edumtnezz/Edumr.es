@@ -3951,7 +3951,7 @@
         rs.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "🔥 Jugadores en racha"));
         if (!hot.length) rs.appendChild(el("p", "muted small", "Ningún jugador del club lleva 3 partidos seguidos puntuando."));
         hot.slice(0, 5).forEach((p) => {
-          const l3 = (p.fitness || []).slice(-3).map((x) => Math.round(Number(x)));
+          const l3 = (p.fitness || []).slice(-3).map((x) => Math.round(Number(x))).reverse();
           const tot = l3.reduce((a, v) => a + v, 0);
           rs.appendChild(plRow(p, "🔥 3 partidos seguidos puntuando: " + l3.join(" + ") + " = " + tot + " pts"));
         });
