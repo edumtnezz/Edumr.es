@@ -1420,7 +1420,7 @@ async function getScoreMap(env) {
 // Puntos de MI liga (Futmondo Social configurable: AS 50% + Marca 50% + SofaScore 50% + estadísticas básicas),
 // calculados con los datos reales del partido. Sirve para jornadas fuera de los 5 últimos partidos que
 // Futmondo publica ("fitness"). Contrastado 20/10/2026 con 89 jugadores / 443 partidos: coincide con
-// fitness en el ~92 % (el resto, sobre todo J5-J6, difiere en 1-2 puntos). Si falta algún medio o la
+// fitness en el ~95 % (el resto, sobre todo J5-J6, difiere en 1-2 puntos). Si falta algún medio o la
 // posición, devuelve null (nunca se inventa).
 function leagueMatchPoints(po, d, role) {
   if (!d || !role) return null;
@@ -1436,7 +1436,7 @@ function leagueMatchPoints(po, d, role) {
   let b = 0;
   if (mins >= 60) b += 1;
   b += n("goal_assist") + n("goals") * gp;
-  if (gk) { if (d.cleansheet && mins >= 60) b += 1; b -= Math.floor(n("goals_conceded") / 2); }
+  if (gk) { if (d.cleansheet && mins > 0) b += 1; b -= Math.floor(n("goals_conceded") / 2); }
   b -= n("own_goals") + 2 * n("att_pen_miss") + 5 * n("red_card");
   return Math.round((as + mc + ss) / 2 + b);
 }
