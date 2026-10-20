@@ -4326,7 +4326,24 @@ async function handleGet({ request, env: env0, params }) {
     } catch (e) { return json({ updatedAt: Date.now(), items: [], error: String(e) }); }
   }
   if (path === "tabla") {
-    const teams = await getTableStats(env);
+    // Clasificación de LaLiga de FotMob (la misma de la página de cada partido); si falla, la calculada con resultados reales
+    let teams = null;
+    const ck = "fmtable:v1";
+    try { const c = await env.PORRA.get(ck, "json"); if (c && c.at && Date.now() - c.at < 20 * 60000 && c.teams && c.teams.length) teams = c.teams; } catch (e) {}
+    if (!teams) {
+      try {
+        const tr = await fetch("https://www.fotmob.com/api/data/tltable?leagueId=87", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+        const tj = await tr.json();
+        const all = tj[0].data.table.all || [];
+        const t2 = all.map((x) => ({ pos: x.idx, id: x.id, name: x.shortName || x.name, pj: x.played, w: x.wins, d: x.draws, l: x.losses, gf: String(x.scoresStr || ""), dg: x.goalConDiff, pts: x.pts, q: x.qualColor || "" }));
+        if (t2.length) { teams = t2; try { await env.PORRA.put(ck, JSON.stringify({ at: Date.now(), teams })); } catch (e) {} }
+      } catch (e) {}
+    }
+    if (!teams) { try { const c = await env.PORRA.get(ck, "json"); if (c && c.teams) teams = c.teams; } catch (e) {} }
+    if (!teams) {
+      const ts = await getTableStats(env);
+      teams = (ts || []).map((t) => ({ pos: t.pos, id: null, name: t.name, pj: t.pj, w: t.w, d: t.d, l: t.l, gf: t.gf + "-" + t.ga, dg: t.gf - t.ga, pts: t.pts, q: "" }));
+    }
     return json({ teams: teams || [] });
   }
   if (path === "rachas") {

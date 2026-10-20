@@ -3803,27 +3803,40 @@
           const T = (r && r.teams) || [];
           const i = T.findIndex((t) => teamCanon(t.name) === tc);
           if (i < 0) { tbSec.remove(); return; }
-          const me = T[i], dg = me.gf - me.ga, sg = (x) => (x > 0 ? "+" : "") + x;
+          const me = T[i], dg = Number(me.dg) || 0, sg = (x) => (x > 0 ? "+" : "") + x;
           const hh = el("div", "eq-sech"); hh.appendChild(el("h3", null, "Situación en LaLiga")); tbSec.appendChild(hh);
           const top = el("div", "eq-tb-top");
           const big = el("div", "eq-tb-pos " + (me.pos <= 4 ? "up" : me.pos > T.length - 3 ? "dn" : "")); big.appendChild(el("b", null, me.pos + "º")); big.appendChild(el("small", null, "de " + T.length));
           top.appendChild(big);
           const st = el("div", "eq-tb-st");
-          [[me.pts, "puntos"], [me.pj, "jugados"], [me.w + "-" + me.d + "-" + me.l, "G-E-P"], [me.gf + "-" + me.ga, "goles"], [sg(dg), "dif."]].forEach((x) => { const c = el("div"); c.appendChild(el("b", null, String(x[0]))); c.appendChild(el("small", null, x[1])); st.appendChild(c); });
+          [[me.pts, "puntos"], [me.pj, "jugados"], [me.w + "-" + me.d + "-" + me.l, "G-E-P"], [me.gf, "goles"], [sg(dg), "dif."]].forEach((x) => { const c = el("div"); c.appendChild(el("b", null, String(x[0]))); c.appendChild(el("small", null, x[1])); st.appendChild(c); });
           top.appendChild(st);
           tbSec.appendChild(top);
-          const from = Math.max(0, Math.min(i - 2, T.length - 5)), to = Math.min(T.length, from + 5);
-          const tb = el("div", "eq-tb");
-          T.slice(from, to).forEach((t) => {
+          const mkRow = (t) => {
             const row = el("div", "eq-tb-row" + (t === me ? " me" : ""));
-            row.appendChild(el("span", "eq-tb-p", String(t.pos)));
-            const lg = clubLogo(t.name, ""); if (lg) { const im = el("img"); im.src = lg; im.alt = ""; im.loading = "lazy"; row.appendChild(im); } else row.appendChild(el("i"));
+            const ps = el("span", "eq-tb-p", String(t.pos)); if (t.q) ps.style.setProperty("box-shadow", "inset 3px 0 0 " + t.q); row.appendChild(ps);
+            const lg = t.id ? "https://images.fotmob.com/image_resources/logo/teamlogo/" + t.id + ".png" : clubLogo(t.name, "");
+            if (lg) { const im = el("img"); im.src = lg; im.alt = ""; im.loading = "lazy"; row.appendChild(im); } else row.appendChild(el("i"));
             row.appendChild(el("span", "eq-tb-n", t.name));
-            row.appendChild(el("span", "eq-tb-d", sg(t.gf - t.ga)));
+            row.appendChild(el("span", "eq-tb-j", String(t.pj)));
+            row.appendChild(el("span", "eq-tb-d", sg(Number(t.dg) || 0)));
             row.appendChild(el("b", "eq-tb-pt", String(t.pts)));
-            tb.appendChild(row);
-          });
+            return row;
+          };
+          const hd = () => { const h = el("div", "eq-tb-row eq-tb-head"); ["#", "", "Equipo", "J", "DG", "PTS"].forEach((x, k) => h.appendChild(el("span", k === 2 ? "eq-tb-n" : k === 0 ? "eq-tb-p" : k === 1 ? "eq-tb-lg" : k === 3 ? "eq-tb-j" : k === 4 ? "eq-tb-d" : "eq-tb-pt", x))); return h; };
+          const tb = el("div", "eq-tb");
+          const det = el("details", "eq-tb-all");
+          det.appendChild(el("summary", null, "Ver clasificación completa"));
+          const full = el("div", "eq-tb");
+          full.appendChild(hd());
+          T.forEach((t) => full.appendChild(mkRow(t)));
+          det.appendChild(full);
+          const from = Math.max(0, Math.min(i - 2, T.length - 5)), to = Math.min(T.length, from + 5);
+          tb.appendChild(hd());
+          T.slice(from, to).forEach((t) => tb.appendChild(mkRow(t)));
           tbSec.appendChild(tb);
+          tbSec.appendChild(det);
+          const src = el("div", "eq-tb-src", "Clasificación: FotMob"); tbSec.appendChild(src);
         } catch (e) { tbSec.remove(); }
       })();
       let stx0 = null;

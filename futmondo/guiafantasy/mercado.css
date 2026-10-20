@@ -2632,3 +2632,12 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 .eq-tb-n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .eq-tb-d { color: var(--muted); font-size: .72rem; }
 .eq-tb-pt { width: 28px; text-align: right; font-family: 'Bricolage Grotesque', sans-serif; }
+.eq-tb-head { font-size: .62rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); font-weight: 800; padding-top: 5px; padding-bottom: 5px; }
+.eq-tb-lg { width: 20px; flex: none; }
+.eq-tb-j { width: 22px; text-align: center; color: var(--muted); font-size: .74rem; }
+.eq-tb-d { width: 30px; text-align: center; }
+.eq-tb-all { margin-top: 8px; }
+.eq-tb-all > summary { cursor: pointer; font-weight: 800; font-size: .8rem; color: var(--accent, #16a34a); padding: 6px 2px; list-style: none; }
+.eq-tb-all > summary::-webkit-details-marker { display: none; }
+.eq-tb-all .eq-tb { margin-top: 4px; }
+.eq-tb-src { font-size: .62rem; color: var(--muted); margin-top: 6px; text-align: right; }
