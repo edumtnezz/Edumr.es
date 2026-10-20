@@ -4571,6 +4571,52 @@
   }
   document.addEventListener("visibilitychange", () => { if (!document.hidden) anRefresh(); });
 
+  // Caja de jugador (capitán recomendado y cláusulas bajas): misma foto y mismo recuadro.
+  const FACE_ZOOM = { "unai simon": 0.78 };
+  function plBox(p, o) {
+    o = o || {};
+    const mm = (x) => (x / 1e6).toFixed(1).replace(".", ",") + " M";
+    const card = el("div", "an-pb" + (o.clause ? " an-pb-cl" : " an-pb-cap"));
+    const ph = el("div", "an-pb-ph");
+    const pa = photoOf(p);
+    const im = photoImg(pa && pa.indexOf("avatar.svg") < 0 ? pa : (p.photo || pa));
+    const z = FACE_ZOOM[stripAccents(String(p.nombre || p.name || "").toLowerCase())];
+    if (z) im.style.transform = "scale(" + z + ")";
+    ph.appendChild(im);
+    card.appendChild(ph);
+    const tx = el("div", "an-pb-tx");
+    tx.appendChild(el("b", "an-pb-n", p.nombre || p.last || ""));
+    if (o.clause) {
+      const diff = p.clause - p.valor;
+      const r = el("div", "an-pb-r"); r.appendChild(el("span", null, "Cláusula")); r.appendChild(el("b", null, mm(p.clause))); tx.appendChild(r);
+      const v = el("div", "an-pb-r"); v.appendChild(el("span", null, "Valor")); v.appendChild(el("b", null, mm(p.valor))); tx.appendChild(v);
+      tx.appendChild(el("div", "an-pb-diff", "+" + mm(diff) + " sobre su valor"));
+    } else {
+      if (p.rival) {
+        const m = el("div", "an-pb-match");
+        const lg = clubLogo(p.rival, ""); if (lg) { const i2 = el("img"); i2.src = lg; i2.alt = ""; m.appendChild(i2); }
+        let t = "vs " + p.rival + (p.casa === true ? " · 🏠 en casa" : p.casa === false ? " · ✈️ fuera" : "");
+        if (p.fecha) { const d = new Date(p.fecha); if (!isNaN(d)) t += " · " + d.toLocaleString("es-ES", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }).replace(",", ""); }
+        m.appendChild(el("span", null, t));
+        tx.appendChild(m);
+      }
+      const f = (p.fitness || []).map(Number).slice(-5);
+      if (f.length) {
+        const row = el("div", "an-pb-last"); row.appendChild(el("span", null, "Últimos"));
+        f.forEach((v) => row.appendChild(el("i", v === 0 ? "z" : v <= 3 ? "l" : v >= 10 ? "h" : "m", v === 0 ? "–" : String(Math.round(v)))));
+        tx.appendChild(row);
+      }
+      const bits = [];
+      const fo = formOf(p);
+      if (fo && fo.season) bits.push("media " + f1e(fo.season.avg) + " en la temporada");
+      if (p.prob != null) bits.push(p.prob + "% de jugar");
+      if (bits.length) tx.appendChild(el("div", "an-pb-why", bits.join(" · ")));
+      if (o.capRisky) tx.appendChild(el("div", "an-cap-warn", "⚠️ Ninguno tiene la titularidad asegurada."));
+    }
+    card.appendChild(tx);
+    return card;
+  }
+
   function renderAnalisis(d) {
     anData = d;
     const out = $("anOut");
@@ -4607,17 +4653,10 @@
       // que pesa el pico reciente de forma (no solo la media) y el nivel de
       // puntos de la temporada, y se filtra a CEN/DEL.
       const capScoreOf = (p) => {
-        if (String(p.estado || "").toUpperCase().indexOf("LESI") >= 0) return 5;
-        const f = p.fitness || [];
-        const avg = f.length ? f.reduce((a, b) => a + (Number(b) || 0), 0) / f.length : 0;
-        const max = f.length ? Math.max(...f.map((x) => Number(x) || 0)) : 0;
-        const racha = avg * 0.5 + max * 0.5; // premia el partidazo reciente (la "racha"), no solo la media
-        const prob = p.prob != null ? p.prob : 60;
-        let s = racha * 8.5 + (prob - 50) * 0.4;
-        if (p.casa === true) s += 3; else if (p.casa === false) s -= 1.5;
-        if (p.pos2) s += 2;
-        if (p.puntos != null) s += Math.min(12, p.puntos / 40); // techo de puntos: prima al que más lleva en la temporada
-        return Math.max(5, Math.min(99, Math.round(s)));
+        if (String(p.estado || "").toUpperCase().indexOf("LESI") >= 0) return 0;
+        // Puntos esperados (media según "Calcular con" × prob. de jugar) + pequeño extra por jugar en casa.
+        // Ya NO se premia el partidazo suelto: un pico de 24 hace una jornada no hace capitán a nadie.
+        return expOf(p) + (p.casa === true ? 0.6 : p.casa === false ? -0.3 : 0) + (p.pos2 ? 0.3 : 0);
       };
       // El capitán dobla puntos si juega, pero no dobla NADA si se queda en
       // el banco — así que antes de mirar quién está más en racha hay que
@@ -4635,22 +4674,7 @@
         const top = capList[0];
         const cap = el("div", "an-capitan");
         cap.appendChild(el("div", "an-capitan-t", "👑 Capitán recomendado"));
-        const row = el("div", "an-cap-pick");
-        const ph = el("div", "an-cap-photo"); ph.appendChild(photoImg(photoOf(top))); row.appendChild(ph);
-        const body = el("div", "an-cap-body");
-        body.appendChild(el("div", "an-cap-name", top.nombre || ""));
-        const why = [];
-        const fmax = (top.fitness || []).length ? Math.max(...top.fitness.map((x) => Number(x) || 0)).toFixed(1).replace(".", ",") : null;
-        if (fmax) why.push("en racha (pico " + fmax + "/10)");
-        if (top.puntos != null) why.push(top.puntos + " pts esta temporada");
-        if (top.prob != null) why.push(top.prob + "% de jugar");
-        if (top.casa === true) why.push("🏠 juega en casa"); else if (top.casa === false) why.push("✈️ juega fuera");
-        if (top.pos2) why.push("doble posición");
-        body.appendChild(el("div", "an-cap-why", why.join(" · ") || "sin datos suficientes"));
-        if (capRisky) body.appendChild(el("div", "an-cap-warn", "⚠️ Ningún CEN/DEL tuyo tiene la titularidad asegurada. El que más opciones tiene (" + (top.prob != null ? top.prob + "%" : "sin dato") + ")"));
-        else if (top.prob != null && top.prob < 95) body.appendChild(el("div", "an-cap-info", "✅ titularidad prácticamente asegurada (" + top.prob + "%)"));
-        row.appendChild(body);
-        cap.appendChild(row);
+        cap.appendChild(plBox(top, { capDetail: true, capRisky }));
         const cur = d.capActual ? findRosterPlayer(d.capActual, tits) : null;
         if (cur) {
           const same = cur === top;
@@ -4662,23 +4686,9 @@
       if (cla.length) {
         const cb = el("div", "an-clauses");
         cb.appendChild(el("div", "an-clauses-t", "🔒 Te pueden robar a estos"));
-        cb.appendChild(el("div", "an-clauses-info", "Su cláusula es muy baja (menos de 1,6 veces su valor). Súbesela."));
-        const mm = (x) => (x / 1e6).toFixed(1).replace(".", ",") + " M";
+        cb.appendChild(el("div", "an-clauses-info", "Cláusula muy cerca de su valor: fácil de robar. Súbesela."));
         const list = el("div", "an-cl2-list");
-        cla.slice(0, 8).forEach((p) => {
-          const r = p.clause / p.valor;
-          const c = el("div", "an-cl2 " + (r < 1.3 ? "hi" : r < 1.5 ? "mid" : "lo"));
-          const ph = el("div", "an-cl2-ph");
-          const pa = photoOf(p);
-          ph.appendChild(photoImg(pa && pa.indexOf("avatar.svg") < 0 ? pa : (p.photo || pa)));
-          c.appendChild(ph);
-          const tx = el("div", "an-cl2-tx");
-          tx.appendChild(el("b", null, p.last || p.nombre || ""));
-          tx.appendChild(el("small", null, "Cláusula " + mm(p.clause) + " · Valor " + mm(p.valor)));
-          c.appendChild(tx);
-          c.appendChild(el("span", "an-cl2-x", "×" + r.toFixed(2).replace(".", ",")));
-          list.appendChild(c);
-        });
+        cla.slice(0, 8).forEach((p) => list.appendChild(plBox(p, { clause: true })));
         cb.appendChild(list);
         out.appendChild(cb);
       }

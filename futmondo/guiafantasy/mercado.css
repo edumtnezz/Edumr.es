@@ -2565,3 +2565,23 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 .an-fm-rt b { font-size: .86rem; }
 .an-fm-tx small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .an-fm-card .an-fm-head::after { margin-left: 2px; }
+
+/* === Caja de jugador (capitán + cláusulas) === */
+.an-pb { display: flex; gap: 12px; align-items: stretch; padding: 8px; border-radius: 16px; background: rgba(127,127,127,.08); border: 1px solid var(--border); }
+.an-pb-cl { margin-top: 6px; border-left: 4px solid #f59e0b; }
+.an-pb-cap { margin-top: 8px; border-left: 4px solid #f59e0b; background: rgba(245,158,11,.08); }
+.an-pb-ph { flex: 0 0 64px; width: 64px; height: 72px; border-radius: 12px; overflow: hidden; background: linear-gradient(180deg, rgba(127,127,127,.25), rgba(127,127,127,.12)); display: flex; align-items: flex-end; justify-content: center; }
+.an-pb-ph img { width: 100%; height: 100%; object-fit: cover; object-position: top; transform-origin: 50% 100%; }
+.an-pb-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; justify-content: center; }
+.an-pb-n { font-size: .95rem; }
+.an-pb-r { display: flex; justify-content: space-between; align-items: baseline; font-size: .74rem; color: var(--muted); }
+.an-pb-r b { font: 800 .86rem 'Bricolage Grotesque', sans-serif; color: var(--text); }
+.an-pb-diff { font-size: .72rem; font-weight: 800; color: #dc2626; }
+.an-pb-match { display: flex; align-items: center; gap: 5px; font-size: .74rem; font-weight: 700; }
+.an-pb-match img { width: 16px; height: 16px; object-fit: contain; }
+.an-pb-last { display: flex; align-items: center; gap: 3px; font-size: .66rem; color: var(--muted); }
+.an-pb-last span { margin-right: 3px; }
+.an-pb-last i { font-style: normal; font: 800 .66rem 'Bricolage Grotesque', sans-serif; width: 21px; height: 20px; display: grid; place-items: center; border-radius: 6px; background: rgba(127,127,127,.18); }
+.an-pb-last i.h { background: #16a34a; color: #fff; } .an-pb-last i.m { background: rgba(34,197,94,.3); } .an-pb-last i.l { background: rgba(239,68,68,.25); }
+.an-pb-why { font-size: .68rem; color: var(--muted); }
+.an-cl2-list { gap: 0; }
