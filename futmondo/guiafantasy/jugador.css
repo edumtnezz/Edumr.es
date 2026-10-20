@@ -116,3 +116,5 @@ svg.ffx-ha.a{background:rgba(99,102,241,.16);color:#6366f1}
 .ffx-mid img { width: 26px; height: 26px; object-fit: contain; }
 .ffx-mid .ffx-rival { display: none; }
 .ficha-fix-it .ffx-d { font-size: .6rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.ficha-fix-row { grid-template-columns: repeat(4, minmax(0,1fr)) !important; }
+@media (max-width: 420px) { .ficha-fix-it .ffx-d { font-size: .54rem; } .ficha-fix-row { gap: 4px; } }
