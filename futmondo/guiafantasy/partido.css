@@ -252,3 +252,5 @@
 .eq-calrow.fin.win .eq-calscore{background:#16a34a;color:#fff}
 .eq-calrow.fin.loss .eq-calscore{background:#ef4444;color:#fff}
 .eq-calrow.fin.draw .eq-calscore{background:#9ca3af;color:#fff}
+.eq-pitch .al-foot{display:none}
+.eq-pitch .al .pitch{padding-bottom:14px}
