@@ -4269,9 +4269,7 @@
       row.appendChild(ph);
       const tx = el("div", "an-cl-tx");
       tx.appendChild(el("b", "an-cl-n", (pl && (pl.last || pl.nombre)) || m[1].trim()));
-      const ch = el("div", "an-cl-chips");
-      parts.forEach((x) => { const c = el("span", "an-cl-chip"); c.innerHTML = miniLine(x.length > 70 ? x.slice(0, 68).replace(/\s+\S*$/, "") + "…" : x); ch.appendChild(c); });
-      tx.appendChild(ch);
+      parts.forEach((x) => { const c = el("div", "an-cl-pt"); c.innerHTML = miniLine(x.length > 70 ? x.slice(0, 68).replace(/\s+\S*$/, "") + "…" : x); tx.appendChild(c); });
       row.appendChild(tx);
       box.appendChild(row); n++;
     });
@@ -4477,7 +4475,7 @@
      const sm = el("summary", "an-fg-s");
      sm.appendChild(el("span", "an-fg-t", g[1] + " " + g[2]));
      sm.appendChild(el("span", "an-fg-n", String(arr.length)));
-     sm.appendChild(el("span", "an-fg-sum", f1e(arr.reduce((a, p) => a + expOf(p), 0)) + " pts esp."));
+     sm.appendChild(el("span", "an-fg-sum", "~" + f1e(arr.reduce((a, p) => a + expOf(p), 0)) + " pts"));
      det.appendChild(sm);
      const inner = el("div", "an-fg-b");
      arr.forEach((p) => {
@@ -4486,11 +4484,14 @@
       const ph = el("div", "an-fm-ph"); ph.appendChild(photoImg(photoOf(p))); head.appendChild(ph);
       const tx = el("div", "an-fm-tx");
       const nm = el("b", null, p.last || p.nombre); tx.appendChild(nm);
-      tx.appendChild(el("small", null, (p.pos || "") + (p.equipo ? " · " + p.equipo : "") + (tits.indexOf(p) >= 0 ? "" : " · banquillo")));
+      tx.appendChild(el("small", null, (p.equipo || "") + (tits.indexOf(p) >= 0 ? "" : " · banquillo")));
       head.appendChild(tx);
+      const mini = el("div", "an-fm-mini");
+      (p.fitness || []).map(Number).slice(-5).forEach((v) => { mini.appendChild(el("i", v === 0 ? "z" : v <= 3 ? "l" : v >= 10 ? "h" : "m", v === 0 ? "–" : String(Math.round(v)))); });
+      head.appendChild(mini);
       const rt = el("div", "an-fm-rt");
-      rt.appendChild(el("b", null, f1e(expOf(p)) + " pts"));
-      rt.appendChild(el("small", null, "esperado" + (p.prob != null ? " · " + p.prob + "% jugar" : "")));
+      rt.appendChild(el("b", null, f1e(expOf(p))));
+      rt.appendChild(el("small", null, p.prob != null ? p.prob + "%" : "pts"));
       head.appendChild(rt);
       card.appendChild(head);
       const body = el("div", "an-fm-body");
@@ -4650,60 +4651,35 @@
         else if (top.prob != null && top.prob < 95) body.appendChild(el("div", "an-cap-info", "✅ titularidad prácticamente asegurada (" + top.prob + "%)"));
         row.appendChild(body);
         cap.appendChild(row);
-        // Tú eliges: las 4 mejores opciones (recomendada + 3 alternativas). Tu elección se guarda en el histórico.
-        const opts = capList.slice(0, 4);
-        if (opts.length > 1) {
-          cap.appendChild(el("div", "an-cap-pickt", "Elige tu capitán (se guarda en tu histórico)"));
-          const grid = el("div", "an-cap-opts");
-          const chosenId = String(d.capChosen || "");
-          opts.forEach((p, i) => {
-            const isSel = chosenId ? String(p.id) === chosenId : false;
-            const c = el("button", "an-cap-opt" + (isSel ? " sel" : "")); c.type = "button";
-            const ph = el("div", "an-cap-opt-ph"); ph.appendChild(photoImg(photoOf(p))); c.appendChild(ph);
-            const tx = el("div", "an-cap-opt-tx");
-            tx.appendChild(el("div", "an-cap-opt-n", p.last || p.nombre || ""));
-            tx.appendChild(el("div", "an-cap-opt-s", (i === 0 ? "⭐ Recomendado" : (p.prob != null ? p.prob + "% de jugar" : ""))));
-            c.appendChild(tx);
-            c.addEventListener("click", async () => {
-              if (!d.capJornada) { const m = $("anMsg"); if (m) m.textContent = "Vuelve a analizar para poder guardar tu capitán."; return; }
-              try {
-                const r = await fetch(API + "/capitan-elegir", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jornada: d.capJornada, id: p.id }) });
-                if (!r.ok) throw new Error("x");
-                d.capChosen = String(p.id);
-                grid.querySelectorAll(".an-cap-opt").forEach((x) => x.classList.remove("sel")); c.classList.add("sel");
-                const m = $("anMsg"); if (m) m.textContent = "👑 Capitán guardado: " + (p.nombre || "");
-                
-              } catch (e) { const m = $("anMsg"); if (m) m.textContent = "No se pudo guardar tu capitán."; }
-            });
-            grid.appendChild(c);
-          });
-          cap.appendChild(grid);
+        const cur = d.capActual ? findRosterPlayer(d.capActual, tits) : null;
+        if (cur) {
+          const same = cur === top;
+          cap.appendChild(el("div", "an-cap-cur" + (same ? " ok" : ""), same ? "✅ Ya lo tienes de capitán" : "Ahora tienes de capitán a " + (cur.last || cur.nombre)));
         }
         out.appendChild(cap);
       }
-      const cla = tits.filter((p) => p.clause && p.valor && p.clause < p.valor * 1.6).sort((a, b) => scoreOf(b) - scoreOf(a));
+      const cla = tits.concat(sups).filter((p) => p.clause && p.valor && p.clause < p.valor * 1.6).sort((a, b) => (a.clause / a.valor) - (b.clause / b.valor));
       if (cla.length) {
         const cb = el("div", "an-clauses");
-        cb.appendChild(el("div", "an-clauses-t", "🔒 Cláusulas bajas · súbeles la cláusula para no perderlos"));
-        cb.appendChild(el("div", "an-clauses-info", "Cláusulas bajas: menos de 1,6× el valor del jugador."));
-        const grid = el("div", "an-clause-grid");
+        cb.appendChild(el("div", "an-clauses-t", "🔒 Te pueden robar a estos"));
+        cb.appendChild(el("div", "an-clauses-info", "Su cláusula es muy baja (menos de 1,6 veces su valor). Súbesela."));
+        const mm = (x) => (x / 1e6).toFixed(1).replace(".", ",") + " M";
+        const list = el("div", "an-cl2-list");
         cla.slice(0, 8).forEach((p) => {
-          const c = el("div", "an-clause-card");
-          const ph = el("div", "an-clause-photo");
+          const r = p.clause / p.valor;
+          const c = el("div", "an-cl2 " + (r < 1.3 ? "hi" : r < 1.5 ? "mid" : "lo"));
+          const ph = el("div", "an-cl2-ph");
           const pa = photoOf(p);
           ph.appendChild(photoImg(pa && pa.indexOf("avatar.svg") < 0 ? pa : (p.photo || pa)));
           c.appendChild(ph);
-          const tx = el("div", "an-clause-tx");
-          tx.appendChild(el("div", "an-clause-name", p.last || p.nombre || ""));
-          tx.appendChild(el("div", "an-clause-vl", "Valor " + money(p.valor) + " €"));
+          const tx = el("div", "an-cl2-tx");
+          tx.appendChild(el("b", null, p.last || p.nombre || ""));
+          tx.appendChild(el("small", null, "Cláusula " + mm(p.clause) + " · Valor " + mm(p.valor)));
           c.appendChild(tx);
-          const rt = el("div", "an-clause-rt");
-          rt.appendChild(el("div", "an-clause-cl", money(p.clause) + " €"));
-          rt.appendChild(el("div", "an-clause-x", "×" + (p.clause / p.valor).toFixed(1).replace(".", ",")));
-          c.appendChild(rt);
-          grid.appendChild(c);
+          c.appendChild(el("span", "an-cl2-x", "×" + r.toFixed(2).replace(".", ",")));
+          list.appendChild(c);
         });
-        cb.appendChild(grid);
+        cb.appendChild(list);
         out.appendChild(cb);
       }
     }
@@ -4809,7 +4785,7 @@
       hookSwap(mine);
       out.appendChild(mine);
       const bs = el("div", "an-base");
-      bs.appendChild(el("div", "an-base-k", "📐 Calcular con"));
+      bs.appendChild(el("div", "an-base-k", "Calcular con"));
       const seg = el("div", "an-base-seg");
       [["temporada", "Toda la temporada"], ["ultimos5", "Últimos 5 partidos"]].forEach((o) => {
         const b = el("button", "an-base-b" + (anBase === o[0] ? " on" : ""), o[1]); b.type = "button";
@@ -4817,9 +4793,8 @@
         seg.appendChild(b);
       });
       bs.appendChild(seg);
-      bs.appendChild(el("div", "an-base-d", anBase === "temporada" ? "Puntos esperados = media de TODOS los partidos que ha jugado en la temporada (dato de Futmondo) × probabilidad de jugar. Los últimos 5 pueden ser suerte; la temporada entera es más estable." : "Puntos esperados = media de sus últimos 5 partidos jugados × probabilidad de jugar. Refleja la forma de ahora, pero 5 partidos pueden ser suerte."));
-      out.appendChild(bs);
       const myProj = projBox(tits, "📈 Puntuación probable de tu once");
+      myProj.box.insertBefore(bs, myProj.box.children[1] || null);
       out.appendChild(myProj.box);
     // Análisis guardados antes traían un "ONCE IDEAL" escrito por la IA: se quita (ahora va arriba con reglas fijas).
     let aiTxt = String(d.analisis || "");

@@ -2853,7 +2853,7 @@ async function handleAnaliza(request, env, user) {
   } catch (e) {}
   let body;
   try { body = await request.json(); } catch (e) { return json({ error: "Datos inválidos." }, 400); }
-  let team = null, leido = [];
+  let team = null, leido = [], capActualRaw = "";
   let market = { players: [] };
   try { market = await getMarketPlayers(env); } catch (e) {}
   const nameList = (market.players || []).map((p) => p.name).filter(Boolean);
@@ -2882,7 +2882,8 @@ async function handleAnaliza(request, env, user) {
       "- Debajo de la foto de cada jugador está su NOMBRE (a veces abreviado, p. ej. 'R.Fernán', 'L. Yamal').\n" +
       "- Debajo del campo hay una zona 'Suplentes' (el banquillo).\n" +
       "Lee TODOS los nombres del campo (deben ser 11 titulares) y del banquillo.\n" +
-      "Responde SOLO con JSON válido: {\"formacion\":\"3-4-3\",\"titulares\":[{\"nombre\":\"...\",\"linea\":1}],\"suplentes\":[{\"nombre\":\"...\"}]}.\n" +
+      "Responde SOLO con JSON válido: {\"formacion\":\"3-4-3\",\"capitan\":\"nombre o vacío\",\"titulares\":[{\"nombre\":\"...\",\"linea\":1}],\"suplentes\":[{\"nombre\":\"...\"}]}.\n" +
+      "'capitan': el CAPITÁN actual es el titular que lleva al lado de su foto una insignia/cuadradito con la letra \"C\" (negro o azul). Pon su nombre tal cual se lee; si ninguno la lleva, déjalo vacío. No elijas capitán por tu cuenta.\n" +
       "'linea': 1 = portero (fila de abajo), 2 = defensas, 3 = centrocampistas, 4 = delanteros (fila de arriba).\n" +
       "Cuenta los jugadores por fila para la formación (DEF-CEN-DEL). Copia los nombres TAL CUAL se lean. No inventes, no traduzcas, no repitas.";
     let visionRaw = await dsChat(env, [{
@@ -2917,6 +2918,7 @@ async function handleAnaliza(request, env, user) {
     if (!team) return json({ error: "No pude leer el equipo de la captura. Prueba con una captura más nítida (sin recortar).", raw: String(visionRaw).slice(0, 300) }, 422);
     if (nTit(team) !== 11 && nTit(team) < 7) return json({ error: "Solo pude leer " + nTit(team) + " jugadores del campo. Prueba con una captura más nítida y completa (con las 3-4 líneas).", leido: (team.titulares || []).map((x) => x.nombre) }, 422);
     leido = [].concat(team.titulares || [], team.suplentes || []).map((x) => String(x.nombre || x.name || "").trim()).filter(Boolean);
+    capActualRaw = String(team.capitan || "").trim();
     const LINE_POS = { 1: "POR", 2: "DEF", 3: "CEN", 4: "DEL" };
     team.titulares = (team.titulares || []).map((x) => ({ nombre: String(x.nombre || x.name || "").trim(), pos: roleShort(x.pos) || LINE_POS[Number(x.linea)] || "" })).filter((x) => x.nombre);
     team.suplentes = (team.suplentes || []).map((x) => ({ nombre: String(x.nombre || x.name || "").trim(), pos: roleShort(x.pos) || "" })).filter((x) => x.nombre);
@@ -3106,7 +3108,7 @@ async function handleAnaliza(request, env, user) {
       capInfo = { capJornada: jornadaPred, capChosen: (ent && ent.chosen) || "" };
     }
   } catch (e) {}
-  return json({ formacion, titulares, suplentes, analisis, leido, ...capInfo });
+  return json({ formacion, titulares, suplentes, analisis, leido, capActual: capActualRaw, ...capInfo });
 }
 
 async function saveCapitanPrediction(env, user, jornada, alts) {
