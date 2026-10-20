@@ -2606,3 +2606,5 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 .an-proj-cap { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: .76rem; font-weight: 700; }
 .an-proj-sel { font: 800 .78rem 'Bricolage Grotesque', sans-serif; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border); background: var(--card, #fff); color: var(--text, inherit); max-width: 50%; }
 .an-proj-dark .an-proj-sel { background: rgba(255,255,255,.12); color: #fff; border-color: rgba(255,255,255,.25); }
+.an-cl2-list .an-pb-ph { height: 92px; align-items: flex-end; justify-content: center; }
+.an-cl2-list .an-pb-ph img { width: auto; max-width: 100%; height: 100%; margin: 0 auto; object-fit: contain; object-position: bottom center; }
