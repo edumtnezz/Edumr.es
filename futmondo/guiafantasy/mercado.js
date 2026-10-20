@@ -3883,7 +3883,7 @@
       cal.appendChild(rows);
       frag.appendChild(cal);
       // Plantilla completa por posiciones (cada jugador es una fila entera tocable, con sus puntos de las últimas 5 jornadas)
-      const plRow = (p) => {
+      const plRow = (p, why) => {
         const r = el("a", "sq3-row");
         r.href = "/jugador/" + encodeURIComponent(p.id) + "/" + nameSlug(p.name);
         r.appendChild(photoImg(p.photo, "sq3-img"));
@@ -3892,6 +3892,7 @@
         const st = statusInfo(p.status); if (st) nm.appendChild(el("span", "sq3-st " + st.cls, p.status === "redcard" ? "Sancionado" : p.status === "doubt" ? "Duda" : "Lesión"));
         mid.appendChild(nm);
         mid.appendChild(el("div", "sq3-sub", [money(p.value) + " €", Number(p.avg) > 0 ? "Media " + Number(p.avg).toFixed(1).replace(".", ",") : "", p.prob != null ? p.prob + "% jugar" : ""].filter(Boolean).join(" · ")));
+        if (why) mid.appendChild(el("div", "sq3-why", why));
         const fit = (p.fitness || []).map((x) => Number(x) || 0);
         if (fit.length) {
           const sc = el("div", "sq3-pts");
@@ -3940,7 +3941,11 @@
         const rs = el("section", "eq-sec sq3");
         rs.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "🔥 Jugadores en racha"));
         if (!hot.length) rs.appendChild(el("p", "muted small", "Ningún jugador del club lleva 3 partidos seguidos puntuando."));
-        hot.forEach((p) => rs.appendChild(plRow(p)));
+        hot.slice(0, 5).forEach((p) => {
+          const l3 = (p.fitness || []).slice(-3).map((x) => Math.round(Number(x)));
+          const tot = l3.reduce((a, v) => a + v, 0);
+          rs.appendChild(plRow(p, "🔥 3 partidos seguidos puntuando: " + l3.join(" + ") + " = " + tot + " pts"));
+        });
         frag.appendChild(rs);
       } catch (e) {}
       // Pinta en el sitio (sin mover el scroll)

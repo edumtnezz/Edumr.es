@@ -87,3 +87,8 @@ a.pl { text-decoration: none; color: inherit; }
 .pl-prob { font-size: .56rem; padding: 1px 5px; left: -6px; bottom: -2px; border-width: 1.2px; }
 .pl-prob.pl-out { font-size: .46rem; }
 .al-bench-row .pl-prob:not(.pl-out) { font-size: .48rem; padding: 0 4px; left: 50%; transform: translateX(-50%); bottom: -7px; border-width: 1px; box-shadow: 0 1px 3px rgba(0,0,0,.35); }
+
+/* Banquillo suelto (fuera de la tarjeta): mismo ancho, esquinas y sombra que la tarjeta de arriba */
+.al-bench { max-width: 450px; margin: 12px auto 0; border-radius: 22px; border-top: 0; box-shadow: 0 18px 40px rgba(16,21,28,.22); box-sizing: border-box; overflow: hidden; }
+.al-bench-row .pl { max-width: 25%; }
+.al .al-bench { max-width: none; margin: 0; border-radius: 0; box-shadow: none; border-top: 2px solid rgba(255,255,255,.25); }

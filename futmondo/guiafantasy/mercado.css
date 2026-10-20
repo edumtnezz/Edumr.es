@@ -2585,3 +2585,5 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 .an-pb-last i.h { background: #16a34a; color: #fff; } .an-pb-last i.m { background: rgba(34,197,94,.3); } .an-pb-last i.l { background: rgba(239,68,68,.25); }
 .an-pb-why { font-size: .68rem; color: var(--muted); }
 .an-cl2-list { gap: 0; }
+
+.sq3-why { font-size: .68rem; font-weight: 700; color: #16a34a; margin-top: 2px; }
