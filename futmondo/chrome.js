@@ -185,6 +185,13 @@
     var lsKey = "cx_jor_" + (n && n > 0 ? n : "cur");
     var cached = null;
     try { cached = JSON.parse(localStorage.getItem(lsKey) || "null"); } catch (e) {}
+    // Solo se usa la copia guardada si es reciente (<6 h) y la jornada NO ha terminado:
+    // si no, se vería un momento la jornada anterior antes de saltar a la siguiente.
+    if (cached) {
+      var fresh = cached.__t && Date.now() - cached.__t < 6 * 3600 * 1000;
+      var finished = (cached.matches || []).length && cached.matches.every(function (m) { return m.live && m.live.state === "final"; });
+      if (!fresh || finished || n) cached = (n && fresh && !finished) ? cached : null;
+    }
     if (!(cached && cached.matches && cached.matches.length)) grid.innerHTML = '<span class="cx-sk cx-sk-strip"></span>';
     var renderJ = function (d) {
         var ms = (d && d.matches) || [];
@@ -256,7 +263,7 @@
     fetch(url, { cache: "no-store" })
       .then(function (r) { return r.json(); })
       .then(function (d) {
-        if (d && d.matches && d.matches.length) { try { localStorage.setItem(lsKey, JSON.stringify(d)); } catch (e) {} }
+        if (d && d.matches && d.matches.length) { try { d.__t = Date.now(); localStorage.setItem(lsKey, JSON.stringify(d)); } catch (e) {} }
         renderJ(d);
       })
       .catch(function () { if (!(cached && cached.matches && cached.matches.length)) { grid.innerHTML = '<span class="cx-strip-load">No disponible.</span>'; grid.style.minHeight = ""; } });
