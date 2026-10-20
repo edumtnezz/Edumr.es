@@ -1436,7 +1436,7 @@ function leagueMatchPoints(po, d, role) {
   let b = 0;
   if (mins >= 60) b += 1;
   b += n("goal_assist") + n("goals") * gp;
-  if (gk) { if (d.cleansheet && mins > 0) b += 1; b -= Math.floor(n("goals_conceded") / 2); }
+  if (gk) { if (d.cleansheet && mins >= 45) b += 1; b -= Math.floor(n("goals_conceded") / 2); }
   b -= n("own_goals") + 2 * n("att_pen_miss") + 5 * n("red_card");
   return Math.round((as + mc + ss) / 2 + b);
 }
