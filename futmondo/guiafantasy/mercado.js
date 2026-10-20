@@ -4628,18 +4628,30 @@
       const v = el("div", "an-pb-r"); v.appendChild(el("span", null, "Valor")); v.appendChild(el("b", null, mm(p.valor))); tx.appendChild(v);
       tx.appendChild(el("div", "an-pb-diff", "+" + mm(diff) + " sobre su valor"));
     } else {
+      const jNext = anData && Number(anData.capJornada) || 0;
       if (p.rival) {
         const m = el("div", "an-pb-match");
         const lg = clubLogo(p.rival, ""); if (lg) { const i2 = el("img"); i2.src = lg; i2.alt = ""; m.appendChild(i2); }
-        let t = "vs " + p.rival + (p.casa === true ? " · 🏠 en casa" : p.casa === false ? " · ✈️ fuera" : "");
-        if (p.fecha) { const d = new Date(p.fecha); if (!isNaN(d)) t += " · " + d.toLocaleString("es-ES", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }).replace(",", ""); }
-        m.appendChild(el("span", null, t));
+        m.appendChild(el("span", null, "vs " + p.rival + (jNext ? " · J" + jNext : "")));
         tx.appendChild(m);
+        let when = "";
+        if (p.fecha) { const d = new Date(p.fecha); if (!isNaN(d)) when = d.toLocaleString("es-ES", { weekday: "long", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }).replace(",", " ·"); }
+        const ha = p.casa === true ? "🏠 Juega en casa, en su estadio" : p.casa === false ? "✈️ Juega fuera, en campo rival" : "";
+        if (ha || when) tx.appendChild(el("div", "an-pb-when", [ha, when].filter(Boolean).join(" · ")));
       }
       const f = (p.fitness || []).map(Number).slice(-5);
       if (f.length) {
-        const row = el("div", "an-pb-last"); row.appendChild(el("span", null, "Últimos"));
-        f.forEach((v) => row.appendChild(el("i", v === 0 ? "z" : v <= 3 ? "l" : v >= 10 ? "h" : "m", v === 0 ? "–" : String(Math.round(v)))));
+        const row = el("div", "an-pb-last an-pb-lastj"); row.appendChild(el("span", null, "Últimos"));
+        const lenAll = (p.fitness || []).length;
+        f.forEach((v, i) => {
+          const k = f.length - 1 - i;
+          let jn = 0; try { jn = jLab(p.equipo || p.team, lenAll, k); } catch (e) {}
+          const c = el("i", v === 0 ? "z" : v <= 3 ? "l" : v >= 10 ? "h" : "m");
+          c.appendChild(el("em", null, jn ? "J" + jn : ""));
+          c.appendChild(document.createTextNode(v === 0 ? "–" : String(Math.round(v))));
+          if (jn) c.title = "Jornada " + jn;
+          row.appendChild(c);
+        });
         tx.appendChild(row);
       }
       const bits = [];

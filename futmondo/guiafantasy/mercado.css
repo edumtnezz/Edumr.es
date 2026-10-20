@@ -2608,3 +2608,8 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 .an-proj-dark .an-proj-sel { background: rgba(255,255,255,.12); color: #fff; border-color: rgba(255,255,255,.25); }
 .an-cl2-list .an-pb-ph { height: 92px; align-items: flex-end; justify-content: center; }
 .an-cl2-list .an-pb-ph img { width: auto; max-width: 100%; height: 100%; margin: 0 auto; object-fit: contain; object-position: bottom center; }
+.an-pb-when { font-size: .7rem; color: var(--muted); line-height: 1.3; }
+.an-pb-lastj { gap: 4px; }
+.an-pb-lastj i { width: 30px !important; height: 34px !important; flex-direction: column; align-content: center; line-height: 1.1; }
+.an-pb-lastj i em { font: 700 .5rem 'Figtree', sans-serif; font-style: normal; opacity: .75; display: block; }
+.an-pb-lastj i { display: flex !important; align-items: center; justify-content: center; }
