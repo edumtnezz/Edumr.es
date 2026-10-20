@@ -3397,44 +3397,54 @@
       const valByR = {}, rivals = {};
       ms.forEach((m, k) => { if (k < fit.length) valByR[m.r] = Math.round(fit[fit.length - 1 - k]); rivals[m.r] = m; });
       const topJ = j0 || Math.max.apply(null, ms.map((x) => x.r).concat([0]));
-      const pendingHist = [];
+      const pendingHist = []; let hasCalc = false;
       for (let j = topJ; j >= 1; j--) {
         const row = el("div", "fm-row");
         row.appendChild(el("span", "fm-j", "J" + j));
         const m = rivals[j];
+        const body = el("div", "fm-body");
+        row.appendChild(body);
         if (m) {
           const rival = (m.home === d.team) ? m.away : (m.away === d.team ? m.home : (m.away || m.home || ""));
           const casa = m.home === d.team;
-          { const mt = el("span", "fm-match"); if (rival) { mt.appendChild(haIcon(casa)); mt.appendChild(document.createTextNode(" " + rival)); } row.appendChild(mt); }
+          body.appendChild(el("div", "fm-rival", rival));
+          const chips = el("div", "fm-chips");
+          const vc = el("span", "fm-venue " + (casa ? "h" : "a")); vc.appendChild(haIcon(casa)); vc.appendChild(document.createTextNode(casa ? "Casa" : "Fuera")); chips.appendChild(vc);
           const mn = Number(m.mins) || 0;
-          let tg = "", tgCls = "";
           if (mn > 0) {
-            if (m.sub) { tg = "▲ entró " + mn + "'"; tgCls = "fm-in"; }
+            let tg, tgCls = "";
+            if (m.sub) { tg = "▲ entró · " + mn + "'"; tgCls = "fm-in"; }
             else if (mn >= 85) { tg = "90'"; }
-            else { tg = "▼ salió " + mn + "'"; tgCls = "fm-out"; }
-          }
-          row.appendChild(el("span", "fm-tag " + tgCls, tg));
-          const v = valByR[j] != null ? valByR[j] : null;
-          // Solo puntos REALES de la liga (fitness = últimos 5 partidos, o histórico guardado).
-          // Antes se rellenaba con el modo "stats" de Futmondo, que NO es la puntuación de la liga
-          // (p. ej. -10 donde en la app eran -3).
-          const ps = el("span", "fm-pts " + (v != null ? "pt-" + ptClass(v) : "pt-st"), v != null ? String(v) : "—");
-          if (v == null) { ps.title = "Sin dato de la liga para esta jornada"; pendingHist.push([j, ps]); }
+            else { tg = "▼ salió · " + mn + "'"; tgCls = "fm-out"; }
+            chips.appendChild(el("span", "fm-min " + tgCls, tg));
+          } else chips.appendChild(el("span", "fm-min fm-out", "0'"));
+          body.appendChild(chips);
+          let v = valByR[j] != null ? valByR[j] : null;
+          let calc = false;
+          // Jornadas fuera de los 5 últimos partidos que publica Futmondo: se calculan con las reglas de la liga
+          // (AS, Marca y SofaScore al 50 % + estadísticas básicas) a partir de los datos reales del partido.
+          if (v == null && m.lg != null) { v = Math.round(Number(m.lg)); calc = true; }
+          const ps = el("span", "fm-pts " + (v != null ? "pt-" + ptClass(v) : "pt-st") + (calc ? " pt-calc" : ""), v != null ? String(v) : "—");
+          if (calc) { ps.title = "Calculado con las reglas de tu liga (Futmondo solo publica los últimos 5 partidos)"; hasCalc = true; }
+          if (v == null || calc) pendingHist.push([j, ps]);
           row.appendChild(ps);
         } else {
-          const nj = el("span", "fm-match fm-nojugo", "No jugó");
-          row.appendChild(nj);
-          row.appendChild(el("span", "fm-tag", ""));
-          const njPts = el("span", "fm-pts", "—");
+          row.classList.add("fm-row-no");
+          const nj = el("span", "fm-nojugo");
+          nj.appendChild(el("i", "fm-nj-dot"));
+          const njT = el("span", null, "No jugó");
+          nj.appendChild(njT);
+          body.appendChild(nj);
+          const njPts = el("span", "fm-pts fm-pts-no", "—");
           row.appendChild(njPts);
           if (j === topJ && d.team) { // ¿de verdad no jugó, o su partido aún no ha acabado?
             fetch(API + "/jornada?jornada=" + j).then((r) => r.json()).then((jj) => {
               const tc = teamCanon(d.team);
               const mm = (jj.matches || []).find((x) => teamCanon(x.home) === tc || teamCanon(x.away) === tc);
               if (!mm || (mm.live && mm.live.state === "final")) return;
-              nj.classList.remove("fm-nojugo"); nj.classList.add("fm-pend");
+              nj.classList.remove("fm-nojugo"); nj.classList.add("fm-pend"); row.classList.remove("fm-row-no");
               if (mm.live && mm.live.state === "live") {
-                nj.textContent = "En juego" + (mm.live.minute ? " · " + mm.live.minute : "");
+                njT.textContent = "En juego" + (mm.live.minute ? " · " + mm.live.minute : "");
                 njPts.textContent = "●"; njPts.className = "fm-pts fm-live"; njPts.title = "Partido en juego";
               } else {
                 let dia = "";
@@ -3446,7 +3456,7 @@
                     dia = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"][dt.getDay()] + " " + q[0] + "/" + q[1];
                   }
                 } catch (e) {}
-                nj.textContent = dia ? "Se juega el " + dia + (mm.time ? " · " + mm.time : "") : "Aún no se ha jugado" + (mm.time ? " · " + mm.time : "");
+                njT.textContent = dia ? "Se juega el " + dia + (mm.time ? " · " + mm.time : "") : "Aún no se ha jugado" + (mm.time ? " · " + mm.time : "");
               }
             }).catch(() => {});
           }
@@ -3454,6 +3464,7 @@
         tbl.appendChild(row);
       }
       colL.appendChild(tbl);
+      if (hasCalc) colL.appendChild(el("p", "fm-legend", "Borde punteado: puntos calculados con las reglas de tu liga (Futmondo solo publica los últimos 5 partidos)."));
       // Jornadas fuera de las 5 últimas: se completan con el histórico de puntos de la liga guardado.
       if (pendingHist.length && (p.id || d.id)) {
         const hid = String(p.id || d.id);

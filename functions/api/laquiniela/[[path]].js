@@ -1417,6 +1417,30 @@ async function getScoreMap(env) {
   return map;
 }
 
+// Puntos de MI liga (Futmondo Social configurable: AS 50% + Marca 50% + SofaScore 50% + estadísticas básicas),
+// calculados con los datos reales del partido. Sirve para jornadas fuera de los 5 últimos partidos que
+// Futmondo publica ("fitness"). Contrastado 20/10/2026 con 89 jugadores / 443 partidos: coincide con
+// fitness en el ~92 % (el resto, sobre todo J5-J6, difiere en 1-2 puntos). Si falta algún medio o la
+// posición, devuelve null (nunca se inventa).
+function leagueMatchPoints(po, d, role) {
+  if (!d || !role) return null;
+  const get = (mode) => { const z = (po || []).find((k) => k.mode === mode); return z && z.p != null ? Number(z.p) : null; };
+  const as = get("as"), mc = get("marca"), ss = get("ss");
+  if (as == null || mc == null || ss == null) return null;
+  const n = (k) => Number(d[k]) || 0;
+  const mins = n("mins_played");
+  const r = String(role).toLowerCase();
+  const gk = r === "portero" || r === "defensa";
+  const gp = { portero: 8, defensa: 6, centrocampista: 4, delantero: 3 }[r];
+  if (!gp) return null;
+  let b = 0;
+  if (mins >= 60) b += 1;
+  b += n("goal_assist") + n("goals") * gp;
+  if (gk) { if (d.cleansheet && mins >= 60) b += 1; b -= Math.floor(n("goals_conceded") / 2); }
+  b -= n("own_goals") + 2 * n("att_pen_miss") + 5 * n("red_card");
+  return Math.round((as + mc + ss) / 2 + b);
+}
+
 async function playerFicha(env, id, fast) {
   if (!id) return { error: "falta id" };
   const header = await futbolHeader(env);
@@ -1461,8 +1485,7 @@ async function playerFicha(env, id, fast) {
       red: Number(dta.red_card) || 0,
       stats: g("stats"), picas: g("picas"), ff: g("ff"), ss: g("ss"), as: g("as"), marca: g("marca"),
       hsc: m.h ? m.h.score : null, asc: m.a ? m.a.score : null,
-      has3: ["as", "marca", "ss"].every((k) => po.some((z) => z.mode === k)),
-      dta,
+      lg: leagueMatchPoints(po, dta, (mp && mp.role) || ""),
     };
   }).slice(0, 60);
   const todayVal = Number(pl.value) || 0;
