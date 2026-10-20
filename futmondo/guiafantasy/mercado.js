@@ -4256,34 +4256,45 @@
   // sale en los cuadros de En racha / Irregulares / Dudas (puntuación probable)
   // NO se repite aquí.
   function renderClaves(txt, roster, tits) {
+    // Los jugadores los elige la IA (nombres del texto), pero TODAS las líneas salen de datos reales
+    // y con el mismo patrón para los cuatro: titularidad, media en la liga, últimos partidos, próximo rival y posición.
     const ideal = pickIdealXI(roster);
-    const ps = [].concat(tits, ideal ? ideal.starters : []).filter((p, i, a) => p && a.indexOf(p) === i);
-    const irr = new Set(ps.filter((p) => { const fo = formOf(p); return fo.len >= 3 && fo.len - fo.played >= 2 && fo.played >= 1; }));
-    const hot = new Set(ps.filter((p) => expOf(p) > 0 && formOf(p).trend >= 1.5));
-    const risk = new Set(ps.filter((p) => p.prob != null && p.prob < 70));
+    const posN = { POR: "portero", DEF: "defensa", CEN: "centrocampista", DEL: "delantero" };
+    const slotOf = new Map(ideal ? ideal.slots.map((x) => [x.p, x.pos]) : []);
+    const jNext = anData && Number(anData.capJornada) || 0;
+    const nf = (x) => (Math.round(x * 10) / 10).toString().replace(".", ",");
     const box = el("div", "an-claves");
+    const seen = new Set();
     let n = 0;
     String(txt || "").split(/\n+/).forEach((ln) => {
       const m = ln.trim().match(/^([^:*]{2,40}):\s*(.+)$/);
       if (!m || n >= 4) return;
       const pl = findRosterPlayer(m[1].trim(), roster);
-      let parts = m[2].replace(/\*\*/g, "").split(/\s*,\s*|\s+y\s+(?=juega|media|tiene|es |viene|se |está|vale|hizo|puntu)|\.\s+/).map((x) => x.trim().replace(/\.$/, "")).filter(Boolean);
-      if (pl) {
-        parts = parts.filter((x) => {
-          if (irr.has(pl) && /irregular|pierd|partidos que|intermitent|ha jugado \d|de sus últimos/i.test(x)) return false;
-          if (hot.has(pl) && /racha|mejor momento|en forma|buen momento/i.test(x)) return false;
-          if (risk.has(pl) && /probabilidad|titular|\d+ ?%|duda/i.test(x)) return false;
-          return true;
-        });
+      if (!pl || seen.has(pl)) return;
+      seen.add(pl);
+      const lines = [];
+      if (pl.prob != null) lines.push("**Titular:** " + pl.prob + "% de probabilidad de jugar");
+      const ss = seasonOf(pl);
+      if (ss && Number.isFinite(ss.avg)) lines.push("**Media en la liga:** " + nf(ss.avg) + " pts por partido" + (ss.n ? " (" + ss.n + " partidos jugados)" : ""));
+      const f = (pl.fitness || []).map(Number).filter((x) => !isNaN(x));
+      if (f.length) lines.push("**Últimos partidos:** " + f.slice(-5).reverse().map((v) => (v === 0 ? "no jugó" : Math.round(v) + " pts")).join(" · ") + " (el último, primero)");
+      if (pl.rival) {
+        let when = "";
+        if (pl.fecha) { const d = new Date(pl.fecha); if (!isNaN(d)) when = " · " + d.toLocaleString("es-ES", { weekday: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }).replace(",", ""); }
+        lines.push("**Próximo partido:** " + (pl.casa === true ? "en casa" : pl.casa === false ? "fuera" : "") + (pl.casa == null ? "" : ", ") + "contra " + pl.rival + (jNext ? " (J" + jNext + ")" : "") + when);
       }
-      parts = parts.slice(0, 3);
-      if (!parts.length) return;
+      const placed = slotOf.get(pl) || pl.pos;
+      if (placed) {
+        const base = pl.pos && pl.pos !== placed ? " (su posición base es " + posN[pl.pos] + ")" : pl.pos2 && pl.pos2 !== placed ? " (también puede jugar de " + posN[pl.pos2] + ")" : "";
+        lines.push("**Posición recomendada:** " + posN[placed] + base);
+      }
+      if (!lines.length) return;
       const row = el("div", "an-cl-row");
-      const ph = el("div", "an-cl-ph an-ti-ph"); if (pl) ph.appendChild(photoImg(photoOf(pl))); else ph.textContent = "•";
+      const ph = el("div", "an-cl-ph an-ti-ph"); ph.appendChild(photoImg(photoOf(pl)));
       row.appendChild(ph);
       const tx = el("div", "an-cl-tx");
-      tx.appendChild(el("b", "an-cl-n", (pl && (pl.last || pl.nombre)) || m[1].trim()));
-      parts.forEach((x) => { const c = el("div", "an-cl-pt"); c.innerHTML = miniLine(x); tx.appendChild(c); });
+      tx.appendChild(el("b", "an-cl-n", pl.last || pl.nombre));
+      lines.forEach((x) => { const c = el("div", "an-cl-pt"); c.innerHTML = miniLine(x); tx.appendChild(c); });
       row.appendChild(tx);
       box.appendChild(row); n++;
     });
