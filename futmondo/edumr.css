@@ -811,3 +811,16 @@ button:not(:disabled):active, [role="button"]:active, .hub-feature:active, .hub-
 .cx-jn-statusrow-prob { padding: 2px 8px 2px 4px; }
 .cx-jn-statusrow-confirm::before { display: inline-grid; place-items: center; width: 10px; height: 10px; flex: none; letter-spacing: 0; line-height: 1; font-size: .46rem; padding: 0; box-sizing: border-box; }
 .cx-jn-statusrow-confirm { padding: 2px 8px 2px 4px; }
+/* Tarjetas de jornada v87: fechas más grandes, recuadros más compactos */
+.cx-jn-mid .cx-jn-time { font-size: .74rem; }
+.cx-jn-mid .cx-jn-hora { font-size: 1rem; }
+.cx-jn { padding: 4px 6px 3px; gap: 1px; }
+.cx-jn-crest { width: 34px; height: 34px; }
+.cx-jn-tvrow { min-height: 0; margin-top: 0; }
+.cx-jn-tvrow .cx-jn-tv { height: 11px; }
+.cx-jn-tvrow .cx-jn-tv-sq { height: 15px; }
+@media (max-width: 560px) {
+  .cx-jn-mid .cx-jn-time { font-size: .7rem; }
+  .cx-jn-mid .cx-jn-hora { font-size: .98rem; }
+  .cx-jn-crest { width: 32px; height: 32px; }
+}
