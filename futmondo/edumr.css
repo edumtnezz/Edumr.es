@@ -806,3 +806,6 @@ button:not(:disabled):active, [role="button"]:active, .hub-feature:active, .hub-
 .cx-jn-tvrow .cx-jn-tv { height: 13px; max-width: 56px; }
 .cx-jn-tvrow .cx-jn-tv-sq { height: 17px; max-width: 36px; }
 @media (max-width: 560px) { .cx-jn-mid .cx-jn-time { font-size: .56rem; } .cx-jn-mid .cx-jn-hora { font-size: .72rem; } }
+/* "?" centrado en su círculo (v85) */
+.cx-jn-statusrow-prob::before { display: inline-grid; place-items: center; width: 10px; height: 10px; flex: none; letter-spacing: 0; line-height: 1; font-size: .46rem; padding: 0; text-indent: 0; box-sizing: border-box; font-family: 'Bricolage Grotesque', sans-serif; }
+.cx-jn-statusrow-prob { padding: 2px 8px 2px 4px; }
