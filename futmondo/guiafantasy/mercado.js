@@ -4279,11 +4279,11 @@
       parts = parts.slice(0, 3);
       if (!parts.length) return;
       const row = el("div", "an-cl-row");
-      const ph = el("div", "an-cl-ph"); if (pl) ph.appendChild(photoImg(photoOf(pl))); else ph.textContent = "•";
+      const ph = el("div", "an-cl-ph an-ti-ph"); if (pl) ph.appendChild(photoImg(photoOf(pl))); else ph.textContent = "•";
       row.appendChild(ph);
       const tx = el("div", "an-cl-tx");
       tx.appendChild(el("b", "an-cl-n", (pl && (pl.last || pl.nombre)) || m[1].trim()));
-      parts.forEach((x) => { const c = el("div", "an-cl-pt"); c.innerHTML = miniLine(x.length > 70 ? x.slice(0, 68).replace(/\s+\S*$/, "") + "…" : x); tx.appendChild(c); });
+      parts.forEach((x) => { const c = el("div", "an-cl-pt"); c.innerHTML = miniLine(x); tx.appendChild(c); });
       row.appendChild(tx);
       box.appendChild(row); n++;
     });
@@ -4325,20 +4325,41 @@
   }
   // Puntuación probable del once: suma de puntos esperados + análisis de racha.
   const f1e = (x) => x.toFixed(1).replace(".", ",");
-  function projBox(players, title, versus) {
+  function projBox(players, title, versus, opts) {
+    opts = opts || {};
     const ps = players.filter(Boolean);
     const f1 = (x) => x.toFixed(0);
     const total = ps.reduce((a, p) => a + expOf(p), 0);
-    const cap = ps.filter((p) => p.pos === "CEN" || p.pos === "DEL").slice().sort((a, b) => expOf(b) - expOf(a))[0];
+    const best = ps.filter((p) => p.pos === "CEN" || p.pos === "DEL").slice().sort((a, b) => expOf(b) - expOf(a))[0] || ps.filter((p) => p.pos !== "POR")[0] || null;
+    let capSel = opts.cap && ps.indexOf(opts.cap) >= 0 ? opts.cap : best;
+    const withCap = () => total + (capSel ? expOf(capSel) : 0);
     const box = el("div", "an-proj");
     const top = el("div", "an-proj-top");
     top.appendChild(el("div", "an-proj-k", title));
-    top.appendChild(el("div", "an-proj-n", "~" + f1(total) + " pts"));
+    const nEl = el("div", "an-proj-n", "~" + f1(withCap()) + " pts");
+    top.appendChild(nEl);
     box.appendChild(top);
-    box.appendChild(el("div", "an-proj-r", (cap ? "Con " + (cap.last || cap.nombre) + " de capitán (dobla puntos): ~" + f1(total + expOf(cap)) + " pts" : "")));
+    let vsEl = null;
+    const paintVs = () => {
+      if (!vsEl) return;
+      const d = withCap() - versus;
+      vsEl.textContent = d >= 0.5 ? "▲ +" + f1(d) + " pts más que tu once actual" : d <= -0.5 ? "▼ " + f1(d) + " pts vs tu once actual" : "= igual que tu once actual";
+    };
+    if (capSel) {
+      const cr = el("label", "an-proj-cap");
+      cr.appendChild(el("span", null, "👑 Capitán (dobla puntos)"));
+      const sel = el("select", "an-proj-sel");
+      ps.filter((p) => p.pos !== "POR").forEach((p, i) => {
+        const o = el("option", null, p.last || p.nombre); o.value = String(ps.indexOf(p)); if (p === capSel) o.selected = true; sel.appendChild(o);
+      });
+      sel.addEventListener("change", () => { capSel = ps[Number(sel.value)]; nEl.textContent = "~" + f1(withCap()) + " pts"; paintVs(); });
+      cr.appendChild(sel);
+      box.appendChild(cr);
+    }
     if (versus != null) {
-      const d = total - versus;
-      box.appendChild(el("div", "an-proj-vs", (d >= 0.5 ? "▲ +" + f1(d) + " pts más que tu once actual" : d <= -0.5 ? "▼ " + f1(d) + " pts vs tu once actual" : "= igual que tu once actual")));
+      vsEl = el("div", "an-proj-vs");
+      box.appendChild(vsEl);
+      paintVs();
     }
     // Reparto de puntos esperados por línea (mismo dato, en mosaico con barra)
     const lines = [["POR", "🧤", "Portero"], ["DEF", "🛡️", "Defensas"], ["CEN", "🎯", "Medios"], ["DEL", "⚽", "Delanteros"]].map((g) => {
@@ -4381,11 +4402,11 @@
       });
       box.appendChild(g);
     };
-    group("🔥", "En racha", "Llegan en su mejor momento: puntúan más en sus 2 últimos partidos.", "hot", hot, (p) => { const fo = formOf(p); return { v: "▲ " + f1d(fo.rec), c: "pts de media (últimos 2)", s: fo.season ? "Media de la temporada: " + f1d(fo.season.avg) + " pts (" + fo.season.n + " partidos)" : "Media al jugar (últimos 5): " + f1d(fo.avg) + " pts" }; });
+    if (!opts.noGroups) group("🔥", "En racha", "Llegan en su mejor momento: puntúan más en sus 2 últimos partidos.", "hot", hot, (p) => { const fo = formOf(p); return { v: "▲ " + f1d(fo.rec), c: "pts de media (últimos 2)", s: fo.season ? "Media de la temporada: " + f1d(fo.season.avg) + " pts (" + fo.season.n + " partidos)" : "Media al jugar (últimos 5): " + f1d(fo.avg) + " pts" }; });
     const irr = ps.filter((p) => { const fo = formOf(p); return fo.len >= 3 && fo.len - fo.played >= 2 && fo.played >= 1; }).sort((a, b) => formOf(b).avg - formOf(a).avg).slice(0, 4);
-    group("🎲", "Irregulares", "Puntúan bien cuando juegan, pero se pierden partidos.", "irr", irr, (p) => { const fo = formOf(p); return { v: f1d(fo.avg), c: "pts al jugar", s: "Ha jugado " + fo.played + " de sus últimos " + fo.len, bar: (fo.played / fo.len) * 100 }; });
+    if (!opts.noGroups) group("🎲", "Irregulares", "Puntúan bien cuando juegan, pero se pierden partidos.", "irr", irr, (p) => { const fo = formOf(p); return { v: f1d(fo.avg), c: "pts al jugar", s: "Ha jugado " + fo.played + " de sus últimos " + fo.len, bar: (fo.played / fo.len) * 100 }; });
     group("⚠️", "Dudas de jugar", "Probabilidad baja de ser titulares.", "risk", risk, (p) => ({ v: p.prob + "%", c: "de jugar", bar: p.prob }));
-    return { box, total };
+    return { box, total: withCap() };
   }
   // Desglose de una jornada: AS, Marca y SofaScore (puntos de su tabla × 50% de tu liga), minutos y el resto
   // (goles, asistencias, tarjetas…) como diferencia con los puntos reales que Futmondo dio al jugador.
@@ -4540,6 +4561,7 @@
       inner.appendChild(card);
      });
      det.appendChild(inner);
+     det.addEventListener("toggle", () => { if (det.open) inner.querySelectorAll(".an-fm-card").forEach((c) => c.classList.add("open")); });
      grid.appendChild(det);
     });
     box.appendChild(grid);
@@ -4707,7 +4729,6 @@
         out.appendChild(cb);
       }
     }
-    if (d.formacion) out.appendChild(el("div", "an-form", "Formación detectada: " + d.formacion));
     if (anStale) {
       const bar = el("div", "an-tools");
       bar.appendChild(el("div", "an-stale", "✏️ Has cambiado jugadores. Vuelve a analizar:"));
@@ -4803,8 +4824,6 @@
       });
     };
     if (window.EduAlineacion && tits.length) {
-      const hs = el("div", "estado-title", "Tu once (toca a un jugador para cambiarlo)");
-      out.appendChild(hs);
       const mine = window.EduAlineacion.card({ starters: tits.map((p) => toSide(p)), bench: [] }, "Tu equipo", "/img/avatar.svg", "", all, "probable", sups.map((p) => toSide(p)), cardOpts("Tu <b>once</b>"));
       hookSwap(mine);
       out.appendChild(mine);
@@ -4817,7 +4836,7 @@
         seg.appendChild(b);
       });
       bs.appendChild(seg);
-      const myProj = projBox(tits, "📈 Puntuación probable de tu once");
+      const myProj = projBox(tits, "📈 Puntuación probable de tu once", null, { cap: d.capActual ? findRosterPlayer(d.capActual, tits) : null });
       myProj.box.insertBefore(bs, myProj.box.children[1] || null);
       out.appendChild(myProj.box);
     // Análisis guardados antes traían un "ONCE IDEAL" escrito por la IA: se quita (ahora va arriba con reglas fijas).
@@ -4846,7 +4865,7 @@
         const posOf = new Map(ideal.slots.map((x) => [x.p, x.pos]));
         const ic = window.EduAlineacion.card({ starters: ideal.starters.map((p) => Object.assign(toSide(p, posOf.get(p)), { match: matchOf(p) })), bench: [] }, "Once ideal", "/img/avatar.svg", "", all, "probable", rest.map((p) => toSide(p)), cardOpts("Once <b>ideal</b>"));
         wrap.appendChild(ic);
-        const idProj = projBox(ideal.starters, "📈 Puntuación probable del once ideal", myProj.total);
+        const idProj = projBox(ideal.starters, "📈 Puntuación probable del once ideal", myProj.total, { noGroups: true });
         idProj.box.classList.add("an-proj-dark");
         wrap.appendChild(idProj.box);
         const entran = ideal.starters.filter((p) => tits.indexOf(p) < 0);

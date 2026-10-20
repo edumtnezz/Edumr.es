@@ -2589,3 +2589,20 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 .sq3-why { font-size: .68rem; font-weight: 700; color: #16a34a; margin-top: 2px; }
 .sq3 > .eq-stats { margin: 4px 0 12px; }
 .eq-tk-go { white-space: nowrap; font-size: .92rem; padding-left: 14px; padding-right: 14px; }
+/* Analiza: cláusulas de dos en dos */
+.an-cl2-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.an-cl2-list .an-pb { flex-direction: column; gap: 6px; margin-top: 0; padding: 6px; }
+.an-cl2-list .an-pb-ph { width: 100%; flex: none; height: 86px; }
+.an-cl2-list .an-pb-n { font-size: .84rem; }
+.an-cl2-list .an-pb-r { font-size: .68rem; }
+.an-cl2-list .an-pb-diff { font-size: .66rem; }
+/* Claves: foto redonda como en Destacados */
+.an-cl-ph.an-ti-ph { flex: 0 0 46px; width: 46px; height: 46px; background: rgba(127,127,127,.2); border: 2px solid #22c55e; display: block; }
+.an-cl-ph.an-ti-ph img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+/* Banquillo del análisis más grande */
+#anOut .al-bench-row .pl-ph { width: 48px; height: 48px; }
+#anOut .al-bench-row .pl-nm { font-size: .64rem; }
+/* Capitán elegido */
+.an-proj-cap { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; font-size: .76rem; font-weight: 700; }
+.an-proj-sel { font: 800 .78rem 'Bricolage Grotesque', sans-serif; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border); background: var(--card, #fff); color: var(--text, inherit); max-width: 50%; }
+.an-proj-dark .an-proj-sel { background: rgba(255,255,255,.12); color: #fff; border-color: rgba(255,255,255,.25); }
