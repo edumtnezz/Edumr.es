@@ -1441,7 +1441,7 @@ function leagueMatchPoints(po, d, role) {
   return Math.round((as + mc + ss) / 2 + b);
 }
 
-async function playerFicha(env, id, fast) {
+async function playerFicha(env, id, fast, raw) {
   if (!id) return { error: "falta id" };
   const header = await futbolHeader(env);
   const r = await futbolPost("/2/player/matches", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP });
@@ -1486,6 +1486,7 @@ async function playerFicha(env, id, fast) {
       stats: g("stats"), picas: g("picas"), ff: g("ff"), ss: g("ss"), as: g("as"), marca: g("marca"),
       hsc: m.h ? m.h.score : null, asc: m.a ? m.a.score : null,
       lg: leagueMatchPoints(po, dta, (mp && mp.role) || ""),
+      ...(raw ? { dta, po } : {}),
     };
   }).slice(0, 60);
   const todayVal = Number(pl.value) || 0;
@@ -4361,7 +4362,7 @@ async function handleGet({ request, env: env0, params }) {
     return json(await getNoticia(url.searchParams.get("u")));
   }
   if (path === "jugador") {
-    return json(await playerFicha(env, url.searchParams.get("id"), url.searchParams.get("fast") === "1"));
+    return json(await playerFicha(env, url.searchParams.get("id"), url.searchParams.get("fast") === "1", url.searchParams.get("raw") === "1"));
   }
   // Puntos de MI liga Futmondo (modo stats) para los jugadores de un partido
   // y una jornada. La página de partido manda los ids resueltos y recibe
