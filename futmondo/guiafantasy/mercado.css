@@ -2653,3 +2653,22 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 .an-pb-lock:empty { display: none; }
 .an-pb-lock.blk { margin-top: 2px; padding: 6px 8px; border-radius: 10px; background: rgba(245,158,11,.14); border: 1px dashed rgba(245,158,11,.55); color: var(--amber, #b45309); text-align: center; }
 .an-pb-lock.open { margin-top: 2px; padding: 6px 8px; border-radius: 10px; background: rgba(34,197,94,.12); color: #15803d; text-align: center; }
+/* Claves de tu once: tarjetas */
+.an-claves2 { display: flex; flex-direction: column; gap: 10px; border: 0 !important; background: none !important; box-shadow: none !important; padding: 0 !important; }
+.an-cl-card { border-radius: 18px; border: 1px solid var(--border); background: var(--card-solid, rgba(127,127,127,.06)); padding: 12px; }
+.an-cl-hd { display: flex; align-items: center; gap: 12px; }
+.an-cl-htx { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.an-cl-htx .an-cl-n { font: 800 1.05rem 'Bricolage Grotesque', sans-serif; }
+.an-cl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.an-cl-chip { padding: 3px 9px; border-radius: 999px; background: rgba(127,127,127,.14); font-size: .7rem; font-weight: 800; }
+.an-cl-chip.pos { background: rgba(99,102,241,.14); color: #4f46e5; }
+.an-cl-chip.ok { background: rgba(34,197,94,.18); color: #15803d; }
+.an-cl-chip.mid { background: rgba(245,158,11,.2); color: #b45309; }
+.an-cl-chip.low { background: rgba(239,68,68,.16); color: #dc2626; }
+.an-cl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.an-cl-it { padding: 9px 10px; border-radius: 14px; background: rgba(127,127,127,.09); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.an-cl-it.wide { grid-column: 1 / -1; }
+.an-cl-it.easy { background: rgba(34,197,94,.14); box-shadow: inset 0 0 0 1px rgba(34,197,94,.45); }
+.an-cl-it small { font-size: .58rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.an-cl-it b { font: 800 .98rem 'Bricolage Grotesque', sans-serif; }
+.an-cl-it span { font-size: .72rem; color: var(--muted); line-height: 1.3; }

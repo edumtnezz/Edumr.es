@@ -4301,52 +4301,86 @@
   // sale en los cuadros de En racha / Irregulares / Dudas (puntuación probable)
   // NO se repite aquí.
   function renderClaves(txt, roster, tits) {
-    // Los jugadores los elige la IA (nombres del texto), pero TODAS las líneas salen de datos reales
-    // y con el mismo patrón para los cuatro: titularidad, media en la liga, últimos partidos, próximo rival y posición.
+    // Los jugadores los elige la IA (nombres del texto), pero TODO lo que se muestra sale de datos reales y con el mismo patrón.
     const ideal = pickIdealXI(roster);
     const posN = { POR: "portero", DEF: "defensa", CEN: "centrocampista", DEL: "delantero" };
     const slotOf = new Map(ideal ? ideal.slots.map((x) => [x.p, x.pos]) : []);
     const jNext = anData && Number(anData.capJornada) || 0;
     const nf = (x) => (Math.round(x * 10) / 10).toString().replace(".", ",");
-    const box = el("div", "an-claves");
+    const box = el("div", "an-claves an-claves2");
     const seen = new Set();
     let n = 0;
+    const tile = (k, big, sub, wide) => {
+      const t = el("div", "an-cl-it" + (wide ? " wide" : ""));
+      t.appendChild(el("small", null, k));
+      const b = el("b", null, big); t.appendChild(b);
+      const sp = el("span", null, sub || ""); t.appendChild(sp);
+      return { t, b, sp };
+    };
     String(txt || "").split(/\n+/).forEach((ln) => {
       const m = ln.trim().match(/^([^:*]{2,40}):\s*(.+)$/);
       if (!m || n >= 4) return;
       const pl = findRosterPlayer(m[1].trim(), roster);
       if (!pl || seen.has(pl)) return;
       seen.add(pl);
-      const lines = [];
-      if (pl.prob != null) lines.push("**Titular:** " + pl.prob + "% de probabilidad de jugar");
-      const ss = seasonOf(pl);
-      if (ss && Number.isFinite(ss.avg)) lines.push("**Media en la liga:** " + nf(ss.avg) + " pts por partido" + (ss.n ? " (" + ss.n + " partidos jugados)" : ""));
-      const f = (pl.fitness || []).map(Number).filter((x) => !isNaN(x));
-      if (f.length) lines.push("**Últimos partidos:** " + f.slice(-5).reverse().map((v) => (v === 0 ? "no jugó" : Math.round(v) + " pts")).join(" · ") + " (el último, primero)");
-      if (pl.rival) {
-        let when = "";
-        if (pl.fecha) { const d = new Date(pl.fecha); if (!isNaN(d)) when = " · " + d.toLocaleString("es-ES", { weekday: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }).replace(",", ""); }
-        lines.push("**Próximo partido:** " + (pl.casa === true ? "en casa" : pl.casa === false ? "fuera" : "") + (pl.casa == null ? "" : ", ") + "contra " + pl.rival + (jNext ? " (J" + jNext + ")" : "") + when);
-      if (pl.rivalPos) {
-        const nT = pl.rivalN || 20, rp = pl.rivalPos;
-        const tag = rp === nT ? "es el colista" : rp >= nT - 3 ? "está entre los últimos" : rp <= 4 ? "está arriba, entre los 4 primeros" : "está a mitad de tabla";
-        lines.push("**Rival en la tabla:** " + pl.rival + " " + tag + " (" + rp + "º, " + pl.rivalPts + " pts en " + pl.rivalPj + " partidos)");
-      }
-      }
+      const card = el("div", "an-cl-card");
+      const hd = el("div", "an-cl-hd");
+      const ph = el("div", "an-cl-ph an-ti-ph"); ph.appendChild(photoImg(photoOf(pl)));
+      hd.appendChild(ph);
+      const ht = el("div", "an-cl-htx");
+      ht.appendChild(el("b", "an-cl-n", pl.last || pl.nombre));
+      const chips = el("div", "an-cl-chips");
       const placed = slotOf.get(pl) || pl.pos;
       if (placed) {
-        const base = pl.pos && pl.pos !== placed ? " (su posición base es " + posN[pl.pos] + ")" : pl.pos2 && pl.pos2 !== placed ? " (también puede jugar de " + posN[pl.pos2] + ")" : "";
-        lines.push("**Posición recomendada:** " + posN[placed] + base);
+        const note = pl.pos && pl.pos !== placed ? " (base: " + posN[pl.pos] + ")" : pl.pos2 && pl.pos2 !== placed ? " (también " + posN[pl.pos2] + ")" : "";
+        chips.appendChild(el("span", "an-cl-chip pos", "📍 Colócalo de " + posN[placed] + note));
       }
-      if (!lines.length) return;
-      const row = el("div", "an-cl-row");
-      const ph = el("div", "an-cl-ph an-ti-ph"); ph.appendChild(photoImg(photoOf(pl)));
-      row.appendChild(ph);
-      const tx = el("div", "an-cl-tx");
-      tx.appendChild(el("b", "an-cl-n", pl.last || pl.nombre));
-      lines.forEach((x) => { const c = el("div", "an-cl-pt"); c.innerHTML = miniLine(x); tx.appendChild(c); });
-      row.appendChild(tx);
-      box.appendChild(row); n++;
+      if (pl.prob != null) chips.appendChild(el("span", "an-cl-chip " + (pl.prob >= 80 ? "ok" : pl.prob >= 50 ? "mid" : "low"), pl.prob + "% de jugar"));
+      ht.appendChild(chips);
+      hd.appendChild(ht);
+      card.appendChild(hd);
+      const grid = el("div", "an-cl-grid");
+      // Media en la liga + participación (se afina con los minutos reales al cargar su ficha)
+      const ss = seasonOf(pl);
+      const tm = ss && teamPub(pl.equipo) ? teamPub(pl.equipo) : 0;
+      if (ss && Number.isFinite(ss.avg)) grid.appendChild(tile("Media en la liga", nf(ss.avg) + " pts", "por partido jugado").t);
+      const part = tile("Participación", ss && ss.n != null ? (tm ? ss.n + " de " + tm : String(ss.n)) : "…", tm && ss && ss.n != null ? (ss.n >= tm ? "ha jugado todos los partidos" : "se ha perdido " + (tm - ss.n)) : "partidos jugados");
+      grid.appendChild(part.t);
+      const pid = pl.id || (ss && ss.id);
+      if (pid) {
+        const draw = (j) => {
+          const ms = ((j && j.matches) || []).filter((x) => x.finished);
+          if (!ms.length || !part.t.isConnected) return;
+          const pm = ms.filter((x) => (Number(x.mins) || 0) > 0);
+          const miss = ms.length - pm.length;
+          part.b.textContent = pm.length + " de " + ms.length;
+          const bits = [miss === 0 ? "ha jugado todos los partidos" : "se ha perdido " + miss + (miss === 1 ? " partido" : " partidos")];
+          if (pm.length) {
+            const avgMin = Math.round(pm.reduce((a, x) => a + Number(x.mins), 0) / pm.length);
+            const full = pm.filter((x) => Number(x.mins) >= 60).length, short = pm.filter((x) => Number(x.mins) < 45).length;
+            bits.push("juega " + avgMin + " min de media");
+            bits.push(full === pm.length ? "siempre más de 60 min" : full + " con 60 min o más" + (short ? " y " + short + " con menos de 45 (rotación o suplente)" : ""));
+          }
+          part.sp.textContent = bits.join(" · ");
+        };
+        if (fmCache[pid]) draw(fmCache[pid]);
+        else fetch(API + "/jugador?id=" + encodeURIComponent(pid)).then((r) => r.json()).then((j) => { fmCache[pid] = j; draw(j); }).catch(() => {});
+      }
+      // Próximo partido con el puesto del rival
+      if (pl.rival) {
+        let when = "";
+        if (pl.fecha) { const d = new Date(pl.fecha); if (!isNaN(d)) when = d.toLocaleString("es-ES", { weekday: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }).replace(",", ""); }
+        let rv = "";
+        if (pl.rivalPos) {
+          const nT = pl.rivalN || 20, rp = pl.rivalPos;
+          rv = (rp === nT ? "colista" : rp >= nT - 3 ? "de los últimos" : rp <= 4 ? "de los primeros" : "a mitad de tabla") + " (" + rp + "º, " + pl.rivalPts + " pts)";
+        }
+        const t = tile("Próximo partido", (pl.casa === true ? "🏠 En casa" : pl.casa === false ? "✈️ Fuera" : "") + " · contra " + pl.rival, [rv ? pl.rival + " es " + rv : "", jNext ? "J" + jNext : "", when].filter(Boolean).join(" · "), true);
+        if (pl.rivalPos && pl.rivalPos >= (pl.rivalN || 20) - 3) t.t.classList.add("easy");
+        grid.appendChild(t.t);
+      }
+      card.appendChild(grid);
+      box.appendChild(card); n++;
     });
     return n ? box : null;
   }
