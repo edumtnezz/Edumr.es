@@ -3559,7 +3559,7 @@ async function getPorraFixtures(env) {
     const [rm, barca] = await Promise.all([fetchTeamFixtures(env, TEAM_RM).catch(() => null), fetchTeamFixtures(env, TEAM_BARCA).catch(() => null)]);
     if (rm || barca) {
       lists = { rm: rm || (lists && lists.rm) || [], barca: barca || (lists && lists.barca) || [] };
-      try { await env.PORRA.put(PORRA_FIX_KEY, JSON.stringify({ updatedAt: now, lists }), { expirationTtl: 3600 }); } catch (e) {}
+      try { await env.PORRA.put(PORRA_FIX_KEY, JSON.stringify({ updatedAt: now, lists }), { expirationTtl: 7 * 24 * 3600 }); } catch (e) {}
     }
   }
   lists = lists || { rm: [], barca: [] };

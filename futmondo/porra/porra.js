@@ -404,7 +404,11 @@ let lastSig = "";
 async function load(auto) {
   try {
     const res = await fetch(API + "/porra" + (viewJornada ? "?jornada=" + viewJornada : ""));
-    const fresh = await res.json();
+    let fresh = await res.json();
+    for (let t = 0; t < 2 && !auto && fresh && (!fresh.matches || !fresh.matches.length) && !fresh.jornada; t++) {
+      await new Promise((r) => setTimeout(r, 1800));
+      try { const r2 = await fetch(API + "/porra" + (viewJornada ? "?jornada=" + viewJornada : "")); const f2 = await r2.json(); if (f2 && f2.matches && f2.matches.length) { fresh = f2; break; } } catch (e) {}
+    }
     const sig = JSON.stringify(fresh);
     if (auto && sig === lastSig) { document.documentElement.classList.remove("auth-loading"); return; }
     lastSig = sig;

@@ -3361,7 +3361,7 @@
       rs.forEach((r) => (r.j.matches || []).forEach((m) => {
         if (m.live || out.length >= 4) return;
         const home = sameT(m.home, teamName), away = sameT(m.away, teamName);
-        if (home || away) out.push({ j: cur + r.k, home, crest: home ? m.awayCrest : m.homeCrest, rival: home ? m.away : m.home, day: m.day, date: m.date, time: m.time });
+        if (home || away) out.push({ j: cur + r.k, home, crest: home ? m.awayCrest : m.homeCrest, rival: home ? m.away : m.home, day: m.tbc ? "" : m.day, date: m.tbc ? "" : m.date, time: m.tbc ? "" : m.time, tbc: !!m.tbc });
       }));
       if (!out.length) { fixBox.remove(); return; }
       out.forEach((n) => {
@@ -3375,7 +3375,10 @@
         mid.appendChild(el("b", "ffx-rival", n.rival || ""));
         c.appendChild(mid);
         const when = [n.day, n.date].filter(Boolean).join(" ");
-        c.appendChild(el("div", "ffx-d", when + (n.time ? " · " + n.time : "")));
+        const dd = el("div", "ffx-d");
+        if (n.tbc) dd.textContent = "Fecha por confirmar";
+        else { dd.appendChild(el("span", null, when)); if (n.time) dd.appendChild(el("span", "ffx-h", n.time)); }
+        c.appendChild(dd);
         fixRow.appendChild(c);
       });
     })();
@@ -3941,6 +3944,7 @@
         const rs = el("section", "eq-sec sq3");
         rs.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "🔥 Jugadores en racha"));
         if (!hot.length) rs.appendChild(el("p", "muted small", "Ningún jugador del club lleva 3 partidos seguidos puntuando."));
+        if (hot.length > 5) rs.querySelector("h3").textContent = "🔥 Jugadores en racha · top 5 de " + hot.length;
         hot.slice(0, 5).forEach((p) => {
           const l3 = (p.fitness || []).slice(-3).map((x) => Math.round(Number(x)));
           const tot = l3.reduce((a, v) => a + v, 0);
