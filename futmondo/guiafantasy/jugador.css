@@ -99,3 +99,20 @@ svg.ffx-ha.a{background:rgba(99,102,241,.16);color:#6366f1}
 .ffx-rival { font: 800 .86rem/1.1 'Bricolage Grotesque', sans-serif; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ficha-fix-it .ffx-d { margin: 6px 0 0; font-size: .7rem; white-space: nowrap; }
 @media (max-width: 420px) { .ficha-fix-it .ffx-d { font-size: .66rem; } .ffx-rival { font-size: .8rem; } }
+
+/* === Ficha compacta (v-compact): posición en píldora fina + próximos partidos en una tira === */
+.ficha-dem { background: none; padding: 0; margin-top: 8px; width: auto; }
+.ficha-dem-bar { height: 26px; gap: 4px; justify-content: center; }
+.ficha-dem-main { flex: 0 0 auto; padding: 0 14px; font-size: .76rem; border-radius: 999px; }
+.ficha-dem-sec { width: 30px; border-radius: 999px; font-size: .66rem; }
+.ficha-fix { background: none; padding: 0; margin-top: 8px; }
+.ficha-fix-k { display: none; }
+.ficha-fix-row { gap: 5px; }
+.ficha-fix-it { background: var(--soft, rgba(127,127,127,.1)); border-radius: 12px; padding: 6px 2px 5px; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
+.ffx-top { display: flex; align-items: center; justify-content: center; gap: 4px; }
+.ffx-top .ffx-j { font-size: .62rem; padding: 2px 5px; }
+.ffx-top svg.ffx-ha { width: 16px; height: 16px; margin: 0; padding: 2px; }
+.ffx-mid { display: flex; align-items: center; justify-content: center; max-width: 100%; }
+.ffx-mid img { width: 26px; height: 26px; object-fit: contain; }
+.ffx-mid .ffx-rival { display: none; }
+.ficha-fix-it .ffx-d { font-size: .6rem; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }

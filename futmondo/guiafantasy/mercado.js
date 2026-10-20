@@ -294,7 +294,10 @@
       const cmp = (n) => { const a = Math.abs(n); return a >= 1e6 ? (a / 1e6).toFixed(1).replace(".", ",") + " M€" : Math.round(a / 1000) + " mil €"; };
       const trend = el("div", "dest-trend");
       [["Hoy", p.change], ["7 días", p.chg7]].forEach((x) => {
-        if (x[1] == null || x[1] === "") return;
+        if (x[1] == null || x[1] === "") {
+          if (x[0] !== "7 días") return;
+          const ln = el("div", "dt-row flat"); ln.appendChild(el("span", null, x[0])); ln.appendChild(el("b", null, "sin dato")); trend.appendChild(ln); return;
+        }
         const v = Number(x[1]) || 0;
         const line = el("div", "dt-row " + (v > 0 ? "up" : v < 0 ? "down" : "flat"));
         line.appendChild(el("span", null, x[0]));
@@ -355,24 +358,23 @@
         if (rb2) pros.appendChild(el("span", "posb posb-" + posCls(p.role2), rb2));
         body.appendChild(pros);
       }
-      const tm = el("div", "claus-team");
+      const tm = el("div", "claus-team claus-meta");
       if (p.logo) { const lg = el("img", "racha-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; tm.appendChild(lg); }
-      if (p.team) tm.appendChild(el("span", null, p.team));
+      if (p.team) tm.appendChild(el("span", "claus-meta-t", p.team));
       clubLink(tm, p.team);
-      body.appendChild(tm);
-      const ow = el("div", "claus-owner");
+      tm.appendChild(el("i", "claus-meta-sep", "·"));
       const av = el("img", "claus-ownav"); av.src = p.ownerPhoto || "/img/avatar.svg"; av.alt = ""; av.loading = "lazy";
       av.addEventListener("error", () => { av.style.visibility = "hidden"; });
-      ow.appendChild(av);
-      ow.appendChild(el("span", null, "de " + (p.owner || "?")));
-      body.appendChild(ow);
+      tm.appendChild(av);
+      tm.appendChild(el("span", "claus-meta-o", p.owner || "?"));
+      body.appendChild(tm);
       // Últimos partidos: para saber de un vistazo si merece la pena pagar
       // la cláusula (en racha de verdad) o si los puntos/la media vienen de
       // partidazos ya lejanos, con el mismo formato que "Jugadores en racha".
       const fit = (p.fitness || []).map((x) => Number(x) || 0);
       if (fit.length) {
         const fitWrap = el("div", "claus-fitwrap");
-        fitWrap.appendChild(el("div", "claus-fitlabel", "Últimos partidos"));
+        
         const scores = el("div", "racha-scores claus-fit-scores");
         const n = Math.min(5, fit.length);
         for (let k = 0; k < n; k++) {
@@ -397,7 +399,7 @@
       const diff = (Number(p.clause) || 0) - (Number(p.value) || 0);
       const vrow = el("div", "claus-val");
       vrow.appendChild(el("b", null, "Valor " + money(p.value) + " €"));
-      vrow.appendChild(el("span", "claus-above", "+" + (diff / 1e6).toFixed(1).replace(".", ",") + " M por encima de su valor"));
+      vrow.appendChild(el("span", "claus-above", "+" + (diff / 1e6).toFixed(1).replace(".", ",") + " M sobre valor"));
       body.appendChild(vrow);
       // Historial de la cláusula: sin tener que entrar en la ficha, para
       // ver de un vistazo si se la han ido subiendo (la están "defendiendo")
@@ -2710,7 +2712,6 @@
     if (name === "clausulazos") renderClausulas();
     if (name === "fichajes") renderFichajes();
     if (name === "plantillas") initPlantillas();
-    if (name === "analiza") renderCapHistorial();
     try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
     try {
       const url = "/futmondo/guiafantasy/" + (name === "plantillas" ? "mercado" : name);
@@ -4237,6 +4238,45 @@
     });
     return box;
   }
+  // "Claves de tu once": una fila por jugador con 2-3 puntos clave. Lo que ya
+  // sale en los cuadros de En racha / Irregulares / Dudas (puntuación probable)
+  // NO se repite aquí.
+  function renderClaves(txt, roster, tits) {
+    const ideal = pickIdealXI(roster);
+    const ps = [].concat(tits, ideal ? ideal.starters : []).filter((p, i, a) => p && a.indexOf(p) === i);
+    const irr = new Set(ps.filter((p) => { const fo = formOf(p); return fo.len >= 3 && fo.len - fo.played >= 2 && fo.played >= 1; }));
+    const hot = new Set(ps.filter((p) => expOf(p) > 0 && formOf(p).trend >= 1.5));
+    const risk = new Set(ps.filter((p) => p.prob != null && p.prob < 70));
+    const box = el("div", "an-claves");
+    let n = 0;
+    String(txt || "").split(/\n+/).forEach((ln) => {
+      const m = ln.trim().match(/^([^:*]{2,40}):\s*(.+)$/);
+      if (!m || n >= 4) return;
+      const pl = findRosterPlayer(m[1].trim(), roster);
+      let parts = m[2].replace(/\*\*/g, "").split(/\s*,\s*|\s+y\s+(?=juega|media|tiene|es |viene|se |está|vale|hizo|puntu)|\.\s+/).map((x) => x.trim().replace(/\.$/, "")).filter(Boolean);
+      if (pl) {
+        parts = parts.filter((x) => {
+          if (irr.has(pl) && /irregular|pierd|partidos que|intermitent|ha jugado \d|de sus últimos/i.test(x)) return false;
+          if (hot.has(pl) && /racha|mejor momento|en forma|buen momento/i.test(x)) return false;
+          if (risk.has(pl) && /probabilidad|titular|\d+ ?%|duda/i.test(x)) return false;
+          return true;
+        });
+      }
+      parts = parts.slice(0, 3);
+      if (!parts.length) return;
+      const row = el("div", "an-cl-row");
+      const ph = el("div", "an-cl-ph"); if (pl) ph.appendChild(photoImg(photoOf(pl))); else ph.textContent = "•";
+      row.appendChild(ph);
+      const tx = el("div", "an-cl-tx");
+      tx.appendChild(el("b", "an-cl-n", (pl && (pl.last || pl.nombre)) || m[1].trim()));
+      const ch = el("div", "an-cl-chips");
+      parts.forEach((x) => { const c = el("span", "an-cl-chip"); c.innerHTML = miniLine(x.length > 70 ? x.slice(0, 68).replace(/\s+\S*$/, "") + "…" : x); ch.appendChild(c); });
+      tx.appendChild(ch);
+      row.appendChild(tx);
+      box.appendChild(row); n++;
+    });
+    return n ? box : null;
+  }
   // ---- Once ideal con reglas fijas ----
   // Puntos esperados de un jugador = media de sus últimos partidos (+0,4 si
   // juega en casa, -0,2 fuera) × probabilidad de ser titular. Si está
@@ -4426,11 +4466,21 @@
     box.innerHTML = "";
     box.appendChild(el("div", "estado-title", "📊 Forma de tus jugadores"));
     const j0 = d && d.capJornada ? d.capJornada - 1 : 0;
-    const order = { POR: 0, DEF: 1, CEN: 2, DEL: 3 };
     const tits = (d && d.titulares) || [];
-    const sorted = players.slice().sort((a, b) => ((tits.indexOf(a) >= 0 ? 0 : 1) - (tits.indexOf(b) >= 0 ? 0 : 1)) || ((order[a.pos] || 0) - (order[b.pos] || 0)));
+    const sorted = players.slice().sort((a, b) => (tits.indexOf(a) >= 0 ? 0 : 1) - (tits.indexOf(b) >= 0 ? 0 : 1));
+    const GR = [["POR", "🧤", "Porteros"], ["DEF", "🛡️", "Defensas"], ["CEN", "🎯", "Medios"], ["DEL", "⚽", "Delanteros"]];
     const grid = el("div", "an-fm-list");
-    sorted.forEach((p) => {
+    GR.forEach((g) => {
+     const arr = sorted.filter((p) => p.pos === g[0]);
+     if (!arr.length) return;
+     const det = el("details", "an-fg");
+     const sm = el("summary", "an-fg-s");
+     sm.appendChild(el("span", "an-fg-t", g[1] + " " + g[2]));
+     sm.appendChild(el("span", "an-fg-n", String(arr.length)));
+     sm.appendChild(el("span", "an-fg-sum", f1e(arr.reduce((a, p) => a + expOf(p), 0)) + " pts esp."));
+     det.appendChild(sm);
+     const inner = el("div", "an-fg-b");
+     arr.forEach((p) => {
       const card = el("div", "an-fm-card" + (tits.indexOf(p) >= 0 ? "" : " bench"));
       const head = el("div", "an-fm-head");
       const ph = el("div", "an-fm-ph"); ph.appendChild(photoImg(photoOf(p))); head.appendChild(ph);
@@ -4443,6 +4493,9 @@
       rt.appendChild(el("small", null, "esperado" + (p.prob != null ? " · " + p.prob + "% jugar" : "")));
       head.appendChild(rt);
       card.appendChild(head);
+      const body = el("div", "an-fm-body");
+      card.appendChild(body);
+      head.addEventListener("click", () => card.classList.toggle("open"));
       const f = (p.fitness || []).map(Number);
       const row = el("div", "an-fm-row");
       const len = f.length;
@@ -4461,15 +4514,18 @@
         row.appendChild(c);
       });
       if (!f.length) row.appendChild(el("div", "muted small", "Sin datos de sus últimos partidos."));
-      card.appendChild(row);
-      if (f.some((v) => v !== 0) && p.id) card.appendChild(el("div", "an-fm-hint", "👆 Toca una jornada para ver de dónde salen sus puntos"));
+      body.appendChild(row);
+      if (f.some((v) => v !== 0) && p.id) body.appendChild(el("div", "an-fm-hint", "👆 Toca una jornada para ver de dónde salen sus puntos"));
       const pid = p.id || (seasonOf(p) && seasonOf(p).id);
       if (pid) {
         const sb = el("button", "an-ss-btn", "📅 Ver toda la temporada"); sb.type = "button";
         sb.addEventListener("click", () => ssToggle(card, sb, p, pid, ptsByJ));
-        card.appendChild(sb);
+        body.appendChild(sb);
       }
-      grid.appendChild(card);
+      inner.appendChild(card);
+     });
+     det.appendChild(inner);
+     grid.appendChild(det);
     });
     box.appendChild(grid);
   }
@@ -4613,10 +4669,10 @@
               try {
                 const r = await fetch(API + "/capitan-elegir", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jornada: d.capJornada, id: p.id }) });
                 if (!r.ok) throw new Error("x");
-                d.capChosen = String(p.id); capHistLoaded = false;
+                d.capChosen = String(p.id);
                 grid.querySelectorAll(".an-cap-opt").forEach((x) => x.classList.remove("sel")); c.classList.add("sel");
                 const m = $("anMsg"); if (m) m.textContent = "👑 Capitán guardado: " + (p.nombre || "");
-                renderCapHistorial();
+                
               } catch (e) { const m = $("anMsg"); if (m) m.textContent = "No se pudo guardar tu capitán."; }
             });
             grid.appendChild(c);
@@ -4634,11 +4690,17 @@
         cla.slice(0, 8).forEach((p) => {
           const c = el("div", "an-clause-card");
           const ph = el("div", "an-clause-photo");
-          ph.appendChild(photoImg(photoOf(p)));
+          const pa = photoOf(p);
+          ph.appendChild(photoImg(pa && pa.indexOf("avatar.svg") < 0 ? pa : (p.photo || pa)));
           c.appendChild(ph);
-          c.appendChild(el("div", "an-clause-name", p.nombre || ""));
-          c.appendChild(el("div", "an-clause-cl", "🔓 " + money(p.clause) + " €"));
-          c.appendChild(el("div", "an-clause-vl", "valor " + money(p.valor) + " €"));
+          const tx = el("div", "an-clause-tx");
+          tx.appendChild(el("div", "an-clause-name", p.last || p.nombre || ""));
+          tx.appendChild(el("div", "an-clause-vl", "Valor " + money(p.valor) + " €"));
+          c.appendChild(tx);
+          const rt = el("div", "an-clause-rt");
+          rt.appendChild(el("div", "an-clause-cl", money(p.clause) + " €"));
+          rt.appendChild(el("div", "an-clause-x", "×" + (p.clause / p.valor).toFixed(1).replace(".", ",")));
+          c.appendChild(rt);
           grid.appendChild(c);
         });
         cb.appendChild(grid);
@@ -4763,10 +4825,13 @@
     let aiTxt = String(d.analisis || "");
     if (/\*\*ONCE IDEAL\*\*/i.test(aiTxt)) aiTxt = /\*\*(?:MULTIPOSICI|CLAVES)/i.test(aiTxt) ? aiTxt.replace(/\*\*ONCE IDEAL\*\*[\s\S]*?(?=\*\*(?:MULTIPOSICI|CLAVES))/i, "") : "";
     if (aiTxt.trim()) {
-      const sec = el("div", "estado-sec an-ai-top");
-      sec.appendChild(el("div", "estado-title", "🔑 Claves de tu once"));
-      sec.appendChild(renderAiText(aiTxt, [].concat(tits, sups)));
-      out.appendChild(sec);
+      const kb = renderClaves(aiTxt, [].concat(tits, sups), tits);
+      if (kb) {
+        const sec = el("div", "estado-sec an-ai-top");
+        sec.appendChild(el("div", "estado-title", "🔑 Claves de tu once"));
+        sec.appendChild(kb);
+        out.appendChild(sec);
+      }
     }
       // Once ideal con reglas fijas (no lo decide la IA)
       const ideal = pickIdealXI(tits.concat(sups));
@@ -4832,54 +4897,7 @@
     clearInterval(anRefT); anRefT = setInterval(anRefresh, 300000);
   }
 
-  // Histórico de capitán: cada vez que analizas tu equipo se guarda a quién
-  // recomendamos de capitán esa jornada; aquí se compara con los puntos
-  // reales en cuanto termina el partido (fuente: puntos por jornada de
-  // Futmondo), para poder ver si merece la pena fiarse del consejo.
-  let capHistLoaded = false;
-  async function renderCapHistorial() {
-    const box = $("anCapHist");
-    if (!box || capHistLoaded) return;
-    capHistLoaded = true;
-    box.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>';
-    try {
-      const d = await (await fetch(API + "/capitan-historial", { cache: "no-store" })).json();
-      const hist = (d && d.historial) || [];
-      if (!hist.length) { box.innerHTML = ""; return; }
-      box.innerHTML = "";
-      const sec = el("div", "estado-sec an-caphist");
-      sec.appendChild(el("div", "estado-title", "📊 Histórico de capitán"));
-      let wins = 0, resolved = 0;
-      hist.forEach((h) => {
-        const results = h.results || [];
-        const cap = (h.chosen && results.find((r) => String(r.id) === String(h.chosen))) || results[0];
-        if (!cap) return;
-        const row = el("div", "cap-hist-row");
-        row.appendChild(el("div", "cap-hist-j", "J" + h.jornada));
-        const ph = el("div", "cap-hist-photo"); ph.appendChild(photoImg(cap.photo)); row.appendChild(ph);
-        const body = el("div", "cap-hist-body");
-        body.appendChild(el("div", "cap-hist-name", cap.nombre || ""));
-        if (h.resolved) {
-          resolved++;
-          const best = results.reduce((m, r) => (r.points != null && (m == null || r.points > m)) ? r.points : m, null);
-          const fue = cap.points != null && best != null && cap.points >= best;
-          if (fue) wins++;
-          const alts = results.filter((r) => r !== cap).map((r) => (r.nombre || "") + " " + (r.points != null ? r.points : "?")).join(" · ");
-          body.appendChild(el("div", "cap-hist-alts", alts ? "Alternativas: " + alts : ""));
-          const pts = el("span", "cap-hist-pts" + (fue ? " win" : ""), (cap.points != null ? cap.points : "?") + " pts" + (fue ? " 👑 mejor opción" : ""));
-          row.appendChild(body);
-          row.appendChild(pts);
-        } else {
-          body.appendChild(el("div", "cap-hist-alts", "pendiente de que termine su partido"));
-          row.appendChild(body);
-          row.appendChild(el("span", "cap-hist-pts pending", "…"));
-        }
-        sec.appendChild(row);
-      });
-      if (resolved) sec.insertBefore(el("div", "cap-hist-summary", "Tu capitán fue la mejor opción en " + wins + " de " + resolved + " jornadas resueltas."), sec.children[2] || null);
-      box.appendChild(sec);
-    } catch (e) { box.innerHTML = ""; }
-  }
+  function renderCapHistorial() {}
 
   const anFile = $("anFile");
   if (anFile) anFile.addEventListener("change", () => {

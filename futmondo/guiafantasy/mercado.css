@@ -2459,3 +2459,58 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 .fm-nj-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .6; }
 .fm-pend { border-style: solid; border-color: rgba(245,158,11,.5); color: #d97706; }
 .fm-pts-no { background: transparent !important; color: var(--muted) !important; box-shadow: none; }
+
+/* === Analiza v278: claves, forma desplegable, cláusulas en fila === */
+.an-clause-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+.an-clause-card { flex-direction: row; align-items: center; text-align: left; gap: 7px; padding: 6px 8px; }
+.an-clause-photo { flex: 0 0 34px; width: 34px; height: 34px; }
+.an-clause-photo img { width: 34px; height: 34px; object-fit: cover; object-position: top; background: rgba(255,255,255,.06); }
+.an-clause-tx { min-width: 0; flex: 1; }
+.an-clause-name { font-size: .74rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.an-clause-vl { font-size: .62rem; }
+.an-clause-rt { text-align: right; flex: 0 0 auto; }
+.an-clause-rt .an-clause-cl { font-size: .72rem; }
+.an-clause-x { font-size: .62rem; font-weight: 800; color: #f59e0b; }
+.an-claves { display: flex; flex-direction: column; gap: 6px; }
+.an-cl-row { display: flex; gap: 9px; align-items: center; padding: 7px 9px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.07); }
+.an-cl-ph { flex: 0 0 36px; width: 36px; height: 36px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: rgba(255,255,255,.07); }
+.an-cl-ph img { width: 100%; height: 100%; object-fit: cover; object-position: top; }
+.an-cl-tx { min-width: 0; flex: 1; }
+.an-cl-n { display: block; font-size: .8rem; margin-bottom: 3px; }
+.an-cl-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.an-cl-chip { font-size: .68rem; line-height: 1.25; padding: 2px 8px; border-radius: 999px; background: rgba(34,197,94,.13); color: inherit; }
+.an-fg { margin-top: 8px; border-radius: 14px; border: 1px solid rgba(255,255,255,.09); background: rgba(255,255,255,.03); }
+.an-fg-s { display: flex; align-items: center; gap: 8px; padding: 11px 12px; cursor: pointer; list-style: none; font-weight: 800; font-size: .88rem; }
+.an-fg-s::-webkit-details-marker { display: none; }
+.an-fg-s::after { content: "▾"; margin-left: 6px; opacity: .6; transition: transform .2s; }
+.an-fg[open] > .an-fg-s::after { transform: rotate(180deg); }
+.an-fg-t { flex: 1; }
+.an-fg-n { font-size: .7rem; padding: 1px 8px; border-radius: 999px; background: rgba(255,255,255,.1); }
+.an-fg-sum { font-size: .68rem; font-weight: 600; opacity: .7; }
+.an-fg-b { padding: 0 8px 8px; display: flex; flex-direction: column; gap: 6px; }
+.an-fm-card .an-fm-body { display: none; }
+.an-fm-card.open .an-fm-body { display: block; }
+.an-fm-card .an-fm-head { cursor: pointer; }
+.an-fm-card .an-fm-head::after { content: "▾"; opacity: .5; margin-left: 4px; transition: transform .2s; }
+.an-fm-card.open .an-fm-head::after { transform: rotate(180deg); }
+
+/* === Clausulazo v278: cabecera mínima, botones grandes, tarjeta compacta === */
+.claus-hero { margin-bottom: 6px; }
+.claus-hero-top h2 { font-size: 1.02rem; }
+.claus-hero-sub { display: none; }
+.claus-upd { font-size: .6rem; padding: 3px 9px; gap: 5px; font-weight: 600; }
+.claus-upd::before { width: 5px; height: 5px; box-shadow: 0 0 0 2px rgba(34,197,94,.22); }
+.claus-filters { gap: 12px; margin: 8px 0 4px; }
+.claus-frow { gap: 6px; padding: 4px; width: 100%; box-sizing: border-box; }
+.claus-chip { flex: 1 1 0; padding: 10px 12px; font-size: .86rem; text-align: center; }
+.claus-grid .claus-card2::before { height: 30px; }
+.claus-grid .claus-photo2 { width: 62px; height: 62px; margin: -26px auto 2px; border-width: 3px; }
+.claus-grid .claus-body2 { gap: 4px; padding: 0 10px 11px; }
+.claus-grid .claus-name2 { font-size: 1rem; }
+.claus-grid .claus-meta { display: flex; width: auto; max-width: 100%; gap: 4px; padding: 3px 9px; font-size: .68rem; flex-wrap: nowrap; }
+.claus-meta .claus-meta-t, .claus-meta .claus-meta-o { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.claus-meta .claus-meta-o { max-width: 70px; }
+.claus-meta .claus-meta-sep { opacity: .5; font-style: normal; }
+.claus-meta .racha-crest, .claus-meta .claus-ownav { width: 14px; height: 14px; flex: none; }
+.claus-grid .claus-fitwrap { padding: 5px 4px; margin: 2px 0 0; }
+@media (max-width: 560px) { .claus-grid .claus-photo2 { width: 56px; height: 56px; margin-top: -24px; } .claus-grid .claus-card2::before { height: 28px; } }
