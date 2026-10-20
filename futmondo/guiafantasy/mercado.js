@@ -4669,6 +4669,32 @@
   document.addEventListener("visibilitychange", () => { if (!document.hidden) anRefresh(); });
 
   // Caja de jugador (capitán recomendado y cláusulas bajas): misma foto y mismo recuadro.
+  // Cuándo se puede pagar la cláusula de un jugador: sale de la misma lista que "Clausulazo jugoso"
+  let clausFetching = null;
+  const clausKey = (x) => stripAccents(String(x || "").toLowerCase()).replace(/[^a-z0-9 ]/g, "").trim();
+  function clausLookup(id, name) {
+    let list = clausAll && clausAll.length ? clausAll : null;
+    if (!list) { try { const c = JSON.parse(localStorage.getItem("claus_cache") || "null"); if (c && c.players) list = c.players; } catch (e) {} }
+    if (!list) return null;
+    const nk = clausKey(name);
+    return list.find((x) => id && String(x.id) === String(id)) || list.find((x) => nk && clausKey(x.name) === nk) || null;
+  }
+  function paintLock(lk) {
+    const info = clausLookup(lk.dataset.pid, lk.dataset.pn);
+    if (!info) {
+      if (!clausFetching) {
+        clausFetching = fetch(API + "/clausulas").then((r) => r.json()).then((d) => {
+          const l = (d && d.players) || [];
+          if (l.length) { clausAll = l; try { localStorage.setItem("claus_cache", JSON.stringify({ at: Date.now(), jornada: Number(d.jornada) || 0, players: l })); } catch (e) {} }
+          document.querySelectorAll(".an-pb-lock").forEach((x) => { if (!x.textContent) paintLock(x); });
+        }).catch(() => {});
+      }
+      return;
+    }
+    const blocked = info.unlock && new Date(info.unlock).getTime() > Date.now();
+    lk.className = "an-pb-lock " + (blocked ? "blk" : "open");
+    lk.textContent = blocked ? "🔒 Se libera el " + fmtDiaLargo(info.unlock) : "🔓 Disponible: ya pueden pagar su cláusula";
+  }
   const FACE_ZOOM = { "unai simon": 0.78 };
   function plBox(p, o) {
     o = o || {};
@@ -4687,7 +4713,10 @@
       const diff = p.clause - p.valor;
       const r = el("div", "an-pb-r"); r.appendChild(el("span", null, "Cláusula")); r.appendChild(el("b", null, mm(p.clause))); tx.appendChild(r);
       const v = el("div", "an-pb-r"); v.appendChild(el("span", null, "Valor")); v.appendChild(el("b", null, mm(p.valor))); tx.appendChild(v);
-      tx.appendChild(el("div", "an-pb-diff", "+" + mm(diff) + " sobre su valor"));
+      tx.appendChild(el("div", "an-pb-diff", "+" + mm(diff) + " sobre valor"));
+      const lk = el("div", "an-pb-lock"); lk.dataset.pid = String(p.id || ""); lk.dataset.pn = String(p.nombre || p.name || "");
+      tx.appendChild(lk);
+      paintLock(lk);
     } else {
       const jNext = anData && Number(anData.capJornada) || 0;
       if (p.rival) {
@@ -4696,17 +4725,19 @@
         m.appendChild(el("span", null, "vs " + p.rival + (jNext ? " · J" + jNext : "")));
         tx.appendChild(m);
         let when = "";
-        if (p.fecha) { const d = new Date(p.fecha); if (!isNaN(d)) when = d.toLocaleString("es-ES", { weekday: "long", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }).replace(",", " ·"); }
-        const ha = p.casa === true ? "🏠 Juega en casa, en su estadio" : p.casa === false ? "✈️ Juega fuera, en campo rival" : "";
-        if (ha || when) tx.appendChild(el("div", "an-pb-when", [ha, when].filter(Boolean).join(" · ")));
+        if (p.fecha) { const d = new Date(p.fecha); if (!isNaN(d)) when = d.toLocaleString("es-ES", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }).replace(",", " ·"); }
+        const chips = el("div", "an-pb-chips");
+        if (p.casa === true || p.casa === false) { const hc = el("span", "an-pb-chip " + (p.casa ? "home" : "away")); hc.appendChild(haIcon(p.casa)); hc.appendChild(document.createTextNode(p.casa ? "En casa" : "Fuera")); chips.appendChild(hc); }
+        if (when) chips.appendChild(el("span", "an-pb-chip", when));
+        if (chips.childNodes.length) tx.appendChild(chips);
         if (p.rivalPos) tx.appendChild(el("div", "an-pb-when", "📊 " + p.rival + " es " + p.rivalPos + "º de " + (p.rivalN || 20) + " (" + p.rivalPts + " pts en " + p.rivalPj + " partidos)" + (p.rivalPos >= (p.rivalN || 20) - 3 ? " · de los últimos" : "")));
       }
       const f = (p.fitness || []).map(Number).slice(-5);
       if (f.length) {
         const row = el("div", "an-pb-last an-pb-lastj"); row.appendChild(el("span", null, "Últimos"));
         const lenAll = (p.fitness || []).length;
-        f.forEach((v, i) => {
-          const k = f.length - 1 - i;
+        f.slice().reverse().forEach((v, i) => {
+          const k = i;
           let jn = 0; try { jn = jLab(p.equipo || p.team, lenAll, k); } catch (e) {}
           const c = el("i", v === 0 ? "z" : v <= 3 ? "l" : v >= 10 ? "h" : "m");
           c.appendChild(el("em", null, jn ? "J" + jn : ""));
