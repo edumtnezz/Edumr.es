@@ -1438,8 +1438,9 @@ function leagueMatchPoints(po, d, role) {
   // Penalti marcado = 2 puntos (contrastado con fitness); el resto de goles, según la posición.
   const pg = Math.min(n("att_pen_goal"), n("goals"));
   b += n("goal_assist") + (n("goals") - pg) * gp + pg * 2 + 3 * n("penalty_save");
-  if (gk) { if (d.cleansheet && mins >= 45) b += 1; b -= Math.floor(n("goals_conceded") / 2); }
-  b -= n("own_goals") + 2 * n("att_pen_miss") + 5 * n("red_card");
+  if (gk) { if ((d.cleansheet || n("goals_conceded") === 0) && mins >= 45) b += 1; b -= Math.floor(n("goals_conceded") / 2); }
+  // Roja: -3 (contrastado con fitness en 2 casos; Futmondo marca red_card también en la doble amarilla)
+  b -= n("own_goals") + 2 * n("att_pen_miss") + 3 * n("red_card");
   return Math.round((as + mc + ss) / 2 + b);
 }
 
