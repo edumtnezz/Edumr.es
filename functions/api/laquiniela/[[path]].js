@@ -1435,7 +1435,9 @@ function leagueMatchPoints(po, d, role) {
   if (!gp) return null;
   let b = 0;
   if (mins >= 60) b += 1;
-  b += n("goal_assist") + n("goals") * gp;
+  // Penalti marcado = 2 puntos (contrastado con fitness); el resto de goles, según la posición.
+  const pg = Math.min(n("att_pen_goal"), n("goals"));
+  b += n("goal_assist") + (n("goals") - pg) * gp + pg * 2 + 3 * n("penalty_save");
   if (gk) { if (d.cleansheet && mins >= 45) b += 1; b -= Math.floor(n("goals_conceded") / 2); }
   b -= n("own_goals") + 2 * n("att_pen_miss") + 5 * n("red_card");
   return Math.round((as + mc + ss) / 2 + b);
@@ -3128,7 +3130,7 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
   // cambian (se guardan 30 días); mientras el partido no ha acabado se
   // guardan solo 2 minutos para no machacar la API de Futmondo desde la
   // página de cada partido.
-  const ck = "pjp:v4:" + playerId + ":" + (Number(jornada) || 0);
+  const ck = "pjp:v5:" + playerId + ":" + (Number(jornada) || 0);
   try {
     const c = await env.PORRA.get(ck, "json");
     if (c && (c.finished || Date.now() - (c.at || 0) < 120000)) return { finished: !!c.finished, points: c.finished ? c.points : null };
@@ -3170,7 +3172,10 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
         // publicados es válido el último valor de fitness. Antes se fiaba de la hora del
         // refresco del mercado y daba por buenos valores de la jornada anterior (se guardaban 30 días).
         const pub = (mk.players || []).reduce((mx, x) => (mp && x.team === mp.team ? Math.max(mx, Number(x.matches) || 0) : mx), 0);
-        const nFinJ = matches.filter((x) => x.st === "F" && Number(x.r) <= Number(jornada)).length;
+        // Fitness va en orden CRONOLÓGICO (fecha de juego), no por número de jornada: hay jornadas aplazadas
+        // (p. ej. J6 se jugó el 3/9, antes que J5 el 13/9). Se cuentan los partidos terminados hasta la fecha de este.
+        const myT = Date.parse((m.info && m.info.date) || "") || 0;
+        const nFinJ = myT ? matches.filter((x) => x.st === "F" && (Date.parse((x.info && x.info.date) || "") || 0) <= myT).length : matches.filter((x) => x.st === "F" && Number(x.r) <= Number(jornada)).length;
         mkFresh = !!mp && pub >= nFinJ && nFinJ > 0;
         if (mkFresh) {
           const k = fit.length - 1 - (pub - nFinJ);

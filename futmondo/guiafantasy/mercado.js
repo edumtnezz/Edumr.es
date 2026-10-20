@@ -3395,7 +3395,10 @@
       colL.appendChild(el("div", "estado-title", "Puntos por jornada (Futmondo Social)"));
       const tbl = el("div", "ficha-matches");
       const valByR = {}, rivals = {};
-      ms.forEach((m, k) => { if (k < fit.length) valByR[m.r] = Math.round(fit[fit.length - 1 - k]); rivals[m.r] = m; });
+      // fitness va en orden cronológico (por fecha), no por jornada: con jornadas aplazadas J6 puede jugarse antes que J5.
+      const msd = ms.slice().sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0) || b.r - a.r);
+      msd.forEach((m, k) => { if (k < fit.length) valByR[m.r] = Math.round(fit[fit.length - 1 - k]); });
+      ms.forEach((m) => { rivals[m.r] = m; });
       const topJ = j0 || Math.max.apply(null, ms.map((x) => x.r).concat([0]));
       const pendingHist = []; let hasCalc = false;
       for (let j = topJ; j >= 1; j--) {
