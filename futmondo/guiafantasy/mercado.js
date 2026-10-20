@@ -3788,12 +3788,13 @@
         if (dd) when.appendChild(icoTxt("cal", dd));
         if (next.time) when.appendChild(icoTxt("clock", next.time));
         ft.appendChild(when);
-        const go = el("span", "eq-tk-go"); go.appendChild(document.createTextNode("Ver partido")); go.appendChild(ico("arrow")); ft.appendChild(go);
+        const go = el("span", "eq-tk-go"); go.appendChild(document.createTextNode(liveNow ? "Ver en directo" : "Ver alineación probable")); go.appendChild(ico("arrow")); ft.appendChild(go);
         nx.appendChild(ft);
         ht.appendChild(nx);
       }
       hd.appendChild(ht);
       frag.appendChild(hd);
+      let stx0 = null;
       if (fx.n) {
         const stx = el("div", "eq-stats");
         [[eqMoney(fx.val), "valor plantilla", "", false], [String(fx.racha), "en racha ›", fx.racha ? "up" : "", true]].forEach((x) => {
@@ -3810,7 +3811,7 @@
           }
           stx.appendChild(c);
         });
-        frag.appendChild(stx);
+        stx0 = stx;
       }
       // Alineación (probable / confirmada) del próximo partido, con el banquillo aparte
       if (next) {
@@ -3822,7 +3823,7 @@
         const link = el("a", "eq-more", "Ver partido →");
         link.href = "/futmondo/guiafantasy/partido/" + matchSlug(next.home, next.away) + "?j=" + next.jn;
         if (stOf(next) === "live") {
-          const h = el("div", "eq-sech"); h.appendChild(el("h3", null, "Partido en juego")); h.appendChild(link);
+          const h = el("div", "eq-sech"); h.appendChild(el("h3", null, "Partido en juego"));
           sec.appendChild(h);
         } else {
           sec.appendChild(Object.assign(document.createElement("div"), { className: "mpage-skel", innerHTML: '<i class="h"></i>' }));
@@ -3842,7 +3843,6 @@
           sec.replaceChildren();
           const h = el("div", "eq-sech");
           h.appendChild(el("h3", null, side ? (kind === "confirmada" ? "Alineación confirmada" : "Alineación probable") : "Alineación"));
-          h.appendChild(link);
           sec.appendChild(h);
           if (side && window.EduAlineacion) {
             const wrap = el("div", "alin-pitches mpage-xipitches eq-pitch");
@@ -3921,6 +3921,7 @@
       };
       const sqS = el("section", "eq-sec sq3");
       sqS.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "Plantilla"));
+      if (stx0) sqS.appendChild(stx0);
       const GR = [["portero", "POR", "Portero"], ["defensa", "DEF", "Defensa"], ["centrocampista", "MC", "Centrocampista"], ["delantero", "DL", "Delantero"]].filter((g) => squad.some((p) => String(p.role || "").toLowerCase() === g[0]));
       if (GR.length && !GR.some((g) => g[0] === eqSq.pos)) eqSq.pos = GR[0][0];
       const bar = el("div", "sq4-bar"); bar.setAttribute("role", "tablist");
@@ -3949,7 +3950,6 @@
         const rs = el("section", "eq-sec sq3");
         rs.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "🔥 Jugadores en racha"));
         if (!hot.length) rs.appendChild(el("p", "muted small", "Ningún jugador del club lleva 3 partidos seguidos puntuando."));
-        if (hot.length > 5) rs.querySelector("h3").textContent = "🔥 Jugadores en racha · top 5 de " + hot.length;
         hot.slice(0, 5).forEach((p) => {
           const l3 = (p.fitness || []).slice(-3).map((x) => Math.round(Number(x)));
           const tot = l3.reduce((a, v) => a + v, 0);
