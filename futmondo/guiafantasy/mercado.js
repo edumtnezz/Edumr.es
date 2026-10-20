@@ -4730,7 +4730,7 @@
     lk.className = "an-pb-lock " + (blocked ? "blk" : "open");
     lk.textContent = blocked ? "🔒 Se libera el " + fmtDiaLargo(info.unlock) : "🔓 Disponible: ya pueden pagar su cláusula";
   }
-  const FACE_ZOOM = { "unai simon": 0.78 };
+  const FACE_ZOOM = { "unai simon": { s: 0.98, y: -11 } };
   function plBox(p, o) {
     o = o || {};
     const mm = (x) => (x / 1e6).toFixed(1).replace(".", ",") + " M";
@@ -4739,7 +4739,7 @@
     const pa = photoOf(p);
     const im = photoImg(pa && pa.indexOf("avatar.svg") < 0 ? pa : (p.photo || pa));
     const z = FACE_ZOOM[stripAccents(String(p.nombre || p.name || "").toLowerCase())];
-    if (z) im.style.transform = "scale(" + z + ")";
+    if (z) im.style.transform = "translateY(" + z.y + "%) scale(" + z.s + ")";
     ph.appendChild(im);
     card.appendChild(ph);
     const tx = el("div", "an-pb-tx");
