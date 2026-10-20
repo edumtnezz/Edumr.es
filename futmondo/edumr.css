@@ -809,3 +809,5 @@ button:not(:disabled):active, [role="button"]:active, .hub-feature:active, .hub-
 /* "?" centrado en su círculo (v85) */
 .cx-jn-statusrow-prob::before { display: inline-grid; place-items: center; width: 10px; height: 10px; flex: none; letter-spacing: 0; line-height: 1; font-size: .46rem; padding: 0; text-indent: 0; box-sizing: border-box; font-family: 'Bricolage Grotesque', sans-serif; }
 .cx-jn-statusrow-prob { padding: 2px 8px 2px 4px; }
+.cx-jn-statusrow-confirm::before { display: inline-grid; place-items: center; width: 10px; height: 10px; flex: none; letter-spacing: 0; line-height: 1; font-size: .46rem; padding: 0; box-sizing: border-box; }
+.cx-jn-statusrow-confirm { padding: 2px 8px 2px 4px; }
