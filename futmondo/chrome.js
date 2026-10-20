@@ -200,7 +200,7 @@
         renderTeamDots();
         if (title) title.textContent = jornada ? ("Jornada " + jornada) : "Jornada";
         if (!ms.length) {
-          grid.innerHTML = '<span class="cx-strip-load">No se pudo cargar la jornada. <a href="#" class="cx-retry">Reintentar</a></span>'; grid.style.minHeight = "";
+          grid.innerHTML = '<span class="cx-strip-load">Calendario de esta jornada aún no disponible. <a href="#" class="cx-retry">Reintentar</a></span>'; grid.style.minHeight = "";
           var rb = grid.querySelector(".cx-retry"); if (rb) rb.addEventListener("click", function (ev) { ev.preventDefault(); loadJornada(n); });
           var pv0 = document.getElementById("cxJPrev"), nx0 = document.getElementById("cxJNext");
           if (pv0) pv0.disabled = jornada <= 1; if (nx0) nx0.disabled = jornada >= 38;
