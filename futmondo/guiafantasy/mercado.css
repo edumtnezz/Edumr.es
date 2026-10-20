@@ -2514,3 +2514,10 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 .claus-meta .racha-crest, .claus-meta .claus-ownav { width: 14px; height: 14px; flex: none; }
 .claus-grid .claus-fitwrap { padding: 5px 4px; margin: 2px 0 0; }
 @media (max-width: 560px) { .claus-grid .claus-photo2 { width: 56px; height: 56px; margin-top: -24px; } .claus-grid .claus-card2::before { height: 28px; } }
+#tab-clausulazos .claus-hero { padding: 0 0 2px; text-align: left; margin-bottom: 4px; }
+#tab-clausulazos .claus-hero-top { flex-direction: row; justify-content: space-between; align-items: center; gap: 8px; }
+#tab-clausulazos .claus-hero h2 { font-size: 1.05rem; letter-spacing: -.02em; line-height: 1.1; }
+#tab-clausulazos .claus-hero-sub { display: none; }
+#tab-clausulazos .claus-filters { margin: 6px 0 2px; gap: 8px; }
+#tab-clausulazos .claus-grid { margin-top: 8px; }
+#tab-clausulazos .claus-grid .claus-status, #tab-clausulazos .claus-grid .claus-lastup { margin: 0; }
