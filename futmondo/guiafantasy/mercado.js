@@ -3397,6 +3397,7 @@
       const valByR = {}, rivals = {};
       ms.forEach((m, k) => { if (k < fit.length) valByR[m.r] = Math.round(fit[fit.length - 1 - k]); rivals[m.r] = m; });
       const topJ = j0 || Math.max.apply(null, ms.map((x) => x.r).concat([0]));
+      const pendingHist = [];
       for (let j = topJ; j >= 1; j--) {
         const row = el("div", "fm-row");
         row.appendChild(el("span", "fm-j", "J" + j));
@@ -3414,9 +3415,12 @@
           }
           row.appendChild(el("span", "fm-tag " + tgCls, tg));
           const v = valByR[j] != null ? valByR[j] : null;
-          const stPts = Number(m.stats) || 0;
-          const pts = v != null ? String(v) : (stPts !== 0 ? String(stPts) : "—");
-          row.appendChild(el("span", "fm-pts " + (v != null ? "pt-" + ptClass(v) : (stPts !== 0 ? "pt-" + ptClass(stPts) : "pt-st")), pts));
+          // Solo puntos REALES de la liga (fitness = últimos 5 partidos, o histórico guardado).
+          // Antes se rellenaba con el modo "stats" de Futmondo, que NO es la puntuación de la liga
+          // (p. ej. -10 donde en la app eran -3).
+          const ps = el("span", "fm-pts " + (v != null ? "pt-" + ptClass(v) : "pt-st"), v != null ? String(v) : "—");
+          if (v == null) { ps.title = "Sin dato de la liga para esta jornada"; pendingHist.push([j, ps]); }
+          row.appendChild(ps);
         } else {
           const nj = el("span", "fm-match fm-nojugo", "No jugó");
           row.appendChild(nj);
@@ -3450,6 +3454,20 @@
         tbl.appendChild(row);
       }
       colL.appendChild(tbl);
+      // Jornadas fuera de las 5 últimas: se completan con el histórico de puntos de la liga guardado.
+      if (pendingHist.length && (p.id || d.id)) {
+        const hid = String(p.id || d.id);
+        fetch(API + "/historial-puntos?ids=" + encodeURIComponent(hid)).then((r) => r.json()).then((h) => {
+          const o = (h && h.pts && h.pts[hid]) || {};
+          pendingHist.forEach((x) => {
+            const v = o[x[0]];
+            if (v == null || !x[1].isConnected) return;
+            x[1].textContent = String(Math.round(Number(v)));
+            x[1].className = "fm-pts pt-" + ptClass(Number(v));
+            x[1].removeAttribute("title");
+          });
+        }).catch(() => {});
+      }
     }
 
     const vals = d.valores || [];
