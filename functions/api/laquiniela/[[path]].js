@@ -1115,6 +1115,11 @@ function ffPick(name, map) {
     const byLast = uniq(keys.filter((k) => k.split(" ").pop() === last));
     if (byLast.length === 1) return map[byLast[0]];
   }
+  // Apodos tipo "Dela" (Adrián de la Fuente): una sola palabra que es "de"+"la" pegado.
+  if (words.length === 1 && n.length >= 4) {
+    const apodo = keys.filter((k) => k.includes(" " + n.slice(0, 2) + " " + n.slice(2) + " "));
+    if (apodo.length === 1) return map[apodo[0]];
+  }
   const cont = keys.filter((k) => k.split(" ").indexOf(n) >= 0 || k.includes(" " + n + " "));
   if (cont.length === 1) return map[cont[0]];
   const toks = words.filter((t) => t.length >= 3);

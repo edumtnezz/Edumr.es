@@ -578,8 +578,18 @@
         sec.appendChild(list);
         box.appendChild(sec);
       });
-    } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar.</p>'; }
+    } catch (e) {
+      // Fallo puntual (p. ej. justo durante un despliegue): se permite reintentar y se reintenta solo una vez.
+      fichLoaded = false;
+      box.innerHTML = "";
+      const em = el("p", "muted small", "No se pudo cargar los movimientos. ");
+      const rb = el("button", "fx-link", "Reintentar"); rb.type = "button";
+      rb.addEventListener("click", () => renderFichajes());
+      em.appendChild(rb); box.appendChild(em);
+      if (!fichRetried) { fichRetried = true; setTimeout(() => { if (!fichLoaded && box.isConnected) renderFichajes(); }, 2500); }
+    }
   }
+  let fichRetried = false;
 
   const akey = (s) => stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9]/g, "");
   function nameSlug(s) { return stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9]/g, ""); }
