@@ -213,13 +213,13 @@
             var stLabel = state === "final" ? "FINALIZADO" : (live.minute || "EN JUEGO");
             statusRow = '<div class="cx-jn-statusrow cx-jn-statusrow-' + state + '"><span class="cx-jn-dot"></span>' + esc(stLabel) + '</div>';
             cardCls += state === "final" ? " cx-jn-isfinal" : " cx-jn-islive";
-            mid = '<span class="cx-jn-score">' + esc(live.score || "") + '</span>' + tv;
+            mid = '<span class="cx-jn-score">' + esc(live.score || "") + '</span>';
           } else if (state === "suspended") {
             statusRow = '<div class="cx-jn-statusrow cx-jn-statusrow-suspended"><span class="cx-jn-dot"></span>SUSPENDIDO</div>';
-            mid = tv;
+            mid = '';
           } else {
             if (m.confirmed) { statusRow = '<div class="cx-jn-statusrow cx-jn-statusrow-confirm">Once confirmado</div>'; cardCls += " cx-jn-confirmed"; }
-            mid = '<span class="cx-jn-time">' + esc(((m.day || "") + " " + (m.date || "")).trim()) + '</span><span class="cx-jn-line"><span class="cx-jn-hora">' + esc(m.time || "") + '</span>' + tv + '</span>';
+            mid = '<span class="cx-jn-time">' + esc(((m.day || "") + " " + (m.date || "")).trim()) + '</span><span class="cx-jn-hora">' + esc(m.time || "") + '</span>';
           }
           return '<div class="' + cardCls + '" data-home="' + esc(m.home) + '" data-away="' + esc(m.away) + '" data-hcrest="' + esc(m.homeCrest) + '" data-acrest="' + esc(m.awayCrest) + '">' +
             statusRow +
@@ -228,6 +228,7 @@
               '<div class="cx-jn-mid">' + mid + '</div>' +
               '<img class="cx-jn-crest" src="' + esc(m.awayCrest) + '" alt="' + esc(m.away) + '" title="' + esc(m.away) + '" loading="lazy" onerror="this.style.visibility=\'hidden\'">' +
             '</div>' +
+            (tv ? '<div class="cx-jn-tvrow">' + tv + '</div>' : '') +
             '</div>';
         }).join("");
         grid.style.minHeight = "";

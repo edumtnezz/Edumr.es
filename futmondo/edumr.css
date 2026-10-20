@@ -797,3 +797,12 @@ button:not(:disabled):active, [role="button"]:active, .hub-feature:active, .hub-
 @keyframes lineDraw { from { stroke-dashoffset: 12; } to { stroke-dashoffset: 0; } }
 @keyframes headBob { 0%,100% { transform: translateY(0); } 35% { transform: translateY(-3px); } 70% { transform: translateY(1px); } }
 @media (prefers-reduced-motion: reduce) { .gf-page .tab .tab-ico, .gf-page .tab.active .tab-ico, .gf-page .tab.active .tab-ico * { animation: none !important; transition: none !important; } }
+
+/* === Tarjetas de jornada v84: día y hora apilados en el centro, canal (DAZN/Movistar) centrado abajo === */
+.cx-jn-mid { gap: 1px; }
+.cx-jn-mid .cx-jn-time { font-size: .62rem; line-height: 1.1; }
+.cx-jn-mid .cx-jn-hora { font-size: .8rem; font-weight: 800; color: var(--cx-text); line-height: 1.1; }
+.cx-jn-tvrow { display: flex; align-items: center; justify-content: center; margin-top: 1px; min-height: 16px; }
+.cx-jn-tvrow .cx-jn-tv { height: 13px; max-width: 56px; }
+.cx-jn-tvrow .cx-jn-tv-sq { height: 17px; max-width: 36px; }
+@media (max-width: 560px) { .cx-jn-mid .cx-jn-time { font-size: .56rem; } .cx-jn-mid .cx-jn-hora { font-size: .72rem; } }
