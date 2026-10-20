@@ -4282,6 +4282,11 @@
         let when = "";
         if (pl.fecha) { const d = new Date(pl.fecha); if (!isNaN(d)) when = " · " + d.toLocaleString("es-ES", { weekday: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }).replace(",", ""); }
         lines.push("**Próximo partido:** " + (pl.casa === true ? "en casa" : pl.casa === false ? "fuera" : "") + (pl.casa == null ? "" : ", ") + "contra " + pl.rival + (jNext ? " (J" + jNext + ")" : "") + when);
+      if (pl.rivalPos) {
+        const nT = pl.rivalN || 20, rp = pl.rivalPos;
+        const tag = rp === nT ? "es el colista" : rp >= nT - 3 ? "está entre los últimos" : rp <= 4 ? "está arriba, entre los 4 primeros" : "está a mitad de tabla";
+        lines.push("**Rival en la tabla:** " + pl.rival + " " + tag + " (" + rp + "º, " + pl.rivalPts + " pts en " + pl.rivalPj + " partidos)");
+      }
       }
       const placed = slotOf.get(pl) || pl.pos;
       if (placed) {
@@ -4649,6 +4654,7 @@
         if (p.fecha) { const d = new Date(p.fecha); if (!isNaN(d)) when = d.toLocaleString("es-ES", { weekday: "long", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }).replace(",", " ·"); }
         const ha = p.casa === true ? "🏠 Juega en casa, en su estadio" : p.casa === false ? "✈️ Juega fuera, en campo rival" : "";
         if (ha || when) tx.appendChild(el("div", "an-pb-when", [ha, when].filter(Boolean).join(" · ")));
+        if (p.rivalPos) tx.appendChild(el("div", "an-pb-when", "📊 " + p.rival + " es " + p.rivalPos + "º de " + (p.rivalN || 20) + " (" + p.rivalPts + " pts en " + p.rivalPj + " partidos)" + (p.rivalPos >= (p.rivalN || 20) - 3 ? " · de los últimos" : "")));
       }
       const f = (p.fitness || []).map(Number).slice(-5);
       if (f.length) {

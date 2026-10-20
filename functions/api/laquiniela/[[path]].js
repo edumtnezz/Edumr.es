@@ -2997,6 +2997,12 @@ async function handleAnaliza(request, env, user) {
   let tableTeams = null;
   try { tableTeams = await getTableStats(env); } catch (e) {}
   [].concat(titulares, suplentes).forEach((p) => { p.dificultad = rivalDifficulty(tableTeams, p.rival, p.pos, p.casa); });
+  [].concat(titulares, suplentes).forEach((p) => {
+    if (!tableTeams || !p.rival) return;
+    const rk = teamKey(p.rival);
+    const r = tableTeams.find((t) => teamKey(t.name) === rk) || tableTeams.find((t) => { const k = teamKey(t.name); return k && rk && (k.includes(rk) || rk.includes(k)); });
+    if (r) { p.rivalPos = r.pos; p.rivalPts = r.pts; p.rivalPj = r.pj; p.rivalN = tableTeams.length; }
+  });
   // Las fotos del mercado de Futmondo son una cara de carné pequeña; para que
   // el campo de "Analiza tu equipo" se vea igual que "Alineaciones probables"
   // (recorte de cuerpo entero de futbolfantasy.com) buscamos la foto de cada
