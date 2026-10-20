@@ -3794,6 +3794,38 @@
       }
       hd.appendChild(ht);
       frag.appendChild(hd);
+      // Situación en la clasificación de LaLiga (resultados reales terminados)
+      const tbSec = el("section", "eq-sec eq-tabla");
+      frag.appendChild(tbSec);
+      (async () => {
+        try {
+          const r = await (await fetch(API + "/tabla")).json();
+          const T = (r && r.teams) || [];
+          const i = T.findIndex((t) => teamCanon(t.name) === tc);
+          if (i < 0) { tbSec.remove(); return; }
+          const me = T[i], dg = me.gf - me.ga, sg = (x) => (x > 0 ? "+" : "") + x;
+          const hh = el("div", "eq-sech"); hh.appendChild(el("h3", null, "Situación en LaLiga")); tbSec.appendChild(hh);
+          const top = el("div", "eq-tb-top");
+          const big = el("div", "eq-tb-pos " + (me.pos <= 4 ? "up" : me.pos > T.length - 3 ? "dn" : "")); big.appendChild(el("b", null, me.pos + "º")); big.appendChild(el("small", null, "de " + T.length));
+          top.appendChild(big);
+          const st = el("div", "eq-tb-st");
+          [[me.pts, "puntos"], [me.pj, "jugados"], [me.w + "-" + me.d + "-" + me.l, "G-E-P"], [me.gf + "-" + me.ga, "goles"], [sg(dg), "dif."]].forEach((x) => { const c = el("div"); c.appendChild(el("b", null, String(x[0]))); c.appendChild(el("small", null, x[1])); st.appendChild(c); });
+          top.appendChild(st);
+          tbSec.appendChild(top);
+          const from = Math.max(0, Math.min(i - 2, T.length - 5)), to = Math.min(T.length, from + 5);
+          const tb = el("div", "eq-tb");
+          T.slice(from, to).forEach((t) => {
+            const row = el("div", "eq-tb-row" + (t === me ? " me" : ""));
+            row.appendChild(el("span", "eq-tb-p", String(t.pos)));
+            const lg = clubLogo(t.name, ""); if (lg) { const im = el("img"); im.src = lg; im.alt = ""; im.loading = "lazy"; row.appendChild(im); } else row.appendChild(el("i"));
+            row.appendChild(el("span", "eq-tb-n", t.name));
+            row.appendChild(el("span", "eq-tb-d", sg(t.gf - t.ga)));
+            row.appendChild(el("b", "eq-tb-pt", String(t.pts)));
+            tb.appendChild(row);
+          });
+          tbSec.appendChild(tb);
+        } catch (e) { tbSec.remove(); }
+      })();
       let stx0 = null;
       if (fx.n) {
         const stx = el("div", "eq-stats");

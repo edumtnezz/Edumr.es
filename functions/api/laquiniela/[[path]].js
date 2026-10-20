@@ -2748,27 +2748,30 @@ function formaTxt(p) {
 // Clasificación y goles a favor/en contra (local y visitante) calculados con los resultados REALES
 // terminados de football-data. Sirve para estimar la dificultad del rival (es una estimación nuestra).
 async function getTableStats(env) {
-  const ck = "tablestats:v1";
+  const ck = "tablestats:v2";
   try { const c = await env.PORRA.get(ck, "json"); if (c && c.at && Date.now() - c.at < 30 * 60000 && c.teams) return c.teams; } catch (e) {}
   try {
     const res = await fetch(`https://api.football-data.org/v4/competitions/${COMPETITION}/matches?status=FINISHED`, { headers: { "X-Auth-Token": env.FOOTBALL_API_KEY } });
     const d = await res.json();
     const T = {};
-    const get = (n) => (T[n] = T[n] || { name: n, pj: 0, pts: 0, gf: 0, ga: 0, hpj: 0, hgf: 0, hga: 0, apj: 0, agf: 0, aga: 0 });
+    const get = (n) => (T[n] = T[n] || { name: n, w: 0, d: 0, l: 0, pj: 0, pts: 0, gf: 0, ga: 0, hpj: 0, hgf: 0, hga: 0, apj: 0, agf: 0, aga: 0 });
     (d.matches || []).forEach((m) => {
       const ft = m.score && m.score.fullTime;
       if (!ft || ft.home == null || ft.away == null || !m.homeTeam || !m.awayTeam) return;
       const h = get(m.homeTeam.name), a = get(m.awayTeam.name);
       h.pj++; a.pj++; h.gf += ft.home; h.ga += ft.away; a.gf += ft.away; a.ga += ft.home;
       h.hpj++; h.hgf += ft.home; h.hga += ft.away; a.apj++; a.agf += ft.away; a.aga += ft.home;
-      if (ft.home > ft.away) h.pts += 3; else if (ft.home < ft.away) a.pts += 3; else { h.pts++; a.pts++; }
+      if (ft.home > ft.away) { h.pts += 3; h.w++; a.l++; } else if (ft.home < ft.away) { a.pts += 3; a.w++; h.l++; } else { h.pts++; a.pts++; h.d++; a.d++; }
     });
     const arr = Object.values(T).sort((x, y) => y.pts - x.pts || (y.gf - y.ga) - (x.gf - x.ga));
     arr.forEach((t, i) => { t.pos = i + 1; });
-    if (!arr.length) return null;
-    try { await env.PORRA.put(ck, JSON.stringify({ at: Date.now(), teams: arr }), { expirationTtl: 3600 }); } catch (e) {}
+    if (!arr.length) { try { const c = await env.PORRA.get(ck, "json"); if (c && c.teams) return c.teams; } catch (e2) {} return null; }
+    try { await env.PORRA.put(ck, JSON.stringify({ at: Date.now(), teams: arr }), { expirationTtl: 7 * 24 * 3600 }); } catch (e) {}
     return arr;
-  } catch (e) { return null; }
+  } catch (e) {
+    try { const c = await env.PORRA.get(ck, "json"); if (c && c.teams) return c.teams; } catch (e2) {}
+    return null;
+  }
 }
 
 // Dificultad estimada del rival para un jugador. Atacantes (CEN/DEL): cuánto encaja el rival;
@@ -4321,6 +4324,10 @@ async function handleGet({ request, env: env0, params }) {
       items.sort((a, b) => (b.at || 0) - (a.at || 0));
       return json({ updatedAt: now, jornada: (cf && cf.matchday) || 0, items: items.slice(0, 20) });
     } catch (e) { return json({ updatedAt: Date.now(), items: [], error: String(e) }); }
+  }
+  if (path === "tabla") {
+    const teams = await getTableStats(env);
+    return json({ teams: teams || [] });
   }
   if (path === "rachas") {
     try { return json(await getRachas(env)); } catch (e) { return json({ players: [] }); }
