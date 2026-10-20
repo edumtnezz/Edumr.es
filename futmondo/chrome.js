@@ -157,6 +157,7 @@
   function applyProb(n) {
     if (!n) return;
     var c = probCache[n];
+    if (!c) { try { var raw = localStorage.getItem("cx_prob_" + n); if (raw) { c = JSON.parse(raw); probCache[n] = c; } } catch (e) {} }
     if (c) markProb(c.set);
     if (c && Date.now() - c.at < 300000) return;
     fetch(API + "/alineaciones-estado?jornada=" + n, { cache: "no-store" })
@@ -165,6 +166,7 @@
         var set = {};
         ((d && d.items) || []).forEach(function (i) { set[i.home + "|" + i.away] = i.at || 1; });
         probCache[n] = { at: Date.now(), set: set };
+        try { localStorage.setItem("cx_prob_" + n, JSON.stringify(probCache[n])); } catch (e) {}
         if (jornada === n) markProb(set);
       }).catch(function () {});
   }
@@ -180,10 +182,11 @@
     // vaciarla primero y dejar que se desplome a una sola línea.
     var prevH = grid.offsetHeight;
     if (prevH) grid.style.minHeight = prevH + "px";
-    grid.innerHTML = '<span class="cx-sk cx-sk-strip"></span>';
-    fetch(url, { cache: "no-store" })
-      .then(function (r) { return r.json(); })
-      .then(function (d) {
+    var lsKey = "cx_jor_" + (n && n > 0 ? n : "cur");
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem(lsKey) || "null"); } catch (e) {}
+    if (!(cached && cached.matches && cached.matches.length)) grid.innerHTML = '<span class="cx-sk cx-sk-strip"></span>';
+    var renderJ = function (d) {
         var ms = (d && d.matches) || [];
         jornada = Number(d && d.matchday) || 0;
         lastJornadaMatches = ms;
@@ -245,8 +248,18 @@
             } }));
           });
         });
+    };
+    if (cached && cached.matches && cached.matches.length) {
+      renderJ(cached);
+      try { var cj = Number(cached.matchday) || 0; if (cj) { var cp = localStorage.getItem("cx_prob_" + cj); if (!cp) applyProb(cj); } } catch (e) {}
+    }
+    fetch(url, { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d && d.matches && d.matches.length) { try { localStorage.setItem(lsKey, JSON.stringify(d)); } catch (e) {} }
+        renderJ(d);
       })
-      .catch(function () { grid.innerHTML = '<span class="cx-strip-load">No disponible.</span>'; grid.style.minHeight = ""; });
+      .catch(function () { if (!(cached && cached.matches && cached.matches.length)) { grid.innerHTML = '<span class="cx-strip-load">No disponible.</span>'; grid.style.minHeight = ""; } });
   }
   function loadTeams() {
     var box = document.getElementById("cxStrip");
