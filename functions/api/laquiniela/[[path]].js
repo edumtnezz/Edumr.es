@@ -1439,8 +1439,8 @@ function leagueMatchPoints(po, d, role) {
   const pg = Math.min(n("att_pen_goal"), n("goals"));
   b += n("goal_assist") + (n("goals") - pg) * gp + pg * 2 + 3 * n("penalty_save");
   if (gk) { if ((d.cleansheet || n("goals_conceded") === 0) && mins >= 45) b += 1; b -= Math.floor(n("goals_conceded") / 2); }
-  // Roja: -3 (contrastado con fitness en 2 casos; Futmondo marca red_card también en la doble amarilla)
-  b -= n("own_goals") + 2 * n("att_pen_miss") + 3 * n("red_card");
+  // Roja: -5 (contrastado: 16 de 18 casos; los 2 restantes parecen rojas anuladas/corregidas en Futmondo)
+  b -= n("own_goals") + 2 * n("att_pen_miss") + 5 * n("red_card");
   return Math.round((as + mc + ss) / 2 + b);
 }
 
