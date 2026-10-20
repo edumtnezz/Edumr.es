@@ -1460,6 +1460,9 @@ async function playerFicha(env, id, fast) {
       yellow: Number(dta.yellow_card) || 0,
       red: Number(dta.red_card) || 0,
       stats: g("stats"), picas: g("picas"), ff: g("ff"), ss: g("ss"), as: g("as"), marca: g("marca"),
+      hsc: m.h ? m.h.score : null, asc: m.a ? m.a.score : null,
+      has3: ["as", "marca", "ss"].every((k) => po.some((z) => z.mode === k)),
+      dta,
     };
   }).slice(0, 60);
   const todayVal = Number(pl.value) || 0;
