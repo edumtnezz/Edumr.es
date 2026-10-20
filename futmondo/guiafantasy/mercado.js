@@ -4617,7 +4617,7 @@
       tx.appendChild(el("small", null, (p.equipo || "") + (tits.indexOf(p) >= 0 ? "" : " · banquillo")));
       head.appendChild(tx);
       const mini = el("div", "an-fm-mini");
-      (p.fitness || []).map(Number).slice(-5).forEach((v) => { mini.appendChild(el("i", v === 0 ? "z" : v <= 3 ? "l" : v >= 10 ? "h" : "m", v === 0 ? "–" : String(Math.round(v)))); });
+      { const fa = (p.fitness || []).map(Number); fa.slice(-5).reverse().forEach((v, k) => { const jn = jLab(p.equipo, fa.length, k, j0); const ci = el("i", v === 0 ? "z" : v <= 3 ? "l" : v >= 10 ? "h" : "m"); ci.appendChild(el("em", null, jn ? "J" + jn : "")); ci.appendChild(document.createTextNode(v === 0 ? "–" : String(Math.round(v)))); mini.appendChild(ci); }); }
       head.appendChild(mini);
       const rt = el("div", "an-fm-rt");
       rt.appendChild(el("b", null, f1e(expOf(p))));
@@ -4631,7 +4631,7 @@
       const row = el("div", "an-fm-row");
       const len = f.length;
       const ptsByJ = {};
-      f.forEach((v, i) => {
+      f.map((v, i) => [v, i]).reverse().forEach(([v, i]) => {
         const jn = jLab(p.equipo, len, len - 1 - i, j0);
         if (jn) ptsByJ[jn] = v;
         const op = jn && oppJ[teamCanon(p.equipo)] && oppJ[teamCanon(p.equipo)][jn];
@@ -4640,6 +4640,7 @@
         const mid = el("div", "an-fm-op");
         if (op) { if (op.crest) { const im = el("img"); im.src = op.crest; im.alt = ""; im.loading = "lazy"; mid.appendChild(im); } mid.appendChild(haIcon(op.home)); }
         c.appendChild(mid);
+        if (op && op.rival) c.appendChild(el("div", "an-fm-rv", String(op.rival).replace(/^(Real|Club|CD|RC|UD|CA|Rayo)\s+/i, "").split(" ")[0]));
         c.appendChild(el("div", "an-fm-v", v === 0 ? "–" : String(v)));
         if (v !== 0 && p.id && jn) { c.classList.add("tap"); c.setAttribute("role", "button"); c.setAttribute("tabindex", "0"); c.addEventListener("click", () => fmToggle(card, row, c, p, jn, v)); }
         row.appendChild(c);
