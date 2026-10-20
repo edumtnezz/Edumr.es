@@ -3355,7 +3355,7 @@
       const cur = Number(d.jornada) || Number(p.jornadaFf) || 0;
       if (!cur) { fixBox.remove(); return; }
       const nrm = (x) => stripAccents(String(x || "")).replace(/[^a-z0-9 ]/g, "").trim();
-      const sameT = (a1, b1) => { const x = nrm(a1), y = nrm(b1); return !!x && !!y && (x === y || x.indexOf(y) >= 0 || y.indexOf(x) >= 0); };
+      const sameT = (a1, b1) => { const x = nrm(a1), y = nrm(b1); if (!x || !y) return false; if (teamCanon(a1) === teamCanon(b1)) return true; return x === y || x.indexOf(y) >= 0 || y.indexOf(x) >= 0; };
       const rs = await Promise.all([0, 1, 2, 3, 4, 5].filter((k) => cur + k <= 38).map((k) => fetch(API + "/jornada?jornada=" + (cur + k)).then((r) => r.json()).then((j) => ({ k, j })).catch(() => ({ k, j: {} }))));
       const out = [];
       rs.forEach((r) => (r.j.matches || []).forEach((m) => {
