@@ -2710,3 +2710,18 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .an-cl-it.hard { background: rgba(239,68,68,.09); box-shadow: inset 0 0 0 1px rgba(239,68,68,.32); }
 
 .an-cl-it.mid { background: rgba(249,115,22,.10); box-shadow: inset 0 0 0 1px rgba(249,115,22,.38); }
+
+/* Temporada del jugador: tabla más clara */
+.an-ss{padding:14px 12px}
+.an-ss .an-ss-r{grid-template-columns:34px minmax(0,1fr) 40px 44px 30px 38px 34px;gap:4px;padding:11px 4px;font-size:.9rem;border-top:1px solid rgba(127,127,127,.16)}
+.an-ss .an-ss-r.hd{font-size:.62rem;padding:4px 4px 8px;border-top:0}
+.an-ss .an-ss-r > span:first-child{font-weight:800;opacity:.7}
+.an-ss .an-ss-r .rv{font-weight:700;font-size:.95rem}
+.an-ss .an-ss-r .pt{display:flex;justify-content:center}
+.an-ss .an-ss-r .pt b{min-width:34px;padding:4px 0;border-radius:9px;text-align:center;font-size:1rem;font-weight:800;color:#14532d;background:rgba(34,197,94,.22)}
+.an-ss .an-ss-r .pt b.h{background:#22c55e;color:#fff}
+.an-ss .an-ss-r .pt b.l{background:rgba(239,68,68,.2);color:#991b1b}
+.an-ss .an-ss-r > span:nth-child(n+5){opacity:.7;font-size:.82rem}
+.an-ss .an-ss-r.avg{margin-top:6px;border-top:2px solid rgba(127,127,127,.3);background:rgba(34,197,94,.08);border-radius:10px}
+.an-ss .an-ss-r.avg .pt{color:inherit}
+.an-ss .an-ss-r.avg > span:nth-child(n+5){opacity:.85}

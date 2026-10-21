@@ -4626,7 +4626,7 @@
         r.appendChild(el("span", "rv", (home ? "🏠 " : "✈️ ") + (home ? m.away : m.home)));
         r.appendChild(el("span", null, played ? m.mins + "'" : "–"));
         const tp = ptsByJ ? ptsByJ[Number(m.r)] : undefined;
-        r.appendChild(el("span", tp !== undefined ? "pt" : "nd", tp !== undefined ? (tp === 0 ? "–" : String(tp)) : "–"));
+        { const pc = el("span", tp !== undefined ? "pt" : "nd"); if (tp !== undefined && tp !== 0) { const pb = el("b", tp <= 3 ? "l" : tp >= 10 ? "h" : "m", String(tp)); pc.appendChild(pb); } else pc.textContent = "–"; r.appendChild(pc); }
         [m.as, m.marca, m.ss].forEach((v) => r.appendChild(el("span", null, played && v != null ? fmN((Number(v) || 0) / 2) : "–")));
         tb.appendChild(r);
       });
@@ -4667,10 +4667,6 @@
       const mini = el("div", "an-fm-mini");
       { const fa = (p.fitness || []).map(Number); fa.slice(-5).reverse().forEach((v, k) => { const jn = jLab(p.equipo, fa.length, k, j0); const ci = el("i", v === 0 ? "z" : v <= 3 ? "l" : v >= 10 ? "h" : "m"); ci.appendChild(el("em", null, jn ? "J" + jn : "")); ci.appendChild(document.createTextNode(v === 0 ? "–" : String(Math.round(v)))); mini.appendChild(ci); }); }
       head.appendChild(mini);
-      const rt = el("div", "an-fm-rt");
-      rt.appendChild(el("b", null, f1e(expOf(p))));
-      rt.appendChild(el("small", null, p.prob != null ? p.prob + "%" : "pts"));
-      head.appendChild(rt);
       card.appendChild(head);
       const body = el("div", "an-fm-body");
       card.appendChild(body);
