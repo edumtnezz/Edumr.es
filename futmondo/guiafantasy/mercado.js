@@ -4614,7 +4614,7 @@
       const sea = seasonOf(p);
       const sum = el("div", "an-ss-sum");
       sum.appendChild(el("b", null, "Jugó " + pl.length + " de " + ms.length + " partidos de su equipo"));
-      sum.appendChild(el("span", null, s60 + " con 60 min o más" + (sea ? " · media de la temporada " + f1e(sea.avg) + " pts por partido jugado" : "")));
+      sum.appendChild(el("span", null, s60 + (s60 === 1 ? " partido con 60 min o más" : " partidos con 60 min o más") + (sea ? " · media de la temporada " + f1e(sea.avg) + " pts por partido jugado" : "")));
       box.appendChild(sum);
       const tb = el("div", "an-ss-t");
       const hd = el("div", "an-ss-r hd"); ["J", "Rival", "Min", "Pts", "AS", "Marca", "Sofa"].forEach((h) => hd.appendChild(el("span", null, h))); tb.appendChild(hd);
@@ -4630,7 +4630,7 @@
         [m.as, m.marca, m.ss].forEach((v) => r.appendChild(el("span", null, played && v != null ? fmN((Number(v) || 0) / 2) : "–")));
         tb.appendChild(r);
       });
-      if (pl.length) { const av = el("div", "an-ss-r avg"); av.appendChild(el("span", null, "")); av.appendChild(el("span", "rv", "Media")); av.appendChild(el("span", null, "")); av.appendChild(el("span", null, "")); [avgOf("as"), avgOf("marca"), avgOf("ss")].forEach((v) => av.appendChild(el("span", null, fmN(v)))); tb.appendChild(av); }
+      if (pl.length) { const av = el("div", "an-ss-r avg"); av.appendChild(el("span", null, "")); av.appendChild(el("span", "rv", "Media")); av.appendChild(el("span", null, "")); const tps = pl.map((m) => (ptsByJ ? ptsByJ[Number(m.r)] : undefined)).filter((v) => v !== undefined); av.appendChild(el("span", "pt", tps.length ? f1e(tps.reduce((a, b) => a + b, 0) / tps.length) : "")); [avgOf("as"), avgOf("marca"), avgOf("ss")].forEach((v) => av.appendChild(el("span", null, fmN(v)))); tb.appendChild(av); }
       box.appendChild(tb);
     };
     const withHist = (j) => fetch(API + "/historial-puntos?ids=" + encodeURIComponent(pid)).then((r) => r.json()).then((h) => { const o = (h && h.pts && h.pts[pid]) || {}; Object.keys(o).forEach((n) => { if (ptsByJ && ptsByJ[n] === undefined) ptsByJ[n] = o[n]; }); return j; }).catch(() => j);
