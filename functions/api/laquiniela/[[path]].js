@@ -2633,7 +2633,16 @@ async function getJornadaStrip(env, matchday) {
   try { cmMin = await getComuniateLiveMinutes(env, jnum); } catch (e) {}
   let cambiosCache = null;
   // Solo si hay un aplazado en la rejilla (leer y analizar el feed completo es costoso)
-  if ((jd.matches || []).some((m) => m && m._aplaz)) { try { cambiosCache = await getCambios(env); } catch (e) {} }
+  // El resultado se recuerda 2 min por partido para no repetir el análisis en cada visita
+  const apHit = (jd.matches || []).some((m) => m && m._aplaz) ? await edgeGet("apx:v1:" + (jd.matches || []).filter((m) => m && m._aplaz).map((m) => m.id).join(",")) : null;
+  if (apHit && Date.now() - (apHit.at || 0) < 120000) cambiosCache = apHit.c;
+  else if ((jd.matches || []).some((m) => m && m._aplaz)) {
+    try {
+      const full = await getCambios(env);
+      cambiosCache = { days: (full.days || []).slice(0, 2).map((d) => ({ day: d.day, items: d.items.filter((it) => it.cat === "once" || it.cat === "once-ok").map((it) => ({ cat: it.cat, title: it.title, time: it.time })) })) };
+      await edgePut("apx:v1:" + (jd.matches || []).filter((m) => m && m._aplaz).map((m) => m.id).join(","), { at: Date.now(), c: cambiosCache }, 300);
+    } catch (e) {}
+  }
   const dayF = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", day: "numeric" });
   const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
   const dtF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" });
