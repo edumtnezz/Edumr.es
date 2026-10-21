@@ -2611,34 +2611,38 @@ async function getJornadaStrip(env, matchday) {
   return { matchday: jd.matchday || 0, matches };
 }
 
-// Foto del estadio de cada club para la cabecera de su página. Fuente real: Wikipedia/Wikimedia Commons
-// (imagen principal del artículo del estadio). Se guarda 30 días.
+// Foto del estadio de cada club para la cabecera de su página: foto ancha del campo (Wikimedia Commons),
+// elegida a mano de entre las de cada estadio. La URL real de la imagen se pide a Commons y se guarda 30 días.
 const ESTADIOS = {
-  ala: ["es", "Estadio de Mendizorroza"], ath: ["es", "Estadio de San Mamés"], bet: ["es", "Estadio Benito Villamarín"], cel: ["es", "Estadio de Balaídos"],
-  dep: ["es", "Estadio de Riazor"], elc: ["es", "Estadio Manuel Martínez Valero"], esp: ["es", "RCDE Stadium"], get: ["es", "Coliseum Alfonso Pérez"],
-  lev: ["es", "Estadio Ciudad de Valencia"], osa: ["es", "Estadio El Sadar"], rac: ["es", "Campos de Sport de El Sardinero"], ray: ["es", "Estadio de Vallecas"],
-  sev: ["es", "Estadio Ramón Sánchez-Pizjuán"], val: ["es", "Estadio de Mestalla"], vil: ["es", "Estadio de la Cerámica"],
-  fcb: ["en", "Camp Nou"], mal: ["en", "La Rosaleda Stadium"], rma: ["en", "Santiago Bernabéu Stadium"], atm: ["en", "Metropolitano Stadium"], rso: ["en", "Anoeta Stadium"],
+  dep: ["Estadio Riazor 2.jpg", "Riazor"], ala: ["Mendizorrotza.jpg", "Mendizorroza"], osa: ["Inside Estadio Reyno de Navarra.JPG", "El Sadar"],
+  cel: ["Vigo-Estadio de Balaídos (6788320478).jpg", "Balaídos"], get: ["Panorámica Coliseum Alfonso Perez.jpg", "Coliseum"],
+  fcb: ["Interactive 360º Panorama - Barcelona Camp Nou.jpg", "Camp Nou"], rso: ["Anoeta estadioa 03, Donostia, Gipuzkoa, Euskal Herria.jpg", "Anoeta"],
+  val: ["Mestallapanoramic4.jpg", "Mestalla"], sev: ["Seville Ramón Sánchez Pizjuán Stadium 4.jpg", "Sánchez-Pizjuán"], mal: ["Estadio La Rosaleda.jpg", "La Rosaleda"],
+  bet: ["Estadio Benito Villamarín 9.jpg", "Benito Villamarín"], ray: ["Estadio de Vallecas.jpg", "Vallecas"],
+  rac: ["Fotografía Eduardo Bermúdez para los Campos de Sport de El Sardinero.jpg", "El Sardinero"], ath: ["Panorama im San Mamés Stadion.jpg", "San Mamés"],
+  elc: ["Panorámica España - Croacia.jpg", "Martínez Valero"], esp: ["Estadicornellaelprat 3.jpg", "RCDE Stadium"],
+  rma: ["Santiago Bernabéu Stadium view Sideview 4, Madrid in 2019.jpg", "Santiago Bernabéu"], lev: ["Het stadion van Levante, vanaf de noordtribune.JPG", "Ciutat de València"],
+  atm: ["Wanda Metropolitano inside.jpg", "Metropolitano"], vil: ["Villarreal CF - UD Almería (2012-13).JPG", "La Cerámica"],
 };
 async function getEstadios(env) {
-  const key = "estadios:v1";
+  const key = "estadios:v2";
   const c = await env.PORRA.get(key, "json");
   if (c && c.at && Date.now() - c.at < 30 * 24 * 3600 * 1000 && c.data && Object.keys(c.data).length >= 15) return c.data;
   const out = {};
-  for (const lang of ["es", "en"]) {
-    const titles = Object.entries(ESTADIOS).filter((e) => e[1][0] === lang);
-    try {
-      const r = await fetch(`https://${lang}.wikipedia.org/w/api.php?action=query&redirects=1&prop=pageimages&pithumbsize=960&format=json&titles=` + encodeURIComponent(titles.map((e) => e[1][1]).join("|")), { headers: { "user-agent": "edumr.es (estadios)" } });
-      const j = await r.json();
-      const pages = Object.values((j.query && j.query.pages) || {});
-      const red = {}; ((j.query && j.query.redirects) || []).forEach((x) => { red[x.from] = x.to; });
-      titles.forEach(([code, [, t]]) => {
-        const pg = pages.find((x) => x.title === (red[t] || t));
-        if (pg && pg.thumbnail && pg.thumbnail.source && !/Location_map/i.test(pg.thumbnail.source)) out[code] = { name: pg.title, img: pg.thumbnail.source.replace(/\?.*$/, "") };
-      });
-    } catch (e) {}
-  }
-  if (Object.keys(out).length < 10) return (c && c.data) || out;
+  try {
+    const entries = Object.entries(ESTADIOS);
+    const r = await fetch("https://commons.wikimedia.org/w/api.php?action=query&prop=imageinfo&iiprop=url&iiurlwidth=1280&format=json&titles=" + encodeURIComponent(entries.map((e) => "File:" + e[1][0]).join("|")), { headers: { "user-agent": "edumr.es (estadios)" } });
+    const j = await r.json();
+    const pages = Object.values((j.query && j.query.pages) || {});
+    const norm = {}; ((j.query && j.query.normalized) || []).forEach((x) => { norm[x.from] = x.to; });
+    entries.forEach(([code, [file, name]]) => {
+      const t = "File:" + file;
+      const pg = pages.find((x) => x.title === (norm[t] || t));
+      const ii = pg && pg.imageinfo && pg.imageinfo[0];
+      if (ii && (ii.thumburl || ii.url)) out[code] = { name, img: ii.thumburl || ii.url };
+    });
+  } catch (e) {}
+  if (Object.keys(out).length < 12) return (c && c.data) || out;
   await env.PORRA.put(key, JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 45 * 24 * 3600 });
   return out;
 }

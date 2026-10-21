@@ -3801,7 +3801,7 @@
         im.onload = () => {
           hd.style.setProperty("--eq-stadium", 'url("' + st.img + '")');
           hd.classList.add("has-stadium");
-          const cr = el("a", "eq-stadium-credit", "Foto: " + st.name + " · Wikimedia");
+          const cr = el("a", "eq-stadium-credit", "Foto: " + st.name + " · Wikimedia Commons");
           cr.href = "https://commons.wikimedia.org/"; cr.target = "_blank"; cr.rel = "noopener";
           cr.addEventListener("click", (ev) => ev.stopPropagation());
           hd.appendChild(cr);
