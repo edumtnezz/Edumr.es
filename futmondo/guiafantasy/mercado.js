@@ -3834,40 +3834,26 @@
           const T = (r && r.teams) || [];
           const i = T.findIndex((t) => teamCanon(t.name) === tc);
           if (i < 0) { tbSec.remove(); return; }
-          const me = T[i], dg = Number(me.dg) || 0, sg = (x) => (x > 0 ? "+" : "") + x;
-          const hh = el("div", "eq-sech"); hh.appendChild(el("h3", null, "Situación en LaLiga")); tbSec.appendChild(hh);
-          const top = el("div", "eq-tb-top");
-          const big = el("div", "eq-tb-pos " + (me.pos <= 4 ? "up" : me.pos > T.length - 3 ? "dn" : "")); big.appendChild(el("b", null, me.pos + "º")); big.appendChild(el("small", null, "de " + T.length));
-          top.appendChild(big);
-          const st = el("div", "eq-tb-st");
-          [[me.pts, "puntos"], [me.pj, "jugados"], [me.w + "-" + me.d + "-" + me.l, "G-E-P"], [me.gf, "goles"], [sg(dg), "dif."]].forEach((x) => { const c = el("div"); c.appendChild(el("b", null, String(x[0]))); c.appendChild(el("small", null, x[1])); st.appendChild(c); });
-          top.appendChild(st);
-          tbSec.appendChild(top);
-          const mkRow = (t) => {
-            const row = el("div", "eq-tb-row" + (t === me ? " me" : ""));
-            const ps = el("span", "eq-tb-p", String(t.pos)); if (t.q) ps.style.setProperty("box-shadow", "inset 3px 0 0 " + t.q); row.appendChild(ps);
-            const lg = t.id ? "https://images.fotmob.com/image_resources/logo/teamlogo/" + t.id + ".png" : clubLogo(t.name, "");
-            if (lg) { const im = el("img"); im.src = lg; im.alt = ""; im.loading = "lazy"; row.appendChild(im); } else row.appendChild(el("i"));
-            row.appendChild(el("span", "eq-tb-n", t.name));
-            row.appendChild(el("span", "eq-tb-j", String(t.pj)));
-            row.appendChild(el("span", "eq-tb-d", sg(Number(t.dg) || 0)));
-            row.appendChild(el("b", "eq-tb-pt", String(t.pts)));
-            return row;
-          };
-          const hd = () => { const h = el("div", "eq-tb-row eq-tb-head"); ["#", "", "Equipo", "J", "DG", "PTS"].forEach((x, k) => h.appendChild(el("span", k === 2 ? "eq-tb-n" : k === 0 ? "eq-tb-p" : k === 1 ? "eq-tb-lg" : k === 3 ? "eq-tb-j" : k === 4 ? "eq-tb-d" : "eq-tb-pt", x))); return h; };
-          const tb = el("div", "eq-tb");
-          const det = el("details", "eq-tb-all");
-          det.appendChild(el("summary", null, "Ver clasificación completa"));
-          const full = el("div", "eq-tb");
-          full.appendChild(hd());
-          T.forEach((t) => full.appendChild(mkRow(t)));
-          det.appendChild(full);
-          const from = Math.max(0, Math.min(i - 2, T.length - 5)), to = Math.min(T.length, from + 5);
-          tb.appendChild(hd());
-          T.slice(from, to).forEach((t) => tb.appendChild(mkRow(t)));
+          const hh = el("div", "eq-sech"); hh.appendChild(el("h3", null, "Clasificación · LaLiga")); tbSec.appendChild(hh);
+          const tb = el("div", "lv-table");
+          const hd = el("div", "lv-trow lv-thead");
+          ["#", "Equipo", "J", "G", "E", "P", "+/-", "DG", "PTS"].forEach((h, k) => hd.appendChild(el("span", k === 1 ? "lv-tn" : "", h)));
+          tb.appendChild(hd);
+          T.forEach((x, k) => {
+            const r = el("div", "lv-trow" + (k === i ? " me" : ""));
+            const pos = el("span", "lv-tp", String(x.pos)); if (x.q) pos.style.setProperty("box-shadow", "inset 3px 0 0 " + x.q);
+            r.appendChild(pos);
+            const tn = el("span", "lv-tn");
+            const lg = x.id ? "https://images.fotmob.com/image_resources/logo/teamlogo/" + x.id + ".png" : clubLogo(x.name, "");
+            if (lg) { const ci = el("img"); ci.alt = ""; ci.loading = "lazy"; ci.src = lg; tn.appendChild(ci); }
+            tn.appendChild(el("em", null, x.name));
+            if (k !== i) clubLink(tn, x.name);
+            r.appendChild(tn);
+            [x.pj, x.w, x.d, x.l, x.gf, x.dg, x.pts].forEach((v, m) => r.appendChild(el("span", m === 6 ? "lv-pts" : "", String(v))));
+            tb.appendChild(r);
+          });
           tbSec.appendChild(tb);
-          tbSec.appendChild(det);
-          const src = el("div", "eq-tb-src", "Clasificación: FotMob"); tbSec.appendChild(src);
+          tbSec.appendChild(el("div", "eq-tb-src", "Clasificación: FotMob"));
         } catch (e) { tbSec.remove(); }
       })();
       let stx0 = null;
