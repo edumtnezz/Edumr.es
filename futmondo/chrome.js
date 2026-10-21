@@ -193,7 +193,7 @@
       var finished = (cached.matches || []).length && cached.matches.every(function (m) { return m.live && m.live.state === "final"; });
       if (!fresh || finished || n) cached = (n && fresh && !finished) ? cached : null;
     }
-    if (!(cached && cached.matches && cached.matches.length)) grid.innerHTML = '<span class="cx-sk cx-sk-strip"></span>';
+    if (!silent && !(cached && cached.matches && cached.matches.length)) grid.innerHTML = '<span class="cx-sk cx-sk-strip"></span>';
     var renderJ = function (d) {
         var ms = (d && d.matches) || [];
         jornada = Number(d && d.matchday) || (n > 0 ? n : 0);
