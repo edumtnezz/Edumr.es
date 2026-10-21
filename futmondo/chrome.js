@@ -189,7 +189,7 @@
     // Solo se usa la copia guardada si es reciente (<6 h) y la jornada NO ha terminado:
     // si no, se vería un momento la jornada anterior antes de saltar a la siguiente.
     if (cached) {
-      var fresh = cached.__t && Date.now() - cached.__t < 6 * 3600 * 1000;
+      var fresh = cached.__t && Date.now() - cached.__t < 90 * 1000;
       var finished = (cached.matches || []).length && cached.matches.every(function (m) { return m.live && m.live.state === "final"; });
       if (!fresh || finished || n) cached = (n && fresh && !finished) ? cached : null;
     }
