@@ -2783,3 +2783,6 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .eq-hero.has-stadium .eq-ticket.live{background:rgba(58,18,18,.6)}
 .eq-hero.has-stadium .eq-ticket > *{position:relative}
 .eq-stadium-credit{position:absolute;right:12px;top:8px;bottom:auto;z-index:2;font-size:.58rem;color:rgba(255,255,255,.75);text-shadow:0 1px 4px rgba(0,0,0,.7)}
+.eq-hero.has-stadium::before,.eq-hero.has-stadium::after{height:250px}
+.eq-hero.has-stadium::before{background-position:center 70%}
+.eq-hero.has-stadium .eq-ticket{margin-top:168px}
