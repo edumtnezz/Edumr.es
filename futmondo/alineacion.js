@@ -63,6 +63,8 @@
 
   function line(pos) { return /port/i.test(pos) ? "gk" : /def/i.test(pos) ? "df" : /del/i.test(pos) ? "fw" : "md"; }
   function probCls(p) { return p >= 90 ? "p90" : p >= 80 ? "p80" : p >= 60 ? "p60" : p >= 40 ? "p40" : "p0"; }
+  // Caras de Futmondo con nombre (no número) que sí son un buen retrato; la de FutbolFantasy de estos es de torso
+  var GOOD_FACE = /\/faces\/\d+\/kang-in-lee\.png/;
   function slug(s) { return strip(s).replace(/ /g, ""); }
 
   function playerHtml(s, pool, mode, probable, alt) {
@@ -71,7 +73,7 @@
         var name = fm ? fm.name : (s.name || s.full);
         var photo = (fm && fm.photo) || s.photo || "/img/avatar.svg", ffPh = s.photo || "/img/avatar.svg";
         // Fotos de Futmondo con nombre en vez de número suelen ser de cuerpo entero: mejor la cara de FF
-        if (fm && fm.photo && s.photo && !/\/faces\/\d+\/\d+\.png/.test(fm.photo)) photo = s.photo;
+        if (fm && fm.photo && s.photo && !/\/faces\/\d+\/\d+\.png/.test(fm.photo) && !GOOD_FACE.test(fm.photo)) photo = s.photo;
         var inner = '<div class="pl-ph"><img src="' + esc(photo) + '" alt="" data-ff="' + esc(ffPh) + '">';
         if (probable && s.bench && (s.san || s.inj) && (s.prob == null || s.prob < 10)) inner += '<span class="pl-prob pl-out">' + (s.san ? "Sancionado" : "Lesionado") + '</span>';
         else if (probable && s.prob != null) inner += '<span class="pl-prob ' + probCls(s.prob) + '">' + s.prob + '%</span>';
@@ -203,7 +205,7 @@
     photoFor: function (s, pool) {
       var fm = match(s, pool || []);
       var photo = (fm && fm.photo) || s.photo || "/img/avatar.svg";
-      if (fm && fm.photo && s.photo && !/\/faces\/\d+\/\d+\.png/.test(fm.photo)) photo = s.photo;
+      if (fm && fm.photo && s.photo && !/\/faces\/\d+\/\d+\.png/.test(fm.photo) && !GOOD_FACE.test(fm.photo)) photo = s.photo;
       return photo;
     },
     card: function (side, teamName, crest, subtitle, players, mode, subs, opts) {
