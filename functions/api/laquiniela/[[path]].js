@@ -2110,9 +2110,6 @@ async function getAlineacionesConfirmadas(env, matchdayParam) {
   const out = { matchday: (jd && jd.matchday) || 0, updatedAt: Date.now(), matches: [] };
   if (jd && jd.matches && jd.matches.length) {
     const links = await getComuniateMatches(env, out.matchday || matchdayParam || "");
-    let cambiosCache = null;
-  if (!matchday) { try { cambiosCache = await getCambios(env); } catch (e) {} }
-  const dayF = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", day: "numeric" });
   const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
     const dtF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" });
     const tF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hour12: false });
@@ -2591,6 +2588,9 @@ async function getJornadaStrip(env, matchday) {
   try { cmExtras = await getComuniateExtras(env, jnum); } catch (e) {}
   try { cmStrip = await getComuniateStrip(env, jnum); } catch (e) {}
   try { cmMin = await getComuniateLiveMinutes(env, jnum); } catch (e) {}
+  let cambiosCache = null;
+  if (!matchday) { try { cambiosCache = await getCambios(env); } catch (e) {} }
+  const dayF = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", day: "numeric" });
   const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
   const dtF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" });
   const tF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hour12: false });
