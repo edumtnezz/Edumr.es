@@ -2705,3 +2705,5 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 .an-cl2-list .an-pb-tx > .an-pb-diff + .an-pb-lock { margin-top: 8px; }
 a.newscard { display: block; text-decoration: none; color: inherit; }
 .news-share { margin: 0 0 10px 8px; }
+.news-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.news-bar .bk, .news-bar .news-share { margin: 0; }

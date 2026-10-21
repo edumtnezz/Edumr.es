@@ -3192,7 +3192,9 @@
       closeNoticiaInline();
       try { history.replaceState({ tab: "noticias" }, "", "/futmondo/guiafantasy/noticias"); } catch (e) {}
     });
-    box.appendChild(back);
+    const bar = el("div", "news-bar");
+    bar.appendChild(back);
+    box.appendChild(bar);
     if (d && d.extinguida) { box.appendChild(el("h2", "ficha-name", title || d.title || "")); box.appendChild(el("p", "muted small", "Esta noticia ya no está vigente.")); return; }
     box.appendChild(el("h2", "ficha-name", title || d.title || ""));
     try { if (title || d.title) document.title = (title || d.title) + " · EduMR"; } catch (e) {}
@@ -3202,7 +3204,7 @@
       try { if (navigator.share) { await navigator.share({ title: title || d.title || "", url: shareUrl }); return; } } catch (e) { return; }
       try { await navigator.clipboard.writeText(shareUrl); sh.textContent = "✅ Enlace copiado"; setTimeout(() => { sh.textContent = "🔗 Copiar enlace"; }, 2000); } catch (e) { sh.textContent = shareUrl; }
     });
-    box.appendChild(sh);
+    bar.appendChild(sh);
     if (d.lead) box.appendChild(el("p", "art-lead", d.lead));
     if (d.html) {
       const art = el("div", "art-body");
