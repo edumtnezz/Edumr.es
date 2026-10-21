@@ -2547,7 +2547,7 @@ async function getProbableFlags(env, jornada) {
   const ok = jn && (jn === dn || (jn === dn + 1 && (dj.matches || []).length && (dj.matches || []).every(isMatchDone)));
   if (!ok) {
     try { const prev = await env.PORRA.get("probflags:" + (jornada || dn), "json"); if (prev && prev.items && Date.now() - (prev.at || 0) < 6 * 3600 * 1000) return { matchday: Number(jornada || dn) || jn, items: prev.items }; } catch (e) {}
-    return { matchday: jn, items: [] };
+    return { matchday: jn, items: [], dbg: { jn, dn, notok: 1, jdm: (jd.matches || []).length, djm: (dj.matches || []).length, v: 7 } };
   }
   const nm = (t) => (t && (t.shortName || t.name)) || "";
   const open = (jd.matches || []).filter((m) => m.status === "SCHEDULED" || m.status === "TIMED");
@@ -2577,7 +2577,7 @@ async function getProbableFlags(env, jornada) {
     if (out.length) await env.PORRA.put(pkey, JSON.stringify({ at: Date.now(), items: out }), { expirationTtl: 86400 });
     else if (prev && prev.items && prev.items.length && open.length) out = prev.items.filter((i) => open.some((m) => nm(m.homeTeam) === i.home && nm(m.awayTeam) === i.away));
   } catch (e) {}
-  return { matchday: jn, items: out };
+  return { matchday: jn, items: out, dbg: { jn, dn, names, has, open: open.length, prev: prevItems.length, v: 7 } };
 }
 
 async function getJornadaStrip(env, matchday) {
