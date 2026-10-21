@@ -2538,8 +2538,8 @@ function flLive(m) {
 // equipo de FF siempre enseña el once del PRÓXIMO partido, así que solo vale para la jornada en curso
 // (o la siguiente si la actual ya acabó).
 async function getProbableFlags(env, jornada) {
-  const jd = await getJornada(env, jornada || null);
-  const dj = jornada ? await getJornada(env, null) : jd;
+  const dj = await getJornada(env, null);
+  const jd = jornada && Number(jornada) !== Number(dj.matchday) ? await getJornada(env, jornada) : dj;
   const jn = Number(jd.matchday) || 0, dn = Number(dj.matchday) || 0;
   const ok = jn && (jn === dn || (jn === dn + 1 && (dj.matches || []).length && (dj.matches || []).every(isMatchDone)));
   if (!ok) return { matchday: jn, items: [] };
