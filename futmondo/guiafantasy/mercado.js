@@ -4423,6 +4423,7 @@
           const nT = pl.rivalN || 20;
           if (pl.rivalPos >= nT - 3) t.t.classList.add("easy");
           else if (pl.rivalPos <= 4 || (pl.casa === false && pl.rivalPos <= Math.floor(nT / 2))) t.t.classList.add("hard");
+          else if (pl.casa === false) t.t.classList.add("mid");
         }
         grid.appendChild(t.t);
       }
