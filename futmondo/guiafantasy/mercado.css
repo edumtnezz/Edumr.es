@@ -2703,3 +2703,5 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 .an-cl2-list .an-pb-lock:empty { display: flex; visibility: hidden; }
 .an-cl2-list .an-pb-lock.nd { background: rgba(127,127,127,.12); color: var(--muted); }
 .an-cl2-list .an-pb-tx > .an-pb-diff + .an-pb-lock { margin-top: 8px; }
+a.newscard { display: block; text-decoration: none; color: inherit; }
+.news-share { margin: 0 0 10px 8px; }

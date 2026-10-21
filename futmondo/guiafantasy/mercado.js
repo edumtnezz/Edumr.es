@@ -2995,9 +2995,9 @@
           dh.appendChild(el("span", "news-day-txt", x.date));
           a.appendChild(dh);
         }
-        const it = el("div", "newscard news-link" + (idx === 0 ? " news-hero" : ""));
+        const it = el("a", "newscard news-link" + (idx === 0 ? " news-hero" : "")); it.href = newsHref(x.link);
         it.style.animationDelay = Math.min(idx, 10) * 40 + "ms";
-        it.addEventListener("click", () => openNoticiaInline(x.link, x.title));
+        it.addEventListener("click", (ev) => { if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button === 1) return; ev.preventDefault(); openNoticiaInline(x.link, x.title); });
         const th = el("div", "newscard-thumb" + (x.thumb ? "" : " ball"));
         const setBg = (u, ball) => { th.style.backgroundImage = 'url("' + u + '")'; th.classList.toggle("ball", !!ball); };
         if (x.thumb) { setBg(x.thumb, false); const t = new Image(); t.onerror = () => setBg("/img/balon.svg", true); t.src = x.thumb; } else setBg("/img/balon.svg", true);
@@ -3159,9 +3159,15 @@
       });
   }
 
-  function openNoticiaInline(url, title) {
+  const NEWS_PFX = "https://www.futbolfantasy.com/laliga/noticias/";
+  const newsSlug = (link) => (String(link || "").indexOf(NEWS_PFX) === 0 ? String(link).slice(NEWS_PFX.length).replace(/[?#].*$/, "").replace(/\/+$/, "") : "");
+  const newsHref = (link) => { const sl = newsSlug(link); return sl ? "/futmondo/guiafantasy/noticias/" + sl : "/futmondo/guiafantasy/noticias"; };
+  const baseTitle = document.title;
+  function openNoticiaInline(url, title, fromPop) {
     const box = $("noticiaView");
     if (!box) return;
+    const sl = newsSlug(url);
+    if (sl && !fromPop) { try { history.pushState({ tab: "noticias", news: sl }, "", newsHref(url)); } catch (e) {} }
     const list = $("newsAnuncios");
     const h3 = document.querySelector("#tab-noticias .estado-title");
     box.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>';
@@ -3180,9 +3186,21 @@
     box.innerHTML = "";
     const back = el("button", "bk", "← Volver a noticias");
     back.type = "button";
-    back.addEventListener("click", closeNoticiaInline);
+    back.addEventListener("click", () => {
+      if (history.state && history.state.news) { history.back(); return; }
+      closeNoticiaInline();
+      try { history.replaceState({ tab: "noticias" }, "", "/futmondo/guiafantasy/noticias"); } catch (e) {}
+    });
     box.appendChild(back);
     box.appendChild(el("h2", "ficha-name", title || d.title || ""));
+    try { if (title || d.title) document.title = (title || d.title) + " · EduMR"; } catch (e) {}
+    const shareUrl = location.origin + newsHref(url);
+    const sh = el("button", "bk news-share", "🔗 Copiar enlace"); sh.type = "button";
+    sh.addEventListener("click", async () => {
+      try { if (navigator.share) { await navigator.share({ title: title || d.title || "", url: shareUrl }); return; } } catch (e) { return; }
+      try { await navigator.clipboard.writeText(shareUrl); sh.textContent = "✅ Enlace copiado"; setTimeout(() => { sh.textContent = "🔗 Copiar enlace"; }, 2000); } catch (e) { sh.textContent = shareUrl; }
+    });
+    box.appendChild(sh);
     if (d.lead) box.appendChild(el("p", "art-lead", d.lead));
     if (d.html) {
       const art = el("div", "art-body");
@@ -3200,6 +3218,7 @@
     if (list) list.classList.remove("hidden");
     const h3 = document.querySelector("#tab-noticias .estado-title");
     if (h3) h3.classList.remove("hidden");
+    try { document.title = baseTitle; } catch (e) {}
   }
 
   function openFicha(p) {
@@ -3217,6 +3236,14 @@
     const ov = $("fichaOverlay"); if (ov) ov.classList.add("hidden");
     lockScroll(false);
     const st = history.state;
+    if (st && st.news) {
+      const keep = location.pathname;
+      if (currentTab !== "noticias") switchTab("noticias", true);
+      try { history.replaceState(st, "", keep); } catch (e) {}
+      openNoticiaInline(NEWS_PFX + st.news, "", true);
+      return;
+    }
+    if (st && st.tab === "noticias" && currentTab === "noticias") { closeNoticiaInline(); return; }
     if (st && st.tab && !st.ficha && st.tab !== currentTab) switchTab(st.tab, true);
   });
 
@@ -4037,6 +4064,17 @@
     try { const pm = location.pathname.match(/\/guiafantasy\/partido\/([a-z0-9-]+)/); if (pm) { renderMatchPage(pm[1]); return; } } catch (e) {}
     try { const pe = location.pathname.match(/^\/equipos\/([a-z0-9-]+)/); if (pe) { renderTeamPage(pe[1]); return; } if (/^\/equipos\/?$/.test(location.pathname)) { renderTeamsIndex(); return; } } catch (e) {}
     try { const pj = location.pathname.match(/\/jugador(?:es)?\/([a-z0-9]{6,40})/i); if (pj) { renderPlayerPage(pj[1]); return; } } catch (e) {}
+    try {
+      const pn = location.pathname.match(/\/guiafantasy\/noticias\/([^/?#]+)/);
+      if (pn) {
+        const keep = location.pathname;
+        switchTab("noticias", true);
+        try { history.replaceState({ tab: "noticias", news: pn[1] }, "", keep); } catch (e) {}
+        openNoticiaInline(NEWS_PFX + pn[1], "", true);
+        try { loadNoticias(); } catch (e) {}
+        return;
+      }
+    } catch (e) {}
     let name = "";
     try {
       const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|noticias|analiza|clausulazos|plantillas)/);

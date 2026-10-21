@@ -1333,7 +1333,7 @@ async function ogThumb(env, url) {
 }
 
 // Vídeos, directos y promos de creadores (Twitch/YouTube, "XI ideal ... por X", "RADAR FANTASY"): no se muestran.
-const FF_PROMO = /(^\s*v[ií]deo\s*:|twitch|youtube|multistream|radar fantasy|\bj\d+\b.*,\s*por\s|jornada\s*\d+.*,\s*por\s)/i;
+const FF_PROMO = /(^\s*v[ií]deo\s*:|twitch|youtube|multistream|radar fantasy|extinguid|\bdel fantasy\b|fantasy\s*✨|playstation|\bj\d+\b.*,\s*por\s|jornada\s*\d+.*,\s*por\s)/i;
 async function getFfNoticias(env) {
   try {
     const res = await fetch("https://www.futbolfantasy.com/laliga/home", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
