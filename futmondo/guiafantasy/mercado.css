@@ -2749,3 +2749,12 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .an-tabsec-a[hidden]{display:none}
 .an-tab-ic{display:inline-flex;opacity:.75}.an-tab.on .an-tab-ic{opacity:1;color:var(--primary,#16a34a)}
 #anOut{margin-bottom:6px}
+
+/* Cabecera del club con la foto de su estadio */
+.eq-hero.has-stadium{position:relative;overflow:hidden;isolation:isolate;background:#0b1a12;color:#fff;box-shadow:none}
+.eq-hero.has-stadium::before{content:"";position:absolute;inset:0;z-index:-2;background:var(--eq-stadium) center/cover no-repeat;transform:scale(1.04)}
+.eq-hero.has-stadium::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(0,0,0,.28) 0%,rgba(0,0,0,.5) 55%,rgba(0,0,0,.72) 100%)}
+.eq-hero.has-stadium .eq-h1{color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.55)}
+.eq-hero.has-stadium .eq-crest{filter:drop-shadow(0 4px 12px rgba(0,0,0,.55))}
+.eq-hero.has-stadium .eq-hsub,.eq-hero.has-stadium .eq-hero-bg{color:#fff}
+.eq-stadium-credit{position:absolute;right:10px;bottom:6px;font-size:.58rem;color:rgba(255,255,255,.7);text-decoration:none;z-index:1}

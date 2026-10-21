@@ -3793,6 +3793,21 @@
       const frag = document.createDocumentFragment();
       // Cabecera
       const hd = el("div", "eq-hero");
+      // Foto del estadio del club como fondo de la cabecera (Wikipedia/Commons; si no hay, queda el fondo de siempre)
+      (window.__estP = window.__estP || fetch(API + "/estadios").then((r) => r.json()).catch(() => ({}))).then((E) => {
+        const st = E && E[tc];
+        if (!st || !st.img) return;
+        const im = new Image();
+        im.onload = () => {
+          hd.style.setProperty("--eq-stadium", 'url("' + st.img + '")');
+          hd.classList.add("has-stadium");
+          const cr = el("a", "eq-stadium-credit", "Foto: " + st.name + " · Wikimedia");
+          cr.href = "https://commons.wikimedia.org/"; cr.target = "_blank"; cr.rel = "noopener";
+          cr.addEventListener("click", (ev) => ev.stopPropagation());
+          hd.appendChild(cr);
+        };
+        im.src = st.img;
+      });
       // El logo de Futmondo es de solo 64 px y se ve borroso en grande: se usa el escudo de la fuente de partidos (football-data, nítido) si lo hay.
       let hiCrest = "";
       for (let q = 0; q < mine.length && !hiCrest; q++) hiCrest = (teamCanon(mine[q].home) === tc ? mine[q].homeCrest : mine[q].awayCrest) || "";
