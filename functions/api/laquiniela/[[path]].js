@@ -2632,7 +2632,8 @@ async function getJornadaStrip(env, matchday) {
   try { cmStrip = await getComuniateStrip(env, jnum); } catch (e) {}
   try { cmMin = await getComuniateLiveMinutes(env, jnum); } catch (e) {}
   let cambiosCache = null;
-  try { cambiosCache = await getCambios(env); } catch (e) {}
+  // Solo si hay un aplazado en la rejilla (leer y analizar el feed completo es costoso)
+  if ((jd.matches || []).some((m) => m && m._aplaz)) { try { cambiosCache = await getCambios(env); } catch (e) {} }
   const dayF = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", day: "numeric" });
   const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
   const dtF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" });
