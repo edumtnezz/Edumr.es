@@ -1464,8 +1464,8 @@
     // Botón central "Ver partido en directo": activo desde el inicio del partido y hasta 2 días después; antes del inicio sale apagado con la hora
     try {
       const ko = kickoffMs(m);
-      if (ko && Date.now() < ko + LIVE_WINDOW) {
-        const on = Date.now() >= ko;
+      if (ko) {
+        const on = true;
         const wrap = el("div", "mpage-livebtn-wrap");
         const b = el(on ? "a" : "div", "mpage-livebtn" + (on ? "" : " off"));
         if (on) b.href = "/futmondo/guiafantasy/directo/" + matchSlug(m.home, m.away) + (jn ? "?j=" + encodeURIComponent(jn) : "");
@@ -1680,9 +1680,6 @@
       head.appendChild(mid);
       head.appendChild(side(m.away, m.awayCrest));
       box.appendChild(head);
-      const expired = ko && now > ko + LIVE_WINDOW;
-      if (expired) { box.appendChild(el("p", "muted small lv-note", "Este directo ya no está disponible (se retira 2 días después del partido).")); return false; }
-      if (ko && now < ko) { box.appendChild(el("p", "lv-note", "El directo empieza a las " + (m.time || "") + ". Esta página se actualiza sola.")); return true; }
       let entries = null, fm = null, ok = false;
       let dstr = "";
       try { const pp = {}; new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(ko || now)).forEach((x) => { pp[x.type] = x.value; }); dstr = pp.year + pp.month + pp.day; } catch (e) {}
