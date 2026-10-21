@@ -4328,12 +4328,13 @@
       const ph = el("div", "an-cl-ph an-ti-ph"); ph.appendChild(photoImg(photoOf(pl)));
       hd.appendChild(ph);
       const ht = el("div", "an-cl-htx");
-      ht.appendChild(el("b", "an-cl-n", pl.last || pl.nombre));
+      ht.appendChild(el("b", "an-cl-n", pl.nombre || pl.last));
       const chips = el("div", "an-cl-chips");
-      const placed = slotOf.get(pl) || pl.pos;
+      const multi = !!(pl.pos2 && pl.pos2 !== pl.pos);
+      const placed = multi ? (slotOf.get(pl) || pl.pos) : pl.pos;
       if (placed) {
-        const note = pl.pos && pl.pos !== placed ? " (base: " + posN[pl.pos] + ")" : pl.pos2 && pl.pos2 !== placed ? " (también " + posN[pl.pos2] + ")" : "";
-        chips.appendChild(el("span", "an-cl-chip pos", "📍 Colócalo de " + posN[placed] + note));
+        const other = multi ? (placed === pl.pos ? pl.pos2 : pl.pos) : "";
+        chips.appendChild(el("span", "an-cl-chip pos", multi ? "↔️ Multiposición: colócalo de " + posN[placed] + " (también " + posN[other] + ")" : "📍 Colócalo de " + posN[placed] + " · no tiene otra posición"));
       }
       if (pl.prob != null) chips.appendChild(el("span", "an-cl-chip " + (pl.prob >= 80 ? "ok" : pl.prob >= 50 ? "mid" : "low"), pl.prob + "% de jugar"));
       ht.appendChild(chips);
