@@ -159,8 +159,8 @@
     if (!n) return;
     var c = probCache[n];
     if (!c) { try { var raw = localStorage.getItem("cx_prob_" + n); if (raw) { c = JSON.parse(raw); probCache[n] = c; } } catch (e) {} }
-    if (c) markProb(c.set);
-    if (c && Date.now() - c.at < 300000) return;
+    if (c && Object.keys(c.set || {}).length) markProb(c.set);
+    if (c && Object.keys(c.set || {}).length && Date.now() - c.at < 300000) return;
     fetch(API + "/alineaciones-estado?jornada=" + n, { cache: "no-store" })
       .then(function (r) { return r.json(); })
       .then(function (d) {
