@@ -622,7 +622,7 @@
     if (!box) return;
     if (!updData) box.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>';
     try {
-      const d = await (await fetch(API + "/cambios")).json();
+      const d = await (await fetch(API + "/ultimos-cambios")).json();
       if (d && d.days) { updData = d; }
       const upd = $("updUpdated");
       if (upd && d && d.updatedAt) upd.textContent = "· " + haceTxt(d.updatedAt);

@@ -4600,7 +4600,7 @@ async function handleGet({ request, env: env0, params }) {
   if (path === "jornada") {
     try { return json(await getJornadaStrip(env, url.searchParams.get("jornada"))); } catch (e) { return json({ matchday: 0, matches: [] }); }
   }
-  if (path === "cambios") {
+  if (path === "ultimos-cambios") {
     try { return json(await getCambios(env)); } catch (e) { return json({ days: [] }); }
   }
   if (path === "estadios") {
