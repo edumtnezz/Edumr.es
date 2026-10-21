@@ -540,6 +540,97 @@
     });
   }
   let fichLoaded = false;
+
+  // ---- Últimas actualizaciones (alineaciones, lesiones, dudas, sanciones, mercado Futmondo) ----
+  const UP_CATS = {
+    "once-ok": ["Once confirmado", "#16a34a", '<path d="M5 12.5l4.5 4.5L19 7.5"/>'],
+    "once": ["Once probable", "#0ea5e9", '<rect x="4" y="5" width="16" height="14" rx="2"/><path d="M12 5v14M4 12h16"/>'],
+    "tocado": ["Tocado", "#f59e0b", '<path d="M12 4v10"/><circle cx="12" cy="18" r="1.4"/>'],
+    "lesion": ["Lesión", "#ef4444", '<path d="M12 5v14M5 12h14"/>'],
+    "duda": ["Duda", "#eab308", '<path d="M9.5 9a2.6 2.6 0 1 1 3.6 2.4c-.8.4-1.1.9-1.1 1.8"/><circle cx="12" cy="17" r="1"/>'],
+    "sancion": ["Sanción", "#dc2626", '<rect x="7" y="4" width="10" height="16" rx="1.5"/>'],
+    "recuperado": ["Recuperado", "#16a34a", '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>'],
+    "convocatoria": ["Convocatoria", "#6366f1", '<path d="M8 6h11M8 12h11M8 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/>'],
+    "mercado": ["Mercado Futmondo", "#22c55e", '<path d="M4 17l5-5 4 4 7-8"/><path d="M15 8h5v5"/>'],
+    "otro": ["Otros", "#94a3b8", '<circle cx="12" cy="12" r="8"/>']
+  };
+  const UP_FILTERS = [["todo", "Todo"], ["once", "Onces"], ["lesion", "Lesiones y dudas"], ["sancion", "Sanciones"], ["mercado", "Mercado"]];
+  const UP_GROUP = { "once-ok": "once", "once": "once", "convocatoria": "once", "tocado": "lesion", "lesion": "lesion", "duda": "lesion", "recuperado": "lesion", "sancion": "sancion", "mercado": "mercado", "otro": "otro" };
+  let updData = null, updFilter = "todo";
+  try { const sv = localStorage.getItem("merc_updf"); if (sv && UP_FILTERS.some((f) => f[0] === sv)) updFilter = sv; } catch (e) {}
+  function paintActualizaciones() {
+    const box = $("updOut"), fb = $("upFilters");
+    if (!box || !updData) return;
+    if (fb) {
+      fb.innerHTML = "";
+      UP_FILTERS.forEach((f) => {
+        const b = el("button", "up-chip" + (f[0] === updFilter ? " on" : ""), f[1]);
+        b.type = "button";
+        b.addEventListener("click", () => { updFilter = f[0]; try { localStorage.setItem("merc_updf", f[0]); } catch (e) {} paintActualizaciones(); });
+        fb.appendChild(b);
+      });
+    }
+    box.innerHTML = "";
+    let shown = 0;
+    (updData.days || []).forEach((d) => {
+      const items = d.items.filter((x) => updFilter === "todo" || UP_GROUP[x.cat] === updFilter);
+      if (!items.length) return;
+      const sec = el("section", "up-day");
+      sec.appendChild(el("h3", "up-date", d.day));
+      const list = el("div", "up-list");
+      items.slice(0, 150).forEach((x) => {
+        shown++;
+        const c = UP_CATS[x.cat] || UP_CATS.otro;
+        const row = el("article", "up-row");
+        row.style.setProperty("--uc", c[1]);
+        const left = el("div", "up-left");
+        const ph = x.photo ? el("img", "up-photo") : null;
+        if (ph) { ph.src = x.photo; ph.alt = ""; ph.loading = "lazy"; ph.addEventListener("error", () => ph.remove()); left.appendChild(ph); }
+        const ib = el("span", "up-ico");
+        ib.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + c[2] + "</svg>";
+        left.appendChild(ib);
+        row.appendChild(left);
+        const body = el("div", "up-body");
+        const meta = el("div", "up-meta");
+        meta.appendChild(el("span", "up-cat", c[0]));
+        if (x.time) meta.appendChild(el("span", "up-time", x.time));
+        body.appendChild(meta);
+        body.appendChild(el("div", "up-title", x.title));
+        if (x.players && x.players.length) {
+          const det = el("div", "up-chg");
+          x.players.forEach((p) => {
+            const r = el("div", "up-pl");
+            if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); r.appendChild(im); }
+            r.appendChild(el("strong", "", p.name));
+            const tr = el("span", "up-tr");
+            tr.textContent = (p.from || "") + " " + (p.fromSt || "") + "  →  " + (p.to || "") + " " + (p.toSt || "");
+            r.appendChild(tr);
+            det.appendChild(r);
+          });
+          body.appendChild(det);
+        }
+        row.appendChild(body);
+        list.appendChild(row);
+      });
+      sec.appendChild(list);
+      box.appendChild(sec);
+    });
+    if (!shown) box.innerHTML = '<p class="muted small">Sin actualizaciones de este tipo ahora mismo.</p>';
+  }
+  async function renderActualizaciones() {
+    const box = $("updOut");
+    if (!box) return;
+    if (!updData) box.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>';
+    try {
+      const d = await (await fetch(API + "/cambios")).json();
+      if (d && d.days) { updData = d; }
+      const upd = $("updUpdated");
+      if (upd && d && d.updatedAt) upd.textContent = "· " + haceTxt(d.updatedAt);
+    } catch (e) {}
+    if (updData) paintActualizaciones();
+    else box.innerHTML = '<p class="muted small">No se han podido cargar las actualizaciones.</p>';
+  }
+
   async function renderFichajes() {
     const box = $("fichOut");
     if (!box || fichLoaded) return;
@@ -2664,7 +2755,7 @@
   // Clausulazo jugoso, Analiza tu equipo) viven aquí dentro en vez de obligar
   // a deslizar o poner flechas. Si la pestaña activa es una de las del menú,
   // el botón se pone verde para saber dónde estás sin abrir el desplegable.
-  const MORE_TABS = { fichajes: "Fichajes", clausulazos: "Clausulazo jugoso", analiza: "Analiza tu equipo", plantillas: "Plantillas (prueba)" };
+  const MORE_TABS = { actualizaciones: "Últimas actualizaciones", fichajes: "Fichajes", clausulazos: "Clausulazo jugoso", analiza: "Analiza tu equipo", plantillas: "Plantillas (prueba)" };
   function closeMoreMenu() {
     const menu = $("cxMoreMenu"), btn = $("cxMoreBtn");
     if (menu) menu.classList.add("hidden");
@@ -2720,6 +2811,7 @@
     if (name === "inicio") renderInicioFeatured();
     if (name === "clausulazos") renderClausulas();
     if (name === "fichajes") renderFichajes();
+    if (name === "actualizaciones") renderActualizaciones();
     if (name === "plantillas") initPlantillas();
     try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
     try {
@@ -4091,7 +4183,7 @@
     } catch (e) {}
     let name = "";
     try {
-      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|noticias|analiza|clausulazos|plantillas)/);
+      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|actualizaciones|noticias|analiza|clausulazos|plantillas)/);
       if (m) name = m[1];
     } catch (e) {}
     if (!name) { try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {} }

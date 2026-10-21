@@ -2786,3 +2786,28 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .eq-hero.has-stadium::before,.eq-hero.has-stadium::after{height:250px}
 .eq-hero.has-stadium::before{background-position:center 70%}
 .eq-hero.has-stadium .eq-ticket{margin-top:168px}
+
+/* Últimas actualizaciones */
+#tab-actualizaciones .up-day, #tab-actualizaciones .up-filters { max-width: 780px; margin-inline: auto; }
+.up-filters { display: flex; gap: 8px; overflow-x: auto; padding: 4px 0 14px; scrollbar-width: none; }
+.up-filters::-webkit-scrollbar { display: none; }
+.up-chip { flex: none; border: 1px solid var(--border); background: transparent; color: var(--muted); font: 700 .8rem 'Inter', sans-serif; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+.up-chip.on { background: var(--text); color: var(--bg, #fff); border-color: var(--text); }
+.up-date { margin: 22px 0 6px; font: 800 1.5rem/1.1 'Bricolage Grotesque', sans-serif; letter-spacing: -.02em; text-transform: capitalize; }
+.up-list { display: flex; flex-direction: column; }
+.up-row { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.up-row:last-child { border-bottom: 0; }
+.up-left { position: relative; width: 48px; height: 48px; }
+.up-photo { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; object-position: top; background: rgba(127,127,127,.15); display: block; }
+.up-ico { position: absolute; right: -6px; bottom: -4px; width: 22px; height: 22px; border-radius: 50%; background: var(--uc); color: #fff; display: grid; place-items: center; border: 2px solid var(--panel-bg, var(--bg, #fff)); }
+.up-ico svg { width: 12px; height: 12px; }
+.up-left:not(:has(.up-photo)) { background: color-mix(in srgb, var(--uc) 16%, transparent); border-radius: 50%; }
+.up-body { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.up-meta { display: flex; gap: 10px; align-items: center; font-size: .68rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.up-cat { color: var(--uc); }
+.up-time { color: var(--muted); font-weight: 600; }
+.up-title { font: 700 1rem/1.25 'Bricolage Grotesque', sans-serif; }
+.up-chg { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.up-pl { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; font-size: .82rem; padding: 6px 10px; border-radius: 10px; background: rgba(127,127,127,.09); }
+.up-pl img { width: 24px; height: 26px; object-fit: cover; object-position: top; border-radius: 6px; }
+.up-tr { color: var(--muted); font-weight: 600; white-space: pre-wrap; }

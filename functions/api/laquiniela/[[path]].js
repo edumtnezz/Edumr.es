@@ -1786,6 +1786,83 @@ async function getFichajes(env) {
   return data;
 }
 
+
+/* ---------- Últimas actualizaciones (futbolfantasy.com/laliga/ultimos-cambios) ---------- */
+const CAMBIOS_URL = "https://www.futbolfantasy.com/laliga/ultimos-cambios";
+// Regla de Edu: solo cuenta Futmondo. Fuera Liga Fantasy Oficial, Mister,
+// Comunio, Biwenger, Fantasy Marca, estrellas, picas y puntos asignados.
+function cambioExcluido(txt) {
+  const t = stripAccents(String(txt || "").toLowerCase());
+  if (/asignad/.test(t)) return true;
+  if (/biwenger|mister|fantasy marca|comunio|liga fantasy|laliga fantasy|estrellas|picas/.test(t)) return true;
+  if (/valores? de mercado/.test(t) && !/futmondo/.test(t)) return true;
+  return false;
+}
+function cambioCat(icon) {
+  const f = String(icon || "").toLowerCase();
+  if (/alineacionc/.test(f)) return "once-ok";
+  if (/alineacion2|alineacion/.test(f)) return "once";
+  if (/tocados/.test(f)) return "tocado";
+  if (/lesionados/.test(f)) return "lesion";
+  if (/dudas/.test(f)) return "duda";
+  if (/sancionad/.test(f)) return "sancion";
+  if (/icono_big_ok/.test(f)) return "recuperado";
+  if (/list/.test(f)) return "convocatoria";
+  if (!f) return "mercado";
+  return "otro";
+}
+function parseCambios(html) {
+  const days = [];
+  let cur = null;
+  const re = /<h2[^>]*changelog-day[^>]*>([\s\S]*?)<\/h2>|<div class="event-row[^"]*"[^>]*>([\s\S]*?)(?=<div class="event-row|<h2[^>]*changelog-day|<\/section|$)/g;
+  const txt = (h) => String(h || "").replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&#0?39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+  const fixUrl = (u) => { u = String(u || ""); return u.startsWith("//") ? "https:" + u : u; };
+  let m;
+  while ((m = re.exec(html))) {
+    if (m[1] !== undefined) { cur = { day: txt(m[1]), items: [] }; days.push(cur); continue; }
+    const b = m[2] || "";
+    if (!cur) { cur = { day: "", items: [] }; days.push(cur); }
+    const time = txt((b.match(/class="event-time"[^>]*>([\s\S]*?)<\/span>/) || [])[1]);
+    const a = b.match(/class="event-content"[^>]*>\s*<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/);
+    if (!a) continue;
+    const title = txt(a[2]);
+    const href = a[1];
+    if (cambioExcluido(title)) continue;
+    const imgs = [...b.split(/class="event-content"/)[0].matchAll(/<img[^>]*src="([^"]+)"/g)].map((x) => fixUrl(x[1]));
+    const iconM = b.match(/<img[^>]*src="([^"]+)"[^>]*class="[^"]*event-icon|<img[^>]*class="[^"]*event-icon[^"]*"[^>]*src="([^"]+)"/);
+    const icon = iconM ? (iconM[1] || iconM[2]) : "";
+    const photo = imgs.find((u) => u !== fixUrl(icon)) || "";
+    const players = [];
+    if (/cambio-jugador/.test(b)) {
+      for (const pm of b.split(/<li class="cambio-jugador"/).slice(1)) {
+        const nombre = txt((pm.match(/cambio-nombre[^>]*>([\s\S]*?)<\/strong>/) || [])[1]);
+        const foto = fixUrl((pm.match(/<img[^>]*cambio-foto[^>]*src="([^"]+)"/) || [])[1]);
+        const antes = pm.match(/cambio-estado--antes[\s\S]*?<span[^>]*>([\s\S]*?)<\/span>[\s\S]*?<small>([\s\S]*?)<\/small>/);
+        const desp = pm.match(/cambio-estado--despues[\s\S]*?<span[^>]*>([\s\S]*?)<\/span>[\s\S]*?<small>([\s\S]*?)<\/small>/);
+        if (nombre) players.push({ name: nombre, photo: foto, from: antes ? txt(antes[1]) : "", fromSt: antes ? txt(antes[2]) : "", to: desp ? txt(desp[1]) : "", toSt: desp ? txt(desp[2]) : "" });
+      }
+    }
+    cur.items.push({ time, cat: cambioCat(icon), title, href, photo, players });
+  }
+  return days.filter((d) => d.items.length);
+}
+async function getCambios(env) {
+  const KEY = "cambios:v1";
+  try { const c = await env.PORRA.get(KEY, "json"); if (c && c.data && Date.now() - (c.at || 0) < 3 * 60 * 1000) return c.data; } catch (e) {}
+  let data = null;
+  try {
+    const html = await (await fetch(CAMBIOS_URL, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text();
+    const days = parseCambios(html);
+    if (days.length) data = { updatedAt: Date.now(), days };
+  } catch (e) {}
+  if (!data) {
+    try { const c = await env.PORRA.get(KEY, "json"); if (c && c.data) return c.data; } catch (e) {}
+    return { updatedAt: Date.now(), days: [] };
+  }
+  try { await env.PORRA.put(KEY, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 86400 }); } catch (e) {}
+  return data;
+}
+
 /* ---------- Alineaciones probables (Comuniate) ---------- */
 function cmHeaders(extra) {
   return Object.assign({ "user-agent": "Mozilla/5.0 (compatible; edumr)", "x-requested-with": "XMLHttpRequest" }, extra || {});
@@ -4522,6 +4599,9 @@ async function handleGet({ request, env: env0, params }) {
   }
   if (path === "jornada") {
     try { return json(await getJornadaStrip(env, url.searchParams.get("jornada"))); } catch (e) { return json({ matchday: 0, matches: [] }); }
+  }
+  if (path === "cambios") {
+    try { return json(await getCambios(env)); } catch (e) { return json({ days: [] }); }
   }
   if (path === "estadios") {
     try { return json(await getEstadios(env)); } catch (e) { return json({}); }
