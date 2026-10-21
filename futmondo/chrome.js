@@ -1,7 +1,7 @@
 /* EduMR chrome: franja de jornada + tira de escudos + última hora. Rellena #cxChrome. */
 (function () {
   var API = "/api/laquiniela";
-  var jornada = 0;
+  var jornada = 0, pinnedJ = 0;
   var lastJornadaMatches = [];
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
@@ -78,8 +78,8 @@
         '<div class="cx-jn-grid" id="cxJGrid"><span class="cx-sk cx-sk-strip"></span></div>' +
       '</div>';
     var pv = document.getElementById("cxJPrev"), nx = document.getElementById("cxJNext");
-    if (pv) pv.addEventListener("click", function () { loadJornada(jornada - 1); });
-    if (nx) nx.addEventListener("click", function () { loadJornada(jornada + 1); });
+    if (pv) pv.addEventListener("click", function () { pinnedJ = jornada - 1; loadJornada(pinnedJ); });
+    if (nx) nx.addEventListener("click", function () { pinnedJ = jornada + 1; loadJornada(pinnedJ); });
     // La cinta de Última hora: las noticias abren la noticia (en Noticias);
     // las alineaciones confirmadas navegan a la página del partido (enlace
     // normal).
@@ -99,7 +99,8 @@
     // Refresca el marcador de la jornada en curso cada minuto: así los
     // partidos que están jugando ahora mismo van actualizando el resultado
     // sin tener que recargar la página.
-    setInterval(function () { if (jornada) loadJornada(jornada); }, 60000);
+    // Sin jornada elegida a mano se refresca la ACTUAL (así nunca se queda atascada en una anterior)
+    setInterval(function () { if (jornada) loadJornada(pinnedJ || 0); }, 60000);
   }
   function mountScrollBar(scrollEl, barEl) {
     if (!scrollEl || !barEl) return;
