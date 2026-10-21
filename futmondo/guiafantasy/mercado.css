@@ -2684,3 +2684,14 @@ a.lv-potm { color: inherit; text-decoration: none; cursor: pointer; }
 .an-fm-mini { gap: 3px; }
 .an-fm-mini i { width: 24px; height: 31px; flex-direction: column; line-height: 1.05; font-size: .72rem; display: flex; align-items: center; justify-content: center; }
 .an-fm-mini i em { font: 700 .48rem 'Figtree', sans-serif; font-style: normal; opacity: .75; }
+/* Capitán: bloques separados (equipo / próximo partido / sus puntos) */
+.an-pb-capv { flex-wrap: wrap; row-gap: 10px; }
+.an-pb-capv .an-pb-tx { justify-content: center; }
+.an-pb-capv .an-pb-n { font: 800 1.15rem 'Bricolage Grotesque', sans-serif; }
+.an-pb-own { display: flex; align-items: center; gap: 6px; font-size: .8rem; font-weight: 700; color: var(--muted); }
+.an-pb-own img { width: 20px; height: 20px; object-fit: contain; }
+.an-pb-sec { flex: 0 0 100%; box-sizing: border-box; padding: 9px 10px; border-radius: 12px; background: rgba(127,127,127,.09); display: flex; flex-direction: column; gap: 6px; }
+.an-pb-k { font-size: .58rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.an-pb-capv .an-pb-match { font-size: .88rem; }
+.an-pb-capv .an-pb-match img { width: 22px; height: 22px; }
+.an-pb-capv .an-cap-warn { flex: 0 0 100%; }

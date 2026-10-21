@@ -4754,42 +4754,57 @@
       paintLock(lk);
     } else {
       const jNext = anData && Number(anData.capJornada) || 0;
+      card.classList.add("an-pb-capv");
+      // 1) De qué equipo es
+      const own = el("div", "an-pb-own");
+      const olg = clubLogo(p.equipo || p.team || "", ""); if (olg) { const i0 = el("img"); i0.src = olg; i0.alt = ""; own.appendChild(i0); }
+      const PN = { POR: "Portero", DEF: "Defensa", CEN: "Centrocampista", DEL: "Delantero" };
+      own.appendChild(el("span", null, [p.equipo || p.team || "", PN[p.pos] || ""].filter(Boolean).join(" · ")));
+      tx.appendChild(own);
+      card.appendChild(tx);
+      // 2) Próximo partido (bloque aparte)
       if (p.rival) {
+        const sec = el("div", "an-pb-sec");
+        sec.appendChild(el("small", "an-pb-k", "Próximo partido" + (jNext ? " · J" + jNext : "")));
         const m = el("div", "an-pb-match");
         const lg = clubLogo(p.rival, ""); if (lg) { const i2 = el("img"); i2.src = lg; i2.alt = ""; m.appendChild(i2); }
-        m.appendChild(el("span", null, "vs " + p.rival + (jNext ? " · J" + jNext : "")));
-        tx.appendChild(m);
+        m.appendChild(el("span", null, "Juega contra " + p.rival));
+        sec.appendChild(m);
         let when = "";
         if (p.fecha) { const d = new Date(p.fecha); if (!isNaN(d)) when = d.toLocaleString("es-ES", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }).replace(",", " ·"); }
         const chips = el("div", "an-pb-chips");
         if (p.casa === true || p.casa === false) { const hc = el("span", "an-pb-chip " + (p.casa ? "home" : "away")); hc.appendChild(haIcon(p.casa)); hc.appendChild(document.createTextNode(p.casa ? "En casa" : "Fuera")); chips.appendChild(hc); }
         if (when) chips.appendChild(el("span", "an-pb-chip", when));
-        if (chips.childNodes.length) tx.appendChild(chips);
-        if (p.rivalPos) tx.appendChild(el("div", "an-pb-when", "📊 " + p.rival + " es " + p.rivalPos + "º de " + (p.rivalN || 20) + " (" + p.rivalPts + " pts en " + p.rivalPj + " partidos)" + (p.rivalPos >= (p.rivalN || 20) - 3 ? " · de los últimos" : "")));
+        if (chips.childNodes.length) sec.appendChild(chips);
+        if (p.rivalPos) sec.appendChild(el("div", "an-pb-when", "📊 " + p.rival + " es " + p.rivalPos + "º de " + (p.rivalN || 20) + " (" + p.rivalPts + " pts en " + p.rivalPj + " partidos)" + (p.rivalPos >= (p.rivalN || 20) - 3 ? " · de los últimos" : "")));
+        card.appendChild(sec);
       }
+      // 3) Sus puntos (bloque aparte)
       const f = (p.fitness || []).map(Number).slice(-5);
+      const sec2 = el("div", "an-pb-sec");
+      sec2.appendChild(el("small", "an-pb-k", "Sus puntos"));
       if (f.length) {
         const row = el("div", "an-pb-last an-pb-lastj"); row.appendChild(el("span", null, "Últimos"));
         const lenAll = (p.fitness || []).length;
         f.slice().reverse().forEach((v, i) => {
-          const k = i;
-          let jn = 0; try { jn = jLab(p.equipo || p.team, lenAll, k); } catch (e) {}
+          let jn = 0; try { jn = jLab(p.equipo || p.team, lenAll, i); } catch (e) {}
           const c = el("i", v === 0 ? "z" : v <= 3 ? "l" : v >= 10 ? "h" : "m");
           c.appendChild(el("em", null, jn ? "J" + jn : ""));
           c.appendChild(document.createTextNode(v === 0 ? "–" : String(Math.round(v))));
           if (jn) c.title = "Jornada " + jn;
           row.appendChild(c);
         });
-        tx.appendChild(row);
+        sec2.appendChild(row);
       }
       const bits = [];
       const fo = formOf(p);
-      if (fo && fo.season) bits.push("media " + f1e(fo.season.avg) + " en la temporada");
+      if (fo && fo.season) bits.push("Media " + f1e(fo.season.avg) + " en la temporada");
       if (p.prob != null) bits.push(p.prob + "% de jugar");
-      if (bits.length) tx.appendChild(el("div", "an-pb-why", bits.join(" · ")));
-      if (o.capRisky) tx.appendChild(el("div", "an-cap-warn", "⚠️ Ninguno tiene la titularidad asegurada."));
+      if (bits.length) sec2.appendChild(el("div", "an-pb-why", bits.join(" · ")));
+      card.appendChild(sec2);
+      if (o.capRisky) card.appendChild(el("div", "an-cap-warn", "⚠️ Ninguno tiene la titularidad asegurada."));
     }
-    card.appendChild(tx);
+    if (!card.contains(tx)) card.appendChild(tx);
     return card;
   }
 
