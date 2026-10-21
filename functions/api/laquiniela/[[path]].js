@@ -2481,6 +2481,27 @@ async function getJornadaStrip(env, matchday) {
   let jd = null;
   try { jd = await getJornada(env, matchday || null, true); } catch (e) {}
   if (!jd || !jd.matches) return { matchday: 0, matches: [] };
+  // Partidos aplazados de jornadas anteriores: entran como un partido más (con la etiqueta "Aplazado") solo cuando ya
+  // tienen fecha y está cerca (≤ 3 días), se está jugando o acaba de terminar. Sin fecha, no se enseñan.
+  if (!matchday) {
+    try {
+      const ap = await getAplazados(env);
+      const now = Date.now();
+      const extra = ((ap && ap.items) || []).filter((x) => {
+        if (x.undated || x.tbc) return false;
+        const t = Date.parse(x.utcDate) || 0;
+        if (x.status === "IN_PLAY" || x.status === "PAUSED" || x.status === "FINISHED") return true;
+        return t > now - 3 * 3600 * 1000 && t < now + 3 * 24 * 3600 * 1000;
+      }).map((x) => ({
+        id: "ap" + x.matchday + x.home, utcDate: x.utcDate, status: x.status, _aplaz: x.matchday,
+        homeTeam: { shortName: x.home, name: x.home, crest: x.homeCrest }, awayTeam: { shortName: x.away, name: x.away, crest: x.awayCrest },
+        score: { fullTime: { home: x.score ? Number(String(x.score).split("-")[0]) : null, away: x.score ? Number(String(x.score).split("-")[1]) : null } },
+      }));
+      if (extra.length) {
+        jd = Object.assign({}, jd, { matches: (jd.matches || []).concat(extra).sort((a, b) => (Date.parse(a.utcDate) || 0) - (Date.parse(b.utcDate) || 0)) });
+      }
+    } catch (e) {}
+  }
   let fl = { byName: {}, list: [] }, ffc = { byName: {}, list: [] };
   try { fl = await fltvMap(env); } catch (e) {}
   try { ffc = await ffTvMap(env); } catch (e) {}
@@ -2605,7 +2626,7 @@ async function getJornadaStrip(env, matchday) {
     } catch (e) {}
     const confirmed = !!(cmE && cmE.confirmed) || cfList.some((c) => teamScore(c.home.name, p.home) + teamScore(c.away.name, p.away) >= 4);
 
-    return { home: p.home, away: p.away, homeCrest: p.homeCrest, awayCrest: p.awayCrest, day: p.day, date: p.date, time: p.tbc ? "" : p.time, tbc: !!p.tbc, tv, live, confirmed };
+    return { home: p.home, away: p.away, homeCrest: p.homeCrest, awayCrest: p.awayCrest, day: p.day, date: p.date, time: p.tbc ? "" : p.time, tbc: !!p.tbc, tv, live, confirmed, aplazado: (p.m && p.m._aplaz) || 0 };
   });
   if (accumChanged) { try { await env.PORRA.put(accumKey, JSON.stringify(accum), { expirationTtl: 10 * 24 * 3600 }); } catch (e) {} }
   return { matchday: jd.matchday || 0, matches };

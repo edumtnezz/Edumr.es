@@ -76,7 +76,6 @@
           '<button class="cx-jn-nav" id="cxJNext" aria-label="Jornada siguiente">▶</button>' +
         '</div>' +
         '<div class="cx-jn-grid" id="cxJGrid"><span class="cx-sk cx-sk-strip"></span></div>' +
-        '<div class="cx-aplaz hidden" id="cxAplaz"></div>' +
       '</div>';
     var pv = document.getElementById("cxJPrev"), nx = document.getElementById("cxJNext");
     if (pv) pv.addEventListener("click", function () { pinnedJ = jornada - 1; loadJornada(pinnedJ); });
@@ -93,8 +92,6 @@
       document.dispatchEvent(new CustomEvent("cx:news", { detail: { link: a.getAttribute("data-link") || a.getAttribute("href"), title: a.getAttribute("data-title") } }));
     });
     loadJornada(0);
-    loadAplazados();
-    setInterval(loadAplazados, 300000);
     loadTeams();
     loadTicker();
     // La cinta de la portada se refresca sola cada 5 minutos.
@@ -242,6 +239,7 @@
             if (m.tbc) mid = '<span class="cx-jn-time">Fecha</span><span class="cx-jn-hora cx-jn-tbc">por confirmar</span>';
             else mid = '<span class="cx-jn-time">' + esc(((m.day || "") + " " + (m.date || "")).trim()) + '</span><span class="cx-jn-hora">' + esc(m.time || "") + '</span>';
           }
+          if (m.aplazado) { statusRow = '<div class="cx-jn-aplaz">Aplazado · J' + esc(m.aplazado) + '</div>' + statusRow; cardCls += " cx-jn-isaplaz"; }
           return '<div class="' + cardCls + '" data-home="' + esc(m.home) + '" data-away="' + esc(m.away) + '" data-hcrest="' + esc(m.homeCrest) + '" data-acrest="' + esc(m.awayCrest) + '">' +
             statusRow +
             '<div class="cx-jn-row">' +
@@ -262,7 +260,7 @@
             var m = ms[idx] || {};
             document.dispatchEvent(new CustomEvent("cx:once", { detail: {
               home: m.home, away: m.away, homeCrest: m.homeCrest, awayCrest: m.awayCrest,
-              day: m.day, date: m.date, time: m.time, tv: m.tv, jornada: jornada
+              day: m.day, date: m.date, time: m.time, tv: m.tv, jornada: m.aplazado || jornada
             } }));
           });
         });
