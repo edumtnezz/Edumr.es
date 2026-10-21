@@ -4712,17 +4712,24 @@
     if (!list) { try { const c = JSON.parse(localStorage.getItem("claus_cache") || "null"); if (c && c.players) list = c.players; } catch (e) {} }
     if (!list) return null;
     const nk = clausKey(name);
-    return list.find((x) => id && String(x.id) === String(id)) || list.find((x) => nk && clausKey(x.name) === nk) || null;
+    const byId = list.find((x) => id && String(x.id) === String(id));
+    if (byId) return byId;
+    const exact = list.filter((x) => nk && clausKey(x.name) === nk);
+    if (exact.length === 1) return exact[0];
+    const lastW = nk.split(" ").pop();
+    const part = list.filter((x) => { const k = clausKey(x.name); return nk && (k.includes(nk) || nk.includes(k) || (lastW.length > 3 && k.split(" ").pop() === lastW)); });
+    return exact[0] || (part.length === 1 ? part[0] : null);
   }
-  function paintLock(lk) {
+  function paintLock(lk, final) {
     const info = clausLookup(lk.dataset.pid, lk.dataset.pn);
     if (!info) {
+      if (final) { lk.className = "an-pb-lock nd"; lk.textContent = "⏳ Sin dato de cuándo se libera"; return; }
       if (!clausFetching) {
         clausFetching = fetch(API + "/clausulas").then((r) => r.json()).then((d) => {
           const l = (d && d.players) || [];
           if (l.length) { clausAll = l; try { localStorage.setItem("claus_cache", JSON.stringify({ at: Date.now(), jornada: Number(d.jornada) || 0, players: l })); } catch (e) {} }
-          document.querySelectorAll(".an-pb-lock").forEach((x) => { if (!x.textContent) paintLock(x); });
-        }).catch(() => {});
+          document.querySelectorAll(".an-pb-lock").forEach((x) => { if (!x.textContent || x.classList.contains("nd")) paintLock(x, true); });
+        }).catch(() => { document.querySelectorAll(".an-pb-lock").forEach((x) => paintLock(x, true)); });
       }
       return;
     }
