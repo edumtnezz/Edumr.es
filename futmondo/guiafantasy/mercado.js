@@ -4413,17 +4413,30 @@
       if (pl.rival) {
         let when = "";
         if (pl.fecha) { const d = new Date(pl.fecha); if (!isNaN(d)) when = d.toLocaleString("es-ES", { weekday: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }).replace(",", ""); }
-        let rv = "";
-        if (pl.rivalPos) {
-          const nT = pl.rivalN || 20, rp = pl.rivalPos;
-          rv = (rp === nT ? "colista" : rp >= nT - 3 ? "de los últimos" : rp <= 4 ? "de los primeros" : "a mitad de tabla") + " (" + rp + "º, " + pl.rivalPts + " pts)";
-        }
-        const t = tile("Próximo partido", (pl.casa === true ? "🏠 En casa" : pl.casa === false ? "✈️ Fuera" : "") + " · contra " + pl.rival, [rv ? pl.rival + " es " + rv : "", jNext ? "J" + jNext : "", when].filter(Boolean).join(" · "), true);
-        if (pl.rivalPos) {
-          const nT = pl.rivalN || 20;
-          if (pl.rivalPos >= nT - 3) t.t.classList.add("easy");
-          else if (pl.rivalPos <= 4 || (pl.casa === false && pl.rivalPos <= Math.floor(nT / 2))) t.t.classList.add("hard");
-          else if (pl.casa === false) t.t.classList.add("mid");
+        const t = tile("Próximo partido", (pl.casa === true ? "🏠 En casa" : pl.casa === false ? "✈️ Fuera" : "") + " · contra " + pl.rival, "", true);
+        const paint = () => {
+          let rv = "";
+          if (pl.rivalPos) {
+            const nT = pl.rivalN || 20, rp = pl.rivalPos;
+            rv = (rp === nT ? "colista" : rp >= nT - 3 ? "de los últimos" : rp <= 4 ? "de los primeros" : "a mitad de tabla") + " (" + rp + "º, " + pl.rivalPts + " pts)";
+            t.t.classList.remove("easy", "hard", "mid");
+            if (rp >= nT - 3) t.t.classList.add("easy");
+            else if (rp <= 4 || (pl.casa === false && rp <= Math.floor(nT / 2))) t.t.classList.add("hard");
+            else if (pl.casa === false) t.t.classList.add("mid");
+          }
+          t.sp.textContent = [rv ? pl.rival + " es " + rv : "", jNext ? "J" + jNext : "", when].filter(Boolean).join(" · ");
+        };
+        paint();
+        if (!pl.rivalPos) {
+          // análisis guardado sin la posición del rival: se completa con la clasificación actual
+          (window.__tablaP = window.__tablaP || fetch(API + "/tabla").then((r) => r.json()).catch(() => null)).then((r) => {
+            const T = (r && r.teams) || [];
+            const STOP = ["de", "del", "la", "a", "cf", "fc", "club", "sad", "sd", "ud", "rcd", "rc", "balompie", "ca"];
+            const tok = (x) => String(x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w && STOP.indexOf(w) < 0);
+            const aw = tok(pl.rival); let best = null, bs = 0;
+            T.forEach((x) => { const bw = tok(x.name); const it = aw.filter((w) => bw.indexOf(w) >= 0).length; if (!it) return; const sc = it / (aw.length + bw.length - it); if (sc > bs) { bs = sc; best = x; } });
+            if (best && bs >= 0.5) { pl.rivalPos = best.pos; pl.rivalPts = best.pts; pl.rivalPj = best.pj; pl.rivalN = T.length; paint(); }
+          });
         }
         grid.appendChild(t.t);
       }
