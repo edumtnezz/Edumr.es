@@ -239,6 +239,7 @@
             if (m.tbc) mid = '<span class="cx-jn-time">Fecha</span><span class="cx-jn-hora cx-jn-tbc">por confirmar</span>';
             else mid = '<span class="cx-jn-time">' + esc(((m.day || "") + " " + (m.date || "")).trim()) + '</span><span class="cx-jn-hora">' + esc(m.time || "") + '</span>';
           }
+          if (m.aplazado && !statusRow && m.probable) { statusRow = '<div class="cx-jn-statusrow-prob">Once probable' + (/^\d/.test(m.probable) && m.probable.indexOf(":") > 0 ? ' <span class="cx-prob-t">· ' + esc(m.probable) + "</span>" : "") + "</div>"; cardCls += " cx-jn-probable"; }
           if (m.aplazado) { statusRow = '<div class="cx-jn-aplaz">Aplazado · J' + esc(m.aplazado) + '</div>' + statusRow; cardCls += " cx-jn-isaplaz"; }
           return '<div class="' + cardCls + '" data-home="' + esc(m.home) + '" data-away="' + esc(m.away) + '" data-hcrest="' + esc(m.homeCrest) + '" data-acrest="' + esc(m.awayCrest) + '">' +
             statusRow +

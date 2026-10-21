@@ -2110,7 +2110,10 @@ async function getAlineacionesConfirmadas(env, matchdayParam) {
   const out = { matchday: (jd && jd.matchday) || 0, updatedAt: Date.now(), matches: [] };
   if (jd && jd.matches && jd.matches.length) {
     const links = await getComuniateMatches(env, out.matchday || matchdayParam || "");
-    const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
+    let cambiosCache = null;
+  if (!matchday) { try { cambiosCache = await getCambios(env); } catch (e) {} }
+  const dayF = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", day: "numeric" });
+  const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
     const dtF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" });
     const tF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hour12: false });
     const results = await Promise.all(jd.matches.map(async (m) => {
@@ -2703,7 +2706,27 @@ async function getJornadaStrip(env, matchday) {
     } catch (e) {}
     const confirmed = !!(cmE && cmE.confirmed) || cfList.some((c) => teamScore(c.home.name, p.home) + teamScore(c.away.name, p.away) >= 4);
 
-    return { home: p.home, away: p.away, homeCrest: p.homeCrest, awayCrest: p.awayCrest, day: p.day, date: p.date, time: p.tbc ? "" : p.time, tbc: !!p.tbc, tv, live, confirmed, aplazado: (p.m && p.m._aplaz) || 0 };
+    // Partido aplazado: su once no está en las listas de la jornada actual, así que se lee del feed de últimas actualizaciones
+    // (solo de hoy o el día anterior al partido, para no arrastrar onces de otros partidos del mismo equipo).
+    let apConf = false, apProb = "";
+    if (p.m && p.m._aplaz && cambiosCache) {
+      const ko = new Date(p.m.utcDate);
+      const kd = Number(dayF.format(ko)), kd0 = Number(dayF.format(new Date(ko.getTime() - 24 * 3600 * 1000)));
+      const sn = (x) => stripAccents(String(x || "").toLowerCase()).replace(/\b(cf|fc|ud|rcd|rc|sad|sd|club|de|la|el)\b/g, "").replace(/\s+/g, " ").trim();
+      const hh = sn(p.home), aa = sn(p.away);
+      for (const d of cambiosCache.days || []) {
+        const dn = Number((String(d.day).match(/(\d{1,2})\s*$/) || [])[1]);
+        if (dn !== kd && dn !== kd0) continue;
+        for (const it of d.items) {
+          if (it.cat !== "once-ok" && it.cat !== "once") continue;
+          const t = sn(it.title);
+          if (!((hh && t.includes(hh)) || (aa && t.includes(aa)))) continue;
+          if (it.cat === "once-ok") apConf = true;
+          else if (!apProb) apProb = it.time || "1";
+        }
+      }
+    }
+    return { home: p.home, away: p.away, homeCrest: p.homeCrest, awayCrest: p.awayCrest, day: p.day, date: p.date, time: p.tbc ? "" : p.time, tbc: !!p.tbc, tv, live, confirmed: confirmed || apConf, probable: apProb, aplazado: (p.m && p.m._aplaz) || 0 };
   });
   if (accumChanged) { try { await env.PORRA.put(accumKey, JSON.stringify(accum), { expirationTtl: 10 * 24 * 3600 }); } catch (e) {} }
   return { matchday: jd.matchday || 0, matches };
