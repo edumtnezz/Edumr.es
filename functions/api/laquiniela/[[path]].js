@@ -1334,6 +1334,9 @@ async function ogThumb(env, url) {
 
 // Vídeos, directos y promos de creadores (Twitch/YouTube, "XI ideal ... por X", "RADAR FANTASY"): no se muestran.
 const FF_PROMO = /(^\s*v[ií]deo\s*:|twitch|youtube|multistream|radar fantasy|extinguid|\bdel fantasy\b|fantasy\s*✨|playstation|\bj\d+\b.*,\s*por\s|jornada\s*\d+.*,\s*por\s)/i;
+// Guías y artículos de firma ("..., por Carrasco") y los de LaLiga Fantasy oficial no encajan con la web
+const FF_BYLINE = /,\s*por\s+[A-ZÁÉÍÓÚÑ][\wáéíóúñ.'’-]+(\s+[A-ZÁÉÍÓÚÑ][\wáéíóúñ.'’-]+){0,2}\s*$/;
+function isFfPromo(t) { t = String(t || ""); return FF_PROMO.test(t) || FF_BYLINE.test(t) || /laliga\s*fantasy/i.test(t); }
 async function getFfNoticias(env) {
   try {
     const res = await fetch("https://www.futbolfantasy.com/laliga/home", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
@@ -1352,7 +1355,7 @@ async function getFfNoticias(env) {
       const thumb = (inner.match(/data-src="([^"]*fotos_noticias[^"]+)"/) || inner.match(/<img[^>]+src="([^"]*fotos_noticias[^"]+)"/) || [])[1] || "";
       const day = ((inner.match(/class="day">([^<]+)</) || [])[1] || "").trim();
       const time = ((inner.match(/class="time">([^<]+)</) || [])[1] || "").trim();
-      if (!link || !title || EX.test(title) || EX_OLD.test(title)) continue;
+      if (!link || !title || isFfPromo(title) || EX_OLD.test(title)) continue;
       seen[link] = 1;
       out.push({ date: day, time, link, title, thumb });
       if (out.length >= 24) break;
@@ -1640,7 +1643,7 @@ async function playerFicha(env, id, fast, raw) {
 async function getNoticias(env) {
   try {
     const c = await env.PORRA.get("ff:news:v2", "json");
-    if (c && c.at && Date.now() - c.at < 15 * 60 * 1000) { c.data.noticias = (c.data.noticias || []).filter((x) => !(x && x.title && FF_PROMO.test(x.title))); c.data.updatedAt = c.at; return c.data; }
+    if (c && c.at && Date.now() - c.at < 15 * 60 * 1000) { c.data.noticias = (c.data.noticias || []).filter((x) => !(x && x.title && isFfPromo(x.title))); c.data.updatedAt = c.at; return c.data; }
   } catch (e) {}
   const out = { noticias: [], locker: [] };
   const fresh = await getFfNoticias(env);
@@ -1661,7 +1664,7 @@ async function getNoticias(env) {
     // se corrigen también aquí, de paso (decodeEntities no hace nada sobre
     // texto que ya está limpio).
     if (x.title) x.title = decodeEntities(x.title);
-    if (x.title && FF_PROMO.test(x.title)) return;
+    if (x.title && isFfPromo(x.title)) return;
     merged.push(x);
   });
   const trimmed = merged.slice(0, 80);
