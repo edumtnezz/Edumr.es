@@ -100,7 +100,7 @@
     // partidos que están jugando ahora mismo van actualizando el resultado
     // sin tener que recargar la página.
     // Sin jornada elegida a mano se refresca la ACTUAL (así nunca se queda atascada en una anterior)
-    setInterval(function () { if (jornada) loadJornada(pinnedJ || 0); }, 30000);
+    setInterval(function () { if (jornada && !document.hidden) loadJornada(pinnedJ || 0, true); }, 30000);
   }
   function mountScrollBar(scrollEl, barEl) {
     if (!scrollEl || !barEl) return;
@@ -171,7 +171,7 @@
         if (jornada === n) markProb(set);
       }).catch(function () {});
   }
-  function loadJornada(n) {
+  function loadJornada(n, silent) {
     var grid = document.getElementById("cxJGrid");
     var title = document.getElementById("cxJTitle");
     if (!grid) return;
@@ -182,10 +182,10 @@
     // que ya tenía la rejilla mientras carga la siguiente, en vez de
     // vaciarla primero y dejar que se desplome a una sola línea.
     var prevH = grid.offsetHeight;
-    if (prevH) grid.style.minHeight = prevH + "px";
+    if (prevH && !silent) grid.style.minHeight = prevH + "px";
     var lsKey = "cx_jor_" + (n && n > 0 ? n : "cur");
     var cached = null;
-    try { cached = JSON.parse(localStorage.getItem(lsKey) || "null"); } catch (e) {}
+    if (!silent) { try { cached = JSON.parse(localStorage.getItem(lsKey) || "null"); } catch (e) {} }
     // Solo se usa la copia guardada si es reciente (<6 h) y la jornada NO ha terminado:
     // si no, se vería un momento la jornada anterior antes de saltar a la siguiente.
     if (cached) {
@@ -271,7 +271,7 @@
       try { var cj = Number(cached.matchday) || 0; if (cj) { var cp = localStorage.getItem("cx_prob_" + cj); if (!cp) applyProb(cj); } } catch (e) {}
     }
     // Si la API devuelve vacío o falla (límite de football-data, despliegue en curso) se reintenta solo, 2 veces.
-    var reqId = (loadJornada._id = (loadJornada._id || 0) + 1);
+    var reqId = silent ? (loadJornada._id || 0) : (loadJornada._id = (loadJornada._id || 0) + 1);
     var getJ = function (tries) {
       return fetch(url, { cache: "no-store" })
         .then(function (r) { return r.json(); })
@@ -284,7 +284,15 @@
     };
     getJ(2).then(function (d) {
       if (reqId !== loadJornada._id) return; // el usuario ya pidió otra jornada
-      if (d && d.matches && d.matches.length) { try { d.__t = Date.now(); localStorage.setItem(lsKey, JSON.stringify(d)); } catch (e) {} renderJ(d); }
+      if (d && d.matches && d.matches.length) {
+        var sig = JSON.stringify(d.matches) + "|" + d.matchday;
+        try { d.__t = Date.now(); localStorage.setItem(lsKey, JSON.stringify(d)); } catch (e) {}
+        // Refresco en segundo plano: si no cambió nada no se toca la pantalla (sin parpadeo ni saltos)
+        if (silent && grid._sig === sig && grid.querySelector(".cx-jn")) { applyProb(jornada); return; }
+        grid._sig = sig;
+        renderJ(d);
+      }
+      else if (silent) return;
       else if (!(cached && cached.matches && cached.matches.length)) renderJ(d || { matches: [] });
     });
   }
