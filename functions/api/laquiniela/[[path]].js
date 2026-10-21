@@ -4644,7 +4644,10 @@ async function handleGet({ request, env: env0, params }) {
     try { return json(await getRachas(env)); } catch (e) { return json({ players: [] }); }
   }
   if (path === "alineaciones-estado") {
-    try { return json(await getProbableFlags(env, url.searchParams.get("jornada") || null)); } catch (e) { return json({ matchday: 0, items: [] }); }
+    try { return json(await getProbableFlags(env, url.searchParams.get("jornada") || null)); } catch (e) {
+      try { const jq = url.searchParams.get("jornada"); const prev = jq ? await env.PORRA.get("probflags:" + Number(jq), "json") : null; if (prev && prev.items) return json({ matchday: Number(jq), items: prev.items }); } catch (e2) {}
+      return json({ matchday: 0, items: [] });
+    }
   }
   if (path === "jornada") {
     try { return json(await getJornadaStrip(env, url.searchParams.get("jornada"))); } catch (e) { return json({ matchday: 0, matches: [] }); }
