@@ -4419,7 +4419,11 @@
           rv = (rp === nT ? "colista" : rp >= nT - 3 ? "de los últimos" : rp <= 4 ? "de los primeros" : "a mitad de tabla") + " (" + rp + "º, " + pl.rivalPts + " pts)";
         }
         const t = tile("Próximo partido", (pl.casa === true ? "🏠 En casa" : pl.casa === false ? "✈️ Fuera" : "") + " · contra " + pl.rival, [rv ? pl.rival + " es " + rv : "", jNext ? "J" + jNext : "", when].filter(Boolean).join(" · "), true);
-        if (pl.rivalPos && pl.rivalPos >= (pl.rivalN || 20) - 3) t.t.classList.add("easy");
+        if (pl.rivalPos) {
+          const nT = pl.rivalN || 20;
+          if (pl.rivalPos >= nT - 3) t.t.classList.add("easy");
+          else if (pl.rivalPos <= 4 || (pl.casa === false && pl.rivalPos <= Math.floor(nT / 2))) t.t.classList.add("hard");
+        }
         grid.appendChild(t.t);
       }
       card.appendChild(grid);
