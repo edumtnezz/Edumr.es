@@ -1897,6 +1897,14 @@ async function cmPct(id) {
     return null;
   } catch (e) { return null; }
 }
+
+// Caché en el edge (Cache API): no gasta el límite diario de escrituras de KV
+async function edgeGet(key) {
+  try { const r = await caches.default.match(new Request("https://edumr.es/__c/" + encodeURIComponent(key))); return r ? await r.json() : null; } catch (e) { return null; }
+}
+async function edgePut(key, val, ttl) {
+  try { await caches.default.put(new Request("https://edumr.es/__c/" + encodeURIComponent(key)), new Response(JSON.stringify(val), { headers: { "content-type": "application/json", "cache-control": "public, max-age=" + (ttl || 600) } })); } catch (e) {}
+}
 async function getFFTeam(env, name) {
   // El slug de la URL de futbolfantasy.com no siempre coincide con el
   // nombre que usa Futmondo para el equipo: p.ej. "RC Deportivo" (o
@@ -1926,7 +1934,7 @@ async function getFFTeam(env, name) {
   };
   if (SLUG_FIX[slug]) slug = SLUG_FIX[slug];
   const key = "ffteam:v9:" + slug;
-  try { const c = await env.PORRA.get(key, "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) { if (!c.data.fetchedAt) c.data.fetchedAt = c.at; return c.data; } } catch (e) {}
+  try { const c = (await edgeGet(key)) || (await env.PORRA.get(key, "json")); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) { if (!c.data.fetchedAt) c.data.fetchedAt = c.at; return c.data; } } catch (e) {}
   const data = { starters: [], bench: [], fetchedAt: Date.now() };
   try {
     const h = await (await fetch("https://www.futbolfantasy.com/laliga/equipos/" + slug, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text();
@@ -1968,7 +1976,7 @@ async function getFFTeam(env, name) {
     const fwd = S.filter((p) => /delantero/i.test(p.pos)).length;
     data.formation = (def || mid || fwd) ? (def + "-" + mid + "-" + fwd) : "";
   } catch (e) {}
-  try { if (data.starters.length) await env.PORRA.put(key, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 6 * 3600 }); } catch (e) {}
+  if (data.starters.length) { await edgePut(key, { at: Date.now(), data }, 1800); try { await env.PORRA.put(key, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 6 * 3600 }); } catch (e) {} }
   return data;
 }
 
@@ -2546,13 +2554,13 @@ async function getProbableFlags(env, jornada) {
   const jn = Number(jd.matchday) || 0, dn = Number(dj.matchday) || 0;
   const ok = jn && (jn === dn || (jn === dn + 1 && (dj.matches || []).length && (dj.matches || []).every(isMatchDone)));
   if (!ok) {
-    try { const prev = await env.PORRA.get("probflags:" + (jornada || dn), "json"); if (prev && prev.items && Date.now() - (prev.at || 0) < 6 * 3600 * 1000) return { matchday: Number(jornada || dn) || jn, items: prev.items }; } catch (e) {}
-    return { matchday: jn, items: [], dbg: { jn, dn, notok: 1, jdm: (jd.matches || []).length, djm: (dj.matches || []).length, v: 7 } };
+    try { const prev = (await edgeGet("probflags:" + (jornada || dn))) || (await env.PORRA.get("probflags:" + (jornada || dn), "json")); if (prev && prev.items && Date.now() - (prev.at || 0) < 6 * 3600 * 1000) return { matchday: Number(jornada || dn) || jn, items: prev.items }; } catch (e) {}
+    return { matchday: jn, items: [] };
   }
   const nm = (t) => (t && (t.shortName || t.name)) || "";
   const open = (jd.matches || []).filter((m) => m.status === "SCHEDULED" || m.status === "TIMED");
   let prevItems = [];
-  try { const pv = await env.PORRA.get("probflags:" + jn, "json"); if (pv && pv.items) prevItems = pv.items; } catch (e) {}
+  try { const pv = (await edgeGet("probflags:" + jn)) || (await env.PORRA.get("probflags:" + jn, "json")); if (pv && pv.items) prevItems = pv.items; } catch (e) {}
   const knownK = new Set(prevItems.map((i) => i.home + "|" + i.away));
   // Cada lectura procesa como mucho 8 equipos (20 páginas de golpe superan el límite de recursos); los que ya se conocen
   // se refrescan en las siguientes y lo ya visto se conserva.
@@ -2569,17 +2577,16 @@ async function getProbableFlags(env, jornada) {
   const pkey = "probflags:" + jn;
   let perr = "";
   try {
-    const prev = await env.PORRA.get(pkey, "json");
+    const prev = { items: prevItems, at: Date.now() };
     if (prev && prev.items && Date.now() - (prev.at || 0) < 12 * 3600 * 1000) {
       const openKeys = new Set(open.map((m) => nm(m.homeTeam) + "|" + nm(m.awayTeam)));
       const have = new Set(out.map((i) => i.home + "|" + i.away));
       prev.items.forEach((i) => { const k = i.home + "|" + i.away; if (!have.has(k) && openKeys.has(k)) out.push(i); });
     }
-    if (out.length) await env.PORRA.put(pkey, JSON.stringify({ at: Date.now(), items: out }), { expirationTtl: 86400 });
+    if (out.length) { await edgePut(pkey, { at: Date.now(), items: out }, 43200); try { await env.PORRA.put(pkey, JSON.stringify({ at: Date.now(), items: out }), { expirationTtl: 86400 }); } catch (e) {} }
     else if (prev && prev.items && prev.items.length && open.length) out = prev.items.filter((i) => open.some((m) => nm(m.homeTeam) === i.home && nm(m.awayTeam) === i.away));
   } catch (e) { perr = String(e && e.message || e).slice(0, 120); }
-  return { matchday: jn, items: out, dbg: { perr },
-  _x: { jn, dn, names, has, open: open.length, prev: prevItems.length, v: 7 } };
+  return { matchday: jn, items: out };
 }
 
 async function getJornadaStrip(env, matchday) {
