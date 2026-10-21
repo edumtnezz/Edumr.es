@@ -2560,15 +2560,16 @@ async function getJornadaStrip(env, matchday) {
   if (!jd || !jd.matches) return { matchday: 0, matches: [] };
   // Partidos aplazados de jornadas anteriores: entran como un partido más (con la etiqueta "Aplazado") solo cuando ya
   // tienen fecha y está cerca (≤ 3 días), se está jugando o acaba de terminar. Sin fecha, no se enseñan.
-  if (!matchday) {
+  {
     try {
       const ap = await getAplazados(env);
-      const now = Date.now();
+      const ts = (jd.matches || []).map((m) => Date.parse(m.utcDate)).filter((t) => t > 0);
+      const lo = ts.length ? Math.min.apply(null, ts) - 4 * 24 * 3600 * 1000 : 0, hi = ts.length ? Math.max.apply(null, ts) + 24 * 3600 * 1000 : 0;
       const extra = ((ap && ap.items) || []).filter((x) => {
-        if (x.undated || x.tbc) return false;
+        if (x.undated || x.tbc || !lo) return false;
+        if (Number(x.matchday) === Number(jd.matchday)) return false;
         const t = Date.parse(x.utcDate) || 0;
-        if (x.status === "IN_PLAY" || x.status === "PAUSED" || x.status === "FINISHED") return true;
-        return t > now - 3 * 3600 * 1000 && t < now + 3 * 24 * 3600 * 1000;
+        return t >= lo && t <= hi;
       }).map((x) => ({
         id: "ap" + x.matchday + x.home, utcDate: x.utcDate, status: x.status, _aplaz: x.matchday,
         homeTeam: { shortName: x.home, name: x.home, crest: x.homeCrest }, awayTeam: { shortName: x.away, name: x.away, crest: x.awayCrest },
@@ -2589,7 +2590,7 @@ async function getJornadaStrip(env, matchday) {
   try { cmStrip = await getComuniateStrip(env, jnum); } catch (e) {}
   try { cmMin = await getComuniateLiveMinutes(env, jnum); } catch (e) {}
   let cambiosCache = null;
-  if (!matchday) { try { cambiosCache = await getCambios(env); } catch (e) {} }
+  try { cambiosCache = await getCambios(env); } catch (e) {}
   const dayF = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", day: "numeric" });
   const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
   const dtF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" });
