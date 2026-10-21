@@ -363,7 +363,10 @@ function fixCrests(data) {
 }
 async function getJornada(env, matchday, hold) {
   // Si football-data no responde y no hay copia buena: jornada vacía (nunca partidos inventados)
-  return fixCrests((await getJornadaRaw(env, matchday, hold)) || { matchday: Number(matchday) || 0, source: "none", matches: [] });
+  const jr = (await getJornadaRaw(env, matchday, hold)) || { matchday: Number(matchday) || 0, source: "none", matches: [] };
+  // Un estado que no es de football-data (p. ej. una fecha) hacía que el partido no contara como pendiente
+  (jr.matches || []).forEach((m) => { if (m && !/^[A-Z_]+$/.test(String(m.status || ""))) m.status = "TIMED"; });
+  return fixCrests(jr);
 }
 async function getJornadaRaw(env, matchday, hold) {
   const kv = env.PORRA;
@@ -2573,7 +2576,7 @@ async function getProbableFlags(env, jornada) {
     }
     await env.PORRA.put(pkey, JSON.stringify({ at: Date.now(), items: out }), { expirationTtl: 86400 });
   } catch (e) {}
-  return { matchday: jn, items: out, dbg: { names, has, n: open.length, st: (jd.matches || []).map((m) => nm(m.homeTeam) + ":" + m.status + ":" + m.utcDate) } };
+  return { matchday: jn, items: out };
 }
 
 async function getJornadaStrip(env, matchday) {
