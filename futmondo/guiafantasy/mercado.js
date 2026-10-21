@@ -4422,7 +4422,7 @@
             t.t.classList.remove("easy", "hard", "mid");
             if (rp >= nT - 3) t.t.classList.add("easy");
             else if (rp <= 4 || (pl.casa === false && rp <= Math.floor(nT / 2))) t.t.classList.add("hard");
-            else if (pl.casa === false) t.t.classList.add("mid");
+            else t.t.classList.add("mid");
           }
           t.sp.textContent = [rv ? pl.rival + " es " + rv : "", jNext ? "J" + jNext : "", when].filter(Boolean).join(" · ");
         };
