@@ -4884,11 +4884,30 @@
     return card;
   }
 
+  let anTab = "equipo"; try { anTab = localStorage.getItem("merc_antab") || "equipo"; } catch (e) {}
   function renderAnalisis(d) {
     anData = d;
-    const out = $("anOut");
-    if (!out) return;
-    out.innerHTML = "";
+    const outRoot = $("anOut");
+    if (!outRoot) return;
+    outRoot.innerHTML = "";
+    // Tres secciones con pestañas: Tu equipo · Once ideal IA · Tus jugadores
+    const tabBar = el("div", "an-tabs"); tabBar.setAttribute("role", "tablist");
+    const secA = el("div", "an-tabsec an-tabsec-a"), secB = el("div", "an-tabsec"), secC = el("div", "an-tabsec");
+    const TABS = [["equipo", "👕", "Tu equipo", secA], ["ideal", "✨", "Once ideal IA", secB], ["jug", "👥", "Tus jugadores", secC]];
+    const tabBtns = {};
+    const showTab = (k) => {
+      try { anTab = k; localStorage.setItem("merc_antab", k); } catch (e) {}
+      TABS.forEach((t) => { const on = t[0] === k; t[3].hidden = !on; tabBtns[t[0]].classList.toggle("on", on); tabBtns[t[0]].setAttribute("aria-selected", on ? "true" : "false"); });
+    };
+    TABS.forEach((t) => {
+      const b = el("button", "an-tab"); b.type = "button"; b.setAttribute("role", "tab");
+      b.appendChild(el("span", "an-tab-ic", t[1])); b.appendChild(el("span", "an-tab-t", t[2]));
+      b.addEventListener("click", () => { showTab(t[0]); const r = tabBar.getBoundingClientRect(); if (r.top < 0) window.scrollTo({ top: window.scrollY + r.top - 120 }); });
+      tabBtns[t[0]] = b; tabBar.appendChild(b);
+    });
+    outRoot.appendChild(tabBar); outRoot.appendChild(secA); outRoot.appendChild(secB); outRoot.appendChild(secC);
+    let cur = secA;
+    const out = { appendChild: (n) => cur.appendChild(n) };
     try {
       const names = [].concat(d.titulares || [], d.suplentes || []).map((p) => p.nombre).filter(Boolean);
       if (names.length) { myTeam = names; localStorage.setItem("merc_myteam", JSON.stringify(names)); updateNewsFilter(); }
@@ -4940,6 +4959,7 @@
       if (capList.length) {
         const top = capList[0];
         const cap = el("div", "an-capitan");
+        cap.style.order = "2";
         cap.appendChild(el("div", "an-capitan-t", "👑 Capitán recomendado"));
         cap.appendChild(plBox(top, { capDetail: true, capRisky }));
         const cur = d.capActual ? findRosterPlayer(d.capActual, tits) : null;
@@ -4951,7 +4971,7 @@
       }
       const cla = tits.concat(sups).filter((p) => p.clause && p.valor && p.clause < p.valor * 1.6).sort((a, b) => (a.clause / a.valor) - (b.clause / b.valor));
       if (cla.length) {
-        const cb = el("div", "an-clauses");
+        const cb = el("div", "an-clauses"); cb.style.order = "3";
         cb.appendChild(el("div", "an-clauses-t", "🔒 Te pueden robar a estos"));
         cb.appendChild(el("div", "an-clauses-info", "Cláusula muy cerca de su valor: fácil de robar. Súbesela."));
         const list = el("div", "an-cl2-list");
@@ -4966,7 +4986,7 @@
       const b = el("button", "btn-primary big", "🔄 Analizar de nuevo");
       b.addEventListener("click", reanalizar);
       bar.appendChild(b);
-      out.appendChild(bar);
+      outRoot.insertBefore(bar, tabBar);
     }
 
     function swapMembers(a, b) {
@@ -5073,6 +5093,7 @@
     // Análisis guardados antes traían un "ONCE IDEAL" escrito por la IA: se quita (ahora va arriba con reglas fijas).
     let aiTxt = String(d.analisis || "");
     if (/\*\*ONCE IDEAL\*\*/i.test(aiTxt)) aiTxt = /\*\*(?:MULTIPOSICI|CLAVES)/i.test(aiTxt) ? aiTxt.replace(/\*\*ONCE IDEAL\*\*[\s\S]*?(?=\*\*(?:MULTIPOSICI|CLAVES))/i, "") : "";
+    cur = secC;
     if (aiTxt.trim()) {
       const kb = renderClaves(aiTxt, [].concat(tits, sups), tits);
       if (kb) {
@@ -5083,6 +5104,7 @@
       }
     }
       // Once ideal con reglas fijas (no lo decide la IA)
+      cur = secB;
       const ideal = pickIdealXI(tits.concat(sups));
       if (ideal) {
         const wrap = el("div", "an-ideal");
@@ -5126,6 +5148,7 @@
         }
         out.appendChild(wrap);
       }
+      cur = secC;
       const fb = el("div", "an-forma");
       out.appendChild(fb);
       anFormaRender = () => renderForma(fb, tits.concat(sups), d);
@@ -5143,6 +5166,10 @@
     // gasta en el que de verdad lo necesita. Esto se calcula aquí con las
     // fechas reales de cada partido, en vez de depender de que la IA lo
     // acierte en el texto libre.
+    if (!secB.children.length) tabBtns.ideal.hidden = true;
+    if (!secC.children.length) tabBtns.jug.hidden = true;
+    if (!TABS.some((t) => t[0] === anTab && !tabBtns[t[0]].hidden)) anTab = "equipo";
+    showTab(anTab);
     clearInterval(anRefT); anRefT = setInterval(anRefresh, 300000);
   }
 

@@ -2734,3 +2734,16 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .an-ss .an-ss-r .rv .nm{overflow:hidden;text-overflow:ellipsis}
 .an-ss .an-ss-r .rv .ic{flex:none;display:inline-flex}
 .an-ss .an-ss-r.hd .rv{justify-content:center}
+
+/* Analiza: tres pestañas */
+.an-tabs{display:flex;gap:6px;padding:5px;margin:4px 0 14px;border-radius:16px;background:rgba(127,127,127,.14)}
+.an-tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:52px;padding:6px 4px;border:0;border-radius:12px;background:transparent;color:inherit;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .2s,box-shadow .2s}
+.an-tab[hidden]{display:none}
+.an-tab-ic{font-size:1.05rem;line-height:1}
+.an-tab-t{font-size:.72rem;font-weight:800;line-height:1.1;text-align:center;opacity:.7}
+.an-tab.on{background:var(--card-solid,var(--card,#fff));box-shadow:0 2px 8px rgba(0,0,0,.14)}
+.an-tab.on .an-tab-t{opacity:1}
+.an-tabsec{display:block}
+.an-tabsec[hidden]{display:none}
+.an-tabsec-a{display:flex;flex-direction:column}
+.an-tabsec-a[hidden]{display:none}
