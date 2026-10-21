@@ -294,7 +294,7 @@
     var box = document.getElementById("cxAplaz");
     if (!box) return;
     fetch(API + "/aplazados", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
-      var items = (d && d.items) || [];
+      var items = ((d && d.items) || []).slice().sort(function (a, b) { return (a.undated ? 1 : 0) - (b.undated ? 1 : 0); });
       if (!items.length) { box.classList.add("hidden"); box.innerHTML = ""; return; }
       var today = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" }).format(new Date());
       box.innerHTML = '<div class="cx-ap-title">Partidos aplazados</div>' + items.map(function (x) {
