@@ -3192,6 +3192,7 @@
       try { history.replaceState({ tab: "noticias" }, "", "/futmondo/guiafantasy/noticias"); } catch (e) {}
     });
     box.appendChild(back);
+    if (d && d.extinguida) { box.appendChild(el("h2", "ficha-name", title || d.title || "")); box.appendChild(el("p", "muted small", "Esta noticia ya no está vigente.")); return; }
     box.appendChild(el("h2", "ficha-name", title || d.title || ""));
     try { if (title || d.title) document.title = (title || d.title) + " · EduMR"; } catch (e) {}
     const shareUrl = location.origin + newsHref(url);

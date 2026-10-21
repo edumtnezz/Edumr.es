@@ -1370,6 +1370,7 @@ async function getNoticia(url) {
   const html = await res.text();
   const title = stripHtml((html.match(/<h1[^>]*class="[^"]*titulo[^"]*"[^>]*>([\s\S]*?)<\/h1>/i) || [])[1] || "");
   const lead = stripHtml((html.match(/<p[^>]*class="[^"]*entradilla[^"]*"[^>]*>([\s\S]*?)<\/p>/i) || [])[1] || "");
+  if (/\[?extinguid/i.test(title)) return { extinguida: true, title: title.replace(/\s*\[?extinguido\]?/i, "").trim() };
   let body = "";
   const ci = html.search(/class="cuerpo"/i);
   if (ci >= 0) {
@@ -1639,7 +1640,7 @@ async function playerFicha(env, id, fast, raw) {
 async function getNoticias(env) {
   try {
     const c = await env.PORRA.get("ff:news:v2", "json");
-    if (c && c.at && Date.now() - c.at < 15 * 60 * 1000) { c.data.updatedAt = c.at; return c.data; }
+    if (c && c.at && Date.now() - c.at < 15 * 60 * 1000) { c.data.noticias = (c.data.noticias || []).filter((x) => !(x && x.title && FF_PROMO.test(x.title))); c.data.updatedAt = c.at; return c.data; }
   } catch (e) {}
   const out = { noticias: [], locker: [] };
   const fresh = await getFfNoticias(env);
@@ -1665,7 +1666,25 @@ async function getNoticias(env) {
   });
   const trimmed = merged.slice(0, 80);
   try { await env.PORRA.put("ff:news:archive", JSON.stringify(trimmed), { expirationTtl: 20 * 24 * 3600 }); } catch (e) {}
-  out.noticias = trimmed;
+  // FutbolFantasy marca con "[EXTINGUIDO]" (solo dentro de la noticia) las que ya no valen: se comprueba y se ocultan
+  let keep = trimmed;
+  try {
+    let ext = (await env.PORRA.get("ff:ext:v1", "json")) || {};
+    const now = Date.now();
+    const todo = trimmed.slice(0, 40).filter((x) => !ext[x.link] || now - ext[x.link].at > 3 * 3600 * 1000).slice(0, 20);
+    await Promise.all(todo.map(async (x) => {
+      try {
+        const html = await (await fetch(x.link, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text();
+        const t = stripHtml((html.match(/<h1[^>]*class="[^"]*titulo[^"]*"[^>]*>([\s\S]*?)<\/h1>/i) || [])[1] || "");
+        if (t) ext[x.link] = { x: /extinguid/i.test(t) ? 1 : 0, at: now };
+      } catch (e) {}
+    }));
+    const links = new Set(trimmed.map((x) => x.link));
+    Object.keys(ext).forEach((k) => { if (!links.has(k)) delete ext[k]; });
+    await env.PORRA.put("ff:ext:v1", JSON.stringify(ext), { expirationTtl: 20 * 24 * 3600 });
+    keep = trimmed.filter((x) => !(ext[x.link] && ext[x.link].x));
+  } catch (e) {}
+  out.noticias = keep;
   try {
     const header = await futbolHeader(env);
     const l = await futbolPost("/2/locker/news", header, { championshipId: FUTMONDO_CHAMPIONSHIP });
