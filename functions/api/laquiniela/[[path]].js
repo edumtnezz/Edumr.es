@@ -2542,7 +2542,10 @@ async function getProbableFlags(env, jornada) {
   const jd = jornada && Number(jornada) !== Number(dj.matchday) ? await getJornada(env, jornada) : dj;
   const jn = Number(jd.matchday) || 0, dn = Number(dj.matchday) || 0;
   const ok = jn && (jn === dn || (jn === dn + 1 && (dj.matches || []).length && (dj.matches || []).every(isMatchDone)));
-  if (!ok) return { matchday: jn, items: [] };
+  if (!ok) {
+    try { const prev = await env.PORRA.get("probflags:" + (jornada || dn), "json"); if (prev && prev.items && Date.now() - (prev.at || 0) < 6 * 3600 * 1000) return { matchday: Number(jornada || dn) || jn, items: prev.items }; } catch (e) {}
+    return { matchday: jn, items: [] };
+  }
   const nm = (t) => (t && (t.shortName || t.name)) || "";
   const open = (jd.matches || []).filter((m) => m.status === "SCHEDULED" || m.status === "TIMED");
   const names = [...new Set(open.reduce((a, m) => a.concat([nm(m.homeTeam), nm(m.awayTeam)]), []).filter(Boolean))];
