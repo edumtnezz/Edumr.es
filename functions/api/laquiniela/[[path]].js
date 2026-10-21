@@ -2574,7 +2574,8 @@ async function getProbableFlags(env, jornada) {
       const have = new Set(out.map((i) => i.home + "|" + i.away));
       prev.items.forEach((i) => { const k = i.home + "|" + i.away; if (!have.has(k) && openKeys.has(k)) out.push(i); });
     }
-    await env.PORRA.put(pkey, JSON.stringify({ at: Date.now(), items: out }), { expirationTtl: 86400 });
+    if (out.length) await env.PORRA.put(pkey, JSON.stringify({ at: Date.now(), items: out }), { expirationTtl: 86400 });
+    else if (prev && prev.items && prev.items.length && open.length) out = prev.items.filter((i) => open.some((m) => nm(m.homeTeam) === i.home && nm(m.awayTeam) === i.away));
   } catch (e) {}
   return { matchday: jn, items: out };
 }
