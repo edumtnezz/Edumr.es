@@ -254,3 +254,6 @@
 .eq-calrow.fin.draw .eq-calscore{background:#9ca3af;color:#fff}
 .eq-pitch .al-foot{display:none}
 .eq-pitch .al .pitch{padding-bottom:14px}
+
+/* Fecha del partido más grande */
+.mpage-state{font-size:1rem !important;font-weight:900 !important;max-width:170px !important;min-height:0 !important;line-height:1.2 !important;letter-spacing:.03em}
