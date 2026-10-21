@@ -2611,6 +2611,38 @@ async function getJornadaStrip(env, matchday) {
   return { matchday: jd.matchday || 0, matches };
 }
 
+// Foto del estadio de cada club para la cabecera de su página. Fuente real: Wikipedia/Wikimedia Commons
+// (imagen principal del artículo del estadio). Se guarda 30 días.
+const ESTADIOS = {
+  ala: ["es", "Estadio de Mendizorroza"], ath: ["es", "Estadio de San Mamés"], bet: ["es", "Estadio Benito Villamarín"], cel: ["es", "Estadio de Balaídos"],
+  dep: ["es", "Estadio de Riazor"], elc: ["es", "Estadio Manuel Martínez Valero"], esp: ["es", "RCDE Stadium"], get: ["es", "Coliseum Alfonso Pérez"],
+  lev: ["es", "Estadio Ciudad de Valencia"], osa: ["es", "Estadio El Sadar"], rac: ["es", "Campos de Sport de El Sardinero"], ray: ["es", "Estadio de Vallecas"],
+  sev: ["es", "Estadio Ramón Sánchez-Pizjuán"], val: ["es", "Estadio de Mestalla"], vil: ["es", "Estadio de la Cerámica"],
+  fcb: ["en", "Camp Nou"], mal: ["en", "La Rosaleda Stadium"], rma: ["en", "Santiago Bernabéu Stadium"], atm: ["en", "Metropolitano Stadium"], rso: ["en", "Anoeta Stadium"],
+};
+async function getEstadios(env) {
+  const key = "estadios:v1";
+  const c = await env.PORRA.get(key, "json");
+  if (c && c.at && Date.now() - c.at < 30 * 24 * 3600 * 1000 && c.data && Object.keys(c.data).length >= 15) return c.data;
+  const out = {};
+  for (const lang of ["es", "en"]) {
+    const titles = Object.entries(ESTADIOS).filter((e) => e[1][0] === lang);
+    try {
+      const r = await fetch(`https://${lang}.wikipedia.org/w/api.php?action=query&redirects=1&prop=pageimages&pithumbsize=960&format=json&titles=` + encodeURIComponent(titles.map((e) => e[1][1]).join("|")), { headers: { "user-agent": "edumr.es (estadios)" } });
+      const j = await r.json();
+      const pages = Object.values((j.query && j.query.pages) || {});
+      const red = {}; ((j.query && j.query.redirects) || []).forEach((x) => { red[x.from] = x.to; });
+      titles.forEach(([code, [, t]]) => {
+        const pg = pages.find((x) => x.title === (red[t] || t));
+        if (pg && pg.thumbnail && pg.thumbnail.source && !/Location_map/i.test(pg.thumbnail.source)) out[code] = { name: pg.title, img: pg.thumbnail.source.replace(/\?.*$/, "") };
+      });
+    } catch (e) {}
+  }
+  if (Object.keys(out).length < 10) return (c && c.data) || out;
+  await env.PORRA.put(key, JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 45 * 24 * 3600 });
+  return out;
+}
+
 // Partidos aplazados: de una jornada ANTERIOR a la actual que aún no se han jugado o se juegan/han jugado hace poco
 // (p. ej. Levante–Athletic de la J6). Todo sale de football-data; nada se inventa.
 async function getAplazados(env) {
@@ -4465,6 +4497,9 @@ async function handleGet({ request, env: env0, params }) {
   }
   if (path === "jornada") {
     try { return json(await getJornadaStrip(env, url.searchParams.get("jornada"))); } catch (e) { return json({ matchday: 0, matches: [] }); }
+  }
+  if (path === "estadios") {
+    try { return json(await getEstadios(env)); } catch (e) { return json({}); }
   }
   if (path === "aplazados") {
     try { return json(await getAplazados(env)); } catch (e) { return json({ current: 0, items: [] }); }
