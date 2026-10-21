@@ -161,12 +161,21 @@
     return ((parts[0] ? parts[0][0] : "?") + (parts[1] ? parts[1][0] : "")).toUpperCase();
   }
   const DEFAULT_AVATAR = "/img/avatar.svg";
+  const FFB = "https://media.futbolfantasy.com/thumb/150x150/v202610200350/uploads/images/jugadores/ficha/";
+  const FF_FALLBACK = { "aaron-mayol": FFB + "17376.png", "unai-santos": FFB + "16982.png", "2000153028": FFB + "16760.png", "jose-antonio-morante": FFB + "16154.png" };
   function photoImg(src, cls) {
     const im = el("img", cls || "");
     im.loading = "lazy";
     im.alt = "";
     im.src = src || DEFAULT_AVATAR;
-    im.addEventListener("error", () => { if (im.getAttribute("src") !== DEFAULT_AVATAR) im.src = DEFAULT_AVATAR; }, { once: true });
+    im.addEventListener("error", () => {
+      const cur = im.getAttribute("src") || "";
+      // Caras de Futmondo que no existen: se usa la de FutbolFantasy (si la hay) antes del avatar
+      const k = (cur.match(/faces\/\d+\/([^/.]+)\.png/) || [])[1];
+      const ff = k && FF_FALLBACK[k];
+      if (ff && cur !== ff) { im.addEventListener("error", () => { if (im.getAttribute("src") !== DEFAULT_AVATAR) im.src = DEFAULT_AVATAR; }, { once: true }); im.src = ff; return; }
+      if (cur !== DEFAULT_AVATAR) im.src = DEFAULT_AVATAR;
+    }, { once: true });
     return im;
   }
   function statusInfo(s) {
