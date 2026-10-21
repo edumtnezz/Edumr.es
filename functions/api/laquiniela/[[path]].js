@@ -2548,7 +2548,13 @@ async function getProbableFlags(env, jornada) {
   }
   const nm = (t) => (t && (t.shortName || t.name)) || "";
   const open = (jd.matches || []).filter((m) => m.status === "SCHEDULED" || m.status === "TIMED");
-  const names = [...new Set(open.reduce((a, m) => a.concat([nm(m.homeTeam), nm(m.awayTeam)]), []).filter(Boolean))];
+  let prevItems = [];
+  try { const pv = await env.PORRA.get("probflags:" + jn, "json"); if (pv && pv.items) prevItems = pv.items; } catch (e) {}
+  const knownK = new Set(prevItems.map((i) => i.home + "|" + i.away));
+  // Cada lectura procesa como mucho 8 equipos (20 páginas de golpe superan el límite de recursos); los que ya se conocen
+  // se refrescan en las siguientes y lo ya visto se conserva.
+  const ordered = open.slice().sort((a, b) => (knownK.has(nm(a.homeTeam) + "|" + nm(a.awayTeam)) ? 1 : 0) - (knownK.has(nm(b.homeTeam) + "|" + nm(b.awayTeam)) ? 1 : 0));
+  const names = [...new Set(ordered.reduce((a, m) => a.concat([nm(m.homeTeam), nm(m.awayTeam)]), []).filter(Boolean))].slice(0, 8);
   const has = {}, at = {};
   await Promise.all(names.map(async (n) => { try { const t = await getFFTeam(env, n); has[n] = ((t && t.starters) || []).length >= 10; at[n] = (t && (t.updatedAt || t.fetchedAt)) || 0; } catch (e) { has[n] = false; } }));
   const items = open.filter((m) => has[nm(m.homeTeam)] && has[nm(m.awayTeam)]);
