@@ -76,6 +76,7 @@
           '<button class="cx-jn-nav" id="cxJNext" aria-label="Jornada siguiente">▶</button>' +
         '</div>' +
         '<div class="cx-jn-grid" id="cxJGrid"><span class="cx-sk cx-sk-strip"></span></div>' +
+        '<div class="cx-aplaz hidden" id="cxAplaz"></div>' +
       '</div>';
     var pv = document.getElementById("cxJPrev"), nx = document.getElementById("cxJNext");
     if (pv) pv.addEventListener("click", function () { pinnedJ = jornada - 1; loadJornada(pinnedJ); });
@@ -92,6 +93,8 @@
       document.dispatchEvent(new CustomEvent("cx:news", { detail: { link: a.getAttribute("data-link") || a.getAttribute("href"), title: a.getAttribute("data-title") } }));
     });
     loadJornada(0);
+    loadAplazados();
+    setInterval(loadAplazados, 300000);
     loadTeams();
     loadTicker();
     // La cinta de la portada se refresca sola cada 5 minutos.
@@ -285,6 +288,29 @@
       if (d && d.matches && d.matches.length) { try { d.__t = Date.now(); localStorage.setItem(lsKey, JSON.stringify(d)); } catch (e) {} renderJ(d); }
       else if (!(cached && cached.matches && cached.matches.length)) renderJ(d || { matches: [] });
     });
+  }
+  // Partidos aplazados de jornadas anteriores (fuente: football-data), con enlace a su página
+  function loadAplazados() {
+    var box = document.getElementById("cxAplaz");
+    if (!box) return;
+    fetch(API + "/aplazados", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
+      var items = (d && d.items) || [];
+      if (!items.length) { box.classList.add("hidden"); box.innerHTML = ""; return; }
+      var today = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" }).format(new Date());
+      box.innerHTML = '<div class="cx-ap-title">Partidos aplazados</div>' + items.map(function (x) {
+        var when, cls = "";
+        if (x.status === "IN_PLAY" || x.status === "PAUSED") { when = "En juego" + (x.score ? " · " + esc(x.score) : ""); cls = " live"; }
+        else if (x.status === "FINISHED") { when = "Finalizado" + (x.score ? " · " + esc(x.score) : ""); cls = " fin"; }
+        else if (x.undated) when = "Fecha por confirmar";
+        else when = (x.date === today ? "Hoy" : esc(x.day + " " + x.date)) + (x.time ? " · " + esc(x.time) : "");
+        var crest = function (u) { return u ? '<img src="' + esc(u) + '" alt="" loading="lazy" onerror="this.remove()">' : ""; };
+        return '<a class="cx-ap-card' + cls + '" href="/futmondo/guiafantasy/partido/' + tickerSlug(x.home, x.away) + '?j=' + x.matchday + '">' +
+          '<span class="cx-ap-j">Jornada ' + x.matchday + '</span>' +
+          '<span class="cx-ap-m">' + crest(x.homeCrest) + '<b>' + esc(x.home) + '</b><i>vs</i><b>' + esc(x.away) + '</b>' + crest(x.awayCrest) + '</span>' +
+          '<span class="cx-ap-w">' + when + '</span></a>';
+      }).join("");
+      box.classList.remove("hidden");
+    }).catch(function () {});
   }
   function loadTeams() {
     var box = document.getElementById("cxStrip");

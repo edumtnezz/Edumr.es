@@ -2614,7 +2614,7 @@ async function getJornadaStrip(env, matchday) {
 // Partidos aplazados: de una jornada ANTERIOR a la actual que aún no se han jugado o se juegan/han jugado hace poco
 // (p. ej. Levante–Athletic de la J6). Todo sale de football-data; nada se inventa.
 async function getAplazados(env) {
-  const kv = env.PORRA, key = "aplaz:v3";
+  const kv = env.PORRA, key = "aplaz:v4";
   const c = await kv.get(key, "json");
   if (c && c.at && Date.now() - c.at < 5 * 60 * 1000) return c.data;
   let data = null;
@@ -2639,7 +2639,7 @@ async function getAplazados(env) {
     all.forEach((m) => {
       if (!cur || m.matchday >= cur) return;
       const t = Date.parse(m.utcDate) || 0;
-      const open = ["POSTPONED", "SUSPENDED", "SCHEDULED", "TIMED", "IN_PLAY", "PAUSED"].indexOf(m.status) >= 0;
+      const open = ["POSTPONED", "SUSPENDED", "CANCELLED", "SCHEDULED", "TIMED", "IN_PLAY", "PAUSED"].indexOf(m.status) >= 0;
       const movedAndRecent = m.status === "FINISHED" && t >= now - 40 * 3600 * 1000 && t > (med[m.matchday] || 0) + 2 * DAY;
       if (!open && !movedAndRecent) return;
       const d = new Date(t);
@@ -2654,18 +2654,11 @@ async function getAplazados(env) {
         day: w.charAt(0).toUpperCase() + w.slice(1), date: dtF.format(d), time: tbc ? "" : tF.format(d), tbc,
         score: ["IN_PLAY", "PAUSED", "FINISHED"].indexOf(m.status) >= 0 && ft.home != null && ft.away != null ? ft.home + " - " + ft.away : "",
         // fecha de juego aún no fijada: football-data deja la original en un partido aplazado
-        undated: m.status === "POSTPONED" || m.status === "SUSPENDED",
+        undated: m.status === "POSTPONED" || m.status === "SUSPENDED" || m.status === "CANCELLED",
       });
     });
-    let fmdbg = null;
-    try {
-      const fr = await fetch("https://www.fotmob.com/api/data/leagues?id=87&ccode3=ESP", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
-      const fj = await fr.json();
-      const fx = (fj.fixtures && fj.fixtures.allMatches) || [];
-      fmdbg = fx.filter((x) => /Athletic/i.test(JSON.stringify([x.home, x.away])) && !(x.status && x.status.finished)).slice(0, 5).map((x) => [x.round, x.home && x.home.name, x.away && x.away.name, x.status && (x.status.utcTime || ""), JSON.stringify(x.status).slice(0, 160)]);
-    } catch (e) { fmdbg = String(e); }
     items.sort((a, b) => Date.parse(a.utcDate) - Date.parse(b.utcDate));
-    data = { current: cur, items, fm: fmdbg, dbg: all.filter((m) => /Athletic/.test((m.homeTeam && m.homeTeam.name) + (m.awayTeam && m.awayTeam.name)) && m.status !== "FINISHED").slice(0, 6).map((m) => [m.matchday, m.status, m.homeTeam.shortName, m.awayTeam.shortName, m.utcDate]) };
+    data = { current: cur, items };
   } catch (e) {
     return c && c.data ? c.data : { current: 0, items: [], error: String(e) };
   }
