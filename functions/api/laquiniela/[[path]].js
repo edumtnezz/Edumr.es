@@ -2614,7 +2614,7 @@ async function getJornadaStrip(env, matchday) {
 // Partidos aplazados: de una jornada ANTERIOR a la actual que aún no se han jugado o se juegan/han jugado hace poco
 // (p. ej. Levante–Athletic de la J6). Todo sale de football-data; nada se inventa.
 async function getAplazados(env) {
-  const kv = env.PORRA, key = "aplaz:v1";
+  const kv = env.PORRA, key = "aplaz:v2";
   const c = await kv.get(key, "json");
   if (c && c.at && Date.now() - c.at < 5 * 60 * 1000) return c.data;
   let data = null;
@@ -2652,13 +2652,13 @@ async function getAplazados(env) {
         home: nm(m.homeTeam) === "Santander" ? "Racing de Santander" : nm(m.homeTeam), away: nm(m.awayTeam) === "Santander" ? "Racing de Santander" : nm(m.awayTeam),
         homeCrest: (m.homeTeam && m.homeTeam.crest) || "", awayCrest: (m.awayTeam && m.awayTeam.crest) || "",
         day: w.charAt(0).toUpperCase() + w.slice(1), date: dtF.format(d), time: tbc ? "" : tF.format(d), tbc,
-        score: ft.home != null && ft.away != null ? ft.home + " - " + ft.away : "",
+        score: ["IN_PLAY", "PAUSED", "FINISHED"].indexOf(m.status) >= 0 && ft.home != null && ft.away != null ? ft.home + " - " + ft.away : "",
         // fecha de juego aún no fijada: football-data deja la original en un partido aplazado
         undated: m.status === "POSTPONED" || m.status === "SUSPENDED",
       });
     });
     items.sort((a, b) => Date.parse(a.utcDate) - Date.parse(b.utcDate));
-    data = { current: cur, items };
+    data = { current: cur, items, dbg: all.filter((m) => /Athletic/.test((m.homeTeam && m.homeTeam.name) + (m.awayTeam && m.awayTeam.name)) && m.status !== "FINISHED").slice(0, 6).map((m) => [m.matchday, m.status, m.homeTeam.shortName, m.awayTeam.shortName, m.utcDate]) };
   } catch (e) {
     return c && c.data ? c.data : { current: 0, items: [], error: String(e) };
   }
