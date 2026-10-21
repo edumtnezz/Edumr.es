@@ -2573,7 +2573,7 @@ async function getProbableFlags(env, jornada) {
     }
     await env.PORRA.put(pkey, JSON.stringify({ at: Date.now(), items: out }), { expirationTtl: 86400 });
   } catch (e) {}
-  return { matchday: jn, items: out, dbg: { names, has, n: open.length } };
+  return { matchday: jn, items: out, dbg: { names, has, n: open.length, st: (jd.matches || []).map((m) => nm(m.homeTeam) + ":" + m.status + ":" + m.utcDate) } };
 }
 
 async function getJornadaStrip(env, matchday) {
