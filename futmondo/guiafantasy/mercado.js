@@ -3163,11 +3163,12 @@
   const newsSlug = (link) => (String(link || "").indexOf(NEWS_PFX) === 0 ? String(link).slice(NEWS_PFX.length).replace(/[?#].*$/, "").replace(/\/+$/, "") : "");
   const newsHref = (link) => { const sl = newsSlug(link); return sl ? "/futmondo/guiafantasy/noticias/" + sl : "/futmondo/guiafantasy/noticias"; };
   const baseTitle = document.title;
+  let newsPushed = false;
   function openNoticiaInline(url, title, fromPop) {
     const box = $("noticiaView");
     if (!box) return;
     const sl = newsSlug(url);
-    if (sl && !fromPop) { try { history.pushState({ tab: "noticias", news: sl }, "", newsHref(url)); } catch (e) {} }
+    if (sl && !fromPop) { try { history.pushState({ tab: "noticias", news: sl }, "", newsHref(url)); newsPushed = true; } catch (e) {} }
     const list = $("newsAnuncios");
     const h3 = document.querySelector("#tab-noticias .estado-title");
     box.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>';
@@ -3187,7 +3188,7 @@
     const back = el("button", "bk", "← Volver a noticias");
     back.type = "button";
     back.addEventListener("click", () => {
-      if (history.state && history.state.news) { history.back(); return; }
+      if (newsPushed && history.state && history.state.news) { newsPushed = false; history.back(); return; }
       closeNoticiaInline();
       try { history.replaceState({ tab: "noticias" }, "", "/futmondo/guiafantasy/noticias"); } catch (e) {}
     });
