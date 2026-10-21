@@ -2551,7 +2551,20 @@ async function getProbableFlags(env, jornada) {
   const items = open.filter((m) => has[nm(m.homeTeam)] && has[nm(m.awayTeam)]);
   // Cada equipo actualiza su once por su cuenta en futbolfantasy: la hora es PARTIDO a PARTIDO y es la de la
   // última actualización real (la más reciente de sus dos equipos), no la de cuando la leímos nosotros.
-  return { matchday: jn, items: items.map((m) => ({ home: nm(m.homeTeam), away: nm(m.awayTeam), at: Math.max(at[nm(m.homeTeam)] || 0, at[nm(m.awayTeam)] || 0) })) };
+  let out = items.map((m) => ({ home: nm(m.homeTeam), away: nm(m.awayTeam), at: Math.max(at[nm(m.homeTeam)] || 0, at[nm(m.awayTeam)] || 0) }));
+  // Leer 20 páginas a la vez a veces falla a medias (límite de recursos): lo que ya se había visto bien se conserva,
+  // siempre que el partido siga sin empezar.
+  const pkey = "probflags:" + jn;
+  try {
+    const prev = await env.PORRA.get(pkey, "json");
+    if (prev && prev.items && Date.now() - (prev.at || 0) < 12 * 3600 * 1000) {
+      const openKeys = new Set(open.map((m) => nm(m.homeTeam) + "|" + nm(m.awayTeam)));
+      const have = new Set(out.map((i) => i.home + "|" + i.away));
+      prev.items.forEach((i) => { const k = i.home + "|" + i.away; if (!have.has(k) && openKeys.has(k)) out.push(i); });
+    }
+    await env.PORRA.put(pkey, JSON.stringify({ at: Date.now(), items: out }), { expirationTtl: 86400 });
+  } catch (e) {}
+  return { matchday: jn, items: out };
 }
 
 async function getJornadaStrip(env, matchday) {
