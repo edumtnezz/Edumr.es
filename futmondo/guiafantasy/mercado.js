@@ -4636,14 +4636,13 @@
         const home = teamCanon(m.home) === tc;
         const r = el("div", "an-ss-r" + (played ? "" : " none"));
         r.appendChild(el("span", null, "J" + m.r));
-        r.appendChild(el("span", "rv", (home ? "🏠 " : "✈️ ") + (home ? m.away : m.home)));
+        { const rv = el("span", "rv"); rv.appendChild(el("span", "ic", home ? "🏠" : "✈️")); rv.appendChild(el("span", "nm", String(home ? m.away : m.home).split(" de ")[0])); r.appendChild(rv); }
         r.appendChild(el("span", null, played ? m.mins + "'" : "–"));
         const tp = ptsByJ ? ptsByJ[Number(m.r)] : undefined;
         { const pc = el("span", tp !== undefined ? "pt" : "nd"); if (tp !== undefined && tp !== 0) { const pb = el("b", tp <= 3 ? "l" : tp >= 10 ? "h" : "m", String(tp)); pc.appendChild(pb); } else pc.textContent = "–"; r.appendChild(pc); }
         [m.as, m.marca, m.ss].forEach((v) => r.appendChild(el("span", null, played && v != null ? fmN((Number(v) || 0) / 2) : "–")));
         tb.appendChild(r);
       });
-      if (pl.length) { const av = el("div", "an-ss-r avg"); av.appendChild(el("span", null, "")); av.appendChild(el("span", "rv", "Media")); av.appendChild(el("span", null, "")); const tps = pl.map((m) => (ptsByJ ? ptsByJ[Number(m.r)] : undefined)).filter((v) => v !== undefined); av.appendChild(el("span", "pt", tps.length ? f1e(tps.reduce((a, b) => a + b, 0) / tps.length) : "")); [avgOf("as"), avgOf("marca"), avgOf("ss")].forEach((v) => av.appendChild(el("span", null, fmN(v)))); tb.appendChild(av); }
       box.appendChild(tb);
     };
     const withHist = (j) => fetch(API + "/historial-puntos?ids=" + encodeURIComponent(pid)).then((r) => r.json()).then((h) => { const o = (h && h.pts && h.pts[pid]) || {}; Object.keys(o).forEach((n) => { if (ptsByJ && ptsByJ[n] === undefined) ptsByJ[n] = o[n]; }); return j; }).catch(() => j);

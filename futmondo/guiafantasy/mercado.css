@@ -2727,3 +2727,10 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .an-ss .an-ss-r.avg > span:nth-child(n+5){opacity:.85}
 .an-ss .an-ss-r{grid-template-columns:34px minmax(0,1fr) 40px 44px 30px 46px 38px}
 .an-ss .an-ss-r.hd > span{font-size:.6rem;opacity:.6;font-weight:800;letter-spacing:0;text-transform:uppercase;white-space:nowrap;overflow:hidden}
+/* Temporada: todo centrado y en una sola línea */
+.an-ss .an-ss-r{grid-template-columns:38px minmax(0,1.5fr) 44px 46px 34px 44px 38px;gap:2px;text-align:center;padding:12px 2px}
+.an-ss .an-ss-r > span,.an-ss .an-ss-r.hd > span{text-align:center}
+.an-ss .an-ss-r .rv{display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;overflow:hidden;font-size:.88rem}
+.an-ss .an-ss-r .rv .nm{overflow:hidden;text-overflow:ellipsis}
+.an-ss .an-ss-r .rv .ic{flex:none;display:inline-flex}
+.an-ss .an-ss-r.hd .rv{justify-content:center}
