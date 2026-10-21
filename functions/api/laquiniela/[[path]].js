@@ -319,12 +319,16 @@ async function fetchFootballData(env, matchday, hold) {
       // en que acabó su último partido; después, la siguiente. Sin hold (juegos), pasa enseguida.
       if (hold && Date.now() < lastEndOf(matches)) held = true;
       if (!held) {
+        let nextFailed = false, moved = false;
         for (let next = md + 1; next <= md + 3; next++) {
           try {
             const nm = await fetchMatchday(headers, next);
-            if (nm.length) { md = next; matches = nm; break; }
-          } catch (e) { break; }
+            if (nm.length) { md = next; matches = nm; moved = true; break; }
+          } catch (e) { nextFailed = true; break; }
         }
+        // Si no se pudo consultar la siguiente (límite de football-data) NO se da por buena la jornada
+        // terminada: se lanza el error y getJornadaRaw sirve la última copia buena (la jornada nueva).
+        if (!moved && nextFailed) throw new Error("siguiente jornada no disponible");
       }
     } else if (hold && md > 1 && matches.every((m) => m.status === "SCHEDULED" || m.status === "TIMED")) {
       // football-data ya avanzó a la siguiente: la recién terminada se mantiene hasta las 23:59 del día
@@ -379,6 +383,13 @@ async function getJornadaRaw(env, matchday, hold) {
   if (!data || !data.matches || !data.matches.length) {
     // football-data falla o limita (10 peticiones/min): se sirve lo último bueno que hubiera.
     // NUNCA datos inventados (antes caía a una jornada falsa Real Madrid–Barcelona).
+    if (!matchday && okRaw && okRaw.data.matches && okRaw.data.matches.length && okRaw.data.matches.every(isMatchDone)) {
+      // la copia es una jornada ya terminada: mejor la siguiente si ya la teníamos guardada
+      try {
+        const nx = await kv.get(`jornada:${Number(okRaw.data.matchday) + 1}`, "json");
+        if (nx && nx.data && nx.data.source === "football-data" && nx.data.matches && nx.data.matches.length) return nx.data;
+      } catch (e) {}
+    }
     return okRaw ? okRaw.data : null;
   }
   const final = !!matchday && data.matches.every((m) => m.status === "FINISHED");
