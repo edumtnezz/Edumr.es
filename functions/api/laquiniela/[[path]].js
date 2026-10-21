@@ -2611,6 +2611,61 @@ async function getJornadaStrip(env, matchday) {
   return { matchday: jd.matchday || 0, matches };
 }
 
+// Partidos aplazados: de una jornada ANTERIOR a la actual que aún no se han jugado o se juegan/han jugado hace poco
+// (p. ej. Levante–Athletic de la J6). Todo sale de football-data; nada se inventa.
+async function getAplazados(env) {
+  const kv = env.PORRA, key = "aplaz:v1";
+  const c = await kv.get(key, "json");
+  if (c && c.at && Date.now() - c.at < 5 * 60 * 1000) return c.data;
+  let data = null;
+  try {
+    const token = env.FOOTBALL_API_KEY;
+    if (!token) throw new Error("sin token");
+    const res = await fetch(`https://api.football-data.org/v4/competitions/${COMPETITION}/matches`, { headers: { "X-Auth-Token": token } });
+    if (!res.ok) throw new Error("matches " + res.status);
+    const all = (await res.json()).matches || [];
+    let cur = 0;
+    try { cur = Number((await getJornada(env, null)).matchday) || 0; } catch (e) {}
+    // fecha "normal" de cada jornada = mediana de sus partidos
+    const byMd = {};
+    all.forEach((m) => { (byMd[m.matchday] = byMd[m.matchday] || []).push(Date.parse(m.utcDate) || 0); });
+    const med = {};
+    Object.keys(byMd).forEach((k) => { const a = byMd[k].sort((x, y) => x - y); med[k] = a[Math.floor(a.length / 2)]; });
+    const now = Date.now(), DAY = 24 * 3600 * 1000;
+    const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
+    const dtF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" });
+    const tF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hour12: false });
+    const items = [];
+    all.forEach((m) => {
+      if (!cur || m.matchday >= cur) return;
+      const t = Date.parse(m.utcDate) || 0;
+      const open = ["POSTPONED", "SUSPENDED", "SCHEDULED", "TIMED", "IN_PLAY", "PAUSED"].indexOf(m.status) >= 0;
+      const movedAndRecent = m.status === "FINISHED" && t >= now - 40 * 3600 * 1000 && t > (med[m.matchday] || 0) + 2 * DAY;
+      if (!open && !movedAndRecent) return;
+      const d = new Date(t);
+      const w = wdF.format(d).replace(".", "");
+      const tbc = d.getUTCHours() === 0 && d.getUTCMinutes() === 0;
+      const ft = (m.score && m.score.fullTime) || {};
+      const nm = (x) => (x && (x.shortName || x.name)) || "";
+      items.push({
+        matchday: m.matchday, status: m.status, utcDate: m.utcDate,
+        home: nm(m.homeTeam) === "Santander" ? "Racing de Santander" : nm(m.homeTeam), away: nm(m.awayTeam) === "Santander" ? "Racing de Santander" : nm(m.awayTeam),
+        homeCrest: (m.homeTeam && m.homeTeam.crest) || "", awayCrest: (m.awayTeam && m.awayTeam.crest) || "",
+        day: w.charAt(0).toUpperCase() + w.slice(1), date: dtF.format(d), time: tbc ? "" : tF.format(d), tbc,
+        score: ft.home != null && ft.away != null ? ft.home + " - " + ft.away : "",
+        // fecha de juego aún no fijada: football-data deja la original en un partido aplazado
+        undated: m.status === "POSTPONED" || m.status === "SUSPENDED",
+      });
+    });
+    items.sort((a, b) => Date.parse(a.utcDate) - Date.parse(b.utcDate));
+    data = { current: cur, items };
+  } catch (e) {
+    return c && c.data ? c.data : { current: 0, items: [], error: String(e) };
+  }
+  await kv.put(key, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 3 * 24 * 3600 });
+  return data;
+}
+
 function pujaStep(base) {
   return Number(base) >= 10000000 ? 500000 : 100000;
 }
@@ -4410,6 +4465,9 @@ async function handleGet({ request, env: env0, params }) {
   }
   if (path === "jornada") {
     try { return json(await getJornadaStrip(env, url.searchParams.get("jornada"))); } catch (e) { return json({ matchday: 0, matches: [] }); }
+  }
+  if (path === "aplazados") {
+    try { return json(await getAplazados(env)); } catch (e) { return json({ current: 0, items: [] }); }
   }
   if (path === "clausulas") {
     try { return json(await getClausulas(env)); } catch (e) { return json({ players: [], error: String(e) }); }
