@@ -2747,3 +2747,5 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .an-tabsec[hidden]{display:none}
 .an-tabsec-a{display:flex;flex-direction:column}
 .an-tabsec-a[hidden]{display:none}
+.an-tab-ic{display:inline-flex;opacity:.75}.an-tab.on .an-tab-ic{opacity:1;color:var(--primary,#16a34a)}
+#anOut{margin-bottom:6px}

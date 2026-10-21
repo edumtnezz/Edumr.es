@@ -4879,7 +4879,12 @@
     // Tres secciones con pestañas: Tu equipo · Once ideal IA · Tus jugadores
     const tabBar = el("div", "an-tabs"); tabBar.setAttribute("role", "tablist");
     const secA = el("div", "an-tabsec an-tabsec-a"), secB = el("div", "an-tabsec"), secC = el("div", "an-tabsec");
-    const TABS = [["equipo", "👕", "Tu equipo", secA], ["ideal", "✨", "Once ideal IA", secB], ["jug", "👥", "Tus jugadores", secC]];
+    const TI = {
+      equipo: '<path d="M8 3.5L3 6.5l2 4 2.2-1V20h9.6V9.5l2.2 1 2-4-5-3a4 4 0 0 1-8 0z"/>',
+      ideal: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 5v14"/><circle cx="12" cy="12" r="2.6"/><path d="M3 9.5h2.8v5H3M21 9.5h-2.8v5H21"/>',
+      jug: '<circle cx="12" cy="8" r="3.6"/><path d="M5 20c.6-3.8 3.4-6 7-6s6.4 2.2 7 6"/>'
+    };
+    const TABS = [["equipo", "", "Tu equipo", secA], ["ideal", "", "Once ideal", secB], ["jug", "", "Tus jugadores", secC]];
     const tabBtns = {};
     const showTab = (k) => {
       try { anTab = k; localStorage.setItem("merc_antab", k); } catch (e) {}
@@ -4887,7 +4892,7 @@
     };
     TABS.forEach((t) => {
       const b = el("button", "an-tab"); b.type = "button"; b.setAttribute("role", "tab");
-      b.appendChild(el("span", "an-tab-ic", t[1])); b.appendChild(el("span", "an-tab-t", t[2]));
+      { const ic = el("span", "an-tab-ic"); ic.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + TI[t[0]] + "</svg>"; b.appendChild(ic); } b.appendChild(el("span", "an-tab-t", t[2]));
       b.addEventListener("click", () => { showTab(t[0]); const r = tabBar.getBoundingClientRect(); if (r.top < 0) window.scrollTo({ top: window.scrollY + r.top - 120 }); });
       tabBtns[t[0]] = b; tabBar.appendChild(b);
     });
@@ -5095,7 +5100,7 @@
       if (ideal) {
         const wrap = el("div", "an-ideal");
         const hd = el("div", "an-ideal-head");
-        hd.appendChild(el("span", "an-ideal-badge", "✨ Recomendación de la IA"));
+        hd.appendChild(el("span", "an-ideal-badge", "Recomendación de la IA"));
         hd.appendChild(el("div", "an-ideal-t", "Tu once ideal"));
         hd.appendChild(el("div", "an-ideal-s", "Formación " + ideal.formacion + " · el once que más puntos debería dar esta jornada"));
         wrap.appendChild(hd);
