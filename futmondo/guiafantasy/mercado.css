@@ -2725,3 +2725,5 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .an-ss .an-ss-r.avg{margin-top:6px;border-top:2px solid rgba(127,127,127,.3);background:rgba(34,197,94,.08);border-radius:10px}
 .an-ss .an-ss-r.avg .pt{color:inherit}
 .an-ss .an-ss-r.avg > span:nth-child(n+5){opacity:.85}
+.an-ss .an-ss-r{grid-template-columns:34px minmax(0,1fr) 40px 44px 30px 46px 38px}
+.an-ss .an-ss-r.hd > span{font-size:.6rem;opacity:.6;font-weight:800;letter-spacing:0;text-transform:uppercase;white-space:nowrap;overflow:hidden}
