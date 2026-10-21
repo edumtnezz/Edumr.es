@@ -4387,6 +4387,33 @@ async function handleGet({ request, env: env0, params }) {
   if (path === "clausulas") {
     try { return json(await getClausulas(env)); } catch (e) { return json({ players: [], error: String(e) }); }
   }
+  if (path === "clausula-info") {
+    // Cuándo se libera la cláusula de unos jugadores concretos (los de Analiza), aunque no estén en el top 40 de Clausulazo
+    const ids = String(url.searchParams.get("ids") || "").split(",").map((x) => x.trim()).filter((x) => /^[a-z0-9]{6,40}$/i.test(x)).slice(0, 16);
+    const names = String(url.searchParams.get("names") || "").split("|").map((x) => x.trim()).filter(Boolean).slice(0, 16);
+    const targets = ids.map((id) => ({ id, key: "id:" + id }));
+    if (names.length) {
+      let market = [];
+      try { market = (await getMarketPlayers(env)).players || []; } catch (e) {}
+      names.forEach((n) => {
+        const nk = stripAccents(n.toLowerCase());
+        const same = market.filter((p) => stripAccents(String(p.name || "").toLowerCase()) === nk);
+        const last = nk.split(" ").pop();
+        const part = same.length ? same : market.filter((p) => { const k = stripAccents(String(p.name || "").toLowerCase()); return k.includes(nk) || nk.includes(k) || (last.length > 3 && k.split(" ").pop() === last); });
+        if (part.length === 1) targets.push({ id: part[0].id, key: "n:" + nk });
+      });
+    }
+    let header = null;
+    try { header = await futbolHeader(env); } catch (e) {}
+    const info = header ? await Promise.all(targets.map(async (t) => {
+      try {
+        const sm = await futbolPost("/1/player/summary", header, { playerId: t.id, championshipId: FUTMONDO_CHAMPIONSHIP });
+        const cl = ((sm.answer || {}).championship || {}).clause || {};
+        return { key: t.key, price: Number(cl.price) || 0, unlock: cl.date || "" };
+      } catch (e) { return null; }
+    })) : [];
+    return json({ info: info.filter(Boolean) });
+  }
   if (path === "ff-health") {
     // El cron diario llama con ?run=1 para forzar una comprobación fresca
     // de las 20 páginas; la web (solo si eres admin) llama sin ?run para

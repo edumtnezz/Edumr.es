@@ -4750,29 +4750,42 @@
   // Cuándo se puede pagar la cláusula de un jugador: sale de la misma lista que "Clausulazo jugoso"
   let clausFetching = null;
   const clausKey = (x) => stripAccents(String(x || "").toLowerCase()).replace(/[^a-z0-9 ]/g, "").trim();
+  const clausExtra = {};
   function clausLookup(id, name) {
     let list = clausAll && clausAll.length ? clausAll : null;
     if (!list) { try { const c = JSON.parse(localStorage.getItem("claus_cache") || "null"); if (c && c.players) list = c.players; } catch (e) {} }
-    if (!list) return null;
     const nk = clausKey(name);
+    const extra = (id && clausExtra["id:" + id]) || clausExtra["n:" + stripAccents(String(name || "").toLowerCase())];
+    if (!list) return extra || null;
     const byId = list.find((x) => id && String(x.id) === String(id));
     if (byId) return byId;
     const exact = list.filter((x) => nk && clausKey(x.name) === nk);
     if (exact.length === 1) return exact[0];
     const lastW = nk.split(" ").pop();
     const part = list.filter((x) => { const k = clausKey(x.name); return nk && (k.includes(nk) || nk.includes(k) || (lastW.length > 3 && k.split(" ").pop() === lastW)); });
-    return exact[0] || (part.length === 1 ? part[0] : null);
+    return exact[0] || (part.length === 1 ? part[0] : null) || extra || null;
   }
   function paintLock(lk, final) {
     const info = clausLookup(lk.dataset.pid, lk.dataset.pn);
     if (!info) {
       if (final) { lk.className = "an-pb-lock nd"; lk.textContent = "⏳ Sin dato de cuándo se libera"; return; }
       if (!clausFetching) {
+        const repaint = (fin) => document.querySelectorAll(".an-pb-lock").forEach((x) => { if (!x.textContent || x.classList.contains("nd")) paintLock(x, fin); });
         clausFetching = fetch(API + "/clausulas").then((r) => r.json()).then((d) => {
           const l = (d && d.players) || [];
           if (l.length) { clausAll = l; try { localStorage.setItem("claus_cache", JSON.stringify({ at: Date.now(), jornada: Number(d.jornada) || 0, players: l })); } catch (e) {} }
-          document.querySelectorAll(".an-pb-lock").forEach((x) => { if (!x.textContent || x.classList.contains("nd")) paintLock(x, true); });
-        }).catch(() => { document.querySelectorAll(".an-pb-lock").forEach((x) => paintLock(x, true)); });
+        }).catch(() => {}).then(() => {
+          repaint(false);
+          // Los que no están en el top 40 de Clausulazo: se piden uno a uno
+          const miss = [...document.querySelectorAll(".an-pb-lock")].filter((x) => !x.textContent && !clausLookup(x.dataset.pid, x.dataset.pn));
+          if (!miss.length) return;
+          const ids = [...new Set(miss.map((x) => x.dataset.pid).filter(Boolean))];
+          const names = [...new Set(miss.filter((x) => !x.dataset.pid).map((x) => x.dataset.pn).filter(Boolean))];
+          return fetch(API + "/clausula-info?ids=" + encodeURIComponent(ids.join(",")) + "&names=" + encodeURIComponent(names.join("|")))
+            .then((r) => r.json())
+            .then((d) => { ((d && d.info) || []).forEach((i) => { clausExtra[i.key] = { unlock: i.unlock, clause: i.price }; }); })
+            .catch(() => {});
+        }).then(() => repaint(true));
       }
       return;
     }
