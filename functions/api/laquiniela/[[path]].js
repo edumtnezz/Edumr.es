@@ -2567,6 +2567,7 @@ async function getProbableFlags(env, jornada) {
   // Leer 20 páginas a la vez a veces falla a medias (límite de recursos): lo que ya se había visto bien se conserva,
   // siempre que el partido siga sin empezar.
   const pkey = "probflags:" + jn;
+  let perr = "";
   try {
     const prev = await env.PORRA.get(pkey, "json");
     if (prev && prev.items && Date.now() - (prev.at || 0) < 12 * 3600 * 1000) {
@@ -2576,8 +2577,9 @@ async function getProbableFlags(env, jornada) {
     }
     if (out.length) await env.PORRA.put(pkey, JSON.stringify({ at: Date.now(), items: out }), { expirationTtl: 86400 });
     else if (prev && prev.items && prev.items.length && open.length) out = prev.items.filter((i) => open.some((m) => nm(m.homeTeam) === i.home && nm(m.awayTeam) === i.away));
-  } catch (e) {}
-  return { matchday: jn, items: out, dbg: { jn, dn, names, has, open: open.length, prev: prevItems.length, v: 7 } };
+  } catch (e) { perr = String(e && e.message || e).slice(0, 120); }
+  return { matchday: jn, items: out, dbg: { perr },
+  _x: { jn, dn, names, has, open: open.length, prev: prevItems.length, v: 7 } };
 }
 
 async function getJornadaStrip(env, matchday) {
