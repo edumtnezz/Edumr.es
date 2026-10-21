@@ -2796,6 +2796,23 @@ async function getTableStats(env) {
   }
 }
 
+// Busca un equipo en la tabla comparando las palabras de su nombre ("RC Deportivo La Coruña" = "Deportivo A Coruña")
+function tableFind(teams, name) {
+  const STOP = ["de", "del", "la", "a", "cf", "fc", "club", "sad", "sd", "ud", "rcd", "rc", "balompie", "ca"];
+  const tok = (x) => stripAccents(String(x || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w && STOP.indexOf(w) < 0);
+  const a = tok(name);
+  if (!a.length) return null;
+  let best = null, bs = 0;
+  (teams || []).forEach((t) => {
+    const b = tok(t.name);
+    const inter = a.filter((w) => b.indexOf(w) >= 0).length;
+    if (!inter) return;
+    const sc = inter / (a.length + b.length - inter);
+    if (sc > bs) { bs = sc; best = t; }
+  });
+  return bs >= 0.5 ? best : null;
+}
+
 // Clasificación de LaLiga de FotMob (la misma de la página de cada partido); si falla, la calculada con resultados reales
 async function getLeagueTable(env) {
   let teams = null;
@@ -3048,8 +3065,7 @@ async function handleAnaliza(request, env, user) {
   try { leagueT = await getLeagueTable(env); } catch (e) {}
   [].concat(titulares, suplentes).forEach((p) => {
     if (!leagueT || !leagueT.length || !p.rival) return;
-    const rk = teamKey(p.rival);
-    const r = leagueT.find((t) => teamKey(t.name) === rk) || leagueT.find((t) => { const k = teamKey(t.name); return k && rk && (k.includes(rk) || rk.includes(k)); });
+    const r = tableFind(leagueT, p.rival);
     if (r) { p.rivalPos = r.pos; p.rivalPts = r.pts; p.rivalPj = r.pj; p.rivalN = leagueT.length; }
   });
 
