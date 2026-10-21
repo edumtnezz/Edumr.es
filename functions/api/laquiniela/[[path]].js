@@ -401,9 +401,14 @@ async function getJornadaRaw(env, matchday, hold) {
   // Jornada futura (todos los partidos por jugar): cambia poco, 3 h. Así navegar por las jornadas no agota el
   // límite de football-data (10/min) y no salen "Sin jornada". La copia vieja se conserva 7 días por si falla.
   const allFuture = !!matchday && data.matches.every((m) => m.status === "SCHEDULED" || m.status === "TIMED");
-  const rec = { fetchedAt: Date.now(), final, ttlMs: allFuture ? 3 * 3600 * 1000 : 0, data };
+  const rec = { fetchedAt: Date.now(), final, ttlMs: allFuture ? 3 * 3600 * 1000 : 0, data, kvAt: Date.now() };
+  // La copia "de por vida" en KV (por si football-data falla) solo se reescribe si hay cambios o pasó más de 1 hora:
+  // la caché del edge sirve las lecturas de cada minuto sin gastar escrituras diarias.
+  let same = false;
+  try { same = !!(okRaw && okRaw.data && JSON.stringify(okRaw.data.matches) === JSON.stringify(data.matches) && Date.now() - (okRaw.kvAt || okRaw.fetchedAt || 0) < 3600 * 1000); } catch (e) {}
+  if (same) rec.kvAt = okRaw.kvAt || okRaw.fetchedAt;
   await edgePut(cacheKey, rec, final ? 21600 : (allFuture ? 10800 : 120));
-  try { await kv.put(cacheKey, JSON.stringify(rec), { expirationTtl: 7 * 24 * 3600 }); } catch (e) {}
+  if (!same) { try { await kv.put(cacheKey, JSON.stringify(rec), { expirationTtl: 7 * 24 * 3600 }); } catch (e) {} }
   return data;
 }
 
@@ -1853,7 +1858,7 @@ function parseCambios(html) {
 }
 async function getCambios(env) {
   const KEY = "cambios:v1";
-  try { const c = await env.PORRA.get(KEY, "json"); if (c && c.data && Date.now() - (c.at || 0) < 3 * 60 * 1000) return c.data; } catch (e) {}
+  try { const c = await edgeGet(KEY); if (c && c.data && Date.now() - (c.at || 0) < 3 * 60 * 1000) return c.data; } catch (e) {}
   let data = null;
   try {
     const html = await (await fetch(CAMBIOS_URL, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text();
@@ -1861,10 +1866,10 @@ async function getCambios(env) {
     if (days.length) data = { updatedAt: Date.now(), days };
   } catch (e) {}
   if (!data) {
-    try { const c = await env.PORRA.get(KEY, "json"); if (c && c.data) return c.data; } catch (e) {}
+    try { const c = await edgeGet(KEY); if (c && c.data) return c.data; } catch (e) {}
     return { updatedAt: Date.now(), days: [] };
   }
-  try { await env.PORRA.put(KEY, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 86400 }); } catch (e) {}
+  await edgePut(KEY, { at: Date.now(), data }, 86400);
   return data;
 }
 
@@ -2810,7 +2815,7 @@ async function getEstadios(env) {
 // (p. ej. Levante–Athletic de la J6). Todo sale de football-data; nada se inventa.
 async function getAplazados(env) {
   const kv = env.PORRA, key = "aplaz:v4";
-  const c = await kv.get(key, "json");
+  const c = (await edgeGet(key)) || (await kv.get(key, "json"));
   if (c && c.at && Date.now() - c.at < 5 * 60 * 1000) return c.data;
   let data = null;
   try {
@@ -2857,7 +2862,12 @@ async function getAplazados(env) {
   } catch (e) {
     return c && c.data ? c.data : { current: 0, items: [], error: String(e) };
   }
-  await kv.put(key, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 3 * 24 * 3600 });
+  // Solo se guarda "de por vida" si cambió algo o pasó 1 hora; el resto del tiempo basta la caché del edge (5 min)
+  const recA = JSON.stringify({ at: Date.now(), data });
+  await edgePut(key, { at: Date.now(), data }, 300);
+  let sameA = false;
+  try { sameA = !!(c && c.data && JSON.stringify(c.data) === JSON.stringify(data) && Date.now() - (c.kvAt || c.at || 0) < 3600 * 1000); } catch (e) {}
+  if (!sameA) { try { await kv.put(key, JSON.stringify({ at: Date.now(), kvAt: Date.now(), data }), { expirationTtl: 3 * 24 * 3600 }); } catch (e) {} }
   return data;
 }
 
