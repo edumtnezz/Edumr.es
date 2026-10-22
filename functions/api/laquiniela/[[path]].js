@@ -4347,7 +4347,7 @@ async function recordPointsHistory(env) {
 
 // Caché de respuestas públicas (Cache API: sin coste ni límite). Evita recalcular en cada visita
 // y mantiene la CPU por petición por debajo del límite del plan gratis de Cloudflare.
-const EDGE_TTL = { "historial-puntos": 120, mercado: 45, rachas: 60, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 90, "alineaciones-confirmadas": 90, "alineaciones-estado": 90, noticias: 300, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10 };
+const EDGE_TTL = { "historial-puntos": 120, mercado: 45, rachas: 60, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 300, "alineaciones-confirmadas": 180, "alineaciones-estado": 300, noticias: 300, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10 };
 export async function onRequestGet(ctx) {
   const path = (ctx.params.path || []).join("/");
   const ttl = EDGE_TTL[path];
@@ -4364,7 +4364,9 @@ export async function onRequestGet(ctx) {
       const txt = await res.clone().text();
       // No se cachean respuestas vacías o fallidas (p. ej. jornada sin partidos cuando falla la fuente): si no, el fallo se "pegaría" varios segundos.
       if (txt.indexOf('"error"') < 0 && txt.length > 20 && !/"(matches|players|teams|items)":\[\]/.test(txt) && !/"matchday":0[,}]/.test(txt)) {
-        const put = caches.default.put(key, new Response(txt, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=" + ttl } }));
+        // La jornada solo necesita refrescarse cada 30 s si hay un partido en juego; si no, cada 90 s (menos CPU)
+        const ttlNow = path === "jornada" && txt.indexOf('"state":"live"') < 0 ? 90 : ttl;
+        const put = caches.default.put(key, new Response(txt, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=" + ttlNow } }));
         if (ctx.waitUntil) ctx.waitUntil(put.catch(() => {})); else await put.catch(() => {});
       }
     } catch (e) {}
