@@ -2001,13 +2001,24 @@ async function checkFFHealth(env, force) {
   if (!force) {
     try { const c = await env.PORRA.get(key, "json"); if (c && Date.now() - (c.at || 0) < 20 * 3600 * 1000) return c; } catch (e) {}
   }
-  const broken = [];
-  await Promise.all(FF_TEAMS.map(async (slug) => {
+  // De 4 en 4 (20 a la vez saturan el servidor y daban falsas alarmas) y los que fallan se reintentan una vez
+  const okTeam = async (slug) => {
     try {
       const d = await getFFTeam(env, slug);
-      if (!d || !((d.starters && d.starters.length) || (d.bench && d.bench.length))) broken.push(slug); // sin once ni banquillo = página rota (tras jugar, FF vacía el once pero no el banquillo)
-    } catch (e) { broken.push(slug); }
-  }));
+      return !!(d && ((d.starters && d.starters.length) || (d.bench && d.bench.length))); // sin once ni banquillo = página rota (tras jugar, FF vacía el once pero no el banquillo)
+    } catch (e) { return false; }
+  };
+  let broken = [];
+  for (let i = 0; i < FF_TEAMS.length; i += 4) {
+    const grp = FF_TEAMS.slice(i, i + 4);
+    const res = await Promise.all(grp.map(okTeam));
+    grp.forEach((slug, k) => { if (!res[k]) broken.push(slug); });
+  }
+  if (broken.length) {
+    const again = [];
+    for (const slug of broken) { if (!(await okTeam(slug))) again.push(slug); }
+    broken = again;
+  }
   const result = { at: Date.now(), total: FF_TEAMS.length, broken };
   try { await env.PORRA.put(key, JSON.stringify(result)); } catch (e) {}
   return result;
