@@ -2811,3 +2811,11 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .up-pl { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; font-size: .82rem; padding: 6px 10px; border-radius: 10px; background: rgba(127,127,127,.09); }
 .up-pl img { width: 24px; height: 26px; object-fit: cover; object-position: top; border-radius: 6px; }
 .up-tr { color: var(--muted); font-weight: 600; white-space: pre-wrap; }
+
+/* Botón del partido: más protagonista, con subtítulo */
+.mpage-livebtn-wrap { margin: 16px 0 12px; padding-inline: 12px; }
+.mpage-livebtn { width: 100%; max-width: 460px; justify-content: flex-start; gap: 14px; padding: 16px 22px; border-radius: 22px; }
+.mpage-livebtn .mlb-tx { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; text-align: left; }
+.mpage-livebtn .mlb-t { font-size: 1.12rem; line-height: 1.15; }
+.mpage-livebtn .mlb-sub { font-size: .76rem; font-weight: 600; opacity: .88; letter-spacing: 0; }
+.mpage-livebtn .mlb-go { font-size: 1.7rem; margin-left: auto; }

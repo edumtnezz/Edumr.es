@@ -1470,7 +1470,10 @@
         const b = el(on ? "a" : "div", "mpage-livebtn" + (on ? "" : " off"));
         if (on) b.href = "/futmondo/guiafantasy/directo/" + matchSlug(m.home, m.away) + (jn ? "?j=" + encodeURIComponent(jn) : "");
         b.appendChild(el("i", "mlb-dot"));
-        b.appendChild(el("span", "mlb-t", on ? "Ver partido en directo" : "Directo · empieza a las " + (m.time || "")));
+        const tx = el("span", "mlb-tx");
+        tx.appendChild(el("span", "mlb-t", "Todos los datos del partido"));
+        tx.appendChild(el("span", "mlb-sub", "Directo, estadísticas, cara a cara y más"));
+        b.appendChild(tx);
         if (on) b.appendChild(el("span", "mlb-go", "›"));
         wrap.appendChild(b);
         box.appendChild(wrap);
@@ -1525,8 +1528,8 @@
     } else if (xi) {
       const sec = el("section", "mpage-xi");
       const hd = el("div", "mpage-xi-h");
-      hd.appendChild(el("span", "mpage-xi-title", xiKind === "confirmada" ? "Alineación confirmada" : "Alineación probable"));
-      if (xiKind !== "confirmada") hd.appendChild(probLegendBtn());
+      // Sin rótulo ni leyenda del %: el propio campo ya lleva su título
+      hd.style.display = "none";
       sec.appendChild(hd);
       const idxH = xiEvIndex(d.homePlayers), idxA = xiEvIndex(d.awayPlayers);
       const pitches = el("div", "alin-pitches mpage-xipitches");
