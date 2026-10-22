@@ -2819,3 +2819,10 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .mpage-livebtn .mlb-t { font-size: 1.12rem; line-height: 1.15; }
 .mpage-livebtn .mlb-sub { font-size: .76rem; font-weight: 600; opacity: .88; letter-spacing: 0; }
 .mpage-livebtn .mlb-go { font-size: 1.7rem; margin-left: auto; }
+
+/* Botón de datos del partido: estilo de la web (verde), sin aspecto de "directo" */
+.mpage-livebtn { background: linear-gradient(135deg, #16a34a, #0f7a37); box-shadow: 0 6px 18px rgba(22,163,74,.30), inset 0 1px 0 rgba(255,255,255,.22); }
+@media (hover: hover) and (pointer: fine) { .mpage-livebtn:hover { box-shadow: 0 8px 22px rgba(22,163,74,.45), inset 0 1px 0 rgba(255,255,255,.22); } }
+.mpage-livebtn .mlb-ico { width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,.18); display: grid; place-items: center; flex: none; }
+.mpage-livebtn .mlb-ico svg { width: 22px; height: 22px; }
+.mpage-livebtn .mlb-live { font-size: .66rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; background: #ef4444; padding: 4px 8px; border-radius: 999px; }

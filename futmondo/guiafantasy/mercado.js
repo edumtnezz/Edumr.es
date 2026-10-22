@@ -1469,11 +1469,14 @@
         const wrap = el("div", "mpage-livebtn-wrap");
         const b = el(on ? "a" : "div", "mpage-livebtn" + (on ? "" : " off"));
         if (on) b.href = "/futmondo/guiafantasy/directo/" + matchSlug(m.home, m.away) + (jn ? "?j=" + encodeURIComponent(jn) : "");
-        b.appendChild(el("i", "mlb-dot"));
+        const bi = el("span", "mlb-ico");
+        bi.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>';
+        b.appendChild(bi);
         const tx = el("span", "mlb-tx");
         tx.appendChild(el("span", "mlb-t", "Todos los datos del partido"));
-        tx.appendChild(el("span", "mlb-sub", "Directo, estadísticas, cara a cara y más"));
+        tx.appendChild(el("span", "mlb-sub", "Crónica, estadísticas, cara a cara y clasificación"));
         b.appendChild(tx);
+        if (isLive || mpLive) b.appendChild(el("span", "mlb-live", "En directo"));
         if (on) b.appendChild(el("span", "mlb-go", "›"));
         wrap.appendChild(b);
         box.appendChild(wrap);
