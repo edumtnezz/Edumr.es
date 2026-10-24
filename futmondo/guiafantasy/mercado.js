@@ -1454,8 +1454,23 @@
     if ((d.score != null && d.scoreAway != null) || (m.live && m.live.score && m.live.state !== "suspended")) teams.classList.add("mpage-hasscore");
     teams.appendChild(mkTeam(m.home, m.homeCrest, "home"));
     const mid = el("div", "mpage-mid");
-    mid.appendChild(el("div", "mpage-state", state));
-    mid.appendChild(el("div", "mpage-score", (d.score != null && d.scoreAway != null) ? (d.score + " - " + d.scoreAway) : (m.live && m.live.score && m.live.state !== "suspended" ? m.live.score : "vs")));
+    // Estado del partido: etiqueta (minuto en directo / descanso / final / fecha), marcador en una placa y la parte debajo
+    const stTxt = String(state || "").trim(), stUp = stTxt.toUpperCase();
+    const stM = stTxt.match(/^(.*?)\s*·\s*MIN\.?\s*(\d+(?:\+\d+)?)/i);
+    let stKind = "date", chipTxt = stTxt, period = "";
+    if (stM) { stKind = "live"; chipTxt = stM[2] + "'"; period = stM[1]; }
+    else if (/DESCANSO/.test(stUp)) { stKind = "ht"; chipTxt = "Descanso"; }
+    else if (/FINALIZADO|^FINAL/.test(stUp)) { stKind = "final"; chipTxt = "Final"; }
+    else if (isLive || /EN JUEGO|PARTE/.test(stUp)) { stKind = "live"; chipTxt = stTxt; }
+    const chip = el("div", "mpage-chip mc-" + stKind);
+    if (stKind === "live") chip.appendChild(el("i", "mc-dot"));
+    chip.appendChild(document.createTextNode(chipTxt));
+    mid.appendChild(chip);
+    const scoreTxt = (d.score != null && d.scoreAway != null) ? (d.score + " - " + d.scoreAway) : (m.live && m.live.score && m.live.state !== "suspended" ? m.live.score : "vs");
+    const plate = el("div", "mpage-plate" + (scoreTxt === "vs" ? " vs" : ""));
+    plate.appendChild(el("div", "mpage-score", scoreTxt));
+    mid.appendChild(plate);
+    if (period) mid.appendChild(el("div", "mpage-period", period));
     teams.appendChild(mid);
     teams.appendChild(mkTeam(m.away, m.awayCrest, "away"));
     head.appendChild(teams);

@@ -257,3 +257,16 @@
 
 /* Fecha del partido más grande */
 .mpage-state{font-size:1rem !important;font-weight:900 !important;max-width:170px !important;min-height:0 !important;line-height:1.2 !important;letter-spacing:.03em}
+
+/* Marcador rediseñado: etiqueta de estado, placa con el resultado y la parte debajo */
+.mpage-mid { display: flex; flex-direction: column; align-items: center; gap: 9px; }
+.mpage-chip { display: inline-flex; align-items: center; gap: 7px; padding: 5px 13px; border-radius: 999px; font: 800 .82rem/1 'Bricolage Grotesque', sans-serif; letter-spacing: .03em; white-space: nowrap; }
+.mpage-chip.mc-live { background: #ef4444; color: #fff; box-shadow: 0 4px 12px rgba(239,68,68,.35); }
+.mpage-chip.mc-ht { background: #f59e0b; color: #231600; }
+.mpage-chip.mc-final { background: rgba(127,127,127,.22); color: var(--text); text-transform: uppercase; letter-spacing: .08em; font-size: .72rem; }
+.mpage-chip.mc-date { background: none; padding: 0; color: #16a34a; font-size: .78rem; white-space: normal; text-align: center; max-width: 118px; line-height: 1.2; }
+.mc-dot { width: 7px; height: 7px; border-radius: 50%; background: #fff; animation: mlbPulse 1.5s ease-out infinite; }
+.mpage-plate { padding: 6px 18px 7px; border-radius: 18px; background: rgba(127,127,127,.14); border: 1px solid rgba(127,127,127,.28); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.mpage-plate.vs { background: none; border-color: transparent; padding: 0; }
+.mpage-plate .mpage-score { font-variant-numeric: tabular-nums; line-height: 1; letter-spacing: .02em; }
+.mpage-period { font-size: .68rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
