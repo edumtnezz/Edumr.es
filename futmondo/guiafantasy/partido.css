@@ -270,3 +270,18 @@
 .mpage-plate.vs { background: none; border-color: transparent; padding: 0; }
 .mpage-plate .mpage-score { font-variant-numeric: tabular-nums; line-height: 1; letter-spacing: .02em; }
 .mpage-period { font-size: .68rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+
+/* Cabecera del partido recolocada: Liga/jornada arriba del todo, marcador centrado con los equipos a los lados */
+.mpage-top { display: flex !important; flex-direction: column; justify-content: flex-start; padding: 14px 12px 18px !important; min-height: 0 !important; }
+.mpage-top > .pp-refresh { position: absolute !important; top: 8px; right: 8px; width: 32px; height: 32px; z-index: 3; }
+.mpage-topline { margin: 0 !important; padding: 0 40px; }
+.mpage-comp { font-size: .8rem; }
+.mpage-teams { margin: auto 0 0 !important; padding: 46px 0 22px !important; grid-template-columns: 1fr auto 1fr !important; align-items: center !important; column-gap: 8px; }
+.mpage-team { transform: none !important; margin: 0 !important; justify-content: center; text-align: center !important; align-items: center !important; padding: 0 4px !important; font-size: 1.05rem !important; }
+.mpage-hasscore .mpage-team { font-size: 1.05rem !important; padding: 0 4px !important; }
+/* la etiqueta (minuto/estado) y la parte salen del hueco del marcador, así los equipos quedan a la altura del resultado */
+.mpage-mid { position: relative; display: block !important; }
+.mpage-mid .mpage-chip { position: absolute; left: 50%; bottom: calc(100% + 9px); transform: translateX(-50%); font-size: 1rem; padding: 7px 17px; }
+.mpage-mid .mpage-chip.mc-date { position: static; transform: none; margin: 0 auto 6px; }
+.mpage-mid .mpage-period { position: absolute; left: 50%; top: calc(100% + 7px); transform: translateX(-50%); white-space: nowrap; }
+.mpage-top-live .mpage-teams { margin: auto 0 0 !important; }
