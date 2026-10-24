@@ -285,3 +285,10 @@
 .mpage-mid .mpage-chip.mc-date { position: static; transform: none; margin: 0 auto 6px; }
 .mpage-mid .mpage-period { position: absolute; left: 50%; top: calc(100% + 7px); transform: translateX(-50%); white-space: nowrap; }
 .mpage-top-live .mpage-teams { margin: auto 0 0 !important; }
+
+/* Nombres de los clubes pegados al marcador */
+.mpage-teams { column-gap: 4px !important; }
+.mpage-team.home { justify-content: flex-end !important; align-items: flex-end !important; text-align: right !important; padding: 0 2px 0 0 !important; }
+.mpage-team.away { justify-content: flex-start !important; align-items: flex-start !important; text-align: left !important; padding: 0 0 0 2px !important; }
+.mpage-hasscore .mpage-team.home { padding: 0 2px 0 0 !important; }
+.mpage-hasscore .mpage-team.away { padding: 0 0 0 2px !important; }
