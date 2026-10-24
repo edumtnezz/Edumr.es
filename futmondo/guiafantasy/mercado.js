@@ -2041,7 +2041,17 @@
           }
         }
         // Partido siguiente (con su competición)
-        const nx = ((fm && fm.next) || []).filter((x) => x && x.d);
+        // Sin repetidos (FotMob da el siguiente de cada equipo y puede ser el mismo partido) y sin el partido que ya se está viendo
+        const nkey = (x) => String((x.hid || x.hn || "") + "-" + (x.aid || x.an || "") + "-" + (x.d || ""));
+        const seenN = new Set();
+        const nrm = (t) => stripAccents(String(t || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w.length > 2);
+        const sameT = (a, b) => { const x = nrm(a), y = nrm(b); return x.some((w) => y.indexOf(w) >= 0); };
+        const nx = ((fm && fm.next) || []).filter((x) => {
+          if (!x || !x.d) return false;
+          const k = nkey(x); if (seenN.has(k)) return false; seenN.add(k);
+          try { if (m && sameT(x.hn, m.home) && sameT(x.an, m.away)) return false; } catch (e) {}
+          return true;
+        });
         if (nx.length) {
           const k = card("Partido siguiente");
           nx.forEach((x) => {
