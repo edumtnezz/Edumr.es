@@ -2826,3 +2826,6 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .mpage-livebtn .mlb-ico { width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,.18); display: grid; place-items: center; flex: none; }
 .mpage-livebtn .mlb-ico svg { width: 22px; height: 22px; }
 .mpage-livebtn .mlb-live { font-size: .66rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; background: #ef4444; padding: 4px 8px; border-radius: 999px; }
+/* Últimas actualizaciones: texto de los cambios legible en modo oscuro */
+.up-pl strong { color: var(--text); }
+.up-tr { color: var(--text); opacity: .78; font-variant-numeric: tabular-nums; }

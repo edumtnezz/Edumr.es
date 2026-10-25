@@ -1847,9 +1847,11 @@ function parseCambios(html) {
       for (const pm of b.split(/<li class="cambio-jugador"/).slice(1)) {
         const nombre = txt((pm.match(/cambio-nombre[^>]*>([\s\S]*?)<\/strong>/) || [])[1]);
         const foto = fixUrl((pm.match(/<img[^>]*cambio-foto[^>]*src="([^"]+)"/) || [])[1]);
-        const antes = pm.match(/cambio-estado--antes[\s\S]*?<span[^>]*>([\s\S]*?)<\/span>[\s\S]*?<small>([\s\S]*?)<\/small>/);
-        const desp = pm.match(/cambio-estado--despues[\s\S]*?<span[^>]*>([\s\S]*?)<\/span>[\s\S]*?<small>([\s\S]*?)<\/small>/);
-        if (nombre) players.push({ name: nombre, photo: foto, from: antes ? txt(antes[1]) : "", fromSt: antes ? txt(antes[2]) : "", to: desp ? txt(desp[1]) : "", toSt: desp ? txt(desp[2]) : "" });
+        // Texto completo de cada estado (p. ej. "0% Suplente" o "Titular 70%"); sin depender de la estructura interior
+        const blk = (re) => { const x = pm.match(re); return x ? txt(x[1]) : ""; };
+        const fromT = blk(/cambio-estado--antes[^>]*>([\s\S]*?)(?=<svg|cambio-estado--despues|<\/li>)/);
+        const toT = blk(/cambio-estado--despues[^>]*>([\s\S]*?)(?=<\/li>|$)/);
+        if (nombre) players.push({ name: nombre, photo: foto, from: fromT, to: toT });
       }
     }
     cur.items.push({ time, cat: cambioCat(icon), title, href, photo, players });
@@ -1857,7 +1859,7 @@ function parseCambios(html) {
   return days.filter((d) => d.items.length);
 }
 async function getCambios(env) {
-  const KEY = "cambios:v1";
+  const KEY = "cambios:v2";
   try { const c = await edgeGet(KEY); if (c && c.data && Date.now() - (c.at || 0) < 3 * 60 * 1000) return c.data; } catch (e) {}
   let data = null;
   try {

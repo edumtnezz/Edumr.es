@@ -603,7 +603,7 @@
             if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); r.appendChild(im); }
             r.appendChild(el("strong", "", p.name));
             const tr = el("span", "up-tr");
-            tr.textContent = (p.from || "") + " " + (p.fromSt || "") + "  →  " + (p.to || "") + " " + (p.toSt || "");
+            tr.textContent = (p.from && p.to) ? (p.from + "  →  " + p.to) : (p.to || p.from || "");
             r.appendChild(tr);
             det.appendChild(r);
           });
