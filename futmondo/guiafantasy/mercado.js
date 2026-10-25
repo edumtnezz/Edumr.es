@@ -3333,6 +3333,47 @@
   const newsHref = (link) => { const sl = newsSlug(link); return sl ? "/futmondo/guiafantasy/noticias/" + sl : "/futmondo/guiafantasy/noticias"; };
   const baseTitle = document.title;
   let newsPushed = false;
+  // Jugadores de los que habla la noticia (solo los que existen en el mercado; coincidencia por nombre o apellido único)
+  async function newsPlayersBlock(box, text) {
+    if (!all || !all.length) { try { await load(); } catch (e) {} }
+    if (!all || !all.length || !document.body.contains(box)) return;
+    const fold = (x) => String(x == null ? "" : x).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const T = fold(text);
+    const keyOf = (w) => fold(w).toLowerCase();
+    const cnt = {};
+    all.forEach((p) => { const seen = {}; String(p.name || "").split(/\s+/).forEach((w) => { const k = keyOf(w); if (k.length >= 5 && !seen[k]) { seen[k] = 1; cnt[k] = (cnt[k] || 0) + 1; } }); });
+    const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const found = [];
+    all.forEach((p) => {
+      const nm = fold(p.name || "").trim(); if (!nm) return;
+      const toks = nm.split(/\s+/);
+      let hits = 0, first = -1;
+      const tryRe = (src) => { const m = new RegExp("(^|[^A-Za-z])" + esc(src) + "(?![A-Za-z])", "i").exec(T); if (m) { hits += (T.split(new RegExp("(?:^|[^A-Za-z])" + esc(src) + "(?![A-Za-z])", "i")).length - 1); const at = m.index + m[1].length; if (first < 0 || at < first) first = at; } return !!m; };
+      if (toks.length > 1 && tryRe(nm)) { /* nombre completo */ }
+      else {
+        const last = toks[toks.length - 1];
+        if (last.length >= 5 && cnt[keyOf(last)] === 1) tryRe(last);
+        else if (toks.length === 1 && nm.length >= 5 && cnt[keyOf(nm)] === 1) tryRe(nm);
+      }
+      if (hits > 0) found.push({ p, hits, first });
+    });
+    if (!found.length) return;
+    found.sort((a, b) => b.hits - a.hits || a.first - b.first);
+    const sec = el("section", "news-players");
+    sec.appendChild(el("h3", "news-players-h", "Jugadores de la noticia"));
+    const row = el("div", "news-players-row");
+    found.slice(0, 8).forEach((f) => {
+      const p = f.p;
+      const c = el("button", "np-card"); c.type = "button";
+      const ph = el("span", "np-ph"); ph.appendChild(photoImg(p.photo, "np-img")); c.appendChild(ph);
+      const tx = el("span", "np-tx"); tx.appendChild(el("b", null, p.name)); tx.appendChild(el("small", null, p.team || "")); c.appendChild(tx);
+      c.appendChild(el("span", "np-go", "›"));
+      c.addEventListener("click", () => openFicha(p));
+      row.appendChild(c);
+    });
+    sec.appendChild(row);
+    box.appendChild(sec);
+  }
   function openNoticiaInline(url, title, fromPop) {
     const box = $("noticiaView");
     if (!box) return;
@@ -3379,6 +3420,7 @@
       const art = el("div", "art-body");
       art.innerHTML = d.html;
       box.appendChild(art);
+      try { newsPlayersBlock(box, (d.title || title || "") + " . " + (d.lead || "") + " . " + (art.textContent || "")); } catch (e) {}
     } else {
       box.appendChild(el("p", "muted small", "No pude extraer el texto de esta noticia."));
       if (url) { const a = el("a", "cmp-trend up", "Ver en FutbolFantasy →"); a.href = url; a.target = "_blank"; a.rel = "noopener"; box.appendChild(a); }

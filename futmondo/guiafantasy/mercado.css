@@ -2851,3 +2851,16 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .lv-tab-xi { flex: 1 1 100% !important; justify-content: center; padding: 10px 8px !important; font-size: .8rem !important; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: #16a34a; background: linear-gradient(135deg, rgba(34,197,94,.16), rgba(34,197,94,.05)); border: 1px solid rgba(34,197,94,.45); font-weight: 800; white-space: nowrap; }
 .lv-tab-xi svg { flex: none; }
 :root[data-theme="dark"] .lv-tab-xi, .dark .lv-tab-xi { color: #4ade80; }
+
+/* Jugadores de la noticia */
+.news-players { margin: 22px 0 8px; padding-top: 16px; border-top: 1px solid rgba(127,127,127,.25); }
+.news-players-h { margin: 0 0 12px; font-size: 1rem; font-weight: 800; }
+.news-players-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
+.np-card { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 16px; border: 1px solid rgba(127,127,127,.28); background: var(--card, rgba(127,127,127,.08)); color: inherit; font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .15s ease, border-color .2s ease; }
+.np-card:active { transform: scale(.98); }
+.np-ph { flex: none; width: 48px; height: 48px; border-radius: 50%; overflow: hidden; background: rgba(127,127,127,.18); border: 2px solid rgba(34,197,94,.55); }
+.np-img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+.np-tx { display: flex; flex-direction: column; min-width: 0; gap: 2px; flex: 1; }
+.np-tx b { font-size: .92rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-tx small { font-size: .72rem; opacity: .7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-go { font-size: 1.4rem; opacity: .55; }
