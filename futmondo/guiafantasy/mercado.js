@@ -2146,7 +2146,7 @@
         c.appendChild(k);
       }
       if (secs.length) {
-        const ORD = ["Alineación", "Hechos", "Estadísticas", "Cara", "Clasificación"];
+        const ORD = live.state === "live" ? ["Hechos", "Alineación", "Estadísticas"] : ["Alineación", "Hechos", "Estadísticas"], "Cara", "Clasificación"];
         secs.sort((x, y) => ORD.indexOf(x[0]) - ORD.indexOf(y[0]));
         secs.forEach(([k, c]) => box.appendChild(c));
         const srcTop = el("p", "lv-srctop", "Fuente de los datos: FotMob · se actualiza cada 10 s");
@@ -2224,6 +2224,8 @@
       const jn = Number(jr && jr.matchday) || 0;
       const m = ms.find((x) => matchSlug(x.home, x.away) === slug);
       if (!m) { if (first) box.innerHTML = '<p class="muted small">No se pudo cargar el partido. <a href="" onclick="location.reload();return false">Reintentar</a></p>'; return false; }
+      // Partido en juego: lo útil son los datos en directo, no la alineación; se abre directamente esa página
+      if (first && m.live && m.live.state === "live") { location.replace("/futmondo/guiafantasy/directo/" + slug + (jn ? "?j=" + encodeURIComponent(jn) : "")); return false; }
       // Cabecera al instante con lo que ya se sabe; lo demás se rellena al llegar
       if (first) { try { renderMatchDetail(box, m, { __quick: true }, jn, null, "", false, null); box.appendChild(Object.assign(document.createElement("div"), { className: "mpage-skel", innerHTML: '<i></i><i class="s"></i>' })); } catch (e) {} }
       // Todo lo del partido a la vez (antes iba una petición detrás de otra)
