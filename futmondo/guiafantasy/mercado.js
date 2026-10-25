@@ -1447,6 +1447,15 @@
       tl.appendChild(t);
     }
     head.appendChild(tl);
+    try {
+      (window.__estP = window.__estP || fetch(API + "/estadios").then((r) => r.json()).catch(() => ({}))).then((E) => {
+        const st = E && E[teamCanon(m.home)];
+        if (!st || !st.img) return;
+        const im = new Image();
+        im.onload = () => { head.style.setProperty("--mp-stadium", 'url("' + st.img + '")'); head.classList.add("has-stadium"); };
+        im.src = st.img;
+      });
+    } catch (e) {}
     const isLive = m.live && m.live.state === "live";
     const state = isLive ? (m.live.minute || "EN JUEGO") : d.state || ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim();
     const mkTeam = (name, crest, cls) => { const t = el("div", "mpage-team " + cls); t.appendChild(clubLink(el("span", null, name), name)); return t; };
@@ -1480,20 +1489,23 @@
     try {
       const ko = kickoffMs(m);
       if (ko) {
-        const on = true;
-        const wrap = el("div", "mpage-livebtn-wrap");
-        const b = el(on ? "a" : "div", "mpage-livebtn" + (on ? "" : " off"));
-        if (on) b.href = "/futmondo/guiafantasy/directo/" + matchSlug(m.home, m.away) + (jn ? "?j=" + encodeURIComponent(jn) : "");
-        const bi = el("span", "mlb-ico");
-        bi.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>';
-        b.appendChild(bi);
-        const tx = el("span", "mlb-tx");
-        tx.appendChild(el("span", "mlb-t", "Todos los datos del partido"));
-        tx.appendChild(el("span", "mlb-sub", "Crónica, estadísticas, cara a cara y clasificación"));
-        b.appendChild(tx);
-        if (isLive || mpLive) b.appendChild(el("span", "mlb-live", "En directo"));
-        if (on) b.appendChild(el("span", "mlb-go", "›"));
-        wrap.appendChild(b);
+        const wrap = el("div", "mpage-actions");
+        const svgS = (d) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
+        const act = (tag, cls, ico, t1, t2, extra) => {
+          const b = el(tag, "mpa " + cls);
+          const i = el("span", "mpa-ico"); i.innerHTML = ico; b.appendChild(i);
+          const tx = el("span", "mpa-tx"); tx.appendChild(el("b", null, t1)); tx.appendChild(el("small", null, t2)); b.appendChild(tx);
+          if (extra) b.appendChild(extra);
+          return b;
+        };
+        const liveNow = isLive || mpLive;
+        const dot = liveNow ? el("span", "mpa-live", "En juego") : null;
+        const a1 = act("a", "mpa-data", svgS('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'), liveNow ? "En directo" : "Datos del partido", "FotMob · alineaciones y más", dot);
+        a1.href = "/futmondo/guiafantasy/directo/" + matchSlug(m.home, m.away) + "?t=" + encodeURIComponent("Alineación") + (jn ? "&j=" + encodeURIComponent(jn) : "");
+        const a2 = act("button", "mpa-pts", svgS('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'), "Puntos Futmondo", "Once con puntos");
+        a2.type = "button";
+        a2.addEventListener("click", () => { const t = box.querySelector(".mpage-xi"); if (t) { const y = t.getBoundingClientRect().top + window.scrollY - 70; window.scrollTo({ top: y, behavior: "smooth" }); } });
+        wrap.appendChild(a1); wrap.appendChild(a2);
         box.appendChild(wrap);
       }
     } catch (e) {}
@@ -1662,7 +1674,7 @@
     main.appendChild(boxR);
     let qj = ""; try { qj = new URLSearchParams(location.search).get("j") || ""; } catch (e) {}
     const matchUrl = "/futmondo/guiafantasy/partido/" + slug + (qj ? "?j=" + encodeURIComponent(qj) : "");
-    let timer = null, lvTab = "";
+    let timer = null, lvTab = ""; try { lvTab = new URLSearchParams(location.search).get("t") || ""; } catch (e) {}
     const kindOf = (t) => {
       if (/¡\s*gol\b|golazo/i.test(t) && !/anulad|malogr|ocasi[oó]n|fuera de juego/i.test(t)) return ["goal", "⚽"];
       if (/tarjeta roja|expuls|doble amarilla|segunda amarilla/i.test(t) && !/amarilla a|le muestra tarjeta amarilla/i.test(t)) return ["red", "🟥"];
@@ -1672,6 +1684,24 @@
       if (/var\b/i.test(t)) return ["var", "📺"];
       if (/comenzado|comienza|descanso|final del partido|termina|segunda parte|primera parte/i.test(t)) return ["mark", "⏱️"];
       return ["", ""];
+    };
+    const lvSwipe = () => {
+      if (boxR.__sw) return; boxR.__sw = 1;
+      let x0 = 0, y0 = 0, t0 = 0, ok = false;
+      const hScroll = (n) => { while (n && n !== boxR) { if (n.nodeType === 1 && n.scrollWidth > n.clientWidth + 4) { const o = getComputedStyle(n).overflowX; if (o === "auto" || o === "scroll") return true; } n = n.parentNode; } return false; };
+      boxR.addEventListener("touchstart", (e) => { if (e.touches.length !== 1) { ok = false; return; } const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); ok = !hScroll(e.target); }, { passive: true });
+      boxR.addEventListener("touchend", (e) => {
+        if (!ok) return; ok = false;
+        const t = e.changedTouches[0], dx = t.clientX - x0, dy = t.clientY - y0;
+        if (Math.abs(dx) < 55 || Math.abs(dx) < Math.abs(dy) * 1.6 || Date.now() - t0 > 700) return;
+        const tabs = [].slice.call(boxR.querySelectorAll(".lv-tab:not(.lv-tab-xi)"));
+        const i = tabs.findIndex((b) => b.classList.contains("on")), n = i + (dx < 0 ? 1 : -1);
+        if (i < 0 || n < 0 || n >= tabs.length) return;
+        tabs[n].click();
+        const vis = [].slice.call(boxR.children).filter((c) => !c.classList.contains("hidden") && !c.classList.contains("lv-tabs") && !c.classList.contains("lv-head") && !c.classList.contains("lv-srctop") && !c.classList.contains("bk") && !c.classList.contains("mpage-back"));
+        vis.forEach((c) => { c.classList.remove("lv-sl", "lv-sr"); void c.offsetWidth; c.classList.add(dx < 0 ? "lv-sl" : "lv-sr"); });
+        try { tabs[n].scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" }); } catch (e2) {}
+      }, { passive: true });
     };
     const paint = async (first, box = boxR) => {
       let jr = null;
@@ -2166,6 +2196,7 @@
         box.insertBefore(bar, secs[0][1]);
         if (fechaCard) { fechaCard.classList.add("in"); head.appendChild(fechaCard); }
       }
+      lvSwipe();
       return live.state !== "final" && !fmDone;
     };
     try {

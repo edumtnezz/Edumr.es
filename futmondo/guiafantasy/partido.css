@@ -292,3 +292,43 @@
 .mpage-team.away { justify-content: flex-start !important; align-items: flex-start !important; text-align: left !important; padding: 0 0 0 2px !important; }
 .mpage-hasscore .mpage-team.home { padding: 0 2px 0 0 !important; }
 .mpage-hasscore .mpage-team.away { padding: 0 0 0 2px !important; }
+
+/* ===== Cabecera del partido con el estadio del local de fondo ===== */
+.mpage-top.has-stadium { isolation: isolate; background: #0b1a12 !important; color: #fff; border: 0; }
+.mpage-top.has-stadium::before { content: ""; position: absolute; inset: 0; z-index: -2; background: var(--mp-stadium) center/cover no-repeat; transform: scale(1.05); animation: mpKen 24s ease-in-out infinite alternate; }
+.mpage-top.has-stadium::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(4,10,8,.55) 0%, rgba(4,10,8,.38) 40%, rgba(4,10,8,.78) 100%); }
+@keyframes mpKen { from { transform: scale(1.05) translateX(0); } to { transform: scale(1.12) translateX(-1.5%); } }
+@media (prefers-reduced-motion: reduce) { .mpage-top.has-stadium::before { animation: none; } }
+.mpage-top.has-stadium .mpage-comp { color: #86efac; text-shadow: 0 1px 8px rgba(0,0,0,.6); }
+.mpage-top.has-stadium .mpage-team { color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,.75); }
+.mpage-top.has-stadium .mpage-score { color: #fff; text-shadow: 0 2px 14px rgba(0,0,0,.6); }
+.mpage-top.has-stadium .mpage-plate { background: rgba(8,14,12,.46); border-color: rgba(255,255,255,.22); }
+.mpage-top.has-stadium .mpage-period { color: rgba(255,255,255,.82); }
+.mpage-top.has-stadium .mpage-bgcrest { opacity: .38; mix-blend-mode: luminosity; filter: saturate(1.2) drop-shadow(0 6px 18px rgba(0,0,0,.5)); }
+.mpage-top.has-stadium .pp-refresh { background: rgba(8,14,12,.5); color: #fff; border-color: rgba(255,255,255,.25); }
+.mpage-top.has-stadium .mpage-chip { box-shadow: 0 2px 10px rgba(0,0,0,.35); }
+
+/* ===== Dos accesos rápidos bajo la cabecera ===== */
+.mpage-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 12px 8px; }
+.mpa { position: relative; display: flex; align-items: center; gap: 10px; min-width: 0; padding: 12px 12px; border-radius: 16px; border: 1px solid rgba(127,127,127,.28); background: var(--card, #fff); color: inherit; font: inherit; text-align: left; text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease; }
+.mpa:active { transform: scale(.97); }
+.mpa-ico { flex: none; width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; }
+.mpa-ico svg { width: 20px; height: 20px; }
+.mpa-tx { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mpa-tx b { font-size: .92rem; font-weight: 800; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mpa-tx small { font-size: .66rem; font-weight: 600; opacity: .72; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mpa-data { background: linear-gradient(135deg, #16a34a, #0f7a37); color: #fff; border-color: transparent; box-shadow: 0 8px 20px -10px rgba(22,163,74,.7); }
+.mpa-data .mpa-ico { background: rgba(255,255,255,.18); }
+.mpa-pts .mpa-ico { background: rgba(245,158,11,.16); color: #f59e0b; }
+.mpa-pts { background: var(--card, #fff); }
+.mpa-live { position: absolute; top: -7px; right: 10px; padding: 2px 8px; border-radius: 999px; background: #ef4444; color: #fff; font-size: .58rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; box-shadow: 0 2px 8px rgba(239,68,68,.5); }
+
+/* ===== Deslizamiento lateral entre pestañas de los datos ===== */
+@keyframes lvSl { from { opacity: 0; transform: translateX(26px); } to { opacity: 1; transform: none; } }
+@keyframes lvSr { from { opacity: 0; transform: translateX(-26px); } to { opacity: 1; transform: none; } }
+.lv-sl { animation: lvSl .26s cubic-bezier(.2,.8,.2,1); }
+.lv-sr { animation: lvSr .26s cubic-bezier(.2,.8,.2,1); }
+.livepage { touch-action: pan-y pinch-zoom; }
+.lv-tabs { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.lv-tabs::-webkit-scrollbar { display: none; }
+@media (prefers-reduced-motion: reduce) { .lv-sl, .lv-sr { animation: none; } }
