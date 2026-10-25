@@ -2188,7 +2188,7 @@
         const bar = el("div", "lv-tabs");
         secs.forEach(([k, c]) => {
           const b = el("button", "lv-tab" + (k === cur ? " on" : ""), k === "Cara" ? "Cara a cara" : k); b.type = "button";
-          b.addEventListener("click", () => { lvTab = k; bar.querySelectorAll(".lv-tab").forEach((x) => x.classList.toggle("on", x === b)); secs.forEach(([k2, c2]) => c2.classList.toggle("hidden", k2 !== k)); });
+          b.addEventListener("click", () => { const t0 = bar.getBoundingClientRect().top; lvTab = k; bar.querySelectorAll(".lv-tab").forEach((x) => x.classList.toggle("on", x === b)); secs.forEach(([k2, c2]) => c2.classList.toggle("hidden", k2 !== k)); const dt = bar.getBoundingClientRect().top - t0; if (Math.abs(dt) > 1) window.scrollBy(0, dt); });
           bar.appendChild(b);
           c.classList.toggle("hidden", k !== cur);
         });

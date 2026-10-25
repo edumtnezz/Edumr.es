@@ -340,3 +340,8 @@
 .mpage-top .mpage-tcrest { width: 54px; height: 54px; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,.55)); }
 .mpage-top .mpage-team { flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; gap: 6px; }
 .mpage-top .mpage-bgcrest { display: none !important; }
+
+/* Sin desplazamientos raros al cambiar de pestaña en los datos */
+.livepage { overflow-x: clip; overscroll-behavior-x: none; }
+html, body { overflow-anchor: auto; }
+.lv-sl, .lv-sr { will-change: transform, opacity; }
