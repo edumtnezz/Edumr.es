@@ -2829,3 +2829,19 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 /* Últimas actualizaciones: texto de los cambios legible en modo oscuro */
 .up-pl strong { color: var(--text); }
 .up-tr { color: var(--text); opacity: .78; font-variant-numeric: tabular-nums; }
+
+/* Destacados en modo oscuro: fondo, nombres y textos legibles */
+:root:not([data-theme="light"]) .dest-panel, :root:not([data-theme="light"]) #rachasOut { background: #131a22; border-radius: 18px; }
+:root:not([data-theme="light"]) .dest-panel .dest-grid { background: transparent; }
+:root:not([data-theme="light"]) .dest-panel .dest-head { background: transparent; }
+:root:not([data-theme="light"]) .dest-panel .dest-name { color: #f1f5f9; }
+:root:not([data-theme="light"]) .dest-panel .dt-row { background: rgba(255,255,255,.06); color: #c3cec8; }
+:root:not([data-theme="light"]) .dest-panel .dt-row.up { background: rgba(34,197,94,.16); }
+:root:not([data-theme="light"]) .dest-panel .dt-row.down { background: rgba(239,68,68,.16); }
+:root:not([data-theme="light"]) .dest-panel .dest-why { color: #a3b3aa; }
+:root[data-theme="dark"] .dest-panel, :root[data-theme="dark"] #rachasOut { background: #131a22; border-radius: 18px; }
+:root[data-theme="dark"] .dest-panel .dest-grid, :root[data-theme="dark"] .dest-panel .dest-head { background: transparent; }
+:root[data-theme="dark"] .dest-panel .dest-name { color: #f1f5f9; }
+:root[data-theme="dark"] .dest-panel .dest-title { color: #f1f5f9; }
+:root[data-theme="dark"] .dest-panel .dt-row { background: rgba(255,255,255,.06); color: #c3cec8; }
+:root[data-theme="dark"] .dest-panel .dest-why { color: #a3b3aa; }
