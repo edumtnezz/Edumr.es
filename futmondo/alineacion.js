@@ -81,7 +81,7 @@
         else if (!probable) { /* confirmada: sin dudas */ }
         else if (s.san || s.inj) inner += '<span class="pl-duda bad">' + (s.san ? "✕" : "+") + '</span>';
         else if (s.prob != null && s.prob < 80 && !s.bench) inner += '<span class="pl-duda">?</span>';
-        if (s.ev && (s.ev.g || s.ev.a)) inner += '<span class="pl-evs">' + "⚽".repeat(s.ev.g || 0) + "👟".repeat(s.ev.a || 0) + "</span>";
+        if (s.ev && (s.ev.g || s.ev.a)) inner += '<span class="pl-evs">' + (s.ev.g ? "⚽" + (s.ev.g > 1 ? "<i>" + s.ev.g + "</i>" : "") : "") + (s.ev.a ? "👟" + (s.ev.a > 1 ? "<i>" + s.ev.a + "</i>" : "") : "") + "</span>";
         if (s.red) inner += '<span class="pl-red" title="Expulsado"></span>';
         inner += '</div><div class="pl-nm">' + esc(name) + '</div>';
         if (s.sw) inner += '<div class="pl-sw ' + s.sw.dir + '"><i>' + (s.sw.dir === "in" ? "▲" : "▼") + "</i>" + esc(s.sw.min) + "'</div>" + (s.sw.with ? '<div class="pl-sw-who">' + (s.sw.dir === "in" ? "por " : "→ ") + esc(s.sw.with.map(function (o) { var f = match(o, pool); return f ? f.name : (o.name || o.full); }).join(" / ")) + "</div>" : "");
