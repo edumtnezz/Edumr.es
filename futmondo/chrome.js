@@ -471,3 +471,25 @@
   try { document.fonts && document.fonts.ready.then(fit); } catch (e) {}
   setTimeout(fit, 400); setTimeout(fit, 1500); setTimeout(fit, 4000);
 })();
+
+/* Anti-salto: si la página vuelve sola arriba (repintado de datos, reactivar pantalla) sin que la persona haya tocado nada, se devuelve a donde estaba. */
+(function () {
+  var lastY = 0, lastUser = 0, restoring = false;
+  function u() { lastUser = Date.now(); }
+  ["touchstart", "touchmove", "touchend", "wheel", "keydown", "pointerdown", "mousedown", "click"].forEach(function (ev) {
+    window.addEventListener(ev, u, { passive: true, capture: true });
+  });
+  window.addEventListener("scroll", function () {
+    var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+    if (restoring) return;
+    if (y < 30 && lastY > 250 && Date.now() - lastUser > 2500) {
+      restoring = true;
+      var t = lastY;
+      window.scrollTo(0, t);
+      setTimeout(function () { restoring = false; }, 120);
+      return;
+    }
+    lastY = y;
+  }, { passive: true });
+  document.addEventListener("visibilitychange", function () { if (document.hidden) lastUser = 0; });
+})();
