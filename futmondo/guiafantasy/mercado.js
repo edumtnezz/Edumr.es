@@ -2159,6 +2159,10 @@
           bar.appendChild(b);
           c.classList.toggle("hidden", k !== cur);
         });
+        // Pestaña aparte para no perder el once confirmado: abre la página del partido con la alineación
+        { const xa = el("a", "lv-tab lv-tab-xi"); xa.href = matchUrl + (matchUrl.indexOf("?") >= 0 ? "&" : "?") + "xi=1";
+          xa.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16M3 12h18"/><circle cx="12" cy="12" r="2.5"/></svg><span>Once confirmado</span>';
+          bar.appendChild(xa); }
         box.insertBefore(bar, secs[0][1]);
         if (fechaCard) { fechaCard.classList.add("in"); head.appendChild(fechaCard); }
       }
@@ -2225,7 +2229,7 @@
       const m = ms.find((x) => matchSlug(x.home, x.away) === slug);
       if (!m) { if (first) box.innerHTML = '<p class="muted small">No se pudo cargar el partido. <a href="" onclick="location.reload();return false">Reintentar</a></p>'; return false; }
       // Partido en juego: lo útil son los datos en directo, no la alineación; se abre directamente esa página
-      if (first && m.live && m.live.state === "live") { location.replace("/futmondo/guiafantasy/directo/" + slug + (jn ? "?j=" + encodeURIComponent(jn) : "")); return false; }
+      if (first && m.live && m.live.state === "live" && !/[?&]xi=1/.test(location.search)) { location.replace("/futmondo/guiafantasy/directo/" + slug + (jn ? "?j=" + encodeURIComponent(jn) : "")); return false; }
       // Cabecera al instante con lo que ya se sabe; lo demás se rellena al llegar
       if (first) { try { renderMatchDetail(box, m, { __quick: true }, jn, null, "", false, null); box.appendChild(Object.assign(document.createElement("div"), { className: "mpage-skel", innerHTML: '<i></i><i class="s"></i>' })); } catch (e) {} }
       // Todo lo del partido a la vez (antes iba una petición detrás de otra)
