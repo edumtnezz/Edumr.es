@@ -1662,8 +1662,10 @@ async function playerFicha(env, id, fast, raw) {
 }
 
 async function getNoticias(env) {
+  let stale = null;
   try {
     const c = await env.PORRA.get("ff:news:v2", "json");
+    stale = c && c.data && (c.data.noticias || []).length ? c : null;
     if (c && c.at && Date.now() - c.at < 15 * 60 * 1000) { c.data.noticias = (c.data.noticias || []).filter((x) => !(x && x.title && isFfPromo(x.title))); c.data.updatedAt = c.at; return c.data; }
   } catch (e) {}
   const out = { noticias: [], locker: [] };
@@ -1695,7 +1697,7 @@ async function getNoticias(env) {
   try {
     let ext = (await env.PORRA.get("ff:ext:v1", "json")) || {};
     const now = Date.now();
-    const todo = trimmed.slice(0, 40).filter((x) => !ext[x.link] || now - ext[x.link].at > 3 * 3600 * 1000).slice(0, 20);
+    const todo = trimmed.slice(0, 40).filter((x) => !ext[x.link] || now - ext[x.link].at > 3 * 3600 * 1000).slice(0, 6);
     await Promise.all(todo.map(async (x) => {
       try {
         const html = await (await fetch(x.link, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text();
@@ -1709,6 +1711,8 @@ async function getNoticias(env) {
     keep = trimmed.filter((x) => !(ext[x.link] && ext[x.link].x));
   } catch (e) {}
   out.noticias = keep;
+  // Si la fuente ha fallado y no hay nada, se devuelven las últimas noticias buenas (mejor viejas que ninguna)
+  if (!out.noticias.length && stale) { stale.data.updatedAt = stale.at; return stale.data; }
   try {
     const header = await futbolHeader(env);
     const l = await futbolPost("/2/locker/news", header, { championshipId: FUTMONDO_CHAMPIONSHIP });

@@ -3230,11 +3230,15 @@
     box.appendChild(sub);
   }
 
+  let newsTry = 0;
   async function loadNoticias() {
+    let okN = false;
     try {
       const d = await (await fetch(API + "/noticias")).json();
+      okN = !!(d && d.noticias && d.noticias.length);
       renderNews(d);
     } catch (e) {}
+    if (!okN && newsTry < 4) { newsTry++; setTimeout(loadNoticias, 3000 * newsTry); } else if (okN) newsTry = 0;
     updateNewsFilter();
     const b = $("newsMine");
     if (b && !b.dataset.wired) {
