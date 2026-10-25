@@ -3896,7 +3896,7 @@
       const jr = await pJr;
       const cur = Number(jr && jr.matchday) || 0;
       const jrs = [{ n: cur, ms: (jr && jr.matches) || [] }];
-      await Promise.all([cur - 1, cur + 1, cur + 2, cur + 3].filter((n) => n >= 1 && n <= 38).map(async (n) => {
+      await Promise.all([cur - 2, cur - 1, cur + 1, cur + 2, cur + 3, cur + 4, cur + 5].filter((n) => n >= 1 && n <= 38).map(async (n) => {
         try { const j2 = await (await fetch(API + "/jornada?jornada=" + n)).json(); jrs.push({ n, ms: (j2 && j2.matches) || [] }); } catch (e) {}
       }));
       jrs.sort((a, b) => a.n - b.n);
@@ -4072,12 +4072,12 @@
       const cal = el("section", "eq-sec");
       cal.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "Calendario"));
       const rows = el("div", "eq-cal");
-      const calList = [].concat(last ? [last] : [], postponed, upcoming.slice(0, 3)).sort((a, b) => { const rk = (m) => { const s2 = stOf(m); return s2 === "live" ? 0 : s2 === "final" ? -1 : 1; }; return rk(a) - rk(b) || (rk(a) === -1 ? b.jn - a.jn : a.jn - b.jn); }); // lo ya jugado (más reciente primero), en juego y lo próximo
+      const calList = [].concat(played.slice(-3), postponed, upcoming.slice(0, 6)).sort((a, b) => { const rk = (m) => { const s2 = stOf(m); return s2 === "live" ? 0 : s2 === "final" ? -1 : 1; }; return rk(a) - rk(b) || (rk(a) === -1 ? b.jn - a.jn : a.jn - b.jn); }); // lo ya jugado (más reciente primero), en juego y lo próximo
       let capShown = "";
       calList.forEach((m) => {
         const home = teamCanon(m.home) === tc;
         const st = stOf(m);
-        const cap = st === "final" ? "Último partido · finalizado" : st === "live" ? "" : "Próximos partidos";
+        const cap = st === "final" ? "Últimos partidos · finalizados" : st === "live" ? "" : "Próximos partidos";
         if (cap && cap !== capShown) { rows.appendChild(el("div", "eq-calcap", cap)); capShown = cap; }
         let outc = "";
         if (st === "final") { const mm = String((m.live && m.live.score) || "").match(/(\d+)\D+(\d+)/); if (mm) { const gh = +mm[1], ga = +mm[2], mine = home ? gh - ga : ga - gh; outc = mine > 0 ? " win" : mine < 0 ? " loss" : " draw"; } }
