@@ -332,3 +332,11 @@
 .lv-tabs { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .lv-tabs::-webkit-scrollbar { display: none; }
 @media (prefers-reduced-motion: reduce) { .lv-sl, .lv-sr { animation: none; } }
+
+/* Cabecera siempre oscura (sin parpadeo); la foto del estadio aparece con un fundido */
+.mpage-top.has-stadium { background: linear-gradient(180deg, #0f1f17, #08110c) !important; }
+.mpage-top.has-stadium::before { opacity: 0; transition: opacity .6s ease; animation: none; }
+.mpage-top.has-stadium.stadium-on::before { opacity: 1; animation: mpKen 24s ease-in-out infinite alternate; }
+.mpage-top .mpage-tcrest { width: 54px; height: 54px; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,.55)); }
+.mpage-top .mpage-team { flex-direction: column !important; align-items: center !important; justify-content: center !important; text-align: center !important; gap: 6px; }
+.mpage-top .mpage-bgcrest { display: none !important; }

@@ -1438,7 +1438,7 @@
     box.innerHTML = "";
     box.appendChild(backBtn("/futmondo/guiafantasy/inicio", "mpage-back"));
     const head = el("div", "mpage-top"); head.appendChild(refreshBtn());
-    [[m.homeCrest, "left"], [m.awayCrest, "right"]].forEach((x) => { if (!x[0]) return; const bg = el("img", "mpage-bgcrest " + x[1]); window.EduAlineacion ? window.EduAlineacion.setCrest(bg, x[0]) : (bg.src = x[0]); bg.alt = ""; head.appendChild(bg); });
+    head.classList.add("has-stadium");
     const tl = el("div", "mpage-topline");
     tl.appendChild(el("span", "mpage-comp", "LaLiga" + (jn ? " · Jornada " + jn : "")));
     if (m.tv && m.tv.length) {
@@ -1448,17 +1448,20 @@
     }
     head.appendChild(tl);
     try {
+      window.__stImg = window.__stImg || {};
+      const hk = teamCanon(m.home);
+      if (window.__stImg[hk]) { head.style.setProperty("--mp-stadium", 'url("' + window.__stImg[hk] + '")'); head.classList.add("stadium-on"); }
       (window.__estP = window.__estP || fetch(API + "/estadios").then((r) => r.json()).catch(() => ({}))).then((E) => {
         const st = E && E[teamCanon(m.home)];
         if (!st || !st.img) return;
         const im = new Image();
-        im.onload = () => { head.style.setProperty("--mp-stadium", 'url("' + st.img + '")'); head.classList.add("has-stadium"); };
+        im.onload = () => { window.__stImg[hk] = st.img; head.style.setProperty("--mp-stadium", 'url("' + st.img + '")'); head.classList.add("stadium-on"); };
         im.src = st.img;
       });
     } catch (e) {}
     const isLive = m.live && m.live.state === "live";
     const state = isLive ? (m.live.minute || "EN JUEGO") : d.state || ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim();
-    const mkTeam = (name, crest, cls) => { const t = el("div", "mpage-team " + cls); t.appendChild(clubLink(el("span", null, name), name)); return t; };
+    const mkTeam = (name, crest, cls) => { const t = el("div", "mpage-team " + cls); if (crest) { const ci = el("img", "mpage-tcrest"); ci.src = crest; ci.alt = ""; ci.decoding = "async"; t.appendChild(ci); } t.appendChild(clubLink(el("span", null, name), name)); return t; };
     const teams = el("div", "mpage-teams");
     if ((d.score != null && d.scoreAway != null) || (m.live && m.live.score && m.live.state !== "suspended")) teams.classList.add("mpage-hasscore");
     teams.appendChild(mkTeam(m.home, m.homeCrest, "home"));
