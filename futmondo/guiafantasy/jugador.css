@@ -121,3 +121,4 @@ svg.ffx-ha.a{background:rgba(99,102,241,.16);color:#6366f1}
 
 .ficha-fix-it .ffx-d { white-space: normal; display: flex; flex-direction: column; align-items: center; line-height: 1.2; text-overflow: clip; }
 .ficha-fix-it .ffx-d .ffx-h { font-weight: 800; color: var(--text, inherit); font-size: .66rem; }
+.ficha-fix-it .ffx-d { text-align: center; width: 100%; }
