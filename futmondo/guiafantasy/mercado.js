@@ -2146,7 +2146,7 @@
         c.appendChild(k);
       }
       if (secs.length) {
-        const ORD = ["Hechos", "Alineación", "Estadísticas", "Cara", "Clasificación"];
+        const ORD = ["Alineación", "Hechos", "Estadísticas", "Cara", "Clasificación"];
         secs.sort((x, y) => ORD.indexOf(x[0]) - ORD.indexOf(y[0]));
         secs.forEach(([k, c]) => box.appendChild(c));
         const srcTop = el("p", "lv-srctop", "Fuente de los datos: FotMob · se actualiza cada 10 s");
