@@ -2864,3 +2864,8 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .np-tx b { font-size: .92rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .np-tx small { font-size: .72rem; opacity: .7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .np-go { font-size: 1.4rem; opacity: .55; }
+
+/* Modo oscuro: sin la raya clara que asomaba por las esquinas de la cabecera de filtros */
+.plt-panel { border-color: transparent !important; box-shadow: none !important; }
+.plt-panel::before, .plt-panel::after { display: none !important; }
+.plt-head { margin-top: -1px; outline: 1px solid #1d2b33; }
