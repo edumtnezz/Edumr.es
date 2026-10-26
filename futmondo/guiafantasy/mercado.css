@@ -2869,3 +2869,20 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .plt-panel { border-color: transparent !important; box-shadow: none !important; }
 .plt-panel::before, .plt-panel::after { display: none !important; }
 .plt-head { margin-top: -1px; outline: 1px solid #1d2b33; }
+
+/* Estadísticas de interés en una sola tarjeta compacta */
+.dash-one { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 12px 4px; margin: 8px 0 4px; }
+.dash-one .do-c { display: flex; flex-direction: column; gap: 4px; padding: 0 12px; min-width: 0; }
+.dash-one .do-c + .do-c { border-left: 1px solid var(--border); }
+.do-l { font-size: .66rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.do-v { display: flex; flex-direction: column; line-height: 1.1; }
+.do-v b { font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.3rem; font-weight: 800; color: var(--text); white-space: nowrap; }
+.do-v small { font-size: .62rem; color: var(--muted); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dash-one .dash-pb { height: 4px; margin-top: 2px; }
+.dash-pf.green { background: #16a34a; } .dash-pf.purple { background: #7c3aed; }
+/* Disponibilidad & disciplina más pequeña */
+.dash-avail { padding: 8px 6px !important; gap: 4px !important; border-radius: 14px; }
+.dash-avail .dash-a { padding: 0 4px; text-align: center; }
+.dash-avail .dash-al { font-size: .62rem; }
+.dash-avail .dash-av { font-size: 1.05rem; line-height: 1.1; }
+.dash-avail .dash-as { font-size: .58rem; }

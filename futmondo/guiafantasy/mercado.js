@@ -3511,18 +3511,18 @@
     box.appendChild(card);
 
     box.appendChild(el("div", "dash-sect", "Estadísticas de interés"));
-    const grid = el("div", "dash-grid");
-    const mcard = (title, big, sub, bar, barcls, ico, icocls) => {
-      const c = el("div", "dash-m");
-      const hd = el("div", "dash-mh"); hd.appendChild(el("span", "dash-mt", title)); if (ico) hd.appendChild(el("span", "dash-ico " + icocls, ico)); c.appendChild(hd);
-      const b = el("div", "dash-mb"); b.appendChild(el("b", null, big)); if (sub) b.appendChild(el("span", "dash-ms", sub)); c.appendChild(b);
-      if (bar != null) { const pb = el("div", "dash-pb"); const f = el("span", "dash-pf" + (barcls ? " " + barcls : "")); f.style.width = Math.min(100, bar) + "%"; pb.appendChild(f); c.appendChild(pb); }
+    const one = el("div", "dash-one");
+    const ocell = (lab, big, sub, pct, cls) => {
+      const c = el("div", "do-c");
+      c.appendChild(el("span", "do-l", lab));
+      const v = el("div", "do-v"); v.appendChild(el("b", null, big)); if (sub) v.appendChild(el("small", null, sub)); c.appendChild(v);
+      if (pct != null) { const pb = el("div", "dash-pb"); const f = el("span", "dash-pf " + cls); f.style.width = Math.max(0, Math.min(100, pct)) + "%"; pb.appendChild(f); c.appendChild(pb); }
       return c;
     };
-    grid.appendChild(mcard("Titularidades", par.starts + "/" + par.played, par.pctStart + "%", par.pctStart, "green", "✓", "green"));
-    grid.appendChild(mcard("Participación", par.played + " de " + par.jornada, "encuentros", par.jornada ? (par.played / par.jornada) * 100 : 0, "blue", "+", "blue"));
-    grid.appendChild(mcard("Minutos Totales", par.totalMin + " min", "de " + par.maxMin + " min posibles (" + par.pctMin + "%)", null, null, "⏱", "purple"));
-    box.appendChild(grid);
+    one.appendChild(ocell("Titular", par.starts + "/" + par.played, par.pctStart + "%", par.pctStart, "green"));
+    one.appendChild(ocell("Partidos", par.played + "/" + par.jornada, "jugados", par.jornada ? (par.played / par.jornada) * 100 : 0, "blue"));
+    one.appendChild(ocell("Minutos", String(par.totalMin), "de " + par.maxMin + " (" + par.pctMin + "%)", par.maxMin ? (par.totalMin / par.maxMin) * 100 : 0, "purple"));
+    box.appendChild(one);
 
     box.appendChild(el("div", "dash-sect", "Disponibilidad & disciplina"));
     const av = el("div", "dash-avail");
