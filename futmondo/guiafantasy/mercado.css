@@ -2893,3 +2893,9 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .plt-nm { display: flex; align-items: center; min-width: 0; }
 /* % de jugar: pastilla sobre la esquina inferior izquierda de la foto */
 .plt-phw .plt-prob { position: absolute; left: -10px; bottom: -4px; margin: 0; padding: 1px 7px; border-radius: 999px; background: #4ea869; color: #fff; border: 2px solid #fff; font-size: .66rem; font-weight: 800; line-height: 1.35; box-shadow: 0 2px 6px rgba(0,0,0,.3); z-index: 2; }
+/* Fila de orden en una sola línea (Titular probable no se parte en dos) */
+#pltSort { flex-wrap: nowrap !important; overflow-x: auto; scrollbar-width: none; align-items: center; }
+#pltSort::-webkit-scrollbar { display: none; }
+#pltSort .plt-btn { white-space: nowrap; font-size: .76rem; padding: 0 9px; flex: 0 0 auto; }
+/* Pastilla del % más pequeña, que no tape la cara */
+.plt-phw .plt-prob { left: -8px; bottom: -3px; padding: 0 5px; font-size: .54rem; line-height: 1.3; border-width: 1.5px; }
