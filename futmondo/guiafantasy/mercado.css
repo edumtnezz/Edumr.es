@@ -2886,3 +2886,8 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .dash-avail .dash-al { font-size: .62rem; }
 .dash-avail .dash-av { font-size: 1.05rem; line-height: 1.1; }
 .dash-avail .dash-as { font-size: .58rem; }
+
+/* Filtro "Titular ≥90%" */
+#pltSort { flex-wrap: wrap; row-gap: 8px; }
+.plt-btn.plt-sure { border-color: rgba(34,197,94,.55); color: #22c55e; font-weight: 800; }
+.plt-btn.plt-sure.on { background: #16a34a; border-color: #16a34a; color: #fff; }
