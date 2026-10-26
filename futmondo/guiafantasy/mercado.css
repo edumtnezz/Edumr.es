@@ -2889,5 +2889,3 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 
 /* Filtro "Titular ≥90%" */
 #pltSort { flex-wrap: wrap; row-gap: 8px; }
-.plt-btn.plt-sure { border-color: rgba(34,197,94,.55); color: #22c55e; font-weight: 800; }
-.plt-btn.plt-sure.on { background: #16a34a; border-color: #16a34a; color: #fff; }

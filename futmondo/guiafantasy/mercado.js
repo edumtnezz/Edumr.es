@@ -5613,7 +5613,7 @@
         pltRerender();
       }));
     });
-    { const sb = pltBtn("Titular ≥90%", pltSure, () => { pltSure = !pltSure; pltShown = 40; pltRerender(); }, "plt-sure"); sb.title = "Solo jugadores con 90 % o más de probabilidad de jugar"; sort.appendChild(sb); }
+    { const sb = pltBtn("Titular probable", pltSure, () => { pltSure = !pltSure; pltShown = 40; pltRerender(); }, "plt-sure"); sb.title = "Solo jugadores con 90 % o más de probabilidad de jugar"; sort.appendChild(sb); }
     per.innerHTML = "";
     per.hidden = pltSort !== "rise";
     if (pltSort === "rise") {
