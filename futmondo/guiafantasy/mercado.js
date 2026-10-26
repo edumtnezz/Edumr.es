@@ -3633,10 +3633,10 @@
     colA.appendChild(head);
 
     const stats = el("div", "ficha-stats");
-    const st = (label, val) => { const c = el("div", "ficha-stat"); c.appendChild(el("div", "fs-val", String(val))); c.appendChild(el("div", "fs-lab", label)); stats.appendChild(c); };
-    st("Puntos", d.points || 0);
-    st("Media", String(Math.round((Number(d.average) || 0) * 10) / 10).replace(".", ","));
-    st("Partidos", d.matches5 || 0);
+    const st = (label, val, cls) => { const c = el("div", "ficha-stat " + (cls || "")); c.appendChild(el("div", "fs-val", String(val))); c.appendChild(el("div", "fs-lab", label)); stats.appendChild(c); };
+    st("Puntos", d.points || 0, "fs-p");
+    st("Media", String(Math.round((Number(d.average) || 0) * 10) / 10).replace(".", ","), "fs-a");
+    st("Partidos", d.matches5 || 0, "fs-m");
     colA.appendChild(stats);
     if (d.participacion) colA.appendChild(renderParticipacion(d.participacion, d.status || p.status));
 
@@ -3685,6 +3685,7 @@
           if (v == null && m.lg != null) { v = Math.round(Number(m.lg)); calc = true; }
           const ps = el("span", "fm-pts " + (v != null ? "pt-" + ptClass(v) : "pt-st") + (calc ? " pt-calc" : ""), v != null ? String(v) : "—");
           if (calc) { ps.title = "Calculado con las reglas de tu liga (Futmondo solo publica los últimos 5 partidos)"; hasCalc = true; }
+          if (v != null) { row.style.setProperty("--bar", Math.max(5, Math.min(100, (v / 20) * 100)) + "%"); row.classList.add("has-bar", "rb-" + ptClass(v)); }
           if (v == null || calc) pendingHist.push([j, ps]);
           row.appendChild(ps);
         } else {

@@ -122,3 +122,26 @@ svg.ffx-ha.a{background:rgba(99,102,241,.16);color:#6366f1}
 .ficha-fix-it .ffx-d { white-space: normal; display: flex; flex-direction: column; align-items: center; line-height: 1.2; text-overflow: clip; }
 .ficha-fix-it .ffx-d .ffx-h { font-weight: 800; color: var(--text, inherit); font-size: .66rem; }
 .ficha-fix-it .ffx-d { text-align: center; width: 100%; }
+
+/* ===== Ficha: próximos partidos, estadísticas y títulos de sección más visuales ===== */
+.ficha-fix-k { display: block !important; font-size: .7rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); text-align: center; margin: 4px 0 8px; }
+.playerpage .ficha-stats { gap: 10px; }
+.playerpage .ficha-stat { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 16px 8px 14px; border-radius: 18px; border: 1px solid rgba(127,127,127,.22); }
+.playerpage .ficha-stat::before { content: ""; position: absolute; inset: 0; opacity: .9; pointer-events: none; }
+.playerpage .ficha-stat > * { position: relative; }
+.playerpage .fs-val { font-family: 'Bricolage Grotesque', sans-serif; font-size: 2rem; font-weight: 800; line-height: 1; letter-spacing: -.02em; }
+.playerpage .fs-lab { font-size: .66rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.playerpage .fs-p::before { background: linear-gradient(160deg, rgba(34,197,94,.22), rgba(34,197,94,.03) 70%); }
+.playerpage .fs-p .fs-val { color: #22c55e; }
+.playerpage .fs-a::before { background: linear-gradient(160deg, rgba(245,158,11,.24), rgba(245,158,11,.03) 70%); }
+.playerpage .fs-a .fs-val { color: #f59e0b; }
+.playerpage .fs-m::before { background: linear-gradient(160deg, rgba(59,130,246,.24), rgba(59,130,246,.03) 70%); }
+.playerpage .fs-m .fs-val { color: #3b82f6; }
+.playerpage .dash-sect, .playerpage .estado-title { display: flex; align-items: center; gap: 10px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 1.05rem; font-weight: 800; letter-spacing: -.01em; margin: 22px 0 10px; }
+.playerpage .dash-sect::before, .playerpage .estado-title::before { content: ""; flex: none; width: 5px; height: 20px; border-radius: 3px; background: linear-gradient(180deg, #22c55e, #0f7a37); }
+.playerpage .dash-sect::after, .playerpage .estado-title::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(127,127,127,.35), transparent); }
+/* Puntos por jornada: barra de color según los puntos */
+.fm-row.has-bar { position: relative; }
+.fm-row.has-bar::after { content: ""; position: absolute; left: 50px; bottom: 3px; height: 4px; width: calc((100% - 120px) * 0.01 * var(--bar-n, 0)); width: min(var(--bar), calc(100% - 120px)); border-radius: 3px; background: #22c55e; opacity: .85; }
+.fm-row.rb-mid::after { background: #f59e0b; }
+.fm-row.rb-lo::after { background: #ef4444; }
