@@ -5652,6 +5652,7 @@
       if (p.logo) { const lg = el("img", "plt-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; wrap.appendChild(lg); }
       const rst = statusInfo(p.status);
       if (rst) wrap.appendChild(el("span", "plt-st " + rst.cls, rst.label));
+      if (p.prob != null) { const pb = el("span", "plt-prob", p.prob + "%"); pb.title = "Probabilidad de jugar: " + p.prob + "%"; wrap.appendChild(pb); }
       const phc = el("div", "plt-phc");
       phc.appendChild(wrap);
       const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
@@ -5665,7 +5666,6 @@
       if (o.tag) mid.appendChild(el("div", "plt-tag " + o.tag[0], o.tag[1]));
       const nm = el("div", "plt-nm");
       nm.appendChild(el("span", "plt-name", p.name));
-      if (p.prob != null) { const pb = el("span", "plt-prob", p.prob + "%"); pb.title = "Probabilidad de jugar: " + p.prob + "%"; nm.appendChild(pb); }
       mid.appendChild(nm);
       mid.appendChild(el("div", "plt-val", money(p.value) + " €"));
       const chg = o.chg;
