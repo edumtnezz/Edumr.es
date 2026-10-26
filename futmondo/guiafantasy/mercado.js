@@ -1477,12 +1477,21 @@
     const chip = el("div", "mpage-chip mc-" + stKind);
     if (stKind === "live") chip.appendChild(el("i", "mc-dot"));
     chip.appendChild(document.createTextNode(chipTxt));
-    mid.appendChild(chip);
     const scoreTxt = (d.score != null && d.scoreAway != null) ? (d.score + " - " + d.scoreAway) : (m.live && m.live.score && m.live.state !== "suspended" ? m.live.score : "vs");
-    const plate = el("div", "mpage-plate" + (scoreTxt === "vs" ? " vs" : ""));
-    plate.appendChild(el("div", "mpage-score", scoreTxt));
+    const pre = scoreTxt === "vs";
+    // Antes del partido: en vez de "VS" se enseña la hora del partido (con el día encima) y, debajo, el estado de las alineaciones
+    let preNote = "";
+    if (pre && stKind === "date") { if (/ALINEAC|CONFIRM|PROBAB/.test(stUp)) preNote = stTxt; } else mid.appendChild(chip);
+    const plate = el("div", "mpage-plate" + (pre ? " vs" : ""));
+    if (pre && (m.time || m.date)) {
+      plate.classList.add("pre");
+      const dl = [m.day, m.date].filter(Boolean).join(" ");
+      if (dl) plate.appendChild(el("div", "mpage-pre-d", dl));
+      plate.appendChild(el("div", "mpage-score mpage-pre-t", m.time || "vs"));
+    } else plate.appendChild(el("div", "mpage-score", scoreTxt));
     mid.appendChild(plate);
     if (period) mid.appendChild(el("div", "mpage-period", period));
+    else if (preNote) { const pn = el("div", "mpage-period mpage-prenote"); pn.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'; pn.appendChild(document.createTextNode(preNote.charAt(0) + preNote.slice(1).toLowerCase())); mid.appendChild(pn); }
     teams.appendChild(mid);
     teams.appendChild(mkTeam(m.away, m.awayCrest, "away"));
     head.appendChild(teams);
