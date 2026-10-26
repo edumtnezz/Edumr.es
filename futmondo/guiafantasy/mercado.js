@@ -541,6 +541,46 @@
   }
   let fichLoaded = false;
 
+  // ---- Titulares: jugadores con alta probabilidad de jugar (FutbolFantasy) ----
+  let titMin = 90, titPos = "";
+  try { const sv = Number(localStorage.getItem("merc_titmin")); if (sv === 90 || sv === 95 || sv === 100) titMin = sv; } catch (e) {}
+  async function renderTitulares() {
+    const bar = $("titFilters"), out = $("titOut");
+    if (!bar || !out) return;
+    if (!all || !all.length) { out.innerHTML = '<div class="cx-sk"></div>'; try { await load(); } catch (e) {} }
+    const base = (all || []).filter((p) => p.prob != null && Number(p.prob) > 0);
+    bar.innerHTML = "";
+    const grp = (items, cur, set) => { const g = el("div", "tit-grp"); items.forEach((it) => { const b = el("button", "tit-chip" + (it[0] === cur ? " on" : ""), it[1]); b.type = "button"; b.addEventListener("click", () => { set(it[0]); renderTitulares(); }); g.appendChild(b); }); bar.appendChild(g); };
+    grp([[90, "90%+"], [95, "95%+"], [100, "100%"]], titMin, (v) => { titMin = v; try { localStorage.setItem("merc_titmin", String(v)); } catch (e) {} });
+    grp([["", "Todos"], ["portero", "Portero"], ["defensa", "Defensa"], ["centrocampista", "Medio"], ["delantero", "Delantero"]], titPos, (v) => { titPos = v; });
+    let list = base.filter((p) => Number(p.prob) >= titMin && (!titPos || String(p.role || "").toLowerCase() === titPos));
+    list.sort((a, b) => (Number(b.prob) - Number(a.prob)) || ((Number(b.points) || 0) - (Number(a.points) || 0)));
+    const up = $("titUpdated"); if (up) up.textContent = list.length + " jugadores";
+    out.innerHTML = "";
+    if (!list.length) { out.appendChild(el("p", "muted small", "Ningún jugador con este porcentaje ahora mismo.")); return; }
+    // Agrupados por club, en el orden de la lista
+    const byTeam = {}, order = [];
+    list.forEach((p) => { const t = p.team || "—"; if (!byTeam[t]) { byTeam[t] = []; order.push(t); } byTeam[t].push(p); });
+    order.sort((a, b) => a.localeCompare(b));
+    order.forEach((t) => {
+      const sec = el("section", "tit-team");
+      const hd = el("div", "tit-th"); const first = byTeam[t][0];
+      if (first.logo) { const im = el("img"); im.src = first.logo; im.alt = ""; im.loading = "lazy"; hd.appendChild(im); }
+      hd.appendChild(el("b", null, t)); hd.appendChild(el("span", "tit-n", String(byTeam[t].length)));
+      const rv = first.rivalFf; if (rv) hd.appendChild(el("small", null, (first.casaFf ? "vs " : "en ") + rv));
+      sec.appendChild(hd);
+      byTeam[t].forEach((p) => {
+        const r = el("button", "tit-row"); r.type = "button";
+        const ph = el("span", "tit-ph"); ph.appendChild(photoImg(p.photo, "tit-img")); r.appendChild(ph);
+        const tx = el("span", "tit-tx"); tx.appendChild(el("b", null, p.name));
+        const sub = el("small"); const rb = roleBadge(p.role); if (rb) sub.appendChild(el("span", "posb posb-" + posCls(p.role) + " tit-pos", rb)); if (p.value) sub.appendChild(document.createTextNode(formatDots(p.value) + " €")); tx.appendChild(sub); r.appendChild(tx);
+        r.appendChild(el("span", "tit-pct" + (Number(p.prob) >= 100 ? " full" : ""), p.prob + "%"));
+        r.addEventListener("click", () => openFicha(p));
+        sec.appendChild(r);
+      });
+      out.appendChild(sec);
+    });
+  }
   // ---- Últimas actualizaciones (alineaciones, lesiones, dudas, sanciones, mercado Futmondo) ----
   const UP_CATS = {
     "once-ok": ["Once confirmado", "#16a34a", '<path d="M5 12.5l4.5 4.5L19 7.5"/>'],
@@ -2819,7 +2859,7 @@
   // Clausulazo jugoso, Analiza tu equipo) viven aquí dentro en vez de obligar
   // a deslizar o poner flechas. Si la pestaña activa es una de las del menú,
   // el botón se pone verde para saber dónde estás sin abrir el desplegable.
-  const MORE_TABS = { actualizaciones: "Últimas actualizaciones", fichajes: "Fichajes", clausulazos: "Clausulazo jugoso", analiza: "Analiza tu equipo", plantillas: "Plantillas (prueba)" };
+  const MORE_TABS = { titulares: "Titulares", actualizaciones: "Últimas actualizaciones", fichajes: "Fichajes", clausulazos: "Clausulazo jugoso", analiza: "Analiza tu equipo", plantillas: "Plantillas (prueba)" };
   function closeMoreMenu() {
     const menu = $("cxMoreMenu"), btn = $("cxMoreBtn");
     if (menu) menu.classList.add("hidden");
@@ -2876,6 +2916,7 @@
     if (name === "clausulazos") renderClausulas();
     if (name === "fichajes") renderFichajes();
     if (name === "actualizaciones") renderActualizaciones();
+    if (name === "titulares") renderTitulares();
     if (name === "plantillas") initPlantillas();
     try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
     try {
@@ -4273,7 +4314,7 @@
 
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { if (document.querySelector(".eq-page, .mpage, .playerpage, .livepage")) { location.href = "/futmondo/guiafantasy/" + (t.dataset.tab === "plantillas" ? "mercado" : t.dataset.tab); return; } switchTab(t.dataset.tab); }));
   setupMoreMenu();
-  let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltPeriod = "chg7", pltDir = -1, pltShown = 40, pltPlayers = [], pltSure = false;
+  let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltPeriod = "chg7", pltDir = -1, pltShown = 40, pltPlayers = [];
   // En la ficha de jugador esto (14 peticiones de jornadas) se pide DESPUÉS de pintar, para no frenar la carga.
   if (!/\/jugador(?:es)?\/[a-z0-9]{6,40}/i.test(location.pathname)) ensurePlayedJ();
   (function restoreTab() {
@@ -4294,7 +4335,7 @@
     } catch (e) {}
     let name = "";
     try {
-      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|actualizaciones|noticias|analiza|clausulazos|plantillas)/);
+      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|titulares|actualizaciones|noticias|analiza|clausulazos|plantillas)/);
       if (m) name = m[1];
     } catch (e) {}
     if (!name) { try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {} }
@@ -5570,12 +5611,12 @@
     renderPltList();
   }
   const PLT_PER = [["chg7", "7 días"], ["chg30", "30 días"], ["chgAll", "Temporada"]];
-  function pltSave() { try { sessionStorage.setItem("pltState", JSON.stringify({ sure: pltSure ? 1 : 0, c: pltClub, p: pltPos, s: pltSort, d: pltDir, per: pltPeriod, n: pltShown })); } catch (e) {} }
+  function pltSave() { try { sessionStorage.setItem("pltState", JSON.stringify({ c: pltClub, p: pltPos, s: pltSort, d: pltDir, per: pltPeriod, n: pltShown })); } catch (e) {} }
   function pltLoadState() {
     try {
       const s = JSON.parse(sessionStorage.getItem("pltState") || "null");
       if (!s) return;
-      pltSure = !!s.sure; pltClub = s.c || ""; pltPos = s.p || ""; pltSort = s.s || "points"; pltDir = s.d === 1 ? 1 : -1; pltPeriod = s.per || "chg7"; pltShown = Number(s.n) > 0 ? Math.min(Number(s.n), 400) : 40;
+      pltClub = s.c || ""; pltPos = s.p || ""; pltSort = s.s || "points"; pltDir = s.d === 1 ? 1 : -1; pltPeriod = s.per || "chg7"; pltShown = Number(s.n) > 0 ? Math.min(Number(s.n), 400) : 40;
     } catch (e) {}
   }
   function pltRerender() { pltShown = 40; renderPltControls(); renderPltList(); }
@@ -5613,7 +5654,6 @@
         pltRerender();
       }));
     });
-    { const sb = pltBtn("Titular ≥90%", pltSure, () => { pltSure = !pltSure; pltShown = 40; pltRerender(); }, "plt-sure"); sb.title = "Solo jugadores con 90 % o más de probabilidad de jugar"; sort.appendChild(sb); }
     per.innerHTML = "";
     per.hidden = pltSort !== "rise";
     if (pltSort === "rise") {
@@ -5708,10 +5748,10 @@
     pltSave();
     const rise = pltSort === "rise";
     const key = rise ? pltPeriod : pltSort;
-    let list = pltPlayers.filter((p) => (!pltClub || p.team === pltClub) && (!pltPos || String(p.role || "").toLowerCase() === pltPos) && (!pltSure || (p.prob != null && Number(p.prob) >= 90)));
+    let list = pltPlayers.filter((p) => (!pltClub || p.team === pltClub) && (!pltPos || String(p.role || "").toLowerCase() === pltPos));
     list = list.slice().sort((a, b) => pltDir * ((Number(a[key]) || 0) - (Number(b[key]) || 0)));
     box.innerHTML = "";
-    if (!list.length) { box.appendChild(el("p", "muted", pltSure ? "Sin jugadores con 90 % o más por ahora." : "Sin jugadores.")); return; }
+    if (!list.length) { box.appendChild(el("p", "muted", "Sin jugadores.")); return; }
     const j0 = pltPlayers.reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0);
     list.slice(0, pltShown).forEach((p) => {
       box.appendChild(pltBuildRow(p, { chg: Number(rise ? p[pltPeriod] : p.change) || 0 }));
