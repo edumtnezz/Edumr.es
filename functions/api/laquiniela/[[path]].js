@@ -4374,18 +4374,33 @@ export async function onRequestGet(ctx) {
     const hit = await caches.default.match(key);
     if (hit) return new Response(hit.body, { status: 200, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-edge": "hit" } });
   } catch (e) {}
-  const res = await handleGet(ctx);
+  // Última respuesta buena (se guarda 2 días): si la fuente falla o llega vacía, se sirve esa en vez de una pantalla vacía.
+  const staleKey = new Request("https://edgecache.edumr.internal/v1-stale" + url.pathname + url.search);
+  const serveStale = async () => {
+    try {
+      const st = await caches.default.match(staleKey);
+      if (st) return new Response(st.body, { status: 200, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-edge": "stale" } });
+    } catch (e) {}
+    return null;
+  };
+  let res;
+  try { res = await handleGet(ctx); } catch (e) { return (await serveStale()) || new Response(JSON.stringify({ error: "temporal" }), { status: 503, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } }); }
   if (res.status === 200) {
     try {
       const txt = await res.clone().text();
-      // No se cachean respuestas vacías o fallidas (p. ej. jornada sin partidos cuando falla la fuente): si no, el fallo se "pegaría" varios segundos.
-      if (txt.indexOf('"error"') < 0 && txt.length > 20 && !/"(matches|players|teams|items|days)":\[\]/.test(txt) && !/"matchday":0[,}]/.test(txt)) {
+      const good = txt.indexOf('"error"') < 0 && txt.length > 20 && !/"(matches|players|teams|items|days)":\[\]/.test(txt) && !/"matchday":0[,}]/.test(txt);
+      if (good) {
         // La jornada solo necesita refrescarse cada 30 s si hay un partido en juego; si no, cada 90 s (menos CPU)
         const ttlNow = path === "jornada" && txt.indexOf('"state":"live"') < 0 ? 90 : ttl;
         const put = caches.default.put(key, new Response(txt, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=" + ttlNow } }));
-        if (ctx.waitUntil) ctx.waitUntil(put.catch(() => {})); else await put.catch(() => {});
+        const put2 = caches.default.put(staleKey, new Response(txt, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=172800" } }));
+        if (ctx.waitUntil) { ctx.waitUntil(put.catch(() => {})); ctx.waitUntil(put2.catch(() => {})); } else { await put.catch(() => {}); await put2.catch(() => {}); }
+      } else {
+        const st = await serveStale(); if (st) return st;
       }
     } catch (e) {}
+  } else if (res.status >= 500) {
+    const st = await serveStale(); if (st) return st;
   }
   return res;
 }
