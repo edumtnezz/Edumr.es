@@ -2886,6 +2886,7 @@
     if (name === "fichajes") renderFichajes();
     if (name === "actualizaciones") renderActualizaciones();
     if (name === "plantillas") initPlantillas();
+    if (name === "analiza") { fetch(API + "/me", { cache: "no-store" }).then((r) => r.json()).then((d) => { const m = $("anMsg"); if (!(d && d.user) && m && !m.querySelector(".an-login")) anMsgSet(m, "Inicia sesión para analizar tu equipo."); }).catch(() => {}); }
     try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
     try {
       const url = "/futmondo/guiafantasy/" + (name === "plantillas" ? "mercado" : name);
@@ -4409,6 +4410,30 @@
     };
     tick();
   }
+  // Mensaje de "Analiza tu equipo": si hace falta iniciar sesión, se pone el formulario ahí mismo (sin ir a otra página)
+  function anMsgSet(m, text) {
+    if (!m) return;
+    m.textContent = text;
+    if (!/inicia\s+sesi/i.test(String(text || ""))) return;
+    const f = el("div", "an-login");
+    const nm = el("input"); nm.placeholder = "Tu nombre"; nm.maxLength = 24; nm.autocomplete = "username";
+    const pin = el("input"); pin.type = "password"; pin.inputMode = "numeric"; pin.placeholder = "Tu código"; pin.maxLength = 6; pin.autocomplete = "current-password";
+    const b = el("button", "btn-primary an-login-b", "Iniciar sesión"); b.type = "button";
+    const er = el("p", "error an-login-e");
+    const go = async () => {
+      er.textContent = ""; b.disabled = true;
+      try {
+        const res = await fetch(API + "/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nombre: nm.value, pin: pin.value }) });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.error || "No se pudo iniciar sesión");
+        location.reload();
+      } catch (e) { er.textContent = e.message; b.disabled = false; }
+    };
+    b.addEventListener("click", go);
+    pin.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+    f.appendChild(nm); f.appendChild(pin); f.appendChild(b); f.appendChild(er);
+    m.appendChild(f);
+  }
   async function runAnaliza(payload, prefijo) {
     anT0 = Date.now();
     anShowRunning(prefijo);
@@ -4422,7 +4447,7 @@
         $("anMsg").textContent = "✅ Analizado en " + ((Date.now() - anT0) / 1000).toFixed(1).replace(".", ",") + " s";
         return d.data;
       }
-      $("anMsg").textContent = d.error || "No se pudo analizar.";
+      anMsgSet($("anMsg"), d.error || "No se pudo analizar.");
       return null;
     } catch (e) {
       // Se cortó la conexión (p. ej. saliste de la app): el servidor sigue trabajando; se recoge el resultado.
@@ -4431,7 +4456,7 @@
       return await new Promise((resolve) => {
         anPoll(prefijo, (j) => {
           if (j && j.status === "done") { try { localStorage.setItem("anJobSeen", String(j.id)); } catch (e2) {} $("anMsg").textContent = "✅ Análisis recuperado"; resolve(j.data); }
-          else { $("anMsg").textContent = (j && j.error) || "No se pudo analizar."; resolve(null); }
+          else { anMsgSet($("anMsg"), (j && j.error) || "No se pudo analizar."); resolve(null); }
         });
       });
     }
@@ -4451,7 +4476,7 @@
         renderAnalisis(x.data);
       } else if (x && x.status === "error") {
         let pend = null; try { pend = localStorage.getItem("anJobPending"); } catch (e) {}
-        if (pend) { try { localStorage.removeItem("anJobPending"); } catch (e) {} const m = $("anMsg"); if (m) m.textContent = x.error || "No se pudo analizar."; }
+        if (pend) { try { localStorage.removeItem("anJobPending"); } catch (e) {} const m = $("anMsg"); if (m) anMsgSet(m, x.error || "No se pudo analizar."); }
       }
     };
     if (j.status === "running") { anT0 = j.at || Date.now(); anPoll("Analizando…", finish); }
