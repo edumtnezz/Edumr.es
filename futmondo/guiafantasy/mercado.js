@@ -4426,7 +4426,8 @@
         const res = await fetch(API + "/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ nombre: nm.value, pin: pin.value }) });
         const d = await res.json();
         if (!res.ok) throw new Error(d.error || "No se pudo iniciar sesión");
-        location.reload();
+        f.replaceChildren(); const ok = el("p", "an-login-ok", "✓ Sesión iniciada correctamente"); f.appendChild(ok); m.firstChild && (m.firstChild.textContent = "");
+        setTimeout(() => location.reload(), 1200);
       } catch (e) { er.textContent = e.message; b.disabled = false; }
     };
     b.addEventListener("click", go);

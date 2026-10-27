@@ -2904,3 +2904,4 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .an-login input { height: 44px; border-radius: 12px; border: 1px solid rgba(127,127,127,.35); background: transparent; color: inherit; padding: 0 14px; font: inherit; }
 .an-login-b { height: 46px; border-radius: 12px; font-weight: 800; }
 .an-login-e { min-height: 0; margin: 0; font-size: .8rem; color: #ef4444; }
+.an-login-ok { margin: 6px 0 0; padding: 12px 14px; border-radius: 12px; background: rgba(34,197,94,.16); border: 1px solid rgba(34,197,94,.5); color: #16a34a; font-weight: 800; text-align: center; }
