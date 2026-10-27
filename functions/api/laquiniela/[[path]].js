@@ -1865,17 +1865,19 @@ function parseCambios(html) {
 async function getCambios(env) {
   const KEY = "cambios:v2";
   try { const c = await edgeGet(KEY); if (c && c.data && Date.now() - (c.at || 0) < 3 * 60 * 1000) return c.data; } catch (e) {}
-  let data = null;
+  let data = null, why = "";
   try {
-    const html = await (await fetch(CAMBIOS_URL, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text();
+    const rs = await fetch(CAMBIOS_URL, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+    const html = await rs.text();
     const days = parseCambios(html);
     if (days.length) data = { updatedAt: Date.now(), days };
-  } catch (e) {}
+    else why = "http " + rs.status + ", " + html.length + " bytes, sin dias leidos" + (/just a moment|captcha|challenge/i.test(html) ? ", pagina de verificacion" : "") + (html.indexOf("Actualizada posible") >= 0 ? ", el texto esta pero no el formato esperado" : "");
+  } catch (e) { why = "error de red: " + String(e).slice(0, 80); }
   if (!data) {
     try { const c = await edgeGet(KEY); if (c && c.data && (c.data.days || []).length) return c.data; } catch (e) {}
     // Respaldo duradero (otro centro de datos o caché caducada): último resultado bueno guardado
     try { const k = await env.PORRA.get("cambios:last", "json"); if (k && k.days && k.days.length) return k; } catch (e) {}
-    return { updatedAt: Date.now(), days: [], failed: true };
+    return { updatedAt: Date.now(), days: [], failed: true, why };
   }
   await edgePut(KEY, { at: Date.now(), data }, 86400);
   // Copia duradera como mucho cada 30 min (pocas escrituras en KV)
