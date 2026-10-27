@@ -617,13 +617,15 @@
     });
     if (!shown) box.innerHTML = '<p class="muted small">Sin actualizaciones de este tipo ahora mismo.</p>';
   }
+  let updTry = 0;
   async function renderActualizaciones() {
     const box = $("updOut");
     if (!box) return;
     if (!updData) box.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>';
     try {
       const d = await (await fetch(API + "/ultimos-cambios")).json();
-      if (d && d.days) { updData = d; }
+      if (d && d.days && d.days.length) { updData = d; updTry = 0; }
+      else if (updTry < 3) { updTry++; setTimeout(() => { if (currentTab === "actualizaciones") renderActualizaciones(); }, 3000 * updTry); }
       const upd = $("updUpdated");
       if (upd && d && d.updatedAt) upd.textContent = "· " + haceTxt(d.updatedAt);
     } catch (e) {}

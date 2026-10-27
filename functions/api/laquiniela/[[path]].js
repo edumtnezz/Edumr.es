@@ -1872,10 +1872,20 @@ async function getCambios(env) {
     if (days.length) data = { updatedAt: Date.now(), days };
   } catch (e) {}
   if (!data) {
-    try { const c = await edgeGet(KEY); if (c && c.data) return c.data; } catch (e) {}
-    return { updatedAt: Date.now(), days: [] };
+    try { const c = await edgeGet(KEY); if (c && c.data && (c.data.days || []).length) return c.data; } catch (e) {}
+    // Respaldo duradero (otro centro de datos o caché caducada): último resultado bueno guardado
+    try { const k = await env.PORRA.get("cambios:last", "json"); if (k && k.days && k.days.length) return k; } catch (e) {}
+    return { updatedAt: Date.now(), days: [], failed: true };
   }
   await edgePut(KEY, { at: Date.now(), data }, 86400);
+  // Copia duradera como mucho cada 30 min (pocas escrituras en KV)
+  try {
+    const last = await edgeGet("cambios:kvat");
+    if (!last || Date.now() - (last.at || 0) > 30 * 60 * 1000) {
+      await env.PORRA.put("cambios:last", JSON.stringify(data), { expirationTtl: 3 * 86400 });
+      await edgePut("cambios:kvat", { at: Date.now() }, 7200);
+    }
+  } catch (e) {}
   return data;
 }
 
@@ -4369,7 +4379,7 @@ export async function onRequestGet(ctx) {
     try {
       const txt = await res.clone().text();
       // No se cachean respuestas vacías o fallidas (p. ej. jornada sin partidos cuando falla la fuente): si no, el fallo se "pegaría" varios segundos.
-      if (txt.indexOf('"error"') < 0 && txt.length > 20 && !/"(matches|players|teams|items)":\[\]/.test(txt) && !/"matchday":0[,}]/.test(txt)) {
+      if (txt.indexOf('"error"') < 0 && txt.length > 20 && !/"(matches|players|teams|items|days)":\[\]/.test(txt) && !/"matchday":0[,}]/.test(txt)) {
         // La jornada solo necesita refrescarse cada 30 s si hay un partido en juego; si no, cada 90 s (menos CPU)
         const ttlNow = path === "jornada" && txt.indexOf('"state":"live"') < 0 ? 90 : ttl;
         const put = caches.default.put(key, new Response(txt, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=" + ttlNow } }));
