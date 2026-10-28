@@ -1856,7 +1856,7 @@ function parseCambios(html) {
         const nombre = txt((pm.match(/cambio-nombre[^>]*>([\s\S]*?)<\/strong>/) || [])[1]);
         const foto = fixUrl((pm.match(/<img[^>]*cambio-foto[^>]*src="([^"]+)"/) || [])[1]);
         // Texto completo de cada estado (p. ej. "0% Suplente" o "Titular 70%"); sin depender de la estructura interior
-        const blk = (re) => { const x = pm.match(re); return x ? txt(x[1]) : ""; };
+        const blk = (re) => { const x = pm.match(re); return x ? txt(x[1].replace(/<[^>]*$/, "")) : ""; };
         const fromT = blk(/cambio-estado--antes[^>]*>([\s\S]*?)(?=<svg|cambio-estado--despues|<\/li>)/);
         const toT = blk(/cambio-estado--despues[^>]*>([\s\S]*?)(?=<\/li>|$)/);
         if (nombre) players.push({ name: nombre, photo: foto, from: fromT, to: toT });
