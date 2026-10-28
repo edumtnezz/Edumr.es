@@ -1526,6 +1526,7 @@ async function playerFicha(env, id, fast, raw) {
       red: Number(dta.red_card) || 0,
       stats: g("stats"), picas: g("picas"), ff: g("ff"), ss: g("ss"), as: g("as"), marca: g("marca"),
       hsc: m.h ? m.h.score : null, asc: m.a ? m.a.score : null,
+      ev: { g: Number(dta.goals) || 0, a: Number(dta.goal_assist) || 0, cs: dta.cleansheet === true && (Number(dta.mins_played) || 0) >= 60 ? 1 : 0, og: Number(dta.own_goals) || 0, pw: Number(dta.penalty_won) || 0, pc: Number(dta.penalty_conceded) || 0, pm: Number(dta.att_pen_miss) || 0, ps: Number(dta.penalty_save) || 0, sv: Number(dta.saves) || 0, gc: Number(dta.goals_conceded) || 0, rt: Number(dta.rating) || 0 },
       lg: leagueMatchPoints(po, dta, (mp && mp.role) || ""),
       ...(raw ? { dta, po } : {}),
     };
