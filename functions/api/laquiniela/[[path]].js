@@ -1479,16 +1479,19 @@ function leagueMatchPoints(po, d, role) {
 
 async function playerFicha(env, id, fast, raw) {
   if (!id) return { error: "falta id" };
-  const header = await futbolHeader(env);
-  const r = await futbolPost("/2/player/matches", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP });
-  const a = r.answer || {};
-  const pl = a.player || {};
+  // Si Futmondo falla (límite, caída, token), se reintenta una vez y, si sigue fallando, la ficha sale con los datos del mercado en vez de error.
+  let header = null, r = {};
+  for (let k = 0; k < 2 && !(r && r.answer); k++) {
+    try { header = await futbolHeader(env); r = await futbolPost("/2/player/matches", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP }); } catch (e) { r = {}; }
+  }
+  const a = (r && r.answer) || {};
+  let pl = a.player || {};
   // Todo lo que no depende de lo demás se pide A LA VEZ (antes iba uno detrás de otro y la ficha tardaba muchísimo).
   // Las partes opcionales y lentas (futbolfantasy, transfermarkt) tienen tope de 3,5 s: si tardan, la ficha sale sin ellas.
   const tmo = (p, ms, fb) => Promise.race([Promise.resolve(p).catch(() => fb), new Promise((res) => setTimeout(() => res(fb), ms))]);
   const pMk = getMarketPlayers(env).catch(() => null);
   const pScore = getScoreMap(env).catch(() => ({}));
-  const pLs = futbolPost("/2/player/lastseasons", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP }).catch(() => null);
+  const pLs = (header ? futbolPost("/2/player/lastseasons", header, { playerId: id, championshipId: FUTMONDO_CHAMPIONSHIP }) : Promise.resolve(null)).catch(() => null);
   const pTeams = getTeams(env).catch(() => null);
   // fast=1: ficha sin las partes lentas externas (futbolfantasy / transfermarkt); el cliente pide después la completa.
   const pSerie = fast ? Promise.resolve(null) : tmo(ffSeason(env, pl.name || ""), 4500, null);
@@ -1501,6 +1504,8 @@ async function playerFicha(env, id, fast, raw) {
     mp = (mk.players || []).find((x) => x.id === k) || (mk.players || []).find((x) => x.name && stripAccents(x.name) === stripAccents(pl.name || ""));
     lJornada = (mk.players || []).reduce((m, x) => Math.max(m, Number(x.matches) || 0), 0);
   } catch (e) {}
+  if (!pl.name && mp && mp.name) pl = { name: mp.name, value: mp.value, change: mp.change, role: mp.role || "", status: mp.status || "", team: mp.team || "" };
+  if (!pl.name) return { error: "sin datos" };
   const smap = (await pScore) || {};
   const matches = (a.matches || []).map((m) => {
     const po = (m.ps && m.ps.po) || [];

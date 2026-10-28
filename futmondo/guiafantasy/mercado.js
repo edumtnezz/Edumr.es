@@ -2397,7 +2397,12 @@
       if (needAll) pl.then(() => { if (document.body.contains(box) && lastD) draw(lastD, false); });
       if (first && !playedJ) ensurePlayedJ().then(() => { if (playedJ && document.body.contains(box) && lastD) draw(lastD, false); }).catch(() => {});
     };
-    try { await paint(true); } catch (e) { box.innerHTML = '<p class="muted small">No se pudo cargar la ficha.</p>'; }
+    try { await paint(true); } catch (e) {
+      try { await new Promise((r) => setTimeout(r, 1200)); await paint(true); } catch (e2) {
+        box.innerHTML = '<p class="muted small">No se pudo cargar la ficha.</p>';
+        const rb = el("button", "btn", "Reintentar"); rb.style.margin = "10px"; rb.onclick = () => location.reload(); box.appendChild(rb);
+      }
+    }
     let swrP = null;
     const onSwrP = (ev) => {
       if (!document.body.contains(box)) { document.removeEventListener("cx:swr", onSwrP); return; }
