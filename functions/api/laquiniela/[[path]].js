@@ -1836,13 +1836,17 @@ function parseCambios(html) {
     if (m[1] !== undefined) { cur = { day: txt(m[1]), items: [] }; days.push(cur); continue; }
     const b = m[2] || "";
     if (!cur) { cur = { day: "", items: [] }; days.push(cur); }
-    const time = txt((b.match(/class="event-time"[^>]*>([\s\S]*?)<\/span>/) || [])[1]);
-    const a = b.match(/class="event-content"[^>]*>\s*<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/);
+    const tm = b.match(/class="event-time"[^>]*>([\s\S]*?)<\/(?:time|span)>/);
+    const time = txt(tm && tm[1]);
+    // Formato actual: <a class="event-link" href> ... <span class="event-title">; formato antiguo: event-content > a
+    let a = b.match(/class="event-link"[^>]*href="([^"]+)"[\s\S]*?class="event-title"[^>]*>([\s\S]*?)<\/span>/) || b.match(/<a[^>]*class="event-link"[^>]*>[\s\S]*?class="event-title"[^>]*>([\s\S]*?)<\/span>/);
+    if (a && a.length === 2) { const hh = b.match(/<a[^>]*href="([^"]+)"[^>]*class="event-link"/); a = [a[0], hh ? hh[1] : "", a[1]]; }
+    if (!a) a = b.match(/class="event-content"[^>]*>\s*<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/);
     if (!a) continue;
     const title = txt(a[2]);
     const href = a[1];
     if (cambioExcluido(title)) continue;
-    const imgs = [...b.split(/class="event-content"/)[0].matchAll(/<img[^>]*src="([^"]+)"/g)].map((x) => fixUrl(x[1]));
+    const imgs = [...b.split(/class="event-content"|class="event-title"/)[0].matchAll(/<img[^>]*src="([^"]+)"/g)].map((x) => fixUrl(x[1]));
     const iconM = b.match(/<img[^>]*src="([^"]+)"[^>]*class="[^"]*event-icon|<img[^>]*class="[^"]*event-icon[^"]*"[^>]*src="([^"]+)"/);
     const icon = iconM ? (iconM[1] || iconM[2]) : "";
     const photo = imgs.find((u) => u !== fixUrl(icon)) || "";
