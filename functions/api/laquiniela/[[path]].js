@@ -1875,7 +1875,7 @@ async function getCambios(env) {
     const html = await rs.text();
     const days = parseCambios(html);
     if (days.length) data = { updatedAt: Date.now(), days };
-    else why = "http " + rs.status + ", " + html.length + " bytes, sin dias leidos" + (/just a moment|captcha|challenge/i.test(html) ? ", pagina de verificacion" : "") + (html.indexOf("Actualizada posible") >= 0 ? ", el texto esta pero no el formato esperado" : "");
+    else why = "http " + rs.status + ", " + html.length + " bytes, sin dias leidos" + (/just a moment|captcha|challenge/i.test(html) ? ", pagina de verificacion" : "") + (html.indexOf("Actualizada posible") >= 0 ? ", el texto esta pero no el formato esperado" : ""); if (!days.length) { const ix = html.indexOf("event-row"); why += " | event-row en pos " + ix + (ix >= 0 ? ": " + html.slice(Math.max(0, ix - 150), ix + 500).replace(/\s+/g, " ") : "") + " | changelog-day: " + html.indexOf("changelog-day"); }
   } catch (e) { why = "error de red: " + String(e).slice(0, 80); }
   if (!data) {
     try { const c = await edgeGet(KEY); if (c && c.data && (c.data.days || []).length) return c.data; } catch (e) {}
