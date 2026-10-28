@@ -3638,8 +3638,21 @@
     })();
     head.appendChild(el("div", "ficha-val", money(d.value || p.value) + " €"));
     const chg = Number(d.change != null ? d.change : p.change) || 0;
-    head.appendChild(el("div", "cmp-trend " + (chg > 0 ? "up" : chg < 0 ? "down" : "flat"),
-      chg > 0 ? "▲ " + formatDots(chg) + " €" + pct(d.value || p.value, chg) : chg < 0 ? "▼ " + formatDots(-chg) + " €" + pct(d.value || p.value, chg) : "—"));
+    (function () {
+      const row = el("div", "vchips");
+      const mk = (lab, v) => {
+        v = Number(v);
+        if (!isFinite(v)) return;
+        const c = el("div", "vchip " + (v > 0 ? "up" : v < 0 ? "down" : "flat"));
+        c.appendChild(el("span", "vc-l", lab));
+        c.appendChild(el("b", "vc-v", v === 0 ? "Sin cambio" : (v > 0 ? "▲ +" : "▼ −") + formatDots(Math.abs(v)) + " €"));
+        row.appendChild(c);
+      };
+      mk("Hoy", chg);
+      if (p.chg7 != null) mk("7 días", p.chg7);
+      if (d.temporada && d.temporada.n >= 2) mk("Temporada", d.temporada.diff);
+      if (row.children.length) head.appendChild(row);
+    })();
     if (d.pronostico) { const pr = el("div", "ficha-pron", "Pronóstico: " + d.pronostico); if (p.prob != null) pr.appendChild(el("span", "ficha-pron-pct", p.prob + "%")); head.appendChild(pr); }
     if (d.fichaje && d.fichaje.date) head.appendChild(el("div", "ficha-fichaje", "🖊️ Fichado: " + d.fichaje.date + (d.fichaje.club ? " · " + d.fichaje.club : "")));
     colA.appendChild(head);
