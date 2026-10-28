@@ -3714,21 +3714,21 @@
           // Qué pasó en el partido (datos reales del partido): goles, asistencias, portería a cero, tarjetas, penaltis, nota.
           const E = m.ev || {};
           const evs = [];
-          if (E.g) evs.push(["⚽", E.g > 1 ? "×" + E.g : "", "Gol" + (E.g > 1 ? "es" : ""), "g"]);
-          if (E.a) evs.push(["👟", E.a > 1 ? "×" + E.a : "", "Asistencia" + (E.a > 1 ? "s" : ""), "a"]);
-          if (E.cs) evs.push(["🧤", "", "Portería a cero", "cs"]);
-          if (E.ps) evs.push(["🧤", "pen.", "Penalti parado", "g"]);
-          if (E.pw) evs.push(["🎯", "pen.", "Penalti provocado", "a"]);
-          if (E.pm) evs.push(["❌", "pen.", "Penalti fallado", "bad"]);
-          if (E.pc) evs.push(["⚠️", "pen.", "Penalti cometido", "bad"]);
-          if (E.og) evs.push(["⚽", "p.p.", "Gol en propia", "bad"]);
-          if (Number(m.yellow) > 0) evs.push(["🟨", "", "Amarilla", "y"]);
-          if (Number(m.red) > 0) evs.push(["🟥", "", "Roja", "bad"]);
-          if (E.sv >= 3) evs.push(["🧤", E.sv, "Paradas", "cs"]);
-          if (E.rt) evs.push(["★", String(E.rt).replace(".", ","), "Nota del partido", "rt"]);
+          if (E.g) evs.push([E.g + (E.g > 1 ? " goles" : " gol"), "g"]);
+          if (E.a) evs.push([E.a + (E.a > 1 ? " asistencias" : " asistencia"), "a"]);
+          if (E.cs) evs.push(["Portería a cero", "cs"]);
+          if (E.ps) evs.push(["Penalti parado", "g"]);
+          if (E.pw) evs.push(["Penalti provocado", "a"]);
+          if (E.pm) evs.push(["Penalti fallado", "bad"]);
+          if (E.pc) evs.push(["Penalti cometido", "bad"]);
+          if (E.og) evs.push(["Gol en propia", "bad"]);
+          if (Number(m.yellow) > 0) evs.push(["Amarilla", "y"]);
+          if (Number(m.red) > 0) evs.push(["Roja", "bad"]);
+          if (E.sv >= 3) evs.push([E.sv + " paradas", "cs"]);
+          if (E.rt) evs.push(["Nota " + String(E.rt).replace(".", ","), "rt"]);
           if (evs.length) {
             const er = el("div", "fm-evs");
-            evs.forEach((x) => { const c = el("span", "fm-ev ev-" + x[3]); c.title = x[2]; c.textContent = x[0] + (x[1] !== "" ? " " + x[1] : ""); er.appendChild(c); });
+            evs.forEach((x) => { er.appendChild(el("span", "fm-ev ev-" + x[1], x[0])); });
             body.appendChild(er);
           }
           let v = valByR[j] != null ? valByR[j] : null;
