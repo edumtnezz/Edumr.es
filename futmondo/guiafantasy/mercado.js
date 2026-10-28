@@ -3654,7 +3654,10 @@
         row.appendChild(c);
       };
       mk("Hoy", chg);
-      if (p.chg7 != null) mk("7 días", p.chg7);
+      const vv = (days) => { const x = (d.valores || []).find((o) => o.days === days && o.diff != null); return x ? x.diff : null; };
+      const d7 = vv(7) != null ? vv(7) : p.chg7, d30 = vv(30);
+      if (d7 != null) mk("7 días", d7);
+      if (d30 != null) mk("30 días", d30);
       if (d.temporada && d.temporada.n >= 2) mk("Temporada", d.temporada.diff);
       if (row.children.length) head.appendChild(row);
     })();
