@@ -117,3 +117,10 @@ Antes de tocar partidos/alineaciones/ficha, repasar esta lista y verificar con c
 - SofaScore por posición: solo hay guías cualitativas (Comuniate, Jornada Perfecta); el artículo oficial de SofaScore no da pesos por posición.
 
 - **Límite de CPU de Cloudflare (aviso 14/10/2026, "Workers CPU limit exceeded" 1.000+ veces/24 h)**: el plan gratis da ~10 ms de CPU por petición. Causa: `/mercado` leía y parseaba `fmhist` (histórico de varios MB) DOS veces en cada visita. Arreglo: marcador diario `fmhist:day` (no se parsea fmhist salvo 1 vez al día), `fmhist` solo si no hay mapa de temporada, `ffPick` con índice de claves, y caché de respuestas públicas (`EDGE_TTL` + `onRequestGet` → Cache API, cabecera `x-edge: hit`). NUNCA parsear JSON grandes (`fmhist`, `fm:season`, `ff:map5`) en rutas calientes sin caché; al añadir un endpoint público nuevo, ponerlo en `EDGE_TTL`.
+
+## Comparador de jugadores (31/10/2026) — `mercado.js` (bloque `cmp*`), `jugador.css` (`.cmpx-*`)
+- Pestaña `comparador` (menú Más). Dos jugadores del mercado de Futmondo; lo básico sale de `all` (mercado) y el detalle de `/jugador?id=` (goles/asistencias, % titular y minutos, valor 5 días/30 días/temporada). `Prob. jugar` = % de FutbolFantasy del mercado.
+- Nada se calcula ni se inventa: lo que falta sale como "—". Si `/jugador` falla se usa el último detalle bueno guardado (`gf:cmp:data:v1`, aviso con fecha) y botón "Reintentar".
+- Comparaciones guardadas: localStorage del dispositivo (`gf:cmp:saved:v1`, máx. 30), sin gastar escrituras de KV. No se sincronizan entre dispositivos.
+- Se pidió las dos fichas a la vez: releer el almacén DESPUÉS de esperar la respuesta (una versión anterior se pisaba y solo guardaba una).
+- Se eliminó el comparador antiguo huérfano (sin HTML) que calculaba una "Prob. jugar" con una fórmula inventada.

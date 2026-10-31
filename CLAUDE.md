@@ -22,8 +22,10 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 - Jugadores rentables (SofaScore, calidad-precio)
 - Jugadores con 90 % o más de jugar
 - Histórico de minutos por jugador
-- Comparador de jugadores (con comparaciones guardadas)
 - Web por club (/equipos/alaves) y clasificación en cada club
 - Estabilidad: pruebas automáticas y datos de reserva en todas las pantallas
 - Plan de pago de Cloudflare solo si los fallos siguen
 - Rayo–Athletic (J8) aplazado: aparece solo cuando tenga fecha
+
+## Hecho
+- Comparador de jugadores (31/10/2026): pestaña "Comparador" en el menú Más (`/futmondo/guiafantasy/comparador`). Comparaciones guardadas en el dispositivo (localStorage).

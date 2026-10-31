@@ -116,7 +116,8 @@
   }
   let teamFilter = "";
   let rangeInit = false;
-  let selA = null, selB = null;
+  let cmpInit = false, cmpSeq = 0, cmpDetail = {};
+  const cmpSel = { a: null, b: null };
   let rangeMin = 0;
   let rangeMax = Infinity;
   const MS_KEY = "merc_state";
@@ -2698,128 +2699,308 @@
     all.forEach((p) => { const t = fold(p.name); if (!t.length || !p.id || !t.every((w) => ut.indexOf(w) >= 0)) return; if (t.length > n) { n = t.length; best = [p]; } else if (t.length === n) best.push(p); });
     return best.length === 1 ? best[0] : null;
   }
-  function findPlayer(name) {
-    const q = stripAccents(name).trim();
-    if (!q) return null;
-    return all.find((p) => stripAccents(p.name) === q) || all.find((p) => stripAccents(p.name).includes(q)) || null;
+  /* ---------- Comparador de jugadores ----------
+     Solo datos reales: lo básico sale del mercado de Futmondo (ya cargado) y el detalle de /jugador (Futmondo).
+     "Prob. jugar" es el % de FutbolFantasy que ya usa el mercado. Lo que no hay se muestra como "—", nunca se calcula ni se inventa.
+     Las comparaciones guardadas viven en este dispositivo (localStorage), sin gastar escrituras de KV. */
+  const CMP_SEL_KEY = "gf:cmp:sel:v1", CMP_SAVED_KEY = "gf:cmp:saved:v1", CMP_DATA_KEY = "gf:cmp:data:v1";
+  function cmpGet(k, fb) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? fb : v; } catch (e) { return fb; } }
+  function cmpSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function cmpFind(id) {
+    if (!id || !all || !all.length) return null;
+    return all.find((p) => String(p.id) === String(id)) || null;
+  }
+  function cmpSaved() { const l = cmpGet(CMP_SAVED_KEY, []); return Array.isArray(l) ? l.filter((x) => x && x.a && x.b && x.a.id && x.b.id) : []; }
+  function cmpSavedIdx(a, b) {
+    const A = String(a.id), B = String(b.id);
+    return cmpSaved().findIndex((x) => (String(x.a.id) === A && String(x.b.id) === B) || (String(x.a.id) === B && String(x.b.id) === A));
   }
 
-  function sugList(input, box, onPick) {
-    const q = stripAccents(input.value.trim());
-    let list = q ? all.filter((p) => stripAccents(p.name).includes(q)) : all.slice().sort((a, b) => b.value - a.value);
-    list = list.slice(0, 10);
-    box.innerHTML = "";
-    if (!list.length) { box.classList.add("hidden"); return; }
-    list.forEach((p) => {
-      const row = el("button", "cmp-sugrow");
-      row.type = "button";
-      const ph = el("span", "cmp-sugphoto");
-      ph.appendChild(photoImg(p.photo));
-      row.appendChild(ph);
-      const body = el("span", "cmp-sugbody");
-      body.appendChild(el("span", "cmp-sugname", p.name));
-      body.appendChild(el("span", "cmp-sugteam", p.team || ""));
-      row.appendChild(body);
-      row.appendChild(el("span", "cmp-sugval", money(p.value) + " €"));
-      row.addEventListener("click", () => onPick(p));
-      box.appendChild(row);
-    });
-    box.classList.remove("hidden");
-  }
-
-  function wireCmp(input, box) {
-    if (!input || !box) return;
-    const pick = (p) => {
-      if (input === $("cmpA")) selA = p; else selB = p;
-      input.value = p.name;
-      box.classList.add("hidden");
-      renderComparador();
+  // Detalle de /jugador reducido a lo que se compara; se guarda el último bueno por si Futmondo falla.
+  function cmpCompact(f) {
+    const ms = Array.isArray(f.matches) ? f.matches : [];
+    const pa = f.participacion || {};
+    const has = ms.length > 0; // sin partidos de Futmondo no hay goles ni minutos: no se inventan ceros
+    const vd = (days) => { const x = (f.valores || []).find((v) => v && v.days === days); return x && x.diff != null ? Number(x.diff) : null; };
+    return {
+      t: Date.now(),
+      goals: has ? ms.reduce((s, m) => s + (Number(m.ev && m.ev.g) || 0), 0) : null,
+      assists: has ? ms.reduce((s, m) => s + (Number(m.ev && m.ev.a) || 0), 0) : null,
+      pctStart: has && pa.played > 0 ? pa.pctStart : null,
+      pctMin: has ? pa.pctMin : null,
+      avgMin: has && pa.played > 0 ? pa.avgMin : null,
+      v5: vd(5), v30: vd(30),
+      vT: f.temporada && f.temporada.diff != null ? Number(f.temporada.diff) : null,
     };
-    input.addEventListener("focus", () => sugList(input, box, pick));
-    input.addEventListener("input", () => { if (input === $("cmpA")) selA = null; else selB = null; sugList(input, box, pick); });
+  }
+  async function cmpFicha(id) {
+    for (let k = 0; k < 2; k++) {
+      try {
+        const r = await Promise.race([fetch(API + "/jugador?id=" + encodeURIComponent(id)), new Promise((_, rej) => setTimeout(() => rej(new Error("tiempo")), 15000))]);
+        const d = await r.json();
+        if (d && !d.error && d.name) return d;
+      } catch (e) {}
+    }
+    return null;
+  }
+  async function cmpLoadOne(id) {
+    const d = await cmpFicha(id);
+    // Se lee el almacén DESPUÉS de esperar: las dos fichas se piden a la vez y, si no, una pisaba a la otra.
+    const store = cmpGet(CMP_DATA_KEY, {});
+    if (d) {
+      const c = cmpCompact(d);
+      if (c.goals != null) {
+        store[id] = c;
+        const ks = Object.keys(store);
+        if (ks.length > 60) ks.sort((x, y) => (store[x].t || 0) - (store[y].t || 0)).slice(0, ks.length - 60).forEach((x) => { delete store[x]; });
+        cmpSet(CMP_DATA_KEY, store);
+        return { c, stale: false };
+      }
+      if (store[id]) return { c: store[id], stale: true };
+      return { c, stale: false, partial: true };
+    }
+    if (store[id]) return { c: store[id], stale: true };
+    return null;
   }
 
-  function pronosticoOf(p) {
-    if (p.status === "redcard") return "Sancionado 🟥";
-    if (String(p.status || "").indexOf("injured") === 0) return "Lesionado ❌";
-    if (p.status === "doubt") return "Duda 🟠";
-    const f = p.fitness || [];
-    const avg = f.length ? f.reduce((s, x) => s + (Number(x) || 0), 0) / f.length : 0;
-    return avg >= 5 ? "Titular 🔥" : avg >= 3 ? "Probable ✅" : "Suplente 🤔";
-  }
-  function cmpCard(p) {
-    const c = el("div", "cmp2-card");
-    const ph = el("div", "cmp2-photo");
-    ph.appendChild(photoImg(p.photo));
-    c.appendChild(ph);
-    c.appendChild(el("div", "cmp2-name", p.name));
-    const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
-    if (rb) c.appendChild(el("span", "mcard-role" + (rb2 ? " multi" : "") + " posb posb-" + posCls(p.role), rb + (rb2 ? " · " + rb2 : "")));
-    c.appendChild(el("div", "cmp2-team", p.team || ""));
+  function cmpSlot(p, which) {
+    const c = el("button", "cmp2-card cmpx-slot" + (p ? "" : " empty"));
+    c.type = "button";
+    if (!p) {
+      c.appendChild(el("span", "cmpx-plus", "+"));
+      c.appendChild(el("div", "cmp2-name", "Elegir jugador"));
+    } else {
+      const ph = el("div", "cmp2-photo");
+      ph.appendChild(photoImg(p.photo));
+      c.appendChild(ph);
+      c.appendChild(el("div", "cmp2-name", p.name));
+      const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
+      if (rb) c.appendChild(el("span", "mcard-role" + (rb2 ? " multi" : "") + " posb posb-" + posCls(p.role), rb + (rb2 ? " · " + rb2 : "")));
+      c.appendChild(el("div", "cmp2-team", p.team || ""));
+    }
+    c.addEventListener("click", () => {
+      openPicker("Elegir jugador", (pl) => {
+        const other = which === "a" ? cmpSel.b : cmpSel.a;
+        if (other && String(other) === String(pl.id)) { cmpNote("Elige dos jugadores distintos."); return; }
+        cmpSel[which] = String(pl.id);
+        cmpSet(CMP_SEL_KEY, cmpSel);
+        cmpNote("");
+        cmpPaint();
+        cmpLoadDetail(false);
+      });
+    });
     return c;
   }
-  function renderComparador() {
-    const out = $("cmpOut");
+  function cmpNote(t) { const n = $("cmpxNote"); if (n) n.textContent = t || ""; }
+
+  const CMP_DASH = "—";
+  const cmpNum = (v) => (v == null || v === "" || isNaN(Number(v)) ? null : Number(v));
+  const cmpEur = (n) => money(n) + " €";
+  const cmpDiff = (n) => (n === 0 ? "0 €" : (n > 0 ? "▲ +" : "▼ −") + formatDots(Math.abs(n)) + " €");
+  const cmpDec = (n) => n.toFixed(1).replace(".", ",");
+  const cmpPct = (n) => n + "%";
+  function cmpCell(v, fmt) { const n = cmpNum(v); return n == null ? { v: null, t: CMP_DASH } : { v: n, t: fmt(n) }; }
+  function cmpDet(res, key, fmt, loading) {
+    if (loading) return { v: null, t: "…" };
+    return cmpCell(res && res.c ? res.c[key] : null, fmt);
+  }
+  function cmpChips(p) {
+    const wrap = el("span", "cmpx-chips");
+    const f = (p.fitness || []).slice(0, 5);
+    if (!f.length) { wrap.textContent = CMP_DASH; return wrap; }
+    f.forEach((v) => {
+      const na = v === null || v === undefined || v === "" || v === "-" || v === "–";
+      wrap.appendChild(el("span", na ? "ficha-chip cmpx-na" : "ficha-chip pt-" + ptClass(v), na ? "–" : String(v)));
+    });
+    return wrap;
+  }
+
+  function cmpPaintTable() {
+    const out = $("cmpxOut");
     if (!out) return;
     out.innerHTML = "";
-    const a = selA, b = selB;
-    if (!a || !b) { out.appendChild(el("p", "muted small", "Toca el buscador y elige dos jugadores para compararlos.")); return; }
-    const grid = el("div", "cmp2");
-    grid.appendChild(cmpCard(a));
-    grid.appendChild(el("div", "cmp2-vs", "VS"));
-    grid.appendChild(cmpCard(b));
-    out.appendChild(grid);
-    const avg = (p) => { const f = p.fitness || []; return f.length ? f.reduce((s, x) => s + (Number(x) || 0), 0) / f.length : 0; };
-    const stats = el("div", "cmp2-stats");
-    const stat = (label, va, vb, wa, wb) => {
+    const a = cmpFind(cmpSel.a), b = cmpFind(cmpSel.b);
+    if (!a || !b) { out.appendChild(el("p", "muted small cmpx-hint", "Elige dos jugadores para compararlos.")); return; }
+    const ra = a.id in cmpDetail ? cmpDetail[a.id] : undefined;
+    const rb = b.id in cmpDetail ? cmpDetail[b.id] : undefined;
+    const la = ra === undefined, lb = rb === undefined;
+    const posOf = (p) => (roleBadge(p.role) || CMP_DASH) + (roleBadge(p.role2) ? " / " + roleBadge(p.role2) : "");
+    const stat = (lab, ca, cb, win, tone) => ({ lab, ca, cb, win: !!win, tone });
+    const rows = [
+      stat("Posición", { v: null, t: posOf(a) }, { v: null, t: posOf(b) }),
+      { head: "Valor" },
+      stat("Actual", cmpCell(a.value, cmpEur), cmpCell(b.value, cmpEur)),
+      stat("Hoy", cmpCell(a.change, cmpDiff), cmpCell(b.change, cmpDiff), false, "diff"),
+      stat("5 días", cmpDet(ra, "v5", cmpDiff, la), cmpDet(rb, "v5", cmpDiff, lb), false, "diff"),
+      stat("30 días", cmpDet(ra, "v30", cmpDiff, la), cmpDet(rb, "v30", cmpDiff, lb), false, "diff"),
+      stat("Temporada", cmpDet(ra, "vT", cmpDiff, la), cmpDet(rb, "vT", cmpDiff, lb), false, "diff"),
+      { head: "Rendimiento" },
+      stat("Puntos", cmpCell(a.points, String), cmpCell(b.points, String), true),
+      stat("Media", cmpCell(a.avg, cmpDec), cmpCell(b.avg, cmpDec), true),
+      stat("Partidos", cmpCell(a.matches, String), cmpCell(b.matches, String)),
+      stat("Goles", cmpDet(ra, "goals", String, la), cmpDet(rb, "goals", String, lb), true),
+      stat("Asistencias", cmpDet(ra, "assists", String, la), cmpDet(rb, "assists", String, lb), true),
+      stat("Últimos 5", { v: null, node: cmpChips(a) }, { v: null, node: cmpChips(b) }),
+      { head: "Juega" },
+      stat("Titular", cmpDet(ra, "pctStart", cmpPct, la), cmpDet(rb, "pctStart", cmpPct, lb), true),
+      stat("Minutos", cmpDet(ra, "pctMin", cmpPct, la), cmpDet(rb, "pctMin", cmpPct, lb), true),
+      stat("Min./partido", cmpDet(ra, "avgMin", (n) => cmpDec(n).replace(",0", ""), la), cmpDet(rb, "avgMin", (n) => cmpDec(n).replace(",0", ""), lb), true),
+      stat("Prob. jugar", cmpCell(a.prob, cmpPct), cmpCell(b.prob, cmpPct), true),
+      stat("Estado", { v: null, t: statusLabel(a.status) }, { v: null, t: statusLabel(b.status) }),
+    ];
+    const box = el("div", "cmp2-stats");
+    rows.forEach((r) => {
+      if (r.head) { box.appendChild(el("div", "cmpx-head", r.head)); return; }
+      const wa = r.win && r.ca.v != null && r.cb.v != null && r.ca.v > r.cb.v;
+      const wb = r.win && r.ca.v != null && r.cb.v != null && r.cb.v > r.ca.v;
+      const tone = (c) => (r.tone === "diff" && c.v != null ? (c.v > 0 ? " cmpx-up" : c.v < 0 ? " cmpx-dn" : "") : "");
       const row = el("div", "cmp2-row");
-      row.appendChild(el("span", "cmp2-cell" + (wa ? " win" : ""), va));
-      row.appendChild(el("span", "cmp2-lab", label));
-      row.appendChild(el("span", "cmp2-cell right" + (wb ? " win" : ""), vb));
-      stats.appendChild(row);
-    };
-    const va = Number(a.value) || 0, vb = Number(b.value) || 0;
-    const posOf = (p) => (roleBadge(p.role) || "") + (roleBadge(p.role2) ? "/" + roleBadge(p.role2) : "");
-    stat("Posición", posOf(a), posOf(b), false, false);
-    stat("Valor", money(va) + " €", money(vb) + " €", va > vb, vb > va);
-    const probOf = (p) => {
-      if (p.prob != null) return p.prob;
-      if (String(p.status || "").indexOf("injured") === 0) return 5;
-      if (p.status === "doubt") return 50;
-      const f = p.fitness || [];
-      const played = f.filter((x) => Number(x) !== 0).length;
-      let base = 55 + (avg(p) - 3) * 6;
-      if (played <= 1) base -= 25;
-      return Math.max(15, Math.min(95, Math.round(base)));
-    };
-    const qa = probOf(a), qb = probOf(b);
-    stat("Prob. jugar", qa + "%", qb + "%", qa > qb, qb > qa);
-    const pa = Number(a.points) || 0, pb = Number(b.points) || 0;
-    stat("Puntos", String(pa), String(pb), pa > pb, pb > pa);
-    const ma = avg(a), mb = avg(b);
-    stat("Media ú.5", ma.toFixed(1).replace(".", ","), mb.toFixed(1).replace(".", ","), ma > mb, mb > ma);
-    stat("Últimos 5", (a.fitness || []).join(" · ") || "—", (b.fitness || []).join(" · ") || "—", false, false);
-    const ca = Number(a.change) || 0, cb = Number(b.change) || 0;
-    stat("Tendencia", (ca >= 0 ? "▲ +" : "▼ −") + formatDots(Math.abs(ca)) + " €", (cb >= 0 ? "▲ +" : "▼ −") + formatDots(Math.abs(cb)) + " €", ca > cb, cb > ca);
-    stat("Estado", statusLabel(a.status), statusLabel(b.status), false, false);
-    stat("Pronóstico", pronosticoOf(a), pronosticoOf(b), false, false);
-    out.appendChild(stats);
+      const ca = el("span", "cmp2-cell" + (wa ? " win" : "") + tone(r.ca));
+      if (r.ca.node) ca.appendChild(r.ca.node); else ca.textContent = r.ca.t;
+      const cb = el("span", "cmp2-cell right" + (wb ? " win" : "") + tone(r.cb));
+      if (r.cb.node) cb.appendChild(r.cb.node); else cb.textContent = r.cb.t;
+      row.appendChild(ca);
+      row.appendChild(el("span", "cmp2-lab", r.lab));
+      row.appendChild(cb);
+      box.appendChild(row);
+    });
+    out.appendChild(box);
+
+    // Avisos del detalle (último dato bueno / fallo) con reintento
+    const bad = [ra, rb].some((r) => r === null || (r && r.partial));
+    const old = [ra, rb].find((r) => r && r.stale);
+    if (bad || old) {
+      const nt = el("div", "cmpx-warn");
+      nt.appendChild(el("span", null, bad ? "No se pudo cargar todo el detalle." : "Detalle guardado del " + fmtDia(old.c.t) + "."));
+      const rt = el("button", "cmpx-retry", "Reintentar");
+      rt.type = "button";
+      rt.addEventListener("click", () => cmpLoadDetail(false));
+      nt.appendChild(rt);
+      out.appendChild(nt);
+    }
+    out.appendChild(el("p", "muted small cmpx-src", "Datos de Futmondo · Prob. jugar: FutbolFantasy"));
+
+    // Guardar / quitar esta comparación
+    const idx = cmpSavedIdx(a, b);
+    const sv = el("button", "cmpx-save" + (idx >= 0 ? " on" : ""), idx >= 0 ? "★ Guardada · quitar" : "☆ Guardar comparación");
+    sv.type = "button";
+    sv.addEventListener("click", () => {
+      const list = cmpSaved();
+      const i = cmpSavedIdx(a, b);
+      if (i >= 0) list.splice(i, 1);
+      else list.unshift({ a: { id: String(a.id), name: a.name }, b: { id: String(b.id), name: b.name }, t: Date.now() });
+      cmpSet(CMP_SAVED_KEY, list.slice(0, 30));
+      cmpPaintTable();
+      cmpPaintSaved();
+    });
+    out.appendChild(sv);
   }
+
+  function cmpPaintSaved() {
+    const box = $("cmpxSaved");
+    if (!box) return;
+    box.innerHTML = "";
+    const list = cmpSaved();
+    if (!list.length) return;
+    box.appendChild(el("h3", "estado-title", "Guardadas"));
+    list.forEach((s) => {
+      const row = el("div", "cmpx-sv");
+      const open = el("button", "cmpx-sv-open");
+      open.type = "button";
+      [s.a, s.b].forEach((x, i) => {
+        if (i) open.appendChild(el("span", "cmpx-sv-vs", "vs"));
+        const p = cmpFind(x.id);
+        const ph = el("span", "cmpx-sv-ph");
+        ph.appendChild(photoImg(p && p.photo));
+        open.appendChild(ph);
+        open.appendChild(el("span", "cmpx-sv-name", x.name || (p && p.name) || ""));
+      });
+      open.addEventListener("click", () => {
+        if (!cmpFind(s.a.id) || !cmpFind(s.b.id)) { cmpNote("Uno de los jugadores ya no está en el mercado."); return; }
+        cmpSel.a = String(s.a.id); cmpSel.b = String(s.b.id);
+        cmpSet(CMP_SEL_KEY, cmpSel);
+        cmpNote("");
+        cmpPaint();
+        cmpLoadDetail(false);
+        window.scrollTo(0, 0);
+      });
+      const del = el("button", "cmpx-sv-del", "✕");
+      del.type = "button";
+      del.setAttribute("aria-label", "Borrar comparación guardada");
+      del.addEventListener("click", () => {
+        cmpSet(CMP_SAVED_KEY, cmpSaved().filter((x) => !(String(x.a.id) === String(s.a.id) && String(x.b.id) === String(s.b.id))));
+        cmpPaintSaved();
+        cmpPaintTable();
+      });
+      row.appendChild(open);
+      row.appendChild(del);
+      box.appendChild(row);
+    });
+  }
+
+  function cmpPaint() {
+    const pick = $("cmpxPick");
+    if (!pick) return;
+    pick.innerHTML = "";
+    pick.appendChild(cmpSlot(cmpFind(cmpSel.a), "a"));
+    pick.appendChild(el("div", "cmp2-vs", "VS"));
+    pick.appendChild(cmpSlot(cmpFind(cmpSel.b), "b"));
+    cmpPaintTable();
+    cmpPaintSaved();
+  }
+
+  async function cmpLoadDetail(silent) {
+    const a = cmpFind(cmpSel.a), b = cmpFind(cmpSel.b);
+    if (!a || !b) return;
+    const seq = ++cmpSeq;
+    if (!silent) { cmpDetail = {}; cmpPaintTable(); }
+    const [x, y] = await Promise.all([cmpLoadOne(a.id), cmpLoadOne(b.id)]);
+    if (seq !== cmpSeq) return;
+    cmpDetail = {}; cmpDetail[a.id] = x; cmpDetail[b.id] = y;
+    const sy = window.scrollY;
+    cmpPaintTable();
+    try { if (window.scrollY !== sy) window.scrollTo(0, sy); } catch (e) {}
+  }
+
+  async function initComparador() {
+    if (!(all && all.length)) {
+      try { const d = await (await fetch(API + "/mercado")).json(); if (Array.isArray(d.players)) all = d.players; if (d.updatedAt) lastMarketAt = d.updatedAt; } catch (e) {}
+    }
+    const out = $("cmpxOut");
+    if (!(all && all.length)) {
+      if (out) {
+        out.innerHTML = "";
+        out.appendChild(el("p", "muted", "No se pudo cargar la lista de jugadores."));
+        const rt = el("button", "cmpx-retry", "Reintentar");
+        rt.type = "button";
+        rt.addEventListener("click", () => initComparador());
+        out.appendChild(rt);
+      }
+      return;
+    }
+    if (!cmpInit) {
+      cmpInit = true;
+      const s = cmpGet(CMP_SEL_KEY, null);
+      if (s && typeof s === "object") { cmpSel.a = s.a || null; cmpSel.b = s.b || null; }
+    }
+    cmpPaint();
+    cmpLoadDetail(false);
+  }
+  // Si el mercado se refresca con el comparador abierto, se repinta en el sitio (sin mover el scroll).
+  function cmpOnMarket() {
+    if (!cmpInit || currentTab !== "comparador") return;
+    const sy = window.scrollY;
+    cmpPaint();
+    try { if (window.scrollY !== sy) window.scrollTo(0, sy); } catch (e) {}
+  }
+  document.addEventListener("cx:swr", (ev) => {
+    const u = (ev.detail && ev.detail.url) || "";
+    if (cmpInit && currentTab === "comparador" && /\/jugador\?id=/.test(u)) cmpLoadDetail(true);
+  });
 
   function updateTime(at) {
     const e = $("mercadoUpdated");
     if (e && at) e.textContent = "Actualizado " + fmtDia(at);
-  }
-
-  function fillDatalist() {
-    const dl = $("cmpList");
-    if (!dl) return;
-    dl.innerHTML = "";
-    all.slice().sort((a, b) => a.name.localeCompare(b.name)).forEach((p) => {
-      const o = document.createElement("option");
-      o.value = p.name;
-      dl.appendChild(o);
-    });
   }
 
   function setupClubs() {
@@ -2910,7 +3091,7 @@
   // Clausulazo jugoso, Analiza tu equipo) viven aquí dentro en vez de obligar
   // a deslizar o poner flechas. Si la pestaña activa es una de las del menú,
   // el botón se pone verde para saber dónde estás sin abrir el desplegable.
-  const MORE_TABS = { actualizaciones: "Últimas actualizaciones", fichajes: "Fichajes", clausulazos: "Clausulazo jugoso", rentables: "Jugadores rentables", analiza: "Analiza tu equipo", plantillas: "Plantillas (prueba)" };
+  const MORE_TABS = { actualizaciones: "Últimas actualizaciones", fichajes: "Fichajes", clausulazos: "Clausulazo jugoso", rentables: "Jugadores rentables", comparador: "Comparador", analiza: "Analiza tu equipo", plantillas: "Plantillas (prueba)" };
   function closeMoreMenu() {
     const menu = $("cxMoreMenu"), btn = $("cxMoreBtn");
     if (menu) menu.classList.add("hidden");
@@ -2969,6 +3150,7 @@
     if (name === "actualizaciones") renderActualizaciones();
     if (name === "plantillas") initPlantillas();
     if (name === "rentables") initRentables();
+    if (name === "comparador") initComparador();
     if (name === "analiza") { fetch(API + "/me", { cache: "no-store" }).then((r) => r.json()).then((d) => { const m = $("anMsg"); if (!(d && d.user) && m && !m.querySelector(".an-login")) anMsgSet(m, "Inicia sesión para analizar tu equipo."); }).catch(() => {}); }
     try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
     try {
@@ -3126,6 +3308,7 @@
       renderGrid();
       renderEstado();
       try { if (rtbInit) renderRentables(); } catch (e) {}
+      try { cmpOnMarket(); } catch (e) {}
       if (all.length && !rangeInit) {
         rangeInit = true;
         setupRange();
@@ -4503,7 +4686,7 @@
     } catch (e) {}
     let name = "";
     try {
-      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|actualizaciones|noticias|analiza|clausulazos|rentables|plantillas)/);
+      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|actualizaciones|noticias|analiza|clausulazos|rentables|comparador|plantillas)/);
       if (m) name = m[1];
     } catch (e) {}
     if (!name) { try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {} }
