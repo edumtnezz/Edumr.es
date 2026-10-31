@@ -1968,7 +1968,7 @@ async function getFFTeam(env, name) {
     "espanyol-barcelona": "espanyol",
   };
   if (SLUG_FIX[slug]) slug = SLUG_FIX[slug];
-  const key = "ffteam:v9:" + slug;
+  const key = "ffteam:v10:" + slug;
   try { const c = (await edgeGet(key)) || (await env.PORRA.get(key, "json")); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) { if (!c.data.fetchedAt) c.data.fetchedAt = c.at; return c.data; } } catch (e) {}
   const data = { starters: [], bench: [], fetchedAt: Date.now() };
   try {
@@ -2002,7 +2002,7 @@ async function getFFTeam(env, name) {
     // la última es cuándo se actualizó DE VERDAD el once de este equipo.
     try {
       let upd = 0;
-      for (const fm of h.matchAll(/data-fecha="(\d{1,2}\/\d{1,2}) (\d{1,2}:\d{2})"[^>]{0,80}renderLineup/g)) { const t = ffWhenAt(fm[1], fm[2]); if (t > upd) upd = t; }
+      for (const fm of h.matchAll(/data-fecha="(\d{1,2}\/\d{1,2}) (\d{1,2}:\d{2})"[^>]{0,160}(?:renderLineup|ffTeamP11Tab)/g)) { const t = ffWhenAt(fm[1], fm[2]); if (t > upd) upd = t; }
       if (upd) data.updatedAt = upd;
     } catch (e) {}
     const S = data.starters;
