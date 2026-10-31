@@ -2927,3 +2927,39 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .fm-ev.ev-rt small { font-size: inherit; font-weight: 600; margin-right: 4px; }
 .fm-ev.ev-rt b { background: none; color: var(--text, inherit); padding: 0; font-size: .82rem; font-weight: 800; }
 .fm-pts { min-width: 42px; text-align: center; font-weight: 800; border-radius: 50%; width: 42px; height: 42px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
+
+/* Jugadores rentables: ranking con barra de calidad-precio */
+.rtb { padding: 4px 2px 24px; }
+.rtb-title { font-family: var(--font-display, inherit); font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em; margin: 6px 4px 2px; }
+.rtb-sub { color: var(--muted); font-size: .8rem; font-weight: 600; margin: 0 4px 12px; }
+.rtb-tabs { display: flex; gap: 14px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border); padding: 0 4px; }
+.rtb-tabs::-webkit-scrollbar { display: none; }
+.rtb-tab { flex: 0 0 auto; background: none; border: 0; border-bottom: 3px solid transparent; margin-bottom: -1px; padding: 10px 0 9px; color: var(--muted); font: inherit; font-size: .86rem; font-weight: 700; cursor: pointer; }
+.rtb-tab.on { color: var(--text); border-bottom-color: #16a34a; }
+.rtb-segs { display: flex; gap: 6px; margin: 12px 4px 4px; overflow-x: auto; scrollbar-width: none; }
+.rtb-segs::-webkit-scrollbar { display: none; }
+.rtb-seg { flex: 0 0 auto; height: 32px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); font: inherit; font-size: .8rem; font-weight: 700; cursor: pointer; }
+.rtb-seg.on { background: var(--text); border-color: var(--text); color: var(--bg, #fff); }
+.rtb-row { display: grid; grid-template-columns: 30px 46px minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%; padding: 12px 4px; border: 0; border-bottom: 1px solid var(--border); background: none; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.rtb-n { font-family: var(--font-display, inherit); font-size: 1.15rem; font-weight: 800; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; }
+.rtb-row.top .rtb-n { font-size: 1.55rem; color: #16a34a; }
+.rtb-ph { width: 46px; height: 46px; border-radius: 50%; overflow: hidden; background: var(--bg-surface, #e2e8f0); }
+.rtb-ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rtb-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rtb-l1 { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.rtb-name { font-weight: 800; font-size: .95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rtb-crest { width: 15px; height: 15px; object-fit: contain; flex: 0 0 auto; }
+.rtb-l2 { display: flex; gap: 8px; font-size: .74rem; font-weight: 600; color: var(--muted); white-space: nowrap; overflow: hidden; }
+.rtb-up { color: #16a34a; }
+.rtb-dn { color: #dc2626; }
+.rtb-bar { display: block; height: 5px; border-radius: 3px; background: var(--border); margin-top: 3px; overflow: hidden; }
+.rtb-bar i { display: block; height: 100%; background: #16a34a; border-radius: 3px; }
+.rtb-r { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.05; min-width: 44px; }
+.rtb-r b { font-family: var(--font-display, inherit); font-size: 1.25rem; font-weight: 800; color: #16a34a; font-variant-numeric: tabular-nums; }
+.rtb-r small { font-size: .62rem; font-weight: 700; color: var(--muted); }
+.rtb-empty { color: var(--muted); padding: 24px 4px; }
+.rtb-more { display: block; width: calc(100% - 8px); margin: 16px 4px 0; height: 44px; border-radius: 10px; border: 1px solid var(--border); background: none; color: var(--text); font: inherit; font-weight: 800; font-size: .9rem; cursor: pointer; }
+@media (hover: hover) and (pointer: fine) { .rtb-row:hover .rtb-name { color: #16a34a; } }
+.rtb-row:focus-visible, .rtb-tab:focus-visible, .rtb-seg:focus-visible, .rtb-more:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+.dest-more-wrap { padding: 2px 10px 16px; background: #fff; border-radius: 0 0 16px 16px; }
+.dest-more { display: block; width: 100%; height: 44px; border-radius: 12px; border: 1px solid #e3e8ea; background: #fff; color: #14181a; font: inherit; font-weight: 800; font-size: .9rem; cursor: pointer; }

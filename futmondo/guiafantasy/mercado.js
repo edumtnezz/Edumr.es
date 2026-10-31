@@ -5913,36 +5913,67 @@
     renderRentables();
   }
   function rtbRerender() { rtbShown = 40; renderRentControls(); renderRentables(); }
+  function rtbChip(label, on, fn, cls) {
+    const b = el("button", cls + (on ? " on" : ""), label); b.type = "button";
+    b.addEventListener("click", fn);
+    return b;
+  }
   function renderRentControls() {
     const pos = $("rtbPos"), pr = $("rtbPrice");
     if (!pos || !pr) return;
     pos.innerHTML = "";
-    [["", "Todos"], ["portero", "Portero"], ["defensa", "Defensa"], ["centrocampista", "Medio"], ["delantero", "Delantero"]].forEach((x) => {
-      pos.appendChild(pltBtn(x[1], rtbPos === x[0], () => { rtbPos = x[0]; rtbRerender(); }));
+    [["", "Todos"], ["portero", "Porteros"], ["defensa", "Defensas"], ["centrocampista", "Medios"], ["delantero", "Delanteros"]].forEach((x) => {
+      pos.appendChild(rtbChip(x[1], rtbPos === x[0], () => { rtbPos = x[0]; rtbRerender(); }, "rtb-tab"));
     });
     pr.innerHTML = "";
-    [["Cualquiera", 0, Infinity], ["Hasta 5M", 0, 5e6], ["5M – 20M", 5e6, 20e6], ["Más de 20M", 20e6, Infinity]].forEach((x) => {
-      pr.appendChild(pltBtn(x[0], rtbMin === x[1] && rtbMax === x[2], () => { rtbMin = x[1]; rtbMax = x[2]; rtbRerender(); }));
+    [["Todos los precios", 0, Infinity], ["< 5M", 0, 5e6], ["5–20M", 5e6, 20e6], ["> 20M", 20e6, Infinity]].forEach((x) => {
+      pr.appendChild(rtbChip(x[0], rtbMin === x[1] && rtbMax === x[2], () => { rtbMin = x[1]; rtbMax = x[2]; rtbRerender(); }, "rtb-seg"));
     });
   }
   function renderRentables() {
     const box = $("rtbList");
     if (!box) return;
     const sub = $("rtbSub");
-    if (sub) sub.textContent = "Más puntos de media por cada millón" + (lastMarketAt ? " · actualizado " + horaTxt(lastMarketAt) : "");
-    const list = bestValue(Infinity).filter((p) => (!rtbPos || String(p.role || "").toLowerCase() === rtbPos) && Number(p.value) >= rtbMin && (rtbMax === Infinity || Number(p.value) <= rtbMax));
+    if (sub) sub.textContent = "Puntos de media por cada millón" + (lastMarketAt ? " · " + horaTxt(lastMarketAt) : "");
+    const full = bestValue(Infinity);
+    const top = full.length ? full[0]._r : 1;
+    const list = full.filter((p) => (!rtbPos || String(p.role || "").toLowerCase() === rtbPos) && Number(p.value) >= rtbMin && (rtbMax === Infinity || Number(p.value) <= rtbMax));
     box.innerHTML = "";
-    if (!list.length) { box.appendChild(el("p", "muted", "Sin jugadores con estos filtros ahora mismo.")); return; }
-    list.slice(0, rtbShown).forEach((p) => {
-      const o = { chg: Number(p.change) || 0, tag: ["best", p._r.toFixed(2).replace(".", ",") + " pts por millón"] };
+    if (!list.length) { box.appendChild(el("p", "rtb-empty", "Sin jugadores con estos filtros ahora mismo.")); return; }
+    list.slice(0, rtbShown).forEach((p, i) => {
+      const row = el("button", "rtb-row" + (i < 3 ? " top" : "")); row.type = "button";
+      row.addEventListener("click", () => openFicha(p));
+      row.addEventListener("pointerdown", () => { try { fetch(API + "/jugador?id=" + encodeURIComponent(p.id) + "&fast=1").catch(() => {}); } catch (e) {} }, { passive: true });
+      row.appendChild(el("span", "rtb-n", String(i + 1)));
+      const ph = el("span", "rtb-ph");
+      if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); ph.appendChild(im); }
+      row.appendChild(ph);
+      const body = el("span", "rtb-body");
+      const l1 = el("span", "rtb-l1");
+      l1.appendChild(el("span", "rtb-name", p.name));
+      if (p.logo) { const lg = el("img", "rtb-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; l1.appendChild(lg); }
+      body.appendChild(l1);
+      const l2 = el("span", "rtb-l2");
+      const rb = roleBadge(p.role);
+      const mv = Number(p.value) / 1e6;
+      l2.appendChild(el("span", null, (rb ? rb + " · " : "") + (mv >= 10 ? Math.round(mv) : mv.toFixed(1).replace(/\.0$/, "").replace(".", ",")) + " M€"));
+      l2.appendChild(el("span", null, "media " + (Number(p.avg) || 0).toFixed(1).replace(".", ",")));
       if (p.chg7 != null && p.chg7 !== "") {
         const v = Number(p.chg7) || 0;
-        o.why = "7 días: " + (v > 0 ? "▲ " + formatDots(v) + " €" : v < 0 ? "▼ " + formatDots(-v) + " €" : "igual");
+        if (v) l2.appendChild(el("span", v > 0 ? "rtb-up" : "rtb-dn", (v > 0 ? "▲ " : "▼ ") + (Math.abs(v) >= 1e6 ? (Math.abs(v) / 1e6).toFixed(1).replace(".", ",") + "M" : Math.round(Math.abs(v) / 1e3) + "k")));
       }
-      box.appendChild(pltBuildRow(p, o));
+      body.appendChild(l2);
+      const bar = el("span", "rtb-bar"); const fill = el("i"); fill.style.width = Math.max(6, Math.round(p._r / top * 100)) + "%"; bar.appendChild(fill);
+      body.appendChild(bar);
+      row.appendChild(body);
+      const r = el("span", "rtb-r");
+      r.appendChild(el("b", null, p._r.toFixed(2).replace(".", ",")));
+      r.appendChild(el("small", null, "pts/M"));
+      row.appendChild(r);
+      box.appendChild(row);
     });
     if (list.length > rtbShown) {
-      const more = el("button", "btn-ghost market-more", "Ver más (" + (list.length - rtbShown) + ")"); more.type = "button";
+      const more = el("button", "rtb-more", "Ver más (" + (list.length - rtbShown) + ")"); more.type = "button";
       more.addEventListener("click", () => { rtbShown += 40; renderRentables(); });
       box.appendChild(more);
     }
