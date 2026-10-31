@@ -315,8 +315,8 @@
 .mpa-ico { flex: none; width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; }
 .mpa-ico svg { width: 20px; height: 20px; }
 .mpa-tx { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.mpa-tx b { font-size: .92rem; font-weight: 800; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mpa-tx small { font-size: .66rem; font-weight: 600; opacity: .72; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mpa-tx b { font-size: .88rem; font-weight: 800; line-height: 1.15; white-space: normal; overflow-wrap: break-word; }
+.mpa-tx small { font-size: .66rem; font-weight: 600; opacity: .72; line-height: 1.15; white-space: normal; overflow-wrap: break-word; }
 .mpa-data { background: linear-gradient(135deg, #16a34a, #0f7a37); color: #fff; border-color: transparent; box-shadow: 0 8px 20px -10px rgba(22,163,74,.7); }
 .mpa-data .mpa-ico { background: rgba(255,255,255,.18); }
 .mpa-pts .mpa-ico { background: rgba(245,158,11,.16); color: #f59e0b; }

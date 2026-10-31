@@ -2608,16 +2608,21 @@ async function getProbableFlags(env, jornada) {
   let prevItems = [];
   try { const pv = (await edgeGet("probflags:" + jn)) || (await env.PORRA.get("probflags:" + jn, "json")); if (pv && pv.items) prevItems = pv.items; } catch (e) {}
   const knownK = new Set(prevItems.map((i) => i.home + "|" + i.away));
-  // Cada lectura procesa como mucho 8 equipos (20 páginas de golpe superan el límite de recursos); los que ya se conocen
-  // se refrescan en las siguientes y lo ya visto se conserva.
-  const ordered = open.slice().sort((a, b) => (knownK.has(nm(a.homeTeam) + "|" + nm(a.awayTeam)) ? 1 : 0) - (knownK.has(nm(b.homeTeam) + "|" + nm(b.awayTeam)) ? 1 : 0));
+  // rt = cuándo LEÍMOS ese partido por última vez (distinto de "at", que es la hora real de FutbolFantasy).
+  const readAt = {};
+  prevItems.forEach((i) => { readAt[i.home + "|" + i.away] = Number(i.rt) || 0; });
+  // Cada lectura procesa como mucho 8 equipos (20 páginas de golpe superan el límite de recursos). Primero los
+  // partidos nunca vistos y después los leídos hace más tiempo, para que TODOS se refresquen por turnos (antes los
+  // últimos partidos de la jornada nunca se refrescaban y se quedaban con la hora de la primera lectura).
+  const rank = (m) => { const k = nm(m.homeTeam) + "|" + nm(m.awayTeam); return knownK.has(k) ? 1 + (readAt[k] || 0) / 1e15 : 0; };
+  const ordered = open.slice().sort((a, b) => rank(a) - rank(b));
   const names = [...new Set(ordered.reduce((a, m) => a.concat([nm(m.homeTeam), nm(m.awayTeam)]), []).filter(Boolean))].slice(0, 8);
   const has = {}, at = {};
   await Promise.all(names.map(async (n) => { try { const t = await getFFTeam(env, n); has[n] = ((t && t.starters) || []).length >= 10; at[n] = (t && (t.updatedAt || t.fetchedAt)) || 0; } catch (e) { has[n] = false; } }));
   const items = open.filter((m) => has[nm(m.homeTeam)] && has[nm(m.awayTeam)]);
   // Cada equipo actualiza su once por su cuenta en futbolfantasy: la hora es PARTIDO a PARTIDO y es la de la
   // última actualización real (la más reciente de sus dos equipos), no la de cuando la leímos nosotros.
-  let out = items.map((m) => ({ home: nm(m.homeTeam), away: nm(m.awayTeam), at: Math.max(at[nm(m.homeTeam)] || 0, at[nm(m.awayTeam)] || 0) }));
+  let out = items.map((m) => ({ home: nm(m.homeTeam), away: nm(m.awayTeam), at: Math.max(at[nm(m.homeTeam)] || 0, at[nm(m.awayTeam)] || 0), rt: Date.now() }));
   // Leer 20 páginas a la vez a veces falla a medias (límite de recursos): lo que ya se había visto bien se conserva,
   // siempre que el partido siga sin empezar.
   const pkey = "probflags:" + jn;
