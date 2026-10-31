@@ -13,6 +13,12 @@
 // Sin TELEGRAM_BOT_TOKEN (secreto de Cloudflare) no hace nada.
 
 const SITE = "https://edumr.es/api/laquiniela/";
+const WEB = "https://edumr.es/futmondo/guiafantasy/";
+const NEWS_PFX = "https://www.futbolfantasy.com/laliga/noticias/";
+// Enlaces a TU web (nunca a la fuente): noticia → /noticias/<slug>, partido → /partido/<slug> (mismo slug que usa la web)
+const newsUrl = (link) => { const sl = String(link || "").indexOf(NEWS_PFX) === 0 ? String(link).slice(NEWS_PFX.length).replace(/[?#].*$/, "").replace(/\/+$/, "") : ""; return WEB + "noticias" + (sl ? "/" + sl : ""); };
+const slugM = (h, a) => String(h + "-" + a).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const matchUrl = (h, a) => WEB + "partido/" + slugM(h, a);
 const STATE_KEY = "tg:avisos:v1";
 const MAX_MSGS = 10;                // mensajes por pasada; lo que sobre espera a la siguiente
 const NEWS_MAX_AGE = 4 * 3600e3;    // no se avisa de noticias con más de 4 h
@@ -202,7 +208,7 @@ export async function avisar(env, deps) {
     }
     cands.sort((a, b) => a.at - b.at); // las más antiguas primero
     for (const c of cands) {
-      const text = (c.hits.length ? "⭐ " : c.kw ? "🔔 " : "📰 ") + "<b>" + esc(c.title) + "</b>" + (c.hits.length ? "\nCoincide con tu jugador: " + esc(c.hits.join(", ")) : "") + "\n" + c.x.link;
+      const text = (c.hits.length ? "⭐ " : c.kw ? "🔔 " : "📰 ") + "<b>" + esc(c.title) + "</b>" + (c.hits.length ? "\nCoincide con tu jugador: " + esc(c.hits.join(", ")) : "") + "\n" + newsUrl(c.x.link);
       queue.push({ text, commit: () => { st.news = (st.news || []).concat([c.x.link]).slice(-200); dirty = true; } });
     }
   }
@@ -218,6 +224,8 @@ export async function avisar(env, deps) {
       const commit = () => { st.conf = (st.conf || []).concat([key]).slice(-120); dirty = true; };
       if (firstRun) { commit(); continue; }
       const cuando = [m.day, m.time].filter(Boolean).join(" ");
+      // nombres como los usa la web (lista de partidos) para que el enlace abra el partido correcto
+      const web = (st.ml || []).find((x) => sameTeam(x.home, m.home.name) && sameTeam(x.away, m.away.name)) || { home: m.home.name, away: m.away.name };
       const fuera = [];
       for (const p of squad) {
         const side = sameTeam(p.team, m.home.name) ? m.home : sameTeam(p.team, m.away.name) ? m.away : null;
@@ -226,7 +234,8 @@ export async function avisar(env, deps) {
       const bloque = (t) => ["<b>" + esc(t.name) + "</b>" + (t.formation ? " (" + esc(t.formation) + ")" : ""),
         posLine("Por", t.portero, squad, t.name), posLine("Def", t.defensas, squad, t.name), posLine("Med", t.medios, squad, t.name), posLine("Del", t.delanteros, squad, t.name)].filter(Boolean).join("\n");
       const text = "✅ <b>Alineación confirmada</b>\n" + esc(m.home.name) + " – " + esc(m.away.name) + (cuando ? " · " + esc(cuando) : "") +
-        "\n\n" + bloque(m.home) + "\n\n" + bloque(m.away) + (fuera.length ? "\n\nTuyos fuera del once: " + esc(fuera.join(", ")) : "");
+        "\n\n" + bloque(m.home) + "\n\n" + bloque(m.away) + (fuera.length ? "\n\nTuyos fuera del once: " + esc(fuera.join(", ")) : "") +
+        "\n\n" + matchUrl(web.home, web.away);
       queue.push({ text, commit });
     }
   }
@@ -263,7 +272,7 @@ export async function avisar(env, deps) {
         const lineas = [diff(m.home, H, prev.h || []), diff(m.away, A, prev.a || [])].filter(Boolean);
         if (!lineas.length) continue;
         const upd = Math.max((d.home && d.home.updatedAt) || 0, (d.away && d.away.updatedAt) || 0);
-        const text = "🔄 <b>Once probable actualizado</b>\n" + esc(m.home) + " – " + esc(m.away) + (upd ? " · act. " + hhmm(upd) : "") + "\n" + lineas.join("\n");
+        const text = "🔄 <b>Once probable actualizado</b>\n" + esc(m.home) + " – " + esc(m.away) + (upd ? " · act. " + hhmm(upd) : "") + "\n" + lineas.join("\n") + "\n\n" + matchUrl(m.home, m.away);
         queue.push({ text, commit: () => { st.pr[key] = nuevo; dirty = true; } });
       }
     } catch (e) {}
@@ -284,7 +293,7 @@ export async function avisar(env, deps) {
       if (partes.length) cambios.push("• <b>" + esc(p.name) + "</b>: " + esc(partes.join(" · ")));
     }
     const commit = () => { st.sq = nuevo; dirty = true; };
-    if (cambios.length) queue.push({ text: "🔄 <b>Cambios en tus jugadores</b>\n" + cambios.join("\n"), commit });
+    if (cambios.length) queue.push({ text: "🔄 <b>Cambios en tus jugadores</b>\n" + cambios.join("\n") + "\n\n" + WEB, commit });
     else if (JSON.stringify(nuevo) !== JSON.stringify(st.sq || {})) commit();
   }
 
