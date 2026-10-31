@@ -264,13 +264,13 @@
   }
   // Destacados: los 6 con mejor calidad/precio = más puntos de media por millón de valor.
   // Solo entran jugadores con partidos suficientes, media decente, sin lesión ni sanción y que no estén bajando de valor (ni hoy ni en 7 días).
-  function bestValue() {
+  function bestValue(max) {
     const j0 = (all || []).reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0);
     return (all || [])
       .filter((p) => (Number(p.matches) || 0) >= Math.max(3, 0.6 * j0) && (Number(p.avg) || 0) >= 8 && !/injured|redcard/.test(p.status || "") && Number(p.value) > 0 && (Number(p.change) || 0) >= 0 && !(p.chg7 != null && Number(p.chg7) < 0))
       .map((p) => Object.assign({ _r: (Number(p.avg) || 0) / (Number(p.value) / 1e6) }, p))
       .sort((a, b) => b._r - a._r)
-      .slice(0, 6);
+      .slice(0, max || 6);
   }
   function renderRachas() {
     const box = $("rachasOut");
@@ -322,6 +322,10 @@
       grid.appendChild(card);
     });
     box.appendChild(grid);
+    const more = el("button", "dest-more", "Ver más jugadores"); more.type = "button";
+    more.addEventListener("click", () => { switchTab("rentables"); try { window.scrollTo(0, 0); } catch (e) {} });
+    const mw = el("div", "dest-more-wrap"); mw.appendChild(more);
+    box.appendChild(mw);
   }
 
   function fmtDiaLargo(v) {
@@ -976,6 +980,7 @@
       try { renderRachas(); } catch (e) {}
       try { if (typeof clausApply === "function") clausApply(); } catch (e) {}
       try { if (pltInit && pltPlayers.length) renderPltList(); } catch (e) {}
+      try { if (rtbInit) renderRentables(); } catch (e) {}
     } catch (e) {} finally { playedJBusy = false; }
   }
   function marketInfo(name, team) {
@@ -2860,7 +2865,7 @@
   // Clausulazo jugoso, Analiza tu equipo) viven aquí dentro en vez de obligar
   // a deslizar o poner flechas. Si la pestaña activa es una de las del menú,
   // el botón se pone verde para saber dónde estás sin abrir el desplegable.
-  const MORE_TABS = { actualizaciones: "Últimas actualizaciones", fichajes: "Fichajes", clausulazos: "Clausulazo jugoso", analiza: "Analiza tu equipo", plantillas: "Plantillas (prueba)" };
+  const MORE_TABS = { actualizaciones: "Últimas actualizaciones", fichajes: "Fichajes", clausulazos: "Clausulazo jugoso", rentables: "Jugadores rentables", analiza: "Analiza tu equipo", plantillas: "Plantillas (prueba)" };
   function closeMoreMenu() {
     const menu = $("cxMoreMenu"), btn = $("cxMoreBtn");
     if (menu) menu.classList.add("hidden");
@@ -2918,6 +2923,7 @@
     if (name === "fichajes") renderFichajes();
     if (name === "actualizaciones") renderActualizaciones();
     if (name === "plantillas") initPlantillas();
+    if (name === "rentables") initRentables();
     if (name === "analiza") { fetch(API + "/me", { cache: "no-store" }).then((r) => r.json()).then((d) => { const m = $("anMsg"); if (!(d && d.user) && m && !m.querySelector(".an-login")) anMsgSet(m, "Inicia sesión para analizar tu equipo."); }).catch(() => {}); }
     try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
     try {
@@ -3074,6 +3080,7 @@
       renderRachas();
       renderGrid();
       renderEstado();
+      try { if (rtbInit) renderRentables(); } catch (e) {}
       if (all.length && !rangeInit) {
         rangeInit = true;
         setupRange();
@@ -4418,6 +4425,7 @@
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { if (document.querySelector(".eq-page, .mpage, .playerpage, .livepage")) { location.href = "/futmondo/guiafantasy/" + (t.dataset.tab === "plantillas" ? "mercado" : t.dataset.tab); return; } switchTab(t.dataset.tab); }));
   setupMoreMenu();
   let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltPeriod = "chg7", pltDir = -1, pltShown = 40, pltPlayers = [];
+  let rtbInit = false, rtbPos = "", rtbMin = 0, rtbMax = Infinity, rtbShown = 40;
   // En la ficha de jugador esto (14 peticiones de jornadas) se pide DESPUÉS de pintar, para no frenar la carga.
   if (!/\/jugador(?:es)?\/[a-z0-9]{6,40}/i.test(location.pathname)) ensurePlayedJ();
   (function restoreTab() {
@@ -4438,7 +4446,7 @@
     } catch (e) {}
     let name = "";
     try {
-      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|actualizaciones|noticias|analiza|clausulazos|plantillas)/);
+      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|actualizaciones|noticias|analiza|clausulazos|rentables|plantillas)/);
       if (m) name = m[1];
     } catch (e) {}
     if (!name) { try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {} }
@@ -5888,6 +5896,54 @@
     if (list.length > pltShown) {
       const more = el("button", "btn-ghost market-more", "Ver más (" + (list.length - pltShown) + ")"); more.type = "button";
       more.addEventListener("click", () => { pltShown += 40; renderPltList(); });
+      box.appendChild(more);
+    }
+  }
+
+/* ---------- Jugadores rentables: la lista completa de calidad-precio (la de Destacados, sin el tope de 6) ---------- */
+  async function initRentables() {
+    if (rtbInit) { renderRentControls(); renderRentables(); return; }
+    rtbInit = true;
+    if (!(all && all.length)) {
+      try { const d = await (await fetch(API + "/mercado")).json(); if (Array.isArray(d.players)) all = d.players; if (d.updatedAt) lastMarketAt = d.updatedAt; } catch (e) {}
+    }
+    if (!(all && all.length)) { rtbInit = false; const l = $("rtbList"); if (l) l.innerHTML = "<p class='muted'>No se pudo cargar la lista.</p>"; return; }
+    try { ensurePlayedJ(); } catch (e) {}
+    renderRentControls();
+    renderRentables();
+  }
+  function rtbRerender() { rtbShown = 40; renderRentControls(); renderRentables(); }
+  function renderRentControls() {
+    const pos = $("rtbPos"), pr = $("rtbPrice");
+    if (!pos || !pr) return;
+    pos.innerHTML = "";
+    [["", "Todos"], ["portero", "Portero"], ["defensa", "Defensa"], ["centrocampista", "Medio"], ["delantero", "Delantero"]].forEach((x) => {
+      pos.appendChild(pltBtn(x[1], rtbPos === x[0], () => { rtbPos = x[0]; rtbRerender(); }));
+    });
+    pr.innerHTML = "";
+    [["Cualquiera", 0, Infinity], ["Hasta 5M", 0, 5e6], ["5M – 20M", 5e6, 20e6], ["Más de 20M", 20e6, Infinity]].forEach((x) => {
+      pr.appendChild(pltBtn(x[0], rtbMin === x[1] && rtbMax === x[2], () => { rtbMin = x[1]; rtbMax = x[2]; rtbRerender(); }));
+    });
+  }
+  function renderRentables() {
+    const box = $("rtbList");
+    if (!box) return;
+    const sub = $("rtbSub");
+    if (sub) sub.textContent = "Más puntos de media por cada millón" + (lastMarketAt ? " · actualizado " + horaTxt(lastMarketAt) : "");
+    const list = bestValue(Infinity).filter((p) => (!rtbPos || String(p.role || "").toLowerCase() === rtbPos) && Number(p.value) >= rtbMin && (rtbMax === Infinity || Number(p.value) <= rtbMax));
+    box.innerHTML = "";
+    if (!list.length) { box.appendChild(el("p", "muted", "Sin jugadores con estos filtros ahora mismo.")); return; }
+    list.slice(0, rtbShown).forEach((p) => {
+      const o = { chg: Number(p.change) || 0, tag: ["best", p._r.toFixed(2).replace(".", ",") + " pts por millón"] };
+      if (p.chg7 != null && p.chg7 !== "") {
+        const v = Number(p.chg7) || 0;
+        o.why = "7 días: " + (v > 0 ? "▲ " + formatDots(v) + " €" : v < 0 ? "▼ " + formatDots(-v) + " €" : "igual");
+      }
+      box.appendChild(pltBuildRow(p, o));
+    });
+    if (list.length > rtbShown) {
+      const more = el("button", "btn-ghost market-more", "Ver más (" + (list.length - rtbShown) + ")"); more.type = "button";
+      more.addEventListener("click", () => { rtbShown += 40; renderRentables(); });
       box.appendChild(more);
     }
   }

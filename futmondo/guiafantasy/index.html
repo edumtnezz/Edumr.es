@@ -15,7 +15,7 @@
   <script src="/futmondo/swr.js?v=3"></script>
   <link rel="stylesheet" href="/futmondo/quiniela/quiniela.css?v=151">
   <link rel="stylesheet" href="/futmondo/edumr.css?v=90">
-  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=329">
+  <link rel="stylesheet" href="/futmondo/guiafantasy/mercado.css?v=330">
   <link rel="stylesheet" href="/futmondo/guiafantasy/jugador.css?v=21">
   <link rel="stylesheet" href="/futmondo/guiafantasy/partido.css?v=42">
   <link rel="stylesheet" href="/futmondo/alineacion.css?v=32">
@@ -53,6 +53,7 @@
             <button class="cx-more-item tab" data-tab="actualizaciones"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Últimas actualizaciones</button>
             <button class="cx-more-item tab" data-tab="fichajes"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/></svg>Fichajes</button>
             <button class="cx-more-item tab" data-tab="clausulazos"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11.5 11.5 3.5H19a1.5 1.5 0 0 1 1.5 1.5v7.5l-8 8z"/><circle cx="15.5" cy="8.5" r="1.3"/></svg>Clausulazo Jugoso</button>
+            <button class="cx-more-item tab" data-tab="rentables"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-5 4 4 7-8"/><path d="M15 8h5v5"/></svg>Jugadores rentables</button>
             <button class="cx-more-item tab" data-tab="analiza"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>Analiza tu equipo</button>
             <a class="cx-more-item" href="/equipos"><svg class="tab-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3.4 7.8 8 9 4.6-1.2 8-4.5 8-9V6z"/></svg>Equipos</a>
           </div>
@@ -194,6 +195,17 @@
       </section>
     </section>
 
+    <section class="tab-panel hidden" id="tab-rentables">
+      <section class="panel plt-panel">
+        <div class="plt-head" id="rtbHead">
+          <div class="plt-row-btns" id="rtbPos"></div>
+          <div class="plt-row-btns" id="rtbPrice"></div>
+        </div>
+        <div class="rtb-sub" id="rtbSub"></div>
+        <div class="plt-list" id="rtbList"><div class="cx-sk"></div></div>
+      </section>
+    </section>
+
     <section class="tab-panel hidden" id="tab-actualizaciones">
       <section class="panel">
         <div class="panel-head">
@@ -242,7 +254,7 @@
   <script src="/futmondo/chrome.js?v=59"></script>
   <script src="/futmondo/alineacion.js?v=42"></script>
   <script src="/futmondo/guiafantasy/icons.js?v=1"></script>
-  <script src="/futmondo/guiafantasy/mercado.js?v=488"></script>
+  <script src="/futmondo/guiafantasy/mercado.js?v=489"></script>
   <script src="/futmondo/totop.js?v=3" defer></script>
   <script src="/futmondo/fresh.js?v=2" defer></script>
 </body>
