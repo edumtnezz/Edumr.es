@@ -1360,7 +1360,8 @@
     const sv = document.createElementNS(NS, "svg");
     sv.setAttribute("viewBox", "0 0 24 24"); sv.setAttribute("class", "ffx-ha " + (home ? "h" : "a")); sv.setAttribute("aria-label", home ? "En casa" : "Fuera");
     const p = document.createElementNS(NS, "path");
-    p.setAttribute("d", home ? "M12 3.2 2.8 11.4a1 1 0 0 0 .7 1.7H5V20a1 1 0 0 0 1 1h4v-5.5h4V21h4a1 1 0 0 0 1-1v-6.9h1.5a1 1 0 0 0 .7-1.7L12 3.2z" : "M21.2 3.4 2.9 10.6a.8.8 0 0 0 0 1.5l5.6 2.2 2.2 5.6a.8.8 0 0 0 1.5 0l7.2-18.3a.8.8 0 0 0-1.2-.2zM9.4 13.4l7.6-6.2-5.4 8.1-.6-1.7-1.6-.2z");
+    p.setAttribute("d", home ? "M12 3.2 2.8 11.4a1 1 0 0 0 .7 1.7H5V20a1 1 0 0 0 1 1h4v-5.5h4V21h4a1 1 0 0 0 1-1v-6.9h1.5a1 1 0 0 0 .7-1.7L12 3.2z" : "M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z");
+    if (!home) p.setAttribute("transform", "rotate(45 12 12)");
     sv.appendChild(p); return sv;
   }
   function buildEvents(m, d) {
@@ -4045,7 +4046,7 @@
     box.appendChild(body);
     body.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>';
     let timer = null;
-    const eqSq = { pos: "delantero", q: "", sort: "points", calOld: false };
+    const eqSq = { pos: "delantero", q: "", sort: "points", calOld: false, calAll: false };
     const run = async (first) => {
       // Todo en paralelo (antes iba una cosa detrás de otra)
       const pTeams = eqTeams(), pAll = (!all || !all.length) ? load().catch(() => {}) : Promise.resolve(), pJr = fetch(API + "/jornada").then((r) => r.json()), pCal = fetch(API + "/calendario").then((r) => r.json()).catch(() => null);
@@ -4289,7 +4290,7 @@
         return a;
       };
       if (fPlayed.length) {
-        const oldN = Math.max(0, fPlayed.length - 3);
+        const oldN = Math.max(0, fPlayed.length - 2);
         rows.appendChild(el("div", "eq-calcap", "Jugados"));
         let btn = null;
         const olds = [];
@@ -4303,7 +4304,17 @@
       }
       fLive.forEach((m) => rows.appendChild(mkRow(m)));
       if (fPost.length || fNext.length) rows.appendChild(el("div", "eq-calcap", "Próximos partidos"));
-      fPost.concat(fNext).forEach((m) => rows.appendChild(mkRow(m)));
+      fPost.forEach((m) => rows.appendChild(mkRow(m)));
+      {
+        const NV = 4, restN = Math.max(0, fNext.length - NV), rest = [];
+        fNext.forEach((m, idx) => { const r = mkRow(m); if (idx >= NV) { r.classList.add("eq-old"); if (!eqSq.calAll) r.classList.add("hidden"); rest.push(r); } rows.appendChild(r); });
+        if (restN) {
+          const b2 = el("button", "eq-calmore", eqSq.calAll ? "Ver menos" : "Ver los " + restN + " restantes");
+          b2.type = "button";
+          b2.addEventListener("click", () => { eqSq.calAll = !eqSq.calAll; rest.forEach((r) => r.classList.toggle("hidden", !eqSq.calAll)); b2.textContent = eqSq.calAll ? "Ver menos" : "Ver los " + restN + " restantes"; });
+          rows.appendChild(b2);
+        }
+      }
       if (!full.length) rows.appendChild(el("p", "muted small", "Sin partidos por ahora."));
       cal.appendChild(rows);
       frag.appendChild(cal);

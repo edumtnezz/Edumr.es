@@ -352,5 +352,12 @@ html, body { overflow-anchor: auto; }
 .mpage-plate.pre .mpage-pre-t { font-size: clamp(1.6rem, 8vw, 2.1rem); letter-spacing: .01em; }
 .mpage-top:not(.has-stadium) .mpage-pre-d { color: var(--muted); }
 .mpage-mid .mpage-period.mpage-prenote { display: inline-flex; align-items: center; gap: 5px; padding: 4px 11px; border-radius: 999px; background: rgba(34,197,94,.2); border: 1px solid rgba(34,197,94,.55); color: #86efac; font-size: .66rem; font-weight: 800; letter-spacing: .04em; white-space: nowrap; text-shadow: none; }
-.eq-calmore{align-self:flex-start;margin:2px 0 4px;padding:7px 14px;border-radius:999px;border:1.5px solid var(--border);background:var(--card-solid,#fff);color:inherit;font:800 .78rem 'Bricolage Grotesque',sans-serif;cursor:pointer}
+.eq-calmore{align-self:center;margin:4px 0 2px;padding:8px 18px;border-radius:999px;border:1.5px solid var(--border);background:var(--card-solid,#fff);color:inherit;font:800 .78rem 'Bricolage Grotesque',sans-serif;cursor:pointer}
 .eq-calrow.hidden{display:none !important}
+
+/* Calendario del club: filas más bajas y badge casa/fuera más cuidado */
+.eq-cal{gap:5px}
+.eq-calrow{padding:7px 10px}
+.eq-calrow svg.ffx-ha,.eq-next svg.ffx-ha{width:24px;height:24px;padding:5px;margin:0;flex:none;color:#fff}
+.eq-calrow svg.ffx-ha.h,.eq-next svg.ffx-ha.h{background:#16a34a}
+.eq-calrow svg.ffx-ha.a,.eq-next svg.ffx-ha.a{background:#6366f1}
