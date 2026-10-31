@@ -4402,18 +4402,55 @@ export async function onRequestGet(ctx) {
     } catch (e) {}
     return null;
   };
+  const isGood = (txt) => txt.indexOf('"error"') < 0 && txt.length > 20 && !/"(matches|players|teams|items|days)":\[\]/.test(txt) && !/"matchday":0[,}]/.test(txt);
+  // Guarda la respuesta buena: copia fresca (TTL) + copia de reserva de 2 días con la hora a la que se guardó (x-saved).
+  const savePair = (txt) => {
+    // La jornada solo necesita refrescarse cada 30 s si hay un partido en juego; si no, cada 90 s (menos CPU)
+    const ttlNow = path === "jornada" && txt.indexOf('"state":"live"') < 0 ? 90 : ttl;
+    const put = caches.default.put(key, new Response(txt, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=" + ttlNow } }));
+    const put2 = caches.default.put(staleKey, new Response(txt, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=172800", "x-saved": String(Date.now()) } }));
+    return [put.catch(() => {}), put2.catch(() => {})];
+  };
+  // "jornada": cuando la copia fresca caduca, se responde AL MOMENTO con la última buena (hasta 10 min) y se refresca por detrás,
+  // para que nadie espere ~1 s a football-data. Nunca se hace con un partido en juego ni con uno que empieza en menos de 20 min
+  // (ahí los datos deben ser frescos).
+  if (path === "jornada" && ctx.waitUntil) {
+    try {
+      const st = await caches.default.match(staleKey);
+      if (st) {
+        const age = Date.now() - (Number(st.headers.get("x-saved")) || 0);
+        const txt0 = await st.text();
+        let calm = age < 600000 && txt0.indexOf('"state":"live"') < 0;
+        if (calm) {
+          const ms = (JSON.parse(txt0).matches) || [];
+          calm = !ms.some((m) => { const t = ffWhenAt(m.date, m.time); return t && !(m.live && m.live.state === "final") && t - Date.now() < 20 * 60 * 1000 && t - Date.now() > -4 * 3600 * 1000; });
+        }
+        if (calm && isGood(txt0)) {
+          const lockKey = new Request("https://edgecache.edumr.internal/v1-lock" + url.pathname + url.search);
+          let locked = false;
+          try { locked = !!(await caches.default.match(lockKey)); } catch (e) {}
+          if (!locked) {
+            ctx.waitUntil((async () => {
+              try {
+                await caches.default.put(lockKey, new Response("1", { headers: { "cache-control": "public, max-age=20" } }));
+                const r = await handleGet(ctx);
+                if (r.status === 200) { const t = await r.text(); if (isGood(t)) await Promise.all(savePair(t)); }
+              } catch (e) {}
+            })());
+          }
+          return new Response(txt0, { status: 200, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-edge": "swr" } });
+        }
+      }
+    } catch (e) {}
+  }
   let res;
   try { res = await handleGet(ctx); } catch (e) { return (await serveStale()) || new Response(JSON.stringify({ error: "temporal" }), { status: 503, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } }); }
   if (res.status === 200) {
     try {
       const txt = await res.clone().text();
-      const good = txt.indexOf('"error"') < 0 && txt.length > 20 && !/"(matches|players|teams|items|days)":\[\]/.test(txt) && !/"matchday":0[,}]/.test(txt);
-      if (good) {
-        // La jornada solo necesita refrescarse cada 30 s si hay un partido en juego; si no, cada 90 s (menos CPU)
-        const ttlNow = path === "jornada" && txt.indexOf('"state":"live"') < 0 ? 90 : ttl;
-        const put = caches.default.put(key, new Response(txt, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=" + ttlNow } }));
-        const put2 = caches.default.put(staleKey, new Response(txt, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=172800" } }));
-        if (ctx.waitUntil) { ctx.waitUntil(put.catch(() => {})); ctx.waitUntil(put2.catch(() => {})); } else { await put.catch(() => {}); await put2.catch(() => {}); }
+      if (isGood(txt)) {
+        const ps = savePair(txt);
+        if (ctx.waitUntil) { ps.forEach((p) => ctx.waitUntil(p)); } else { await Promise.all(ps); }
       } else {
         const st = await serveStale(); if (st) return st;
       }
