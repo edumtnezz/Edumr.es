@@ -4268,7 +4268,7 @@
       const fPlayed = full.filter(isPast).sort(byT);
       const fLive = full.filter((m) => stOf(m) === "live");
       const fPost = full.filter((m) => stOf(m) === "suspended").sort((a, b) => a.jn - b.jn);
-      const fNext = full.filter((m) => !isPast(m) && !stOf(m)).sort(byT);
+      const fNext = full.filter((m) => !isPast(m) && !stOf(m)).sort((a, b) => a.jn - b.jn);
       const mkRow = (m) => {
         const home = teamCanon(m.home) === tc;
         const st = stOf(m);
