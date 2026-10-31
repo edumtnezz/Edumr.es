@@ -65,7 +65,7 @@ function updateWelcome() {
   g.textContent = `Con permiso, ¡${saludo}${name ? ", " + name : ""}!`;
   if (s) {
     s.textContent = name
-      ? "Aquí tienes tu quiniela: elige 1, X o 2 en cada partido y guárdala antes de que empiece el primer partido."
+      ? "Aquí tienes tu quiniela: elige 1, X o 2 en cada partido y guárdala antes de que empiece cada partido."
       : "Juega la quiniela de LaLiga con tus compañeros. Es rápido y gratis.";
   }
   const steps = $("welcomeSteps");
