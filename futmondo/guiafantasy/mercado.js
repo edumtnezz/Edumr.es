@@ -4045,10 +4045,10 @@
     box.appendChild(body);
     body.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>';
     let timer = null;
-    const eqSq = { pos: "delantero", q: "", sort: "points" };
+    const eqSq = { pos: "delantero", q: "", sort: "points", calOld: false };
     const run = async (first) => {
       // Todo en paralelo (antes iba una cosa detrás de otra)
-      const pTeams = eqTeams(), pAll = (!all || !all.length) ? load().catch(() => {}) : Promise.resolve(), pJr = fetch(API + "/jornada").then((r) => r.json());
+      const pTeams = eqTeams(), pAll = (!all || !all.length) ? load().catch(() => {}) : Promise.resolve(), pJr = fetch(API + "/jornada").then((r) => r.json()), pCal = fetch(API + "/calendario").then((r) => r.json()).catch(() => null);
       const teams = await pTeams;
       const team = teams.find((t) => teamSlug(t.name) === slug);
       if (!team) { if (first) body.innerHTML = '<p class="muted small">No se encontró ese equipo.</p>'; return false; }
@@ -4064,6 +4064,33 @@
       const mine = [];
       jrs.forEach((j) => j.ms.forEach((m) => { if (teamCanon(m.home) === tc || teamCanon(m.away) === tc) mine.push(Object.assign({ jn: j.n }, m)); }));
       const stOf = (m) => (m.live && m.live.state) || "";
+      // Calendario completo de la temporada (todas las jornadas). Las jornadas cercanas (arriba) son más frescas: en directo, aplazados, canal.
+      // El resto sale de /calendario (football-data). Si falla, queda lo que ya había.
+      const full = [];
+      try {
+        const kk = (jn, h, a) => jn + "|" + teamCanon(h) + "|" + teamCanon(a);
+        const seen = new Set();
+        mine.forEach((m) => { const jn = Number(m.aplazado) || m.jn; const k = kk(jn, m.home, m.away); if (seen.has(k)) return; seen.add(k); full.push(Object.assign({}, m, { jn })); });
+        const cal = await pCal;
+        if (cal && cal.teams && cal.matches) {
+          const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
+          const dtF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" });
+          const tmF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hour12: false });
+          cal.matches.forEach((r) => {
+            const h = cal.teams[r[1]], a = cal.teams[r[2]];
+            if (!h || !a || (teamCanon(h.n) !== tc && teamCanon(a.n) !== tc)) return;
+            const k = kk(r[0], h.n, a.n); if (seen.has(k)) return; seen.add(k);
+            const d = new Date(r[3]), ok = !isNaN(d.getTime());
+            const tbc = ok && d.getUTCHours() === 0 && d.getUTCMinutes() === 0;
+            const sc = r[4];
+            const state = sc === "FINISHED" || sc === "AWARDED" ? "final" : sc === "IN_PLAY" || sc === "PAUSED" ? "live" : sc === "POSTPONED" || sc === "SUSPENDED" || sc === "CANCELLED" ? "suspended" : "";
+            const w = ok ? wdF.format(d).replace(".", "") : "";
+            full.push({ jn: r[0], home: h.n, away: a.n, homeCrest: h.c, awayCrest: a.c, utc: ok ? d.getTime() : 0, tbc,
+              day: w ? w.charAt(0).toUpperCase() + w.slice(1) : "", date: ok ? dtF.format(d) : "", time: ok && !tbc ? tmF.format(d) : "",
+              live: state ? { state, score: (state === "final" || state === "live") && r[5] != null && r[6] != null ? r[5] + " - " + r[6] : "" } : null });
+          });
+        }
+      } catch (e) {}
       // Un partido suspendido/aplazado no es el "próximo partido": se muestra aparte en el calendario como "Aplazado".
       const upcoming = mine.filter((m) => stOf(m) !== "final" && stOf(m) !== "suspended");
       const postponed = mine.filter((m) => stOf(m) === "suspended");
@@ -4233,15 +4260,20 @@
       const cal = el("section", "eq-sec");
       cal.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "Calendario"));
       const rows = el("div", "eq-cal");
-      const calList = [].concat(played.slice(-3), postponed, upcoming.slice(0, 6)).sort((a, b) => { const rk = (m) => { const s2 = stOf(m); return s2 === "live" ? 0 : s2 === "final" ? -1 : 1; }; return rk(a) - rk(b) || (rk(a) === -1 ? b.jn - a.jn : a.jn - b.jn); }); // lo ya jugado (más reciente primero), en juego y lo próximo
-      let capShown = "";
-      calList.forEach((m) => {
+      // Todos los partidos del club: jugados (los últimos 3 a la vista, el resto se abre con un botón), en juego, aplazados y próximos
+      const tOf = (m) => m.utc || kickoffMs(m) || 0;
+      const nowMs = Date.now();
+      const isPast = (m) => { const s2 = stOf(m); if (s2 === "final") return true; if (s2) return false; const t = tOf(m); return !!t && t < nowMs - 3 * 3600 * 1000; };
+      const byT = (a, b) => (tOf(a) - tOf(b)) || (a.jn - b.jn);
+      const fPlayed = full.filter(isPast).sort(byT);
+      const fLive = full.filter((m) => stOf(m) === "live");
+      const fPost = full.filter((m) => stOf(m) === "suspended").sort((a, b) => a.jn - b.jn);
+      const fNext = full.filter((m) => !isPast(m) && !stOf(m)).sort(byT);
+      const mkRow = (m) => {
         const home = teamCanon(m.home) === tc;
         const st = stOf(m);
-        const cap = st === "final" ? "Últimos partidos · finalizados" : st === "live" ? "" : "Próximos partidos";
-        if (cap && cap !== capShown) { rows.appendChild(el("div", "eq-calcap", cap)); capShown = cap; }
         let outc = "";
-        if (st === "final") { const mm = String((m.live && m.live.score) || "").match(/(\d+)\D+(\d+)/); if (mm) { const gh = +mm[1], ga = +mm[2], mine = home ? gh - ga : ga - gh; outc = mine > 0 ? " win" : mine < 0 ? " loss" : " draw"; } }
+        if (st === "final") { const mm = String((m.live && m.live.score) || "").match(/(\d+)\D+(\d+)/); if (mm) { const gh = +mm[1], ga = +mm[2], mine2 = home ? gh - ga : ga - gh; outc = mine2 > 0 ? " win" : mine2 < 0 ? " loss" : " draw"; } }
         const a = el("a", "eq-calrow" + (st === "final" ? " fin" + outc : st === "live" ? " live" : ""));
         a.href = "/futmondo/guiafantasy/partido/" + matchSlug(m.home, m.away) + "?j=" + m.jn;
         a.appendChild(el("span", "eq-calj", "J" + m.jn));
@@ -4249,12 +4281,30 @@
         const c = el("img"); c.src = (home ? m.awayCrest : m.homeCrest) || ""; c.alt = ""; c.loading = "lazy";
         a.appendChild(c);
         a.appendChild(el("span", "eq-calrival", home ? m.away : m.home));
-        const res = st === "suspended" ? "Aplazado" : st === "final" || st === "live" ? ((m.live && m.live.score) || "") : [m.day, m.date, m.time].filter(Boolean).join(" ");
+        const when = m.tbc ? "Fecha por confirmar" : [m.day, m.date, m.time].filter(Boolean).join(" ");
+        const sc = (m.live && m.live.score) || "";
+        const res = st === "suspended" ? "Aplazado" : (st === "final" || st === "live") && sc ? sc : when;
         if (st === "live") { const tg = el("span", "eq-livetag"); tg.appendChild(el("i")); tg.appendChild(document.createTextNode("En juego")); a.appendChild(tg); }
-        a.appendChild(el("span", "eq-calres" + (st === "final" ? " eq-calscore" : ""), res));
-        rows.appendChild(a);
-      });
-      if (!calList.length) rows.appendChild(el("p", "muted small", "Sin partidos próximos."));
+        a.appendChild(el("span", "eq-calres" + (st === "final" && sc ? " eq-calscore" : ""), res));
+        return a;
+      };
+      if (fPlayed.length) {
+        const oldN = Math.max(0, fPlayed.length - 3);
+        rows.appendChild(el("div", "eq-calcap", "Jugados"));
+        let btn = null;
+        const olds = [];
+        if (oldN) {
+          btn = el("button", "eq-calmore", eqSq.calOld ? "Ocultar anteriores" : "Ver " + oldN + " anteriores");
+          btn.type = "button";
+          rows.appendChild(btn);
+        }
+        fPlayed.forEach((m, idx) => { const r = mkRow(m); if (idx < oldN) { r.classList.add("eq-old"); if (!eqSq.calOld) r.classList.add("hidden"); olds.push(r); } rows.appendChild(r); });
+        if (btn) btn.addEventListener("click", () => { eqSq.calOld = !eqSq.calOld; olds.forEach((r) => r.classList.toggle("hidden", !eqSq.calOld)); btn.textContent = eqSq.calOld ? "Ocultar anteriores" : "Ver " + oldN + " anteriores"; });
+      }
+      fLive.forEach((m) => rows.appendChild(mkRow(m)));
+      if (fPost.length || fNext.length) rows.appendChild(el("div", "eq-calcap", "Próximos partidos"));
+      fPost.concat(fNext).forEach((m) => rows.appendChild(mkRow(m)));
+      if (!full.length) rows.appendChild(el("p", "muted small", "Sin partidos por ahora."));
       cal.appendChild(rows);
       frag.appendChild(cal);
       // Plantilla completa por posiciones (cada jugador es una fila entera tocable, con sus puntos de las últimas 5 jornadas)

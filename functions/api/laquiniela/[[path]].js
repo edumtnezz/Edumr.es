@@ -2915,6 +2915,30 @@ async function getEstadios(env) {
   return out;
 }
 
+// Calendario completo de la temporada (todas las jornadas, todos los equipos) en formato compacto.
+// Sale de football-data (1 sola petición); la caché del edge (EDGE_TTL) y su copia de reserva de 2 días la sirven. Nada inventado.
+async function getCalendario(env) {
+  const token = env.FOOTBALL_API_KEY;
+  if (!token) throw new Error("sin token");
+  const res = await fetch(`https://api.football-data.org/v4/competitions/${COMPETITION}/matches`, { headers: { "X-Auth-Token": token } });
+  if (!res.ok) throw new Error("matches " + res.status);
+  const ms = (await res.json()).matches || [];
+  const teams = {}, matches = [];
+  ms.forEach((m) => {
+    const h = m.homeTeam || {}, a = m.awayTeam || {};
+    if (!h.id || !a.id || !m.matchday) return;
+    [h, a].forEach((t) => {
+      if (teams[t.id]) return;
+      const n = t.shortName || t.name || "";
+      teams[t.id] = { n: n === "Santander" ? "Racing de Santander" : n, c: CREST_FIX[t.id] || t.crest || "" };
+    });
+    const ft = (m.score && m.score.fullTime) || {};
+    matches.push([m.matchday, h.id, a.id, m.utcDate, m.status, ft.home == null ? null : ft.home, ft.away == null ? null : ft.away]);
+  });
+  matches.sort((x, y) => x[0] - y[0] || (Date.parse(x[3]) || 0) - (Date.parse(y[3]) || 0));
+  return { teams, matches };
+}
+
 // Partidos aplazados: de una jornada ANTERIOR a la actual que aún no se han jugado o se juegan/han jugado hace poco
 // (p. ej. Levante–Athletic de la J6). Todo sale de football-data; nada se inventa.
 async function getAplazados(env) {
@@ -4430,7 +4454,7 @@ async function recordPointsHistory(env) {
 
 // Caché de respuestas públicas (Cache API: sin coste ni límite). Evita recalcular en cada visita
 // y mantiene la CPU por petición por debajo del límite del plan gratis de Cloudflare.
-const EDGE_TTL = { "ultimos-cambios": 180, aplazados: 300, estadios: 3600, "historial-puntos": 120, mercado: 45, rachas: 60, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 300, "alineaciones-confirmadas": 180, "alineaciones-estado": 300, noticias: 300, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10 };
+const EDGE_TTL = { "ultimos-cambios": 180, aplazados: 300, calendario: 600, estadios: 3600, "historial-puntos": 120, mercado: 45, rachas: 60, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 300, "alineaciones-confirmadas": 180, "alineaciones-estado": 300, noticias: 300, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10 };
 export async function onRequestGet(ctx) {
   const path = (ctx.params.path || []).join("/");
   const ttl = EDGE_TTL[path];
@@ -4837,6 +4861,9 @@ async function handleGet({ request, env: env0, params }) {
   }
   if (path === "estadios") {
     try { return json(await getEstadios(env)); } catch (e) { return json({}); }
+  }
+  if (path === "calendario") {
+    try { return json(await getCalendario(env)); } catch (e) { return json({ teams: {}, matches: [], error: String(e) }); }
   }
   if (path === "aplazados") {
     try { return json(await getAplazados(env)); } catch (e) { return json({ current: 0, items: [] }); }
