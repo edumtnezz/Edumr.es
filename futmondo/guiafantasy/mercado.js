@@ -3561,7 +3561,8 @@
       return c;
     };
     one.appendChild(ocell("Titular", par.starts + "/" + par.played, par.pctStart + "%", par.pctStart, "green"));
-    one.appendChild(ocell("Partidos", par.played + "/" + par.jornada, "jugados", par.jornada ? (par.played / par.jornada) * 100 : 0, "blue"));
+    const jDen = par.jPlayed != null ? par.jPlayed : par.jornada;
+    one.appendChild(ocell("Partidos", par.played + "/" + jDen, "jugados", jDen ? (par.played / jDen) * 100 : 0, "blue"));
     one.appendChild(ocell("Minutos", String(par.totalMin), "de " + par.maxMin + " (" + par.pctMin + "%)", par.maxMin ? (par.totalMin / par.maxMin) * 100 : 0, "purple"));
     box.appendChild(one);
 

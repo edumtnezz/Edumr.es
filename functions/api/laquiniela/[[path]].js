@@ -1650,9 +1650,13 @@ async function playerFicha(env, id, fast, raw) {
   const starts = cats.filter((c) => c.cat === "completo" || c.cat === "sustituido").length;
   const bench = cats.filter((c) => c.cat === "banquillo").length;
   const totalMin = matches.reduce((s, m) => s + (m.mins || 0), 0);
-  const maxMin = (Number(lJornada) || 0) * 90;
+  // Jornadas que su equipo ya ha jugado = la última jornada con datos suyos en Futmondo (si su equipo aún no ha jugado
+  // la jornada en curso, no cuenta: antes se dividía entre una jornada de más, p. ej. "9/11" y "661 de 990").
+  const lastR = matches.reduce((mx, m) => Math.max(mx, Number(m.r) || 0), 0);
+  const jPlayed = lastR > 0 && lastR <= (Number(lJornada) || 0) ? lastR : (Number(lJornada) || 0);
+  const maxMin = jPlayed * 90;
   const participacion = {
-    jornada: Number(lJornada) || 0, played: parPlayed, starts, bench,
+    jornada: Number(lJornada) || 0, jPlayed, played: parPlayed, starts, bench,
     totalMin, maxMin, pctMin: maxMin ? Math.round((totalMin / maxMin) * 100) : 0,
     avgMin: parPlayed ? Math.round((totalMin / parPlayed) * 10) / 10 : 0,
     pctStart: parPlayed ? Math.round((starts / parPlayed) * 100) : 0,
