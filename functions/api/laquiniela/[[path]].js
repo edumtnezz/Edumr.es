@@ -1037,8 +1037,10 @@ async function searchMercado(env, q) {
   }
   let players = cache.players || [];
   try { await snapshotMarket(env, players); } catch (e) {}
+  let ffAt = 0;
   try {
     const map = await ffMap(env);
+    ffAt = map.__at || 0;
     players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, jornadaFf: e.jornada, tend: e.tend, chg1: e.d1, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
   } catch (e) {}
   let season = {};
@@ -1063,17 +1065,20 @@ async function searchMercado(env, q) {
   if (query) list = players.filter((p) => stripAccents(p.name.toLowerCase()).includes(query));
   list = list.slice().sort((a, b) => b.value - a.value);
   const limit = query ? 80 : 700;
-  return json({ players: list.slice(0, limit), updatedAt: cache.at || null, seasonOk: seasonOn });
+  return json({ players: list.slice(0, limit), updatedAt: cache.at || null, ffAt, seasonOk: seasonOn });
 }
 
 const FF_MARKET_URL = "https://www.futbolfantasy.com/analytics/futmondo/mercado/social";
 const FF_MAP_KEY = "ff:map5";
 
+// Marca (no enumerable) con la hora real de los datos de FutbolFantasy, para que la web pueda avisar si son viejos.
+function ffTag(map, at) { try { Object.defineProperty(map, "__at", { value: Number(at) || 0, enumerable: false, configurable: true }); } catch (e) {} return map; }
+
 async function ffMap(env) {
   let cached = null;
   try {
     cached = await env.PORRA.get(FF_MAP_KEY, "json");
-    if (cached && cached.map && Date.now() - (cached.at || 0) < 6 * 3600 * 1000) return cached.map;
+    if (cached && cached.map && Date.now() - (cached.at || 0) < 6 * 3600 * 1000) return ffTag(cached.map, cached.at);
   } catch (e) {}
   // Si la petición o el parseo fallan, en vez de devolver {} (que deja a
   // TODA la web sin prob/rival/casa-fuera de golpe) se reutiliza el último
@@ -1111,13 +1116,13 @@ async function ffMap(env) {
     if (Object.keys(map).length > 50) {
       try { await env.PORRA.put(FF_MAP_KEY, JSON.stringify({ at: Date.now(), map })); } catch (e) {}
       await clearScrape(env, "ff-mercado");
-      return map;
+      return ffTag(map, Date.now());
     }
     await flagScrape(env, "ff-mercado", "La página de mercado de futbolfantasy.com solo dio " + Object.keys(map).length + " jugadores (se esperan >50). Puede haber cambiado el HTML de la página.");
-    return (cached && cached.map) || map;
+    return ffTag((cached && cached.map) || map, cached && cached.map ? cached.at : 0);
   } catch (e) {
     await flagScrape(env, "ff-mercado", "No se pudo cargar la página de mercado de futbolfantasy.com.");
-    return (cached && cached.map) || {};
+    return ffTag((cached && cached.map) || {}, cached && cached.map ? cached.at : 0);
   }
 }
 
