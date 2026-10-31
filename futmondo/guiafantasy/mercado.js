@@ -3725,9 +3725,14 @@
         if (m) {
           const rival = (m.home === d.team) ? m.away : (m.away === d.team ? m.home : (m.away || m.home || ""));
           const casa = m.home === d.team;
-          body.appendChild(el("div", "fm-rival", rival));
+          // Rival: escudo + nombre (lleva a su club) + casa/fuera
+          const rl = el("div", "fm-rival");
+          const rlogo = (all || []).find((x) => x.logo && x.team && teamCanon(x.team) === teamCanon(rival));
+          if (rlogo) { const ci = el("img", "fm-rcrest"); ci.src = rlogo.logo; ci.alt = ""; ci.loading = "lazy"; rl.appendChild(clubLink(ci, rival)); }
+          rl.appendChild(clubLink(el("span", "fm-rname", rival), rival));
+          const vc = el("span", "fm-venue " + (casa ? "h" : "a")); vc.appendChild(haIcon(casa)); vc.appendChild(document.createTextNode(casa ? "Casa" : "Fuera")); rl.appendChild(vc);
+          body.appendChild(rl);
           const chips = el("div", "fm-chips");
-          const vc = el("span", "fm-venue " + (casa ? "h" : "a")); vc.appendChild(haIcon(casa)); vc.appendChild(document.createTextNode(casa ? "Casa" : "Fuera")); chips.appendChild(vc);
           const mn = Number(m.mins) || 0;
           if (mn > 0) {
             let tg, tgCls = "";
@@ -3751,12 +3756,12 @@
           if (Number(m.yellow) > 0) evs.push(["Amarilla", "y"]);
           if (Number(m.red) > 0) evs.push(["Roja", "bad"]);
           if (E.sv >= 3) evs.push([E.sv + " paradas", "cs"]);
-          if (E.rt) evs.push(["Nota " + String(E.rt).replace(".", ","), "rt"]);
-          if (evs.length) {
-            const er = el("div", "fm-evs");
-            evs.forEach((x) => { er.appendChild(el("span", "fm-ev ev-" + x[1], x[0])); });
-            body.appendChild(er);
-          }
+          // La nota es la de Futmondo (dato "rating" de su API); no coincide con la de FotMob, por eso se dice de dónde sale
+          if (E.rt) evs.push([String(E.rt).replace(".", ","), "rt"]);
+          evs.forEach((x) => {
+            if (x[1] === "rt") { const nt = el("span", "fm-ev ev-rt"); nt.appendChild(el("small", null, "Nota Futmondo")); nt.appendChild(el("b", null, x[0])); chips.appendChild(nt); }
+            else chips.appendChild(el("span", "fm-ev ev-" + x[1], x[0]));
+          });
           let v = valByR[j] != null ? valByR[j] : null;
           let calc = false;
           // Jornadas fuera de los 5 últimos partidos que publica Futmondo: se calculan con las reglas de la liga
