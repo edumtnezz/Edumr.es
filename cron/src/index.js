@@ -33,6 +33,8 @@ export default {
       "https://edumr.es/api/laquiniela/fichajes",
       // Guarda los puntos de liga por jornada cuando un equipo acaba un partido (histórico de la temporada).
       "https://edumr.es/api/laquiniela/historial-puntos?run=1",
+      // Histórico de minutos por jugador (30 por pasada hasta tenerlos todos; luego una pasada por hora).
+      "https://edumr.es/api/laquiniela/minutos?run=1",
       // La Porra: pasa al historial los partidos terminados (pasado el lunes 23:59).
       "https://edumr.es/api/laquiniela/porra",
     ];

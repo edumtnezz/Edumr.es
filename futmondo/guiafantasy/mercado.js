@@ -68,7 +68,41 @@
     ["", "Todos"],
     ["racha", "🔥 En racha"],
     ["multipos", "🔀 Multiposición"],
+    ["m_mas", "🏟️ Juegan más"],
+    ["m_90", "⏱️ Los 90'"],
+    ["m_pronto", "↘️ Los cambian pronto"],
+    ["m_revul", "🔁 Revulsivos"],
+    ["m_poco", "🪑 Juegan poco"],
   ];
+  // Histórico de minutos (Futmondo, partidos terminados). Los cortes de cada filtro son MÍOS (no un dato de Futmondo):
+  // se dicen en la línea de ayuda y se ven los números reales de cada jugador en su fila.
+  // m = {n: partidos terminados, j: jugó, t: minutos, c: titular 85'+, s: titular cambiado, x: minuto medio de salida, b: desde banquillo, bm: minutos medios al entrar}
+  const MQ = {
+    m_mas: { hint: "Jugó al menos el 80% de los partidos de su equipo (mín. 4). Ordenados por minutos.", test: (m) => m.n >= 4 && m.j / m.n >= 0.8, sort: (a, b) => b.t - a.t,
+      line: (m) => "Jugó " + m.j + " de " + m.n + " partidos · " + m.t + "'" },
+    m_90: { hint: "Titular y completo (85' o más) en al menos el 70% de los partidos que juega (mín. 3).", test: (m) => m.j >= 3 && m.c / m.j >= 0.7, sort: (a, b) => b.c / b.j - a.c / a.j || b.t - a.t,
+      line: (m) => "90' en " + m.c + " de " + m.j + " partidos" + (m.s ? " · cambiado " + m.s + (m.s === 1 ? " vez" : " veces") : "") },
+    m_pronto: { hint: "Titular al que quitan antes del 85' en la mitad o más de sus titularidades, y sale de media sobre el 70' o antes (mín. 3 titularidades).", test: (m) => m.c + m.s >= 3 && m.s / (m.c + m.s) >= 0.5 && m.x > 0 && m.x <= 70, sort: (a, b) => a.x - b.x,
+      line: (m) => "Cambiado " + m.s + " de " + (m.c + m.s) + " titularidades · sale sobre el " + m.x + "'" },
+    m_revul: { hint: "Entra desde el banquillo en la mitad o más de los partidos que juega (mín. 2).", test: (m) => m.j >= 2 && m.b / m.j >= 0.5, sort: (a, b) => b.b / b.j - a.b / a.j || b.b - a.b,
+      line: (m) => "Desde el banquillo " + m.b + " de " + m.j + " · juega " + m.bm + "' de media" },
+    m_poco: { hint: "Juega menos de la mitad de los partidos de su equipo (mín. 4). Ordenados de menos a más.", test: (m) => m.n >= 4 && m.j / m.n < 0.5, sort: (a, b) => a.j / a.n - b.j / b.n || a.t - b.t,
+      line: (m) => "Jugó " + m.j + " de " + m.n + " partidos · " + m.t + "'" },
+  };
+  let minsMap = null, minsCover = null, minsLoading = false, minsFail = false;
+  function minsOf(p) { return (minsMap && p && minsMap[p.id]) || null; }
+  async function loadMinutos() {
+    if (minsLoading) return;
+    minsLoading = true;
+    try {
+      const d = await (await fetch(API + "/minutos")).json();
+      if (d && d.map && Object.keys(d.map).length) { minsMap = d.map; minsCover = d.cover || null; minsFail = false; }
+      else if (!minsMap) minsFail = true;
+    } catch (e) { if (!minsMap) minsFail = true; }
+    minsLoading = false;
+    if (MQ[quick] && $("marketGrid")) { const y = window.scrollY; renderGrid(); window.scrollTo(0, y); }
+  }
+  document.addEventListener("cx:swr", (ev) => { const u = (ev.detail && ev.detail.url) || ""; if (/\/minutos/.test(u)) loadMinutos(); });
   function renderChips() {
     const box = $("mercChips");
     if (!box) return;
@@ -2494,13 +2528,16 @@
       if (v < rangeMin || v > rangeMax) return false;
       return true;
     });
-    if (quick === "chollos") list = list.filter((p) => (Number(p.change) || 0) < -150000 && (Number(p.points) || 0) > 25);
+    const mq = MQ[quick];
+    if (mq) list = list.filter((p) => { const m = minsOf(p); return m && mq.test(m); });
+    else if (quick === "chollos") list = list.filter((p) => (Number(p.change) || 0) < -150000 && (Number(p.points) || 0) > 25);
     else if (quick === "bajando") list = list.filter((p) => (Number(p.change) || 0) < 0);
     else if (quick === "subiendo") list = list.filter((p) => (Number(p.change) || 0) > 0);
     else if (quick === "racha") list = list.filter((p) => { const f = (p.fitness || []).slice(-3); return f.length === 3 && f.every((x) => Number(x) > 0); });
     else if (quick === "vuelven") list = list.filter((p) => { const f = p.fitness || []; return f.length >= 3 && Number(f[0]) <= 0 && Number(f[f.length - 1]) > 0; });
     else if (quick === "multipos") list = list.filter((p) => p.role2);
-    if (q || quick) list = list.slice().sort((a, b) => b.value - a.value);
+    if (mq) list = list.slice().sort((a, b) => mq.sort(minsOf(a), minsOf(b)));
+    else if (q || quick) list = list.slice().sort((a, b) => b.value - a.value);
     else if (sortMode === "up") list = list.filter((p) => hlChange(p) > 0).sort((a, b) => hlChange(b) - hlChange(a));
     else if (sortMode === "down") list = list.filter((p) => hlChange(p) < 0).sort((a, b) => hlChange(a) - hlChange(b));
     else list = list.slice().sort((a, b) => b.value - a.value);
@@ -2540,6 +2577,13 @@
     });
     top.appendChild(seg);
     grid.appendChild(top);
+    const mqa = MQ[quick];
+    if (mqa) {
+      if (!minsMap && !minsLoading && !minsFail) loadMinutos();
+      if (!minsMap) { grid.appendChild(el("p", "market-empty", minsFail ? "Sin datos de minutos ahora mismo." : "Cargando minutos…")); return; }
+      const cv = minsCover && minsCover.total ? " · datos de " + minsCover.known + " de " + minsCover.total + " jugadores" : "";
+      grid.appendChild(el("div", "mkt-hint mkt-minhint", mqa.hint + cv));
+    }
     const list0 = filteredList();
     const pctOf = (p) => { const ch = hlChange(p); const prev = (Number(p.value) || 0) - ch; return prev > 0 ? (ch / prev) * 100 : 0; };
     const vantOf = (p) => (Number(p.value) || 0) - hlChange(p);
@@ -2586,6 +2630,7 @@
       if (p.team) tm.appendChild(el("span", null, p.team));
       clubLink(tm, p.team);
       jj.appendChild(tm);
+      if (mqa) { const mm = minsOf(p); if (mm) jj.appendChild(el("span", "mkt-mins", mqa.line(mm))); }
       j.appendChild(jj);
       row.appendChild(j);
       row.appendChild(el("div", "mkt-val", money(p.value) + " €"));
@@ -3557,6 +3602,18 @@
     }
     chart.appendChild(bars);
     card.appendChild(chart);
+    // Resumen con datos reales: cuántas veces juega los 90', cuántas lo cambian y sobre qué minuto, y cuántas entra desde el banquillo.
+    const bjn = (par.byJornada || []).filter((x) => x && x.cat && x.cat !== "none");
+    if (bjn.length) {
+      const comp = bjn.filter((x) => x.cat === "completo").length;
+      const cam = bjn.filter((x) => x.cat === "sustituido" && !x.red);
+      const ban = bjn.filter((x) => x.cat === "banquillo");
+      const tit = bjn.length - ban.length;
+      const bits = [];
+      if (tit) bits.push("Titular " + tit + " de " + bjn.length + ": 90' en " + comp + (cam.length ? ", cambiado " + cam.length + (cam.length === 1 ? " vez" : " veces") + " (sale sobre el " + Math.round(cam.reduce((a, x) => a + (Number(x.mins) || 0), 0) / cam.length) + "')" : ""));
+      if (ban.length) bits.push("Desde el banquillo " + ban.length + (ban.length === 1 ? " vez" : " veces") + " (juega " + Math.round(ban.reduce((a, x) => a + (Number(x.mins) || 0), 0) / ban.length) + "' de media)");
+      card.appendChild(el("div", "dash-note", bits.join(" · ")));
+    }
     box.appendChild(card);
 
     box.appendChild(el("div", "dash-sect", "Estadísticas de interés"));

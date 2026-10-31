@@ -971,6 +971,85 @@ async function getMios(env) {
   };
 }
 
+// Histórico de minutos por jugador (dato REAL de Futmondo: /2/player/matches → mins_played y substituted por partido).
+// Comprobado el 31/10/2026 con Yamal (65-70' y substituted "False": titular al que quitan), Lookman y Chupete
+// (13-23' y substituted "True": entran desde el banquillo). Futmondo NO da el minuto exacto de entrada/salida:
+// para un titular, el minuto en que sale = sus minutos jugados; para un suplente, jugó esos minutos desde que entró.
+// Se rellena por tandas desde el cron (1 petición por jugador; la Function aguanta ~50) y se guarda en KV
+// SOLO cuando hay datos nuevos (tope 1.000 escrituras/día): al principio cada pasada, luego una vez por hora.
+const MINS_KEY = "fm:mins:v1";
+const MINS_STALE_MS = 12 * 3600 * 1000;
+async function buildMinutos(env, force) {
+  let store = {};
+  try { store = (await env.PORRA.get(MINS_KEY, "json")) || {}; } catch (e) {}
+  if (!store.map || typeof store.map !== "object") store.map = {};
+  const mk = await getMarketPlayers(env);
+  const players = (mk.players || []).filter((p) => p.id);
+  const now = Date.now();
+  const unknown = players.filter((p) => !store.map[p.id]);
+  const hourly = new Date().getUTCMinutes() < 15;
+  if (!unknown.length && !hourly && !force) return { skipped: "espera", known: players.length - unknown.length, total: players.length };
+  const due = unknown.concat(
+    players.filter((p) => store.map[p.id] && now - (store.map[p.id].at || 0) > MINS_STALE_MS)
+      .sort((a, b) => (store.map[a.id].at || 0) - (store.map[b.id].at || 0))
+  );
+  const todo = due.slice(0, 30);
+  if (!todo.length) return { skipped: "al-dia", known: players.length, total: players.length };
+  const header = await futbolHeader(env);
+  let done = 0;
+  for (let i = 0; i < todo.length; i += 6) {
+    await Promise.all(todo.slice(i, i + 6).map(async (p) => {
+      let arr = null;
+      for (let a = 0; a < 2 && !arr; a++) {
+        try {
+          const x = await futbolPost("/2/player/matches", header, { playerId: p.id, championshipId: FUTMONDO_CHAMPIONSHIP });
+          if (x && x.answer && Array.isArray(x.answer.matches)) arr = x.answer.matches;
+        } catch (e) {}
+      }
+      if (!arr) return; // si Futmondo falla se conserva lo que ya había
+      const m = arr.filter((x) => x && x.st === "F").map((x) => {
+        const d = (x.ps && x.ps.data) || {};
+        return [Number(x.r) || 0, Number(d.mins_played) || 0, (d.substituted === "True" || d.substituted === true) ? 1 : 0, Number(d.red_card) ? 1 : 0];
+      }).sort((u, v) => u[0] - v[0]);
+      store.map[p.id] = { at: now, m };
+      done++;
+    }));
+  }
+  const ids = new Set(players.map((p) => p.id));
+  Object.keys(store.map).forEach((k) => { if (!ids.has(k)) delete store.map[k]; });
+  if (done) { store.at = now; try { await env.PORRA.put(MINS_KEY, JSON.stringify(store)); } catch (e) {} }
+  return { refreshed: done, known: players.filter((p) => store.map[p.id]).length, total: players.length };
+}
+
+// Perfil de minutos de un jugador a partir de sus partidos terminados [jornada, minutos, entróDesdeBanquillo, roja].
+//  n = partidos terminados de su equipo · j = en los que jugó · t = minutos totales
+//  c = titular y completo (85' o más) · s = titular al que cambian (menos de 85') · x = minuto medio en que sale
+//  b = entró desde el banquillo · bm = minutos medios que juega al entrar · z = no jugó · rd = titular expulsado (no cuenta como cambio)
+function minutosProfile(m) {
+  let n = 0, j = 0, t = 0, c = 0, s = 0, sx = 0, b = 0, bm = 0, z = 0, rd = 0;
+  for (const e of m) {
+    const mins = Number(e[1]) || 0;
+    n++; t += mins;
+    if (mins <= 0) { z++; continue; }
+    j++;
+    if (e[2]) { b++; bm += mins; }
+    else if (mins >= 85) c++;
+    else if (e[3]) rd++;
+    else { s++; sx += mins; }
+  }
+  return { n, j, t, c, s, x: s ? Math.round(sx / s) : 0, b, bm: b ? Math.round(bm / b) : 0, z, rd };
+}
+async function getMinutos(env) {
+  let store = null;
+  try { store = await env.PORRA.get(MINS_KEY, "json"); } catch (e) {}
+  const map = {};
+  let known = 0;
+  if (store && store.map) Object.keys(store.map).forEach((id) => { const r = store.map[id]; if (r && Array.isArray(r.m) && r.m.length) { map[id] = minutosProfile(r.m); known++; } });
+  let total = 0;
+  try { total = ((await getMarketPlayers(env)).players || []).length; } catch (e) {}
+  return { updatedAt: (store && store.at) || null, cover: { known, total }, map };
+}
+
 async function getClausulas(env) {
   try { const c = await env.PORRA.get("clausulas:v15", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
   let cache;
@@ -1644,7 +1723,7 @@ async function playerFicha(env, id, fast, raw) {
   const cats = matches.map((m) => {
     const mn = m.mins || 0;
     const cat = mn <= 0 ? "none" : m.sub ? "banquillo" : (mn >= 85 ? "completo" : "sustituido");
-    return { r: m.r, mins: mn, cat };
+    return { r: m.r, mins: mn, cat, red: m.red ? 1 : 0 };
   });
   const parPlayed = cats.filter((c) => c.mins > 0).length;
   const starts = cats.filter((c) => c.cat === "completo" || c.cat === "sustituido").length;
@@ -4455,7 +4534,7 @@ async function recordPointsHistory(env) {
 
 // Caché de respuestas públicas (Cache API: sin coste ni límite). Evita recalcular en cada visita
 // y mantiene la CPU por petición por debajo del límite del plan gratis de Cloudflare.
-const EDGE_TTL = { "ultimos-cambios": 180, aplazados: 300, calendario: 600, estadios: 3600, "historial-puntos": 120, mercado: 45, rachas: 60, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 300, "alineaciones-confirmadas": 180, "alineaciones-estado": 300, noticias: 300, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10 };
+const EDGE_TTL = { "ultimos-cambios": 180, aplazados: 300, calendario: 600, estadios: 3600, "historial-puntos": 120, mercado: 45, rachas: 60, minutos: 300, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 300, "alineaciones-confirmadas": 180, "alineaciones-estado": 300, noticias: 300, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10 };
 export async function onRequestGet(ctx) {
   const path = (ctx.params.path || []).join("/");
   const ttl = EDGE_TTL[path];
@@ -4847,6 +4926,12 @@ async function handleGet({ request, env: env0, params }) {
   }
   if (path === "rachas") {
     try { return json(await getRachas(env)); } catch (e) { return json({ players: [] }); }
+  }
+  if (path === "minutos") {
+    if (url.searchParams.has("run")) {
+      try { return json({ ok: true, result: await buildMinutos(env, url.searchParams.has("force")) }); } catch (e) { return json({ ok: false, error: String(e).slice(0, 200) }); }
+    }
+    try { return json(await getMinutos(env)); } catch (e) { return json({ updatedAt: null, cover: { known: 0, total: 0 }, map: {}, error: String(e).slice(0, 120) }); }
   }
   if (path === "alineaciones-estado") {
     try { return json(await getProbableFlags(env, url.searchParams.get("jornada") || null)); } catch (e) {

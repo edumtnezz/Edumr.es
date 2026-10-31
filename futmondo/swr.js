@@ -3,7 +3,7 @@
    avisa con el evento "cx:swr" para que la página se repinte en el sitio. */
 (function () {
   "use strict";
-  var EPS = /^\/api\/laquiniela\/(mercado|jugador|jornada|rachas|equipos|portada|noticias|detallepartido|once|alineaciones-confirmadas|cambios|puntos|ultimahora)(\?|$)/;
+  var EPS = /^\/api\/laquiniela\/(mercado|jugador|jornada|rachas|equipos|portada|noticias|detallepartido|once|alineaciones-confirmadas|cambios|puntos|ultimahora|minutos)(\?|$)/;
   var MAXAGE = 15 * 60 * 1000, MAXBODY = 1500000, PFX = "swr2:";
   var native = window.fetch.bind(window), inflight = {}, lastEv = {};
   function lsGet(k) { try { return JSON.parse(localStorage.getItem(PFX + k)); } catch (e) { return null; } }
