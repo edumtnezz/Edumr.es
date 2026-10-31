@@ -1744,10 +1744,12 @@ function ffWhenAt(date, time) {
   if (!dm) return 0;
   const tm = String(time || "").match(/(\d{1,2}):(\d{2})/);
   const y = new Date().getUTCFullYear();
-  const iso = y + "-" + String(Number(dm[2])).padStart(2, "0") + "-" + String(Number(dm[1])).padStart(2, "0") +
-    "T" + String(tm ? Number(tm[1]) : 0).padStart(2, "0") + ":" + String(tm ? Number(tm[2]) : 0).padStart(2, "0") + ":00+02:00";
-  const t = Date.parse(iso);
-  return isNaN(t) ? 0 : t;
+  // Hora de Madrid: +02:00 en horario de verano (del último domingo de marzo al último de octubre, 01:00 UTC) y +01:00 el resto.
+  const naive = Date.UTC(y, Number(dm[2]) - 1, Number(dm[1]), tm ? Number(tm[1]) : 0, tm ? Number(tm[2]) : 0);
+  if (isNaN(naive)) return 0;
+  const lastSun = (mo) => { const d = new Date(Date.UTC(y, mo + 1, 0)); return Date.UTC(y, mo, d.getUTCDate() - d.getUTCDay(), 1); };
+  const asSummer = naive - 2 * 3600000;
+  return (asSummer >= lastSun(2) && asSummer < lastSun(9)) ? asSummer : naive - 3600000;
 }
 
 async function getUltimaHora(env) {
@@ -1968,7 +1970,7 @@ async function getFFTeam(env, name) {
     "espanyol-barcelona": "espanyol",
   };
   if (SLUG_FIX[slug]) slug = SLUG_FIX[slug];
-  const key = "ffteam:v10:" + slug;
+  const key = "ffteam:v11:" + slug;
   try { const c = (await edgeGet(key)) || (await env.PORRA.get(key, "json")); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) { if (!c.data.fetchedAt) c.data.fetchedAt = c.at; return c.data; } } catch (e) {}
   const data = { starters: [], bench: [], fetchedAt: Date.now() };
   try {
