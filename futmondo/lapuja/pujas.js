@@ -474,7 +474,7 @@ function startTimer() {
     let target, txt;
     if (open) { target = p.closesAt; txt = p.extended ? "En prórroga · se amplía con cada puja" : "Cierra a las 22:00 · hora de Madrid"; }
     else if (data.inWindow) { target = data.nextTuesday; txt = "Elige jugador · cierra el martes 22:00"; }
-    else { target = data.nextWindow; txt = "Próxima subasta · lunes 00:00"; }
+    else { target = data.nextWindow; txt = "Próxima subasta · lunes 23:59"; }
     if (sub) sub.textContent = txt;
     if (!target) { t.textContent = "--:--:--"; return; }
     const diff = target - Date.now();
