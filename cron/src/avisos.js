@@ -148,8 +148,9 @@ export async function avisar(env, deps) {
     dirty = true;
   }
 
-  const [rNews, rCl, rConf] = await Promise.allSettled([getJson(f, "noticias"), getJson(f, "clausulas"), getJson(f, "alineaciones-confirmadas")]);
+  const [rNews, rCl, rConf] = await Promise.allSettled([getJson(f, "noticias"), getJson(f, "mios?t=" + now), getJson(f, "alineaciones-confirmadas")]);
   const mios = rCl.status === "fulfilled" && Array.isArray(rCl.value.mios) ? rCl.value.mios : null;
+  const cover = rCl.status === "fulfilled" ? rCl.value.cover : null;
   // Si esta vez no hay plantilla (fallo puntual de la fuente), se usa la última buena guardada.
   const squad = mios && mios.length ? mios : Object.keys(st.sq || {}).map((id) => ({ id, name: st.sq[id].n, team: st.sq[id].t }));
 
@@ -225,7 +226,7 @@ export async function avisar(env, deps) {
   if (firstRun) {
     queue.forEach((q) => q.commit()); // primera vez: se guarda lo que hay sin mandarlo
     st.init = true; dirty = true;
-    await send(env, f, st.chat, "✅ <b>Avisos activados</b>\nTe aviso de noticias de tus jugadores y de lesiones, sanciones o dudas, de alineaciones confirmadas y de cambios en tus jugadores.\nSilencio de 00:00 a 08:00.");
+    await send(env, f, st.chat, "✅ <b>Avisos activados</b>" + (mios && mios.length ? "\nVigilo " + mios.length + " jugadores tuyos" + (cover && cover.known < cover.total ? " (sigo localizando el resto de tu plantilla)" : "") + "." : "") + "\nTe aviso de noticias de tus jugadores y de lesiones, sanciones o dudas, de alineaciones confirmadas y de cambios en tus jugadores.\nSilencio de 00:00 a 08:00.");
   } else if (quiet) {
     queue.forEach((q) => q.commit()); // de noche no suena nada: se guarda como visto
   } else {

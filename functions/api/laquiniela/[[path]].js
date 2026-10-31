@@ -927,8 +927,52 @@ async function getAvatars(env) {
   return map;
 }
 
+// Plantilla completa de MI equipo para los avisos de Telegram. Futmondo solo dice quién es el dueño de un jugador
+// mirando su ficha (1 llamada por jugador) y una Function aguanta ~50 llamadas, así que se resuelven por tandas
+// (34 por pasada, rotando por franjas de 15 min) y el dueño de cada uno se guarda en KV (solo se escribe si cambia algo).
+const OWNERS_KEY = "fm:owners:v1";
+async function getMios(env) {
+  let myTeam = "Eduardo Martínez";
+  try { const mt = await env.PORRA.get("fm:myteam"); if (mt) myTeam = mt; } catch (e) {}
+  const market = await getMarketPlayers(env);
+  const own = (market.players || []).filter((p) => p.computer === false).sort((a, b) => (a.id < b.id ? -1 : 1));
+  let map = {};
+  try { map = (await env.PORRA.get(OWNERS_KEY, "json")) || {}; } catch (e) {}
+  const header = await futbolHeader(env);
+  const BATCH = 34;
+  const unknown = own.filter((p) => map[p.id] === undefined);
+  const known = own.filter((p) => map[p.id] !== undefined);
+  const start = known.length ? (Math.floor(Date.now() / 900000) * BATCH) % known.length : 0;
+  const todo = unknown.concat(known.slice(start), known.slice(0, start)).slice(0, BATCH);
+  let changed = false;
+  for (let i = 0; i < todo.length; i += 8) {
+    await Promise.all(todo.slice(i, i + 8).map(async (p) => {
+      let s = null;
+      for (let a = 0; a < 2 && !s; a++) { try { s = await futbolPost("/1/player/summary", header, { playerId: p.id, championshipId: FUTMONDO_CHAMPIONSHIP }); } catch (e) {} }
+      if (!s) return;
+      const o = ((s.answer || {}).championship || {}).owner;
+      const name = (o && !o.computer && o.name) || "";
+      if (map[p.id] !== name) { map[p.id] = name; changed = true; }
+    }));
+  }
+  const ids = new Set(own.map((p) => p.id));
+  Object.keys(map).forEach((k) => { if (!ids.has(k)) { delete map[k]; changed = true; } });
+  if (changed) { try { await env.PORRA.put(OWNERS_KEY, JSON.stringify(map)); } catch (e) {} }
+  const me = stripAccents(myTeam.toLowerCase());
+  let mine = own.filter((p) => map[p.id] && stripAccents(map[p.id].toLowerCase()) === me);
+  try {
+    const ff = await ffMap(env);
+    mine = mine.map((p) => { const e = ffPick(p.name, ff); return e ? { ...p, prob: e.prob } : p; });
+  } catch (e) {}
+  return {
+    updatedAt: Date.now(), me: myTeam,
+    mios: mine.map((p) => ({ id: p.id, name: p.name, team: p.team, role: p.role, prob: typeof p.prob === "number" ? p.prob : null, status: p.status })),
+    cover: { total: own.length, known: own.filter((p) => map[p.id] !== undefined).length },
+  };
+}
+
 async function getClausulas(env) {
-  try { const c = await env.PORRA.get("clausulas:v17", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
+  try { const c = await env.PORRA.get("clausulas:v15", "json"); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.data; } catch (e) {}
   let cache;
   try { cache = await getMarketPlayers(env); } catch (e) { return { players: [], updatedAt: null }; }
   let players = cache.players || [];
@@ -945,7 +989,6 @@ async function getClausulas(env) {
   let avatars = {};
   try { avatars = await getAvatars(env); } catch (e) {}
   const out = [];
-  const mios = [];
   let okC = 0, ownC = 0, errC = 0;
   const diag = [];
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -971,10 +1014,6 @@ async function getClausulas(env) {
       const owner = (ownerObj && ownerObj.name) || "";
       const ownerComputer = !!(ownerObj && ownerObj.computer);
       if (diag.length < 20) diag.push(p.name + ":" + (owner ? "OWN[" + owner + "]" : "free") + " cl=" + (cl.price ? 1 : 0));
-      // Plantilla completa de mi equipo (sin recortar a 40 ni exigir cláusula): la usa el avisador de Telegram.
-      if (owner && !ownerComputer && myTeam && stripAccents(owner.toLowerCase()) === stripAccents(myTeam.toLowerCase())) {
-        mios.push({ id: p.id, name: p.name, team: p.team, role: p.role, prob: p.prob, status: p.status });
-      }
       if (cl.price && owner && !ownerComputer) {
         ownC++;
         const mine = !!(myTeam && stripAccents(owner.toLowerCase()) === stripAccents(myTeam.toLowerCase()));
@@ -1019,8 +1058,8 @@ async function getClausulas(env) {
     }
   } catch (e) {}
 
-  const data = { updatedAt: Date.now(), me: myTeam, jornada, players: out.slice(0, 40), mios, diag: { own: own.length, ok: okC, err: errC, mios: mios.length } };
-  try { await env.PORRA.put("clausulas:v17", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
+  const data = { updatedAt: Date.now(), me: myTeam, jornada, players: out.slice(0, 40) };
+  try { await env.PORRA.put("clausulas:v15", JSON.stringify({ at: Date.now(), data }), { expirationTtl: 1800 }); } catch (e) {}
   return data;
 }
 
@@ -4875,6 +4914,9 @@ async function handleGet({ request, env: env0, params }) {
   if (path === "capitan-historial") {
     if (!user) return json({ error: "Inicia sesión para ver tu histórico." }, 401);
     try { return json({ historial: await getCapitanHistorial(env, user) }); } catch (e) { return json({ historial: [], error: String(e) }); }
+  }
+  if (path === "mios") {
+    try { return json(await getMios(env)); } catch (e) { return json({ mios: [], cover: null, error: String(e && e.message || e).slice(0, 120) }); }
   }
   if (path === "noticias") {
     return json(await getNoticias(env));
