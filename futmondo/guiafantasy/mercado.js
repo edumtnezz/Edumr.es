@@ -5926,9 +5926,14 @@
       pos.appendChild(rtbChip(x[1], rtbPos === x[0], () => { rtbPos = x[0]; rtbRerender(); }, "rtb-tab"));
     });
     pr.innerHTML = "";
-    [["Todos los precios", 0, Infinity], ["< 5M", 0, 5e6], ["5–20M", 5e6, 20e6], ["> 20M", 20e6, Infinity]].forEach((x) => {
-      pr.appendChild(rtbChip(x[0], rtbMin === x[1] && rtbMax === x[2], () => { rtbMin = x[1]; rtbMax = x[2]; rtbRerender(); }, "rtb-seg"));
-    });
+    const steps = [2e6, 5e6, 10e6, 20e6, 30e6, 50e6, Infinity];
+    const lab = el("span", "rtb-plab"), rg = el("input"); rg.type = "range"; rg.min = 0; rg.max = steps.length - 1; rg.step = 1;
+    rg.value = Math.max(0, steps.indexOf(rtbMax)); if (steps.indexOf(rtbMax) < 0) rg.value = steps.length - 1;
+    const txt = () => { const v = steps[+rg.value]; lab.textContent = v === Infinity ? "Cualquier precio" : "Hasta " + (v / 1e6) + " M€"; };
+    rg.setAttribute("aria-label", "Precio máximo"); rg.className = "rtb-range"; txt();
+    rg.addEventListener("input", txt);
+    rg.addEventListener("change", () => { rtbMin = 0; rtbMax = steps[+rg.value]; rtbShown = 40; renderRentables(); });
+    pr.appendChild(lab); pr.appendChild(rg);
   }
   function renderRentables() {
     const box = $("rtbList");
@@ -5946,7 +5951,10 @@
       row.addEventListener("pointerdown", () => { try { fetch(API + "/jugador?id=" + encodeURIComponent(p.id) + "&fast=1").catch(() => {}); } catch (e) {} }, { passive: true });
       row.appendChild(el("span", "rtb-n", String(i + 1)));
       const ph = el("span", "rtb-ph");
-      if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); ph.appendChild(im); }
+      const inn = el("span", "rtb-in");
+      if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); inn.appendChild(im); }
+      ph.appendChild(inn);
+      posRingCls(ph, p.role, p.role2);
       row.appendChild(ph);
       const body = el("span", "rtb-body");
       const l1 = el("span", "rtb-l1");
@@ -5954,15 +5962,19 @@
       if (p.logo) { const lg = el("img", "rtb-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; l1.appendChild(lg); }
       body.appendChild(l1);
       const l2 = el("span", "rtb-l2");
-      const rb = roleBadge(p.role);
+      const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
       const mv = Number(p.value) / 1e6;
-      l2.appendChild(el("span", null, (rb ? rb + " · " : "") + (mv >= 10 ? Math.round(mv) : mv.toFixed(1).replace(/\.0$/, "").replace(".", ",")) + " M€"));
-      l2.appendChild(el("span", null, "media " + (Number(p.avg) || 0).toFixed(1).replace(".", ",")));
+      l2.appendChild(el("span", null, (rb ? rb + (rb2 ? "/" + rb2 : "") + " · " : "") + (mv >= 10 ? Math.round(mv) : mv.toFixed(1).replace(/\.0$/, "").replace(".", ",")) + " M€"));
       if (p.chg7 != null && p.chg7 !== "") {
         const v = Number(p.chg7) || 0;
         if (v) l2.appendChild(el("span", v > 0 ? "rtb-up" : "rtb-dn", (v > 0 ? "▲ " : "▼ ") + (Math.abs(v) >= 1e6 ? (Math.abs(v) / 1e6).toFixed(1).replace(".", ",") + "M" : Math.round(Math.abs(v) / 1e3) + "k")));
       }
       body.appendChild(l2);
+      const l3 = el("span", "rtb-l3");
+      const tp = el("span"); tp.appendChild(el("b", null, String(Number(p.points) || 0))); tp.appendChild(document.createTextNode(" pts"));
+      const av = el("span"); av.appendChild(el("b", null, (Number(p.avg) || 0).toFixed(1).replace(".", ","))); av.appendChild(document.createTextNode(" media"));
+      l3.appendChild(tp); l3.appendChild(av);
+      body.appendChild(l3);
       const bar = el("span", "rtb-bar"); const fill = el("i"); fill.style.width = Math.max(6, Math.round(p._r / top * 100)) + "%"; bar.appendChild(fill);
       body.appendChild(bar);
       row.appendChild(body);
