@@ -8,9 +8,9 @@ binding = "PORRA"
 id = "4f99553a34954704b9786bbb14ca74c5"
 
 [triggers]
-# El primero (cada 15 min) refresca cachés de noticias/mercado/etc.
+# El primero (cada 5 min) manda los avisos de Telegram. El segundo (cada 15 min) refresca cachés de noticias/mercado/etc.
 # El segundo (todos los días a las 8:00 UTC) es el vigilante de
 # futbolfantasy.com — antes era solo los lunes, pero un equipo puede
 # romperse cualquier día de la semana (fichajes, ascensos...) y no tiene
 # sentido tardar hasta 6 días en enterarse.
-crons = ["*/15 * * * *", "0 8 * * *"]
+crons = ["*/5 * * * *", "*/15 * * * *", "0 8 * * *"]

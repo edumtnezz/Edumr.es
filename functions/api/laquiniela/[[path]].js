@@ -1990,7 +1990,7 @@ async function edgeGet(key) {
 async function edgePut(key, val, ttl) {
   try { await caches.default.put(new Request("https://edumr.es/__c/" + encodeURIComponent(key)), new Response(JSON.stringify(val), { headers: { "content-type": "application/json", "cache-control": "public, max-age=" + (ttl || 600) } })); } catch (e) {}
 }
-async function getFFTeam(env, name) {
+async function getFFTeam(env, name, fresh) {
   // El slug de la URL de futbolfantasy.com no siempre coincide con el
   // nombre que usa Futmondo para el equipo: p.ej. "RC Deportivo" (o
   // "Deportivo de La Coruña") hay que convertirlo en solo "deportivo". Se
@@ -2019,7 +2019,7 @@ async function getFFTeam(env, name) {
   };
   if (SLUG_FIX[slug]) slug = SLUG_FIX[slug];
   const key = "ffteam:v11:" + slug;
-  try { const c = (await edgeGet(key)) || (await env.PORRA.get(key, "json")); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) { if (!c.data.fetchedAt) c.data.fetchedAt = c.at; return c.data; } } catch (e) {}
+  if (!fresh) { try { const c = (await edgeGet(key)) || (await env.PORRA.get(key, "json")); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) { if (!c.data.fetchedAt) c.data.fetchedAt = c.at; return c.data; } } catch (e) {} }
   const data = { starters: [], bench: [], fetchedAt: Date.now() };
   try {
     const h = await (await fetch("https://www.futbolfantasy.com/laliga/equipos/" + slug, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).text();
@@ -2061,7 +2061,8 @@ async function getFFTeam(env, name) {
     const fwd = S.filter((p) => /delantero/i.test(p.pos)).length;
     data.formation = (def || mid || fwd) ? (def + "-" + mid + "-" + fwd) : "";
   } catch (e) {}
-  if (data.starters.length) { await edgePut(key, { at: Date.now(), data }, 1800); try { await env.PORRA.put(key, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 6 * 3600 }); } catch (e) {} }
+  // fresh = lectura directa para los avisos de Telegram: ni se lee ni se guarda caché (no gasta escrituras de KV).
+  if (data.starters.length && !fresh) { await edgePut(key, { at: Date.now(), data }, 1800); try { await env.PORRA.put(key, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 6 * 3600 }); } catch (e) {} }
   return data;
 }
 
@@ -2209,9 +2210,9 @@ function parseConfirmedPitch(html) {
   away.formation = fmt(away);
   return { home, away };
 }
-async function getAlineacionesConfirmadas(env, matchdayParam) {
+async function getAlineacionesConfirmadas(env, matchdayParam, fresh) {
   const cacheKey = "cm:confirmadas:v3:" + (matchdayParam || "current");
-  try { const c = await env.PORRA.get(cacheKey, "json"); if (c && Date.now() - (c.at || 0) < 10 * 60 * 1000) return c.data; } catch (e) {}
+  if (!fresh) { try { const c = await env.PORRA.get(cacheKey, "json"); if (c && Date.now() - (c.at || 0) < 10 * 60 * 1000) return c.data; } catch (e) {} }
   let jd = null;
   try { jd = await getJornada(env, matchdayParam || null); } catch (e) {}
   const out = { matchday: (jd && jd.matchday) || 0, updatedAt: Date.now(), matches: [] };
@@ -2272,7 +2273,7 @@ async function getAlineacionesConfirmadas(env, matchdayParam) {
       } catch (e) { mm.confirmedAt = Date.now(); }
     }));
   }
-  try { await env.PORRA.put(cacheKey, JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 600 }); } catch (e) {}
+  if (!fresh) { try { await env.PORRA.put(cacheKey, JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 600 }); } catch (e) {} }
   return out;
 }
 
@@ -2672,7 +2673,7 @@ async function getProbableFlags(env, jornada) {
   const items = open.filter((m) => has[nm(m.homeTeam)] && has[nm(m.awayTeam)]);
   // Cada equipo actualiza su once por su cuenta en futbolfantasy: la hora es PARTIDO a PARTIDO y es la de la
   // última actualización real (la más reciente de sus dos equipos), no la de cuando la leímos nosotros.
-  let out = items.map((m) => ({ home: nm(m.homeTeam), away: nm(m.awayTeam), at: Math.max(at[nm(m.homeTeam)] || 0, at[nm(m.awayTeam)] || 0), rt: Date.now() }));
+  let out = items.map((m) => ({ home: nm(m.homeTeam), away: nm(m.awayTeam), at: Math.max(at[nm(m.homeTeam)] || 0, at[nm(m.awayTeam)] || 0), rt: Date.now(), ko: Date.parse(m.utcDate) || 0 }));
   // Leer 20 páginas a la vez a veces falla a medias (límite de recursos): lo que ya se había visto bien se conserva,
   // siempre que el partido siga sin empezar.
   const pkey = "probflags:" + jn;
@@ -4610,7 +4611,7 @@ async function handleGet({ request, env: env0, params }) {
     try { return json(await getPartidoFF(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "", url.searchParams.get("jornada") || "")); } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "alineaciones-confirmadas") {
-    try { return json(await getAlineacionesConfirmadas(env, url.searchParams.get("jornada") || null)); } catch (e) { return json({ matchday: 0, matches: [], error: String(e) }); }
+    try { return json(await getAlineacionesConfirmadas(env, url.searchParams.get("jornada") || null, url.searchParams.get("fresh") === "1")); } catch (e) { return json({ matchday: 0, matches: [], error: String(e) }); }
   }
   // Cambios de un partido (quién sale y quién entra), sacados de la crónica
   // minuto a minuto de la página del partido. Cada frase se lee con varios
@@ -4946,13 +4947,18 @@ async function handleGet({ request, env: env0, params }) {
     const h = url.searchParams.get("home") || "", a = url.searchParams.get("away") || "";
     if (!h || !a) return json({ error: "faltan equipos" }, 400);
     try {
-      const [H, A] = await Promise.all([getFFTeam(env, h), getFFTeam(env, a)]);
+      const [H, A] = await Promise.all([getFFTeam(env, h, true), getFFTeam(env, a, true)]);
       const side = (name, t) => ({ name, formation: t.formation || "", updatedAt: t.updatedAt || 0, starters: (t.starters || []).map((p) => ({ name: p.full || p.name, short: p.name, prob: p.prob })) });
       return json({ home: side(h, H), away: side(a, A) });
     } catch (e) { return json({ error: String((e && e.message) || e).slice(0, 120) }, 500); }
   }
   if (path === "mios") {
     try { return json(await getMios(env)); } catch (e) { return json({ mios: [], cover: null, error: String(e && e.message || e).slice(0, 120) }); }
+  }
+  // Noticias de FutbolFantasy leídas directamente, sin caché ni escrituras de KV (para los avisos de Telegram).
+  if (path === "noticias-rapido") {
+    const list = await getFfNoticias(null);
+    return json({ noticias: list, at: Date.now() });
   }
   if (path === "noticias") {
     return json(await getNoticias(env));

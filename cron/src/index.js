@@ -5,6 +5,13 @@ import { avisar } from "./avisos.js";
 
 export default {
   async scheduled(event, env, ctx) {
+    // "*/5 * * * *" = avisos de Telegram (noticias, alineaciones, cambios en tus
+    // jugadores). Lee las fuentes directamente; sin el secreto TELEGRAM_BOT_TOKEN
+    // no hace nada, y un fallo aquí nunca afecta a lo demás.
+    if (event.cron === "*/5 * * * *") {
+      try { await avisar(env); } catch (e) {}
+      return;
+    }
     // "0 8 * * *" = vigilante diario: comprueba que las 20 páginas de
     // equipo de futbolfantasy.com (de donde sacamos fotos tipo
     // Alineaciones probables) siguen cargando jugadores. Si una se rompe
@@ -36,10 +43,6 @@ export default {
         await r.text();
       } catch (e) {}
     }));
-    // Avisos de Telegram (noticias, alineaciones, cambios en tus jugadores).
-    // Va DESPUÉS de refrescar las cachés para leer datos frescos. Sin el secreto
-    // TELEGRAM_BOT_TOKEN no hace nada, y un fallo aquí nunca rompe lo de arriba.
-    try { await avisar(env); } catch (e) {}
   },
   async fetch() {
     return new Response("edumr-cron ok", { status: 200, headers: { "content-type": "text/plain" } });

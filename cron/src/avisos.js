@@ -5,8 +5,9 @@
 //   2) Alineación confirmada de TODOS los partidos (⭐ marca a tus jugadores).
 //   3) Once probable actualizado: quién entra y quién sale (de todos los partidos).
 //   4) Cambios en tus jugadores: el % de jugar de FutbolFantasy y el estado de Futmondo.
-// Las alineaciones se comprueban solo de día y menos a menudo (confirmada cada 30 min,
-// probable cada hora) para no gastar las escrituras del plan gratis de Cloudflare.
+// Corre cada 5 min y lee las fuentes DIRECTAMENTE (endpoints noticias-rapido, probables?...,
+// alineaciones-confirmadas?fresh=1: sin caché ni escrituras de KV) para ser rápido sin gastar el
+// tope de 1.000 escrituras/día del plan gratis. Las alineaciones solo de día (08:00–24:00).
 // Todo sale de la propia web (/api/laquiniela/...), que a su vez lee fuentes reales.
 // Si un dato falta no se inventa: simplemente no se avisa.
 // Sin TELEGRAM_BOT_TOKEN (secreto de Cloudflare) no hace nada.
@@ -162,17 +163,27 @@ export async function avisar(env, deps) {
     dirty = true;
   }
 
-  const [rNews, rCl, rConf] = await Promise.allSettled([getJson(f, "noticias"), getJson(f, "mios?t=" + now), getJson(f, "alineaciones-confirmadas")]);
-  const mios = rCl.status === "fulfilled" && Array.isArray(rCl.value.mios) ? rCl.value.mios : null;
-  const cover = rCl.status === "fulfilled" ? rCl.value.cover : null;
-  // Si esta vez no hay plantilla (fallo puntual de la fuente), se usa la última buena guardada.
-  const squad = mios && mios.length ? mios : Object.keys(st.sq || {}).map((id) => ({ id, name: st.sq[id].n, team: st.sq[id].t }));
-
   const quiet = madridHour(now) >= QUIET_FROM && madridHour(now) < QUIET_TO;
   const mnt = new Date(now).getUTCMinutes();
-  const all = !!(deps && deps.allTicks);                 // solo para pruebas
-  const doConf = !quiet && (all || mnt % 30 < 15);       // cada 30 min
-  const doProb = !quiet && (all || mnt < 15);            // cada hora
+  const all = !!(deps && deps.allTicks);                  // solo para pruebas
+  const near = (ko, a, b) => !ko || (ko >= now + a && ko <= now + b); // sin hora conocida: se mira por si acaso
+  const doMios = all || mnt % 15 === 0 || !Object.keys(st.sq || {}).length; // plantilla: cada 15 min
+  const doList = !quiet && (all || mnt === 0 || !st.ml);   // lista de partidos: cada hora
+  // El once confirmado solo se pide si algún partido empieza en las próximas 2 h y media (o acaba de empezar).
+  const wantConf = !quiet && (all || (st.ml || []).some((m) => near(m.ko, -20 * 60e3, 150 * 60e3)));
+  const skip = () => Promise.reject(new Error("no toca"));
+
+  // Lecturas directas de la fuente (sin caché ni escrituras de KV): así los avisos son rápidos.
+  const [rNews, rCl, rConf] = await Promise.allSettled([
+    getJson(f, "noticias-rapido?t=" + now).catch(() => getJson(f, "noticias")),
+    doMios ? getJson(f, "mios?t=" + now) : skip(),
+    wantConf ? getJson(f, "alineaciones-confirmadas?run=1&fresh=1&t=" + now) : skip(),
+  ]);
+  const mios = rCl.status === "fulfilled" && Array.isArray(rCl.value.mios) ? rCl.value.mios : null;
+  const cover = rCl.status === "fulfilled" ? rCl.value.cover : null;
+  // Si esta vez no hay plantilla (no toca o fallo puntual de la fuente), se usa la última buena guardada.
+  const squad = mios && mios.length ? mios : Object.keys(st.sq || {}).map((id) => ({ id, name: st.sq[id].n, team: st.sq[id].t }));
+
   const queue = []; // { text, commit }
 
   // 1) Noticias
@@ -196,8 +207,8 @@ export async function avisar(env, deps) {
     }
   }
 
-  // 2) Alineaciones confirmadas (todos los partidos; ⭐ marca a tus jugadores). Cada 30 min y solo de día.
-  if (doConf && rConf.status === "fulfilled" && Array.isArray(rConf.value.matches)) {
+  // 2) Alineaciones confirmadas (todos los partidos; ⭐ marca a tus jugadores). Solo cerca de cada partido.
+  if (wantConf && rConf.status === "fulfilled" && Array.isArray(rConf.value.matches)) {
     const md = rConf.value.matchday || 0;
     const seenConf = new Set(st.conf || []);
     for (const m of rConf.value.matches) {
@@ -220,33 +231,39 @@ export async function avisar(env, deps) {
     }
   }
 
-  // 2b) Once probable actualizado: quién entra y quién sale (cada hora y solo de día).
-  if (doProb) {
+  // 2b) Once probable actualizado: quién entra y quién sale. Se lee directo de FutbolFantasy en cada pasada
+  // (cada 5 min) para los partidos de las próximas 72 h; solo avisa si el once cambia de verdad.
+  if (!quiet) {
     try {
-      const est = await getJson(f, "alineaciones-estado");
-      const md = est.matchday || 0;
+      if (doList) {
+        const est = await getJson(f, "alineaciones-estado");
+        const items = (est.items || []).filter((i) => i && i.home && i.away).map((i) => ({ home: i.home, away: i.away, ko: i.ko || 0 }));
+        if (items.length && JSON.stringify(items) !== JSON.stringify(st.ml || null)) { st.ml = items; st.mlMd = est.matchday || 0; dirty = true; }
+      }
       st.pr = st.pr || {};
-      for (const it of est.items || []) {
-        if (!it || !it.home || !it.away) continue;
-        const key = md + ":" + norm(it.home) + "-" + norm(it.away);
+      const todo = (st.ml || []).filter((m) => near(m.ko, 0, 72 * 3600e3));
+      const res = await Promise.all(todo.map(async (m) => {
+        try { return { m, d: await getJson(f, "probables?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&t=" + now) }; } catch (e) { return null; }
+      }));
+      for (const r of res) {
+        if (!r) continue;
+        const { m, d } = r;
+        const key = (st.mlMd || 0) + ":" + norm(m.home) + "-" + norm(m.away);
         const prev = st.pr[key];
-        if (prev && prev.at === it.at) continue; // FutbolFantasy no ha tocado este partido
-        let d;
-        try { d = await getJson(f, "probables?home=" + encodeURIComponent(it.home) + "&away=" + encodeURIComponent(it.away)); } catch (e) { continue; }
         const H = (d.home && d.home.starters || []).map((p) => p.name), A = (d.away && d.away.starters || []).map((p) => p.name);
         if (H.length < 10 || A.length < 10) continue; // página sin once: no se interpreta como "han salido todos"
-        const nuevo = { at: it.at, h: H, a: A };
+        const nuevo = { h: H, a: A };
         if (!prev || firstRun) { st.pr[key] = nuevo; dirty = true; continue; } // primera vez que lo vemos: se guarda sin avisar
-        const diff = (team, now, before) => {
-          const nb = new Set(before.map(norm)), nn = new Set(now.map(norm));
-          const entra = now.filter((x) => !nb.has(norm(x))), sale = before.filter((x) => !nn.has(norm(x)));
+        const diff = (team, now2, before) => {
+          const nb = new Set(before.map(norm)), nn = new Set(now2.map(norm));
+          const entra = now2.filter((x) => !nb.has(norm(x))), sale = before.filter((x) => !nn.has(norm(x)));
           if (!entra.length && !sale.length) return "";
           return "<b>" + esc(team) + "</b>: " + (entra.length ? "entra " + esc(entra.map((x) => star(squad, team, x)).join(", ")) : "") + (entra.length && sale.length ? " · " : "") + (sale.length ? "sale " + esc(sale.map((x) => star(squad, team, x)).join(", ")) : "");
         };
-        const lineas = [diff(it.home, H, prev.h || []), diff(it.away, A, prev.a || [])].filter(Boolean);
-        if (!lineas.length) continue; // cambió la hora pero no el once: no se avisa (ni se guarda)
+        const lineas = [diff(m.home, H, prev.h || []), diff(m.away, A, prev.a || [])].filter(Boolean);
+        if (!lineas.length) continue;
         const upd = Math.max((d.home && d.home.updatedAt) || 0, (d.away && d.away.updatedAt) || 0);
-        const text = "🔄 <b>Once probable actualizado</b>\n" + esc(it.home) + " – " + esc(it.away) + (upd ? " · act. " + hhmm(upd) : "") + "\n" + lineas.join("\n");
+        const text = "🔄 <b>Once probable actualizado</b>\n" + esc(m.home) + " – " + esc(m.away) + (upd ? " · act. " + hhmm(upd) : "") + "\n" + lineas.join("\n");
         queue.push({ text, commit: () => { st.pr[key] = nuevo; dirty = true; } });
       }
     } catch (e) {}
