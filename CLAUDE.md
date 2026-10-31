@@ -7,7 +7,7 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 - Comprobar yo mismo la web y las APIs (navegador/API), sin pedirle a Edu que lo haga.
 - Poco texto, visuales claros, nada de aspecto "IA" (degradados, textos largos).
 - Solo valores de mercado de Futmondo (nada de Liga Fantasy Oficial, Mister, Comunio, Biwenger, Fantasy Marca).
-- Sin recargas automáticas visibles.
+- Sin recargas automáticas visibles ni saltos de pantalla.
 - Antes de subir: `node --check` de los JS y subir `?v=` en futmondo/guiafantasy/index.html.
 - Si una fuente falla, mostrar el último dato bueno, nunca pantalla vacía.
 

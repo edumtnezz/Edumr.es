@@ -1,13 +1,16 @@
 # AGENTS.md — proyecto web edumr.es
 
 ## Cómo trabajo aquí
-- Al desplegar, usar SIEMPRE `deploy.ps1` (wrangler fijado a `4.131.1`). Nunca subir la versión.
-- Tras cada cambio visible, subir la versión del CSS/JS afectado (`?v=N`) en el HTML y desplegar.
+- Se despliega con un push a `main` (GitHub Action, ver "Despliegue automático"). `deploy.ps1` queda solo como plan B manual desde el PC (wrangler fijado a `4.131.1`; no subir esa versión).
+- Tras cada cambio visible, subir la versión del CSS/JS afectado (`?v=N`) en el HTML y hacer push.
+- Antes de subir: `node --check` de los JS tocados.
 
 ## REGLA IMPORTANTE: fallos visuales → captura real
 Siempre que el usuario reporte un error/fallo, ANTES de tocar nada, hacer una **captura real de la web con Chrome headless** y mirarla, y volver a capturar despues del arreglo para confirmar.
 
-Script de captura:
+Desde una sesión en la nube (sin el PC de Edu) hacer la captura con el navegador disponible (Chrome o el integrado), a ~390 px de ancho; el script de abajo es solo para el PC de Edu.
+
+Script de captura (PC de Edu, Windows):
 ```
 & "C:\Program Files\Google\Chrome\Application\chrome.exe" --headless=new --disable-gpu `
   --hide-scrollbars --window-size=1400,900 --virtual-time-budget=7000 `
@@ -20,7 +23,7 @@ Para ver estilos/posiciones calculadas (depurar huecos, etc.) usar el CDP:
 
 ## Mapa rápido
 - Web principal: `index.html`, `styles.css`, `script.js`, `theme-init.js`.
-- Juegos (hub): `futmondo/` (hub), `futmondo/quiniela/`, `futmondo/porra/`, `futmondo/pujas/`.
+- Juegos (hub): `futmondo/` (hub), `futmondo/quiniela/`, `futmondo/porra/`, `futmondo/lapuja/`.
 - CSS compartido de los juegos: `futmondo/quiniela/quiniela.css`.
 - Tema claro/oscuro compartido: `futmondo/theme.js` (clave `theme` en localStorage; por defecto CLARO).
 - Backend: `functions/api/laquiniela/[[path]].js` (KV namespace PORRA `4f99553a34954704b9786bbb14ca74c5`).
