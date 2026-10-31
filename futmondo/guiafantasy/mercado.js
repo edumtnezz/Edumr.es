@@ -904,6 +904,8 @@
     node.addEventListener("keydown", (e) => { if (e.key === "Enter") go(e); });
     return node;
   }
+  // Escudo de la cabecera de una alineación (alineacion.js): lleva a la página del club
+  function cardClub(card, team) { try { const i = card && card.querySelector(".al-head img"); if (i) clubLink(i, team); } catch (e) {} return card; }
   // Jornadas que ha JUGADO cada equipo (partidos terminados). Los 5 puntos de "fitness" son de los
   // últimos 5 partidos jugados, así que si un partido se suspende/aplaza (Rayo–Athletic) esa jornada
   // no cuenta y las etiquetas J deben saltársela.
@@ -1092,7 +1094,7 @@
   }
   let mpTeams = { home: "", away: "" }, mpCambios = [], mpPairs = [], mpReds = [], mpGm = null, mpConf = null, mpLive = false;
   function mpNewCard(side, name, crest, subtitle, mode, photoMap, bench) {
-    return window.EduAlineacion.card(xiToStarters(side, photoMap, mode === "played"), name, crest, subtitle, all, mode, bench);
+    return cardClub(window.EduAlineacion.card(xiToStarters(side, photoMap, mode === "played"), name, crest, subtitle, all, mode, bench), name);
   }
   function mpXiTeam(side, crest, evIdx, showPts) {
     const col = el("div", "alin-teamcol mpage-xi-team");
@@ -1557,7 +1559,7 @@
           if (p.i && !p.o) { const usedO = P.map((q) => q.o).filter(Boolean); const c = outs.filter((x) => usedO.indexOf(x) < 0 && Math.abs(Number(x.sw.min) - p.min) <= 1); if (c.length === 1) p.o = c[0]; }
         });
         P.forEach((p) => { if (p.o && p.i) { p.o.sw.with = [p.i]; p.i.sw.with = [p.o]; mpPairs.push({ side: name === m.home ? "home" : "away", min: p.min, x: p.x, inN: window.EduAlineacion.nameOf(p.i, name, all), outN: window.EduAlineacion.nameOf(p.o, name, all) }); } });
-        const cardEl = window.EduAlineacion.card(st, name, crest, rival, all, "played", subsL);
+        const cardEl = cardClub(window.EduAlineacion.card(st, name, crest, rival, all, "played", subsL), name);
         if (mpLive) { const tt = cardEl.querySelector(".al-title"); if (tt) tt.innerHTML = "Partido <b>en juego</b>"; cardEl.classList.add("al-live"); }
         return cardEl;
       };
@@ -1586,9 +1588,9 @@
       } else if (xiKind === "probable" && window.EduAlineacion) {
         // Nuevo campo EduMR (alineacion.js): foto de Futmondo, % de titularidad y alternativa
         pitches.classList.add("al-pair");
-        pitches.appendChild(window.EduAlineacion.card(xi.home || {}, m.home, m.homeCrest, "vs " + m.away, all, "probable", (xi.home && xi.home.bench) || []));
+        pitches.appendChild(cardClub(window.EduAlineacion.card(xi.home || {}, m.home, m.homeCrest, "vs " + m.away, all, "probable", (xi.home && xi.home.bench) || []), m.home));
         pitches.appendChild(el("div", "al-sep"));
-        pitches.appendChild(window.EduAlineacion.card(xi.away || {}, m.away, m.awayCrest, "en " + m.home, all, "probable", (xi.away && xi.away.bench) || []));
+        pitches.appendChild(cardClub(window.EduAlineacion.card(xi.away || {}, m.away, m.awayCrest, "en " + m.home, all, "probable", (xi.away && xi.away.bench) || []), m.away));
       } else {
       pitches.appendChild(mpXiTeam(xi.home || {}, (xi.home && xi.home.crest) || m.homeCrest, idxH, false));
       pitches.appendChild(mpXiTeam(xi.away || {}, (xi.away && xi.away.crest) || m.awayCrest, idxA, false));
@@ -1832,14 +1834,14 @@
           const chips = el("div", "lv-chips");
           if (t.f) chips.appendChild(el("span", "lv-chip", t.f));
           if (t.r) chips.appendChild(el("span", "lv-chip lv-rate" + rcls(t.r), String(t.r.toFixed ? t.r.toFixed(1) : t.r).replace(".", ",")));
-          tx.appendChild(chips); d.appendChild(tx); top.appendChild(d);
+          tx.appendChild(chips); d.appendChild(tx); clubLink(d, t.name); top.appendChild(d);
         });
         c.appendChild(top);
         const pitch = el("div", "lv-pitch");
         pitch.appendChild(el("div", "lv-mid-line"));
         pitch.appendChild(el("div", "lv-circle"));
         [[ln.h, "h", m.homeCrest], [ln.a, "a", m.awayCrest]].forEach(([t, w, cr]) => {
-          const tg = el("div", "lv-ptag " + w); const im = el("img"); im.alt = ""; im.src = cr || ""; tg.appendChild(im); tg.appendChild(el("span", null, t.name)); pitch.appendChild(tg);
+          const tg = el("div", "lv-ptag " + w); const im = el("img"); im.alt = ""; im.src = cr || ""; tg.appendChild(im); tg.appendChild(el("span", null, t.name)); clubLink(tg, t.name); pitch.appendChild(tg);
         });
         const place = (t, home) => (t.st || []).forEach((q) => {
           if (q.x == null || q.y == null) return;
