@@ -361,3 +361,8 @@ html, body { overflow-anchor: auto; }
 .eq-calrow svg.ffx-ha,.eq-next svg.ffx-ha{width:24px;height:24px;padding:5px;margin:0;flex:none;color:#fff}
 .eq-calrow svg.ffx-ha.h,.eq-next svg.ffx-ha.h{background:#16a34a}
 .eq-calrow svg.ffx-ha.a,.eq-next svg.ffx-ha.a{background:#6366f1}
+/* Casa / fuera: mismo badge en la ficha del jugador (próximos partidos) */
+.ffx-top svg.ffx-ha,.ffx-r svg.ffx-ha{color:#fff;box-sizing:border-box}
+.ffx-top svg.ffx-ha{width:20px;height:20px;padding:4px}
+.ffx-top svg.ffx-ha.h,.ffx-r svg.ffx-ha.h{background:#16a34a}
+.ffx-top svg.ffx-ha.a,.ffx-r svg.ffx-ha.a{background:#6366f1}
