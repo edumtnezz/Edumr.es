@@ -292,7 +292,7 @@
       if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); inn.appendChild(im); }
       ph.appendChild(inn); posRingCls(ph, p.role, p.role2);
       const wrap = el("div", "plt-phw"); wrap.appendChild(ph);
-      if (p.logo) { const lg = el("img", "plt-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; wrap.appendChild(lg); }
+      if (p.logo) { const lg = el("img", "plt-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; clubLink(lg, p.team); wrap.appendChild(lg); }
       const rst = statusInfo(p.status);
       if (rst) wrap.appendChild(el("span", "plt-st " + rst.cls, rst.label));
       card.appendChild(wrap);
@@ -585,7 +585,12 @@
         row.style.setProperty("--uc", c[1]);
         const left = el("div", "up-left");
         const ph = x.photo ? el("img", "up-photo") : null;
-        if (ph) { ph.src = x.photo; ph.alt = ""; ph.loading = "lazy"; ph.addEventListener("error", () => ph.remove()); left.appendChild(ph); }
+        if (ph) {
+          ph.src = x.photo; ph.alt = ""; ph.loading = "lazy"; ph.addEventListener("error", () => ph.remove()); left.appendChild(ph);
+          // La foto grande es la del jugador cuando la noticia habla de uno solo
+          const p0 = x.players && x.players.length === 1 && x.players[0].photo === x.photo ? playerByFullName(x.players[0].name) : null;
+          if (p0) { ph.classList.add("club-link"); ph.addEventListener("click", () => openFicha(p0)); }
+        }
         const ib = el("span", "up-ico");
         ib.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + c[2] + "</svg>";
         left.appendChild(ib);
@@ -600,6 +605,8 @@
           const det = el("div", "up-chg");
           x.players.forEach((p) => {
             const r = el("div", "up-pl");
+            const pf = playerByFullName(p.name);
+            if (pf) { r.classList.add("club-link"); r.setAttribute("role", "link"); r.addEventListener("click", () => openFicha(pf)); }
             if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); r.appendChild(im); }
             r.appendChild(el("strong", "", p.name));
             const tr = el("span", "up-tr");
@@ -629,7 +636,11 @@
       const upd = $("updUpdated");
       if (upd && d && d.updatedAt) upd.textContent = "· " + haceTxt(d.updatedAt);
     } catch (e) {}
-    if (updData) paintActualizaciones();
+    if (updData) {
+      paintActualizaciones();
+      // Los enlaces a la ficha necesitan el mercado cargado: si aún no está, se pintan en cuanto llegue (sin mover la pantalla)
+      if (!all || !all.length) load().then(() => { if (currentTab === "actualizaciones" && all && all.length) { const y = window.scrollY; paintActualizaciones(); window.scrollTo(0, y); } }).catch(() => {});
+    }
     else box.innerHTML = '<p class="muted small">No se han podido cargar las actualizaciones.</p>';
   }
 
@@ -1990,7 +2001,7 @@
           const two = el("div", "lv-form");
           [[ln && ln.h ? ln.h.name : m.home, fm2[0], m.homeCrest], [ln && ln.a ? ln.a.name : m.away, fm2[1], m.awayCrest]].forEach(([nm, arr, cr]) => {
             const col = el("div", "lv-fcol");
-            const hd = el("div", "lv-fhead"); if (cr) { const ci = el("img"); ci.alt = ""; ci.src = cr; hd.appendChild(ci); } hd.appendChild(el("span", null, nm)); col.appendChild(hd);
+            const hd = el("div", "lv-fhead"); if (cr) { const ci = el("img"); ci.alt = ""; ci.src = cr; hd.appendChild(ci); } hd.appendChild(el("span", null, nm)); clubLink(hd, nm); col.appendChild(hd);
             (arr || []).slice().reverse().forEach((x) => {
               const r = el("div", "lv-frow");
               r.appendChild(el("span", "lv-fd", x.d ? fdm(x.d) : ""));
@@ -2626,6 +2637,17 @@
     if (!any) box.appendChild(el("p", "market-empty", sel ? "Nadie en ese estado ahora mismo." : "Sin bajas ni dudas ahora mismo."));
   }
 
+  // Nombre completo de otra fuente (p. ej. "Jan Oblak") -> jugador del mercado ("Oblak").
+  // Solo si es seguro: todas las palabras del nombre del mercado están en el nombre y gana uno solo (el de más palabras). Si hay duda, no hay enlace.
+  function playerByFullName(name) {
+    if (!all || !all.length) return null;
+    const fold = (x) => String(x || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter(Boolean);
+    const ut = fold(name);
+    if (!ut.length) return null;
+    let best = [], n = 0;
+    all.forEach((p) => { const t = fold(p.name); if (!t.length || !p.id || !t.every((w) => ut.indexOf(w) >= 0)) return; if (t.length > n) { n = t.length; best = [p]; } else if (t.length === n) best.push(p); });
+    return best.length === 1 ? best[0] : null;
+  }
   function findPlayer(name) {
     const q = stripAccents(name).trim();
     if (!q) return null;
@@ -5738,7 +5760,7 @@
       posRingCls(ph, p.role, p.role2);
       const wrap = el("div", "plt-phw");
       wrap.appendChild(ph);
-      if (p.logo) { const lg = el("img", "plt-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; wrap.appendChild(lg); }
+      if (p.logo) { const lg = el("img", "plt-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; clubLink(lg, p.team); wrap.appendChild(lg); }
       const rst = statusInfo(p.status);
       if (rst) wrap.appendChild(el("span", "plt-st " + rst.cls, rst.label));
       if (p.prob != null && !o.noProb) { const pb = el("span", "plt-prob", p.prob + "%"); pb.title = "Probabilidad de jugar: " + p.prob + "%"; wrap.appendChild(pb); }
