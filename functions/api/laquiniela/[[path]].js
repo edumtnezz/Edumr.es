@@ -4941,6 +4941,16 @@ async function handleGet({ request, env: env0, params }) {
     if (!user) return json({ error: "Inicia sesión para ver tu histórico." }, 401);
     try { return json({ historial: await getCapitanHistorial(env, user) }); } catch (e) { return json({ historial: [], error: String(e) }); }
   }
+  // Once probable de FutbolFantasy de los dos equipos de un partido (para los avisos de Telegram: quién entra y sale).
+  if (path === "probables") {
+    const h = url.searchParams.get("home") || "", a = url.searchParams.get("away") || "";
+    if (!h || !a) return json({ error: "faltan equipos" }, 400);
+    try {
+      const [H, A] = await Promise.all([getFFTeam(env, h), getFFTeam(env, a)]);
+      const side = (name, t) => ({ name, formation: t.formation || "", updatedAt: t.updatedAt || 0, starters: (t.starters || []).map((p) => ({ name: p.full || p.name, short: p.name, prob: p.prob })) });
+      return json({ home: side(h, H), away: side(a, A) });
+    } catch (e) { return json({ error: String((e && e.message) || e).slice(0, 120) }, 500); }
+  }
   if (path === "mios") {
     try { return json(await getMios(env)); } catch (e) { return json({ mios: [], cover: null, error: String(e && e.message || e).slice(0, 120) }); }
   }

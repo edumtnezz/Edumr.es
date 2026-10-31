@@ -1,17 +1,19 @@
 // avisos.js — avisos de Telegram para Edu (liga "Con Permisoo").
 // Se ejecuta dentro del cron de 15 min (index.js) y solo manda lo NUEVO:
-//   1) Noticias de FutbolFantasy que nombran a un jugador tuyo, o que hablan de
-//      lesiones / sanciones / dudas / titularidad.
-//   2) Alineaciones confirmadas de los partidos donde juega alguno de tus jugadores
-//      (quién está en el once y quién no).
-//   3) Cambios en tus jugadores: el % de jugar de FutbolFantasy y el estado de Futmondo.
+//   1) TODAS las noticias nuevas de FutbolFantasy (⭐ si nombran a un jugador tuyo,
+//      🔔 si hablan de lesiones / sanciones / dudas / titularidad).
+//   2) Alineación confirmada de TODOS los partidos (⭐ marca a tus jugadores).
+//   3) Once probable actualizado: quién entra y quién sale (de todos los partidos).
+//   4) Cambios en tus jugadores: el % de jugar de FutbolFantasy y el estado de Futmondo.
+// Las alineaciones se comprueban solo de día y menos a menudo (confirmada cada 30 min,
+// probable cada hora) para no gastar las escrituras del plan gratis de Cloudflare.
 // Todo sale de la propia web (/api/laquiniela/...), que a su vez lee fuentes reales.
 // Si un dato falta no se inventa: simplemente no se avisa.
 // Sin TELEGRAM_BOT_TOKEN (secreto de Cloudflare) no hace nada.
 
 const SITE = "https://edumr.es/api/laquiniela/";
 const STATE_KEY = "tg:avisos:v1";
-const MAX_MSGS = 6;                 // mensajes por pasada; lo que sobre espera a la siguiente
+const MAX_MSGS = 10;                // mensajes por pasada; lo que sobre espera a la siguiente
 const NEWS_MAX_AGE = 4 * 3600e3;    // no se avisa de noticias con más de 4 h
 const QUIET_FROM = 0, QUIET_TO = 8; // silencio de 00:00 a 08:00 (hora de Madrid)
 
@@ -67,6 +69,9 @@ function madridOffsetMs(utcMs) {
 function madridHour(now) {
   return Number(new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Madrid", hourCycle: "h23", hour: "2-digit" }).format(new Date(now)));
 }
+function hhmm(ms) {
+  return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(ms));
+}
 // "31/10" + "16:14" (hora de Madrid) -> milisegundos. 0 si falta algún dato.
 function newsAt(date, time, now) {
   const dm = String(date || "").match(/(\d{1,2})\/(\d{1,2})/);
@@ -98,6 +103,15 @@ function inLineup(pname, names) {
   const toks = norm(pname).split(" ").filter((t) => t.length >= 4 && !STOP.has(t));
   const pn = norm(pname);
   return names.some((ln) => ln === pn || ln.split(" ").some((t) => toks.indexOf(t) >= 0));
+}
+
+// ¿Es de mis jugadores? (mismo equipo + nombre parecido). Devuelve el nombre con ⭐ si lo es.
+function star(squad, team, name) {
+  const mine = squad.some((p) => sameTeam(p.team, team) && inLineup(p.name, [norm(name)]));
+  return (mine ? "⭐" : "") + name;
+}
+function posLine(label, arr, squad, team) {
+  return arr && arr.length ? label + ": " + arr.map((p) => esc(star(squad, team, p.name))).join(", ") : "";
 }
 
 // ---------- Telegram ----------
@@ -155,6 +169,10 @@ export async function avisar(env, deps) {
   const squad = mios && mios.length ? mios : Object.keys(st.sq || {}).map((id) => ({ id, name: st.sq[id].n, team: st.sq[id].t }));
 
   const quiet = madridHour(now) >= QUIET_FROM && madridHour(now) < QUIET_TO;
+  const mnt = new Date(now).getUTCMinutes();
+  const all = !!(deps && deps.allTicks);                 // solo para pruebas
+  const doConf = !quiet && (all || mnt % 30 < 15);       // cada 30 min
+  const doProb = !quiet && (all || mnt < 15);            // cada hora
   const queue = []; // { text, commit }
 
   // 1) Noticias
@@ -169,37 +187,69 @@ export async function avisar(env, deps) {
       if (!firstRun && !(at && now - at <= NEWS_MAX_AGE)) continue;
       const hits = ownMatch(title, squad);
       const kw = KW.test(norm(title));
-      if (!hits.length && !kw) continue;
-      cands.push({ x, title, at, hits });
+      cands.push({ x, title, at, hits, kw });
     }
     cands.sort((a, b) => a.at - b.at); // las más antiguas primero
     for (const c of cands) {
-      const text = (c.hits.length ? "⭐ " : "🔔 ") + "<b>" + esc(c.title) + "</b>" + (c.hits.length ? "\nCoincide con tu jugador: " + esc(c.hits.join(", ")) : "") + "\n" + c.x.link;
+      const text = (c.hits.length ? "⭐ " : c.kw ? "🔔 " : "📰 ") + "<b>" + esc(c.title) + "</b>" + (c.hits.length ? "\nCoincide con tu jugador: " + esc(c.hits.join(", ")) : "") + "\n" + c.x.link;
       queue.push({ text, commit: () => { st.news = (st.news || []).concat([c.x.link]).slice(-200); dirty = true; } });
     }
   }
 
-  // 2) Alineaciones confirmadas (solo partidos con jugadores tuyos)
-  if (rConf.status === "fulfilled" && Array.isArray(rConf.value.matches)) {
+  // 2) Alineaciones confirmadas (todos los partidos; ⭐ marca a tus jugadores). Cada 30 min y solo de día.
+  if (doConf && rConf.status === "fulfilled" && Array.isArray(rConf.value.matches)) {
     const md = rConf.value.matchday || 0;
     const seenConf = new Set(st.conf || []);
     for (const m of rConf.value.matches) {
       if (!m || !m.home || !m.away) continue;
       const key = md + ":" + norm(m.home.name) + "-" + norm(m.away.name);
       if (seenConf.has(key)) continue;
-      const dentro = [], fuera = [];
+      const commit = () => { st.conf = (st.conf || []).concat([key]).slice(-120); dirty = true; };
+      if (firstRun) { commit(); continue; }
+      const cuando = [m.day, m.time].filter(Boolean).join(" ");
+      const fuera = [];
       for (const p of squad) {
         const side = sameTeam(p.team, m.home.name) ? m.home : sameTeam(p.team, m.away.name) ? m.away : null;
-        if (!side) continue;
-        (inLineup(p.name, lineupNames(side)) ? dentro : fuera).push(p.name);
+        if (side && !inLineup(p.name, lineupNames(side))) fuera.push(p.name);
       }
-      const commit = () => { st.conf = (st.conf || []).concat([key]).slice(-120); dirty = true; };
-      if (firstRun || (!dentro.length && !fuera.length)) { commit(); continue; }
-      const cuando = [m.day, m.time].filter(Boolean).join(" ");
+      const bloque = (t) => ["<b>" + esc(t.name) + "</b>" + (t.formation ? " (" + esc(t.formation) + ")" : ""),
+        posLine("Por", t.portero, squad, t.name), posLine("Def", t.defensas, squad, t.name), posLine("Med", t.medios, squad, t.name), posLine("Del", t.delanteros, squad, t.name)].filter(Boolean).join("\n");
       const text = "✅ <b>Alineación confirmada</b>\n" + esc(m.home.name) + " – " + esc(m.away.name) + (cuando ? " · " + esc(cuando) : "") +
-        (dentro.length ? "\nEn el once: " + esc(dentro.join(", ")) : "") + (fuera.length ? "\nFuera del once: " + esc(fuera.join(", ")) : "");
+        "\n\n" + bloque(m.home) + "\n\n" + bloque(m.away) + (fuera.length ? "\n\nTuyos fuera del once: " + esc(fuera.join(", ")) : "");
       queue.push({ text, commit });
     }
+  }
+
+  // 2b) Once probable actualizado: quién entra y quién sale (cada hora y solo de día).
+  if (doProb) {
+    try {
+      const est = await getJson(f, "alineaciones-estado");
+      const md = est.matchday || 0;
+      st.pr = st.pr || {};
+      for (const it of est.items || []) {
+        if (!it || !it.home || !it.away) continue;
+        const key = md + ":" + norm(it.home) + "-" + norm(it.away);
+        const prev = st.pr[key];
+        if (prev && prev.at === it.at) continue; // FutbolFantasy no ha tocado este partido
+        let d;
+        try { d = await getJson(f, "probables?home=" + encodeURIComponent(it.home) + "&away=" + encodeURIComponent(it.away)); } catch (e) { continue; }
+        const H = (d.home && d.home.starters || []).map((p) => p.name), A = (d.away && d.away.starters || []).map((p) => p.name);
+        if (H.length < 10 || A.length < 10) continue; // página sin once: no se interpreta como "han salido todos"
+        const nuevo = { at: it.at, h: H, a: A };
+        if (!prev || firstRun) { st.pr[key] = nuevo; dirty = true; continue; } // primera vez que lo vemos: se guarda sin avisar
+        const diff = (team, now, before) => {
+          const nb = new Set(before.map(norm)), nn = new Set(now.map(norm));
+          const entra = now.filter((x) => !nb.has(norm(x))), sale = before.filter((x) => !nn.has(norm(x)));
+          if (!entra.length && !sale.length) return "";
+          return "<b>" + esc(team) + "</b>: " + (entra.length ? "entra " + esc(entra.map((x) => star(squad, team, x)).join(", ")) : "") + (entra.length && sale.length ? " · " : "") + (sale.length ? "sale " + esc(sale.map((x) => star(squad, team, x)).join(", ")) : "");
+        };
+        const lineas = [diff(it.home, H, prev.h || []), diff(it.away, A, prev.a || [])].filter(Boolean);
+        if (!lineas.length) continue; // cambió la hora pero no el once: no se avisa (ni se guarda)
+        const upd = Math.max((d.home && d.home.updatedAt) || 0, (d.away && d.away.updatedAt) || 0);
+        const text = "🔄 <b>Once probable actualizado</b>\n" + esc(it.home) + " – " + esc(it.away) + (upd ? " · act. " + hhmm(upd) : "") + "\n" + lineas.join("\n");
+        queue.push({ text, commit: () => { st.pr[key] = nuevo; dirty = true; } });
+      }
+    } catch (e) {}
   }
 
   // 3) Cambios en tus jugadores (% de jugar de FutbolFantasy y estado de Futmondo)
@@ -226,7 +276,7 @@ export async function avisar(env, deps) {
   if (firstRun) {
     queue.forEach((q) => q.commit()); // primera vez: se guarda lo que hay sin mandarlo
     st.init = true; dirty = true;
-    await send(env, f, st.chat, "✅ <b>Avisos activados</b>" + (mios && mios.length ? "\nVigilo " + mios.length + " jugadores tuyos" + (cover && cover.known < cover.total ? " (sigo localizando el resto de tu plantilla)" : "") + "." : "") + "\nTe aviso de noticias de tus jugadores y de lesiones, sanciones o dudas, de alineaciones confirmadas y de cambios en tus jugadores.\nSilencio de 00:00 a 08:00.");
+    await send(env, f, st.chat, "✅ <b>Avisos activados</b>" + (mios && mios.length ? "\nVigilo " + mios.length + " jugadores tuyos" + (cover && cover.known < cover.total ? " (sigo localizando el resto de tu plantilla)" : "") + "." : "") + "\nTe aviso de todas las noticias nuevas (⭐ las de tus jugadores), del once probable (quién entra y sale), de alineaciones confirmadas y de cambios en tus jugadores.\nSilencio de 00:00 a 08:00.");
   } else if (quiet) {
     queue.forEach((q) => q.commit()); // de noche no suena nada: se guarda como visto
   } else {
