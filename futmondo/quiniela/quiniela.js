@@ -249,7 +249,7 @@ function updateCountdown() {
     timer.textContent = `${pad(h)}:${pad(m)}:${pad(s)}`;
   }
 
-  info.textContent = "Se cierra cuando empiece el primer partido";
+  info.textContent = "Se bloquea cuando empiece el siguiente partido";
 }
 
 /* ---------- Render ---------- */
