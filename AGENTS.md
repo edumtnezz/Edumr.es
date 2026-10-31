@@ -63,6 +63,15 @@ Para ver estilos/posiciones calculadas (depurar huecos, etc.) usar el CDP:
 
 
 
+## 🔔 Avisos de Telegram (31/10/2026) — `cron/src/avisos.js`
+- Va dentro del cron de 15 min (`cron/src/index.js`, tras refrescar cachés). Bot **nuevo, solo para avisos** (no es @eduarIA_bot, que es el que edita la web).
+- Secreto en Cloudflare (Worker `edumr-cron` → Settings → Variables y secretos, tipo *Secret*): `TELEGRAM_BOT_TOKEN`. El token NUNCA va en el chat ni en el repo. El chat de Edu se descubre solo: el primer chat privado que escribe `/start` al bot queda guardado (opcional: secreto `TELEGRAM_CHAT_ID`). Sin token no hace nada.
+- Estado en KV `PORRA`, clave `tg:avisos:v1` (solo escribe cuando manda o cambia algo, por el tope de 1.000 puts/día).
+- Qué avisa (solo lo NUEVO): ⭐ noticias que nombran a un jugador de Con Permisoo; 🔔 noticias con lesión/sanción/duda/titularidad (regex `KW`); ✅ alineación confirmada de partidos con jugadores suyos (en el once / fuera del once); 🔄 cambios en sus jugadores (% de jugar de FutbolFantasy y estado de Futmondo).
+- Su plantilla sale de `/api/laquiniela/clausulas` → campo `mios` (completa, sin recortar a 40). Cache `clausulas:v16`.
+- Reglas: silencio 00:00–08:00 Madrid (se guarda como visto, no se manda), máx. 6 mensajes por pasada, noticias de más de 4 h no se avisan, primera pasada solo guarda y manda "Avisos activados". Si falla una fuente, no se avisa (nunca se inventa).
+- Pendiente de verificar con datos reales: formato de nombres de la alineación confirmada de Comuniate (cuando haya partidos con once confirmado) y tamaño real de `mios`.
+
 ## 🚫 Fallos ya reportados por Edu (NO repetir; comprobar siempre antes de dar algo por hecho)
 Antes de tocar partidos/alineaciones/ficha, repasar esta lista y verificar con captura real.
 - **Fases del partido** (siempre así): días antes = alineación PROBABLE con % y % de banquillo → rato antes = CONFIRMADA sin % → en juego = "Partido en juego" con la alineación actual (NUNCA "probable 100%") → final = resumen. Si todos los titulares están al 100% o el partido ya empezó, es confirmada/en juego.

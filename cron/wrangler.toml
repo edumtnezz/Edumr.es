@@ -2,6 +2,11 @@ name = "edumr-cron"
 main = "src/index.js"
 compatibility_date = "2025-09-01"
 
+# Mismo KV que usa la web (PORRA): aquí solo guarda qué avisos de Telegram ya se mandaron.
+[[kv_namespaces]]
+binding = "PORRA"
+id = "4f99553a34954704b9786bbb14ca74c5"
+
 [triggers]
 # El primero (cada 15 min) refresca cachés de noticias/mercado/etc.
 # El segundo (todos los días a las 8:00 UTC) es el vigilante de

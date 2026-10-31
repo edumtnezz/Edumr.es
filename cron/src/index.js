@@ -1,6 +1,8 @@
 // edumr-cron: agente 24h que mantiene frescas las noticias (y demás cachés).
 // Cada 15 min llama al endpoint que aplica nuestras reglas de limpieza y deja
 // el resultado cacheado en KV, para que la web lo sirva al instante.
+import { avisar } from "./avisos.js";
+
 export default {
   async scheduled(event, env, ctx) {
     // "0 8 * * *" = vigilante diario: comprueba que las 20 páginas de
@@ -34,6 +36,10 @@ export default {
         await r.text();
       } catch (e) {}
     }));
+    // Avisos de Telegram (noticias, alineaciones, cambios en tus jugadores).
+    // Va DESPUÉS de refrescar las cachés para leer datos frescos. Sin el secreto
+    // TELEGRAM_BOT_TOKEN no hace nada, y un fallo aquí nunca rompe lo de arriba.
+    try { await avisar(env); } catch (e) {}
   },
   async fetch() {
     return new Response("edumr-cron ok", { status: 200, headers: { "content-type": "text/plain" } });
