@@ -976,7 +976,6 @@
       try { renderRachas(); } catch (e) {}
       try { if (typeof clausApply === "function") clausApply(); } catch (e) {}
       try { if (pltInit && pltPlayers.length) renderPltList(); } catch (e) {}
-      try { if (prbInit) renderProbables(); } catch (e) {}
     } catch (e) {} finally { playedJBusy = false; }
   }
   function marketInfo(name, team) {
@@ -2860,7 +2859,7 @@
   // Clausulazo jugoso, Analiza tu equipo) viven aquí dentro en vez de obligar
   // a deslizar o poner flechas. Si la pestaña activa es una de las del menú,
   // el botón se pone verde para saber dónde estás sin abrir el desplegable.
-  const MORE_TABS = { actualizaciones: "Últimas actualizaciones", fichajes: "Fichajes", clausulazos: "Clausulazo jugoso", probables: "Jugadores probables", analiza: "Analiza tu equipo", plantillas: "Plantillas (prueba)" };
+  const MORE_TABS = { actualizaciones: "Últimas actualizaciones", fichajes: "Fichajes", clausulazos: "Clausulazo jugoso", analiza: "Analiza tu equipo", plantillas: "Plantillas (prueba)" };
   function closeMoreMenu() {
     const menu = $("cxMoreMenu"), btn = $("cxMoreBtn");
     if (menu) menu.classList.add("hidden");
@@ -2918,7 +2917,6 @@
     if (name === "fichajes") renderFichajes();
     if (name === "actualizaciones") renderActualizaciones();
     if (name === "plantillas") initPlantillas();
-    if (name === "probables") initProbables();
     if (name === "analiza") { fetch(API + "/me", { cache: "no-store" }).then((r) => r.json()).then((d) => { const m = $("anMsg"); if (!(d && d.user) && m && !m.querySelector(".an-login")) anMsgSet(m, "Inicia sesión para analizar tu equipo."); }).catch(() => {}); }
     try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
     try {
@@ -3062,12 +3060,11 @@
     }, 150);
   })();
   document.addEventListener("cx:swr", (ev) => { const u = (ev.detail && ev.detail.url) || ""; if (/\/mercado/.test(u) && typeof load === "function") load(); });
-  let lastMarketAt = 0, lastFfAt = 0;
+  let lastMarketAt = 0;
   async function load() {
     try {
       const res = await fetch(API + "/mercado");
       const d = await res.json();
-      if (d && d.ffAt) lastFfAt = d.ffAt;
       if (d.updatedAt && d.updatedAt === lastMarketAt && all.length) { updateTime(d.updatedAt); return; }
       lastMarketAt = d.updatedAt || 0;
       if (Array.isArray(d.players)) all = d.players;
@@ -3076,7 +3073,6 @@
       renderRachas();
       renderGrid();
       renderEstado();
-      try { if (prbInit) renderProbables(); } catch (e) {}
       if (all.length && !rangeInit) {
         rangeInit = true;
         setupRange();
@@ -4355,11 +4351,6 @@
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { if (document.querySelector(".eq-page, .mpage, .playerpage, .livepage")) { location.href = "/futmondo/guiafantasy/" + (t.dataset.tab === "plantillas" ? "mercado" : t.dataset.tab); return; } switchTab(t.dataset.tab); }));
   setupMoreMenu();
   let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltPeriod = "chg7", pltDir = -1, pltShown = 40, pltPlayers = [], pltSure = false;
-  let prbInit = false, prbLevelSel = "", prbPos = "", prbSort = "prob", prbShown = 40;
-  // Tramos y colores = los de FutbolFantasy (80 / 60 / 40). Las palabras solo ponen nombre a cada tramo.
-  const PRB_LV = [["", "Todos"], ["juega", "Juega"], ["prob", "Probable"], ["duda", "Duda"], ["sup", "Suplente"], ["baja", "Baja"]];
-  const PRB_COL = { juega: "#41ab58", prob: "#d9b800", duda: "#cf8236", sup: "#808080", baja: "#dc2626" };
-  const PRB_RANGE = { juega: "80 % o más", prob: "60–79 %", duda: "40–59 %", sup: "menos de 40 %" };
   // En la ficha de jugador esto (14 peticiones de jornadas) se pide DESPUÉS de pintar, para no frenar la carga.
   if (!/\/jugador(?:es)?\/[a-z0-9]{6,40}/i.test(location.pathname)) ensurePlayedJ();
   (function restoreTab() {
@@ -4380,7 +4371,7 @@
     } catch (e) {}
     let name = "";
     try {
-      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|actualizaciones|noticias|analiza|clausulazos|probables|plantillas)/);
+      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|actualizaciones|noticias|analiza|clausulazos|plantillas)/);
       if (m) name = m[1];
     } catch (e) {}
     if (!name) { try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {} }
@@ -5763,7 +5754,7 @@
       if (p.logo) { const lg = el("img", "plt-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; clubLink(lg, p.team); wrap.appendChild(lg); }
       const rst = statusInfo(p.status);
       if (rst) wrap.appendChild(el("span", "plt-st " + rst.cls, rst.label));
-      if (p.prob != null && !o.noProb) { const pb = el("span", "plt-prob", p.prob + "%"); pb.title = "Probabilidad de jugar: " + p.prob + "%"; wrap.appendChild(pb); }
+      if (p.prob != null) { const pb = el("span", "plt-prob", p.prob + "%"); pb.title = "Probabilidad de jugar: " + p.prob + "%"; wrap.appendChild(pb); }
       const phc = el("div", "plt-phc");
       phc.appendChild(wrap);
       const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
@@ -5831,126 +5822,6 @@
     if (list.length > pltShown) {
       const more = el("button", "btn-ghost market-more", "Ver más (" + (list.length - pltShown) + ")"); more.type = "button";
       more.addEventListener("click", () => { pltShown += 40; renderPltList(); });
-      box.appendChild(more);
-    }
-  }
-
-/* ---------- Jugadores probables: quién juega (probabilidad de FutbolFantasy) ---------- */
-  // Sin dato de FutbolFantasy => "" (el jugador no sale: nada de inventar un porcentaje).
-  function prbLevelOf(p) {
-    const st = String(p.status || "");
-    if (st === "redcard" || st.indexOf("injured") === 0) return "baja";
-    if (p.prob == null || isNaN(Number(p.prob))) return "";
-    const v = Number(p.prob);
-    return v >= 80 ? "juega" : v >= 60 ? "prob" : v >= 40 ? "duda" : "sup";
-  }
-  function prbSave() { try { sessionStorage.setItem("prbState", JSON.stringify({ l: prbLevelSel, p: prbPos, s: prbSort })); } catch (e) {} }
-  function prbLoadState() {
-    try {
-      const s = JSON.parse(sessionStorage.getItem("prbState") || "null");
-      if (!s) return;
-      if (PRB_LV.some((x) => x[0] === (s.l || ""))) prbLevelSel = s.l || "";
-      prbPos = s.p || "";
-      if (["prob", "avg", "points", "value"].indexOf(s.s) >= 0) prbSort = s.s;
-    } catch (e) {}
-  }
-  async function initProbables() {
-    if (prbInit) { renderProbControls(); renderProbables(); return; }
-    prbInit = true;
-    prbLoadState();
-    if (!(all && all.length)) {
-      try {
-        const d = await (await fetch(API + "/mercado")).json();
-        if (Array.isArray(d.players)) all = d.players;
-        if (d && d.ffAt) lastFfAt = d.ffAt;
-      } catch (e) {}
-    }
-    if (!(all && all.length)) { prbInit = false; const l = $("prbList"); if (l) l.innerHTML = "<p class='muted'>No se pudo cargar la lista.</p>"; return; }
-    try { ensurePlayedJ(); } catch (e) {}
-    renderProbControls();
-    renderProbables();
-  }
-  function prbRerender() { prbShown = 40; renderProbControls(); renderProbables(); }
-  function renderProbControls() {
-    const lv = $("prbLevels"), pos = $("prbPos"), sort = $("prbSort");
-    if (!lv || !pos || !sort) return;
-    const cnt = {};
-    (all || []).forEach((p) => {
-      if (prbPos && String(p.role || "").toLowerCase() !== prbPos) return;
-      const k = prbLevelOf(p); if (!k) return;
-      cnt[k] = (cnt[k] || 0) + 1; cnt[""] = (cnt[""] || 0) + 1;
-    });
-    lv.innerHTML = "";
-    PRB_LV.forEach((x) => {
-      const b = el("button", "plt-btn prb-lv" + (prbLevelSel === x[0] ? " on" : "")); b.type = "button";
-      b.appendChild(el("span", null, x[1]));
-      const n = el("small", "prb-n", String(cnt[x[0]] || 0));
-      if (PRB_COL[x[0]]) n.style.color = PRB_COL[x[0]];
-      b.appendChild(n);
-      b.addEventListener("click", () => { prbLevelSel = x[0]; prbRerender(); });
-      lv.appendChild(b);
-    });
-    pos.innerHTML = "";
-    [["", "Todos"], ["portero", "Portero"], ["defensa", "Defensa"], ["centrocampista", "Medio"], ["delantero", "Delantero"]].forEach((x) => {
-      pos.appendChild(pltBtn(x[1], prbPos === x[0], () => { prbPos = x[0]; prbRerender(); }));
-    });
-    sort.innerHTML = "";
-    [["prob", "Probabilidad"], ["avg", "Media"], ["points", "Puntos"], ["value", "Precio"]].forEach((x) => {
-      sort.appendChild(pltBtn(x[1], prbSort === x[0], () => { prbSort = x[0]; prbRerender(); }));
-    });
-  }
-  function renderProbSub(sinDato) {
-    const sub = $("prbSub");
-    if (!sub) return;
-    sub.innerHTML = "";
-    const leg = el("div", "prb-leg");
-    ["juega", "prob", "duda", "sup"].forEach((k) => {
-      const s = el("span", "prb-leg-i"); const d = el("i"); d.style.background = PRB_COL[k]; s.appendChild(d);
-      s.appendChild(document.createTextNode(PRB_LV.filter((x) => x[0] === k)[0][1] + " " + PRB_RANGE[k]));
-      leg.appendChild(s);
-    });
-    sub.appendChild(leg);
-    const meta = el("div", "prb-meta");
-    let txt = "Probabilidad de jugar según FutbolFantasy";
-    const old = lastFfAt && Date.now() - lastFfAt > 12 * 3600 * 1000;
-    if (lastFfAt) txt += " · " + (old ? "datos de hace " + Math.round((Date.now() - lastFfAt) / 3600000) + " h" : "actualizado " + horaTxt(lastFfAt));
-    if (sinDato > 0) txt += " · " + sinDato + " sin dato";
-    meta.textContent = txt;
-    if (old) meta.classList.add("old");
-    sub.appendChild(meta);
-  }
-  function renderProbables() {
-    const box = $("prbList");
-    if (!box) return;
-    prbSave();
-    const src = all || [];
-    let sinDato = 0;
-    const list = [];
-    src.forEach((p) => {
-      if (prbPos && String(p.role || "").toLowerCase() !== prbPos) return;
-      const k = prbLevelOf(p);
-      if (!k) { sinDato++; return; }
-      if (prbLevelSel && k !== prbLevelSel) return;
-      list.push({ p, k });
-    });
-    const num = (v) => Number(v) || 0;
-    list.sort((a, b) => {
-      const pa = a.p, pb = b.p;
-      if (prbSort === "prob") { const d = (a.k === "baja" ? -1 : num(pa.prob)) - (b.k === "baja" ? -1 : num(pb.prob)); if (d) return -d; }
-      else { const d = num(pa[prbSort]) - num(pb[prbSort]); if (d) return -d; }
-      return num(pb.avg) - num(pa.avg) || num(pb.points) - num(pa.points);
-    });
-    renderProbSub(sinDato);
-    box.innerHTML = "";
-    if (!list.length) { box.appendChild(el("p", "muted", "Sin jugadores en este filtro ahora mismo.")); return; }
-    list.slice(0, prbShown).forEach((x) => {
-      const p = x.p;
-      const lab = x.k === "baja" ? statusLabel(p.status) : PRB_LV.filter((q) => q[0] === x.k)[0][1] + " · " + p.prob + "%";
-      box.appendChild(pltBuildRow(p, { chg: Number(p.change) || 0, noProb: true, tag: ["prb-t prb-" + x.k, lab] }));
-    });
-    if (list.length > prbShown) {
-      const more = el("button", "btn-ghost market-more", "Ver más (" + (list.length - prbShown) + ")"); more.type = "button";
-      more.addEventListener("click", () => { prbShown += 40; renderProbables(); });
       box.appendChild(more);
     }
   }
