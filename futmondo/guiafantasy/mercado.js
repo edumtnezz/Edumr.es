@@ -1463,7 +1463,7 @@
     } catch (e) {}
     const isLive = m.live && m.live.state === "live";
     const state = isLive ? (m.live.minute || "EN JUEGO") : d.state || ((m.day || "") + " " + (m.date || "") + " " + (m.time || "")).trim();
-    const mkTeam = (name, crest, cls) => { const t = el("div", "mpage-team " + cls); if (crest) { const ci = el("img", "mpage-tcrest"); ci.src = crest; ci.alt = ""; ci.decoding = "async"; t.appendChild(ci); } t.appendChild(clubLink(el("span", null, name), name)); return t; };
+    const mkTeam = (name, crest, cls) => { const t = el("div", "mpage-team " + cls); if (crest) { const ci = el("img", "mpage-tcrest"); ci.src = crest; ci.alt = ""; ci.decoding = "async"; t.appendChild(ci); } t.appendChild(el("span", null, name)); return clubLink(t, name); };
     const teams = el("div", "mpage-teams");
     if ((d.score != null && d.scoreAway != null) || (m.live && m.live.score && m.live.state !== "suspended")) teams.classList.add("mpage-hasscore");
     teams.appendChild(mkTeam(m.home, m.homeCrest, "home"));
@@ -1728,7 +1728,7 @@
       box.innerHTML = "";
       box.appendChild(backBtn(matchUrl, "mpage-back"));
       const head = el("div", "lv-head"); head.appendChild(refreshBtn());
-      const side = (name, crest) => { const t = el("div", "lv-team"); const im = el("img"); im.src = crest || ""; im.alt = ""; t.appendChild(im); t.appendChild(el("span", null, name)); return t; };
+      const side = (name, crest) => { const t = el("div", "lv-team"); const im = el("img"); im.src = crest || ""; im.alt = ""; t.appendChild(im); t.appendChild(el("span", null, name)); return clubLink(t, name); };
       head.appendChild(side(m.home, m.homeCrest));
       const mid = el("div", "lv-mid");
       if (live.state === "live") {
