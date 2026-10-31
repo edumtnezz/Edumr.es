@@ -4350,7 +4350,7 @@
 
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { if (document.querySelector(".eq-page, .mpage, .playerpage, .livepage")) { location.href = "/futmondo/guiafantasy/" + (t.dataset.tab === "plantillas" ? "mercado" : t.dataset.tab); return; } switchTab(t.dataset.tab); }));
   setupMoreMenu();
-  let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltPeriod = "chg7", pltDir = -1, pltShown = 40, pltPlayers = [], pltSure = false;
+  let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltPeriod = "chg7", pltDir = -1, pltShown = 40, pltPlayers = [];
   // En la ficha de jugador esto (14 peticiones de jornadas) se pide DESPUÉS de pintar, para no frenar la carga.
   if (!/\/jugador(?:es)?\/[a-z0-9]{6,40}/i.test(location.pathname)) ensurePlayedJ();
   (function restoreTab() {
@@ -5672,12 +5672,12 @@
     renderPltList();
   }
   const PLT_PER = [["chg7", "7 días"], ["chg30", "30 días"], ["chgAll", "Temporada"]];
-  function pltSave() { try { sessionStorage.setItem("pltState", JSON.stringify({ sure: pltSure ? 1 : 0, c: pltClub, p: pltPos, s: pltSort, d: pltDir, per: pltPeriod, n: pltShown })); } catch (e) {} }
+  function pltSave() { try { sessionStorage.setItem("pltState", JSON.stringify({ c: pltClub, p: pltPos, s: pltSort, d: pltDir, per: pltPeriod, n: pltShown })); } catch (e) {} }
   function pltLoadState() {
     try {
       const s = JSON.parse(sessionStorage.getItem("pltState") || "null");
       if (!s) return;
-      pltSure = !!s.sure; pltClub = s.c || ""; pltPos = s.p || ""; pltSort = s.s || "points"; pltDir = s.d === 1 ? 1 : -1; pltPeriod = s.per || "chg7"; pltShown = Number(s.n) > 0 ? Math.min(Number(s.n), 400) : 40;
+      pltClub = s.c || ""; pltPos = s.p || ""; pltSort = s.s || "points"; pltDir = s.d === 1 ? 1 : -1; pltPeriod = s.per || "chg7"; pltShown = Number(s.n) > 0 ? Math.min(Number(s.n), 400) : 40;
     } catch (e) {}
   }
   function pltRerender() { pltShown = 40; renderPltControls(); renderPltList(); }
@@ -5715,7 +5715,6 @@
         pltRerender();
       }));
     });
-    { const sb = pltBtn("Titular probable", pltSure, () => { pltSure = !pltSure; pltShown = 40; pltRerender(); }, "plt-sure"); sb.title = "Solo jugadores con 90 % o más de probabilidad de jugar"; sort.appendChild(sb); }
     per.innerHTML = "";
     per.hidden = pltSort !== "rise";
     if (pltSort === "rise") {
@@ -5811,10 +5810,10 @@
     pltSave();
     const rise = pltSort === "rise";
     const key = rise ? pltPeriod : pltSort;
-    let list = pltPlayers.filter((p) => (!pltClub || p.team === pltClub) && (!pltPos || String(p.role || "").toLowerCase() === pltPos) && (!pltSure || (p.prob != null && Number(p.prob) >= 90)));
+    let list = pltPlayers.filter((p) => (!pltClub || p.team === pltClub) && (!pltPos || String(p.role || "").toLowerCase() === pltPos));
     list = list.slice().sort((a, b) => pltDir * ((Number(a[key]) || 0) - (Number(b[key]) || 0)));
     box.innerHTML = "";
-    if (!list.length) { box.appendChild(el("p", "muted", pltSure ? "Sin jugadores con 90 % o más por ahora." : "Sin jugadores.")); return; }
+    if (!list.length) { box.appendChild(el("p", "muted", "Sin jugadores.")); return; }
     const j0 = pltPlayers.reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0);
     list.slice(0, pltShown).forEach((p) => {
       box.appendChild(pltBuildRow(p, { chg: Number(rise ? p[pltPeriod] : p.change) || 0 }));
