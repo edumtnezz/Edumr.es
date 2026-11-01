@@ -129,6 +129,20 @@ function eur(n) {
 }
 const hash = (str) => { let h = 5381; for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0; return String(h); };
 
+// Aviso de mercado: 5 mayores subidas y 5 mayores bajadas (valores de Futmondo). null si no hay cambios.
+function mercadoTexto(ps, own, sig) {
+  const fila = (p, i, sube) => "<b>" + (i + 1) + "</b>  " + (own.has(String(p.id)) ? "⭐" : "") + "<b>" + esc(p.name) + "</b>  <i>" + esc(p.team || "") + "</i>\n" +
+    "     " + (sube ? "▲ +" : "▼ −") + eur(p.change) + "  ·  " + eur(p.value);
+  const up = ps.filter((p) => p.change > 0).sort((a, b) => b.change - a.change).slice(0, 5);
+  const down = ps.filter((p) => p.change < 0).sort((a, b) => a.change - b.change).slice(0, 5);
+  if (!up.length && !down.length) return null;
+  return "💹 <b>Mercado actualizado</b>\n\n" +
+    (up.length ? "📈 <b>Suben más</b>\n" + up.map((p, i) => fila(p, i, true)).join("\n") : "") +
+    (up.length && down.length ? "\n\n" : "") +
+    (down.length ? "📉 <b>Bajan más</b>\n" + down.map((p, i) => fila(p, i, false)).join("\n") : "") +
+    "\n\n" + WEB + "mercado?v=" + sig;
+}
+
 // ---------- Telegram ----------
 async function tg(env, f, method, body) {
   try {
@@ -340,20 +354,10 @@ export async function avisar(env, deps) {
         const sig = hash(ps.map((p) => p.id + ":" + p.change).join("|"));
         if (sig !== st.px && (!st.pxAt || now - st.pxAt > 6 * 3600e3)) { // mínimo 6 h entre avisos, por si los precios se mueven a lo largo del día
           const own = new Set(squad.map((p) => String(p.id)));
-          const fila = (p, i, sube) => "<b>" + (i + 1) + "</b>  " + (own.has(String(p.id)) ? "⭐" : "") + "<b>" + esc(p.name) + "</b>  <i>" + esc(p.team || "") + "</i>\n" +
-            "     " + (sube ? "▲ +" : "▼ −") + eur(p.change) + "  ·  " + eur(p.value);
-          const up = ps.filter((p) => p.change > 0).sort((a, b) => b.change - a.change).slice(0, 5);
-          const down = ps.filter((p) => p.change < 0).sort((a, b) => a.change - b.change).slice(0, 5);
+          const mt = mercadoTexto(ps, own, sig);
           const commit = () => { st.px = sig; st.pxAt = now; dirty = true; };
-          if (firstRun || (!up.length && !down.length)) commit();
-          else queue.push({
-            text: "💹 <b>Mercado actualizado</b>\n\n" +
-              (up.length ? "📈 <b>Suben más</b>\n" + up.map((p, i) => fila(p, i, true)).join("\n") : "") +
-              (up.length && down.length ? "\n\n" : "") +
-              (down.length ? "📉 <b>Bajan más</b>\n" + down.map((p, i) => fila(p, i, false)).join("\n") : "") +
-              "\n\n" + WEB + "mercado?v=" + sig,
-            commit,
-          });
+          if (firstRun || !mt) commit();
+          else queue.push({ text: mt, commit });
         }
       }
     } catch (e) {}
@@ -376,6 +380,26 @@ export async function avisar(env, deps) {
     const commit = () => { st.sq = nuevo; dirty = true; };
     if (cambios.length) queue.push({ text: "🔄 <b>Cambios en tus jugadores</b>\n" + cambios.join("\n") + "\n\n" + WEB, commit });
     else if (JSON.stringify(nuevo) !== JSON.stringify(st.sq || {})) commit();
+  }
+
+  // PRUEBA ÚNICA (pedida por Edu, 01/11): manda una noticia real y la tabla de mercado real, marcadas como prueba. Se borra tras usarse.
+  if (!firstRun && !quiet && !st.demo && !(deps && deps.noDemo)) {
+    try {
+      const own = new Set(squad.map((p) => String(p.id)));
+      const ps = ((await getMk()).players || []).filter((p) => p && p.name && Number.isFinite(p.change));
+      const mt = ps.length > 50 ? mercadoTexto(ps, own, hash(ps.map((p) => p.id + ":" + p.change).join("|"))) : null;
+      const n0 = rNews.status === "fulfilled" && (rNews.value.noticias || []).find((x) => x && x.link && x.title);
+      let nt = null;
+      if (n0) {
+        let resumen = "";
+        try { const n = await getJson(f, "noticia?u=" + encodeURIComponent(n0.link)); resumen = decode(String(n.lead || "")).replace(/\s+/g, " ").trim(); if (resumen.length > 150) resumen = resumen.slice(0, 150).replace(/\s+\S*$/, "") + "…"; } catch (e) {}
+        nt = "🧪 <i>PRUEBA</i>\n📰 <b>" + esc(decode(n0.title)) + "</b>" + (resumen ? "\n\n" + esc(resumen) : "") + "\n\n<b>Más información:</b>\n" + newsUrl(n0.link);
+      }
+      const dcommit = () => { st.demo = 1; dirty = true; };
+      if (mt) queue.unshift({ text: "🧪 <i>PRUEBA</i>\n" + mt, commit: dcommit });
+      if (nt) queue.unshift({ text: nt, commit: dcommit });
+      if (!mt && !nt) dcommit();
+    } catch (e) {}
   }
 
   // Envío
