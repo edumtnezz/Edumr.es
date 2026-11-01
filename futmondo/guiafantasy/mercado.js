@@ -4085,7 +4085,7 @@
       const chg = el("div", "feat-chg");
       chg.id = "featChg";
       // En móvil "Últimos cambios" va abajo, solo y a todo el ancho; en pantalla ancha, dentro de Anteriores.
-      if (box.clientWidth && box.clientWidth < 640) { chg.classList.add("feat-chg-solo"); chgBelow = chg; } else prev.appendChild(chg);
+      if ((box.clientWidth || window.innerWidth) < 640) { chg.classList.add("feat-chg-solo"); chgBelow = chg; } else prev.appendChild(chg);
       paintInicioCambios();
       loadInicioCambios();
       grid.appendChild(prev);
