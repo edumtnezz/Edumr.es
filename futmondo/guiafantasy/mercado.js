@@ -1729,6 +1729,16 @@
     return cands[0] || 0;
   }
   // Página del directo: /futmondo/guiafantasy/directo/<slug>?j=N — crónica minuto a minuto (la de Comuniate), de la hora del partido hasta 2 días después
+  // Iconos del jugador en el campo de FotMob: roja/amarilla, goles y asistencias (datos reales de FotMob: goal, assist, yellowCard, redCard, yellowRedCard).
+  function lvPlEvents(ph, evs) {
+    const cds = evs || [];
+    if (cds.indexOf("redCard") >= 0 || cds.indexOf("yellowRedCard") >= 0) ph.appendChild(el("span", "pl-red"));
+    else if (cds.indexOf("yellowCard") >= 0) ph.appendChild(el("span", "pl-yel"));
+    const gl = cds.filter((x) => x === "goal").length;
+    if (gl) { const ev = el("span", "pl-evs", "⚽"); if (gl > 1) ev.appendChild(el("i", null, String(gl))); ph.appendChild(ev); }
+    const as = cds.filter((x) => x === "assist").length;
+    if (as) { const ev = el("span", "pl-ast", "👟"); if (as > 1) ev.appendChild(el("i", null, String(as))); ev.title = as > 1 ? as + " asistencias" : "Asistencia"; ph.appendChild(ev); }
+  }
   async function renderLivePage(slug) {
     const main = document.querySelector(".quiniela-main");
     if (!main) return;
@@ -1906,10 +1916,7 @@
           im.addEventListener("error", () => { im.src = "/img/avatar.svg"; });
           ph.appendChild(im);
           if (q.r) ph.appendChild(el("span", "pl-pts" + (fm.potm && fm.potm.id === q.id ? " mvp" : rcls(q.r)), String(q.r.toFixed ? q.r.toFixed(1) : q.r).replace(".", ",") + (fm.potm && fm.potm.id === q.id ? " ★" : "")));
-          const cds = q.ev || [];
-          if (cds.indexOf("redCard") >= 0 || cds.indexOf("yellowRedCard") >= 0) ph.appendChild(el("span", "pl-red"));
-          else if (cds.indexOf("yellowCard") >= 0) ph.appendChild(el("span", "pl-yel"));
-          const gl = cds.filter((x) => x === "goal").length; if (gl) { const ev = el("span", "pl-evs", "⚽"); if (gl > 1) ev.appendChild(el("i", null, String(gl))); ph.appendChild(ev); }
+          lvPlEvents(ph, q.ev);
           pl.appendChild(ph);
           pl.appendChild(el("div", "pl-nm", String(q.n || "").split(" ").slice(-1)[0]));
           if (q.so) { const sw = el("div", "pl-sw out"); sw.appendChild(el("i", null, "▼")); sw.appendChild(document.createTextNode(q.so + "'")); pl.appendChild(sw); }
@@ -1930,10 +1937,7 @@
             im.addEventListener("error", () => { im.src = "/img/avatar.svg"; });
             ph.appendChild(im);
             if (q.r) ph.appendChild(el("span", "pl-pts" + rcls(q.r), String(q.r.toFixed ? q.r.toFixed(1) : q.r).replace(".", ",")));
-            const cds = q.ev || [];
-            if (cds.indexOf("redCard") >= 0 || cds.indexOf("yellowRedCard") >= 0) ph.appendChild(el("span", "pl-red"));
-            else if (cds.indexOf("yellowCard") >= 0) ph.appendChild(el("span", "pl-yel"));
-            const gl = cds.filter((x) => x === "goal").length; if (gl) { const ev = el("span", "pl-evs", "⚽"); if (gl > 1) ev.appendChild(el("i", null, String(gl))); ph.appendChild(ev); }
+            lvPlEvents(ph, q.ev);
             pl.appendChild(ph);
             pl.appendChild(el("div", "pl-nm", String(q.n || "").split(" ").slice(-1)[0]));
             if (q.si) { const sw = el("div", "pl-sw in"); sw.appendChild(el("i", null, "▲")); sw.appendChild(document.createTextNode(q.si + "'")); pl.appendChild(sw); }

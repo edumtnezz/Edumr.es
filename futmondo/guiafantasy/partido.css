@@ -366,3 +366,5 @@ html, body { overflow-anchor: auto; }
 .ffx-top svg.ffx-ha{width:20px;height:20px;padding:4px}
 .ffx-top svg.ffx-ha.h,.ffx-r svg.ffx-ha.h{background:#16a34a}
 .ffx-top svg.ffx-ha.a,.ffx-r svg.ffx-ha.a{background:#6366f1}
+.pl-ast { position: absolute; right: -3px; bottom: -4px; display: inline-flex; align-items: center; font-size: .78rem; line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,.45)); }
+.pl-ast i { font-style: normal; font-size: .58rem; font-weight: 900; line-height: 1; background: #0f172a; color: #fff; border-radius: 6px; padding: 1px 4px; margin-left: -2px; align-self: flex-end; }
