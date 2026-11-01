@@ -147,7 +147,7 @@ function noticiaTexto(title, hits, resumen, link, src) {
     : /\b(sancion\w*|apercibid\w*|expulsad\w*|suspendid\w*)\b/.test(t) ? "🟥 <b>SANCIÓN</b>"
     : /\b(duda|dudas|dudoso|molestias?)\b/.test(t) ? "⚠️ <b>DUDA</b>"
     : /\btitular\w*/.test(t) ? "✅ <b>TITULAR</b>" : "📰 <b>ÚLTIMA HORA</b>";
-  return tag + (hits.length ? "  ·  ⭐ <b>TU JUGADOR</b>" : "") + "\n\n<b>" + esc(title) + "</b>" +
+  return tag + (hits.length ? "  ·  ⭐ <b>TU JUGADOR</b>" : "") + "\n<b>" + esc(title) + "</b>" +
     (resumen ? "\n\n" + esc(resumen) : "") + (hits.length ? "\n\n⭐ Afecta a: <b>" + esc(hits.join(", ")) + "</b>" : "") +
     (src && src !== "FutbolFantasy" ? "\n\n<i>Fuente: " + esc(src) + "</i>" : "") +
     "\n\n👉 <b>Más información:</b>\n" + newsUrl(link);
@@ -162,7 +162,7 @@ function mercadoTexto(ps, own, sig) {
   const fila = (p, i, sube) => "<b>" + (i + 1) + "</b>  " + (own.has(String(p.id)) ? "⭐" : "") + "<b>" + esc(p.name) + "</b>  " + (sube ? "🟢▲ <b>+" : "🔻🔴 <b>−") + eur(p.change) + "</b>";
   const top = up.concat(down).filter((p) => own.has(String(p.id)));
   const gancho = [up[0] ? "🔥 <b>" + esc(up[0].name) + "</b> se dispara 🟢 <b>+" + eur(up[0].change) + "</b>" : "", down[0] ? "🧊 <b>" + esc(down[0].name) + "</b> se hunde 🔴 <b>−" + eur(down[0].change) + "</b>" : "", top.length ? "⭐ Tienes en el top: <b>" + esc(top.map((p) => p.name).join(", ")) + "</b>" : ""].filter(Boolean).join("\n");
-  return "💹 <b>MERCADO EN MOVIMIENTO</b>\n\n" + gancho + "\n\n" +
+  return "💹 <b>MERCADO EN MOVIMIENTO</b>\n" + gancho + "\n\n" +
     (up.length ? "📈 <b>TOP 5 SUBIDAS</b>\n" + up.map((p, i) => fila(p, i, true)).join("\n") : "") +
     (up.length && down.length ? "\n\n" : "") +
     (down.length ? "📉 <b>TOP 5 BAJADAS</b>\n" + down.map((p, i) => fila(p, i, false)).join("\n") : "") +
@@ -430,7 +430,7 @@ export async function avisar(env, deps) {
       if (partes.length) cambios.push("• <b>" + esc(p.name) + "</b>: " + esc(partes.join(" · ")));
     }
     const commit = () => { st.sq = nuevo; dirty = true; };
-    if (cambios.length) queue.push({ text: "🚨 <b>TUS JUGADORES CAMBIAN</b>\n\n" + cambios.join("\n") + "\n\n👉 <b>Míralo en tu web:</b>\n" + WEB, commit });
+    if (cambios.length) queue.push({ text: "🚨 <b>TUS JUGADORES CAMBIAN</b>\n" + cambios.join("\n") + "\n\n👉 <b>Míralo en tu web:</b>\n" + WEB, commit });
     else if (JSON.stringify(nuevo) !== JSON.stringify(st.sq || {})) commit();
   }
 
