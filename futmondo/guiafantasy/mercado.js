@@ -563,12 +563,13 @@
   try { const sv = localStorage.getItem("merc_updf"); if (sv && UP_FILTERS.some((f) => f[0] === sv)) updFilter = sv; } catch (e) {}
   // Equipo del titular ("Alineación confirmada de Real Madrid" → "Real Madrid") para poder
   // llevar al club y al partido desde Últimas actualizaciones.
-  let jmCache = null;
+  let jmCache = null, jmDay = 0;
   async function jornadaMap() {
     if (jmCache) return jmCache;
     jmCache = {};
     try {
       const d = await (await fetch(API + "/jornada")).json();
+      jmDay = Number(d.matchday) || 0;
       (d.matches || []).forEach((m) => { [m.home, m.away].forEach((t) => { if (t) jmCache[teamCanon(t)] = m; }); });
     } catch (e) {}
     return jmCache;
@@ -597,7 +598,7 @@
     const m = jm[teamCanon(club)];
     if (m) {
       const a2 = el("a", "up-tomatch", "Ver partido →");
-      a2.href = "/futmondo/guiafantasy/partido/" + matchSlug(m.home, m.away) + "?j=" + (m.aplazado || m.jornada || "");
+      a2.href = "/futmondo/guiafantasy/partido/" + matchSlug(m.home, m.away) + "?j=" + (m.aplazado || m.jornada || jmDay || "");
       box.appendChild(a2);
     }
     return box;
