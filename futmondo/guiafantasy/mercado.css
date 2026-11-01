@@ -3291,18 +3291,21 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 
 /* Inicio en móvil como en el PC: lista a la izquierda y la noticia grande a la derecha (Edu 01/11) */
 @container (max-width: 639px) {
-  .feat-grid { grid-template-columns: minmax(0, 46%) minmax(0, 1fr); column-gap: 8px; align-items: stretch; }
+  .feat-grid { grid-template-columns: minmax(0, 52%) minmax(0, 1fr); column-gap: 8px; align-items: stretch; }
   .feat-hero { grid-column: 2; grid-row: 1; aspect-ratio: auto; height: auto; min-height: 340px; margin-bottom: 14px; }
   .feat-hero img { position: absolute; inset: 0; }
   .feat-hero-title { font-size: .95rem; }
   .feat-hero-overlay { padding: 40px 10px 10px; }
   .feat-prev { grid-column: 1; grid-row: 1; padding: 10px 9px 2px; min-width: 0; overflow: hidden; }
-  .feat-prev-img { display: none; }
-  .feat-prev-h { font-size: .78rem; }
-  .feat-chg-ph { display: none; }
-  .feat-chg-cat { font-size: .62rem; }
-  .feat-chg-txt { font-size: .72rem; }
-  .feat-chg-time { display: none; }
+  .feat-prev-row { gap: 7px; }
+  .feat-prev-img { width: 38px; height: 38px; border-radius: 9px; }
+  .feat-prev-h { font-size: .7rem; line-height: 1.2; }
+  .feat-prev-m { font-size: .58rem; }
+  .feat-chg-row { gap: 5px; font-size: .66rem; }
+  .feat-chg-ph { width: 20px; height: 20px; }
+  .feat-chg-cat { font-size: .56rem; }
+  .feat-chg-txt { font-size: .62rem; }
+  .feat-chg-time { font-size: .55rem; }
   .feat-sub { grid-column: 1 / -1; grid-row: 2; }
 }
 
