@@ -6419,7 +6419,7 @@
       l2.appendChild(el("span", null, (rb ? rb + (rb2 ? "/" + rb2 : "") + " · " : "") + (mv >= 10 ? Math.round(mv) : mv.toFixed(1).replace(/\.0$/, "").replace(".", ",")) + " M€"));
       if (p.chg7 != null && p.chg7 !== "") {
         const v = Number(p.chg7) || 0;
-        if (v) l2.appendChild(el("span", v > 0 ? "rtb-up" : "rtb-dn", (v > 0 ? "▲ " : "▼ ") + (Math.abs(v) >= 1e6 ? (Math.abs(v) / 1e6).toFixed(1).replace(".", ",") + "M" : Math.round(Math.abs(v) / 1e3) + "k")));
+        if (v) l2.appendChild(el("span", v > 0 ? "rtb-up" : "rtb-dn", (v > 0 ? "+" : "−") + (Math.abs(v) >= 1e6 ? (Math.abs(v) / 1e6).toFixed(1).replace(".", ",") + "M" : Math.round(Math.abs(v) / 1e3) + "k")));
       }
       body.appendChild(l2);
       const l3 = el("span", "rtb-l3");

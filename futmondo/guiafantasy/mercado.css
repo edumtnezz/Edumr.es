@@ -2978,3 +2978,28 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .mkt-minhint { margin: 2px 2px 8px; line-height: 1.35; }
 .mkt-mins { display: block; margin-top: 2px; font-size: 0.68rem; font-weight: 700; color: var(--accent); white-space: normal; line-height: 1.25; }
 .dash-note { margin-top: 8px; font-size: 0.74rem; font-weight: 700; color: var(--muted); line-height: 1.35; }
+
+/* Rentables: acabado sobrio (sin pastillas ni verde por todas partes) */
+.rtb-title { font-size: 1.5rem; letter-spacing: -.03em; }
+.rtb-row { grid-template-columns: 24px 48px minmax(0, 1fr) auto; gap: 12px; padding: 16px 4px; }
+.rtb-n { font-size: .9rem; font-weight: 700; color: var(--muted); }
+.rtb-row.top .rtb-n { font-size: .9rem; color: var(--text); }
+.rtb-name { font-size: 1rem; letter-spacing: -.01em; }
+.rtb-l2 { font-size: .78rem; }
+.rtb-up { color: #15803d; }
+.rtb-dn { color: #b91c1c; }
+.rtb-l3 { gap: 0; margin: 6px 0 2px; }
+.rtb-st { flex-direction: column; align-items: flex-start; gap: 1px; padding: 0 14px; background: none; border-radius: 0; border-left: 1px solid var(--border); }
+.rtb-st:first-child { padding-left: 0; border-left: 0; }
+.rtb-st b { font-size: 1rem; line-height: 1.1; }
+.rtb-st small { font-size: .6rem; letter-spacing: .06em; text-transform: uppercase; }
+.rtb-bar { height: 3px; margin-top: 8px; background: transparent; }
+.rtb-bar i { background: var(--text); opacity: .75; border-radius: 0; }
+.rtb-row.top .rtb-bar i { background: #16a34a; opacity: 1; }
+.rtb-r b { font-size: 1.4rem; color: var(--text); letter-spacing: -.02em; }
+.rtb-row.top .rtb-r b { color: #15803d; }
+.rtb-r small { font-size: .6rem; letter-spacing: .06em; text-transform: uppercase; }
+.rtb-tab.on { border-bottom-color: var(--text); }
+.rtb-plab { font-size: .95rem; }
+.rtb-range { accent-color: var(--text); }
+.rtb-r { gap: 3px; } .rtb-r b { line-height: 1.1; }
