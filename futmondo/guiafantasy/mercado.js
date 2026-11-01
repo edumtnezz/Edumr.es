@@ -68,11 +68,6 @@
     ["", "Todos"],
     ["racha", "🔥 En racha"],
     ["multipos", "🔀 Multiposición"],
-    ["m_mas", "🏟️ Juegan más"],
-    ["m_90", "⏱️ Los 90'"],
-    ["m_pronto", "↘️ Los cambian pronto"],
-    ["m_revul", "🔁 Revulsivos"],
-    ["m_poco", "🪑 Juegan poco"],
   ];
   // Histórico de minutos (Futmondo, partidos terminados). Los cortes de cada filtro son MÍOS (no un dato de Futmondo):
   // se dicen en la línea de ayuda y se ven los números reales de cada jugador en su fila.
@@ -135,7 +130,7 @@
     let st = null;
     try { st = JSON.parse(sessionStorage.getItem(MS_KEY) || "null"); } catch (e) {}
     if (!st) return;
-    sortMode = st.sortMode || sortMode; quick = st.quick || ""; teamFilter = st.teamFilter || "";
+    sortMode = st.sortMode || sortMode; quick = QUICKS.some(([k]) => k === st.quick) ? st.quick : ""; teamFilter = st.teamFilter || "";
     rangeMin = Number(st.rangeMin) || 0; rangeMax = Number(st.rangeMax) || Infinity;
     if (st.hlPeriod) hlPeriod = st.hlPeriod;
     if (st.mktSort && typeof st.mktSort === "object") mktSort = st.mktSort;
@@ -2556,8 +2551,6 @@
     if (mqa) {
       if (!minsMap && !minsLoading && !minsFail) loadMinutos();
       if (!minsMap) { grid.appendChild(el("p", "market-empty", minsFail ? "Sin datos de minutos ahora mismo." : "Cargando minutos…")); return; }
-      const cv = minsCover && minsCover.total ? " · datos de " + minsCover.known + " de " + minsCover.total + " jugadores" : "";
-      grid.appendChild(el("div", "mkt-hint mkt-minhint", mqa.hint + cv));
     }
     const list0 = filteredList();
     const pctOf = (p) => { const ch = hlChange(p); const prev = (Number(p.value) || 0) - ch; return prev > 0 ? (ch / prev) * 100 : 0; };
