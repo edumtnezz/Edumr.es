@@ -107,8 +107,8 @@
     const box = $("mercChips");
     if (!box) return;
     box.innerHTML = "";
-    QUICKS.forEach(([k, label]) => {
-      const b = el("button", "mchip" + (quick === k ? " active" : ""), label);
+    QUICKS.filter(([k]) => k === "" || MQ[k]).forEach(([k, label]) => {
+      const b = el("button", "mx-chip" + (quick === k ? " active" : ""), label);
       b.type = "button";
       b.addEventListener("click", () => { quick = k; shown = 18; renderChips(); renderGrid(); });
       box.appendChild(b);
@@ -130,6 +130,7 @@
   }
   function restoreMercState() {
     if (msRestored) return; msRestored = true;
+    renderChips();
     let st = null;
     try { st = JSON.parse(sessionStorage.getItem(MS_KEY) || "null"); } catch (e) {}
     if (!st) return;
