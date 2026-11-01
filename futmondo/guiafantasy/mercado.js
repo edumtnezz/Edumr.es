@@ -6545,8 +6545,6 @@
       if (!minsMap && !minsLoading && !minsFail) loadMinutos();
       if (!minsMap) { box.appendChild(el("p", "muted", minsFail ? "Sin datos de minutos ahora mismo." : "Cargando minutos…")); return; }
       list = list.filter((p) => { const m = minsOf(p); return m && mq.test(m); }).sort((a, b) => mq.sort(minsOf(a), minsOf(b)));
-      const cv = minsCover && minsCover.total ? " · datos de " + minsCover.known + " de " + minsCover.total + " jugadores" : "";
-      box.appendChild(el("div", "mkt-hint mkt-minhint", mq.hint + cv));
     }
     if (!list.length) { box.appendChild(el("p", "muted", "Sin jugadores.")); return; }
     const j0 = pltPlayers.reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0);
