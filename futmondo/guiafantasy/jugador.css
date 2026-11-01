@@ -264,3 +264,12 @@ svg.ffx-ha.a{background:rgba(99,102,241,.16);color:#6366f1}
 .cmpx-evc { padding: 3px 8px; font-size: .78rem; gap: 4px; }
 .cmpx-evc .gi { width: 1.25em; height: 1.25em; }
 .cmpx-evs { gap: 5px; }
+.cmpx-fx { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: .8rem; font-weight: 800; background: rgba(59,130,246,.14); border: 1px solid rgba(59,130,246,.4); }
+.cmpx-fx.done { background: rgba(127,127,127,.14); border-color: var(--border); color: var(--muted); }
+.cmpx-fx .gi { width: 1.15em; height: 1.15em; vertical-align: -.2em; }
+.cmpx-mj { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.cmpx-mj small { font-size: .6rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
+.cmpx-mrow.cmpx-next { background: rgba(59,130,246,.05); border-radius: 10px; }
+.cmpx-mrival.club-link, .cmpx-mrival .club-link, .cmpx-team.club-link, .cmpx-crestbadge.club-link { cursor: pointer; }
+.cmpx-team.club-link:hover .cmpx-teamname { text-decoration: underline; }
+.cmpx-fx { white-space: nowrap; font-size: .76rem; padding: 4px 9px; border-radius: 12px; }

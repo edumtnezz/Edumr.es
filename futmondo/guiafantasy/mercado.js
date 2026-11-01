@@ -2750,6 +2750,7 @@
       let pt = valByR[m.r] != null ? valByR[m.r] : null, calc = false;
       if (pt == null && m.lg != null) { pt = Math.round(Number(m.lg)); calc = true; }
       const E = m.ev || {};
+      if ((Number(m.mins) || 0) <= 0 && pt == null) { pt = 0; calc = false; } // no jugó: 0 puntos
       return { r: m.r, dt: cmpYmd(m.date), hm: m.home || "", aw: m.away || "", rv, h: casa ? 1 : 0, mn: Number(m.mins) || 0, sb: m.sub ? 1 : 0, g: Number(E.g) || 0, a: Number(E.a) || 0, y: Number(m.yellow) || 0, rd: Number(m.red) || 0, pt, calc: calc ? 1 : 0 };
     }).sort((x, y) => y.r - x.r);
     return {
@@ -2808,7 +2809,7 @@
       ph.appendChild(photoImg(p.photo));
       pw.appendChild(ph);
       const cb = cmpCrest(p, "cmpx-crestbadge");
-      if (cb) pw.appendChild(cb);
+      if (cb) pw.appendChild(clubLink(cb, p.team));
       c.appendChild(pw);
       c.appendChild(el("div", "cmp2-name", p.name));
       const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
@@ -2863,7 +2864,7 @@
     const w = el("span", "cmpx-team");
     const c = cmpCrest(p, "cmpx-teamcrest"); if (c) w.appendChild(c);
     w.appendChild(el("span", "cmpx-teamname", p.team || CMP_DASH));
-    return w;
+    return clubLink(w, p.team);
   }
 
   // ---------- Minutos reales de FotMob (goles, asistencias, tarjetas, entradas y salidas) ----------
@@ -2948,13 +2949,69 @@
   }
 
   let cmpRange = 5; // siempre empieza en "Últimos 5"
+  // ---------- Calendario (football-data vía /calendario): próximos partidos con día y hora ----------
+  let cmpCal = null, cmpCalBusy = false;
+  async function cmpCalLoad() {
+    if (cmpCal || cmpCalBusy) return;
+    cmpCalBusy = true;
+    try { const d = await (await fetch(API + "/calendario")).json(); if (d && d.teams && Array.isArray(d.matches)) cmpCal = d; } catch (e) {}
+    cmpCalBusy = false;
+  }
+  function cmpTeamFixtures(team) {
+    if (!cmpCal || !team) return [];
+    const tc = teamCanon(team), out = [];
+    cmpCal.matches.forEach((r) => {
+      const h = cmpCal.teams[r[1]], a = cmpCal.teams[r[2]];
+      if (!h || !a) return;
+      const isH = teamCanon(h.n) === tc;
+      if (!isH && teamCanon(a.n) !== tc) return;
+      const d = new Date(r[3]), ok = !isNaN(d.getTime());
+      out.push({ r: r[0], h: isH ? 1 : 0, rv: isH ? a.n : h.n, crest: isH ? a.c : h.c, utc: ok ? d.getTime() : 0, tbc: ok && d.getUTCHours() === 0 && d.getUTCMinutes() === 0, st: String(r[4] || "") });
+    });
+    return out;
+  }
+  const CMP_DONE = /FINISHED|AWARDED/, CMP_OFF = /POSTPONED|SUSPENDED|CANCELLED/;
+  function cmpNextFixture(fx) {
+    return fx.filter((f) => !CMP_DONE.test(f.st) && !CMP_OFF.test(f.st)).sort((x, y) => (x.utc || 9e15) - (y.utc || 9e15))[0] || null;
+  }
+  function cmpWhen(f) {
+    if (CMP_OFF.test(f.st)) return "Aplazado";
+    if (/IN_PLAY|PAUSED|LIVE/.test(f.st)) return "En juego";
+    if (!f.utc) return "Fecha por confirmar";
+    const d = new Date(f.utc), tz = { timeZone: "Europe/Madrid" };
+    const ymd = (x) => new Intl.DateTimeFormat("en-CA", tz).format(x);
+    const day = ymd(d), today = ymd(new Date()), tom = ymd(new Date(Date.now() + 864e5));
+    let ds;
+    if (day === today) ds = "Hoy"; else if (day === tom) ds = "Mañana";
+    else { ds = new Intl.DateTimeFormat("es-ES", Object.assign({ weekday: "short", day: "numeric", month: "short" }, tz)).format(d).replace(/\./g, "").replace(",", ""); ds = ds.charAt(0).toUpperCase() + ds.slice(1); }
+    const hm = f.tbc ? "" : new Intl.DateTimeFormat("es-ES", Object.assign({ hour: "2-digit", minute: "2-digit", hour12: false }, tz)).format(d);
+    return ds + (hm ? " · " + hm : " · hora por confirmar");
+  }
+  function cmpFixtureCell(f, right) {
+    const c = el("span", "cmp2-cell cmpx-mcell" + (right ? " right" : ""));
+    if (!f) { c.appendChild(el("span", "cmpx-mna", "Sin datos")); return c; }
+    const rl = el("span", "cmpx-mrival");
+    if (f.crest) { const ci = el("img", "cmpx-mcrest"); ci.src = f.crest; ci.alt = ""; ci.loading = "lazy"; ci.addEventListener("error", () => { ci.style.display = "none"; }); rl.appendChild(clubLink(ci, f.rv)); }
+    rl.appendChild(clubLink(el("span", null, f.rv + " · " + (f.h ? "Casa" : "Fuera")), f.rv));
+    c.appendChild(rl);
+    const done = CMP_DONE.test(f.st);
+    c.appendChild(el("span", "cmpx-fx" + (done ? " done" : ""), done ? "Jugado · puntos pendientes" : "📅 " + cmpWhen(f)));
+    return c;
+  }
+  function cmpRepaintTable() {
+    if (!cmpInit || currentTab !== "comparador") return;
+    const sy = window.scrollY;
+    cmpPaintTable();
+    try { if (window.scrollY !== sy) window.scrollTo(0, sy); } catch (e) {}
+  }
+
   function cmpMatchCell(m, right, fmd) {
     const c = el("span", "cmp2-cell cmpx-mcell" + (right ? " right" : ""));
     if (!m) { c.appendChild(el("span", "cmpx-mna", CMP_DASH)); return c; }
     const rl = el("span", "cmpx-mrival");
     const rlogo = (all || []).find((x) => x.logo && x.team && teamCanon(x.team) === teamCanon(m.rv));
-    if (rlogo) { const ci = el("img", "cmpx-mcrest"); ci.src = rlogo.logo; ci.alt = ""; ci.loading = "lazy"; ci.addEventListener("error", () => { ci.style.display = "none"; }); rl.appendChild(ci); }
-    rl.appendChild(el("span", null, (m.rv || CMP_DASH) + " · " + (m.h ? "Casa" : "Fuera")));
+    if (rlogo) { const ci = el("img", "cmpx-mcrest"); ci.src = rlogo.logo; ci.alt = ""; ci.loading = "lazy"; ci.addEventListener("error", () => { ci.style.display = "none"; }); rl.appendChild(clubLink(ci, m.rv)); }
+    rl.appendChild(clubLink(el("span", null, (m.rv || CMP_DASH) + " · " + (m.h ? "Casa" : "Fuera")), m.rv));
     c.appendChild(rl);
     const ln = el("span", "cmpx-mline");
     const pc = el("span", "ficha-chip " + (m.pt != null ? "pt-" + ptClass(m.pt) : "cmpx-na") + (m.calc ? " cmpx-calc" : ""), m.pt != null ? String(m.pt) : "–");
@@ -2982,18 +3039,25 @@
     box.innerHTML = "";
     const la = ra && ra.c && Array.isArray(ra.c.ms) ? ra.c.ms : [];
     const lb = rb && rb.c && Array.isArray(rb.c.ms) ? rb.c.ms : [];
+    const fa = cmpTeamFixtures(a.team), fb = cmpTeamFixtures(b.team);
     const rs = Array.from(new Set(la.map((m) => m.r).concat(lb.map((m) => m.r)))).sort((x, y) => y - x);
-    if (!rs.length) { box.appendChild(el("p", "muted small cmpx-hint", "Sin partidos de Futmondo todavía.")); return; }
+    // Próximos partidos (aún sin jugar): arriba, con día y hora; no cuentan en "Últimos N"
+    const nx = [cmpNextFixture(fa), cmpNextFixture(fb)];
+    const upR = Array.from(new Set(nx.filter(Boolean).map((f) => f.r))).filter((r) => !la.some((m) => m.r === r) && !lb.some((m) => m.r === r)).sort((x, y) => y - x);
+    if (!rs.length && !upR.length) { box.appendChild(el("p", "muted small cmpx-hint", "Sin partidos de Futmondo todavía.")); return; }
     const n = cmpRange;
     const shown = n > 0 ? rs.slice(0, n) : rs;
-    shown.forEach((r) => {
-      const row = el("div", "cmp2-row cmpx-mrow");
+    const row = (r, up) => {
+      const rw = el("div", "cmp2-row cmpx-mrow" + (up ? " cmpx-next" : ""));
       const ma = la.find((m) => m.r === r), mb = lb.find((m) => m.r === r);
-      row.appendChild(cmpMatchCell(ma, false, ma && ra && ra.c ? cmpFmPlayer(ma, ra.c.nm) : null));
-      row.appendChild(el("span", "cmp2-lab cmpx-mj", "J" + r));
-      row.appendChild(cmpMatchCell(mb, true, mb && rb && rb.c ? cmpFmPlayer(mb, rb.c.nm) : null));
-      box.appendChild(row);
-    });
+      rw.appendChild(ma ? cmpMatchCell(ma, false, ra && ra.c ? cmpFmPlayer(ma, ra.c.nm) : null) : cmpFixtureCell(fa.find((f) => f.r === r), false));
+      const lab = el("span", "cmp2-lab cmpx-mj"); lab.appendChild(el("span", null, "J" + r)); if (up) lab.appendChild(el("small", null, "Próximo"));
+      rw.appendChild(lab);
+      rw.appendChild(mb ? cmpMatchCell(mb, true, rb && rb.c ? cmpFmPlayer(mb, rb.c.nm) : null) : cmpFixtureCell(fb.find((f) => f.r === r), true));
+      box.appendChild(rw);
+    };
+    upR.forEach((r) => row(r, true));
+    shown.forEach((r) => row(r, false));
   }
   function cmpPaintMatches(out, a, b, ra, rb) {
     if (ra === undefined || rb === undefined) return; // aún cargando
@@ -3018,14 +3082,28 @@
   }
 
   // Resumen: 2 datos que se deducen de los partidos reales de la temporada (nada inventado; sin datos suficientes no se dice nada).
-  function cmpInsights(c) {
-    const ms = c && Array.isArray(c.ms) ? c.ms.filter((m) => m.mn > 0) : [];
-    const N = ms.length;
+  // Posición de su media entre los jugadores de LaLiga con 5+ partidos (datos del mercado de Futmondo).
+  function cmpTopPct(avg) {
+    const l = (all || []).filter((x) => x.matches >= 5 && cmpNum(x.avg) != null).map((x) => Number(x.avg));
+    if (l.length < 60 || cmpNum(avg) == null) return null;
+    return Math.max(1, Math.round(((l.filter((v) => v > avg).length + 1) / l.length) * 100));
+  }
+  const cmpAvg1 = (arr) => (arr.length ? arr.reduce((t, v) => t + v, 0) / arr.length : null);
+  // Dos datos del jugador, uno de "cómo juega" (A) y otro de "cómo rinde" (B). Todo sale de sus partidos reales; sin datos, no se dice.
+  function cmpInsights(c, pl) {
+    const all0 = c && Array.isArray(c.ms) ? c.ms : [];
+    const ms = all0.filter((m) => m.mn > 0);
+    const N = ms.length, T = all0.length;
+    if (T >= 3 && N < 3) return [["⚠", "Solo ha jugado <b>" + N + " de " + T + "</b> partidos"]];
     if (N < 3) return [];
     const starters = ms.filter((m) => !m.sb), subs = ms.filter((m) => m.sb);
     const swapped = starters.filter((m) => m.mn < 85);
     const avgOut = swapped.length ? Math.round(swapped.reduce((t, m) => t + m.mn, 0) / swapped.length) : 0;
-    const out = [];
+    const ptsL = ms.filter((m) => m.pt != null);
+    const avgS = pl && cmpNum(pl.avg) != null ? Number(pl.avg) : cmpAvg1(ptsL.map((m) => m.pt));
+    const top = cmpTopPct(avgS);
+    const good = top != null && top <= 25 && N >= 5;
+    const dec = (v) => cmpDec(v);
     // Minutos reales de FotMob (solo si se han podido leer casi todos los partidos del jugador)
     const fmL = ms.map((m) => ({ m, f: c.nm ? cmpFmPlayer(m, c.nm) : null }));
     const fmOk = fmL.filter((x) => x.f).length / N >= 0.8;
@@ -3033,30 +3111,62 @@
     const avgIn = subsF.length ? Math.round(subsF.reduce((t, x) => t + x.f.inn.m, 0) / subsF.length) : 0;
     const outsF = fmL.filter((x) => !x.m.sb && x.f && x.f.out);
     const gmins = fmOk ? fmL.reduce((t, x) => t.concat(x.f ? x.f.goals.map((g) => g.m) : []), []) : [];
+    const A = [], B = [];
+    // ----- A: cómo juega -----
+    if (starters.length >= 3 && swapped.length / starters.length >= 0.5) {
+      const ex = fmOk && outsF.length === swapped.length && outsF.length ? Math.round(outsF.reduce((t, x) => t + x.f.out.m, 0) / outsF.length) : avgOut;
+      const base = (swapped.length / starters.length >= 0.8 ? "Titular al que casi siempre sustituyen" : "Titular al que sustituyen a menudo") + " (<b>" + swapped.length + " de " + starters.length + "</b>, sobre el <b>min. " + ex + "</b>)";
+      if (good) A.push(["🔄", base + ", pero puntúa bien: media <b>" + dec(avgS) + "</b> (top <b>" + top + " %</b>)"]);
+      else A.push(["🔄", base]);
+    }
     const part = subs.filter((m) => m.g || m.a).length;
-    if (subs.length >= 2 && part >= 1) out.push(["🔥", "Buen revulsivo: entra" + (fmOk && subsF.length >= 2 ? " sobre el <b>min. " + avgIn + "</b>" : " desde el banquillo") + " y participa en gol en <b>" + part + " de " + subs.length + "</b> partidos"]);
+    if (subs.length >= 2 && part >= 1) A.push(["🔥", "Buen revulsivo: entra" + (fmOk && subsF.length >= 2 ? " sobre el <b>min. " + avgIn + "</b>" : " desde el banquillo") + " y participa en gol en <b>" + part + " de " + subs.length + "</b> partidos"]);
+    if (subs.length / N >= 0.5) A.push(["🔼", "Suele salir desde el banquillo: <b>" + subs.length + " de " + N + "</b> partidos" + (subsF.length >= 2 ? ", entra sobre el <b>min. " + avgIn + "</b>" : "")]);
+    if (starters.length >= 3 && swapped.length / starters.length <= 0.2) A.push(["✅", "Intocable: juega los 90' en <b>" + (starters.length - swapped.length) + " de " + starters.length + "</b> titularidades" + (good ? " y puntúa bien (media <b>" + dec(avgS) + "</b>)" : "")]);
+    if (T >= 4 && N / T < 0.5) A.push(["⚠", "Juega poco: <b>" + N + " de " + T + "</b> partidos de su equipo"]);
+    // ----- B: cómo rinde -----
     if (gmins.length >= 3) {
       const late = gmins.filter((m) => m >= 70).length, s2 = gmins.filter((m) => m > 45).length;
-      if (late / gmins.length >= 0.5) out.push(["⚽", "Sus goles llegan tarde: <b>" + late + " de " + gmins.length + "</b> después del min. 70"]);
-      else if (s2 / gmins.length >= 0.7) out.push(["⚽", "Marca sobre todo en la 2ª parte: <b>" + s2 + " de " + gmins.length + "</b> goles"]);
-      else if ((gmins.length - s2) / gmins.length >= 0.7) out.push(["⚽", "Marca sobre todo en la 1ª parte: <b>" + (gmins.length - s2) + " de " + gmins.length + "</b> goles"]);
+      if (late / gmins.length >= 0.5) B.push(["⚽", "Sus goles llegan tarde: <b>" + late + " de " + gmins.length + "</b> después del min. 70"]);
+      else if (s2 / gmins.length >= 0.7) B.push(["⚽", "Marca sobre todo en la 2ª parte: <b>" + s2 + " de " + gmins.length + "</b> goles"]);
+      else if ((gmins.length - s2) / gmins.length >= 0.7) B.push(["⚽", "Marca sobre todo en la 1ª parte: <b>" + (gmins.length - s2) + " de " + gmins.length + "</b> goles"]);
     }
-    if (subs.length / N >= 0.5) out.push(["🔼", "Suele salir desde el banquillo: <b>" + subs.length + " de " + N + "</b> partidos"]);
-    if (starters.length >= 3 && swapped.length / starters.length >= 0.5) out.push(["🔄", (swapped.length / starters.length >= 0.8 ? "Casi siempre lo quitan" : "Lo quitan a menudo") + ": <b>" + swapped.length + " de " + starters.length + "</b> titularidades, sobre el <b>min. " + (fmOk && outsF.length === swapped.length && outsF.length ? Math.round(outsF.reduce((t, x) => t + x.f.out.m, 0) / outsF.length) : avgOut) + "</b>"]);
     const gm = ms.filter((m) => m.g).length, gt = ms.reduce((t, m) => t + m.g, 0);
-    if (N >= 4 && gm / N >= 0.4) out.push(["⚽", "Marca en <b>" + gm + " de " + N + "</b> partidos (" + gt + (gt === 1 ? " gol" : " goles") + ")"]);
+    if (N >= 4 && gm / N >= 0.4) B.push(["⚽", "Marca en <b>" + gm + " de " + N + "</b> partidos (" + gt + (gt === 1 ? " gol" : " goles") + ")"]);
     const am = ms.filter((m) => m.a).length;
-    if (N >= 4 && am / N >= 0.4) out.push(["👟", "Da asistencia en <b>" + am + " de " + N + "</b> partidos"]);
-    const hi = ms.filter((m) => m.pt != null && m.pt >= 10).length;
-    if (N >= 4 && hi / N >= 0.5) out.push(["⭐", "Puntúa 10 o más en <b>" + hi + " de " + N + "</b> partidos"]);
-    if (starters.length >= 3 && swapped.length / starters.length <= 0.2) out.push(["✅", "Juega los 90' en <b>" + (starters.length - swapped.length) + " de " + starters.length + "</b> titularidades"]);
+    if (N >= 4 && am / N >= 0.4) B.push(["👟", "Da asistencia en <b>" + am + " de " + N + "</b> partidos"]);
+    const hi = ptsL.filter((m) => m.pt >= 10).length;
+    if (N >= 4 && hi / N >= 0.5) B.push(["⭐", "Puntúa 10 o más en <b>" + hi + " de " + N + "</b> partidos"]);
+    const rec = ptsL.slice().sort((x, y) => y.r - x.r).slice(0, 3);
+    if (N >= 6 && rec.length === 3 && avgS != null) {
+      const a3 = cmpAvg1(rec.map((m) => m.pt));
+      if (a3 - avgS >= 3) B.push(["📈", "En racha: media <b>" + dec(a3) + "</b> en sus 3 últimos partidos (temporada " + dec(avgS) + ")"]);
+      else if (avgS - a3 >= 3) B.push(["📉", "Viene a la baja: media <b>" + dec(a3) + "</b> en sus 3 últimos partidos (temporada " + dec(avgS) + ")"]);
+    }
+    const hp = ptsL.filter((m) => m.h).map((m) => m.pt), ap = ptsL.filter((m) => !m.h).map((m) => m.pt);
+    if (hp.length >= 2 && ap.length >= 2) {
+      const dh = cmpAvg1(hp), da = cmpAvg1(ap);
+      if (dh - da >= 3) B.push(["🏠", "Rinde más en casa: media <b>" + dec(dh) + "</b> en casa y <b>" + dec(da) + "</b> fuera"]);
+      else if (da - dh >= 3) B.push(["✈", "Rinde más fuera: media <b>" + dec(da) + "</b> fuera y <b>" + dec(dh) + "</b> en casa"]);
+    }
+    if (N >= 5 && avgS != null && ptsL.filter((m) => m.pt >= 5).length / N >= 0.8) B.push(["📊", "Muy regular: puntúa 5 o más en <b>" + ptsL.filter((m) => m.pt >= 5).length + " de " + N + "</b> partidos"]);
     const yc = ms.filter((m) => m.y).length;
-    if (yc >= 3) out.push(["🟨", "Amarilla en <b>" + yc + "</b> partidos"]);
+    if (yc >= 3) B.push(["🟨", "Amarilla en <b>" + yc + "</b> partidos"]);
+    if (good && !A.some((x) => /puntúa bien/.test(x[1]))) B.push(["⭐", "Puntúa bien: media <b>" + dec(avgS) + "</b>, entre el <b>" + top + " %</b> mejor de LaLiga"]);
+    if (ptsL.length) {
+      const best = ptsL.slice().sort((x, y) => y.pt - x.pt || y.r - x.r)[0];
+      B.push(["⭐", "Su mejor partido: <b>J" + best.r + "</b> con <b>" + best.pt + " pts</b>" + (best.rv ? " ante " + best.rv : "")]);
+    }
+    // Uno de cada tipo si se puede; si no, dos del mismo
+    const out = [];
+    if (A.length) out.push(A[0]);
+    if (B.length) out.push(B[0]);
+    A.slice(1).concat(B.slice(1)).forEach((x) => { if (out.length < 2) out.push(x); });
     return out.slice(0, 2);
   }
   function cmpPaintSummary(out, a, b, ra, rb) {
     if (ra === undefined || rb === undefined) return;
-    const items = [[a, cmpInsights(ra && ra.c)], [b, cmpInsights(rb && rb.c)]].filter((x) => x[1].length);
+    const items = [[a, cmpInsights(ra && ra.c, a)], [b, cmpInsights(rb && rb.c, b)]].filter((x) => x[1].length);
     if (!items.length) return;
     const wrap = el("div", "cmpx-sum");
     wrap.appendChild(el("div", "cmpx-head", "Resumen"));
@@ -3277,6 +3387,7 @@
     }
     cmpPaint();
     cmpLoadDetail(false);
+    if (!cmpCal) cmpCalLoad().then(() => { if (cmpCal) cmpRepaintTable(); });
   }
   // Si el mercado se refresca con el comparador abierto, se repinta en el sitio (sin mover el scroll).
   function cmpOnMarket() {
