@@ -381,3 +381,10 @@ svg.ffx-ha.a{background:rgba(99,102,241,.16);color:#6366f1}
 .cmpx-sum .cmpx-sumline { gap: 10px; margin-top: 8px; font-size: .88rem; line-height: 1.35; }
 .cmpx-sum .cmpx-sumico { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--sc, #16a34a); margin-top: .5em; font-size: 0; }
 .cmpx-sum .cmpx-sumtx b { color: var(--sc, inherit); }
+
+/* iPhone: si un campo de texto tiene letra menor de 16 px, Safari hace zoom al tocarlo. Aquí `font: ... inherit` era inválido y se ignoraba, y el campo se quedaba pequeño (Edu 02/11) */
+.cmpov-inp, .pk-search { font-family: inherit; font-size: 16px; font-weight: 500; line-height: 1.2; }
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="color"]):not([type="file"]),
+  select, textarea { font-size: max(16px, 1em) !important; }
+}
