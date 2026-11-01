@@ -143,17 +143,19 @@ function noticiaTexto(title, hits, resumen, link) {
 
 // Aviso de mercado: 5 mayores subidas y 5 mayores bajadas (valores de Futmondo). null si no hay cambios.
 function mercadoTexto(ps, own, sig) {
-  const fila = (p, i, sube) => "<b>" + (i + 1) + "</b>  " + (own.has(String(p.id)) ? "⭐" : "") + "<b>" + esc(p.name) + "</b>  <i>" + esc(p.team || "") + "</i>\n" +
-    "     " + (sube ? "▲ +" : "▼ −") + eur(p.change) + "  ·  " + eur(p.value);
   const up = ps.filter((p) => p.change > 0).sort((a, b) => b.change - a.change).slice(0, 5);
   const down = ps.filter((p) => p.change < 0).sort((a, b) => a.change - b.change).slice(0, 5);
   if (!up.length && !down.length) return null;
+  // Barra de cuadrados (1 a 5) proporcional al mayor cambio de su lista
+  const barra = (p, lista, ic) => ic.repeat(Math.max(1, Math.round(5 * Math.abs(p.change) / Math.abs(lista[0].change))));
+  const fila = (p, i, lista, sube) => "<b>" + (i + 1) + "</b>  " + (own.has(String(p.id)) ? "⭐" : "") + "<b>" + esc(p.name) + "</b>  <i>" + esc(p.team || "") + "</i>\n" +
+    barra(p, lista, sube ? "🟩" : "🟥") + "  <b>" + (sube ? "+" : "−") + eur(p.change) + "</b>  ·  " + eur(p.value);
   const top = up.concat(down).filter((p) => own.has(String(p.id)));
-  const gancho = [up[0] ? "🔥 <b>" + esc(up[0].name) + "</b> se dispara  ▲ +" + eur(up[0].change) : "", down[0] ? "🧊 <b>" + esc(down[0].name) + "</b> se hunde  ▼ −" + eur(down[0].change) : "", top.length ? "⭐ Tienes en el top: <b>" + esc(top.map((p) => p.name).join(", ")) + "</b>" : ""].filter(Boolean).join("\n");
+  const gancho = [up[0] ? "🔥 <b>" + esc(up[0].name) + "</b> se dispara 🟢 <b>+" + eur(up[0].change) + "</b>" : "", down[0] ? "🧊 <b>" + esc(down[0].name) + "</b> se hunde 🔴 <b>−" + eur(down[0].change) + "</b>" : "", top.length ? "⭐ Tienes en el top: <b>" + esc(top.map((p) => p.name).join(", ")) + "</b>" : ""].filter(Boolean).join("\n");
   return "💹 <b>MERCADO EN MOVIMIENTO</b>\n\n" + gancho + "\n\n" +
-    (up.length ? "📈 <b>TOP 5 SUBIDAS</b>\n" + up.map((p, i) => fila(p, i, true)).join("\n") : "") +
+    (up.length ? "🟢📈 <b>TOP 5 SUBIDAS</b>\n\n" + up.map((p, i) => fila(p, i, up, true)).join("\n\n") : "") +
     (up.length && down.length ? "\n\n" : "") +
-    (down.length ? "📉 <b>TOP 5 BAJADAS</b>\n" + down.map((p, i) => fila(p, i, false)).join("\n") : "") +
+    (down.length ? "🔴📉 <b>TOP 5 BAJADAS</b>\n\n" + down.map((p, i) => fila(p, i, down, false)).join("\n\n") : "") +
     "\n\n👉 <b>Todo el mercado:</b>\n" + WEB + "mercado?v=" + sig;
 }
 
@@ -166,11 +168,16 @@ async function tg(env, f, method, body) {
 }
 async function send(env, f, chat, text, opts) {
   opts = opts || {};
-  // Con fotos (escudos de los dos clubes): se mandan juntas y el texto va de pie. Si Telegram las rechaza, sale el texto solo.
-  if (opts.photos && opts.photos.length >= 2 && text.length <= 1024) {
-    const media = opts.photos.slice(0, 10).map((u, i) => (i === 0 ? { type: "photo", media: u, caption: text, parse_mode: "HTML" } : { type: "photo", media: u }));
+  // Con fotos (escudos de los dos clubes): primero las fotos con un pie corto y luego el detalle en otro mensaje.
+  // Si Telegram rechaza las fotos, sale todo como un solo texto.
+  if (opts.photos && opts.photos.length >= 2 && opts.caption) {
+    const media = opts.photos.slice(0, 10).map((u, i) => (i === 0 ? { type: "photo", media: u, caption: opts.caption, parse_mode: "HTML" } : { type: "photo", media: u }));
     const g = await tg(env, f, "sendMediaGroup", { chat_id: chat, media });
-    if (g && g.ok) return true;
+    if (g && g.ok) {
+      const d = await tg(env, f, "sendMessage", { chat_id: chat, text, parse_mode: "HTML", link_preview_options: { is_disabled: true } });
+      return !!(d && d.ok);
+    }
+    text = opts.caption + "\n\n" + text;
   }
   const lp = opts.small ? { is_disabled: false, prefer_small_media: true } : { is_disabled: false, prefer_large_media: true };
   const j = await tg(env, f, "sendMessage", { chat_id: chat, text, parse_mode: "HTML", link_preview_options: lp });
@@ -307,7 +314,7 @@ export async function avisar(env, deps) {
     try {
       if (doList) {
         const est = await getJson(f, "alineaciones-estado");
-        const items = (est.items || []).filter((i) => i && i.home && i.away).map((i) => ({ home: i.home, away: i.away, ko: i.ko || 0 }));
+        const items = (est.items || []).filter((i) => i && i.home && i.away).map((i) => ({ home: i.home, away: i.away, ko: i.ko || 0, hc: i.hc || "", ac: i.ac || "" }));
         if (items.length && JSON.stringify(items) !== JSON.stringify(st.ml || null)) { st.ml = items; st.mlMd = est.matchday || 0; dirty = true; }
       }
       st.pr = st.pr || {};
@@ -320,39 +327,43 @@ export async function avisar(env, deps) {
         const { m, d } = r;
         const key = (st.mlMd || 0) + ":" + norm(m.home) + "-" + norm(m.away);
         const prev = st.pr[key];
-        const X = (side) => (side && side.starters || []).map((p) => ({ n: p.name, p: Number.isFinite(p.prob) ? p.prob : null }));
+        const posCod = (v) => { v = norm(v); return /portero/.test(v) ? "POR" : /defens/.test(v) ? "DEF" : /medi|centro/.test(v) ? "MED" : /delant/.test(v) ? "DEL" : ""; };
+        const X = (side) => (side && side.starters || []).map((p) => ({ n: p.name, p: Number.isFinite(p.prob) ? p.prob : null, s: posCod(p.pos) }));
         const H = X(d.home), A = X(d.away);
         if (H.length < 10 || A.length < 10) continue; // página sin once: no se interpreta como "han salido todos"
-        const nuevo = { h: H, a: A };
-        if (!prev || firstRun) { st.pr[key] = nuevo; dirty = true; continue; } // primera vez que lo vemos: se guarda sin avisar
-        const old = (arr) => (arr || []).map((x) => (typeof x === "string" ? { n: x, p: null } : x)); // estado antiguo: solo nombres
-        const pc = (v) => (v == null ? "" : " " + v + "%");
-        // Entra / sale / cambia el % (≥15 puntos) de un titular que sigue
-        const diff = (team, ahora, antes) => {
+        const nuevo = { h: H, a: A, fh: (d.home && d.home.formation) || "", fa: (d.away && d.away.formation) || "" };
+        // Primera vez que lo vemos, o referencia antigua con más de 11 titulares (FutbolFantasy mezclaba dos onces): se guarda sin avisar
+        if (!prev || firstRun || (prev.h || []).length > 11 || (prev.a || []).length > 11) { st.pr[key] = nuevo; dirty = true; continue; }
+        const old = (arr) => (arr || []).map((x) => (typeof x === "string" ? { n: x, p: null, s: "" } : x)); // estado antiguo: solo nombres
+        const ORD = { POR: 0, DEF: 1, MED: 2, DEL: 3, "": 4 };
+        // Entra / sale / cambia el % (≥15 puntos) de un titular que sigue, con su posición
+        const diff = (team, ahora, antes, fAntes, fAhora) => {
           antes = old(antes);
           const mb = new Map(antes.map((x) => [norm(x.n), x])), mn = new Map(ahora.map((x) => [norm(x.n), x]));
-          const nm = (x) => esc(star(squad, team, x.n));
-          const entra = ahora.filter((x) => !mb.has(norm(x.n))).map((x) => "▲ Entra " + nm(x) + pc(x.p));
-          const sale = antes.filter((x) => !mn.has(norm(x.n))).map((x) => "▼ Sale " + nm(x) + (x.p == null ? "" : " (antes " + x.p + "%)"));
-          const cambia = ahora.filter((x) => { const o = mb.get(norm(x.n)); return o && o.p != null && x.p != null && Math.abs(x.p - o.p) >= 15; })
-            .map((x) => "◆ " + nm(x) + " " + mb.get(norm(x.n)).p + "% → " + x.p + "%");
-          const all = entra.concat(sale, cambia);
-          return all.length ? "<b>" + esc(team) + "</b>\n" + all.join("\n") : "";
+          const nm = (x) => "<b>" + esc(star(squad, team, x.n)) + "</b>";
+          const pos = (x) => (x.s ? x.s + " · " : "");
+          const byPos = (a, b) => (ORD[a.s || ""] - ORD[b.s || ""]);
+          const entra = ahora.filter((x) => !mb.has(norm(x.n))).sort(byPos);
+          const sale = antes.filter((x) => !mn.has(norm(x.n))).sort(byPos);
+          const cambia = ahora.filter((x) => { const o = mb.get(norm(x.n)); return o && o.p != null && x.p != null && Math.abs(x.p - o.p) >= 15; }).sort(byPos);
+          if (!entra.length && !sale.length && !cambia.length) return null;
+          const sist = fAhora && fAntes && fAhora !== fAntes ? "  ·  sistema " + esc(fAntes) + " → " + esc(fAhora) : fAhora ? "  ·  " + esc(fAhora) : "";
+          const l = [].concat(
+            entra.map((x) => "🟢 <b>ENTRA</b> · " + pos(x) + nm(x) + (x.p == null ? "" : " · <b>" + x.p + "%</b>")),
+            sale.map((x) => "🔴 <b>SALE</b> · " + pos(x) + nm(x) + (x.p == null ? "" : " · antes " + x.p + "%")),
+            cambia.map((x) => { const o = mb.get(norm(x.n)); return "🟡 <b>%</b> · " + pos(x) + nm(x) + " · " + o.p + "% → <b>" + x.p + "%</b> " + (x.p > o.p ? "📈" : "📉"); }));
+          return { txt: "<b>" + esc(team) + "</b>" + sist + "\n" + l.join("\n"), e: entra.length, s: sale.length, c: cambia.length };
         };
-        const lineas = [diff(m.home, H, prev.h), diff(m.away, A, prev.a)].filter(Boolean);
-        if (!lineas.length) continue;
+        const dd = [diff(m.home, H, prev.h, prev.fh, nuevo.fh), diff(m.away, A, prev.a, prev.fa, nuevo.fa)].filter(Boolean);
+        if (!dd.length) continue;
         const upd = Math.max((d.home && d.home.updatedAt) || 0, (d.away && d.away.updatedAt) || 0);
         const cu = cuandoKo(m.ko);
-        let photos = [];
-        try {
-          const mk = await getMk();
-          const logo = (name) => ((mk.players || []).find((p) => p.logo && sameTeam(p.team, name)) || {}).logo;
-          const l1 = logo(m.home), l2 = logo(m.away);
-          if (l1 && l2) photos = [l1, l2];
-        } catch (e) {}
-        const text = "🔄 <b>ONCE PROBABLE ACTUALIZADO</b>\n⚽ <b>" + esc(m.home) + " vs " + esc(m.away) + "</b>\n" +
-          [cu ? "🕒 " + esc(cu) : "", upd ? "Actualizado " + hhmm(upd) : ""].filter(Boolean).join("  ·  ") + "\n\n" + lineas.join("\n\n") + "\n\n👉 <b>Míralo en tu web:</b>\n" + matchUrl(m.home, m.away);
-        queue.push({ text, photos, commit: () => { st.pr[key] = nuevo; dirty = true; } });
+        const tot = dd.reduce((a, x) => ({ e: a.e + x.e, s: a.s + x.s, c: a.c + x.c }), { e: 0, s: 0, c: 0 });
+        const resumen = [tot.e ? tot.e + " entra" + (tot.e > 1 ? "n" : "") : "", tot.s ? tot.s + " sale" + (tot.s > 1 ? "n" : "") : "", tot.c ? tot.c + " con % distinto" : ""].filter(Boolean).join(" · ");
+        const caption = "🔄 <b>ONCE PROBABLE ACTUALIZADO</b>\n⚽ <b>" + esc(m.home) + " vs " + esc(m.away) + "</b>\n" +
+          [cu ? "🕒 " + esc(cu) : "", upd ? "Actualizado " + hhmm(upd) : ""].filter(Boolean).join("  ·  ");
+        const text = dd.map((x) => x.txt).join("\n\n") + "\n\n📋 " + resumen + "\n\n👉 <b>Míralo en tu web:</b>\n" + matchUrl(m.home, m.away);
+        queue.push({ text, caption, photos: m.hc && m.ac ? [m.hc, m.ac] : [], commit: () => { st.pr[key] = nuevo; dirty = true; } });
       }
     } catch (e) {}
   }
@@ -396,7 +407,7 @@ export async function avisar(env, deps) {
   }
 
   // PRUEBA ÚNICA (pedida por Edu, 01/11): manda una noticia real y la tabla de mercado real, marcadas como prueba. Se borra tras usarse.
-  if (!firstRun && !quiet && !st.demo2 && !(deps && deps.noDemo)) {
+  if (!firstRun && !quiet && !st.demo3 && !(deps && deps.noDemo)) {
     try {
       const own = new Set(squad.map((p) => String(p.id)));
       const ps = ((await getMk()).players || []).filter((p) => p && p.name && Number.isFinite(p.change));
@@ -408,7 +419,7 @@ export async function avisar(env, deps) {
         try { const n = await getJson(f, "noticia?u=" + encodeURIComponent(n0.link)); resumen = decode(String(n.lead || "")).replace(/\s+/g, " ").trim(); if (resumen.length > 150) resumen = resumen.slice(0, 150).replace(/\s+\S*$/, "") + "…"; } catch (e) {}
         nt = "🧪 <i>PRUEBA</i>\n" + noticiaTexto(decode(n0.title), ownMatch(decode(n0.title), squad), resumen, n0.link);
       }
-      const dcommit = () => { st.demo2 = 1; dirty = true; };
+      const dcommit = () => { st.demo3 = 1; dirty = true; };
       if (mt) queue.unshift({ text: "🧪 <i>PRUEBA</i>\n" + mt, commit: dcommit });
       if (nt) queue.unshift({ text: nt, commit: dcommit });
       if (!mt && !nt) dcommit();

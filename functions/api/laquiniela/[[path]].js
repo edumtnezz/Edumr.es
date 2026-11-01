@@ -2753,7 +2753,7 @@ async function getProbableFlags(env, jornada) {
   const items = open.filter((m) => has[nm(m.homeTeam)] && has[nm(m.awayTeam)]);
   // Cada equipo actualiza su once por su cuenta en futbolfantasy: la hora es PARTIDO a PARTIDO y es la de la
   // última actualización real (la más reciente de sus dos equipos), no la de cuando la leímos nosotros.
-  let out = items.map((m) => ({ home: nm(m.homeTeam), away: nm(m.awayTeam), at: Math.max(at[nm(m.homeTeam)] || 0, at[nm(m.awayTeam)] || 0), rt: Date.now(), ko: Date.parse(m.utcDate) || 0 }));
+  let out = items.map((m) => ({ home: nm(m.homeTeam), away: nm(m.awayTeam), at: Math.max(at[nm(m.homeTeam)] || 0, at[nm(m.awayTeam)] || 0), rt: Date.now(), ko: Date.parse(m.utcDate) || 0, hc: (m.homeTeam && m.homeTeam.crest) || "", ac: (m.awayTeam && m.awayTeam.crest) || "" }));
   // Leer 20 páginas a la vez a veces falla a medias (límite de recursos): lo que ya se había visto bien se conserva,
   // siempre que el partido siga sin empezar.
   const pkey = "probflags:" + jn;
@@ -5073,7 +5073,7 @@ async function handleGet({ request, env: env0, params }) {
     if (!h || !a) return json({ error: "faltan equipos" }, 400);
     try {
       const [H, A] = await Promise.all([getFFTeam(env, h, true), getFFTeam(env, a, true)]);
-      const side = (name, t) => ({ name, formation: t.formation || "", updatedAt: t.updatedAt || 0, starters: (t.starters || []).map((p) => ({ name: p.full || p.name, short: p.name, prob: p.prob })) });
+      const side = (name, t) => ({ name, formation: t.formation || "", updatedAt: t.updatedAt || 0, starters: (t.starters || []).map((p) => ({ name: p.full || p.name, short: p.name, prob: p.prob, pos: p.pos || "" })) });
       return json({ home: side(h, H), away: side(a, A) });
     } catch (e) { return json({ error: String((e && e.message) || e).slice(0, 120) }, 500); }
   }
