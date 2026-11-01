@@ -3283,3 +3283,8 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .feat-hero-live { background: #10151c; }
 .feat-hero-live img { object-fit: contain; object-position: center bottom; }
 .feat-live-kind { background: #dc2626; color: #fff; }
+
+/* Todas las tarjetas de la jornada con la misma altura (Edu 01/11): el once probable no la agranda */
+#cxChrome .cx-jn-grid { grid-auto-rows: 50px; }
+#cxChrome .cx-jn { height: 50px; box-sizing: border-box; overflow: hidden; justify-content: center; }
+#cxChrome .cx-jn .cx-jn-tvrow { display: none; }
