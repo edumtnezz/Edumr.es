@@ -136,9 +136,23 @@ async function tg(env, f, method, body) {
     return await r.json();
   } catch (e) { return null; }
 }
-async function send(env, f, chat, text) {
-  const j = await tg(env, f, "sendMessage", { chat_id: chat, text, parse_mode: "HTML", link_preview_options: { is_disabled: false, prefer_large_media: true } });
+async function send(env, f, chat, text, opts) {
+  opts = opts || {};
+  // Con fotos (escudos de los dos clubes): se mandan juntas y el texto va de pie. Si Telegram las rechaza, sale el texto solo.
+  if (opts.photos && opts.photos.length >= 2 && text.length <= 1024) {
+    const media = opts.photos.slice(0, 10).map((u, i) => (i === 0 ? { type: "photo", media: u, caption: text, parse_mode: "HTML" } : { type: "photo", media: u }));
+    const g = await tg(env, f, "sendMediaGroup", { chat_id: chat, media });
+    if (g && g.ok) return true;
+  }
+  const lp = opts.small ? { is_disabled: false, prefer_small_media: true } : { is_disabled: false, prefer_large_media: true };
+  const j = await tg(env, f, "sendMessage", { chat_id: chat, text, parse_mode: "HTML", link_preview_options: lp });
   return !!(j && j.ok);
+}
+// "dom 1 nov · 16:15" (hora de Madrid)
+function cuandoKo(ms) {
+  if (!ms) return "";
+  const d = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short", day: "numeric", month: "short" }).format(new Date(ms)).replace(/\./g, "").replace(",", "");
+  return d + " · " + hhmm(ms);
 }
 // El primer chat privado que escribe /start al bot queda como dueño (igual que el bot de la web).
 async function findChat(env, f) {
@@ -198,7 +212,8 @@ export async function avisar(env, deps) {
   // Si esta vez no hay plantilla (no toca o fallo puntual de la fuente), se usa la última buena guardada.
   const squad = mios && mios.length ? mios : Object.keys(st.sq || {}).map((id) => ({ id, name: st.sq[id].n, team: st.sq[id].t }));
 
-  const queue = []; // { text, commit }
+  const queue = []; // { text, commit, photos?, small? }
+  let mkP; const getMk = () => mkP || (mkP = getJson(f, "mercado"));
 
   // 1) Noticias
   if (rNews.status === "fulfilled" && Array.isArray(rNews.value.noticias)) {
@@ -267,21 +282,39 @@ export async function avisar(env, deps) {
         const { m, d } = r;
         const key = (st.mlMd || 0) + ":" + norm(m.home) + "-" + norm(m.away);
         const prev = st.pr[key];
-        const H = (d.home && d.home.starters || []).map((p) => p.name), A = (d.away && d.away.starters || []).map((p) => p.name);
+        const X = (side) => (side && side.starters || []).map((p) => ({ n: p.name, p: Number.isFinite(p.prob) ? p.prob : null }));
+        const H = X(d.home), A = X(d.away);
         if (H.length < 10 || A.length < 10) continue; // página sin once: no se interpreta como "han salido todos"
         const nuevo = { h: H, a: A };
         if (!prev || firstRun) { st.pr[key] = nuevo; dirty = true; continue; } // primera vez que lo vemos: se guarda sin avisar
-        const diff = (team, now2, before) => {
-          const nb = new Set(before.map(norm)), nn = new Set(now2.map(norm));
-          const entra = now2.filter((x) => !nb.has(norm(x))), sale = before.filter((x) => !nn.has(norm(x)));
-          if (!entra.length && !sale.length) return "";
-          return "<b>" + esc(team) + "</b>: " + (entra.length ? "entra " + esc(entra.map((x) => star(squad, team, x)).join(", ")) : "") + (entra.length && sale.length ? " · " : "") + (sale.length ? "sale " + esc(sale.map((x) => star(squad, team, x)).join(", ")) : "");
+        const old = (arr) => (arr || []).map((x) => (typeof x === "string" ? { n: x, p: null } : x)); // estado antiguo: solo nombres
+        const pc = (v) => (v == null ? "" : " " + v + "%");
+        // Entra / sale / cambia el % (≥15 puntos) de un titular que sigue
+        const diff = (team, ahora, antes) => {
+          antes = old(antes);
+          const mb = new Map(antes.map((x) => [norm(x.n), x])), mn = new Map(ahora.map((x) => [norm(x.n), x]));
+          const nm = (x) => esc(star(squad, team, x.n));
+          const entra = ahora.filter((x) => !mb.has(norm(x.n))).map((x) => "▲ Entra " + nm(x) + pc(x.p));
+          const sale = antes.filter((x) => !mn.has(norm(x.n))).map((x) => "▼ Sale " + nm(x) + (x.p == null ? "" : " (antes " + x.p + "%)"));
+          const cambia = ahora.filter((x) => { const o = mb.get(norm(x.n)); return o && o.p != null && x.p != null && Math.abs(x.p - o.p) >= 15; })
+            .map((x) => "◆ " + nm(x) + " " + mb.get(norm(x.n)).p + "% → " + x.p + "%");
+          const all = entra.concat(sale, cambia);
+          return all.length ? "<b>" + esc(team) + "</b>\n" + all.join("\n") : "";
         };
-        const lineas = [diff(m.home, H, prev.h || []), diff(m.away, A, prev.a || [])].filter(Boolean);
+        const lineas = [diff(m.home, H, prev.h), diff(m.away, A, prev.a)].filter(Boolean);
         if (!lineas.length) continue;
         const upd = Math.max((d.home && d.home.updatedAt) || 0, (d.away && d.away.updatedAt) || 0);
-        const text = "🔄 <b>Once probable actualizado</b>\n" + esc(m.home) + " – " + esc(m.away) + (upd ? " · act. " + hhmm(upd) : "") + "\n" + lineas.join("\n") + "\n\n" + matchUrl(m.home, m.away);
-        queue.push({ text, commit: () => { st.pr[key] = nuevo; dirty = true; } });
+        const cu = cuandoKo(m.ko);
+        let photos = [];
+        try {
+          const mk = await getMk();
+          const logo = (name) => ((mk.players || []).find((p) => p.logo && sameTeam(p.team, name)) || {}).logo;
+          const l1 = logo(m.home), l2 = logo(m.away);
+          if (l1 && l2) photos = [l1, l2];
+        } catch (e) {}
+        const text = "🔄 <b>Once probable actualizado</b>\n<b>" + esc(m.home) + " – " + esc(m.away) + "</b>\n" +
+          [cu ? "🕒 " + esc(cu) : "", upd ? "Actualizado " + hhmm(upd) : ""].filter(Boolean).join("  ·  ") + "\n\n" + lineas.join("\n\n") + "\n\n" + matchUrl(m.home, m.away);
+        queue.push({ text, photos, commit: () => { st.pr[key] = nuevo; dirty = true; } });
       }
     } catch (e) {}
   }
@@ -290,24 +323,25 @@ export async function avisar(env, deps) {
   // Se detecta por cambio real de los precios; de noche no se mira, así que el aviso sale a las 08:00.
   if (!quiet && (all || mnt % 10 === 0)) {
     try {
-      const mk = await getJson(f, "mercado");
+      const mk = await getMk();
       const ps = (mk.players || []).filter((p) => p && p.name && Number.isFinite(p.change));
       if (ps.length > 50) {
         const sig = hash(ps.map((p) => p.id + ":" + p.change).join("|"));
         if (sig !== st.px && (!st.pxAt || now - st.pxAt > 6 * 3600e3)) { // mínimo 6 h entre avisos, por si los precios se mueven a lo largo del día
           const own = new Set(squad.map((p) => String(p.id)));
-          const fila = (p, i, sube) => ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"][i] + " " + (own.has(String(p.id)) ? "⭐" : "") + "<b>" + esc(p.name) + "</b> · " + esc(p.team || "") +
-            "\n" + (sube ? "🟢 +" : "🔴 −") + eur(p.change) + "  ·  💰 " + eur(p.value);
+          const fila = (p, i, sube) => "<b>" + (i + 1) + "</b>  " + (own.has(String(p.id)) ? "⭐" : "") + "<b>" + esc(p.name) + "</b>  <i>" + esc(p.team || "") + "</i>\n" +
+            "     " + (sube ? "▲ +" : "▼ −") + eur(p.change) + "  ·  " + eur(p.value);
           const up = ps.filter((p) => p.change > 0).sort((a, b) => b.change - a.change).slice(0, 5);
           const down = ps.filter((p) => p.change < 0).sort((a, b) => a.change - b.change).slice(0, 5);
           const commit = () => { st.px = sig; st.pxAt = now; dirty = true; };
           if (firstRun || (!up.length && !down.length)) commit();
           else queue.push({
             text: "💹 <b>Mercado actualizado</b>\n\n" +
-              (up.length ? "📈 <b>Las 5 mayores subidas</b>\n" + up.map((p, i) => fila(p, i, true)).join("\n") : "") +
+              (up.length ? "📈 <b>Suben más</b>\n" + up.map((p, i) => fila(p, i, true)).join("\n") : "") +
               (up.length && down.length ? "\n\n" : "") +
-              (down.length ? "📉 <b>Las 5 mayores bajadas</b>\n" + down.map((p, i) => fila(p, i, false)).join("\n") : "") +
-              "\n\n" + WEB + "mercado",
+              (down.length ? "📉 <b>Bajan más</b>\n" + down.map((p, i) => fila(p, i, false)).join("\n") : "") +
+              "\n\n" + WEB + "mercado" + (up[0] && /^https:\/\/static0\d\.mondocore\.com\/futmondo\/img\/faces\//.test(up[0].photo || "") ? "?foto=" + encodeURIComponent(up[0].photo) + "&v=" + sig : ""),
+            small: true,
             commit,
           });
         }
@@ -345,7 +379,7 @@ export async function avisar(env, deps) {
   } else {
     for (const q of queue) {
       if (sentCount >= MAX_MSGS) break;
-      if (await send(env, f, st.chat, q.text)) { q.commit(); sentCount++; }
+      if (await send(env, f, st.chat, q.text, q)) { q.commit(); sentCount++; }
       else break; // si Telegram falla, se reintenta en la siguiente pasada
     }
   }
