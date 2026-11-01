@@ -4672,7 +4672,9 @@ export async function onRequestGet(ctx) {
     } catch (e) {}
     return null;
   };
-  const isGood = (txt) => txt.indexOf('"error"') < 0 && txt.length > 20 && !/"(matches|players|teams|items|days)":\[\]/.test(txt) && !/"matchday":0[,}]/.test(txt) && !/"notas":\{\}/.test(txt);
+  // Solo cuentan las listas vacías de PRIMER nivel (antes cualquier "items":[] anidado hacía que respuestas buenas, como ultimos-cambios, no se guardaran nunca).
+  const topEmpty = (txt) => { try { const o = JSON.parse(txt); return !!o && typeof o === "object" && ["matches", "players", "teams", "items", "days"].some((k) => Array.isArray(o[k]) && !o[k].length); } catch (e) { return /"(matches|players|teams|items|days)":\[\]/.test(txt.slice(0, 400)); } };
+  const isGood = (txt) => txt.indexOf('"error"') < 0 && txt.length > 20 && !topEmpty(txt) && !/"matchday":0[,}]/.test(txt) && !/"notas":\{\}/.test(txt);
   // Guarda la respuesta buena: copia fresca (TTL) + copia de reserva de 2 días con la hora a la que se guardó (x-saved).
   const savePair = (txt) => {
     // La jornada solo necesita refrescarse cada 30 s si hay un partido en juego; si no, cada 90 s (menos CPU)
