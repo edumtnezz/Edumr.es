@@ -116,12 +116,14 @@
   const cmpSel = { a: null, b: null };
   let rangeMin = 0;
   let rangeMax = Infinity;
+  // Probabilidad de jugar (FutbolFantasy): "", "90", "70" o "low" (en duda, menos del 50 %).
+  let probSel = "";
   const MS_KEY = "merc_state";
   let msRestored = false;
   function saveMercState() {
     try {
       const sr = $("mjSearch"), rl = $("mjRole");
-      sessionStorage.setItem(MS_KEY, JSON.stringify({ q: sr ? sr.value : "", sortMode, quick, teamFilter, role: rl ? rl.value : "", rangeMin, rangeMax: rangeMax === Infinity ? 0 : rangeMax, hlPeriod, mktSort, shown }));
+      sessionStorage.setItem(MS_KEY, JSON.stringify({ q: sr ? sr.value : "", sortMode, quick, teamFilter, role: rl ? rl.value : "", rangeMin, rangeMax: rangeMax === Infinity ? 0 : rangeMax, probSel, hlPeriod, mktSort, shown }));
     } catch (e) {}
   }
   function restoreMercState() {
@@ -132,6 +134,7 @@
     if (!st) return;
     sortMode = st.sortMode || sortMode; quick = QUICKS.some(([k]) => k === st.quick) ? st.quick : ""; teamFilter = st.teamFilter || "";
     rangeMin = Number(st.rangeMin) || 0; rangeMax = Number(st.rangeMax) || Infinity;
+    probSel = st.probSel || "";
     if (st.hlPeriod) hlPeriod = st.hlPeriod;
     if (st.mktSort && typeof st.mktSort === "object") mktSort = st.mktSort;
     shown = Math.max(18, Number(st.shown) || 18);
@@ -139,6 +142,7 @@
     const rl = $("mjRole"); if (rl) rl.value = st.role || "";
     document.querySelectorAll("#mxRole .mx-chip").forEach((x) => x.classList.toggle("active", (x.dataset.role || "") === (st.role || "")));
     document.querySelectorAll("#mxPrice .mx-chip").forEach((x) => x.classList.toggle("active", (Number(x.dataset.min) || 0) === rangeMin && (Number(x.dataset.max) || Infinity) === rangeMax));
+    document.querySelectorAll("#mxProb .mx-chip").forEach((x) => x.classList.toggle("active", (x.dataset.prob || "") === probSel));
     document.querySelectorAll(".merc-segbtn").forEach((x) => x.classList.toggle("active", x.dataset.sort === sortMode));
     renderChips(); syncClubActive();
   }
@@ -146,9 +150,10 @@
     const sr = $("mjSearch"); if (sr) sr.value = "";
     const sg = $("mjSuggest"); if (sg) { sg.innerHTML = ""; sg.hidden = true; }
     const rl = $("mjRole"); if (rl) rl.value = "";
-    sortMode = "all"; quick = ""; teamFilter = ""; rangeMin = 0; rangeMax = Infinity; shown = 18; mktSort = { key: "", dir: -1 };
+    sortMode = "all"; quick = ""; teamFilter = ""; rangeMin = 0; rangeMax = Infinity; probSel = ""; shown = 18; mktSort = { key: "", dir: -1 };
     document.querySelectorAll("#mxRole .mx-chip").forEach((x) => x.classList.toggle("active", !(x.dataset.role || "")));
     document.querySelectorAll("#mxPrice .mx-chip").forEach((x) => x.classList.toggle("active", !(Number(x.dataset.max) || 0) && !(Number(x.dataset.min) || 0)));
+    document.querySelectorAll("#mxProb .mx-chip").forEach((x) => x.classList.toggle("active", !(x.dataset.prob || "")));
     document.querySelectorAll(".merc-segbtn").forEach((x) => x.classList.toggle("active", x.dataset.sort === "all"));
     renderChips(); syncClubActive(); renderGrid();
   }
@@ -2516,6 +2521,9 @@
       if (role && p.role !== role) return false;
       const v = Number(p.value) || 0;
       if (v < rangeMin || v > rangeMax) return false;
+      // Filtro "probabilidad de jugar" (dato de FutbolFantasy que ya trae el mercado).
+      if (probSel === "90" || probSel === "70") { if (!(Number(p.prob) >= Number(probSel))) return false; }
+      else if (probSel === "low") { if (!(p.prob != null && Number(p.prob) < 50)) return false; }
       return true;
     });
     const mq = MQ[quick];
@@ -2548,7 +2556,7 @@
       }
     } catch (e) {}
     const _sq = $("mjSearch"), _rl = $("mjRole");
-    if ((_sq && _sq.value.trim()) || quick || teamFilter || (_rl && _rl.value) || rangeMin > 0 || (rangeMax !== Infinity && rangeMax > 0 && document.querySelector("#mxPrice .mx-chip.active") && (Number(document.querySelector("#mxPrice .mx-chip.active").dataset.max) || 0)) || sortMode !== "all") {
+    if ((_sq && _sq.value.trim()) || quick || teamFilter || (_rl && _rl.value) || probSel || rangeMin > 0 || (rangeMax !== Infinity && rangeMax > 0 && document.querySelector("#mxPrice .mx-chip.active") && (Number(document.querySelector("#mxPrice .mx-chip.active").dataset.max) || 0)) || sortMode !== "all") {
       const rb = el("button", "btn-ghost mkt-reset", "✕ Quitar filtros y ver todos los jugadores"); rb.type = "button";
       rb.addEventListener("click", resetMercFilters);
       grid.appendChild(rb);
@@ -5158,7 +5166,7 @@
 
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { if (document.querySelector(".eq-page, .mpage, .playerpage, .livepage")) { location.href = "/futmondo/guiafantasy/" + (t.dataset.tab === "plantillas" ? "mercado" : t.dataset.tab); return; } switchTab(t.dataset.tab); }));
   setupMoreMenu();
-  let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltPeriod = "chg7", pltDir = -1, pltShown = 40, pltPlayers = [], pltMin = "";
+  let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltPeriod = "chg7", pltDir = -1, pltShown = 40, pltPlayers = [], pltMin = "", pltProb = "";
   let rtbInit = false, rtbPos = "", rtbMin = 0, rtbMax = Infinity, rtbShown = 40;
   // En la ficha de jugador esto (14 peticiones de jornadas) se pide DESPUÉS de pintar, para no frenar la carga.
   if (!/\/jugador(?:es)?\/[a-z0-9]{6,40}/i.test(location.pathname)) ensurePlayedJ();
@@ -6457,6 +6465,11 @@
     document.querySelectorAll("#mxRole .mx-chip").forEach((x) => x.classList.toggle("active", x === b));
     const sel = $("mjRole"); if (sel) { sel.value = b.dataset.role || ""; sel.dispatchEvent(new Event("change")); }
   }));
+  document.querySelectorAll("#mxProb .mx-chip").forEach((b) => b.addEventListener("click", () => {
+    document.querySelectorAll("#mxProb .mx-chip").forEach((x) => x.classList.toggle("active", x === b));
+    probSel = b.dataset.prob || "";
+    const y = window.scrollY; shown = 18; renderGrid(); if (window.scrollY !== y) window.scrollTo(0, y);
+  }));
 
   const estadoSel = $("estadoSel"); if (estadoSel) estadoSel.addEventListener("change", renderEstado);
   const teamSel = $("mjTeam"); if (teamSel) teamSel.addEventListener("change", () => { syncClubActive(); shown = 18; renderGrid(); });
@@ -6551,12 +6564,12 @@
     renderPltList();
   }
   const PLT_PER = [["chg7", "7 días"], ["chg30", "30 días"], ["chgAll", "Temporada"]];
-  function pltSave() { try { sessionStorage.setItem("pltState", JSON.stringify({ c: pltClub, p: pltPos, s: pltSort, d: pltDir, per: pltPeriod, n: pltShown, mn: pltMin })); } catch (e) {} }
+  function pltSave() { try { sessionStorage.setItem("pltState", JSON.stringify({ c: pltClub, p: pltPos, s: pltSort, d: pltDir, per: pltPeriod, n: pltShown, mn: pltMin, pr: pltProb })); } catch (e) {} }
   function pltLoadState() {
     try {
       const s = JSON.parse(sessionStorage.getItem("pltState") || "null");
       if (!s) return;
-      pltClub = s.c || ""; pltPos = s.p || ""; pltSort = s.s || "points"; pltDir = s.d === 1 ? 1 : -1; pltPeriod = s.per || "chg7"; pltShown = Number(s.n) > 0 ? Math.min(Number(s.n), 400) : 40; pltMin = MQ[s.mn] ? s.mn : "";
+      pltClub = s.c || ""; pltPos = s.p || ""; pltSort = s.s || "points"; pltDir = s.d === 1 ? 1 : -1; pltPeriod = s.per || "chg7"; pltShown = Number(s.n) > 0 ? Math.min(Number(s.n), 400) : 40; pltMin = MQ[s.mn] ? s.mn : ""; pltProb = ["90", "70", "low"].indexOf(s.pr) >= 0 ? s.pr : "";
     } catch (e) {}
   }
   function pltRerender() { pltShown = 40; renderPltControls(); renderPltList(); }
@@ -6600,6 +6613,14 @@
       mn.appendChild(el("span", "plt-lbl", "Minutos"));
       QUICKS.filter(([k]) => MQ[k]).forEach(([k, lab]) => {
         mn.appendChild(pltBtn(lab, pltMin === k, () => { pltMin = pltMin === k ? "" : k; pltRerender(); }));
+      });
+    }
+    const pr = $("pltProb");
+    if (pr) {
+      pr.innerHTML = "";
+      pr.appendChild(el("span", "plt-lbl", "Jugar"));
+      [["", "Todos"], ["90", "≥ 90 %"], ["70", "≥ 70 %"], ["low", "En duda"]].forEach(([k, lab]) => {
+        pr.appendChild(pltBtn(lab, pltProb === k, () => { pltProb = pltProb === k ? "" : k; pltRerender(); }));
       });
     }
     per.innerHTML = "";
@@ -6698,6 +6719,9 @@
     const rise = pltSort === "rise";
     const key = rise ? pltPeriod : pltSort;
     let list = pltPlayers.filter((p) => (!pltClub || p.team === pltClub) && (!pltPos || String(p.role || "").toLowerCase() === pltPos));
+    // Mismo filtro de "probabilidad de jugar" que en Mercado (dato de FutbolFantasy).
+    if (pltProb === "90" || pltProb === "70") list = list.filter((p) => Number(p.prob) >= Number(pltProb));
+    else if (pltProb === "low") list = list.filter((p) => p.prob != null && Number(p.prob) < 50);
     list = list.slice().sort((a, b) => pltDir * ((Number(a[key]) || 0) - (Number(b[key]) || 0)));
     box.innerHTML = "";
     const mq = MQ[pltMin];

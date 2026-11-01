@@ -5304,6 +5304,27 @@ async function handleGet({ request, env: env0, params }) {
       return json({ pts });
     } catch (e) { return json({ pts: {} }); }
   }
+  if (path === "vista") {
+    // Contador de visitas propio, sin cookies y sin guardar nada de nadie:
+    // solo "cuántas veces se abrió esta página hoy". Se pide una vez por página y sesión.
+    try {
+      const p = String(url.searchParams.get("p") || "/").slice(0, 60).replace(/[^a-zA-Z0-9/_-]/g, "");
+      if (!p) return json({ ok: false });
+      const key = "st:v1:" + dstrMadrid(0);
+      const cur = (await env.PORRA.get(key, "json")) || {};
+      cur[p] = (Number(cur[p]) || 0) + 1;
+      await env.PORRA.put(key, JSON.stringify(cur));
+      return json({ ok: true });
+    } catch (e) { return json({ ok: false }); }
+  }
+  if (path === "vistas") {
+    try {
+      const dias = Math.min(31, Math.max(1, Number(url.searchParams.get("dias")) || 14));
+      const out = {};
+      for (let i = 0; i < dias; i++) { const k = dstrMadrid(i); out[k] = (await env.PORRA.get("st:v1:" + k, "json")) || {}; }
+      return json({ dias: out });
+    } catch (e) { return json({ dias: {} }); }
+  }
   if (path === "puntos") {
     try {
       const j = Number(url.searchParams.get("jornada")) || 0;

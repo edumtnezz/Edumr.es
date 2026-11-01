@@ -36,6 +36,8 @@ Para ver estilos/posiciones calculadas (depurar huecos, etc.) usar el CDP:
 - Al hacer push a `main`, un **GitHub Action** (`.github/workflows/deploy.yml`) publica sola la web (Pages) y el Worker (`puja-do`). Usa `build.sh` para armar `dist`.
 - Secretos del repo: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
 - Ya NO hace falta `deploy.ps1` (ni el PC). Cualquier push despliega.
+- **Después de publicar**, el Action corre `scripts/smoke.mjs` (8 páginas + 4 APIs). Si la web se queda en blanco, sin datos o una API cae, el despliegue sale en rojo. Antes de dar algo por bueno, mira además con captura real a 390 px.
+- **Visitas**: `futmondo/vista.js` (sin cookies) → `/api/laquiniela/vista` → KV `st:v1:<día>` → `/futmondo/stats/` (noindex). Una visita por página y sesión.
 
 
 

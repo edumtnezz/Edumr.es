@@ -49,3 +49,8 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: cron
           command: deploy
+
+      # Al final, se comprueba de verdad la web publicada. Si algo se ha quedado
+      # roto (página en blanco, API vacía), el despliegue sale en rojo y se ve.
+      - name: Comprobar que la web sigue en pie
+        run: node scripts/smoke.mjs

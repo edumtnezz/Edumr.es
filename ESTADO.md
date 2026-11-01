@@ -20,6 +20,10 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
   - **`?v=` automático**: `scripts/version-assets.mjs` pone la versión según el contenido de cada CSS/JS al preparar `dist`. Ya no hay que acordarse de subirla (y estos archivos se cachean un año). Tests en `tests/version-assets.test.mjs`.
   - **Inicio más ligero**: la foto grande del inicio se queda y las dos siguientes pasan a lista (antes eran tres fotos a todo el ancho). Textos mínimos: se subieron los de 6,7 / 7,4 / 8,6 px (hora del once probable, pastillas de posición, horas del ticker).
   - **Detalles**: el hub aclara que la Guía Fantasy se ve sin cuenta; La Puja enseña el valor en formato corto (131,5 M€) y deja las pujas exactas.
+- 01/11: **filtro "Prob. jugar"** en Mercado (`#mxProb`) y en Plantillas (`#pltProb`): Todas / ≥90 % / ≥70 % / En duda. Sale del % de FutbolFantasy que ya trae el mercado; no calcula nada.
+- 01/11: **portada reordenada**: Futmondo va primero (es lo que más se usa) y se quita la tarjeta "Web Oficial & VPS" (eso es la casa, no un proyecto). El contador dice 4 proyectos.
+- 01/11: **prueba de humo tras publicar** (`scripts/smoke.mjs`, último paso del GitHub Action): 8 páginas + 4 APIs. Si algo se queda en blanco o sin datos, el despliegue sale en rojo.
+- 01/11: **contador de visitas propio** (sin cookies, sin datos personales): `futmondo/vista.js` avisa una vez por página y sesión; el backend lo suma en KV (`st:v1:<día>`) y `/futmondo/stats/` enseña los últimos 14 días. Se puede ver en https://edumr.es/futmondo/stats/ (noindex, sin enlaces).
 
 ## Pendiente
 - Jugadores con ≥ 90 % de probabilidad de jugar (idea de Edu, AGENTS.md; no consta en el historial como hecha).
