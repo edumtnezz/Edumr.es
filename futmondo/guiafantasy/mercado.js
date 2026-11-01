@@ -2925,13 +2925,26 @@
     } else {
       body.appendChild(el("div", "cmpx-s2name", which === "a" ? "Elige el primer jugador" : "Elige el segundo jugador"));
     }
+    // Desplegable normal del móvil (sin buscador ni pantalla completa): jugadores agrupados por club (Edu 02/11)
     const box = el("div", "cmpx-s2box");
-    // Un botón (no un campo de texto): al tocarlo se abre el selector a pantalla completa, con el buscador fijo ARRIBA
-    // para que el teclado del móvil nunca tape lo que se escribe.
-    const inp = el("button", "cmpx-s2inp"); inp.type = "button";
-    inp.textContent = p ? "Cambiar jugador" : "Buscar jugador";
-    const arrow = el("span", "cmpx-s2arrow"); arrow.setAttribute("aria-hidden", "true"); arrow.textContent = "⌕";
-    box.appendChild(inp); box.appendChild(arrow);
+    const sel = el("select", "cmpx-s2sel");
+    sel.setAttribute("aria-label", which === "a" ? "Jugador 1" : "Jugador 2");
+    const o0 = el("option", null, p ? "Cambiar jugador" : "Elegir jugador"); o0.value = ""; sel.appendChild(o0);
+    const byTeam = {};
+    (all || []).forEach((q) => { if (q && q.id != null && q.name && q.team) (byTeam[q.team] = byTeam[q.team] || []).push(q); });
+    Object.keys(byTeam).sort((x, y) => x.localeCompare(y, "es")).forEach((tn) => {
+      const og = document.createElement("optgroup"); og.label = tn;
+      byTeam[tn].sort((x, y) => String(x.name).localeCompare(String(y.name), "es")).forEach((q) => {
+        const o = el("option", null, q.name + (roleBadge(q.role) ? " · " + roleBadge(q.role) : "")); o.value = String(q.id); og.appendChild(o);
+      });
+      sel.appendChild(og);
+    });
+    sel.addEventListener("change", () => {
+      const pl = (all || []).find((q) => String(q.id) === sel.value);
+      sel.value = "";
+      if (pl) choose(pl);
+    });
+    box.appendChild(sel);
     body.appendChild(box);
     c.appendChild(body);
     const choose = (pl) => {
@@ -2943,7 +2956,6 @@
       cmpPaint();
       cmpLoadDetail(false);
     };
-    box.addEventListener("click", () => openCmpOverlay(which === "a" ? "Jugador 1" : "Jugador 2", choose));
     return c;
   }
   // Selector a pantalla completa: buscador fijo arriba, lista debajo. Sigue al "viewport visual" del móvil (teclado abierto).
