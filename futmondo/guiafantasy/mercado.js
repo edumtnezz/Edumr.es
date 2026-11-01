@@ -2799,7 +2799,7 @@
     }
     const box = el("div", "cmpx-s2box");
     const inp = el("input", "cmpx-s2inp"); inp.type = "text"; inp.autocomplete = "off"; inp.setAttribute("autocapitalize", "off");
-    inp.placeholder = p ? "Cambiar jugador…" : "Buscar jugador…";
+    inp.placeholder = p ? "Cambiar…" : "Buscar…";
     const arrow = el("button", "cmpx-s2arrow"); arrow.type = "button"; arrow.setAttribute("aria-label", "Ver jugadores"); arrow.textContent = "▾";
     box.appendChild(inp); box.appendChild(arrow);
     body.appendChild(box);
@@ -2816,13 +2816,14 @@
       cmpPaint();
       cmpLoadDetail(false);
     };
+    const st = {};
     const open = () => {
       if (cmpOpen && cmpOpen !== c) cmpOpen.classList.remove("open");
       c.classList.add("open"); cmpOpen = c;
-      pickFill(dd, inp.value, choose);
+      pickFill(dd, inp.value, choose, st);
     };
-    inp.addEventListener("focus", open);
-    inp.addEventListener("input", open);
+    inp.addEventListener("focus", () => { if (!c.classList.contains("open")) { st.mode = null; } open(); });
+    inp.addEventListener("input", () => { st.mode = null; open(); });
     inp.addEventListener("keydown", (e) => {
       if (e.key === "Escape") { c.classList.remove("open"); cmpOpen = null; inp.blur(); }
       if (e.key === "Enter") { const f = dd.querySelector(".pk-row"); if (f) f.click(); }
@@ -5258,8 +5259,42 @@
     });
     return row;
   }
-  function pickFill(list, q, cb) {
+  function pickFill(list, q, cb, st) {
+    st = st || {};
     list.innerHTML = "";
+    const again = () => pickFill(list, q, cb, st);
+    const hasQ = !!String(q || "").trim();
+    if (!hasQ && st.mode === "clubs") {
+      list.appendChild(el("div", "pk-head", "Elige un club"));
+      const seen = {}, cl = [];
+      all.forEach((p) => { if (p.team && !seen[p.team]) { seen[p.team] = 1; cl.push(p); } });
+      cl.sort((x, y) => String(x.team).localeCompare(String(y.team), "es"));
+      const grid = el("div", "pk-clubs");
+      cl.forEach((p) => {
+        const b = el("button", "pk-club"); b.type = "button";
+        const cr = cmpCrest(p, "pk-club-img"); if (cr) b.appendChild(cr);
+        b.appendChild(el("span", null, p.team));
+        b.addEventListener("click", () => { st.club = p.team; st.mode = "club"; again(); });
+        grid.appendChild(b);
+      });
+      list.appendChild(grid);
+      return;
+    }
+    if (!hasQ && st.mode === "club" && st.club) {
+      const back = el("button", "pk-back", "‹ Clubes"); back.type = "button";
+      back.addEventListener("click", () => { st.mode = "clubs"; again(); });
+      list.appendChild(back);
+      list.appendChild(el("div", "pk-head", st.club));
+      const pl = all.filter((p) => p.team === st.club).sort((x, y) => y.value - x.value);
+      pl.forEach((p) => list.appendChild(pickRowEl(p, cb)));
+      if (!pl.length) list.appendChild(el("p", "pk-empty", "Sin jugadores"));
+      return;
+    }
+    if (!hasQ) {
+      const bc = el("button", "pk-byclub", "🛡 Elegir por club"); bc.type = "button";
+      bc.addEventListener("click", () => { st.mode = "clubs"; again(); });
+      list.appendChild(bc);
+    }
     const groups = pickGroups(q);
     let n = 0;
     groups.forEach(([gt, gl]) => {
@@ -5277,9 +5312,10 @@
     const list = el("div", "pk-list");
     root.appendChild(list);
     const pick = (p) => { cb(p); closeModal(); };
-    inp.addEventListener("input", () => pickFill(list, inp.value, pick));
+    const st = {};
+    inp.addEventListener("input", () => { st.mode = null; pickFill(list, inp.value, pick, st); });
     showModal(root);
-    pickFill(list, "", pick);
+    pickFill(list, "", pick, st);
     inp.focus();
   }
   function toPlayer(pl, pos) {

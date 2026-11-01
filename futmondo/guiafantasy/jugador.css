@@ -332,3 +332,22 @@ svg.ffx-ha.a{background:rgba(99,102,241,.16);color:#6366f1}
 .cmpx-panel { overflow: visible; }
 .cmpx-dd { color: var(--text, inherit); }
 .cmpx-dd .pk-name, .cmpx-dd .pk-val { color: var(--text, inherit); }
+
+/* Jugador 1 a la izquierda y 2 a la derecha; el desplegable ocupa todo el ancho */
+.cmpx-panel .cmp2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; position: relative; align-items: start; }
+.cmpx-panel .cmp2-vs { position: absolute; left: 50%; top: 42px; transform: translateX(-50%); margin: 0; }
+.cmpx-slot2 { position: static; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 14px 8px 12px; min-width: 0; }
+.cmpx-slot2.open { border-color: #16a34a; }
+.cmpx-s2body { width: 100%; text-align: center; }
+.cmpx-s2sub { justify-content: center; margin: 0 0 8px; }
+.cmpx-s2name { font-size: .95rem; }
+.cmpx-s2ph { width: 64px; height: 64px; }
+.cmpx-s2inp { padding: 0 8px; font-size: 15px; }
+.cmpx-s2arrow { flex-basis: 32px; }
+.cmpx-dd { left: 0; right: 0; top: 100%; margin-top: 6px; z-index: 10; }
+.pk-byclub { display: flex; align-items: center; gap: 8px; width: 100%; margin: 6px 0 2px; padding: 12px; border: 1px dashed var(--border, rgba(127,127,127,.5)); border-radius: 12px; background: transparent; color: inherit; font: 700 14px/1 inherit; cursor: pointer; }
+.pk-back { margin: 4px 0 0; padding: 8px 4px; border: 0; background: transparent; color: #16a34a; font: 800 14px/1 inherit; cursor: pointer; }
+.pk-clubs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; padding-bottom: 6px; }
+.pk-club { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 8px; border: 1px solid var(--border, rgba(127,127,127,.3)); border-radius: 10px; background: rgba(127,127,127,.06); color: inherit; font: 600 13px/1.15 inherit; text-align: left; cursor: pointer; }
+.pk-club span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pk-club-img { width: 24px; height: 24px; object-fit: contain; flex: 0 0 24px; }
