@@ -1518,17 +1518,17 @@ async function getFfNoticias(env) {
 // Solo título, foto, hora y enlace (el texto de la noticia se lee en su web). Sin duplicar historias: si otra fuente cuenta
 // lo mismo que FutbolFantasy se queda solo una. Si una fuente falla o bloquea, se ignora (nunca se inventa nada).
 const EXT_SKIP = /(comunio|biwenger|mister|fantasy marca|laliga fantasy|mercado fantasy|subidas y bajadas|rosco|confesionario|portadas|descarga la app|nueva version|alineaciones confirmadas|app de comuniate)/;
-const EXT_STOP = new Set("para sobre ante tras este esta estos estas desde entre hasta como pero sino aunque cuando donde jornada fantasy segun mientras tiene tienen habla hablan confirma confirman vuelve vuelven sigue siguen sera serán tambien despues antes porque quien dice".split(" "));
+const EXT_STOP = new Set("para sobre ante tras este esta estos estas desde entre hasta como pero sino aunque cuando donde jornada fantasy segun mientras tiene tienen habla hablan confirma confirman vuelve vuelven sigue siguen sera tambien despues antes porque quien dice parte medico oficial lesion lesionado lesiones baja bajas partido equipo entrenador convocatoria convocados convocado jugador jugadores ultima hora ultimo tras sera podria puede pide pasa deja queda recupera recuperacion real madrid barcelona atletico athletic bilbao club sevilla betis valencia villarreal getafe osasuna celta espanyol girona levante alaves mallorca rayo vallecano racing santander deportivo coruna oviedo elche sociedad cadiz granada almeria laliga liga copa".split(" "));
 function titleTokens(t) {
-  return Array.from(new Set(String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !EXT_STOP.has(w))));
+  return Array.from(new Set(String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !EXT_STOP.has(w))));
 }
-// ¿Cuentan lo mismo? ≥3 palabras clave compartidas y la mitad de las del título más corto
+// ¿Cuentan lo mismo? ≥2 palabras clave compartidas y el 40 % de las del título más corto
 function sameStory(a, b) {
   const A = titleTokens(a), B = titleTokens(b);
   if (!A.length || !B.length) return false;
   const bs = new Set(B);
   const n = A.filter((w) => bs.has(w)).length;
-  return n >= 3 && n >= 0.5 * Math.min(A.length, B.length);
+  return n >= 2 && n >= 0.4 * Math.min(A.length, B.length);
 }
 function madridDM(ts) {
   const p = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(ts));
@@ -1593,7 +1593,8 @@ async function getNoticiasMulti(ff) {
   const base = (ff || []).map((x) => Object.assign({ src: "FutbolFantasy" }, x));
   const kept = [];
   for (const x of cm.concat(jp)) {
-    if (base.slice(0, 40).some((y) => sameStory(x.title, y.title)) || kept.some((y) => sameStory(x.title, y.title))) continue;
+    // Solo se compara con noticias de OTRAS fuentes (dos seguidas de la misma fuente son distintas)
+    if (base.slice(0, 40).some((y) => y.src !== x.src && sameStory(x.title, y.title)) || kept.some((y) => y.src !== x.src && sameStory(x.title, y.title))) continue;
     kept.push(x);
   }
   kept.sort((a, b) => (b.ts || 0) - (a.ts || 0));

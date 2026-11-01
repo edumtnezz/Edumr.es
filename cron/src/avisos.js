@@ -25,9 +25,10 @@ const newsUrl = (link) => {
   return WEB + "noticias" + (sl ? "/" + sl : "");
 };
 // Palabras clave del titular para detectar la misma historia contada por varias fuentes
-const TSTOP = new Set("para sobre ante tras este esta estos estas desde entre hasta como pero sino aunque cuando donde jornada fantasy segun mientras tiene tienen habla hablan confirma confirman vuelve vuelven sigue siguen sera tambien despues antes porque quien dice".split(" "));
+const TSTOP = new Set("para sobre ante tras este esta estos estas desde entre hasta como pero sino aunque cuando donde jornada fantasy segun mientras tiene tienen habla hablan confirma confirman vuelve vuelven sigue siguen sera tambien despues antes porque quien dice parte medico oficial lesion lesionado lesiones baja bajas partido equipo entrenador convocatoria convocados convocado jugador jugadores ultima hora ultimo tras sera podria puede pide pasa deja queda recupera recuperacion real madrid barcelona atletico athletic bilbao club sevilla betis valencia villarreal getafe osasuna celta espanyol girona levante alaves mallorca rayo vallecano racing santander deportivo coruna oviedo elche sociedad cadiz granada almeria laliga liga copa".split(" "));
 const tokens = (t) => Array.from(new Set(norm(t).split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !TSTOP.has(w))));
-const sameTok = (A, B) => { if (!A.length || !B.length) return false; const bs = new Set(B); const n = A.filter((w) => bs.has(w)).length; return n >= 3 && n >= 0.5 * Math.min(A.length, B.length); };
+// Misma historia: al menos 2 palabras clave compartidas (nombre/apellido, tema) y el 40 % de las del título más corto
+const sameTok = (A, B) => { if (!A.length || !B.length) return false; const bs = new Set(B); const n = A.filter((w) => bs.has(w)).length; return n >= 2 && n >= 0.4 * Math.min(A.length, B.length); };
 const slugM = (h, a) => String(h + "-" + a).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const matchUrl = (h, a) => WEB + "partido/" + slugM(h, a);
 const STATE_KEY = "tg:avisos:v1";
@@ -268,7 +269,7 @@ export async function avisar(env, deps) {
     // Historial de titulares de las últimas 12 h para no avisar dos veces de la misma historia (aunque la cuenten fuentes distintas)
     const migrar = !st.nt; // primera vez con varias fuentes: lo que ya hay de Comuniate/Jornada Perfecta se da por visto
     st.nt = (st.nt || []).filter((e) => now - e.t < 12 * 3600e3);
-    if (migrar) items.filter((x) => !ext(x)).forEach((x) => { const at0 = newsAt(x.date, x.time, now); if (at0 && now - at0 < 12 * 3600e3) st.nt.push({ k: tokens(decode(x.title)), t: at0 }); });
+    if (migrar) items.filter((x) => !ext(x)).forEach((x) => { const at0 = newsAt(x.date, x.time, now); if (at0 && now - at0 < 12 * 3600e3) st.nt.push({ k: tokens(decode(x.title)), t: at0, s: x.src || "FutbolFantasy" }); });
     const cands = [];
     for (const x of items) {
       if (sent.has(x.link)) continue;
@@ -278,15 +279,16 @@ export async function avisar(env, deps) {
       if (!firstRun && !(at && now - at <= NEWS_MAX_AGE)) continue;
       const hits = ownMatch(title, squad);
       const kw = KW.test(norm(title));
-      cands.push({ x, title, at, hits, kw, k: tokens(title) });
+      cands.push({ x, title, at, hits, kw, k: tokens(title), s: x.src || "FutbolFantasy" });
     }
     cands.sort((a, b) => a.at - b.at); // las más antiguas primero
     const aceptadas = [];
     const nuevas = [];
     for (const c of cands) {
-      const dup = st.nt.some((e) => sameTok(c.k, e.k)) || aceptadas.some((k) => sameTok(c.k, k));
+      // Solo cuenta como repetida si la historia ya salió en OTRA fuente (dos noticias seguidas de la misma fuente son distintas)
+      const dup = st.nt.some((e) => e.s !== c.s && sameTok(c.k, e.k)) || aceptadas.some((e) => e.s !== c.s && sameTok(c.k, e.k));
       if (dup) { st.news = (st.news || []).concat([c.x.link]).slice(-200); dirty = true; continue; } // misma historia: se da por vista sin avisar
-      aceptadas.push(c.k); nuevas.push(c);
+      aceptadas.push({ k: c.k, s: c.s }); nuevas.push(c);
     }
     for (const c of nuevas.slice(0, firstRun || quiet ? 0 : MAX_MSGS)) {
       // Resumen breve (la entradilla de la noticia); si no hay, el aviso sale sin él
@@ -300,7 +302,7 @@ export async function avisar(env, deps) {
     }
     for (const c of nuevas) {
       const text = noticiaTexto(c.title, c.hits, c.resumen, c.x.link, c.x.src);
-      queue.push({ text, commit: () => { st.news = (st.news || []).concat([c.x.link]).slice(-200); st.nt = (st.nt || []).concat([{ k: c.k, t: c.at || now }]).slice(-150); dirty = true; } });
+      queue.push({ text, commit: () => { st.news = (st.news || []).concat([c.x.link]).slice(-200); st.nt = (st.nt || []).concat([{ k: c.k, t: c.at || now, s: c.s }]).slice(-150); dirty = true; } });
     }
   }
 
