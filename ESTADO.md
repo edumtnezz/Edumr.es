@@ -54,3 +54,12 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 - Tests automáticos en `tests/` (los corre el GitHub Action antes de publicar; si fallan no se despliega).
 
 - Inicio (01/11/2026): "Destacados" se quitó y ahora es "Jugadores rentables": los 6 primeros con el mismo diseño de filas que la pestaña (función compartida `rtbRow` en `mercado.js`; `renderRachas` pinta Inicio y `renderRentables` la pestaña). "Ver más jugadores" abre la pestaña. Las tarjetas `dest-*` ya no se usan (el CSS sigue ahí).
+
+## 01/11/2026 — Tanda de 25 arreglos de Edu (hecho y subido)
+- Onces: un partido final/en vivo no se marca "once confirmado". Telegram: sin imágenes, una sola alerta "ONCE DEL <EQUIPO>", confirmado con posiciones separadas, % sin alertas, mercado con "Sube más / Baja más", parte médico sin confundir nombres (tests en `tests/avisos.test.mjs`).
+- Noticias: banners propios (`/img/noticia-ultima-hora.jpg`, `/img/parte-medico.jpg`), todo abre en la propia web, sin "Lo último".
+- Comparador a pantalla completa (`openCmpOverlay`), resumen nuevo, sin scroll lateral en todas las hojas.
+- Mercado: botones planos e iguales (CSS al final de `mercado.css`). Fichajes y Equipos con el estilo de la web; Equipos sin buscador.
+- FotMob en directo: nota verde desde 7, naranja por debajo. Noticia principal "Sigue el partido en directo" (`paintLiveHero`): foto real de un jugador del equipo que gana (al azar si empatan). Sin probar con un partido en vivo real todavía.
+- Alerta de fallos del menú: resumen "Fallos de fuentes (N)"; se marca leída al abrir el menú (`seen_fail_sig`).
+- Visitas: `vista.js` cuenta páginas y toques por hora (KV `st:v2:<día>:<hora>`, API `vistas-horas`); página `/futmondo/stats/` con barras por hora y detalle al tocar una hora. El histórico por hora empieza el 01/11.
