@@ -3325,3 +3325,6 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .feat-chg-solo .feat-chg-title { margin-top: 0; }
 .feat-chg-solo .feat-chg-ph { display: block; width: 24px; height: 24px; }
 .feat-chg-solo .feat-chg-time { display: block; }
+
+/* Inicio sin título: las noticias van pegadas a las tarjetas de la jornada */
+#tab-inicio > .panel:first-of-type { margin-top: 10px; }
