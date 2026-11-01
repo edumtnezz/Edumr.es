@@ -3975,7 +3975,7 @@
         const it = el("a", "newscard news-link" + (idx === 0 ? " news-hero" : "")); it.href = newsHref(x.link);
         it.style.animationDelay = Math.min(idx, 10) * 40 + "ms";
         it.addEventListener("click", (ev) => { if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button === 1) return; ev.preventDefault(); openNoticiaInline(x.link, x.title); });
-        const th = el("div", "newscard-thumb");
+        const th = el("div", "newscard-thumb" + (isCm(x) ? " cm-crop-bg" : ""));
         const fbImg = newsFallbackImg(x.title), mainImg = newsImgOf(x);
         const setBg = (u) => { th.style.backgroundImage = 'url("' + u + '")'; };
         setBg(mainImg);
@@ -4066,7 +4066,7 @@
     const hero = list[0];
     const h = el("div", "feat-hero");
     h.addEventListener("click", () => open(hero));
-    const him = el("img"); him.alt = ""; him.loading = "lazy"; him.src = newsImgOf(hero);
+    const him = el("img"); him.alt = ""; him.loading = "lazy"; him.src = newsImgOf(hero); if (isCm(hero)) him.classList.add("cm-crop");
     him.addEventListener("error", () => { him.src = newsFallbackImg(hero.title); }, { once: true });
     h.appendChild(him);
     const hov = el("div", "feat-hero-overlay");
@@ -4087,7 +4087,7 @@
         row.addEventListener("click", () => open(x));
         const th = el("img", "feat-prev-img"); th.alt = ""; th.loading = "lazy"; th.src = newsImgOf(x);
         th.addEventListener("error", () => { th.src = newsFallbackImg(x.title); }, { once: true });
-        row.appendChild(th);
+        if (isCm(x)) { const w = el("span", "feat-prev-img cm-wrap"); th.className = "cm-in"; w.appendChild(th); row.appendChild(w); } else row.appendChild(th);
         const tx = el("div", "feat-prev-tx");
         const tl = el("div", "feat-prev-top");
         const kk = newsKindChip(x.title);
@@ -4260,6 +4260,7 @@
   // Foto de cada noticia: el parte médico lleva SU banner y las que no traen foto, el banner de noticias (antes salía un balón gris)
   const NEWS_IMG = "/img/noticia-ultima-hora.jpg", PARTE_IMG = "/img/parte-medico.jpg";
   const isParteMedico = (title) => /parte\s+m[eé]dico/i.test(String(title || ""));
+  const isCm = (x) => /comuniate\.com/i.test(String((x && x.link) || "")); // imágenes de Comuniate: se recorta abajo, donde va su logo (Edu 02/11)
   const newsFallbackImg = (title) => (isParteMedico(title) ? PARTE_IMG : NEWS_IMG);
   const newsImgOf = (x) => (isParteMedico(x && x.title) ? PARTE_IMG : (x && x.thumb) || NEWS_IMG);
   const baseTitle = document.title;
@@ -4341,7 +4342,7 @@
       // Noticia de otra fuente (Comuniate / Jornada Perfecta): titular, foto y resumen; el texto completo se lee en su web
       box.appendChild(el("h2", "ficha-name", title || d.title || ""));
       try { if (title || d.title) document.title = (title || d.title) + " · EduMR"; } catch (e) {}
-      { const im = new Image(); im.src = isParteMedico(title || d.title) ? PARTE_IMG : (d.image || NEWS_IMG); im.alt = ""; im.className = "art-img"; im.style.cssText = "width:100%;border-radius:12px;margin:8px 0"; im.addEventListener("error", () => { im.src = newsFallbackImg(title || d.title); }, { once: true }); box.appendChild(im); }
+      { const im = new Image(); im.src = isParteMedico(title || d.title) ? PARTE_IMG : (d.image || NEWS_IMG); im.alt = ""; im.className = "art-img"; const cmImg = d.src === "Comuniate" && !isParteMedico(title || d.title); im.style.cssText = cmImg ? "" : "width:100%;border-radius:12px;margin:8px 0"; im.addEventListener("error", () => { im.src = newsFallbackImg(title || d.title); }, { once: true }); if (cmImg) { const w = el("div", "cm-detail"); w.appendChild(im); box.appendChild(w); } else box.appendChild(im); }
       if (d.lead) box.appendChild(el("p", "art-lead", d.lead));
       try { newsPlayersBlock(box, (d.title || title || "") + " . " + (d.lead || "")); } catch (e) {}
       return;
