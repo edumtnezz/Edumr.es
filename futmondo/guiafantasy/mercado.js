@@ -4158,8 +4158,10 @@
       row.addEventListener("click", () => { pendingUpdKey = updKey(x); switchTab("actualizaciones"); let n = 0; const t = setInterval(() => { if (focusUpd() || ++n > 12) clearInterval(t); }, 250); });
       if (x.photo) { const ph = el("img", "feat-chg-ph"); ph.alt = ""; ph.loading = "lazy"; ph.src = x.photo; ph.addEventListener("error", () => { const d = el("span", "feat-chg-dot"); ph.replaceWith(d); }, { once: true }); row.appendChild(ph); }
       else row.appendChild(el("span", "feat-chg-dot"));
-      row.appendChild(el("span", "feat-chg-cat", cc[0]));
-      row.appendChild(el("span", "feat-chg-txt", x.title));
+      const ctx = el("div", "feat-chg-tx");
+      ctx.appendChild(el("span", "feat-chg-cat", cc[0]));
+      ctx.appendChild(el("span", "feat-chg-txt", x.title));
+      row.appendChild(ctx);
       if (x.time) row.appendChild(el("span", "feat-chg-time", x.time));
       c.appendChild(row);
     });

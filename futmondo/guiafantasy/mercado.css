@@ -3375,3 +3375,17 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .feat-chg-solo .feat-chg-txt { font-size: 1rem; }
 .feat-chg-solo .feat-chg-time { font-size: .86rem; }
 @container (min-width: 640px) { .feat-prev-img { width: 76px; height: 76px; } .feat-prev-h { font-size: 1rem; } }
+
+/* Inicio: Anteriores y Últimos cambios con la misma letra (negrita, mismo tamaño) y filas separadas por una línea (Edu 02/11) */
+.feat-prev-h, .feat-chg .feat-chg-cat, .feat-chg .feat-chg-txt { font-size: .86rem; font-weight: 700; line-height: 1.25; }
+.feat-prev-m, .feat-chg .feat-chg-time { font-size: .72rem; font-weight: 600; }
+.feat-chg .feat-chg-row { border-top: 1px solid var(--border); padding: 9px 0; gap: 9px; align-items: center; }
+.feat-chg .feat-chg-title + .feat-chg-row { border-top: 0; }
+.feat-chg .feat-chg-ph { width: 32px; height: 32px; }
+.feat-chg .feat-chg-dot { width: 9px; height: 9px; }
+.feat-chg .feat-chg-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.feat-chg .feat-chg-cat { flex: none; }
+.feat-chg .feat-chg-txt { flex: none; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: clip; }
+.feat-chg .feat-chg-empty { font-size: .86rem; }
+@container (max-width: 639px) { .feat-prev-h { font-size: .86rem; } .feat-prev-m { font-size: .72rem; } }
+@container (min-width: 640px) { .feat-prev-h { font-size: .86rem; } }
