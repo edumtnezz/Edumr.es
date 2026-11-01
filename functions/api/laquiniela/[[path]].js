@@ -1667,6 +1667,11 @@ async function getNoticia(url) {
     let seg = html.slice(start, start + 22000);
     const m = seg.search(/(<div class="noticia (prev|next)|class="relacionad|class="mas-noticias|class="relative-noticias|comments-container|btn-ver-comentarios|uc-open-bar|uc-icon-wrap|class="taboola|taboola-|class="descripcion|<h4 class="mb-0"|<footer|class="clearfix")/i);
     if (m > 0) seg = seg.slice(0, m);
+    // El enlace "Posibles alineaciones X - Y" suele quedar muy abajo (tras las fichas de jugadores): se busca en toda la página
+    if (!/Posibles alineaciones|Alineaciones probables/i.test(seg)) {
+      const pa = html.slice(start).match(/<a\b[^>]*href="https:\/\/www\.futbolfantasy\.com\/partidos\/[^"]*"[^>]*>\s*(?:Posibles alineaciones|Alineaciones probables)[^<]*<\/a>/i);
+      if (pa) seg += "<p>" + pa[0] + "</p>";
+    }
     body = cleanArticle(prettyArticle(seg));
   }
   if (!body || body.replace(/<[^>]+>/g, "").trim().length < 40) {
