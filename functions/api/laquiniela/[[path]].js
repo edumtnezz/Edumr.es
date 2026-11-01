@@ -2097,7 +2097,7 @@ async function getFFTeam(env, name, fresh) {
     "espanyol-barcelona": "espanyol",
   };
   if (SLUG_FIX[slug]) slug = SLUG_FIX[slug];
-  const key = "ffteam:v11:" + slug;
+  const key = "ffteam:v12:" + slug;
   if (!fresh) { try { const c = (await edgeGet(key)) || (await env.PORRA.get(key, "json")); if (c && c.data && Date.now() - (c.at || 0) < 30 * 60 * 1000) { if (!c.data.fetchedAt) c.data.fetchedAt = c.at; return c.data; } } catch (e) {} }
   const data = { starters: [], bench: [], fetchedAt: Date.now() };
   try {
@@ -2125,7 +2125,12 @@ async function getFFTeam(env, name, fresh) {
       const last = (fullName || stripHtml(nm)).split(/\s+/).pop();
       return { name: stripHtml(nm), full: fullName, last, photo, pos, prob: prob != null ? Number(prob) : null, x: x ? parseFloat(x) : null, y: y ? parseFloat(y) : null, nat, edad, inj, san };
     }).filter(Boolean);
-    data.starters = parse(hTit);
+    // FutbolFantasy ahora mete en el bloque de titulares una SEGUNDA tanda de 11 (otra versión del once,
+    // sin posición ni %), así que salían 22 y repetidos. Solo valen los que traen posición; sin repetir.
+    const seen = new Set();
+    const tit = parse(hTit);
+    const conPos = tit.filter((p) => p.pos);
+    data.starters = (conPos.length >= 10 ? conPos : tit).filter((p) => { const k = p.full || p.name; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 11);
     data.bench = parse(hSup);
     // FutbolFantasy guarda las versiones del once probable con su fecha ("12/10 20:06", "13/10 17:06"...):
     // la última es cuándo se actualizó DE VERDAD el once de este equipo.
@@ -2184,7 +2189,7 @@ async function checkFFHealth(env, force) {
 
 async function getOnce(env, home, away, jornada) {
   const j = Number(jornada) || 0;
-  const key = "once:v12:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
+  const key = "once:v13:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
   try { const c = await env.PORRA.get(key, "json"); if (c && c.at && Date.now() - c.at < 30 * 60 * 1000) return c.data; } catch (e) {}
   let stadium = "", kickoff = "", referee = "";
   try {

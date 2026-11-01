@@ -110,6 +110,9 @@
   function render(side, pool, bench, mode) {
     var probable = !mode || mode === "probable";
     var groups = { fw: [], md: [], df: [], gk: [] };
+    // Nunca el mismo jugador dos veces en el campo
+    var vistos = {};
+    side = Object.assign({}, side, { starters: side.starters.filter(function (s) { var k = strip(s.full || s.name); if (vistos[k]) return false; vistos[k] = 1; return true; }) });
     side.starters.forEach(function (s) { groups[line(s.pos)].push(s); });
     // Cada suplente es alternativa de UN solo titular dudoso (el de menor probabilidad de su línea).
     var altOf = new Map(), libres = !probable ? [] : bench.filter(function (b) { return (b.prob || 0) >= 40; }).slice();
