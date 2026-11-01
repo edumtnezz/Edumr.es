@@ -3358,3 +3358,20 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .feat-chg.feat-chg-solo { padding: 12px 14px 8px; min-height: 0; }
 .feat-chg-solo .feat-chg-ph { width: 36px; height: 36px; }
 .feat-chg-solo .feat-chg-txt { font-size: .92rem; }
+
+/* Inicio: un poco más grande todavía (Edu 02/11) */
+@container (max-width: 639px) {
+  .feat-grid { grid-template-columns: minmax(0, 64%) minmax(0, 1fr); }
+  .feat-prev-row { gap: 9px; padding: 10px 0; }
+  .feat-prev-img { width: 62px; height: 62px; border-radius: 11px; }
+  .feat-prev-h { font-size: .92rem; line-height: 1.22; }
+  .feat-prev-m { font-size: .74rem; }
+  .feat-hero-title { font-size: .8rem; }
+}
+.feat-prev-title { font-size: .6rem; }
+.feat-chg-solo .feat-chg-row { padding: 10px 0; gap: 11px; }
+.feat-chg-solo .feat-chg-ph { width: 44px; height: 44px; }
+.feat-chg-solo .feat-chg-cat { font-size: .88rem; }
+.feat-chg-solo .feat-chg-txt { font-size: 1rem; }
+.feat-chg-solo .feat-chg-time { font-size: .86rem; }
+@container (min-width: 640px) { .feat-prev-img { width: 76px; height: 76px; } .feat-prev-h { font-size: 1rem; } }
