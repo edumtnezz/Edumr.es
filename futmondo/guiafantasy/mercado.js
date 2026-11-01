@@ -931,7 +931,11 @@
   // Equipo canónico para comparar "Barça" con "Barcelona", "Atleti" con "Atlético de Madrid"...
   function teamCanon(t) {
     const n = stripAccents(String(t || "").toLowerCase()).replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
-    const T = [[/barc/, "fcb"], [/athletic|bilbao/, "ath"], [/atleti|atletico/, "atm"], [/real madrid/, "rma"], [/betis/, "bet"], [/sociedad/, "rso"], [/celta/, "cel"], [/depor/, "dep"], [/rayo/, "ray"], [/espanyol|espanol/, "esp"], [/getafe/, "get"], [/alaves/, "ala"], [/elche/, "elc"], [/osasuna/, "osa"], [/villarreal/, "vil"], [/valencia/, "val"], [/sevilla/, "sev"], [/levante/, "lev"], [/malaga/, "mal"], [/racing/, "rac"], [/girona/, "gir"], [/mallorca/, "mll"], [/oviedo/, "ovi"], [/palmas/, "lpa"]];
+    // OJO con el orden: gana la primera regla que casa. "Deportivo Alavés"
+    // (nombre de FotMob) contiene "deportivo", así que /alaves/ tiene que ir
+    // ANTES que /depor/; si no, se queda en "dep" y se confunde con el
+    // Deportivo de la Coruña (Alavés se quedaba sin clasificación en su club).
+    const T = [[/barc/, "fcb"], [/athletic|bilbao/, "ath"], [/atleti|atletico/, "atm"], [/real madrid/, "rma"], [/betis/, "bet"], [/sociedad/, "rso"], [/celta/, "cel"], [/alaves/, "ala"], [/coruna/, "dep"], [/depor/, "dep"], [/rayo/, "ray"], [/espanyol|espanol/, "esp"], [/getafe/, "get"], [/elche/, "elc"], [/osasuna/, "osa"], [/villarreal/, "vil"], [/valencia/, "val"], [/sevilla/, "sev"], [/levante/, "lev"], [/malaga/, "mal"], [/racing/, "rac"], [/girona/, "gir"], [/mallorca/, "mll"], [/oviedo/, "ovi"], [/palmas/, "lpa"]];
     for (const [re, k] of T) if (re.test(n)) return k;
     return n.split(" ").filter((w) => !/^(real|fc|de|la|del|club|ud|cd|rc|ca|cf|sd)$/.test(w))[0] || n;
   }

@@ -9,9 +9,9 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 - Jugadores rentables (calidad-precio), histórico de minutos por jugador y comparador de jugadores con comparaciones guardadas.
 - Club: calendario completo, escudos que llevan al club. Partido: nota real de FotMob, asistencias en el campo.
 - 31/10: alineaciones probables con fecha y hora de Madrid corregidas; primera carga de `jornada` más rápida (copia guardada + actualización detrás); textos de La Puja y La Quiniela alineados con la regla "cada partido se bloquea al empezar".
+- 01/11: **web por club terminada**. Las 20 fichas de club (`/equipos/<club>`) llevan su clasificación de LaLiga; estaba roto solo en Alavés: `teamCanon("Deportivo Alavés")` devolvía `dep` (la regla `/depor/` iba antes que `/alaves/`), así que la sección se borraba sola. Arreglado el orden de las reglas (`/alaves/` antes, `/coruna/` para el Deportivo). Comprobado con datos reales: los 20 clubes tienen fila y página, y Alavés y Deportivo ya no se mezclan.
 
 ## Pendiente
-- Web por club (`/equipos/alaves`) y clasificación en cada club (según CLAUDE.md).
 - Jugadores con ≥ 90 % de probabilidad de jugar (idea de Edu, AGENTS.md; no consta en el historial como hecha).
 - Estabilidad: pruebas automáticas y datos de reserva en todas las pantallas.
 - Ajuste por rival (pendiente de confirmar con Edu, AGENTS.md).
@@ -31,6 +31,7 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 - Athletic: el denominador de partidos jugados sale una jornada más alto por el J8 aplazado (caso conocido, sin arreglar).
 - Plan gratis de Cloudflare: ~10 ms de CPU, 1.000 escrituras KV al día, ~50 llamadas por petición; fallos sueltos en horas punta.
 - football-data.org: ~10 peticiones por minuto.
+- Ninguno visual conocido a 390 px (01/11: corregido el borde derecho de la tarjeta del próximo partido del club, que se salía 8 px).
 
 ## Siguiente paso
-- Elegir con Edu la siguiente idea pendiente (web por club o jugadores con ≥ 90 %), comprobarla en la web real a ~390 px y subirla.
+- Jugadores con ≥ 90 % de probabilidad de jugar: comprobarlo en la web real a ~390 px y subirlo.
