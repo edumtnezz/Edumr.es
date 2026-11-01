@@ -1658,7 +1658,7 @@
     if (finished) {
       const sec = el("section", "mpage-xi mpage-xi-done");
       // En juego no se repite el título (ya lo lleva cada alineación)
-      if (!mpLive) { const hd = el("div", "mpage-xi-h"); hd.appendChild(el("span", "mpage-xi-title", "Partido finalizado")); sec.appendChild(hd); }
+      if (!mpLive) { const hd = el("div", "mpage-xi-h"); sec.appendChild(hd); } // sin el título verde "Partido finalizado" (Edu 02/11); el contenedor vacío se queda para el aviso de puntos
       const idxH = xiEvIndex(d.homePlayers), idxA = xiEvIndex(d.awayPlayers);
       const home = xiFinishedSide(m.home, m.homeCrest, d.homePlayers, xiPhotoMap(ffData && ffData.home), mpConf && mpConf.home);
       const away = xiFinishedSide(m.away, m.awayCrest, d.awayPlayers, xiPhotoMap(ffData && ffData.away), mpConf && mpConf.away);
