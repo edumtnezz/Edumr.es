@@ -3401,3 +3401,8 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 /* "Estadísticas FotMob" al final de las noticias: enlace al partido dentro de la web (Edu 02/11) */
 .fm-stats-link { display: inline-block; color: #16a34a; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 :root:not([data-theme="light"]) .fm-stats-link { color: #4ade80; }
+
+/* Miniaturas de Comuniate: recorte más suave para que no se vean tan grandes (Edu 02/11) */
+.newscard-thumb.cm-crop-bg { background-size: auto 110% !important; }
+.cm-crop { transform: scale(1.1); }
+.cm-wrap .cm-in { transform: scale(1.1); }

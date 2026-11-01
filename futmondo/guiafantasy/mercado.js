@@ -4284,9 +4284,9 @@
   };
   const newsHref = (link) => { const sl = newsSlug(link); return sl ? "/futmondo/guiafantasy/noticias/" + sl : "/futmondo/guiafantasy/noticias"; };
   // Foto de cada noticia: el parte médico lleva SU banner y las que no traen foto, el banner de noticias (antes salía un balón gris)
-  const NEWS_IMG = "/img/noticia-ultima-hora.jpg", PARTE_IMG = "/img/parte-medico.jpg";
+  const NEWS_IMG = "/img/noticia-ultima-hora.jpg", PARTE_IMG = "/img/parte-medico.jpg?v=2";
   const isParteMedico = (title) => /parte\s+m[eé]dico/i.test(String(title || ""));
-  const isCm = (x) => /comuniate\.com/i.test(String((x && x.link) || "")); // imágenes de Comuniate: se recorta abajo, donde va su logo (Edu 02/11)
+  const isCm = (x) => /comuniate\.com/i.test(String((x && x.link) || "")) && !isParteMedico(x && x.title); // imágenes de Comuniate: se recorta abajo, donde va su logo (Edu 02/11)
   const newsFallbackImg = (title) => (isParteMedico(title) ? PARTE_IMG : NEWS_IMG);
   const newsImgOf = (x) => (isParteMedico(x && x.title) ? PARTE_IMG : (x && x.thumb) || NEWS_IMG);
   const baseTitle = document.title;

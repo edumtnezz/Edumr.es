@@ -37,7 +37,7 @@ export async function onRequest(context) {
     }
     if (!og.t && !og.i) return base;
     // Fotos propias: el parte médico lleva su banner y las noticias sin foto, el banner de noticias
-    if (/parte\s+m[eé]dico/i.test(og.t || "")) og = { ...og, i: url.origin + "/img/parte-medico.jpg" };
+    if (/parte\s+m[eé]dico/i.test(og.t || "")) og = { ...og, i: url.origin + "/img/parte-medico.jpg?v=2" };
     else if (!og.i) og = { ...og, i: url.origin + "/img/noticia-ultima-hora.jpg" };
     const tags = '<meta property="og:site_name" content="Guía Fantasy · Futmondo EduMR"><meta property="og:type" content="article">' +
       '<meta property="og:url" content="' + esc(url.origin + url.pathname) + '">' +
