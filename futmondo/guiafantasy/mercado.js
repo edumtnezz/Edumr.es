@@ -2770,37 +2770,64 @@
     return null;
   }
 
+  let cmpOpen = null;
+  document.addEventListener("pointerdown", (e) => {
+    if (cmpOpen && !cmpOpen.contains(e.target)) { cmpOpen.classList.remove("open"); cmpOpen = null; }
+  });
   function cmpSlot(p, which) {
-    const c = el("button", "cmp2-card cmpx-slot" + (p ? "" : " empty"));
-    c.type = "button";
-    if (!p) {
-      c.appendChild(el("span", "cmpx-plus", "+"));
-      c.appendChild(el("div", "cmp2-name", "Elegir jugador"));
+    const c = el("div", "cmpx-slot2" + (p ? "" : " empty") + " cmpx-s-" + which);
+    const pw = el("div", "cmpx-photowrap cmpx-s2photo");
+    if (p) {
+      const ph = el("div", "cmp2-photo"); ph.appendChild(photoImg(p.photo)); pw.appendChild(ph);
+      const cb = cmpCrest(p, "cmpx-crestbadge"); if (cb) pw.appendChild(clubLink(cb, p.team));
     } else {
-      const pw = el("div", "cmpx-photowrap");
-      const ph = el("div", "cmp2-photo");
-      ph.appendChild(photoImg(p.photo));
-      pw.appendChild(ph);
-      const cb = cmpCrest(p, "cmpx-crestbadge");
-      if (cb) pw.appendChild(clubLink(cb, p.team));
-      c.appendChild(pw);
-      c.appendChild(el("div", "cmp2-name", p.name));
-      const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
-      if (rb) c.appendChild(el("span", "mcard-role" + (rb2 ? " multi" : "") + " posb posb-" + posCls(p.role), rb + (rb2 ? " · " + rb2 : "")));
-      c.appendChild(el("div", "cmp2-team", p.team || ""));
-      if (p.value != null) c.appendChild(el("div", "cmpx-slotval", money(p.value) + " €"));
+      pw.appendChild(el("div", "cmpx-s2ph", which === "a" ? "1" : "2"));
     }
-    c.addEventListener("click", () => {
-      openPicker("Elegir jugador", (pl) => {
-        const other = which === "a" ? cmpSel.b : cmpSel.a;
-        if (other && String(other) === String(pl.id)) { cmpNote("Elige dos jugadores distintos."); return; }
-        cmpSel[which] = String(pl.id);
-        cmpSet(CMP_SEL_KEY, cmpSel);
-        cmpNote("");
-        cmpPaint();
-        cmpLoadDetail(false);
-      });
+    c.appendChild(pw);
+    const body = el("div", "cmpx-s2body");
+    body.appendChild(el("div", "cmpx-s2k", "JUGADOR " + (which === "a" ? "1" : "2")));
+    if (p) {
+      body.appendChild(el("div", "cmpx-s2name", p.name));
+      const sub = el("div", "cmpx-s2sub");
+      const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
+      if (rb) sub.appendChild(el("span", "pk-pos posb posb-" + posCls(p.role), rb + (rb2 ? " · " + rb2 : "")));
+      sub.appendChild(clubLink(el("span", "cmpx-s2team", p.team || ""), p.team));
+      if (p.value != null) sub.appendChild(el("span", "cmpx-s2val", money(p.value) + " €"));
+      body.appendChild(sub);
+    } else {
+      body.appendChild(el("div", "cmpx-s2name", which === "a" ? "Elige el primer jugador" : "Elige el segundo jugador"));
+    }
+    const box = el("div", "cmpx-s2box");
+    const inp = el("input", "cmpx-s2inp"); inp.type = "text"; inp.autocomplete = "off"; inp.setAttribute("autocapitalize", "off");
+    inp.placeholder = p ? "Cambiar jugador…" : "Buscar jugador…";
+    const arrow = el("button", "cmpx-s2arrow"); arrow.type = "button"; arrow.setAttribute("aria-label", "Ver jugadores"); arrow.textContent = "▾";
+    box.appendChild(inp); box.appendChild(arrow);
+    body.appendChild(box);
+    c.appendChild(body);
+    const dd = el("div", "cmpx-dd");
+    c.appendChild(dd);
+    const choose = (pl) => {
+      const other = which === "a" ? cmpSel.b : cmpSel.a;
+      c.classList.remove("open"); cmpOpen = null;
+      if (other && String(other) === String(pl.id)) { cmpNote("Elige dos jugadores distintos."); return; }
+      cmpSel[which] = String(pl.id);
+      cmpSet(CMP_SEL_KEY, cmpSel);
+      cmpNote("");
+      cmpPaint();
+      cmpLoadDetail(false);
+    };
+    const open = () => {
+      if (cmpOpen && cmpOpen !== c) cmpOpen.classList.remove("open");
+      c.classList.add("open"); cmpOpen = c;
+      pickFill(dd, inp.value, choose);
+    };
+    inp.addEventListener("focus", open);
+    inp.addEventListener("input", open);
+    inp.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") { c.classList.remove("open"); cmpOpen = null; inp.blur(); }
+      if (e.key === "Enter") { const f = dd.querySelector(".pk-row"); if (f) f.click(); }
     });
+    arrow.addEventListener("click", () => { if (c.classList.contains("open")) { c.classList.remove("open"); cmpOpen = null; } else { open(); } });
     return c;
   }
   function cmpCrest(p, cls) {
@@ -5150,6 +5177,57 @@
   }
 
   let anData = null, anStale = false, anDrag = null;
+  const PICK_RECENT_KEY = "gf:cmp:recent:v1";
+  function pickGroups(q) {
+    q = stripAccents(String(q || "").trim());
+    if (q) return [[null, all.filter((p) => stripAccents(p.name).includes(q))]];
+    let rec = [];
+    try { rec = JSON.parse(localStorage.getItem(PICK_RECENT_KEY) || "[]"); } catch (e) {}
+    const recP = rec.map((id) => all.find((p) => String(p.id) === String(id))).filter(Boolean);
+    const ids = new Set(recP.map((p) => String(p.id)));
+    const top = all.filter((p) => !ids.has(String(p.id))).sort((x, y) => y.value - x.value);
+    const g = [];
+    if (recP.length) g.push(["Elegidos antes", recP]);
+    g.push(["Más valiosos", top]);
+    return g;
+  }
+  function pickRowEl(p, cb) {
+    const row = el("button", "pk-row"); row.type = "button";
+    const ph = el("span", "pk-photo"); ph.appendChild(photoImg(p.photo));
+    const cr = cmpCrest(p, "pk-crest"); if (cr) ph.appendChild(cr);
+    row.appendChild(ph);
+    const bb = el("span", "pk-body");
+    bb.appendChild(el("span", "pk-name", p.name));
+    const tl = el("span", "pk-sub");
+    const rbp = roleBadge(p.role);
+    if (rbp) tl.appendChild(el("span", "pk-pos posb posb-" + posCls(p.role), rbp));
+    tl.appendChild(el("span", "pk-team", p.team || ""));
+    bb.appendChild(tl);
+    row.appendChild(bb);
+    const rg = el("span", "pk-right");
+    rg.appendChild(el("span", "pk-val", money(p.value) + " €"));
+    const info = [];
+    if (cmpNum(p.points) != null) info.push(p.points + " pts");
+    if (cmpNum(p.avg) != null) info.push("media " + cmpDec(Number(p.avg)));
+    if (info.length) rg.appendChild(el("span", "pk-info", info.join(" · ")));
+    row.appendChild(rg);
+    row.addEventListener("click", () => {
+      try { const r = JSON.parse(localStorage.getItem(PICK_RECENT_KEY) || "[]").filter((x) => String(x) !== String(p.id)); r.unshift(String(p.id)); localStorage.setItem(PICK_RECENT_KEY, JSON.stringify(r.slice(0, 8))); } catch (e) {}
+      cb(p);
+    });
+    return row;
+  }
+  function pickFill(list, q, cb) {
+    list.innerHTML = "";
+    const groups = pickGroups(q);
+    let n = 0;
+    groups.forEach(([gt, gl]) => {
+      if (!gl.length) return;
+      if (gt) list.appendChild(el("div", "pk-head", gt));
+      gl.slice(0, 40).forEach((p) => { n++; list.appendChild(pickRowEl(p, cb)); });
+    });
+    if (!n) list.appendChild(el("p", "pk-empty", "Sin resultados"));
+  }
   function openPicker(title, cb) {
     const root = el("div", "pk");
     root.appendChild(el("h2", "pk-title", title || "Elegir jugador"));
@@ -5157,59 +5235,10 @@
     root.appendChild(inp);
     const list = el("div", "pk-list");
     root.appendChild(list);
-    const render = () => {
-      const q = stripAccents(inp.value.trim());
-      list.innerHTML = "";
-      let groups;
-      if (q) groups = [[null, all.filter((p) => stripAccents(p.name).includes(q))]];
-      else {
-        let rec = [];
-        try { rec = JSON.parse(localStorage.getItem("gf:cmp:recent:v1") || "[]"); } catch (e) {}
-        const recP = rec.map((id) => all.find((p) => String(p.id) === String(id))).filter(Boolean);
-        const ids = new Set(recP.map((p) => String(p.id)));
-        const top = all.filter((p) => !ids.has(String(p.id))).sort((x, y) => y.value - x.value);
-        groups = [];
-        if (recP.length) groups.push(["Elegidos antes", recP]);
-        groups.push(["Más valiosos", top]);
-      }
-      const arr = groups.reduce((n, g) => n + g[1].length, 0) ? groups : [];
-      arr.forEach(([gt, gl]) => {
-        if (gt) list.appendChild(el("div", "pk-head", gt));
-        gl.slice(0, 40).forEach((p) => addRow(p));
-      });
-      if (!arr.length) list.appendChild(el("p", "pk-empty", "Sin resultados"));
-    };
-    const addRow = (p) => {
-      {
-        const row = el("button", "pk-row"); row.type = "button";
-        const ph = el("span", "pk-photo"); ph.appendChild(photoImg(p.photo));
-        const cr = cmpCrest(p, "pk-crest"); if (cr) ph.appendChild(cr);
-        row.appendChild(ph);
-        const bb = el("span", "pk-body");
-        bb.appendChild(el("span", "pk-name", p.name));
-        const tl = el("span", "pk-sub");
-        const rbp = roleBadge(p.role);
-        if (rbp) tl.appendChild(el("span", "pk-pos posb posb-" + posCls(p.role), rbp));
-        tl.appendChild(el("span", "pk-team", p.team || ""));
-        bb.appendChild(tl);
-        row.appendChild(bb);
-        const rg = el("span", "pk-right");
-        rg.appendChild(el("span", "pk-val", money(p.value) + " €"));
-        const info = [];
-        if (cmpNum(p.points) != null) info.push(p.points + " pts");
-        if (cmpNum(p.avg) != null) info.push("media " + cmpDec(Number(p.avg)));
-        if (info.length) rg.appendChild(el("span", "pk-info", info.join(" · ")));
-        row.appendChild(rg);
-        row.addEventListener("click", () => {
-          try { const r = JSON.parse(localStorage.getItem("gf:cmp:recent:v1") || "[]").filter((x) => String(x) !== String(p.id)); r.unshift(String(p.id)); localStorage.setItem("gf:cmp:recent:v1", JSON.stringify(r.slice(0, 8))); } catch (e) {}
-          cb(p); closeModal();
-        });
-        list.appendChild(row);
-      }
-    };
-    inp.addEventListener("input", render);
+    const pick = (p) => { cb(p); closeModal(); };
+    inp.addEventListener("input", () => pickFill(list, inp.value, pick));
     showModal(root);
-    render();
+    pickFill(list, "", pick);
     inp.focus();
   }
   function toPlayer(pl, pos) {
