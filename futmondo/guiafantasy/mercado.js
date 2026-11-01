@@ -6320,13 +6320,19 @@
     });
     pr.innerHTML = "";
     const steps = [2e6, 5e6, 10e6, 20e6, 30e6, 50e6, Infinity];
-    const lab = el("span", "rtb-plab"), rg = el("input"); rg.type = "range"; rg.min = 0; rg.max = steps.length - 1; rg.step = 1;
-    rg.value = Math.max(0, steps.indexOf(rtbMax)); if (steps.indexOf(rtbMax) < 0) rg.value = steps.length - 1;
-    const txt = () => { const v = steps[+rg.value]; lab.textContent = v === Infinity ? "Cualquier precio" : "Hasta " + (v / 1e6) + " M€"; };
+    const top = el("div", "rtb-ptop");
+    top.appendChild(el("span", "rtb-pk", "Precio máximo"));
+    const lab = el("b", "rtb-plab");
+    top.appendChild(lab);
+    const rg = el("input"); rg.type = "range"; rg.min = 0; rg.max = steps.length - 1; rg.step = 1;
+    rg.value = steps.indexOf(rtbMax) < 0 ? steps.length - 1 : steps.indexOf(rtbMax);
+    const txt = () => { const v = steps[+rg.value]; lab.textContent = v === Infinity ? "Sin límite" : "Hasta " + (v / 1e6) + " M€"; };
     rg.setAttribute("aria-label", "Precio máximo"); rg.className = "rtb-range"; txt();
     rg.addEventListener("input", txt);
     rg.addEventListener("change", () => { rtbMin = 0; rtbMax = steps[+rg.value]; rtbShown = 40; renderRentables(); });
-    pr.appendChild(lab); pr.appendChild(rg);
+    const tk = el("div", "rtb-ticks");
+    steps.forEach((v) => tk.appendChild(el("span", null, v === Infinity ? "∞" : String(v / 1e6))));
+    pr.appendChild(top); pr.appendChild(rg); pr.appendChild(tk);
   }
   function renderRentables() {
     const box = $("rtbList");
@@ -6336,6 +6342,7 @@
     const full = bestValue(Infinity);
     const top = full.length ? full[0]._r : 1;
     const list = full.filter((p) => (!rtbPos || String(p.role || "").toLowerCase() === rtbPos) && Number(p.value) >= rtbMin && (rtbMax === Infinity || Number(p.value) <= rtbMax));
+    if (sub) sub.textContent += " · " + list.length + (list.length === 1 ? " jugador" : " jugadores");
     box.innerHTML = "";
     if (!list.length) { box.appendChild(el("p", "rtb-empty", "Sin jugadores con estos filtros ahora mismo.")); return; }
     list.slice(0, rtbShown).forEach((p, i) => {
@@ -6364,9 +6371,9 @@
       }
       body.appendChild(l2);
       const l3 = el("span", "rtb-l3");
-      const tp = el("span"); tp.appendChild(el("b", null, String(Number(p.points) || 0))); tp.appendChild(document.createTextNode(" pts"));
-      const av = el("span"); av.appendChild(el("b", null, (Number(p.avg) || 0).toFixed(1).replace(".", ","))); av.appendChild(document.createTextNode(" media"));
-      l3.appendChild(tp); l3.appendChild(av);
+      [[Number(p.points) || 0, "pts"], [(Number(p.avg) || 0).toFixed(1).replace(".", ","), "media"], [Number(p.matches) || 0, "part."]].forEach((s) => {
+        const c = el("span", "rtb-st"); c.appendChild(el("b", null, String(s[0]))); c.appendChild(el("small", null, s[1])); l3.appendChild(c);
+      });
       body.appendChild(l3);
       const bar = el("span", "rtb-bar"); const fill = el("i"); fill.style.width = Math.max(6, Math.round(p._r / top * 100)) + "%"; bar.appendChild(fill);
       body.appendChild(bar);
