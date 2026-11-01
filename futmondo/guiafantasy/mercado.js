@@ -2856,7 +2856,7 @@
     return w;
   }
 
-  const CMP_RANGE_KEY = "gf:cmp:range:v1";
+  let cmpRange = 5; // siempre empieza en "Últimos 5"
   function cmpMatchCell(m, right) {
     const c = el("span", "cmp2-cell cmpx-mcell" + (right ? " right" : ""));
     if (!m) { c.appendChild(el("span", "cmpx-mna", CMP_DASH)); return c; }
@@ -2876,12 +2876,13 @@
     else { tg = "▼ Sale · " + m.mn + "'"; cls = " out"; }
     ln.appendChild(el("span", "cmpx-mtag" + cls, tg));
     c.appendChild(ln);
-    const ev = [];
-    if (m.g) ev.push(m.g + (m.g > 1 ? " goles" : " gol"));
-    if (m.a) ev.push(m.a + (m.a > 1 ? " asist." : " asist."));
-    if (m.y) ev.push("Amarilla");
-    if (m.rd) ev.push("Roja");
-    if (ev.length) c.appendChild(el("span", "cmpx-mev", ev.join(" · ")));
+    const evs = el("span", "cmpx-evs");
+    const chip = (cls, ico, n) => evs.appendChild(el("span", "cmpx-evc " + cls, ico + (n > 1 ? " " + n : "")));
+    if (m.g) chip("g", "⚽", m.g);
+    if (m.a) chip("a", "👟", m.a);
+    if (m.y) chip("y", "🟨", m.y);
+    if (m.rd) chip("r", "🟥", m.rd);
+    if (evs.firstChild) c.appendChild(evs);
     return c;
   }
   function cmpMatchRows(box, a, b, ra, rb) {
@@ -2890,7 +2891,7 @@
     const lb = rb && rb.c && Array.isArray(rb.c.ms) ? rb.c.ms : [];
     const rs = Array.from(new Set(la.map((m) => m.r).concat(lb.map((m) => m.r)))).sort((x, y) => y - x);
     if (!rs.length) { box.appendChild(el("p", "muted small cmpx-hint", "Sin partidos de Futmondo todavía.")); return; }
-    const n = Number(cmpGet(CMP_RANGE_KEY, 5));
+    const n = cmpRange;
     const shown = n > 0 ? rs.slice(0, n) : rs;
     shown.forEach((r) => {
       const row = el("div", "cmp2-row cmpx-mrow");
@@ -2899,7 +2900,6 @@
       row.appendChild(cmpMatchCell(lb.find((m) => m.r === r), true));
       box.appendChild(row);
     });
-    if ([].concat(la, lb).some((m) => m.calc && shown.indexOf(m.r) >= 0)) box.appendChild(el("p", "muted small cmpx-src", "Puntos en cursiva: calculados con las reglas de tu liga (Futmondo solo publica los 5 últimos)."));
   }
   function cmpPaintMatches(out, a, b, ra, rb) {
     if (ra === undefined || rb === undefined) return; // aún cargando
@@ -2913,13 +2913,60 @@
     [[5, "Últimos 5"], [10, "Últimos 10"], [0, "Todos" + (total ? " (" + total + ")" : "")]].forEach(([v, t]) => {
       const o = el("option", null, t); o.value = String(v); sel.appendChild(o);
     });
-    sel.value = String(Number(cmpGet(CMP_RANGE_KEY, 5)));
+    sel.value = String(cmpRange);
     const body = el("div", "cmpx-mbody");
-    sel.addEventListener("change", () => { cmpSet(CMP_RANGE_KEY, Number(sel.value)); cmpMatchRows(body, a, b, ra, rb); });
+    sel.addEventListener("change", () => { cmpRange = Number(sel.value); cmpMatchRows(body, a, b, ra, rb); });
     head.appendChild(sel);
     wrap.appendChild(head);
     wrap.appendChild(body);
     cmpMatchRows(body, a, b, ra, rb);
+    out.appendChild(wrap);
+  }
+
+  // Resumen: 2 datos que se deducen de los partidos reales de la temporada (nada inventado; sin datos suficientes no se dice nada).
+  function cmpInsights(c) {
+    const ms = c && Array.isArray(c.ms) ? c.ms.filter((m) => m.mn > 0) : [];
+    const N = ms.length;
+    if (N < 3) return [];
+    const starters = ms.filter((m) => !m.sb), subs = ms.filter((m) => m.sb);
+    const swapped = starters.filter((m) => m.mn < 85);
+    const avgOut = swapped.length ? Math.round(swapped.reduce((t, m) => t + m.mn, 0) / swapped.length) : 0;
+    const out = [];
+    const part = subs.filter((m) => m.g || m.a).length;
+    if (subs.length >= 2 && part >= 1) out.push(["🔥", "Buen revulsivo: entra desde el banquillo y participa en gol en <b>" + part + " de " + subs.length + "</b> partidos"]);
+    if (subs.length / N >= 0.5) out.push(["🔼", "Suele salir desde el banquillo: <b>" + subs.length + " de " + N + "</b> partidos"]);
+    if (starters.length >= 3 && swapped.length / starters.length >= 0.5) out.push(["🔄", (swapped.length / starters.length >= 0.8 ? "Casi siempre lo quitan" : "Lo quitan a menudo") + ": <b>" + swapped.length + " de " + starters.length + "</b> titularidades, sobre el <b>min. " + avgOut + "</b>"]);
+    const gm = ms.filter((m) => m.g).length, gt = ms.reduce((t, m) => t + m.g, 0);
+    if (N >= 4 && gm / N >= 0.4) out.push(["⚽", "Marca en <b>" + gm + " de " + N + "</b> partidos (" + gt + (gt === 1 ? " gol" : " goles") + ")"]);
+    const am = ms.filter((m) => m.a).length;
+    if (N >= 4 && am / N >= 0.4) out.push(["👟", "Da asistencia en <b>" + am + " de " + N + "</b> partidos"]);
+    const hi = ms.filter((m) => m.pt != null && m.pt >= 10).length;
+    if (N >= 4 && hi / N >= 0.5) out.push(["⭐", "Puntúa 10 o más en <b>" + hi + " de " + N + "</b> partidos"]);
+    if (starters.length >= 3 && swapped.length / starters.length <= 0.2) out.push(["✅", "Juega los 90' en <b>" + (starters.length - swapped.length) + " de " + starters.length + "</b> titularidades"]);
+    const yc = ms.filter((m) => m.y).length;
+    if (yc >= 3) out.push(["🟨", "Amarilla en <b>" + yc + "</b> partidos"]);
+    return out.slice(0, 2);
+  }
+  function cmpPaintSummary(out, a, b, ra, rb) {
+    if (ra === undefined || rb === undefined) return;
+    const items = [[a, cmpInsights(ra && ra.c)], [b, cmpInsights(rb && rb.c)]].filter((x) => x[1].length);
+    if (!items.length) return;
+    const wrap = el("div", "cmpx-sum");
+    wrap.appendChild(el("div", "cmpx-head", "Resumen"));
+    items.forEach(([p, ins]) => {
+      const blk = el("div", "cmpx-sumblock");
+      const ph = el("span", "cmpx-sumph"); ph.appendChild(photoImg(p.photo)); blk.appendChild(ph);
+      const body = el("div", "cmpx-sumbody");
+      body.appendChild(el("div", "cmpx-sumname", p.name));
+      ins.forEach(([ico, html]) => {
+        const ln = el("div", "cmpx-sumline");
+        ln.appendChild(el("span", "cmpx-sumico", ico));
+        const tx = el("span", "cmpx-sumtx"); tx.innerHTML = html; ln.appendChild(tx);
+        body.appendChild(ln);
+      });
+      blk.appendChild(body);
+      wrap.appendChild(blk);
+    });
     out.appendChild(wrap);
   }
 
@@ -2937,7 +2984,7 @@
     const rows = [
       stat("Equipo", { v: null, node: cmpTeamNode(a) }, { v: null, node: cmpTeamNode(b) }),
       stat("Posición", { v: null, t: posOf(a) }, { v: null, t: posOf(b) }),
-      stat("Edad", cmpDet(ra, "age", (n) => n + " años", la), cmpDet(rb, "age", (n) => n + " años", lb)),
+      ...(la || lb || (cmpNum(ra && ra.c && ra.c.age) != null && cmpNum(rb && rb.c && rb.c.age) != null) ? [stat("Edad", cmpDet(ra, "age", (n) => n + " años", la), cmpDet(rb, "age", (n) => n + " años", lb))] : []),
       { head: "Valor" },
       stat("Actual", cmpCell(a.value, cmpEur), cmpCell(b.value, cmpEur), false, null, true),
       stat("Hoy", cmpCell(a.change, cmpDiff), cmpCell(b.change, cmpDiff), false, "diff"),
@@ -2986,6 +3033,7 @@
     out.appendChild(box);
 
     cmpPaintMatches(out, a, b, ra, rb);
+    cmpPaintSummary(out, a, b, ra, rb);
 
     // Avisos del detalle (último dato bueno / fallo) con reintento
     const bad = [ra, rb].some((r) => r === null || (r && r.partial));
@@ -2999,7 +3047,6 @@
       nt.appendChild(rt);
       out.appendChild(nt);
     }
-    out.appendChild(el("p", "muted small cmpx-src", "Datos de Futmondo · Prob. jugar: FutbolFantasy"));
 
     // Guardar / quitar esta comparación
     const idx = cmpSavedIdx(a, b);
@@ -3089,7 +3136,7 @@
     const a = cmpFind(cmpSel.a), b = cmpFind(cmpSel.b);
     if (!a || !b) return;
     const seq = ++cmpSeq;
-    if (!silent) { cmpDetail = {}; cmpPaintTable(); }
+    if (!silent) { cmpRange = 5; cmpDetail = {}; cmpPaintTable(); }
     const [x, y] = await Promise.all([cmpLoadOne(a.id), cmpLoadOne(b.id)]);
     if (seq !== cmpSeq) return;
     cmpDetail = {}; cmpDetail[a.id] = x; cmpDetail[b.id] = y;
