@@ -3853,7 +3853,7 @@
         const bd = el("div", "newscard-body");
         if (idx === 0) bd.appendChild(icoTxt("bolt", "Lo último", "news-badge"));
         bd.appendChild(el("div", "news-title", x.title));
-        const nd = el("div", "news-date"); nd.appendChild(ico("clock")); nd.appendChild(document.createTextNode(x.date + (x.time ? " · " + x.time : ""))); bd.appendChild(nd);
+        const nd = el("div", "news-date"); nd.appendChild(ico("clock")); nd.appendChild(document.createTextNode(x.date + (x.time ? " · " + x.time : "") + (x.src && x.src !== "FutbolFantasy" ? " · " + x.src : ""))); bd.appendChild(nd);
         it.appendChild(bd);
         a.appendChild(it);
       });
@@ -4012,7 +4012,20 @@
   }
 
   const NEWS_PFX = "https://www.futbolfantasy.com/laliga/noticias/";
-  const newsSlug = (link) => (String(link || "").indexOf(NEWS_PFX) === 0 ? String(link).slice(NEWS_PFX.length).replace(/[?#].*$/, "").replace(/\/+$/, "") : "");
+  // Noticias de FutbolFantasy (slug tal cual), de Comuniate ("cm-<id>-<slug>") y de Jornada Perfecta ("jp-<slug>")
+  const newsSlug = (link) => {
+    link = String(link || "");
+    if (link.indexOf(NEWS_PFX) === 0) return link.slice(NEWS_PFX.length).replace(/[?#].*$/, "").replace(/\/+$/, "");
+    let m = link.match(/^https:\/\/www\.comuniate\.com\/noticias\/(\d+)\/([a-z0-9-]+)\/?$/); if (m) return "cm-" + m[1] + "-" + m[2];
+    m = link.match(/^https:\/\/www\.jornadaperfecta\.com\/blog\/([a-z0-9-]+)\/?$/); if (m) return "jp-" + m[1];
+    return "";
+  };
+  const slugToUrl = (sl) => {
+    sl = String(sl || "");
+    let m = sl.match(/^cm-(\d+)-([a-z0-9-]+)$/); if (m) return "https://www.comuniate.com/noticias/" + m[1] + "/" + m[2];
+    m = sl.match(/^jp-([a-z0-9-]+)$/); if (m) return "https://www.jornadaperfecta.com/blog/" + m[1] + "/";
+    return NEWS_PFX + sl;
+  };
   const newsHref = (link) => { const sl = newsSlug(link); return sl ? "/futmondo/guiafantasy/noticias/" + sl : "/futmondo/guiafantasy/noticias"; };
   const baseTitle = document.title;
   let newsPushed = false;
@@ -4089,6 +4102,17 @@
     bar.appendChild(back);
     box.appendChild(bar);
     if (d && d.extinguida) { box.appendChild(el("h2", "ficha-name", title || d.title || "")); box.appendChild(el("p", "muted small", "Esta noticia ya no está vigente.")); return; }
+    if (d && d.external) {
+      // Noticia de otra fuente (Comuniate / Jornada Perfecta): titular, foto y resumen; el texto completo se lee en su web
+      box.appendChild(el("h2", "ficha-name", title || d.title || ""));
+      try { if (title || d.title) document.title = (title || d.title) + " · EduMR"; } catch (e) {}
+      if (d.image) { const im = new Image(); im.src = d.image; im.alt = ""; im.className = "art-img"; im.style.cssText = "width:100%;border-radius:12px;margin:8px 0"; box.appendChild(im); }
+      if (d.lead) box.appendChild(el("p", "art-lead", d.lead));
+      box.appendChild(el("p", "muted small", "Fuente: " + (d.src || "")));
+      const go = el("a", "cmp-trend up", "Leer la noticia completa en " + (d.src || "su web") + " →"); go.href = d.url || url; go.target = "_blank"; go.rel = "noopener"; box.appendChild(go);
+      try { newsPlayersBlock(box, (d.title || title || "") + " . " + (d.lead || "")); } catch (e) {}
+      return;
+    }
     box.appendChild(el("h2", "ficha-name", title || d.title || ""));
     try { if (title || d.title) document.title = (title || d.title) + " · EduMR"; } catch (e) {}
     const shareUrl = location.origin + newsHref(url);
@@ -4138,7 +4162,7 @@
       const keep = location.pathname;
       if (currentTab !== "noticias") switchTab("noticias", true);
       try { history.replaceState(st, "", keep); } catch (e) {}
-      openNoticiaInline(NEWS_PFX + st.news, "", true);
+      openNoticiaInline(slugToUrl(st.news), "", true);
       return;
     }
     if (st && st.tab === "noticias" && currentTab === "noticias") { closeNoticiaInline(); return; }
@@ -5096,7 +5120,7 @@
         const keep = location.pathname;
         switchTab("noticias", true);
         try { history.replaceState({ tab: "noticias", news: pn[1] }, "", keep); } catch (e) {}
-        openNoticiaInline(NEWS_PFX + pn[1], "", true);
+        openNoticiaInline(slugToUrl(pn[1]), "", true);
         try { loadNoticias(); } catch (e) {}
         return;
       }

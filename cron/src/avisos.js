@@ -16,7 +16,18 @@ const SITE = "https://edumr.es/api/laquiniela/";
 const WEB = "https://edumr.es/futmondo/guiafantasy/";
 const NEWS_PFX = "https://www.futbolfantasy.com/laliga/noticias/";
 // Enlaces a TU web (nunca a la fuente): noticia → /noticias/<slug>, partido → /partido/<slug> (mismo slug que usa la web)
-const newsUrl = (link) => { const sl = String(link || "").indexOf(NEWS_PFX) === 0 ? String(link).slice(NEWS_PFX.length).replace(/[?#].*$/, "").replace(/\/+$/, "") : ""; return WEB + "noticias" + (sl ? "/" + sl : ""); };
+const newsUrl = (link) => {
+  link = String(link || "");
+  let sl = "", m;
+  if (link.indexOf(NEWS_PFX) === 0) sl = link.slice(NEWS_PFX.length).replace(/[?#].*$/, "").replace(/\/+$/, "");
+  else if ((m = link.match(/^https:\/\/www\.comuniate\.com\/noticias\/(\d+)\/([a-z0-9-]+)\/?$/))) sl = "cm-" + m[1] + "-" + m[2];
+  else if ((m = link.match(/^https:\/\/www\.jornadaperfecta\.com\/blog\/([a-z0-9-]+)\/?$/))) sl = "jp-" + m[1];
+  return WEB + "noticias" + (sl ? "/" + sl : "");
+};
+// Palabras clave del titular para detectar la misma historia contada por varias fuentes
+const TSTOP = new Set("para sobre ante tras este esta estos estas desde entre hasta como pero sino aunque cuando donde jornada fantasy segun mientras tiene tienen habla hablan confirma confirman vuelve vuelven sigue siguen sera tambien despues antes porque quien dice".split(" "));
+const tokens = (t) => Array.from(new Set(norm(t).split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !TSTOP.has(w))));
+const sameTok = (A, B) => { if (!A.length || !B.length) return false; const bs = new Set(B); const n = A.filter((w) => bs.has(w)).length; return n >= 3 && n >= 0.5 * Math.min(A.length, B.length); };
 const slugM = (h, a) => String(h + "-" + a).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const matchUrl = (h, a) => WEB + "partido/" + slugM(h, a);
 const STATE_KEY = "tg:avisos:v1";
@@ -130,7 +141,7 @@ function eur(n) {
 const hash = (str) => { let h = 5381; for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0; return String(h); };
 
 // Aviso de noticia con titular llamativo (la primera línea es lo que se ve en la lista de chats)
-function noticiaTexto(title, hits, resumen, link) {
+function noticiaTexto(title, hits, resumen, link, src) {
   const t = norm(title);
   const tag = /\b(lesion\w*|rotura|fractura|esguince|baja|bajas)\b/.test(t) ? "🚑 <b>BAJA</b>"
     : /\b(sancion\w*|apercibid\w*|expulsad\w*|suspendid\w*)\b/.test(t) ? "🟥 <b>SANCIÓN</b>"
@@ -138,6 +149,7 @@ function noticiaTexto(title, hits, resumen, link) {
     : /\btitular\w*/.test(t) ? "✅ <b>TITULAR</b>" : "📰 <b>ÚLTIMA HORA</b>";
   return tag + (hits.length ? "  ·  ⭐ <b>TU JUGADOR</b>" : "") + "\n\n<b>" + esc(title) + "</b>" +
     (resumen ? "\n\n" + esc(resumen) : "") + (hits.length ? "\n\n⭐ Afecta a: <b>" + esc(hits.join(", ")) + "</b>" : "") +
+    (src && src !== "FutbolFantasy" ? "\n\n<i>Fuente: " + esc(src) + "</i>" : "") +
     "\n\n👉 <b>Más información:</b>\n" + newsUrl(link);
 }
 
@@ -251,19 +263,32 @@ export async function avisar(env, deps) {
   // 1) Noticias
   if (rNews.status === "fulfilled" && Array.isArray(rNews.value.noticias)) {
     const sent = new Set(st.news || []);
-    const items = rNews.value.noticias.slice(0, 40).filter((x) => x && x.link && x.title);
+    const items = rNews.value.noticias.slice(0, 60).filter((x) => x && x.link && x.title);
+    const ext = (x) => x.src && x.src !== "FutbolFantasy";
+    // Historial de titulares de las últimas 12 h para no avisar dos veces de la misma historia (aunque la cuenten fuentes distintas)
+    const migrar = !st.nt; // primera vez con varias fuentes: lo que ya hay de Comuniate/Jornada Perfecta se da por visto
+    st.nt = (st.nt || []).filter((e) => now - e.t < 12 * 3600e3);
+    if (migrar) items.filter((x) => !ext(x)).forEach((x) => { const at0 = newsAt(x.date, x.time, now); if (at0 && now - at0 < 12 * 3600e3) st.nt.push({ k: tokens(decode(x.title)), t: at0 }); });
     const cands = [];
     for (const x of items) {
       if (sent.has(x.link)) continue;
       const title = decode(x.title);
-      const at = newsAt(x.date, x.time, now);
+      if (migrar && ext(x)) { st.news = (st.news || []).concat([x.link]).slice(-200); dirty = true; continue; }
+      const at = x.dateOnly ? (x.hoy ? now : 0) : (x.ts || newsAt(x.date, x.time, now));
       if (!firstRun && !(at && now - at <= NEWS_MAX_AGE)) continue;
       const hits = ownMatch(title, squad);
       const kw = KW.test(norm(title));
-      cands.push({ x, title, at, hits, kw });
+      cands.push({ x, title, at, hits, kw, k: tokens(title) });
     }
     cands.sort((a, b) => a.at - b.at); // las más antiguas primero
-    for (const c of cands.slice(0, firstRun || quiet ? 0 : MAX_MSGS)) {
+    const aceptadas = [];
+    const nuevas = [];
+    for (const c of cands) {
+      const dup = st.nt.some((e) => sameTok(c.k, e.k)) || aceptadas.some((k) => sameTok(c.k, k));
+      if (dup) { st.news = (st.news || []).concat([c.x.link]).slice(-200); dirty = true; continue; } // misma historia: se da por vista sin avisar
+      aceptadas.push(c.k); nuevas.push(c);
+    }
+    for (const c of nuevas.slice(0, firstRun || quiet ? 0 : MAX_MSGS)) {
       // Resumen breve (la entradilla de la noticia); si no hay, el aviso sale sin él
       let resumen = "";
       try {
@@ -273,9 +298,9 @@ export async function avisar(env, deps) {
       } catch (e) {}
       c.resumen = resumen;
     }
-    for (const c of cands) {
-      const text = noticiaTexto(c.title, c.hits, c.resumen, c.x.link);
-      queue.push({ text, commit: () => { st.news = (st.news || []).concat([c.x.link]).slice(-200); dirty = true; } });
+    for (const c of nuevas) {
+      const text = noticiaTexto(c.title, c.hits, c.resumen, c.x.link, c.x.src);
+      queue.push({ text, commit: () => { st.news = (st.news || []).concat([c.x.link]).slice(-200); st.nt = (st.nt || []).concat([{ k: c.k, t: c.at || now }]).slice(-150); dirty = true; } });
     }
   }
 
@@ -420,7 +445,7 @@ export async function avisar(env, deps) {
       if (n0) {
         let resumen = "";
         try { const n = await getJson(f, "noticia?u=" + encodeURIComponent(n0.link)); resumen = decode(String(n.lead || "")).replace(/\s+/g, " ").trim(); if (resumen.length > 150) resumen = resumen.slice(0, 150).replace(/\s+\S*$/, "") + "…"; } catch (e) {}
-        nt = "🧪 <i>PRUEBA</i>\n" + noticiaTexto(decode(n0.title), ownMatch(decode(n0.title), squad), resumen, n0.link);
+        nt = "🧪 <i>PRUEBA</i>\n" + noticiaTexto(decode(n0.title), ownMatch(decode(n0.title), squad), resumen, n0.link, n0.src);
       }
       const dcommit = () => { st.demo4 = 1; dirty = true; };
       if (mt) queue.unshift({ text: "🧪 <i>PRUEBA</i>\n" + mt, commit: dcommit });

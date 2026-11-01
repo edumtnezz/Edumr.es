@@ -1513,7 +1513,112 @@ async function getFfNoticias(env) {
   }
 }
 
+
+// ---------- Otras fuentes de noticias: Comuniate y Jornada Perfecta ----------
+// Solo título, foto, hora y enlace (el texto de la noticia se lee en su web). Sin duplicar historias: si otra fuente cuenta
+// lo mismo que FutbolFantasy se queda solo una. Si una fuente falla o bloquea, se ignora (nunca se inventa nada).
+const EXT_SKIP = /(comunio|biwenger|mister|fantasy marca|laliga fantasy|mercado fantasy|subidas y bajadas|rosco|confesionario|portadas|descarga la app|nueva version|alineaciones confirmadas|app de comuniate)/;
+const EXT_STOP = new Set("para sobre ante tras este esta estos estas desde entre hasta como pero sino aunque cuando donde jornada fantasy segun mientras tiene tienen habla hablan confirma confirman vuelve vuelven sigue siguen sera serán tambien despues antes porque quien dice".split(" "));
+function titleTokens(t) {
+  return Array.from(new Set(String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !EXT_STOP.has(w))));
+}
+// ¿Cuentan lo mismo? ≥3 palabras clave compartidas y la mitad de las del título más corto
+function sameStory(a, b) {
+  const A = titleTokens(a), B = titleTokens(b);
+  if (!A.length || !B.length) return false;
+  const bs = new Set(B);
+  const n = A.filter((w) => bs.has(w)).length;
+  return n >= 3 && n >= 0.5 * Math.min(A.length, B.length);
+}
+function madridDM(ts) {
+  const p = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(ts));
+  const g = (t) => (p.find((x) => x.type === t) || {}).value || "";
+  return { date: g("day") + "/" + g("month"), time: g("hour") + ":" + g("minute") };
+}
+async function getCmNoticias() {
+  const out = [];
+  try {
+    const res = await fetch("https://www.comuniate.com/noticias/comunio", { headers: cmHeaders() });
+    if (!res.ok) return out;
+    const html = await res.text();
+    const now = Date.now();
+    const seen = new Set();
+    for (const m of html.matchAll(/<article class="cm-row-card[^"]*">([\s\S]*?)<\/article>/g)) {
+      const b = m[1];
+      const tag = b.match(/<a[^>]*href="(https:\/\/www\.comuniate\.com\/noticias\/(\d+)\/[^"]+)"[^>]*>/);
+      if (!tag || seen.has(tag[2])) continue;
+      const lk = [tag[0], tag[1], tag[2]];
+      const title = decodeEntities(((tag[0].match(/title="([^"]*)"/) || [])[1]) || stripHtml((b.match(/<h3[^>]*class="[^"]*cm-title[^"]*"[^>]*>([\s\S]*?)<\/h3>/) || [])[1] || ""));
+      if (!title) continue;
+      const age = b.match(/HACE\s+(\d+)\s+(MINUTOS?|HORAS?|D[ÍI]AS?)/i);
+      if (!age) continue;
+      const unit = /^M/i.test(age[2]) ? 60e3 : /^H/i.test(age[2]) ? 3600e3 : 86400e3;
+      const ts = now - Number(age[1]) * unit;
+      if (EXT_SKIP.test(title.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""))) continue;
+      let thumb = "";
+      for (const im of b.matchAll(/<img[^>]+src="([^"]+)"/g)) { if (/intranet\/noticias\/fotos/.test(im[1])) { thumb = im[1]; break; } }
+      if (thumb && thumb.startsWith("/")) thumb = "https://www.comuniate.com" + thumb;
+      seen.add(lk[2]);
+      out.push(Object.assign({ src: "Comuniate", link: lk[1], title, thumb, ts }, madridDM(ts)));
+    }
+  } catch (e) {}
+  return out;
+}
+async function getJpNoticias() {
+  const out = [];
+  try {
+    const res = await fetch("https://www.jornadaperfecta.com/", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+    if (!res.ok) return out;
+    const html = await res.text();
+    const now = Date.now();
+    const seen = new Set();
+    for (const m of html.matchAll(/<a href="(https:\/\/www\.jornadaperfecta\.com\/blog\/[a-z0-9-]+\/)">\s*<img[^>]*?src="([^"]+)"[^>]*>\s*<div class="text"><span class="title">([\s\S]*?)<\/span>\s*(?:<br\s*\/?>)?\s*<span class="author">([^<]*)<\/span>/g)) {
+      if (seen.has(m[1])) continue;
+      const title = stripHtml(m[3]);
+      const dm = m[4].match(/(\d{2})\/(\d{2})\/(\d{2})/);
+      if (!title || !dm) continue;
+      if (EXT_SKIP.test(title.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""))) continue;
+      seen.add(m[1]);
+      const hoy = madridDM(now).date;
+      const date = dm[1] + "/" + dm[2];
+      // Solo trae el día, sin hora: la hora de la noticia se desconoce (no se inventa)
+      out.push({ src: "Jornada Perfecta", link: m[1], title, thumb: m[2], ts: date === hoy ? now : ffWhenAt(date, "12:00"), date, time: "", dateOnly: true, hoy: date === hoy });
+    }
+  } catch (e) {}
+  return out;
+}
+// FutbolFantasy + Comuniate + Jornada Perfecta en una sola lista, sin historias repetidas (gana FutbolFantasy, luego Comuniate)
+async function getNoticiasMulti(ff) {
+  const [cm, jp] = await Promise.all([getCmNoticias(), getJpNoticias()]);
+  const base = (ff || []).map((x) => Object.assign({ src: "FutbolFantasy" }, x));
+  const kept = [];
+  for (const x of cm.concat(jp)) {
+    if (base.slice(0, 40).some((y) => sameStory(x.title, y.title)) || kept.some((y) => sameStory(x.title, y.title))) continue;
+    kept.push(x);
+  }
+  kept.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  // Mezcla por hora manteniendo el orden de FutbolFantasy
+  const out = [];
+  let i = 0, j = 0;
+  while (i < base.length || j < kept.length) {
+    const a = base[i], b = kept[j];
+    const ta = a ? (ffWhenAt(a.date, a.time) || 0) : -1;
+    if (a && (!b || !ta || ta >= (b.ts || 0))) { out.push(a); i++; } else { out.push(b); j++; }
+  }
+  return out;
+}
+
 async function getNoticia(url) {
+  const ext = String(url || "").match(/^https:\/\/www\.(comuniate\.com\/noticias\/\d+\/|jornadaperfecta\.com\/blog\/)[a-z0-9-]+\/?$/);
+  if (ext) {
+    // Otras fuentes: solo titular, foto y resumen; el texto completo se lee en su web
+    try {
+      const h = await (await fetch(url, { headers: cmHeaders() })).text();
+      const meta = (p) => { const a = h.match(new RegExp('<meta[^>]+(?:property|name)="' + p + '"[^>]+content="([^"]*)"', "i")) || h.match(new RegExp('<meta[^>]+content="([^"]*)"[^>]+(?:property|name)="' + p + '"', "i")); return a ? decodeEntities(a[1]) : ""; };
+      const src = /comuniate/.test(url) ? "Comuniate" : "Jornada Perfecta";
+      return { external: true, src, url, title: meta("og:title").replace(/\s*[|\-–]\s*(Comuniate|Jornada Perfecta).*$/i, "").trim(), lead: meta("og:description") || meta("description"), image: meta("og:image") };
+    } catch (e) { return { external: true, error: "no disponible" }; }
+  }
   if (!/^https:\/\/www\.futbolfantasy\.com\//.test(String(url || ""))) return { error: "no permitido" };
   const res = await fetch(url, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
   const html = await res.text();
@@ -1808,7 +1913,7 @@ async function getNoticias(env) {
   try {
     const c = await env.PORRA.get("ff:news:v2", "json");
     stale = c && c.data && (c.data.noticias || []).length ? c : null;
-    if (c && c.at && Date.now() - c.at < 15 * 60 * 1000) { c.data.noticias = (c.data.noticias || []).filter((x) => !(x && x.title && isFfPromo(x.title))); c.data.updatedAt = c.at; return c.data; }
+    if (c && c.at && Date.now() - c.at < 2 * 60 * 1000) { c.data.noticias = (c.data.noticias || []).filter((x) => !(x && x.title && isFfPromo(x.title))); c.data.updatedAt = c.at; return c.data; }
   } catch (e) {}
   const out = { noticias: [], locker: [] };
   const fresh = await getFfNoticias(env);
@@ -1853,6 +1958,7 @@ async function getNoticias(env) {
     keep = trimmed.filter((x) => !(ext[x.link] && ext[x.link].x));
   } catch (e) {}
   out.noticias = keep;
+  try { out.noticias = await getNoticiasMulti(keep); } catch (e) {}
   // Si la fuente ha fallado y no hay nada, se devuelven las últimas noticias buenas (mejor viejas que ninguna)
   if (!out.noticias.length && stale) { stale.data.updatedAt = stale.at; return stale.data; }
   try {
@@ -5129,7 +5235,7 @@ async function handleGet({ request, env: env0, params }) {
   }
   // Noticias de FutbolFantasy leídas directamente, sin caché ni escrituras de KV (para los avisos de Telegram).
   if (path === "noticias-rapido") {
-    const list = await getFfNoticias(null);
+    const list = await getNoticiasMulti(await getFfNoticias(null));
     return json({ noticias: list, at: Date.now() });
   }
   if (path === "noticias") {
