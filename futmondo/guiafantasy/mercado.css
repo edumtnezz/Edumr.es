@@ -3018,11 +3018,13 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
    de posición) y 8,6 px (horas del ticker). Se sube el mínimo sin tocar la estructura. */
 @media (max-width: 480px) {
   .cx-ticker-when { font-size: .68rem; }
+  .cx-ticker-tag { font-size: .66rem; }
   .cx-team span { font-size: .68rem; }
-  .cx-prob-t { font-size: .62rem; }
-  .mkt-pos { font-size: .6rem; }
+  .cx-prob-t, .cx-jn-statusrow { font-size: .68rem; }
+  .cx-jn-nav, .cx-conf-k { font-size: .66rem; }
+  .mkt-pos { font-size: .64rem; }
   .plt-pill { font-size: .64rem; }
-  .dest-ratio, .dest-ratio span { font-size: .68rem; }
+  .dest-why, .dest-ratio, .dest-ratio span { font-size: .7rem; }
 }
 
 /* Noticias del inicio: la foto grande se queda; las dos siguientes pasan a lista
