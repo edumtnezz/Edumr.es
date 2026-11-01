@@ -5438,14 +5438,16 @@
 
   let anData = null, anStale = false, anDrag = null;
   const PICK_RECENT_KEY = "gf:cmp:recent:v1";
+  // Siempre de más a menos valor (Futmondo); sin valor, al final
+  const pickByValue = (x, y) => (Number(y.value) || 0) - (Number(x.value) || 0) || String(x.name).localeCompare(String(y.name), "es");
   function pickGroups(q) {
     q = stripAccents(String(q || "").trim());
-    if (q) return [[null, all.filter((p) => stripAccents(p.name).includes(q))]];
+    if (q) { const ql = q.toLowerCase(); return [[null, all.filter((p) => stripAccents(p.name).toLowerCase().includes(ql) || stripAccents(p.team || "").toLowerCase().includes(ql)).sort(pickByValue)]]; }
     let rec = [];
     try { rec = JSON.parse(localStorage.getItem(PICK_RECENT_KEY) || "[]"); } catch (e) {}
     const recP = rec.map((id) => all.find((p) => String(p.id) === String(id))).filter(Boolean);
     const ids = new Set(recP.map((p) => String(p.id)));
-    const top = all.filter((p) => !ids.has(String(p.id))).sort((x, y) => y.value - x.value);
+    const top = all.filter((p) => !ids.has(String(p.id))).sort(pickByValue);
     const g = [];
     if (recP.length) g.push(["Elegidos antes", recP]);
     g.push(["Más valiosos", top]);
@@ -5502,7 +5504,7 @@
       back.addEventListener("click", () => { st.mode = "clubs"; again(); });
       list.appendChild(back);
       list.appendChild(el("div", "pk-head", st.club));
-      const pl = all.filter((p) => p.team === st.club).sort((x, y) => y.value - x.value);
+      const pl = all.filter((p) => p.team === st.club).sort(pickByValue);
       pl.forEach((p) => list.appendChild(pickRowEl(p, cb)));
       if (!pl.length) list.appendChild(el("p", "pk-empty", "Sin jugadores"));
       return;
