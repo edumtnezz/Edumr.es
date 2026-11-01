@@ -150,7 +150,7 @@ function noticiaTexto(title, hits, resumen, link, src) {
     : /\btitular\w*/.test(t) ? "✅ <b>TITULAR</b>" : "📰 <b>ÚLTIMA HORA</b>";
   return tag + (hits.length ? "  ·  ⭐ <b>TU JUGADOR</b>" : "") + "\n<b>" + esc(title) + "</b>" +
     (resumen ? "\n\n" + esc(resumen) : "") + (hits.length ? "\n\n⭐ Afecta a: <b>" + esc(hits.join(", ")) + "</b>" : "") +
-    (src && src !== "FutbolFantasy" ? "\n\n<i>Fuente: " + esc(src) + "</i>" : "") +
+    "" +
     "\n\n👉 <b>Más información:</b>\n" + newsUrl(link);
 }
 
