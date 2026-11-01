@@ -3045,3 +3045,22 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 @media (max-width: 480px) {
   .dest-panel .dt-row { font-size: .6rem; padding: 2px 5px; gap: 2px; }
 }
+
+/* ===== Jugadores rentables: filas más compactas (01/11/2026) ===== */
+.rtb-row { grid-template-columns: 20px 40px minmax(0, 1fr) auto; gap: 9px; padding: 9px 4px; }
+.rtb-n, .rtb-row.top .rtb-n { font-size: .85rem; }
+.rtb-ph { width: 40px; height: 40px; padding: 2px; }
+.rtb-body { gap: 1px; }
+.rtb-name { font-size: .92rem; }
+.rtb-price { font-size: 1rem; }
+.rtb-l2 { font-size: .72rem; }
+.rtb-l3 { margin: 1px 0 0; }
+.rtb-st { flex-direction: row; align-items: baseline; gap: 3px; padding: 0 8px; }
+.rtb-st b { font-size: .84rem; }
+.rtb-st small { font-size: .64rem; letter-spacing: 0; text-transform: none; }
+.rtb-bar { height: 3px; margin-top: 5px; }
+.rtb-r b { font-size: 1.2rem; }
+.rtb-r small { font-size: .56rem; }
+.rtb-title { margin-bottom: 0; }
+.rtb-sub { margin-bottom: 6px; }
+.rtb-more { height: 38px; margin-top: 10px; }
