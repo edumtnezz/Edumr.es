@@ -4062,6 +4062,7 @@
     grid.appendChild(h);
     // "Anteriores": las noticias siguientes, en lista (a la izquierda de la foto grande en pantallas anchas)
     const older = list.slice(1, 4);
+    let chgBelow = null;
     if (older.length) {
       const prev = el("div", "feat-prev");
       prev.appendChild(el("div", "feat-prev-title", "Anteriores"));
@@ -4083,12 +4084,14 @@
       });
       const chg = el("div", "feat-chg");
       chg.id = "featChg";
-      prev.appendChild(chg);
+      // En móvil "Últimos cambios" va abajo, solo y a todo el ancho; en pantalla ancha, dentro de Anteriores.
+      if (box.clientWidth && box.clientWidth < 640) { chg.classList.add("feat-chg-solo"); chgBelow = chg; } else prev.appendChild(chg);
       paintInicioCambios();
       loadInicioCambios();
       grid.appendChild(prev);
     }
     box.appendChild(grid);
+    if (chgBelow) box.appendChild(chgBelow);
     paintLiveHero(h);
   }
 

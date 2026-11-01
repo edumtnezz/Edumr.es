@@ -3301,11 +3301,6 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
   .feat-prev-img { width: 38px; height: 38px; border-radius: 9px; }
   .feat-prev-h { font-size: .7rem; line-height: 1.2; }
   .feat-prev-m { font-size: .58rem; }
-  .feat-chg-row { gap: 5px; font-size: .66rem; }
-  .feat-chg-ph { width: 20px; height: 20px; }
-  .feat-chg-cat { font-size: .56rem; }
-  .feat-chg-txt { font-size: .62rem; }
-  .feat-chg-time { font-size: .55rem; }
   .feat-sub { grid-column: 1 / -1; grid-row: 2; }
 }
 
@@ -3324,3 +3319,9 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 
 /* Últimas actualizaciones: sin el botón con el nombre del club (Edu 01/11) */
 #tab-actualizaciones .up-club { display: none; }
+
+/* "Últimos cambios" en móvil: recuadro propio debajo, a todo el ancho */
+.feat-chg.feat-chg-solo { border: 1px solid var(--border); border-radius: 16px; padding: 12px 14px 8px; margin: 0 0 14px; min-height: 0; }
+.feat-chg-solo .feat-chg-title { margin-top: 0; }
+.feat-chg-solo .feat-chg-ph { display: block; width: 24px; height: 24px; }
+.feat-chg-solo .feat-chg-time { display: block; }
