@@ -3331,3 +3331,4 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 
 /* Cambio al que se llega desde "Últimos cambios" del Inicio */
 #tab-actualizaciones .up-row.up-focus { box-shadow: 0 0 0 2px #16a34a; transition: box-shadow .3s; }
+#tab-actualizaciones .up-row { scroll-margin-top: 130px; }

@@ -649,7 +649,7 @@
     if (!r) return false;
     pendingUpdKey = "";
     r.classList.add("up-focus");
-    try { r.scrollIntoView({ block: "center" }); } catch (e) {}
+    try { r.scrollIntoView({ block: "start" }); } catch (e) {}
     setTimeout(() => r.classList.remove("up-focus"), 2600);
     return true;
   }
