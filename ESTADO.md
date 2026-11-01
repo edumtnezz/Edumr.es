@@ -5,7 +5,6 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 
 ## Hecho (sacado de AGENTS.md, CLAUDE.md y el historial de git)
 - Despliegue automático: push a `main` → GitHub Action publica la web y el Worker `puja-do`.
-- Bot de Telegram en VPS (@eduarIA_bot, Aider + DeepSeek) que edita la web desde el móvil.
 - Avisos de Telegram (31/10): noticias, once probable y confirmado, precios, cambios en sus jugadores (`cron/src/avisos.js`).
 - Jugadores rentables (calidad-precio), histórico de minutos por jugador y comparador de jugadores con comparaciones guardadas.
 - Club: calendario completo, escudos que llevan al club. Partido: nota real de FotMob, asistencias en el campo.

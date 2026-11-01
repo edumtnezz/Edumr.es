@@ -37,34 +37,10 @@ Para ver estilos/posiciones calculadas (depurar huecos, etc.) usar el CDP:
 - Secretos del repo: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`.
 - Ya NO hace falta `deploy.ps1` (ni el PC). Cualquier push despliega.
 
-## Agente en el VPS (edición desde el móvil por Telegram)
-- VPS (C2G): `193.36.236.222`, root. Ubuntu 22.04, 2 vCPU, 2 GB.
-- Carpeta `/opt/edumr`: `repo` (clon del repo), `venv` (Aider), `bot.py` (bot de Telegram), `config.json` (token Telegram, secret, clave DeepSeek).
-- Servicio `edumr-bot` (systemd, `Restart=always`). Reiniciar: `systemctl restart edumr-bot`.
-- Bot Telegram: **@eduarIA_bot**. Autoriza el **primer chat** que escribe (queda como dueño; ya no hay `/start <SECRET>`).
-- Flujo: mensaje → `git fetch+reset` → Aider (modelo `openai/deepseek-flash`, base `https://api.deepseek.com`) → commit+push → GitHub Action despliega → aviso `🔔 ya publicado`.
-- Progreso visible: `🧠 Pensando…` → `⏳ Trabajando… (N min)` → `✅ Hecho y subido` / `🤔 No he cambiado nada` / `❌ Error`.
-- Git del VPS usa clave `/root/.ssh/edumr_deploy` (deploy key con escritura en el repo).
-- Extra en `config.json`: `github_token` + `github_repo` (para el aviso de despliegue vía API de GitHub Actions).
-- ⚠️ **Este bot es SOLO para la web `edumr.es`** (proyecto fijo `web`). Para proyectos nuevos hay otro bot aparte (ver `C:\Users\PC\Desktop\PROMPT-BOT-PROYECTOS.md`).
-- Comandos: `/ayuda` `/menu` `/modelo` `/preguntar <duda>` `/revisar` `/captura` `/estado` `/actualizar` `/deshacer` `/web` `/coste` `/tarea`.
-- 🎛️ Menú con **botones**: Preguntar, Revisar, Estado, Coste, Web, Deshacer, Ayuda.
-- 🎙️ **Notas de voz**: `getFile` → ffmpeg (16k mono) → `faster-whisper` `small` (español).
-- 🖼️ **Fotos/capturas**: visión de `deepseek-flash` (OpenAI-compatible, thinking OFF). Responde "ACCIÓN:" + "PISTAS:" → dice **"🖼️ Voy a: …"**. Con texto → ejecuta; sin texto → espera un "hazlo".
-- 🧠 **IA rápida (~15 s)**: **plan** por API directa (en español, ~2 s) → **edición con Aider** → **verificación** del diff por API directa (`<SI|NO> | <resumen>`). El resumen alimenta el mensaje final. Si la verificación dice NO, reintenta (hasta 3). Nunca pide "sé más concreto".
-- ⚡ **Claves de la velocidad** (¡importante!): DeepSeek V4.1 trae **thinking ACTIVADO por defecto** (¡lentísimo!). Se desactiva con `--model-settings-file /opt/edumr/myset.yml` (`extra_body.thinking.type=disabled`). Además Aider con `--edit-format diff` (no reescribe el archivo entero) y `--map-tokens 0`. Resultado: **~14 s** vs **>10 min**. Guardar `thinking: disabled` también en las llamadas directas (plan/verify/visión).
-- ⚠️ **Sin chequeo visual automático**: se quitó porque la visión **lee mal el texto pequeño** de las capturas (falsos NO → reintentos en bucle). La fiabilidad la da la verificación del diff.
-- 💶 **Coste en euros**: tokens (entrada/salida) × precio DeepSeek V4.1-Flash (peak/off-peak), mostrado al terminar y acumulado en `/coste`.
-- 🛡️ **Guardián anti-destructivo**: si un cambio borra muchísimo (>=100 líneas y añade <20%), se cancela y se restaura.
-- 🧵 **Memoria corta** por chat (últimos 4 turnos) para resolver "esto"/"eso" sin disparar el consumo.
-- ⏰ **Tareas programadas**: `/tarea`, `/tarea diario 09:00 <petición>`, `/tarea borrar <id>`. Hilo `scheduler` (hora Europe/Madrid).
-- 🔔 Siempre responde: sticker/vídeo/archivo reciben contestación, nunca silencio.
-- Config en `config.json` (chmod 600): token, clave DeepSeek, token+repo GitHub, model, tareas, offset, usage, memory.
-
 
 
 ## 🔔 Avisos de Telegram (31/10/2026) — `cron/src/avisos.js`
-- Cron propio cada 5 min (`*/5 * * * *` en `cron/wrangler.toml`, rama en `cron/src/index.js`). Bot **nuevo, solo para avisos** (no es @eduarIA_bot, que es el que edita la web).
+- Cron propio cada 5 min (`*/5 * * * *` en `cron/wrangler.toml`, rama en `cron/src/index.js`). Bot de Telegram solo para avisos.
 - Secreto en Cloudflare (Worker `edumr-cron` → Settings → Variables y secretos, tipo *Secret*): `TELEGRAM_BOT_TOKEN`. El token NUNCA va en el chat ni en el repo. El chat de Edu se descubre solo: el primer chat privado que escribe `/start` al bot queda guardado (opcional: secreto `TELEGRAM_CHAT_ID`). Sin token no hace nada.
 - Estado en KV `PORRA`, clave `tg:avisos:v1` (solo escribe cuando manda o cambia algo, por el tope de 1.000 puts/día).
 - Qué avisa (solo lo NUEVO): 📰/🔔/⭐ TODAS las noticias nuevas (⭐ nombran a un jugador de Con Permisoo, 🔔 lesión/sanción/duda/titularidad, regex `KW`); ✅ alineación confirmada de TODOS los partidos con los dos onces (⭐ marca a sus jugadores y lista los suyos que no están); 🔄 once probable actualizado (quién entra y sale en cada equipo, de `/api/laquiniela/alineaciones-estado` + `/api/laquiniela/probables`, comparando el once guardado en `st.pr`); 🔄 cambios en sus jugadores (% de jugar de FutbolFantasy y estado de Futmondo).
