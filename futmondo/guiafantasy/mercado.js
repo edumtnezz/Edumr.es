@@ -2965,11 +2965,12 @@
     ln.appendChild(el("span", "cmpx-mtag" + cls, tg));
     c.appendChild(ln);
     const evs = el("span", "cmpx-evs");
-    const chip = (cls2, ico, n, list) => evs.appendChild(el("span", "cmpx-evc " + cls2, ico + (list && list.length === n ? " " + list.map(cmpMin).join(" ") : n > 1 ? " " + n : "")));
-    if (m.g) chip("g", "⚽", m.g, fm && fm.goals);
-    if (m.a) chip("a", "👟", m.a, fm && fm.assists);
-    if (m.y) chip("y", "🟨", m.y, fm && fm.yc);
-    if (m.rd) chip("r", "🟥", m.rd, fm && fm.rc);
+    // Icono + palabra + minutos (si FotMob los tiene); sin minutos, "2 goles".
+    const chip = (cls2, ico, n, list, one, many) => evs.appendChild(el("span", "cmpx-evc " + cls2, ico + " " + (list && list.length === n ? (n > 1 ? many : one) + " " + list.map(cmpMin).join(" ") : n > 1 ? n + " " + (many === "Asist." ? "asist." : many.toLowerCase()) : one)));
+    if (m.g) chip("g", "⚽", m.g, fm && fm.goals, "Gol", "Goles");
+    if (m.a) chip("a", "👟", m.a, fm && fm.assists, "Asist.", "Asist.");
+    if (m.y) chip("y", "🟨", m.y, fm && fm.yc, "Amarilla", "Amarillas");
+    if (m.rd) chip("r", "🟥", m.rd, fm && fm.rc, "Roja", "Rojas");
     if (evs.firstChild) c.appendChild(evs);
     return c;
   }
@@ -3220,7 +3221,8 @@
     if (bar) {
       bar.innerHTML = "";
       if (cmpSel.a || cmpSel.b) {
-        const nb = el("button", "cmpx-new", "✕ Salir y buscar otros jugadores");
+        const nb = el("button", "cmpx-new", "🔎 Buscar otros");
+        nb.setAttribute("aria-label", "Salir de esta comparación y buscar otros jugadores");
         nb.type = "button";
         nb.addEventListener("click", () => {
           cmpSel.a = null; cmpSel.b = null; cmpSet(CMP_SEL_KEY, cmpSel);
