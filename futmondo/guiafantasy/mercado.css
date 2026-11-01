@@ -3008,3 +3008,7 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .plt-mins { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
 .plt-mins::-webkit-scrollbar { display: none; }
 .plt-mins .plt-btn { white-space: nowrap; }
+
+.rtb-pos { flex: 0 0 auto; font-size: .66rem; font-weight: 800; letter-spacing: .05em; color: var(--muted); }
+.rtb-price { font-size: 1.1rem; font-weight: 800; letter-spacing: -.02em; color: var(--text); font-variant-numeric: tabular-nums; }
+.rtb-l2 { align-items: baseline; }

@@ -6532,10 +6532,10 @@
       l1.appendChild(el("span", "rtb-name", p.name));
       if (p.logo) { const lg = el("img", "rtb-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; l1.appendChild(lg); }
       body.appendChild(l1);
-      const l2 = el("span", "rtb-l2");
       const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
-      const mv = Number(p.value) / 1e6;
-      l2.appendChild(el("span", null, (rb ? rb + (rb2 ? "/" + rb2 : "") + " · " : "") + (mv >= 10 ? Math.round(mv) : mv.toFixed(1).replace(/\.0$/, "").replace(".", ",")) + " M€"));
+      if (rb) l1.appendChild(el("span", "rtb-pos", rb + (rb2 ? "/" + rb2 : "")));
+      const l2 = el("span", "rtb-l2");
+      l2.appendChild(el("b", "rtb-price", money(p.value) + " €"));
       if (p.chg7 != null && p.chg7 !== "") {
         const v = Number(p.chg7) || 0;
         if (v) l2.appendChild(el("span", v > 0 ? "rtb-up" : "rtb-dn", (v > 0 ? "+" : "−") + (Math.abs(v) >= 1e6 ? (Math.abs(v) / 1e6).toFixed(1).replace(".", ",") + "M" : Math.round(Math.abs(v) / 1e3) + "k")));
