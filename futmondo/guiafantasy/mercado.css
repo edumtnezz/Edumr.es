@@ -3038,3 +3038,14 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
   .feat-card-sm-title { color: var(--text); }
   .feat-card-sm-date { color: var(--muted); font-size: .7rem; }
 }
+
+/* ===== Jugadores rentables: mismas tarjetas que Destacados (01/11/2026) ===== */
+.rtb-panel .rtb-tabs { margin: 0 10px; justify-content: safe center; gap: 16px; }
+.rtb-panel .rtb-segs { margin: 14px 16px 6px; }
+.rtb-panel .dest-grid { padding-top: 12px; }
+.rtb-panel .cx-sk, .rtb-panel .rtb-empty, .rtb-panel .rtb-more, .rtb-panel .muted { grid-column: 1 / -1; }
+.rtb-panel .rtb-empty { text-align: center; }
+.rtb-panel .rtb-more { width: 100%; margin: 6px 0 0; border-radius: 12px; }
+.rtb-panel .dest-rank { top: 9px; left: 11px; }
+:root:not([data-theme="light"]) .rtb-panel .dest-rank { color: #4ade80; }
+:root[data-theme="dark"] .rtb-panel .dest-rank { color: #4ade80; }
