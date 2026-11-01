@@ -4544,6 +4544,9 @@ async function recordPointsHistory(env) {
 // Caché de respuestas públicas (Cache API: sin coste ni límite). Evita recalcular en cada visita
 // y mantiene la CPU por petición por debajo del límite del plan gratis de Cloudflare.
 const EDGE_TTL = { "ultimos-cambios": 180, aplazados: 300, calendario: 600, estadios: 3600, "historial-puntos": 120, mercado: 45, rachas: 60, minutos: 300, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 300, "alineaciones-confirmadas": 180, "alineaciones-estado": 300, noticias: 60, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10, "notas-fotmob": 3600, "fm-partido": 21600 };
+// Pantallas donde un dato de hace unos minutos no hace daño: cuando caduca la copia fresca se responde AL MOMENTO con la última buena (hasta 15 min) y se refresca por detrás.
+// Fuera de aquí a propósito: directo, detallepartido, alineaciones-confirmadas, notas-fotmob, fm-partido (en juego deben ser frescos).
+const SWR_OK = new Set(["mercado", "jugador", "ultimos-cambios", "equipos", "calendario", "rachas", "minutos", "temporada", "noticias", "clausulas", "fichajes", "portada", "aplazados", "estadios", "historial-puntos", "once", "alineaciones-estado"]);
 export async function onRequestGet(ctx) {
   const path = (ctx.params.path || []).join("/");
   const ttl = EDGE_TTL[path];
@@ -4575,14 +4578,14 @@ export async function onRequestGet(ctx) {
   // "jornada": cuando la copia fresca caduca, se responde AL MOMENTO con la última buena (hasta 10 min) y se refresca por detrás,
   // para que nadie espere ~1 s a football-data. Nunca se hace con un partido en juego ni con uno que empieza en menos de 20 min
   // (ahí los datos deben ser frescos).
-  if (path === "jornada" && ctx.waitUntil) {
+  if ((path === "jornada" || SWR_OK.has(path)) && ctx.waitUntil) {
     try {
       const st = await caches.default.match(staleKey);
       if (st) {
         const age = Date.now() - (Number(st.headers.get("x-saved")) || 0);
         const txt0 = await st.text();
-        let calm = age < 600000 && txt0.indexOf('"state":"live"') < 0;
-        if (calm) {
+        let calm = age < (path === "jornada" ? 600000 : path === "mercado" ? 180000 : 900000) && (path !== "jornada" || txt0.indexOf('"state":"live"') < 0);
+        if (calm && path === "jornada") {
           const ms = (JSON.parse(txt0).matches) || [];
           calm = !ms.some((m) => { const t = ffWhenAt(m.date, m.time); return t && !(m.live && m.live.state === "final") && t - Date.now() < 20 * 60 * 1000 && t - Date.now() > -4 * 3600 * 1000; });
         }
