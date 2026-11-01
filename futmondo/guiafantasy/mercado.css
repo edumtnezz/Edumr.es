@@ -3176,6 +3176,8 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .up-club:hover { background: rgba(127,127,127,.24); }
 .up-tomatch { font-size: .76rem; font-weight: 800; color: #16a34a; text-decoration: none; padding: 5px 11px; border-radius: 999px; border: 1px solid rgba(22,163,74,.4); }
 :root:not([data-theme="light"]) .up-tomatch { color: #4ade80; }
+.up-tolast { font-size: .74rem; font-weight: 700; color: var(--muted); text-decoration: none; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--border); }
+.up-tolast:hover { color: var(--text); }
 
 /* ===== Un solo estilo de botón de filtro en toda la web (el de Destacados) =====
    Destacados (#tab-inicio) se queda con SU estilo, que es el que gusta: aquí se

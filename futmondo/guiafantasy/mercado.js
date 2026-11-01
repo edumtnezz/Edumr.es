@@ -563,14 +563,38 @@
   try { const sv = localStorage.getItem("merc_updf"); if (sv && UP_FILTERS.some((f) => f[0] === sv)) updFilter = sv; } catch (e) {}
   // Equipo del titular ("Alineación confirmada de Real Madrid" → "Real Madrid") para poder
   // llevar al club y al partido desde Últimas actualizaciones.
+  // OJO: un once nuevo casi siempre es para el partido QUE VIENE; el de la jornada en curso
+  // puede estar ya jugado (su alineación se publicó antes). Por eso se guardan dos:
+  //   jmNext  → el próximo partido sin jugar (el del once nuevo)
+  //   jmLast  → el último que ya se jugó (ahí están los puntos de cada jugador)
   let jmCache = null, jmDay = 0;
   async function jornadaMap() {
     if (jmCache) return jmCache;
     jmCache = {};
+    const anota = (m, tipo, dia) => {
+      [m.home, m.away].forEach((t) => {
+        if (!t) return;
+        const k = teamCanon(t);
+        const e = jmCache[k] = jmCache[k] || {};
+        if (tipo === "last") { if (!e.last) e.last = { m, dia }; }
+        else if (!e.next) e.next = { m, dia };
+      });
+    };
     try {
-      const d = await (await fetch(API + "/jornada")).json();
-      jmDay = Number(d.matchday) || 0;
-      (d.matches || []).forEach((m) => { [m.home, m.away].forEach((t) => { if (t) jmCache[teamCanon(t)] = m; }); });
+      const cur = await (await fetch(API + "/jornada")).json();
+      jmDay = Number(cur.matchday) || 0;
+      const ms = (cur.matches || []).slice();
+      const jugado = (m) => !!(m.live && m.live.state === "final");
+      // Primero los que ya se jugaron (de la jornada en curso) y luego los que quedan.
+      ms.filter(jugado).forEach((m) => anota(m, "last", jmDay));
+      ms.filter((m) => !jugado(m)).forEach((m) => anota(m, "next", jmDay));
+    } catch (e) {}
+    try {
+      if (jmDay && jmDay < 38) {
+        const nxt = await (await fetch(API + "/jornada?jornada=" + (jmDay + 1))).json();
+        const nd = Number(nxt.matchday) || (jmDay + 1);
+        (nxt.matches || []).forEach((m) => anota(m, "next", nd));
+      }
     } catch (e) {}
     return jmCache;
   }
@@ -595,11 +619,20 @@
       a.href = href;
       box.appendChild(a);
     }
-    const m = jm[teamCanon(club)];
-    if (m) {
+    const e = jm[teamCanon(club)] || {};
+    const partidoHref = (o) => "/futmondo/guiafantasy/partido/" + matchSlug(o.m.home, o.m.away) + "?j=" + (o.m.aplazado || o.dia || "");
+    const near = e.next || e.last;
+    if (near) {
       const a2 = el("a", "up-tomatch", "Ver partido →");
-      a2.href = "/futmondo/guiafantasy/partido/" + matchSlug(m.home, m.away) + "?j=" + (m.aplazado || m.jornada || jmDay || "");
+      a2.href = partidoHref(near);
+      a2.title = e.next ? "Próximo partido (el del once nuevo)" : "Último partido";
       box.appendChild(a2);
+    }
+    // El que ya se jugó se queda a mano: ahí están los puntos de cada jugador.
+    if (e.last && e.next) {
+      const a3 = el("a", "up-tolast", "Último jugado · puntos");
+      a3.href = partidoHref(e.last);
+      box.appendChild(a3);
     }
     return box;
   }
