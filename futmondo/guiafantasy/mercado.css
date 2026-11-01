@@ -3321,3 +3321,6 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 /* "Once probable · fecha hora" siempre entero, también en móviles estrechos */
 #cxChrome .cx-jn .cx-jn-statusrow-prob { font-size: .52rem; letter-spacing: .1px; padding: 2px 5px; gap: 3px; max-width: 100%; box-sizing: border-box; }
 #cxChrome .cx-jn .cx-jn-statusrow-prob .cx-prob-t { font-size: .52rem; letter-spacing: 0; }
+
+/* Últimas actualizaciones: sin el botón con el nombre del club (Edu 01/11) */
+#tab-actualizaciones .up-club { display: none; }
