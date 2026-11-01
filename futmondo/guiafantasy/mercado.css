@@ -3049,3 +3049,10 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .rtb-panel .dest-rank { top: 9px; left: 11px; }
 :root:not([data-theme="light"]) .rtb-panel .dest-rank { color: #4ade80; }
 :root[data-theme="dark"] .rtb-panel .dest-rank { color: #4ade80; }
+
+/* Hoy / 7 días: cada línea en una sola fila, aunque la cifra sea larga (arreglado 01/11/2026) */
+.dest-panel .dt-row { white-space: nowrap; }
+.dest-panel .dt-row b { white-space: nowrap; }
+@media (max-width: 480px) {
+  .dest-panel .dt-row { font-size: .6rem; padding: 2px 5px; gap: 2px; }
+}
