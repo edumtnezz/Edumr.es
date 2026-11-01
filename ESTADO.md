@@ -48,5 +48,3 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 ## 01/11/2026 — Alineaciones con jugadores repetidos (arreglado)
 - Causa: FutbolFantasy añadió una 2ª tanda de 11 en el bloque de titulares. Ahora `cleanStarters` deja siempre un once válido (máx. 11, sin repetidos), en el lector, en `/once` y en `alineacion.js`.
 - Tests automáticos en `tests/` (los corre el GitHub Action antes de publicar; si fallan no se despliega).
-
-- Jugadores rentables = misma tarjeta que Destacados (01/11/2026): una sola función `destCard(p, rank)` en `mercado.js` pinta las dos; la pestaña usa `dest-panel`/`dest-grid` (mismo título centrado y pastilla "Actualizado"), con número de puesto en la esquina y los filtros de posición y precio encima. Estilos en el final de `mercado.css` (`.rtb-panel`). Si se cambia la tarjeta, se cambia en `destCard` y vale para las dos.
