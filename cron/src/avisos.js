@@ -129,6 +129,18 @@ function eur(n) {
 }
 const hash = (str) => { let h = 5381; for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0; return String(h); };
 
+// Aviso de noticia con titular llamativo (la primera línea es lo que se ve en la lista de chats)
+function noticiaTexto(title, hits, resumen, link) {
+  const t = norm(title);
+  const tag = /\b(lesion\w*|rotura|fractura|esguince|baja|bajas)\b/.test(t) ? "🚑 <b>BAJA</b>"
+    : /\b(sancion\w*|apercibid\w*|expulsad\w*|suspendid\w*)\b/.test(t) ? "🟥 <b>SANCIÓN</b>"
+    : /\b(duda|dudas|dudoso|molestias?)\b/.test(t) ? "⚠️ <b>DUDA</b>"
+    : /\btitular\w*/.test(t) ? "✅ <b>TITULAR</b>" : "📰 <b>ÚLTIMA HORA</b>";
+  return tag + (hits.length ? "  ·  ⭐ <b>TU JUGADOR</b>" : "") + "\n\n<b>" + esc(title) + "</b>" +
+    (resumen ? "\n\n" + esc(resumen) : "") + (hits.length ? "\n\n⭐ Afecta a: <b>" + esc(hits.join(", ")) + "</b>" : "") +
+    "\n\n👉 <b>Más información:</b>\n" + newsUrl(link);
+}
+
 // Aviso de mercado: 5 mayores subidas y 5 mayores bajadas (valores de Futmondo). null si no hay cambios.
 function mercadoTexto(ps, own, sig) {
   const fila = (p, i, sube) => "<b>" + (i + 1) + "</b>  " + (own.has(String(p.id)) ? "⭐" : "") + "<b>" + esc(p.name) + "</b>  <i>" + esc(p.team || "") + "</i>\n" +
@@ -136,11 +148,13 @@ function mercadoTexto(ps, own, sig) {
   const up = ps.filter((p) => p.change > 0).sort((a, b) => b.change - a.change).slice(0, 5);
   const down = ps.filter((p) => p.change < 0).sort((a, b) => a.change - b.change).slice(0, 5);
   if (!up.length && !down.length) return null;
-  return "💹 <b>Mercado actualizado</b>\n\n" +
-    (up.length ? "📈 <b>Suben más</b>\n" + up.map((p, i) => fila(p, i, true)).join("\n") : "") +
+  const top = up.concat(down).filter((p) => own.has(String(p.id)));
+  const gancho = [up[0] ? "🔥 <b>" + esc(up[0].name) + "</b> se dispara  ▲ +" + eur(up[0].change) : "", down[0] ? "🧊 <b>" + esc(down[0].name) + "</b> se hunde  ▼ −" + eur(down[0].change) : "", top.length ? "⭐ Tienes en el top: <b>" + esc(top.map((p) => p.name).join(", ")) + "</b>" : ""].filter(Boolean).join("\n");
+  return "💹 <b>MERCADO EN MOVIMIENTO</b>\n\n" + gancho + "\n\n" +
+    (up.length ? "📈 <b>TOP 5 SUBIDAS</b>\n" + up.map((p, i) => fila(p, i, true)).join("\n") : "") +
     (up.length && down.length ? "\n\n" : "") +
-    (down.length ? "📉 <b>Bajan más</b>\n" + down.map((p, i) => fila(p, i, false)).join("\n") : "") +
-    "\n\n" + WEB + "mercado?v=" + sig;
+    (down.length ? "📉 <b>TOP 5 BAJADAS</b>\n" + down.map((p, i) => fila(p, i, false)).join("\n") : "") +
+    "\n\n👉 <b>Todo el mercado:</b>\n" + WEB + "mercado?v=" + sig;
 }
 
 // ---------- Telegram ----------
@@ -255,8 +269,7 @@ export async function avisar(env, deps) {
       c.resumen = resumen;
     }
     for (const c of cands) {
-      const text = (c.hits.length ? "⭐ " : c.kw ? "🔔 " : "📰 ") + "<b>" + esc(c.title) + "</b>" + (c.hits.length ? "\nCoincide con tu jugador: " + esc(c.hits.join(", ")) : "") +
-        (c.resumen ? "\n\n" + esc(c.resumen) : "") + "\n\n<b>Más información:</b>\n" + newsUrl(c.x.link);
+      const text = noticiaTexto(c.title, c.hits, c.resumen, c.x.link);
       queue.push({ text, commit: () => { st.news = (st.news || []).concat([c.x.link]).slice(-200); dirty = true; } });
     }
   }
@@ -281,9 +294,9 @@ export async function avisar(env, deps) {
       }
       const bloque = (t) => ["<b>" + esc(t.name) + "</b>" + (t.formation ? " (" + esc(t.formation) + ")" : ""),
         posLine("Por", t.portero, squad, t.name), posLine("Def", t.defensas, squad, t.name), posLine("Med", t.medios, squad, t.name), posLine("Del", t.delanteros, squad, t.name)].filter(Boolean).join("\n");
-      const text = "✅ <b>Alineación confirmada</b>\n" + esc(m.home.name) + " – " + esc(m.away.name) + (cuando ? " · " + esc(cuando) : "") +
-        "\n\n" + bloque(m.home) + "\n\n" + bloque(m.away) + (fuera.length ? "\n\nTuyos fuera del once: " + esc(fuera.join(", ")) : "") +
-        "\n\n" + matchUrl(web.home, web.away);
+      const text = "✅ <b>ONCE CONFIRMADO</b>\n⚽ <b>" + esc(m.home.name) + " vs " + esc(m.away.name) + "</b>" + (cuando ? "\n🕒 " + esc(cuando) : "") +
+        "\n\n" + bloque(m.home) + "\n\n" + bloque(m.away) + (fuera.length ? "\n\n⚠️ <b>Tuyos fuera del once:</b> " + esc(fuera.join(", ")) : "") +
+        "\n\n👉 <b>Míralo en tu web:</b>\n" + matchUrl(web.home, web.away);
       queue.push({ text, commit });
     }
   }
@@ -337,8 +350,8 @@ export async function avisar(env, deps) {
           const l1 = logo(m.home), l2 = logo(m.away);
           if (l1 && l2) photos = [l1, l2];
         } catch (e) {}
-        const text = "🔄 <b>Once probable actualizado</b>\n<b>" + esc(m.home) + " – " + esc(m.away) + "</b>\n" +
-          [cu ? "🕒 " + esc(cu) : "", upd ? "Actualizado " + hhmm(upd) : ""].filter(Boolean).join("  ·  ") + "\n\n" + lineas.join("\n\n") + "\n\n" + matchUrl(m.home, m.away);
+        const text = "🔄 <b>ONCE PROBABLE ACTUALIZADO</b>\n⚽ <b>" + esc(m.home) + " vs " + esc(m.away) + "</b>\n" +
+          [cu ? "🕒 " + esc(cu) : "", upd ? "Actualizado " + hhmm(upd) : ""].filter(Boolean).join("  ·  ") + "\n\n" + lineas.join("\n\n") + "\n\n👉 <b>Míralo en tu web:</b>\n" + matchUrl(m.home, m.away);
         queue.push({ text, photos, commit: () => { st.pr[key] = nuevo; dirty = true; } });
       }
     } catch (e) {}
@@ -378,12 +391,12 @@ export async function avisar(env, deps) {
       if (partes.length) cambios.push("• <b>" + esc(p.name) + "</b>: " + esc(partes.join(" · ")));
     }
     const commit = () => { st.sq = nuevo; dirty = true; };
-    if (cambios.length) queue.push({ text: "🔄 <b>Cambios en tus jugadores</b>\n" + cambios.join("\n") + "\n\n" + WEB, commit });
+    if (cambios.length) queue.push({ text: "🚨 <b>TUS JUGADORES CAMBIAN</b>\n\n" + cambios.join("\n") + "\n\n👉 <b>Míralo en tu web:</b>\n" + WEB, commit });
     else if (JSON.stringify(nuevo) !== JSON.stringify(st.sq || {})) commit();
   }
 
   // PRUEBA ÚNICA (pedida por Edu, 01/11): manda una noticia real y la tabla de mercado real, marcadas como prueba. Se borra tras usarse.
-  if (!firstRun && !quiet && !st.demo && !(deps && deps.noDemo)) {
+  if (!firstRun && !quiet && !st.demo2 && !(deps && deps.noDemo)) {
     try {
       const own = new Set(squad.map((p) => String(p.id)));
       const ps = ((await getMk()).players || []).filter((p) => p && p.name && Number.isFinite(p.change));
@@ -393,9 +406,9 @@ export async function avisar(env, deps) {
       if (n0) {
         let resumen = "";
         try { const n = await getJson(f, "noticia?u=" + encodeURIComponent(n0.link)); resumen = decode(String(n.lead || "")).replace(/\s+/g, " ").trim(); if (resumen.length > 150) resumen = resumen.slice(0, 150).replace(/\s+\S*$/, "") + "…"; } catch (e) {}
-        nt = "🧪 <i>PRUEBA</i>\n📰 <b>" + esc(decode(n0.title)) + "</b>" + (resumen ? "\n\n" + esc(resumen) : "") + "\n\n<b>Más información:</b>\n" + newsUrl(n0.link);
+        nt = "🧪 <i>PRUEBA</i>\n" + noticiaTexto(decode(n0.title), ownMatch(decode(n0.title), squad), resumen, n0.link);
       }
-      const dcommit = () => { st.demo = 1; dirty = true; };
+      const dcommit = () => { st.demo2 = 1; dirty = true; };
       if (mt) queue.unshift({ text: "🧪 <i>PRUEBA</i>\n" + mt, commit: dcommit });
       if (nt) queue.unshift({ text: nt, commit: dcommit });
       if (!mt && !nt) dcommit();
