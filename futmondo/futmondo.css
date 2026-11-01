@@ -388,3 +388,8 @@ body.hub-page::before { position: fixed; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* Sin deslizamiento lateral en ninguna pantalla (Edu, 01/11/2026): la página solo se mueve hacia arriba y abajo.
+   Las tiras con su propio scroll (escudos, filtros) siguen deslizándose dentro de su caja. */
+html { overflow-x: hidden; overscroll-behavior-x: none; }
+body { overflow-x: clip; overscroll-behavior-x: none; max-width: 100%; }

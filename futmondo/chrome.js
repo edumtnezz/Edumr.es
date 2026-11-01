@@ -188,6 +188,8 @@
       var kk = window.EduTeams ? (window.EduTeams.canon(el.getAttribute("data-home")) + "|" + window.EduTeams.canon(el.getAttribute("data-away"))) : k;
       if (!set[k] && !set[kk]) return;
       if (el.classList.contains("cx-jn-confirmed")) return;
+      // Un partido ya acabado o en juego NUNCA es "once confirmado" (mostraba FINALIZADO y CONFIRMADO a la vez)
+      if (el.classList.contains("cx-jn-isfinal") || el.classList.contains("cx-jn-islive") || el.querySelector(".cx-jn-statusrow-final, .cx-jn-statusrow-live, .cx-jn-statusrow-suspended")) return;
       var row = document.createElement("div");
       row.className = "cx-jn-statusrow cx-jn-statusrow-confirm";
       row.textContent = "Once confirmado";

@@ -52,14 +52,18 @@ const STOP = new Set(["de", "del", "la", "el", "da", "do", "dos", "van", "von", 
 function hasWord(normText, tok) { return (" " + normText + " ").indexOf(" " + tok + " ") >= 0; }
 
 // Jugadores tuyos que nombra un título. Devuelve los nombres tal cual vienen de Futmondo.
-function ownMatch(title, squad) {
+// `otros` = el resto de jugadores del mercado ({id, name}). Si el título nombra COMPLETO a otro jugador
+// que comparte la palabra (ej. "Óscar Valentín" y tu "Valentín Gómez"), esa palabra no cuenta como tuyo.
+function ownMatch(title, squad, otros) {
   const nt = norm(title);
+  const mine = new Set((squad || []).map((p) => String(p.id)));
+  const ajenos = (otros || []).filter((o) => o && o.name && !mine.has(String(o.id))).map((o) => norm(o.name)).filter((n) => n.indexOf(" ") >= 0 && hasWord(nt, n));
   const hits = [];
   for (const p of squad) {
     const full = norm(p.name);
     if (!full) continue;
     if (hasWord(nt, full)) { hits.push(p.name); continue; }
-    if (full.indexOf(" ") >= 0 && full.split(" ").some((t) => t.length >= 5 && !STOP.has(t) && hasWord(nt, t))) hits.push(p.name);
+    if (full.indexOf(" ") >= 0 && full.split(" ").some((t) => t.length >= 5 && !STOP.has(t) && hasWord(nt, t) && !ajenos.some((a) => a.split(" ").indexOf(t) >= 0))) hits.push(p.name);
   }
   return hits;
 }
@@ -161,9 +165,9 @@ function mercadoTexto(ps, own, sig) {
   if (!up.length && !down.length) return null;
   // Una línea por jugador, bien visible: "1 Berenguer 🟢▲ +888k€" / "1 Comesaña 🔻🔴 −395k€"
   const fila = (p, i, sube) => "<b>" + (i + 1) + "</b>  " + (own.has(String(p.id)) ? "⭐" : "") + "<b>" + esc(p.name) + "</b>  " + (sube ? "🟢▲ <b>+" : "🔻🔴 <b>−") + eur(p.change) + "</b>";
-  const top = up.concat(down).filter((p) => own.has(String(p.id)));
-  const gancho = [up[0] ? "🔥 <b>" + esc(up[0].name) + "</b> se dispara 🟢 <b>+" + eur(up[0].change) + "</b>" : "", down[0] ? "🧊 <b>" + esc(down[0].name) + "</b> se hunde 🔴 <b>−" + eur(down[0].change) + "</b>" : "", top.length ? "⭐ Tienes en el top: <b>" + esc(top.map((p) => p.name).join(", ")) + "</b>" : ""].filter(Boolean).join("\n");
-  return "💹 <b>MERCADO EN MOVIMIENTO</b>\n" + gancho + "\n\n" +
+  // Primera línea (la que se ve en la lista de chats): quién sube más y quién baja más, sin adornos
+  const gancho = [up[0] ? "📈 Sube más: <b>" + esc(up[0].name) + " +" + eur(up[0].change) + "</b>" : "", down[0] ? "📉 Baja más: <b>" + esc(down[0].name) + " −" + eur(down[0].change) + "</b>" : ""].filter(Boolean).join("\n");
+  return "💹 <b>MERCADO ACTUALIZADO</b>\n" + gancho + "\n\n" +
     (up.length ? "📈 <b>TOP 5 SUBIDAS</b>\n" + up.map((p, i) => fila(p, i, true)).join("\n") : "") +
     (up.length && down.length ? "\n\n" : "") +
     (down.length ? "📉 <b>TOP 5 BAJADAS</b>\n" + down.map((p, i) => fila(p, i, false)).join("\n") : "") +
@@ -179,18 +183,8 @@ async function tg(env, f, method, body) {
 }
 async function send(env, f, chat, text, opts) {
   opts = opts || {};
-  // Con fotos (escudos de los dos clubes): primero las fotos con un pie corto y luego el detalle en otro mensaje.
-  // Si Telegram rechaza las fotos, sale todo como un solo texto.
-  if (opts.photos && opts.photos.length >= 2 && opts.caption) {
-    const media = opts.photos.slice(0, 10).map((u, i) => (i === 0 ? { type: "photo", media: u, caption: opts.caption, parse_mode: "HTML" } : { type: "photo", media: u }));
-    const g = await tg(env, f, "sendMediaGroup", { chat_id: chat, media });
-    if (g && g.ok) {
-      const d = await tg(env, f, "sendMessage", { chat_id: chat, text, parse_mode: "HTML", link_preview_options: { is_disabled: true } });
-      return !!(d && d.ok);
-    }
-    text = opts.caption + "\n\n" + text;
-  }
-  const lp = opts.small ? { is_disabled: false, prefer_small_media: true } : { is_disabled: false, prefer_large_media: true };
+  // Los onces van siempre en UN solo mensaje de texto, sin fotos ni vista previa del enlace (opts.noPreview).
+  const lp = opts.noPreview ? { is_disabled: true } : opts.small ? { is_disabled: false, prefer_small_media: true } : { is_disabled: false, prefer_large_media: true };
   const j = await tg(env, f, "sendMessage", { chat_id: chat, text, parse_mode: "HTML", link_preview_options: lp });
   return !!(j && j.ok);
 }
@@ -271,13 +265,16 @@ export async function avisar(env, deps) {
     st.nt = (st.nt || []).filter((e) => now - e.t < 12 * 3600e3);
     if (migrar) items.filter((x) => !ext(x)).forEach((x) => { const at0 = newsAt(x.date, x.time, now); if (at0 && now - at0 < 12 * 3600e3) st.nt.push({ k: tokens(decode(x.title)), t: at0, s: x.src || "FutbolFantasy" }); });
     const cands = [];
+    // Resto de jugadores del mercado: sirve para no confundir "Óscar Valentín" con tu "Valentín Gómez"
+    let otros = [];
+    if (items.some((x) => !sent.has(x.link))) { try { otros = ((await getMk()).players || []).map((p) => ({ id: p.id, name: p.name })); } catch (e) {} }
     for (const x of items) {
       if (sent.has(x.link)) continue;
       const title = decode(x.title);
       if (migrar && ext(x)) { st.news = (st.news || []).concat([x.link]).slice(-200); dirty = true; continue; }
       const at = x.dateOnly ? (x.hoy ? now : 0) : (x.ts || newsAt(x.date, x.time, now));
       if (!firstRun && !(at && now - at <= NEWS_MAX_AGE)) continue;
-      const hits = ownMatch(title, squad);
+      const hits = ownMatch(title, squad, otros);
       const kw = KW.test(norm(title));
       cands.push({ x, title, at, hits, kw, k: tokens(title), s: x.src || "FutbolFantasy" });
     }
@@ -324,14 +321,19 @@ export async function avisar(env, deps) {
         const side = sameTeam(p.team, m.home.name) ? m.home : sameTeam(p.team, m.away.name) ? m.away : null;
         if (side && !inLineup(p.name, lineupNames(side))) fuera.push(p.name);
       }
-      const bloque = (t) => ["<b>" + esc(t.name) + "</b>" + (t.formation ? " (" + esc(t.formation) + ")" : ""),
-        posLine("Por", t.portero, squad, t.name), posLine("Def", t.defensas, squad, t.name), posLine("Med", t.medios, squad, t.name), posLine("Del", t.delanteros, squad, t.name)].filter(Boolean).join("\n");
-      const text = "✅ <b>ONCE CONFIRMADO</b>\n⚽ <b>" + esc(m.home.name) + " vs " + esc(m.away.name) + "</b>" + (cuando ? "\n🕒 " + esc(cuando) : "") +
-        "\n\n" + bloque(m.home) + "\n\n" + bloque(m.away) + (fuera.length ? "\n\n⚠️ <b>Tuyos fuera del once:</b> " + esc(fuera.join(", ")) : "") +
+      // Una línea en blanco entre portero, defensas, medios y delanteros para que se lea sin apretar
+      const bloque = (t) => "<b>" + esc(t.name) + "</b>" + (t.formation ? " (" + esc(t.formation) + ")" : "") + "\n\n" +
+        [posLine("Por", t.portero, squad, t.name), posLine("Def", t.defensas, squad, t.name), posLine("Med", t.medios, squad, t.name), posLine("Del", t.delanteros, squad, t.name)].filter(Boolean).join("\n\n");
+      const text = "✅ <b>ONCE CONFIRMADO · " + esc(m.home.name.toUpperCase()) + " - " + esc(m.away.name.toUpperCase()) + "</b>" + (cuando ? "\n🕒 " + esc(cuando) : "") +
+        "\n\n" + bloque(m.home) + "\n\n\n" + bloque(m.away) + (fuera.length ? "\n\n\n⚠️ <b>Tuyos fuera del once:</b> " + esc(fuera.join(", ")) : "") +
         "\n\n👉 <b>Míralo en tu web:</b>\n" + matchUrl(web.home, web.away);
-      queue.push({ text, commit });
+      queue.push({ text, commit, noPreview: true });
     }
   }
+
+  // Partidos que ya tienen el once confirmado en esta pasada (para no mandar además el probable)
+  const confSet = wantConf && rConf.status === "fulfilled" && Array.isArray(rConf.value.matches)
+    ? rConf.value.matches.filter((m) => m && m.home && m.away).map((m) => ({ home: m.home.name, away: m.away.name })) : [];
 
   // 2b) Once probable actualizado: quién entra y quién sale. Se lee directo de FutbolFantasy (partidos de las próximas 72 h, más seguido cuanto más cerca); solo avisa si el once cambia de verdad.
   if (!quiet) {
@@ -366,34 +368,30 @@ export async function avisar(env, deps) {
         if (!prev || firstRun || (prev.h || []).length > 11 || (prev.a || []).length > 11) { st.pr[key] = nuevo; dirty = true; continue; }
         const old = (arr) => (arr || []).map((x) => (typeof x === "string" ? { n: x, p: null, s: "" } : x)); // estado antiguo: solo nombres
         const ORD = { POR: 0, DEF: 1, MED: 2, DEL: 3, "": 4 };
-        // Entra / sale / cambia el % (≥15 puntos) de un titular que sigue, con su posición
+        // Solo quién ENTRA y quién SALE del once (los cambios de % ya no avisan: era demasiado ruido)
         const diff = (team, ahora, antes, fAntes, fAhora) => {
           antes = old(antes);
           const mb = new Map(antes.map((x) => [norm(x.n), x])), mn = new Map(ahora.map((x) => [norm(x.n), x]));
-          const nm = (x) => "<b>" + esc(star(squad, team, x.n)) + "</b>";
-          const pos = (x) => (x.s ? x.s + " · " : "");
+          const nm = (x) => "<b>" + esc(star(squad, team, x.n)) + "</b>" + (x.s ? " (" + x.s + ")" : "");
           const byPos = (a, b) => (ORD[a.s || ""] - ORD[b.s || ""]);
           const entra = ahora.filter((x) => !mb.has(norm(x.n))).sort(byPos);
           const sale = antes.filter((x) => !mn.has(norm(x.n))).sort(byPos);
-          const cambia = ahora.filter((x) => { const o = mb.get(norm(x.n)); return o && o.p != null && x.p != null && Math.abs(x.p - o.p) >= 15; }).sort(byPos);
-          if (!entra.length && !sale.length && !cambia.length) return null;
-          const sist = fAhora && fAntes && fAhora !== fAntes ? "  ·  sistema " + esc(fAntes) + " → " + esc(fAhora) : fAhora ? "  ·  " + esc(fAhora) : "";
-          const l = [].concat(
-            entra.map((x) => "🟢 <b>ENTRA</b> · " + pos(x) + nm(x) + (x.p == null ? "" : " · <b>" + x.p + "%</b>")),
-            sale.map((x) => "🔴 <b>SALE</b> · " + pos(x) + nm(x) + (x.p == null ? "" : " · antes " + x.p + "%")),
-            cambia.map((x) => { const o = mb.get(norm(x.n)); return "🟡 <b>%</b> · " + pos(x) + nm(x) + " · " + o.p + "% → <b>" + x.p + "%</b> " + (x.p > o.p ? "📈" : "📉"); }));
-          return { txt: "<b>" + esc(team) + "</b>" + sist + "\n" + l.join("\n"), e: entra.length, s: sale.length, c: cambia.length };
+          if (!entra.length && !sale.length) return null;
+          const sist = fAhora && fAntes && fAhora !== fAntes ? "\nSistema " + esc(fAntes) + " → " + esc(fAhora) : "";
+          const l = [].concat(entra.map((x) => "🟢 Entra: " + nm(x)), sale.map((x) => "🔴 Sale: " + nm(x)));
+          return { team, txt: l.join("\n") + sist };
         };
         const dd = [diff(m.home, H, prev.h, prev.fh, nuevo.fh), diff(m.away, A, prev.a, prev.fa, nuevo.fa)].filter(Boolean);
+        const commit = () => { st.pr[key] = nuevo; dirty = true; };
         if (!dd.length) continue;
-        const upd = Math.max((d.home && d.home.updatedAt) || 0, (d.away && d.away.updatedAt) || 0);
+        // Si ese partido ya tiene el once CONFIRMADO, no se manda también el probable: solo se guarda
+        if (confSet.some((c) => sameTeam(c.home, m.home) && sameTeam(c.away, m.away))) { commit(); continue; }
         const cu = cuandoKo(m.ko);
-        const tot = dd.reduce((a, x) => ({ e: a.e + x.e, s: a.s + x.s, c: a.c + x.c }), { e: 0, s: 0, c: 0 });
-        const resumen = [tot.e ? tot.e + " entra" + (tot.e > 1 ? "n" : "") : "", tot.s ? tot.s + " sale" + (tot.s > 1 ? "n" : "") : "", tot.c ? tot.c + " con % distinto" : ""].filter(Boolean).join(" · ");
-        const caption = "🔄 <b>ONCE PROBABLE ACTUALIZADO</b>\n⚽ <b>" + esc(m.home) + " vs " + esc(m.away) + "</b>\n" +
-          [cu ? "🕒 " + esc(cu) : "", upd ? "Actualizado " + hhmm(upd) : ""].filter(Boolean).join("  ·  ");
-        const text = dd.map((x) => x.txt).join("\n\n") + "\n\n📋 " + resumen + "\n\n👉 <b>Míralo en tu web:</b>\n" + matchUrl(m.home, m.away);
-        queue.push({ text, caption, photos: m.hc && m.ac ? [m.hc, m.ac] : [], commit: () => { st.pr[key] = nuevo; dirty = true; } });
+        // Título corto: "ONCE DEL ATHLETIC" (si cambian los dos equipos: "ONCE ATHLETIC - REAL SOCIEDAD")
+        const titulo = dd.length === 1 ? "ONCE DEL " + dd[0].team.toUpperCase() : "ONCE " + m.home.toUpperCase() + " - " + m.away.toUpperCase();
+        const cuerpo = dd.length === 1 ? dd[0].txt : dd.map((x) => "<b>" + esc(x.team) + "</b>\n" + x.txt).join("\n\n");
+        const text = "🔄 <b>" + esc(titulo) + "</b>\n⚽ " + esc(m.home) + " vs " + esc(m.away) + (cu ? " · " + esc(cu) : "") + "\n\n" + cuerpo + "\n\n👉 <b>Míralo en tu web:</b>\n" + matchUrl(m.home, m.away);
+        queue.push({ text, noPreview: true, commit });
       }
     } catch (e) {}
   }
@@ -436,26 +434,6 @@ export async function avisar(env, deps) {
     else if (JSON.stringify(nuevo) !== JSON.stringify(st.sq || {})) commit();
   }
 
-  // PRUEBA ÚNICA (pedida por Edu, 01/11): manda una noticia real y la tabla de mercado real, marcadas como prueba. Se borra tras usarse.
-  if (!firstRun && !quiet && !st.demo4 && !(deps && deps.noDemo)) {
-    try {
-      const own = new Set(squad.map((p) => String(p.id)));
-      const ps = ((await getMk()).players || []).filter((p) => p && p.name && Number.isFinite(p.change));
-      const mt = ps.length > 50 ? mercadoTexto(ps, own, hash(ps.map((p) => p.id + ":" + p.change).join("|"))) : null;
-      const n0 = rNews.status === "fulfilled" && (rNews.value.noticias || []).find((x) => x && x.link && x.title);
-      let nt = null;
-      if (n0) {
-        let resumen = "";
-        try { const n = await getJson(f, "noticia?u=" + encodeURIComponent(n0.link)); resumen = decode(String(n.lead || "")).replace(/\s+/g, " ").trim(); if (resumen.length > 150) resumen = resumen.slice(0, 150).replace(/\s+\S*$/, "") + "…"; } catch (e) {}
-        nt = "🧪 <i>PRUEBA</i>\n" + noticiaTexto(decode(n0.title), ownMatch(decode(n0.title), squad), resumen, n0.link, n0.src);
-      }
-      const dcommit = () => { st.demo4 = 1; dirty = true; };
-      if (mt) queue.unshift({ text: "🧪 <i>PRUEBA</i>\n" + mt, commit: dcommit });
-      if (nt) queue.unshift({ text: nt, commit: dcommit });
-      if (!mt && !nt) dcommit();
-    } catch (e) {}
-  }
-
   // Envío
   let sentCount = 0;
   if (firstRun) {
@@ -477,4 +455,4 @@ export async function avisar(env, deps) {
 }
 
 // Solo para pruebas
-export const _t = { norm, ownMatch, sameTeam, newsAt, KW, inLineup, statusLabel };
+export const _t = { norm, ownMatch, sameTeam, newsAt, KW, inLineup, statusLabel, mercadoTexto };

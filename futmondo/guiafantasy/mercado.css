@@ -3211,9 +3211,55 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 /* Los filtros de Últimas actualizaciones caben en el móvil (antes el último quedaba cortado) */
 .up-filters { flex-wrap: wrap; overflow-x: visible; }
 
-/* Cinta de noticias: sin "Última hora" y en una sola línea, sin marquesina */
+/* Cinta de noticias: sin la etiqueta "Última hora", pero SIEMPRE en movimiento (Edu 01/11: se había congelado y no se veían las noticias) */
 .cx-ticker-tag-hide { display: none !important; }
-.cx-ticker-track { animation: none !important; transform: none !important; }
-.cx-ticker-track > *:nth-child(n+2) { display: none !important; }
 .cx-ticker-view { overflow: hidden; }
+.cx-ticker-track { animation-play-state: running; }
 
+
+/* ===== Tarjetas de la jornada más pequeñas y sin degradados (Edu, 01/11/2026) ===== */
+#cxChrome .cx-jn-grid { gap: 4px; grid-auto-rows: auto; }
+#cxChrome .cx-jn { padding: 3px 5px 3px; gap: 1px; border-radius: 9px; justify-content: flex-start; }
+#cxChrome .cx-jn-crest { width: 28px; height: 28px; }
+#cxChrome .cx-jn-score { font-size: 1.05rem; }
+#cxChrome .cx-jn-time, #cxChrome .cx-jn-hora { font-size: .58rem; }
+#cxChrome .cx-jn-tv { height: 10px; max-width: 40px; }
+#cxChrome .cx-jn-tv-sq { height: 13px; max-width: 30px; }
+#cxChrome .cx-jn-statusrow { font-size: .56rem; padding-bottom: 1px; }
+#cxChrome .cx-jn .cx-jn-statusrow-prob, #cxChrome .cx-jn .cx-jn-statusrow-confirm { font-size: .52rem; padding: 2px 7px; }
+#cxChrome .cx-jn-statusrow-confirm { background: #16a34a; box-shadow: none; }
+#cxChrome .cx-prob-t { font-size: .52rem; }
+/* Partido acabado o en juego: sin el logo de la tele (ya no hace falta) */
+#cxChrome .cx-jn-isfinal .cx-jn-tvrow, #cxChrome .cx-jn-islive .cx-jn-tvrow { display: none; }
+
+/* ===== Últimas actualizaciones: tarjetas limpias, sin barra de filtros (Edu, 01/11/2026) ===== */
+#tab-actualizaciones .up-filters { display: none !important; }
+#tab-actualizaciones > .panel { padding: 0; background: transparent; border: 0; box-shadow: none; }
+#tab-actualizaciones .up-date { font-size: 1.05rem; margin: 18px 2px 8px; }
+#tab-actualizaciones .up-list { gap: 10px; }
+#tab-actualizaciones .up-row { grid-template-columns: 44px minmax(0, 1fr); gap: 12px; padding: 12px; border: 1px solid var(--border); border-radius: 16px; background: var(--card, var(--panel-bg, #fff)); }
+#tab-actualizaciones .up-row:last-child { border-bottom: 1px solid var(--border); }
+#tab-actualizaciones .up-left, #tab-actualizaciones .up-photo { width: 44px; height: 44px; }
+#tab-actualizaciones .up-cat { background: color-mix(in srgb, var(--uc) 14%, transparent); padding: 3px 9px; border-radius: 999px; }
+#tab-actualizaciones .up-title { font-size: .95rem; }
+#tab-actualizaciones .up-links { flex-direction: column; gap: 6px; margin-top: 6px; }
+#tab-actualizaciones .up-club { align-self: flex-start; }
+#tab-actualizaciones .up-tomatch, #tab-actualizaciones .up-tolast { display: block; text-align: center; font-size: .8rem; padding: 10px 12px; border-radius: 12px; }
+#tab-actualizaciones .up-tomatch { background: #16a34a; color: #fff; border-color: #16a34a; }
+:root:not([data-theme="light"]) #tab-actualizaciones .up-tomatch { color: #fff; }
+#tab-actualizaciones .up-chg { gap: 4px; }
+#tab-actualizaciones .up-pl { padding: 4px 8px; font-size: .8rem; flex-wrap: nowrap; }
+#tab-actualizaciones .up-pl .up-tr { margin-left: auto; white-space: nowrap; }
+
+/* Mercado: botones de posición y orden iguales, planos y siempre visibles (captura 11 de Edu, 01/11) */
+:is(#tab-mercado, #tab-plantillas) .plt-head .plt-row-btns { display: flex; flex-wrap: nowrap; gap: 0; padding: 0 6px; background: #1d2b33; }
+:is(#tab-mercado, #tab-plantillas) .plt-head .plt-row-btns .plt-btn:not(.plt-club):not(.plt-arrow) {
+  flex: 1 1 0; min-width: 0; height: auto; padding: 11px 2px; border-radius: 4px;
+  background: none; color: #aebcc3; font: 700 .8rem/1 inherit; text-align: center;
+}
+:is(#tab-mercado, #tab-plantillas) .plt-head #pltPos .plt-btn.on { background: #5b6b73; color: #fff; }
+:is(#tab-mercado, #tab-plantillas) .plt-head #pltSort .plt-btn { border-radius: 0; padding: 12px 2px; }
+:is(#tab-mercado, #tab-plantillas) .plt-head #pltSort .plt-btn.on { background: none; color: #fff; box-shadow: inset 0 -2px 0 #22c55e; }
+:is(#tab-mercado, #tab-plantillas) .plt-head .plt-row-btns.plt-per .plt-btn:not(.plt-club) { background: rgba(255,255,255,.08); margin: 0 2px; padding: 9px 2px; }
+:is(#tab-mercado, #tab-plantillas) .plt-head .plt-row-btns.plt-per .plt-btn.on { background: #5b6b73; color: #fff; }
+:is(#tab-mercado, #tab-plantillas) .plt-head #pltSort .plt-lbl, :is(#tab-mercado, #tab-plantillas) .plt-head .plt-per .plt-lbl { display: none; }

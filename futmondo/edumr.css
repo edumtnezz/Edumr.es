@@ -846,3 +846,8 @@ button:not(:disabled):active, [role="button"]:active, .hub-feature:active, .hub-
 /* Partido aplazado dentro de la jornada */
 .cx-jn-aplaz { grid-column: 1 / -1; width: 100%; text-align: center; font-size: .62rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #b45309; background: rgba(245,158,11,.16); border-radius: 8px; padding: 2px 6px; margin-bottom: 4px; }
 .cx-jn-isaplaz { box-shadow: inset 0 0 0 1.5px rgba(245,158,11,.55); }
+
+/* Sin deslizamiento lateral en ninguna pantalla (Edu, 01/11/2026): la página solo se mueve hacia arriba y abajo.
+   Las tiras con su propio scroll (escudos, filtros) siguen deslizándose dentro de su caja. */
+html { overflow-x: hidden; overscroll-behavior-x: none; }
+body { overflow-x: clip; overscroll-behavior-x: none; max-width: 100%; }

@@ -1801,3 +1801,8 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
 .rank-det { padding: 10px 2px 4px; }
 .rank-det.hidden { display: none; }
 .rank-card { cursor: pointer; }
+
+/* Sin deslizamiento lateral en ninguna pantalla (Edu, 01/11/2026): la página solo se mueve hacia arriba y abajo.
+   Las tiras con su propio scroll (escudos, filtros) siguen deslizándose dentro de su caja. */
+html { overflow-x: hidden; overscroll-behavior-x: none; }
+body { overflow-x: clip; overscroll-behavior-x: none; max-width: 100%; }

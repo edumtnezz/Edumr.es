@@ -626,14 +626,15 @@
     const partidoHref = (o) => "/futmondo/guiafantasy/partido/" + matchSlug(o.m.home, o.m.away) + "?j=" + (o.m.aplazado || o.dia || "");
     const near = e.next || e.last;
     if (near) {
-      const a2 = el("a", "up-tomatch", "Ver partido →");
+      // Dos botones distintos: el del PRÓXIMO partido (alineación) y el del ÚLTIMO partido jugado (puntos)
+      const esOnce = x.cat === "once" || x.cat === "once-ok" || x.cat === "convocatoria";
+      const a2 = el("a", "up-tomatch", e.next ? (esOnce ? (x.cat === "once-ok" ? "Ver alineación confirmada · próximo partido" : "Ver alineación probable · próximo partido") : "Ver próximo partido") : "Ver último partido jugado");
       a2.href = partidoHref(near);
-      a2.title = e.next ? "Próximo partido (el del once nuevo)" : "Último partido";
       box.appendChild(a2);
     }
     // El que ya se jugó se queda a mano: ahí están los puntos de cada jugador.
     if (e.last && e.next) {
-      const a3 = el("a", "up-tolast", "Último jugado · puntos");
+      const a3 = el("a", "up-tolast", "Ver último partido jugado");
       a3.href = partidoHref(e.last);
       box.appendChild(a3);
     }
@@ -643,15 +644,9 @@
     const box = $("updOut"), fb = $("upFilters");
     if (!box || !updData) return;
     const jm = await jornadaMap();
-    if (fb) {
-      fb.innerHTML = "";
-      UP_FILTERS.forEach((f) => {
-        const b = el("button", "up-chip" + (f[0] === updFilter ? " on" : ""), f[1]);
-        b.type = "button";
-        b.addEventListener("click", () => { updFilter = f[0]; try { localStorage.setItem("merc_updf", f[0]); } catch (e) {} paintActualizaciones(); });
-        fb.appendChild(b);
-      });
-    }
+    // Sin barra de filtros (Onces / Lesiones / Sanciones / Mercado): se enseña todo en orden de hora (Edu, 01/11)
+    if (fb) { fb.innerHTML = ""; fb.hidden = true; }
+    updFilter = "todo";
     box.innerHTML = "";
     let shown = 0;
     (updData.days || []).forEach((d) => {
@@ -2202,7 +2197,9 @@
           if (sc.length) {
             const k = card("Noticias del partido");
             sc.forEach((r) => {
-              const a = el("a", "lv-nw"); a.href = r.x.link; a.target = "_blank"; a.rel = "noopener noreferrer";
+              // La noticia se abre en TU web (nunca en la fuente externa)
+              const a = el("a", "lv-nw"); a.href = newsHref(r.x.link);
+              a.addEventListener("click", (ev) => { if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button === 1) return; ev.preventDefault(); openNoticiaInline(r.x.link, r.x.title); });
               if (r.x.thumb) { const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = r.x.thumb; im.addEventListener("error", () => im.remove()); a.appendChild(im); }
               const t = el("div", "lv-nw-t"); t.appendChild(el("b", null, r.x.title)); t.appendChild(el("small", null, (r.x.date || "") + (r.x.time ? " · " + r.x.time : ""))); a.appendChild(t);
               k.appendChild(a);
@@ -2887,17 +2884,16 @@
       body.appendChild(el("div", "cmpx-s2name", which === "a" ? "Elige el primer jugador" : "Elige el segundo jugador"));
     }
     const box = el("div", "cmpx-s2box");
-    const inp = el("input", "cmpx-s2inp"); inp.type = "text"; inp.autocomplete = "off"; inp.setAttribute("autocapitalize", "off");
-    inp.placeholder = p ? "Cambiar…" : "Buscar…";
-    const arrow = el("button", "cmpx-s2arrow"); arrow.type = "button"; arrow.setAttribute("aria-label", "Ver jugadores"); arrow.textContent = "▾";
+    // Un botón (no un campo de texto): al tocarlo se abre el selector a pantalla completa, con el buscador fijo ARRIBA
+    // para que el teclado del móvil nunca tape lo que se escribe.
+    const inp = el("button", "cmpx-s2inp"); inp.type = "button";
+    inp.textContent = p ? "Cambiar jugador" : "Buscar jugador";
+    const arrow = el("span", "cmpx-s2arrow"); arrow.setAttribute("aria-hidden", "true"); arrow.textContent = "⌕";
     box.appendChild(inp); box.appendChild(arrow);
     body.appendChild(box);
     c.appendChild(body);
-    const dd = el("div", "cmpx-dd");
-    c.appendChild(dd);
     const choose = (pl) => {
       const other = which === "a" ? cmpSel.b : cmpSel.a;
-      c.classList.remove("open"); cmpOpen = null;
       if (other && String(other) === String(pl.id)) { cmpNote("Elige dos jugadores distintos."); return; }
       cmpSel[which] = String(pl.id);
       cmpSet(CMP_SEL_KEY, cmpSel);
@@ -2905,20 +2901,37 @@
       cmpPaint();
       cmpLoadDetail(false);
     };
-    const st = {};
-    const open = () => {
-      if (cmpOpen && cmpOpen !== c) cmpOpen.classList.remove("open");
-      c.classList.add("open"); cmpOpen = c;
-      pickFill(dd, inp.value, choose, st);
-    };
-    inp.addEventListener("focus", () => { if (!c.classList.contains("open")) { st.mode = null; } open(); });
-    inp.addEventListener("input", () => { st.mode = null; open(); });
-    inp.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") { c.classList.remove("open"); cmpOpen = null; inp.blur(); }
-      if (e.key === "Enter") { const f = dd.querySelector(".pk-row"); if (f) f.click(); }
-    });
-    arrow.addEventListener("click", () => { if (c.classList.contains("open")) { c.classList.remove("open"); cmpOpen = null; } else { open(); } });
+    box.addEventListener("click", () => openCmpOverlay(which === "a" ? "Jugador 1" : "Jugador 2", choose));
     return c;
+  }
+  // Selector a pantalla completa: buscador fijo arriba, lista debajo. Sigue al "viewport visual" del móvil (teclado abierto).
+  function openCmpOverlay(title, choose) {
+    const ov = el("div", "cmpov");
+    ov.setAttribute("role", "dialog");
+    ov.setAttribute("aria-label", title);
+    const bar = el("div", "cmpov-bar");
+    const back = el("button", "cmpov-back", "←"); back.type = "button"; back.setAttribute("aria-label", "Cerrar");
+    const inp = el("input", "cmpov-inp"); inp.type = "search"; inp.placeholder = "Buscar jugador…"; inp.autocomplete = "off"; inp.setAttribute("autocapitalize", "off"); inp.setAttribute("enterkeyhint", "search");
+    bar.appendChild(back); bar.appendChild(inp);
+    const list = el("div", "cmpov-list");
+    ov.appendChild(bar); ov.appendChild(list);
+    document.body.appendChild(ov);
+    lockScroll(true);
+    const vv = window.visualViewport;
+    const fit = () => { if (!vv) return; ov.style.top = vv.offsetTop + "px"; ov.style.height = vv.height + "px"; };
+    fit();
+    if (vv) { vv.addEventListener("resize", fit); vv.addEventListener("scroll", fit); }
+    const st = {};
+    const close = () => { ov.remove(); lockScroll(false); if (vv) { vv.removeEventListener("resize", fit); vv.removeEventListener("scroll", fit); } document.removeEventListener("keydown", onKey); };
+    const onKey = (e) => { if (e.key === "Escape") close(); };
+    document.addEventListener("keydown", onKey);
+    const pick = (pl) => { close(); choose(pl); };
+    const fill = () => pickFill(list, inp.value, pick, st);
+    back.addEventListener("click", close);
+    inp.addEventListener("input", () => { st.mode = null; fill(); list.scrollTop = 0; });
+    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { const f = list.querySelector(".pk-row"); if (f) f.click(); } });
+    fill();
+    inp.focus();
   }
   function cmpCrest(p, cls) {
     if (!p || !p.logo) return null;
@@ -3263,13 +3276,13 @@
     const wrap = el("div", "cmpx-sum");
     wrap.appendChild(el("div", "cmpx-head", "Resumen"));
     items.forEach(([p, ins]) => {
-      const blk = el("div", "cmpx-sumblock");
+      const blk = el("div", "cmpx-sumblock " + (p === a ? "cmpx-sum-a" : "cmpx-sum-b"));
       const ph = el("span", "cmpx-sumph"); ph.appendChild(photoImg(p.photo)); blk.appendChild(ph);
       const body = el("div", "cmpx-sumbody");
       body.appendChild(el("div", "cmpx-sumname", p.name));
       ins.forEach(([ico, html]) => {
         const ln = el("div", "cmpx-sumline");
-        ln.appendChild(el("span", "cmpx-sumico", ico));
+        ln.appendChild(el("span", "cmpx-sumico"));
         const tx = el("span", "cmpx-sumtx"); tx.innerHTML = html; ln.appendChild(tx);
         body.appendChild(ln);
       });
@@ -3946,12 +3959,13 @@
         const it = el("a", "newscard news-link" + (idx === 0 ? " news-hero" : "")); it.href = newsHref(x.link);
         it.style.animationDelay = Math.min(idx, 10) * 40 + "ms";
         it.addEventListener("click", (ev) => { if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button === 1) return; ev.preventDefault(); openNoticiaInline(x.link, x.title); });
-        const th = el("div", "newscard-thumb" + (x.thumb ? "" : " ball"));
-        const setBg = (u, ball) => { th.style.backgroundImage = 'url("' + u + '")'; th.classList.toggle("ball", !!ball); };
-        if (x.thumb) { setBg(x.thumb, false); const t = new Image(); t.onerror = () => setBg("/img/balon.svg", true); t.src = x.thumb; } else setBg("/img/balon.svg", true);
+        const th = el("div", "newscard-thumb");
+        const fbImg = newsFallbackImg(x.title), mainImg = newsImgOf(x);
+        const setBg = (u) => { th.style.backgroundImage = 'url("' + u + '")'; };
+        setBg(mainImg);
+        if (mainImg !== fbImg) { const t = new Image(); t.onerror = () => setBg(fbImg); t.src = mainImg; }
         it.appendChild(th);
         const bd = el("div", "newscard-body");
-        if (idx === 0) bd.appendChild(icoTxt("bolt", "Lo último", "news-badge"));
         const nkc = newsKindChip(x.title, "news-kind");
         if (nkc) bd.appendChild(nkc);
         bd.appendChild(el("div", "news-title", x.title));
@@ -4036,11 +4050,10 @@
     const hero = list[0];
     const h = el("div", "feat-hero");
     h.addEventListener("click", () => open(hero));
-    const him = el("img"); him.alt = ""; him.loading = "lazy"; him.src = hero.thumb || "/img/balon.svg";
-    him.addEventListener("error", () => { him.src = "/img/balon.svg"; }, { once: true });
+    const him = el("img"); him.alt = ""; him.loading = "lazy"; him.src = newsImgOf(hero);
+    him.addEventListener("error", () => { him.src = newsFallbackImg(hero.title); }, { once: true });
     h.appendChild(him);
     const hov = el("div", "feat-hero-overlay");
-    hov.appendChild(el("div", "feat-badge", "Lo último"));
     const hk = newsKindChip(hero.title, "feat-kind");
     if (hk) hov.appendChild(hk);
     hov.appendChild(el("div", "feat-hero-title", hero.title));
@@ -4055,12 +4068,11 @@
       older.forEach((x, i) => {
         const row = el("div", "feat-prev-row");
         row.addEventListener("click", () => open(x));
-        const th = el("img", "feat-prev-img"); th.alt = ""; th.loading = "lazy"; th.src = x.thumb || "/img/balon.svg";
-        th.addEventListener("error", () => { th.src = "/img/balon.svg"; }, { once: true });
+        const th = el("img", "feat-prev-img"); th.alt = ""; th.loading = "lazy"; th.src = newsImgOf(x);
+        th.addEventListener("error", () => { th.src = newsFallbackImg(x.title); }, { once: true });
         row.appendChild(th);
         const tx = el("div", "feat-prev-tx");
         const tl = el("div", "feat-prev-top");
-        if (i === 0) tl.appendChild(el("span", "feat-prev-new", "Lo más reciente"));
         const kk = newsKindChip(x.title);
         if (kk) tl.appendChild(kk);
         if (tl.childElementCount) tx.appendChild(tl);
@@ -4166,7 +4178,6 @@
           c.appendChild(art);
         } else {
           c.appendChild(el("p", "muted small", "No pude extraer el texto de esta noticia."));
-          if (url) { const a = el("a", "cmp-trend up", "Ver en FutbolFantasy →"); a.href = url; a.target = "_blank"; a.rel = "noopener"; c.appendChild(a); }
         }
         showModal(c);
       })
@@ -4194,6 +4205,11 @@
     return NEWS_PFX + sl;
   };
   const newsHref = (link) => { const sl = newsSlug(link); return sl ? "/futmondo/guiafantasy/noticias/" + sl : "/futmondo/guiafantasy/noticias"; };
+  // Foto de cada noticia: el parte médico lleva SU banner y las que no traen foto, el banner de noticias (antes salía un balón gris)
+  const NEWS_IMG = "/img/noticia-ultima-hora.jpg", PARTE_IMG = "/img/parte-medico.jpg";
+  const isParteMedico = (title) => /parte\s+m[eé]dico/i.test(String(title || ""));
+  const newsFallbackImg = (title) => (isParteMedico(title) ? PARTE_IMG : NEWS_IMG);
+  const newsImgOf = (x) => (isParteMedico(x && x.title) ? PARTE_IMG : (x && x.thumb) || NEWS_IMG);
   const baseTitle = document.title;
   let newsPushed = false;
   // Jugadores de los que habla la noticia (solo los que existen en el mercado; coincidencia por nombre o apellido único)
@@ -4273,7 +4289,7 @@
       // Noticia de otra fuente (Comuniate / Jornada Perfecta): titular, foto y resumen; el texto completo se lee en su web
       box.appendChild(el("h2", "ficha-name", title || d.title || ""));
       try { if (title || d.title) document.title = (title || d.title) + " · EduMR"; } catch (e) {}
-      if (d.image) { const im = new Image(); im.src = d.image; im.alt = ""; im.className = "art-img"; im.style.cssText = "width:100%;border-radius:12px;margin:8px 0"; box.appendChild(im); }
+      { const im = new Image(); im.src = isParteMedico(title || d.title) ? PARTE_IMG : (d.image || NEWS_IMG); im.alt = ""; im.className = "art-img"; im.style.cssText = "width:100%;border-radius:12px;margin:8px 0"; im.addEventListener("error", () => { im.src = newsFallbackImg(title || d.title); }, { once: true }); box.appendChild(im); }
       if (d.lead) box.appendChild(el("p", "art-lead", d.lead));
       try { newsPlayersBlock(box, (d.title || title || "") + " . " + (d.lead || "")); } catch (e) {}
       return;
@@ -4295,7 +4311,6 @@
       try { newsPlayersBlock(box, (d.title || title || "") + " . " + (d.lead || "") + " . " + (art.textContent || "")); } catch (e) {}
     } else {
       box.appendChild(el("p", "muted small", "No pude extraer el texto de esta noticia."));
-      if (url) { const a = el("a", "cmp-trend up", "Ver en FutbolFantasy →"); a.href = url; a.target = "_blank"; a.rel = "noopener"; box.appendChild(a); }
     }
   }
   function closeNoticiaInline() {
@@ -4816,9 +4831,10 @@
         sec.appendChild(el("h3", "ficha-news-h", "Últimas noticias sobre " + nm));
         const g = el("div", "ficha-news-grid");
         hit.forEach((x) => {
-          const a1 = el("a", "ficha-news-it"); a1.href = x.link || "#"; a1.target = "_blank"; a1.rel = "noopener";
-          const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = x.thumb || "/img/balon.svg";
-          im.addEventListener("error", () => { im.src = "/img/balon.svg"; }, { once: true });
+          const a1 = el("a", "ficha-news-it"); a1.href = newsHref(x.link);
+          a1.addEventListener("click", (ev) => { if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button === 1) return; ev.preventDefault(); closeModal(); switchTab("noticias"); openNoticiaInline(x.link, x.title); });
+          const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = newsImgOf(x);
+          im.addEventListener("error", () => { im.src = newsFallbackImg(x.title); }, { once: true });
           a1.appendChild(im);
           const t = el("div", "ficha-news-t"); t.appendChild(el("span", null, x.title || "")); t.appendChild(el("small", null, (x.date || "") + (x.time ? " · " + x.time : ""))); a1.appendChild(t);
           g.appendChild(a1);
@@ -5346,20 +5362,16 @@
     const ph = el("span", "pk-photo"); ph.appendChild(photoImg(p.photo));
     const cr = cmpCrest(p, "pk-crest"); if (cr) ph.appendChild(cr);
     row.appendChild(ph);
+    // Solo lo esencial: foto + escudo, nombre, posición y valor (nada de puntos ni medias)
     const bb = el("span", "pk-body");
     bb.appendChild(el("span", "pk-name", p.name));
     const tl = el("span", "pk-sub");
     const rbp = roleBadge(p.role);
     if (rbp) tl.appendChild(el("span", "pk-pos posb posb-" + posCls(p.role), rbp));
-    tl.appendChild(el("span", "pk-team", p.team || ""));
     bb.appendChild(tl);
     row.appendChild(bb);
     const rg = el("span", "pk-right");
     rg.appendChild(el("span", "pk-val", money(p.value) + " €"));
-    const info = [];
-    if (cmpNum(p.points) != null) info.push(p.points + " pts");
-    if (cmpNum(p.avg) != null) info.push("media " + cmpDec(Number(p.avg)));
-    if (info.length) rg.appendChild(el("span", "pk-info", info.join(" · ")));
     row.appendChild(rg);
     row.addEventListener("click", () => {
       try { const r = JSON.parse(localStorage.getItem(PICK_RECENT_KEY) || "[]").filter((x) => String(x) !== String(p.id)); r.unshift(String(p.id)); localStorage.setItem(PICK_RECENT_KEY, JSON.stringify(r.slice(0, 8))); } catch (e) {}
@@ -5373,6 +5385,9 @@
     const again = () => pickFill(list, q, cb, st);
     const hasQ = !!String(q || "").trim();
     if (!hasQ && st.mode === "clubs") {
+      const back0 = el("button", "pk-back", "‹ Volver a jugadores"); back0.type = "button";
+      back0.addEventListener("click", () => { st.mode = null; again(); });
+      list.appendChild(back0);
       list.appendChild(el("div", "pk-head", "Elige un club"));
       const seen = {}, cl = [];
       all.forEach((p) => { if (p.team && !seen[p.team]) { seen[p.team] = 1; cl.push(p); } });
@@ -5389,7 +5404,7 @@
       return;
     }
     if (!hasQ && st.mode === "club" && st.club) {
-      const back = el("button", "pk-back", "‹ Clubes"); back.type = "button";
+      const back = el("button", "pk-back", "‹ Volver a clubes"); back.type = "button";
       back.addEventListener("click", () => { st.mode = "clubs"; again(); });
       list.appendChild(back);
       list.appendChild(el("div", "pk-head", st.club));

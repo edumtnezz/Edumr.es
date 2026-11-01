@@ -351,3 +351,33 @@ svg.ffx-ha.a{background:rgba(99,102,241,.16);color:#6366f1}
 .pk-club { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 8px; border: 1px solid var(--border, rgba(127,127,127,.3)); border-radius: 10px; background: rgba(127,127,127,.06); color: inherit; font: 600 13px/1.15 inherit; text-align: left; cursor: pointer; }
 .pk-club span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pk-club-img { width: 24px; height: 24px; object-fit: contain; flex: 0 0 24px; }
+
+/* ===== Comparador (Edu, 01/11/2026): tarjetas alineadas, selector a pantalla completa, resumen moderno ===== */
+.cmpx-panel .cmp2 { align-items: stretch; }
+.cmpx-slot2 { height: 100%; justify-content: flex-start; }
+.cmpx-s2body { display: flex; flex-direction: column; flex: 1 1 auto; }
+.cmpx-s2name { min-height: 2.3em; display: flex; align-items: center; justify-content: center; }
+.cmpx-s2box { margin-top: auto; }
+.cmpx-s2inp { text-align: left; cursor: pointer; color: var(--muted, inherit); font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cmpx-s2arrow { display: flex; align-items: center; justify-content: center; font-size: 18px; }
+
+.cmpov { position: fixed; left: 0; right: 0; top: 0; height: 100dvh; z-index: 3000; display: flex; flex-direction: column; background: var(--card-solid, #fff); color: var(--text, inherit); overscroll-behavior: contain; }
+:root[data-theme="dark"] .cmpov { background: #0f1722; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cmpov { background: #0f1722; } }
+.cmpov-bar { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border, rgba(127,127,127,.3)); }
+.cmpov-back { flex: 0 0 44px; height: 44px; border-radius: 12px; border: 1px solid var(--border, rgba(127,127,127,.35)); background: transparent; color: inherit; font-size: 22px; cursor: pointer; }
+.cmpov-inp { flex: 1 1 auto; min-width: 0; height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid #16a34a; background: transparent; color: inherit; font: 500 16px/1 inherit; outline: none; -webkit-appearance: none; }
+.cmpov-list { flex: 1 1 auto; overflow-y: auto; padding: 0 12px 28px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.cmpov .pk-back { position: sticky; top: 0; z-index: 2; display: block; width: 100%; text-align: left; padding: 14px 4px; background: inherit; }
+.cmpov .pk-row .pk-name { font-size: 16px; }
+
+.cmpx-sum { margin-top: 18px; display: grid; gap: 10px; }
+.cmpx-sum .cmpx-sumblock { padding: 14px; border: 1px solid var(--border, rgba(127,127,127,.3)); border-left: 4px solid var(--sc, #16a34a); border-radius: 14px; background: rgba(127,127,127,.05); gap: 12px; }
+.cmpx-sum .cmpx-head + .cmpx-sumblock { border-top: 1px solid var(--border, rgba(127,127,127,.3)); }
+.cmpx-sum-a { --sc: #16a34a; }
+.cmpx-sum-b { --sc: #ea580c; }
+.cmpx-sum .cmpx-sumph { width: 44px; height: 44px; }
+.cmpx-sum .cmpx-sumname { font-size: 1rem; }
+.cmpx-sum .cmpx-sumline { gap: 10px; margin-top: 8px; font-size: .88rem; line-height: 1.35; }
+.cmpx-sum .cmpx-sumico { flex: 0 0 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--sc, #16a34a); margin-top: .5em; font-size: 0; }
+.cmpx-sum .cmpx-sumtx b { color: var(--sc, inherit); }
