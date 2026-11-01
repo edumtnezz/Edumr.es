@@ -1,3 +1,4 @@
+import { cleanStarters } from "../../_lib/starters.mjs";
 const COMPETITION = "PD";
 const CACHE_TTL_MS = 60 * 1000;
 const FORM_TTL_MS = 10 * 60 * 1000;
@@ -2125,12 +2126,7 @@ async function getFFTeam(env, name, fresh) {
       const last = (fullName || stripHtml(nm)).split(/\s+/).pop();
       return { name: stripHtml(nm), full: fullName, last, photo, pos, prob: prob != null ? Number(prob) : null, x: x ? parseFloat(x) : null, y: y ? parseFloat(y) : null, nat, edad, inj, san };
     }).filter(Boolean);
-    // FutbolFantasy ahora mete en el bloque de titulares una SEGUNDA tanda de 11 (otra versión del once,
-    // sin posición ni %), así que salían 22 y repetidos. Solo valen los que traen posición; sin repetir.
-    const seen = new Set();
-    const tit = parse(hTit);
-    const conPos = tit.filter((p) => p.pos);
-    data.starters = (conPos.length >= 10 ? conPos : tit).filter((p) => { const k = p.full || p.name; if (seen.has(k)) return false; seen.add(k); return true; }).slice(0, 11);
+    data.starters = cleanStarters(parse(hTit)); // siempre un once válido: máx. 11 y sin repetidos (ver functions/_lib/starters.mjs)
     data.bench = parse(hSup);
     // FutbolFantasy guarda las versiones del once probable con su fecha ("12/10 20:06", "13/10 17:06"...):
     // la última es cuándo se actualizó DE VERDAD el once de este equipo.
@@ -4689,7 +4685,12 @@ async function handleGet({ request, env: env0, params }) {
     try { return json(await getFichajes(env)); } catch (e) { return json({ groups: [], error: String(e) }); }
   }
   if (path === "once") {
-    try { return json(await getOnce(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "", url.searchParams.get("jornada") || "")); } catch (e) { return json({ error: String(e) }); }
+    try {
+      const o = await getOnce(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "", url.searchParams.get("jornada") || "");
+      // Última barrera: aunque una copia guardada venga mal, nunca sale un once con más de 11 ni repetidos
+      ["home", "away"].forEach((k) => { if (o && o[k] && Array.isArray(o[k].starters)) o[k].starters = cleanStarters(o[k].starters); });
+      return json(o);
+    } catch (e) { return json({ error: String(e) }); }
   }
   if (path === "detallepartido") {
     try { return json(await getPartidoFF(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "", url.searchParams.get("jornada") || "")); } catch (e) { return json({ error: String(e) }); }

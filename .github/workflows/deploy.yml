@@ -17,6 +17,13 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Pruebas (si fallan, NO se publica nada)
+        run: |
+          node --test tests/*.test.mjs
+          node --check futmondo/alineacion.js
+          node --check futmondo/guiafantasy/mercado.js
+          cp "functions/api/laquiniela/[[path]].js" /tmp/backend.mjs && node --check /tmp/backend.mjs
+
       - name: Preparar dist
         run: bash build.sh
 

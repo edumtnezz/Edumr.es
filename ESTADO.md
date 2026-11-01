@@ -35,3 +35,7 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 
 ## Siguiente paso
 - Jugadores con ≥ 90 % de probabilidad de jugar: comprobarlo en la web real a ~390 px y subirlo.
+
+## 01/11/2026 — Alineaciones con jugadores repetidos (arreglado)
+- Causa: FutbolFantasy añadió una 2ª tanda de 11 en el bloque de titulares. Ahora `cleanStarters` deja siempre un once válido (máx. 11, sin repetidos), en el lector, en `/once` y en `alineacion.js`.
+- Tests automáticos en `tests/` (los corre el GitHub Action antes de publicar; si fallan no se despliega).
