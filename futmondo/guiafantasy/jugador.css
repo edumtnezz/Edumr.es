@@ -404,3 +404,7 @@ svg.ffx-ha.a{background:rgba(99,102,241,.16);color:#6366f1}
 .cmpx-pop { position: absolute; left: 0; right: 0; top: calc(100% + 8px); z-index: 30; max-height: 46vh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 2px 12px 10px; border: 1px solid #16a34a; border-radius: 16px; background: var(--card-solid, var(--card, #0f172a)); box-shadow: 0 16px 40px rgba(0,0,0,.45); text-align: left; }
 .cmpx-pop[hidden] { display: none; }
 .cmpx-pop .pk-row .pk-name { font-size: 16px; }
+
+/* Dentro de un club: el botón de volver se queda fijo ARRIBA de la lista, aunque bajes por los jugadores (Edu 02/11) */
+.cmpx-pop .pk-back, .pk-list .pk-back { position: sticky; top: 0; z-index: 3; display: block; width: 100%; text-align: left; padding: 14px 4px; margin: 0; font-size: 15px; background: var(--card-solid, var(--card, #0f172a)); border-bottom: 1px solid rgba(127,127,127,.22); }
+.cmpx-pop { padding-top: 0; }
