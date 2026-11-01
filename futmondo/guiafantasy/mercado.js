@@ -309,60 +309,22 @@
       .sort((a, b) => b._r - a._r)
       .slice(0, max || 6);
   }
+  // Inicio: los 6 más rentables, con el mismo diseño de filas que la pestaña "Jugadores rentables".
   function renderRachas() {
     const box = $("rachasOut");
     if (!box) return;
     box.innerHTML = "";
-    const head = el("div", "dest-head");
-    head.appendChild(el("span", "dest-title", "Destacados"));
-    const upd = el("span", "dest-upd"); upd.appendChild(el("i", "dest-dot")); upd.appendChild(document.createTextNode((lastMarketAt ? "Actualizado " + horaTxt(lastMarketAt) + " · " : "") + "se renueva cada 10 min"));
-    head.appendChild(upd);
-    box.appendChild(head);
-    const grid = el("div", "dest-grid");
-    const list = bestValue();
-    if (!list.length) { grid.appendChild(el("div", "cx-sk")); box.appendChild(grid); return; }
-    list.forEach((p, i) => {
-      const card = el("div", "dest-card");
-      card.addEventListener("click", () => openFicha(p));
-      card.addEventListener("pointerdown", () => { try { fetch(API + "/jugador?id=" + encodeURIComponent(p.id) + "&fast=1").catch(() => {}); } catch (e) {} }, { passive: true });
-      const ph = el("div", "plt-ph"), inn = el("div", "plt-in");
-      if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); inn.appendChild(im); }
-      ph.appendChild(inn); posRingCls(ph, p.role, p.role2);
-      const wrap = el("div", "plt-phw"); wrap.appendChild(ph);
-      if (p.logo) { const lg = el("img", "plt-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; clubLink(lg, p.team); wrap.appendChild(lg); }
-      const rst = statusInfo(p.status);
-      if (rst) wrap.appendChild(el("span", "plt-st " + rst.cls, rst.label));
-      card.appendChild(wrap);
-      card.appendChild(el("div", "dest-name", p.name));
-      const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
-      if (rb) { const pill = el("span", "plt-pill posb posb-" + posCls(p.role), rb + (rb2 ? " · " + rb2 : "")); splitBadge(pill); card.appendChild(pill); }
-      card.appendChild(el("div", "dest-price", (Number(p.value) / 1e6).toFixed(1).replace(".", ",") + " M€"));
-      const cmp = (n) => { const a = Math.abs(n); return a >= 1e6 ? (a / 1e6).toFixed(1).replace(".", ",") + " M€" : Math.round(a / 1000) + " mil €"; };
-      const trend = el("div", "dest-trend");
-      [["Hoy", p.change], ["7 días", p.chg7]].forEach((x) => {
-        if (x[1] == null || x[1] === "") {
-          if (x[0] !== "7 días") return;
-          const ln = el("div", "dt-row flat"); ln.appendChild(el("span", null, x[0])); ln.appendChild(el("b", null, "sin dato")); trend.appendChild(ln); return;
-        }
-        const v = Number(x[1]) || 0;
-        const line = el("div", "dt-row " + (v > 0 ? "up" : v < 0 ? "down" : "flat"));
-        line.appendChild(el("span", null, x[0]));
-        line.appendChild(el("b", null, v === 0 ? "igual" : (v > 0 ? "▲ " : "▼ ") + cmp(v)));
-        trend.appendChild(line);
-      });
-      if (trend.children.length) card.appendChild(trend);
-      const ratio = el("div", "dest-ratio");
-      ratio.appendChild(el("b", null, (Number(p.avg) || 0).toFixed(1).replace(".", ",")));
-      ratio.appendChild(el("small", null, "puntos de media"));
-      card.appendChild(ratio);
-      card.appendChild(el("div", "dest-why", p._r.toFixed(2).replace(".", ",") + " pts de media por cada millón"));
-      grid.appendChild(card);
-    });
-    box.appendChild(grid);
-    const more = el("button", "dest-more", "Ver más jugadores"); more.type = "button";
+    box.appendChild(el("h2", "rtb-title", "Jugadores rentables"));
+    box.appendChild(el("div", "rtb-sub", "Puntos de media por cada millón" + (lastMarketAt ? " · " + horaTxt(lastMarketAt) : "")));
+    const full = bestValue(Infinity);
+    if (!full.length) { box.appendChild(el("div", "cx-sk")); return; }
+    const top = full[0]._r;
+    const list = el("div", "rtb-list");
+    full.slice(0, 6).forEach((p, i) => list.appendChild(rtbRow(p, i, top)));
+    box.appendChild(list);
+    const more = el("button", "rtb-more", "Ver más jugadores"); more.type = "button";
     more.addEventListener("click", () => { switchTab("rentables"); try { window.scrollTo(0, 0); } catch (e) {} });
-    const mw = el("div", "dest-more-wrap"); mw.appendChild(more);
-    box.appendChild(mw);
+    box.appendChild(more);
   }
 
   function fmtDiaLargo(v) {
@@ -6647,6 +6609,46 @@
     steps.forEach((v) => tk.appendChild(el("span", null, v === Infinity ? "∞" : String(v / 1e6))));
     pr.appendChild(top); pr.appendChild(rg); pr.appendChild(tk);
   }
+  // Fila de jugador rentable: la usan la pestaña "Jugadores rentables" y la sección de Inicio.
+  function rtbRow(p, i, top) {
+    const row = el("button", "rtb-row" + (i < 3 ? " top" : "")); row.type = "button";
+    row.addEventListener("click", () => openFicha(p));
+    row.addEventListener("pointerdown", () => { try { fetch(API + "/jugador?id=" + encodeURIComponent(p.id) + "&fast=1").catch(() => {}); } catch (e) {} }, { passive: true });
+    row.appendChild(el("span", "rtb-n", String(i + 1)));
+    const ph = el("span", "rtb-ph");
+    const inn = el("span", "rtb-in");
+    if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); inn.appendChild(im); }
+    ph.appendChild(inn);
+    posRingCls(ph, p.role, p.role2);
+    row.appendChild(ph);
+    const body = el("span", "rtb-body");
+    const l1 = el("span", "rtb-l1");
+    l1.appendChild(el("span", "rtb-name", p.name));
+    if (p.logo) { const lg = el("img", "rtb-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; l1.appendChild(lg); }
+    body.appendChild(l1);
+    const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
+    if (rb) l1.appendChild(el("span", "rtb-pos", rb + (rb2 ? "/" + rb2 : "")));
+    const l2 = el("span", "rtb-l2");
+    l2.appendChild(el("b", "rtb-price", money(p.value) + " €"));
+    if (p.chg7 != null && p.chg7 !== "") {
+      const v = Number(p.chg7) || 0;
+      if (v) l2.appendChild(el("span", v > 0 ? "rtb-up" : "rtb-dn", (v > 0 ? "+" : "−") + (Math.abs(v) >= 1e6 ? (Math.abs(v) / 1e6).toFixed(1).replace(".", ",") + "M" : Math.round(Math.abs(v) / 1e3) + "k")));
+    }
+    body.appendChild(l2);
+    const l3 = el("span", "rtb-l3");
+    [[Number(p.points) || 0, "pts"], [(Number(p.avg) || 0).toFixed(1).replace(".", ","), "media"], [Number(p.matches) || 0, "part."]].forEach((s) => {
+      const c = el("span", "rtb-st"); c.appendChild(el("b", null, String(s[0]))); c.appendChild(el("small", null, s[1])); l3.appendChild(c);
+    });
+    body.appendChild(l3);
+    const bar = el("span", "rtb-bar"); const fill = el("i"); fill.style.width = Math.max(6, Math.round(p._r / top * 100)) + "%"; bar.appendChild(fill);
+    body.appendChild(bar);
+    row.appendChild(body);
+    const r = el("span", "rtb-r");
+    r.appendChild(el("b", null, p._r.toFixed(2).replace(".", ",")));
+    r.appendChild(el("small", null, "pts/M"));
+    row.appendChild(r);
+    return row;
+  }
   function renderRentables() {
     const box = $("rtbList");
     if (!box) return;
@@ -6658,45 +6660,7 @@
     if (sub) sub.textContent += " · " + list.length + (list.length === 1 ? " jugador" : " jugadores");
     box.innerHTML = "";
     if (!list.length) { box.appendChild(el("p", "rtb-empty", "Sin jugadores con estos filtros ahora mismo.")); return; }
-    list.slice(0, rtbShown).forEach((p, i) => {
-      const row = el("button", "rtb-row" + (i < 3 ? " top" : "")); row.type = "button";
-      row.addEventListener("click", () => openFicha(p));
-      row.addEventListener("pointerdown", () => { try { fetch(API + "/jugador?id=" + encodeURIComponent(p.id) + "&fast=1").catch(() => {}); } catch (e) {} }, { passive: true });
-      row.appendChild(el("span", "rtb-n", String(i + 1)));
-      const ph = el("span", "rtb-ph");
-      const inn = el("span", "rtb-in");
-      if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); inn.appendChild(im); }
-      ph.appendChild(inn);
-      posRingCls(ph, p.role, p.role2);
-      row.appendChild(ph);
-      const body = el("span", "rtb-body");
-      const l1 = el("span", "rtb-l1");
-      l1.appendChild(el("span", "rtb-name", p.name));
-      if (p.logo) { const lg = el("img", "rtb-crest"); lg.src = p.logo; lg.alt = ""; lg.loading = "lazy"; l1.appendChild(lg); }
-      body.appendChild(l1);
-      const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
-      if (rb) l1.appendChild(el("span", "rtb-pos", rb + (rb2 ? "/" + rb2 : "")));
-      const l2 = el("span", "rtb-l2");
-      l2.appendChild(el("b", "rtb-price", money(p.value) + " €"));
-      if (p.chg7 != null && p.chg7 !== "") {
-        const v = Number(p.chg7) || 0;
-        if (v) l2.appendChild(el("span", v > 0 ? "rtb-up" : "rtb-dn", (v > 0 ? "+" : "−") + (Math.abs(v) >= 1e6 ? (Math.abs(v) / 1e6).toFixed(1).replace(".", ",") + "M" : Math.round(Math.abs(v) / 1e3) + "k")));
-      }
-      body.appendChild(l2);
-      const l3 = el("span", "rtb-l3");
-      [[Number(p.points) || 0, "pts"], [(Number(p.avg) || 0).toFixed(1).replace(".", ","), "media"], [Number(p.matches) || 0, "part."]].forEach((s) => {
-        const c = el("span", "rtb-st"); c.appendChild(el("b", null, String(s[0]))); c.appendChild(el("small", null, s[1])); l3.appendChild(c);
-      });
-      body.appendChild(l3);
-      const bar = el("span", "rtb-bar"); const fill = el("i"); fill.style.width = Math.max(6, Math.round(p._r / top * 100)) + "%"; bar.appendChild(fill);
-      body.appendChild(bar);
-      row.appendChild(body);
-      const r = el("span", "rtb-r");
-      r.appendChild(el("b", null, p._r.toFixed(2).replace(".", ",")));
-      r.appendChild(el("small", null, "pts/M"));
-      row.appendChild(r);
-      box.appendChild(row);
-    });
+    list.slice(0, rtbShown).forEach((p, i) => box.appendChild(rtbRow(p, i, top)));
     if (list.length > rtbShown) {
       const more = el("button", "rtb-more", "Ver más (" + (list.length - rtbShown) + ")"); more.type = "button";
       more.addEventListener("click", () => { rtbShown += 40; renderRentables(); });
