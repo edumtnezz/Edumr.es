@@ -393,3 +393,14 @@ svg.ffx-ha.a{background:rgba(99,102,241,.16);color:#6366f1}
 .cmpx-s2box { height: auto; }
 .cmpx-s2sel { width: 100%; min-width: 0; height: 44px; padding: 0 10px; border: 1px solid var(--border, rgba(127,127,127,.4)); border-radius: 10px; background: rgba(127,127,127,.08); color: inherit; font-family: inherit; font-size: 16px; font-weight: 600; outline: none; }
 .cmpx-s2sel:focus { border-color: #16a34a; }
+
+/* Comparador: campo escribible + lista con foto y escudo, debajo de los dos jugadores (Edu 02/11) */
+#cmpxPick { position: relative; }
+.cmpx-slot2 { position: static !important; }
+.cmpx-s2box { display: flex; align-items: stretch; height: 44px; width: 100%; }
+.cmpx-s2in { flex: 1 1 auto; min-width: 0; width: 100%; padding: 0 10px; border: 1px solid var(--border, rgba(127,127,127,.4)); border-right: 0; border-radius: 10px 0 0 10px; background: rgba(127,127,127,.08); color: inherit; font-family: inherit; font-size: 16px; font-weight: 600; outline: none; -webkit-appearance: none; appearance: none; }
+.cmpx-s2in:focus { border-color: #16a34a; background: transparent; }
+.cmpx-s2box .cmpx-s2arrow { display: flex; align-items: center; justify-content: center; flex: 0 0 38px; border: 1px solid var(--border, rgba(127,127,127,.4)); border-radius: 0 10px 10px 0; background: rgba(127,127,127,.08); color: #16a34a; font-size: 16px; cursor: pointer; padding: 0; }
+.cmpx-pop { position: absolute; left: 0; right: 0; top: calc(100% + 8px); z-index: 30; max-height: 46vh; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 2px 12px 10px; border: 1px solid #16a34a; border-radius: 16px; background: var(--card-solid, var(--card, #0f172a)); box-shadow: 0 16px 40px rgba(0,0,0,.45); text-align: left; }
+.cmpx-pop[hidden] { display: none; }
+.cmpx-pop .pk-row .pk-name { font-size: 16px; }

@@ -2925,26 +2925,31 @@
     } else {
       body.appendChild(el("div", "cmpx-s2name", which === "a" ? "Elige el primer jugador" : "Elige el segundo jugador"));
     }
-    // Desplegable normal del móvil (sin buscador ni pantalla completa): jugadores agrupados por club (Edu 02/11)
+    // Desplegable que se puede escribir: campo + lista debajo con foto, escudo y posición de cada jugador (Edu 02/11).
+    // Letra de 16 px y lista dentro de la página (no a pantalla completa) para que el iPhone no haga zoom.
     const box = el("div", "cmpx-s2box");
-    const sel = el("select", "cmpx-s2sel");
-    sel.setAttribute("aria-label", which === "a" ? "Jugador 1" : "Jugador 2");
-    const o0 = el("option", null, p ? "Cambiar jugador" : "Elegir jugador"); o0.value = ""; sel.appendChild(o0);
-    const byTeam = {};
-    (all || []).forEach((q) => { if (q && q.id != null && q.name && q.team) (byTeam[q.team] = byTeam[q.team] || []).push(q); });
-    Object.keys(byTeam).sort((x, y) => x.localeCompare(y, "es")).forEach((tn) => {
-      const og = document.createElement("optgroup"); og.label = tn;
-      byTeam[tn].sort((x, y) => String(x.name).localeCompare(String(y.name), "es")).forEach((q) => {
-        const o = el("option", null, q.name + (roleBadge(q.role) ? " · " + roleBadge(q.role) : "")); o.value = String(q.id); og.appendChild(o);
-      });
-      sel.appendChild(og);
-    });
-    sel.addEventListener("change", () => {
-      const pl = (all || []).find((q) => String(q.id) === sel.value);
-      sel.value = "";
-      if (pl) choose(pl);
-    });
-    box.appendChild(sel);
+    const inp = el("input", "cmpx-s2in"); inp.type = "search"; inp.autocomplete = "off"; inp.setAttribute("autocapitalize", "off"); inp.setAttribute("enterkeyhint", "search");
+    inp.placeholder = p ? "Cambiar jugador" : "Elegir jugador";
+    inp.setAttribute("aria-label", which === "a" ? "Jugador 1" : "Jugador 2");
+    const arrow = el("button", "cmpx-s2arrow"); arrow.type = "button"; arrow.setAttribute("aria-label", "Ver lista"); arrow.textContent = "▾";
+    box.appendChild(inp); box.appendChild(arrow);
+    const pop = el("div", "cmpx-pop"); pop.hidden = true;
+    const popList = el("div", "cmpx-pop-list"); pop.appendChild(popList);
+    const st = {};
+    const closePop = () => { pop.hidden = true; c.classList.remove("open"); document.removeEventListener("pointerdown", outside, true); };
+    const outside = (e) => { if (!c.contains(e.target)) closePop(); };
+    const pickPl = (pl) => { closePop(); inp.value = ""; inp.blur(); choose(pl); };
+    const fillPop = () => pickFill(popList, inp.value, pickPl, st);
+    const openPop = () => {
+      document.querySelectorAll(".cmpx-pop").forEach((o) => { if (o !== pop) o.hidden = true; });
+      fillPop(); pop.hidden = false; c.classList.add("open");
+      document.addEventListener("pointerdown", outside, true);
+    };
+    inp.addEventListener("focus", openPop);
+    inp.addEventListener("input", () => { st.mode = null; fillPop(); popList.scrollTop = 0; if (pop.hidden) openPop(); });
+    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { const f = popList.querySelector(".pk-row"); if (f) f.click(); } else if (e.key === "Escape") closePop(); });
+    arrow.addEventListener("click", () => { if (pop.hidden) { openPop(); } else closePop(); });
+    c.appendChild(pop);
     body.appendChild(box);
     c.appendChild(body);
     const choose = (pl) => {
