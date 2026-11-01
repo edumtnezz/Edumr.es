@@ -4534,7 +4534,7 @@ async function recordPointsHistory(env) {
 
 // Caché de respuestas públicas (Cache API: sin coste ni límite). Evita recalcular en cada visita
 // y mantiene la CPU por petición por debajo del límite del plan gratis de Cloudflare.
-const EDGE_TTL = { "ultimos-cambios": 180, aplazados: 300, calendario: 600, estadios: 3600, "historial-puntos": 120, mercado: 45, rachas: 60, minutos: 300, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 300, "alineaciones-confirmadas": 180, "alineaciones-estado": 300, noticias: 300, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10 };
+const EDGE_TTL = { "ultimos-cambios": 180, aplazados: 300, calendario: 600, estadios: 3600, "historial-puntos": 120, mercado: 45, rachas: 60, minutos: 300, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 300, "alineaciones-confirmadas": 180, "alineaciones-estado": 300, noticias: 300, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10, "notas-fotmob": 3600 };
 export async function onRequestGet(ctx) {
   const path = (ctx.params.path || []).join("/");
   const ttl = EDGE_TTL[path];
@@ -4554,7 +4554,7 @@ export async function onRequestGet(ctx) {
     } catch (e) {}
     return null;
   };
-  const isGood = (txt) => txt.indexOf('"error"') < 0 && txt.length > 20 && !/"(matches|players|teams|items|days)":\[\]/.test(txt) && !/"matchday":0[,}]/.test(txt);
+  const isGood = (txt) => txt.indexOf('"error"') < 0 && txt.length > 20 && !/"(matches|players|teams|items|days)":\[\]/.test(txt) && !/"matchday":0[,}]/.test(txt) && !/"notas":\{\}/.test(txt);
   // Guarda la respuesta buena: copia fresca (TTL) + copia de reserva de 2 días con la hora a la que se guardó (x-saved).
   const savePair = (txt) => {
     // La jornada solo necesita refrescarse cada 30 s si hay un partido en juego; si no, cada 90 s (menos CPU)
@@ -4695,6 +4695,40 @@ async function handleGet({ request, env: env0, params }) {
   // Cambios de un partido (quién sale y quién entra), sacados de la crónica
   // minuto a minuto de la página del partido. Cada frase se lee con varios
   // patrones; lo que no encaje se ignora (el cliente lo cruza por eliminación).
+  if (path === "notas-fotmob") {
+    // Nota de FotMob de un jugador en cada partido ya jugado (de la alineación de cada partido en FotMob). Sin KV: caché de borde.
+    const UA = { "user-agent": "Mozilla/5.0 (compatible; edumr)" };
+    const norm = (n) => String(n || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+    const STOP = new Set(["de", "la", "el", "club", "fc", "cf", "ud", "cd", "rcd", "sd", "rc", "real"]);
+    const ALIAS = { atleti: "atletico madrid", barca: "barcelona", athletic: "athletic club" };
+    const toks = (n) => { let k = norm(n); if (ALIAS[k]) k = ALIAS[k]; return k.split(" ").filter((w) => w && !STOP.has(w)); };
+    const same = (a0, b0) => { const a = toks(a0), b = toks(b0); return a.length && b.length && a.some((w) => b.indexOf(w) >= 0); };
+    const pname = norm(url.searchParams.get("name") || "");
+    const items = String(url.searchParams.get("ms") || "").split(";").map((x) => x.split("|")).filter((x) => /^\d{8}$/.test(x[0]) && x[1] && x[2]).slice(0, 20);
+    if (!pname || !items.length) return json({ notas: {} });
+    const dayCache = {};
+    const dayList = (d) => (dayCache[d] = dayCache[d] || fetch("https://www.fotmob.com/api/data/matches?date=" + d + "&timezone=Europe%2FMadrid&ccode3=ESP", { headers: UA }).then((r) => r.json()).catch(() => null));
+    const notas = {};
+    await Promise.all(items.map(async (it) => {
+      try {
+        const lj = await dayList(it[0]);
+        let hit = null;
+        for (const lg of ((lj && lj.leagues) || [])) {
+          for (const m of (lg.matches || [])) { if (same(it[1], m.home && (m.home.longName || m.home.name)) && same(it[2], m.away && (m.away.longName || m.away.name))) { hit = m; break; } }
+          if (hit) break;
+        }
+        if (!hit || !hit.status || !hit.status.finished) return;
+        const j = await (await fetch("https://www.fotmob.com/api/data/matchDetails?matchId=" + hit.id, { headers: UA })).json();
+        const lu = ((j.content || {}).lineup) || {};
+        const found = [];
+        [lu.homeTeam, lu.awayTeam].forEach((t) => { if (!t) return; (t.starters || []).concat(t.subs || []).forEach((x) => { const n = norm(x.name); if (n && (n === pname || n.split(" ").indexOf(pname) >= 0 || (" " + n + " ").indexOf(" " + pname + " ") >= 0)) found.push(x); }); });
+        if (found.length !== 1) return;
+        const rt = found[0].performance && found[0].performance.rating;
+        if (rt && Number(rt) > 0) notas[it[0] + "|" + it[1] + "|" + it[2]] = Number(rt);
+      } catch (e) {}
+    }));
+    return json({ notas });
+  }
   if (path === "directo") {
     // Directo de un partido: crónica de Comuniate + eventos y estadísticas de FotMob. Sin KV: caché de borde de 30 s.
     const hh = url.searchParams.get("home") || "", aa = url.searchParams.get("away") || "", jj = url.searchParams.get("jornada") || "";

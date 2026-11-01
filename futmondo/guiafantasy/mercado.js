@@ -3998,7 +3998,7 @@
       msd.forEach((m, k) => { if (k < fit.length) valByR[m.r] = Math.round(fit[fit.length - 1 - k]); });
       ms.forEach((m) => { rivals[m.r] = m; });
       const topJ = j0 || Math.max.apply(null, ms.map((x) => x.r).concat([0]));
-      const pendingHist = []; let hasCalc = false;
+      const pendingHist = []; let hasCalc = false; const notaRows = [];
       for (let j = topJ; j >= 1; j--) {
         const row = el("div", "fm-row");
         row.appendChild(el("span", "fm-j", "J" + j));
@@ -4039,12 +4039,12 @@
           if (Number(m.yellow) > 0) evs.push(["Amarilla", "y"]);
           if (Number(m.red) > 0) evs.push(["Roja", "bad"]);
           if (E.sv >= 3) evs.push([E.sv + " paradas", "cs"]);
-          // La nota es la de Futmondo (dato "rating" de su API); no coincide con la de FotMob, por eso se dice de dónde sale
-          if (E.rt) evs.push([String(E.rt).replace(".", ","), "rt"]);
-          evs.forEach((x) => {
-            if (x[1] === "rt") { const nt = el("span", "fm-ev ev-rt"); nt.appendChild(el("small", null, "Nota Futmondo")); nt.appendChild(el("b", null, x[0])); chips.appendChild(nt); }
-            else chips.appendChild(el("span", "fm-ev ev-" + x[1], x[0]));
-          });
+          evs.forEach((x) => { chips.appendChild(el("span", "fm-ev ev-" + x[1], x[0])); });
+          // La nota de FotMob se pide aparte (una vez por jugador) y se añade a esta línea cuando llega
+          try {
+            const dt = new Date(m.date);
+            if (m.finished && !isNaN(dt)) { const ymd = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).format(dt).replace(/-/g, ""); notaRows.push({ key: ymd + "|" + m.home + "|" + m.away, chips: chips }); }
+          } catch (e) {}
           let v = valByR[j] != null ? valByR[j] : null;
           let calc = false;
           // Jornadas fuera de los 5 últimos partidos que publica Futmondo: se calculan con las reglas de la liga
@@ -4093,6 +4093,17 @@
       colL.appendChild(tbl);
       if (hasCalc) colL.appendChild(el("p", "fm-legend", "Borde punteado: puntos calculados con las reglas de tu liga (Futmondo solo publica los últimos 5 partidos)."));
       // Jornadas fuera de las 5 últimas: se completan con el histórico de puntos de la liga guardado.
+      if (notaRows.length && d.name) {
+        const nq = notaRows.map((x) => x.key).join(";");
+        fetch(API + "/notas-fotmob?name=" + encodeURIComponent(d.name) + "&ms=" + encodeURIComponent(nq)).then((r) => r.json()).then((jn) => {
+          const nt = (jn && jn.notas) || {};
+          notaRows.forEach((x) => {
+            if (nt[x.key] == null || x.chips.querySelector(".ev-rt")) return;
+            const sp = el("span", "fm-ev ev-rt"); sp.appendChild(el("small", null, "Nota FotMob")); sp.appendChild(el("b", null, String(nt[x.key].toFixed ? nt[x.key].toFixed(1) : nt[x.key]).replace(".", ",")));
+            x.chips.appendChild(sp);
+          });
+        }).catch(() => {});
+      }
       if (pendingHist.length && (p.id || d.id)) {
         const hid = String(p.id || d.id);
         fetch(API + "/historial-puntos?ids=" + encodeURIComponent(hid)).then((r) => r.json()).then((h) => {
