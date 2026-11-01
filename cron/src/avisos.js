@@ -230,8 +230,19 @@ export async function avisar(env, deps) {
       cands.push({ x, title, at, hits, kw });
     }
     cands.sort((a, b) => a.at - b.at); // las más antiguas primero
+    for (const c of cands.slice(0, firstRun || quiet ? 0 : MAX_MSGS)) {
+      // Resumen breve (la entradilla de la noticia); si no hay, el aviso sale sin él
+      let resumen = "";
+      try {
+        const n = await getJson(f, "noticia?u=" + encodeURIComponent(c.x.link));
+        resumen = decode(String(n.lead || "")).replace(/\s+/g, " ").trim();
+        if (resumen.length > 150) resumen = resumen.slice(0, 150).replace(/\s+\S*$/, "") + "…";
+      } catch (e) {}
+      c.resumen = resumen;
+    }
     for (const c of cands) {
-      const text = (c.hits.length ? "⭐ " : c.kw ? "🔔 " : "📰 ") + "<b>" + esc(c.title) + "</b>" + (c.hits.length ? "\nCoincide con tu jugador: " + esc(c.hits.join(", ")) : "") + "\n" + newsUrl(c.x.link);
+      const text = (c.hits.length ? "⭐ " : c.kw ? "🔔 " : "📰 ") + "<b>" + esc(c.title) + "</b>" + (c.hits.length ? "\nCoincide con tu jugador: " + esc(c.hits.join(", ")) : "") +
+        (c.resumen ? "\n\n" + esc(c.resumen) : "") + "\n\n<b>Más información:</b>\n" + newsUrl(c.x.link);
       queue.push({ text, commit: () => { st.news = (st.news || []).concat([c.x.link]).slice(-200); dirty = true; } });
     }
   }
@@ -340,8 +351,7 @@ export async function avisar(env, deps) {
               (up.length ? "📈 <b>Suben más</b>\n" + up.map((p, i) => fila(p, i, true)).join("\n") : "") +
               (up.length && down.length ? "\n\n" : "") +
               (down.length ? "📉 <b>Bajan más</b>\n" + down.map((p, i) => fila(p, i, false)).join("\n") : "") +
-              "\n\n" + WEB + "mercado" + (up[0] && /^https:\/\/static0\d\.mondocore\.com\/futmondo\/img\/faces\//.test(up[0].photo || "") ? "?foto=" + encodeURIComponent(up[0].photo) + "&v=" + sig : ""),
-            small: true,
+              "\n\n" + WEB + "mercado?v=" + sig,
             commit,
           });
         }
