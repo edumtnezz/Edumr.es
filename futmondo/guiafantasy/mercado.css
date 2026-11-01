@@ -3305,3 +3305,12 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
   .feat-chg-time { display: none; }
   .feat-sub { grid-column: 1 / -1; grid-row: 2; }
 }
+
+/* Tarjetas de la jornada un poco más grandes, todas iguales (Edu 01/11) */
+#cxChrome .cx-jn-grid { grid-auto-rows: 60px; gap: 5px; }
+#cxChrome .cx-jn { height: 60px; padding: 4px 6px; }
+#cxChrome .cx-jn-crest { width: 33px; height: 33px; }
+#cxChrome .cx-jn-score { font-size: 1.2rem; }
+#cxChrome .cx-jn-statusrow { font-size: .6rem; }
+#cxChrome .cx-jn .cx-jn-statusrow-prob, #cxChrome .cx-jn .cx-jn-statusrow-confirm { font-size: .56rem; }
+#cxChrome .cx-jn-time, #cxChrome .cx-jn-hora { font-size: .64rem; }
