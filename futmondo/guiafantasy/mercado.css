@@ -3406,3 +3406,10 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .newscard-thumb.cm-crop-bg { background-size: auto 110% !important; }
 .cm-crop { transform: scale(1.1); }
 .cm-wrap .cm-in { transform: scale(1.1); }
+
+/* Últimas actualizaciones: los jugadores ocupan todo el ancho de la tarjeta y cada uno, más grande (Edu 02/11) */
+#tab-actualizaciones .up-chg { margin-left: -56px; margin-top: 8px; gap: 6px; }
+#tab-actualizaciones .up-pl { padding: 8px 12px; font-size: .98rem; gap: 10px; border-radius: 12px; align-items: center; }
+#tab-actualizaciones .up-pl img { width: 38px; height: 40px; border-radius: 8px; flex: none; }
+#tab-actualizaciones .up-pl strong { font-weight: 700; }
+#tab-actualizaciones .up-pl .up-tr { font-size: .95rem; font-weight: 700; }
