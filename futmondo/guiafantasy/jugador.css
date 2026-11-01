@@ -273,3 +273,6 @@ svg.ffx-ha.a{background:rgba(99,102,241,.16);color:#6366f1}
 .cmpx-mrival.club-link, .cmpx-mrival .club-link, .cmpx-team.club-link, .cmpx-crestbadge.club-link { cursor: pointer; }
 .cmpx-team.club-link:hover .cmpx-teamname { text-decoration: underline; }
 .cmpx-fx { white-space: nowrap; font-size: .76rem; padding: 4px 9px; border-radius: 12px; }
+
+.ficha-cmp { display:inline-flex; align-items:center; gap:6px; margin:10px auto 0; padding:8px 16px; border-radius:999px; border:1px solid var(--line,#d0d5dd); background:transparent; color:inherit; font:600 14px/1 inherit; cursor:pointer; }
+.ficha-cmp:active { opacity:.7; }

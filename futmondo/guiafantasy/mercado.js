@@ -4264,6 +4264,15 @@
       if (teamName) tt.appendChild(clubLink(el("span", null, teamName), teamName));
       head.appendChild(tt);
     }
+    if (p.id || d.id) {
+      const cb = el("button", "ficha-cmp", "⚖ Comparar");
+      cb.type = "button";
+      cb.addEventListener("click", () => {
+        try { localStorage.setItem("gf:cmp:sel:v1", JSON.stringify({ a: String(p.id || d.id), b: null })); } catch (e) {}
+        location.href = "/futmondo/guiafantasy/comparador";
+      });
+      head.appendChild(cb);
+    }
     // Demarcación: píldora ancha con la posición principal + chips de las secundarias
     {
       const ROLE_AB = { portero: "PT", defensa: "DF", centrocampista: "MC", delantero: "DL" };
