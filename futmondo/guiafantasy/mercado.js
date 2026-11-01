@@ -3951,8 +3951,13 @@
       older.forEach((x) => {
         const row = el("div", "feat-prev-row");
         row.addEventListener("click", () => open(x));
-        row.appendChild(el("div", "feat-prev-h", x.title));
-        row.appendChild(el("div", "feat-prev-m", metaTxt(x)));
+        const th = el("img", "feat-prev-img"); th.alt = ""; th.loading = "lazy"; th.src = x.thumb || "/img/balon.svg";
+        th.addEventListener("error", () => { th.src = "/img/balon.svg"; }, { once: true });
+        row.appendChild(th);
+        const tx = el("div", "feat-prev-tx");
+        tx.appendChild(el("div", "feat-prev-h", x.title));
+        tx.appendChild(el("div", "feat-prev-m", metaTxt(x)));
+        row.appendChild(tx);
         prev.appendChild(row);
       });
       const chg = el("div", "feat-chg");
@@ -3980,7 +3985,8 @@
       const row = el("div", "feat-chg-row");
       row.style.setProperty("--uc", cc[1]);
       row.addEventListener("click", () => switchTab("actualizaciones"));
-      row.appendChild(el("span", "feat-chg-dot"));
+      if (x.photo) { const ph = el("img", "feat-chg-ph"); ph.alt = ""; ph.loading = "lazy"; ph.src = x.photo; ph.addEventListener("error", () => { const d = el("span", "feat-chg-dot"); ph.replaceWith(d); }, { once: true }); row.appendChild(ph); }
+      else row.appendChild(el("span", "feat-chg-dot"));
       row.appendChild(el("span", "feat-chg-cat", cc[0]));
       row.appendChild(el("span", "feat-chg-txt", x.title));
       if (x.time) row.appendChild(el("span", "feat-chg-time", x.time));

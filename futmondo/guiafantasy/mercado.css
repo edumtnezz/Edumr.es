@@ -3088,7 +3088,7 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 @container (max-width: 639px) { .feat-sub .feat-card-sm:nth-child(n+3) { display: none; } }
 @container (min-width: 640px) {
   .feat-grid { grid-template-columns: minmax(230px, 32%) 1fr; column-gap: 14px; }
-  .feat-hero { grid-column: 2; grid-row: 1; aspect-ratio: auto; height: 380px; margin-bottom: 14px; }
+  .feat-hero { grid-column: 2; grid-row: 1; aspect-ratio: auto; height: 400px; margin-bottom: 14px; }
   .feat-hero img { position: absolute; inset: 0; }
   .feat-prev { grid-column: 1; grid-row: 1; margin-bottom: 14px; overflow: hidden; display: flex; flex-direction: column; padding-bottom: 0; }
   .feat-prev-row { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 6px 0; }
@@ -3111,3 +3111,12 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .feat-chg-empty { font-size: .76rem; color: var(--muted); padding: 4px 0; }
 @media (hover: hover) and (pointer: fine) { .feat-chg-row:hover .feat-chg-txt { text-decoration: underline; } }
 @container (min-width: 640px) { .feat-prev-row { padding: 5px 0; } .feat-chg { margin-top: 0; padding-bottom: 12px; } }
+
+/* Anteriores más visual: miniatura de foto en cada noticia y foto del jugador en los cambios (01/11/2026) */
+.feat-prev-row { display: flex; align-items: center; gap: 11px; }
+.feat-prev-tx { flex: 1; min-width: 0; }
+.feat-prev-img { flex: none; width: 62px; height: 62px; border-radius: 12px; object-fit: cover; background: rgba(127,127,127,.15); display: block; }
+.feat-prev-h { font-size: .84rem; }
+.feat-chg-ph { flex: none; width: 24px; height: 24px; border-radius: 50%; object-fit: cover; object-position: top; background: rgba(127,127,127,.18); box-shadow: 0 0 0 2px var(--uc, #94a3b8); display: block; }
+.feat-chg-row { gap: 9px; }
+@container (min-width: 640px) { .feat-prev-row { flex-direction: row; justify-content: flex-start; } .feat-prev-img { width: 56px; height: 56px; } }
