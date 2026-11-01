@@ -1332,7 +1332,7 @@
     let map = {};
     try {
       // En trozos de 8: cada petición al servidor tiene un tope de llamadas externas y con 28 jugadores de golpe fallaban la mayoría
-      const chunks = []; for (let i = 0; i < ids.length; i += 8) chunks.push(ids.slice(i, i + 8));
+      const chunks = []; for (let i = 0; i < ids.length; i += 40) chunks.push(ids.slice(i, i + 40));
       const rs = await Promise.all(chunks.map((c) => fetch(API + "/puntos?jornada=" + encodeURIComponent(jn) + "&ids=" + c.join(","), { cache: "no-store" }).then((x) => x.json()).catch(() => null)));
       rs.forEach((r) => { if (r && r.points) Object.keys(r.points).forEach((k) => { if (r.points[k]) map[k] = r.points[k]; }); });
       // Si algún trozo falló (el servidor limita las llamadas), se piden de nuevo los que faltan, de 4 en 4 y de uno en uno
@@ -2306,6 +2306,7 @@
     box.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i><i class="s"></i></div>';
     main.appendChild(box);
     let timer = null;
+    let waitPts = false;
     const run = async (first) => {
       let qj = ""; try { qj = new URLSearchParams(location.search).get("j") || ""; } catch (e) {}
       // Pide un JSON con reintentos: la API a veces falla o devuelve la jornada vacía un instante
@@ -2392,10 +2393,11 @@
       let pointsIn = true;
       if (finished) { try { const r = await fillMpPoints(box, d, jn); if (!mpLive) pointsIn = r !== false; } catch (e) { pointsIn = false; } }
       if (finalNow && !pointsIn) { const h = box.querySelector(".mpage-xi-h"); if (h) h.insertAdjacentElement("afterend", el("p", "muted small mpage-live-note", "⏳ Esperando los puntos de Futmondo…")); }
+      waitPts = finalNow && !pointsIn;
       return !finalNow || !pointsIn;
     };
     // Si llegan datos nuevos distintos de lo que se pintó al instante (carga rápida), se repinta en el sitio
-    let swrT = null;
+    let swrT = null, tick = 0;
     const onSwr = (ev) => {
       if (!document.body.contains(box)) { document.removeEventListener("cx:swr", onSwr); return; }
       const u = (ev.detail && ev.detail.url) || "";
@@ -2415,12 +2417,14 @@
       if (more) timer = setInterval(async () => {
         if (!document.body.contains(box)) { clearInterval(timer); return; }
         if (document.hidden) return;
+        // Esperando los puntos de Futmondo: se mira cada 15 s; en directo, cada minuto
+        if (!waitPts && (++tick % 4)) return;
         const y = window.scrollY;
         box.style.minHeight = box.offsetHeight + "px";
         try { const mo = await run(false); if (!mo) clearInterval(timer); } catch (e) {}
         box.style.minHeight = "";
         window.scrollTo(0, y);
-      }, 60000);
+      }, 15000);
     } catch (e) { try { console.error('partido:', e && e.stack || e); } catch (e2) {} box.innerHTML = '<p class="muted small">No se pudo cargar el partido.</p>'; }
   }
   // Ficha de jugador como página propia:

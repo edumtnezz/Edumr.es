@@ -3733,7 +3733,7 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
         const ko = Date.parse((m.info && m.info.date) || ""); const minAt = ko > 0 ? ko + 105 * 60000 : 0;
         const okMk = (q) => !!(q && q.at && q.at >= minAt);
         if (!okMk(mk) && Date.now() >= minAt) {
-          if (!(globalThis.__mkForceAt && Date.now() - globalThis.__mkForceAt < 30000)) { globalThis.__mkForceAt = Date.now(); globalThis.__mkForceP = getMarketPlayers(env, true).catch(() => null); }
+          if (!(globalThis.__mkForceAt && Date.now() - globalThis.__mkForceAt < 10000)) { globalThis.__mkForceAt = Date.now(); globalThis.__mkForceP = getMarketPlayers(env, true).catch(() => null); }
           if (globalThis.__mkForceP) { const m2 = await globalThis.__mkForceP; if (m2 && m2.at) mk = m2; }
         }
         const mp = (mk.players || []).find((x) => String(x.id) === String(playerId));
@@ -3755,7 +3755,7 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
       } catch (e) {}
       if (!mkFresh) {
         // pendiente: se guarda solo 30 s para volver a mirar pronto
-        try { await env.PORRA.put(ck, JSON.stringify({ at: Date.now() - 90000, finished: false, points: null }), { expirationTtl: 60 }); } catch (e) {}
+        try { await env.PORRA.put(ck, JSON.stringify({ at: Date.now() - 108000, finished: false, points: null }), { expirationTtl: 60 }); } catch (e) {}
         return { finished: false, points: null };
       }
       if (pts == null) {
@@ -5158,7 +5158,7 @@ async function handleGet({ request, env: env0, params }) {
       const j = Number(url.searchParams.get("jornada")) || 0;
       const ids = String(url.searchParams.get("ids") || "")
         .split(",").map((x) => x.trim()).filter((x) => /^[a-z0-9]{6,40}$/i.test(x))
-        .filter((x, i, a) => a.indexOf(x) === i).slice(0, 12);
+        .filter((x, i, a) => a.indexOf(x) === i).slice(0, 40);
       const out = {};
       await Promise.all(ids.map(async (id) => {
         const r = await getPlayerJornadaPoints(env, id, j);
