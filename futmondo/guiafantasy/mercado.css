@@ -3206,6 +3206,9 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 :is(#tab-mercado, #tab-plantillas) .plt-head .plt-btn:not(.plt-club):not(.plt-arrow) { color: #e9f2ee; background: rgba(255,255,255,.14); }
 :is(#tab-mercado, #tab-plantillas) .plt-head .plt-btn:not(.plt-club):not(.plt-arrow).on { background: #16a34a; color: #fff; }
 
+/* Los filtros de Últimas actualizaciones caben en el móvil (antes el último quedaba cortado) */
+.up-filters { flex-wrap: wrap; overflow-x: visible; }
+
 /* Cinta de noticias: sin "Última hora" y en una sola línea, sin marquesina */
 .cx-ticker-tag-hide { display: none !important; }
 .cx-ticker-track { animation: none !important; transform: none !important; }
