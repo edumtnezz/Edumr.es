@@ -3024,7 +3024,7 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
   .cx-jn-nav, .cx-conf-k { font-size: .66rem; }
   .mkt-pos { font-size: .64rem; }
   .plt-pill { font-size: .64rem; }
-  .dest-why, .dest-ratio, .dest-ratio span { font-size: .7rem; }
+  .dest-why, .dest-panel .dest-why, .dest-ratio, .dest-ratio span { font-size: .7rem; }
 }
 
 /* Noticias del inicio: la foto grande se queda; las dos siguientes pasan a lista
