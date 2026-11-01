@@ -3889,6 +3889,8 @@
     if (!list.length) { box.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>'; return; }
     box.innerHTML = "";
     const open = (x) => { switchTab("noticias"); openNoticiaInline(x.link, x.title); };
+    const metaTxt = (x) => (x.date || "") + (x.time ? " · " + x.time : "") + (x.src && x.src !== "FutbolFantasy" ? " · " + x.src : "");
+    const grid = el("div", "feat-grid");
     const hero = list[0];
     const h = el("div", "feat-hero");
     h.addEventListener("click", () => open(hero));
@@ -3899,9 +3901,9 @@
     hov.appendChild(el("div", "feat-hero-title", hero.title));
     hov.appendChild(el("div", "feat-hero-date", (hero.date || "") + (hero.time ? " · " + hero.time : "")));
     h.appendChild(hov);
-    box.appendChild(h);
+    grid.appendChild(h);
     const sub = el("div", "feat-sub");
-    list.slice(1, 3).forEach((x) => {
+    list.slice(1, 4).forEach((x) => {
       const it = el("div", "feat-card-sm");
       it.addEventListener("click", () => open(x));
       const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = x.thumb || "/img/balon.svg";
@@ -3913,7 +3915,22 @@
       it.appendChild(ov);
       sub.appendChild(it);
     });
-    box.appendChild(sub);
+    grid.appendChild(sub);
+    // "Anteriores": las noticias siguientes, en lista (a la izquierda de la foto grande en pantallas anchas)
+    const older = list.slice(4, 8);
+    if (older.length) {
+      const prev = el("div", "feat-prev");
+      prev.appendChild(el("div", "feat-prev-title", "Anteriores"));
+      older.forEach((x) => {
+        const row = el("div", "feat-prev-row");
+        row.addEventListener("click", () => open(x));
+        row.appendChild(el("div", "feat-prev-h", x.title));
+        row.appendChild(el("div", "feat-prev-m", metaTxt(x)));
+        prev.appendChild(row);
+      });
+      grid.appendChild(prev);
+    }
+    box.appendChild(grid);
   }
 
   let newsTry = 0;
