@@ -994,6 +994,32 @@
       b.addEventListener("keydown", (e) => { if (e.key === "Enter") go(e); });
     });
   }
+  // "Estadísticas Fantasy del X - Y" al final de las noticias → "Estadísticas FotMob", que lleva al partido en nuestra web (Edu 02/11)
+  function wireStatsLinks(root) {
+    const re = /^Estad[ií]sticas\s+Fantasy\s+del\s+(.+?)\s+[-–]\s+(.+)$/i;
+    const hit = (n) => re.test((n.textContent || "").replace(/\s+/g, " ").trim());
+    const nodes = Array.from(root.querySelectorAll("p, a, li, h2, h3, h4, div, span, strong, b")).filter((n) => hit(n) && !Array.from(n.children).some(hit));
+    nodes.forEach((n) => {
+      const m = (n.textContent || "").replace(/\s+/g, " ").trim().match(re);
+      if (!m) return;
+      const h = m[1].trim(), a = m[2].trim();
+      const link = el("a", "fm-stats-link", "Estadísticas FotMob");
+      link.href = "/futmondo/guiafantasy/directo/" + matchSlug(h, a);
+      link.addEventListener("click", async (e) => {
+        e.preventDefault(); e.stopPropagation();
+        let home = h, away = a, jn = "";
+        try {
+          const jr = await (await fetch(API + "/jornada")).json();
+          const f = ((jr && jr.matches) || []).find((x) => teamCanon(x.home) === teamCanon(h) && teamCanon(x.away) === teamCanon(a));
+          if (f) { home = f.home; away = f.away; jn = jr.matchday || jr.jornada || ""; }
+        } catch (x) {}
+        location.href = "/futmondo/guiafantasy/directo/" + matchSlug(home, away) + "?t=" + encodeURIComponent("Alineación") + (jn ? "&j=" + encodeURIComponent(jn) : "");
+      });
+      const up = n.closest("a");
+      const target = up && up !== n ? up : n;
+      target.innerHTML = ""; target.removeAttribute("href"); target.appendChild(link);
+    });
+  }
   function mpPos(pos) {
     const p = String(pos || "").toLowerCase();
     if (p.indexOf("porter") >= 0) return ["PT", "pt"];
@@ -4226,7 +4252,7 @@
         if (d.lead) c.appendChild(el("p", "art-lead", d.lead));
         if (d.html) {
           const art = el("div", "art-body");
-          art.innerHTML = d.html; wireCvBtns(art);
+          art.innerHTML = d.html; wireCvBtns(art); try { wireStatsLinks(art); } catch (e) {}
           c.appendChild(art);
         } else {
           c.appendChild(el("p", "muted small", "No pude extraer el texto de esta noticia."));
@@ -4359,7 +4385,7 @@
     if (d.lead) box.appendChild(el("p", "art-lead", d.lead));
     if (d.html) {
       const art = el("div", "art-body");
-      art.innerHTML = d.html; wireCvBtns(art);
+      art.innerHTML = d.html; wireCvBtns(art); try { wireStatsLinks(art); } catch (e) {}
       box.appendChild(art);
       try { newsPlayersBlock(box, (d.title || title || "") + " . " + (d.lead || "") + " . " + (art.textContent || "")); } catch (e) {}
     } else {
