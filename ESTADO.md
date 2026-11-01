@@ -13,6 +13,12 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 - 31/10: alineaciones probables con fecha y hora de Madrid corregidas; primera carga de `jornada` más rápida (copia guardada + actualización detrás); textos de La Puja y La Quiniela alineados con la regla "cada partido se bloquea al empezar".
 - 01/11: **web por club terminada**. Las 20 fichas de club (`/equipos/<club>`) llevan su clasificación de LaLiga; estaba roto solo en Alavés: `teamCanon("Deportivo Alavés")` devolvía `dep` (la regla `/depor/` iba antes que `/alaves/`), así que la sección se borraba sola. Arreglado el orden de las reglas (`/alaves/` antes, `/coruna/` para el Deportivo). Comprobado con datos reales: los 20 clubes tienen fila y página, y Alavés y Deportivo ya no se mezclan.
 - 01/11: **Athletic, denominador arreglado** (J8 aplazado). La ficha dividía entre la última jornada con datos en vez de los partidos jugados: Unai Simón salía "9 de 10" (900') cuando había jugado los 9 de 9 (810'). Ahora el denominador son los partidos del EQUIPO, sacados del mercado (máximo de partidos de sus jugadores). Comprobado con datos reales: Athletic 9/9, Barça 11/11, Deportivo 10/10, Málaga 11/11 (sin cambios fuera del Athletic). Test en `tests/played.test.mjs`.
+- 01/11: **repaso de la opinión** (lo que faltaba):
+  - **Portada con `h1`**: no había ninguno. Ahora "Aplicaciones y automatizaciones con IA" (el efecto de máquina de escribir sigue debajo).
+  - **Los clubes en una sola tabla**: `futmondo/teams.js` (`window.EduTeams`). Se borraron las tres copias (teamCanon, CLUB_SLUG y ALI); tests en `tests/teams.test.mjs`.
+  - **`?v=` automático**: `scripts/version-assets.mjs` pone la versión según el contenido de cada CSS/JS al preparar `dist`. Ya no hay que acordarse de subirla (y estos archivos se cachean un año). Tests en `tests/version-assets.test.mjs`.
+  - **Inicio más ligero**: la foto grande del inicio se queda y las dos siguientes pasan a lista (antes eran tres fotos a todo el ancho). Textos mínimos: se subieron los de 6,7 / 7,4 / 8,6 px (hora del once probable, pastillas de posición, horas del ticker).
+  - **Detalles**: el hub aclara que la Guía Fantasy se ve sin cuenta; La Puja enseña el valor en formato corto (131,5 M€) y deja las pujas exactas.
 
 ## Pendiente
 - Jugadores con ≥ 90 % de probabilidad de jugar (idea de Edu, AGENTS.md; no consta en el historial como hecha).
@@ -28,7 +34,7 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 - Se mantienen los degradados de la cabecera de Equipos y de la tarjeta del próximo partido del club (Edu, 31/10).
 - La Quiniela: cada partido se bloquea cuando empieza; los pronósticos de todos se ven desde el principio.
 - No eludir bloqueos de bots de FutbolFantasy (denegado).
-- Antes de subir: `node --check` de los JS, ESLint `no-undef` en `mercado.js` y subir `?v=` en `futmondo/guiafantasy/index.html`.
+- Antes de subir: `node --check` de los JS y `node --test tests/*.test.mjs`. El `?v=` lo pone solo el despliegue.
 
 ## Errores abiertos
 - Cloudflare (plan de pago desde 01/11/2026): ya no aplican los topes del plan gratis (10 ms de CPU, 1.000 escrituras KV/día, 50 llamadas por petición). Se mantienen la caché en el borde y no parsear JSON enormes en rutas calientes, por velocidad. Pendiente de comprobar en producción si los fallos sueltos de horas punta desaparecen.

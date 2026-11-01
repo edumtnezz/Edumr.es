@@ -35,6 +35,16 @@ function icoBtn(cls, name, txt) {
 }
 function money(n) { return Number(n || 0).toLocaleString("es-ES"); }
 
+// Valores de mercado largos ("131.484.278 €") ocupaban media tarjeta en el móvil.
+// Para el valor se usa el formato corto del resto de la web; las PUJAS siguen exactas.
+function moneyShort(n) {
+  const v = Number(n || 0);
+  const a = Math.abs(v);
+  if (a >= 1e6) return (v / 1e6).toLocaleString("es-ES", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " M€";
+  if (a >= 1e3) return Math.round(v / 1e3) + " mil €";
+  return money(v) + " €";
+}
+
 function el(tag, cls, txt) {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -253,10 +263,10 @@ function render() {
       pcard.appendChild(tr);
     }
     if (p.value) {
-      const vv = el("div", "puja-pcard-val", "Valor " + money(p.value) + " €");
+      const vv = el("div", "puja-pcard-val", "Valor " + moneyShort(p.value));
       const chg = Number(p.change) || 0;
-      if (chg > 0) vv.appendChild(el("span", "up", "   ▲ " + formatDots(chg) + " €"));
-      else if (chg < 0) vv.appendChild(el("span", "down", "   ▼ " + formatDots(-chg) + " €"));
+      if (chg > 0) vv.appendChild(el("span", "up", "   ▲ " + moneyShort(chg)));
+      else if (chg < 0) vv.appendChild(el("span", "down", "   ▼ " + moneyShort(-chg)));
       pcard.appendChild(vv);
     }
     if (p.status === "open") {

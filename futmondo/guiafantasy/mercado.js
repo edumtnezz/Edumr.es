@@ -931,19 +931,17 @@
     return ["", "x"];
   }
   // Equipo canónico para comparar "Barça" con "Barcelona", "Atleti" con "Atlético de Madrid"...
+  // La tabla de clubes vive en UN solo sitio: /futmondo/teams.js (EduTeams).
+  // Aquí queda solo un respaldo por si ese script no cargara (no debe pasar).
   function teamCanon(t) {
-    const n = stripAccents(String(t || "").toLowerCase()).replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
-    // OJO con el orden: gana la primera regla que casa. "Deportivo Alavés"
-    // (nombre de FotMob) contiene "deportivo", así que /alaves/ tiene que ir
-    // ANTES que /depor/; si no, se queda en "dep" y se confunde con el
-    // Deportivo de la Coruña (Alavés se quedaba sin clasificación en su club).
-    const T = [[/barc/, "fcb"], [/athletic|bilbao/, "ath"], [/atleti|atletico/, "atm"], [/real madrid/, "rma"], [/betis/, "bet"], [/sociedad/, "rso"], [/celta/, "cel"], [/alaves/, "ala"], [/coruna/, "dep"], [/depor/, "dep"], [/rayo/, "ray"], [/espanyol|espanol/, "esp"], [/getafe/, "get"], [/elche/, "elc"], [/osasuna/, "osa"], [/villarreal/, "vil"], [/valencia/, "val"], [/sevilla/, "sev"], [/levante/, "lev"], [/malaga/, "mal"], [/racing/, "rac"], [/girona/, "gir"], [/mallorca/, "mll"], [/oviedo/, "ovi"], [/palmas/, "lpa"]];
-    for (const [re, k] of T) if (re.test(n)) return k;
-    return n.split(" ").filter((w) => !/^(real|fc|de|la|del|club|ud|cd|rc|ca|cf|sd)$/.test(w))[0] || n;
+    if (window.EduTeams) return window.EduTeams.canon(t);
+    return stripAccents(String(t || "").toLowerCase()).replace(/[^a-z ]/g, " ").replace(/\s+/g, " ").trim();
   }
   // Enlace al club: cualquier escudo o nombre de equipo lleva a /equipos/<club> (salvo en los partidos "vs")
-  const CLUB_SLUG = { fcb: "barcelona", ath: "athletic-de-bilbao", atm: "atletico-de-madrid", rma: "real-madrid", bet: "betis", rso: "real-sociedad", cel: "celta-de-vigo", dep: "deportivo-de-la-coruna", ray: "rayo-vallecano", esp: "espanyol", get: "getafe", ala: "alaves", elc: "elche", osa: "osasuna", vil: "villarreal", val: "valencia", sev: "sevilla", lev: "levante", mal: "malaga", rac: "racing-de-santander" };
-  function clubHref(t) { const k = CLUB_SLUG[teamCanon(t)]; return k ? "/equipos/" + k : ""; }
+  function clubHref(t) {
+    if (window.EduTeams) return window.EduTeams.href(t);
+    return "";
+  }
   function clubLink(node, team) {
     const h = clubHref(team);
     if (!node || !h) return node;
@@ -2133,8 +2131,8 @@
         // Noticias relacionadas con el partido
         if (news.length) {
           const nrmN = (x) => stripAccents(String(x || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
-          const ALI = { fcb: ["barca", "barcelona"], atm: ["atletico", "atleti"], ath: ["athletic", "bilbao"], rma: ["real madrid", "madridista"], bet: ["betis"], rso: ["real sociedad", "sociedad"], cel: ["celta"], dep: ["depor", "coruna"], ray: ["rayo"], esp: ["espanyol", "espanol"], get: ["getafe"], ala: ["alaves"], elc: ["elche"], osa: ["osasuna"], vil: ["villarreal"], val: ["valencia"], sev: ["sevilla"], lev: ["levante"], mal: ["malaga"], rac: ["racing"] };
-          const keysOf = (nm) => { const a = ALI[teamCanon(nm)]; return a || [nrmN(nm).split(" ")[0]]; };
+          // Los nombres de cada club salen de la tabla única (/futmondo/teams.js).
+          const keysOf = (nm) => (window.EduTeams ? window.EduTeams.alias(nm) : [nrmN(nm).split(" ")[0]]);
           const hk = keysOf(m.home), ak = keysOf(m.away);
           const hit = (t, ks) => ks.some((q) => q && new RegExp("\\b" + q).test(t));
           const sc = news.map((x, i) => { const t = nrmN(x.title); const a = hit(t, hk), b = hit(t, ak); return { x, i, s: (a ? 1 : 0) + (b ? 1 : 0) }; }).filter((r) => r.s > 0).sort((p, q) => q.s - p.s || p.i - q.i).slice(0, 5);

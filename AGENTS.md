@@ -2,8 +2,8 @@
 
 ## Cómo trabajo aquí
 - Se despliega con un push a `main` (GitHub Action, ver "Despliegue automático"). `deploy.ps1` queda solo como plan B manual desde el PC (wrangler fijado a `4.131.1`; no subir esa versión).
-- Tras cada cambio visible, subir la versión del CSS/JS afectado (`?v=N`) en el HTML y hacer push.
-- Antes de subir: `node --check` de los JS tocados.
+- Ya **no** hay que subir el `?v=N` a mano: en el despliegue, `scripts/version-assets.mjs` pone la versión de cada CSS/JS según el contenido del archivo (si el archivo cambia, cambia la URL; si no, se queda igual). Puedes seguir editando el HTML sin tocar los números.
+- Antes de subir: `node --check` de los JS tocados y `node --test tests/*.test.mjs`.
 
 ## REGLA IMPORTANTE: fallos visuales → captura real
 Siempre que el usuario reporte un error/fallo, ANTES de tocar nada, hacer una **captura real de la web con Chrome headless** y mirarla, y volver a capturar despues del arreglo para confirmar.
@@ -73,7 +73,7 @@ Antes de tocar partidos/alineaciones/ficha, repasar esta lista y verificar con c
 - **Carga instantánea (swr.js)**: `futmondo/swr.js` envuelve `fetch` de la API (mercado, jugador, jornada, partido…): pinta al instante lo guardado en localStorage y actualiza detrás; si cambia, lanza el evento `cx:swr` y la página se repinta en el sitio (sin mover el scroll). Cualquier página nueva que pida datos de la API debe escuchar `cx:swr` (si no, se queda con lo viejo). No cachear endpoints del usuario (`me`, etc.).
 - **Jornadas falsas (mock)**: football-data.org (plan gratis) limita a ~10 peticiones/min. Antes, si fallaba, `getJornadaRaw` devolvía una jornada INVENTADA (Real Madrid–Barcelona "mañana") y se veía como real (J9, J10 y J11 con el mismo partido). Ahora nunca se inventa: se sirve la última copia buena o una jornada vacía. Las jornadas terminadas se cachean 6 h. No abrir muchas jornadas de golpe desde el cliente sin pensar en este límite; si cambia el formato de la caché de `jornada`, subir también el prefijo de `swr.js` (`swr2:`…).
 
-- **Alavés ≠ Deportivo (arreglado 01/11/2026)**: FotMob llama **"Deportivo Alavés"** al Alavés. En `teamCanon` (`mercado.js`) gana la primera regla que casa, así que `/alaves/` tiene que ir **antes** de `/depor/`; si no, el Alavés se convierte en `dep` (se quedaba sin clasificación en su club y sus escudos llevaban al Deportivo). Al tocar esa lista, comprobar con datos reales que los 20 clubes siguen teniendo fila en `/tabla` y página propia.
+- **Los clubes están en UN solo sitio: `futmondo/teams.js`** (`window.EduTeams`: `canon`, `href`, `alias`). Antes había tres listas con los mismos 20 equipos (teamCanon, CLUB_SLUG y ALI) y de ahí salió el fallo del Alavés (quedaba como `dep` porque la regla del Deportivo iba antes que la suya). Para añadir/cambiar un club, se toca SOLO esa tabla y se pasan los tests (`tests/teams.test.mjs`). Regla: las reglas más concretas van primero (`/alaves/` antes de `/coruna|depor/`).
 - **Páginas de partido rotas (13/10/2026)**: un trozo de código suelto (`formOf(p)` sin `p`) metido en `buildOtherMatches` hizo que NINGÚN partido cargara («No se pudo cargar el partido»). Tras CUALQUIER cambio en `mercado.js`, abrir una página de partido real (`/futmondo/guiafantasy/partido/<local>-<visitante>?j=N`, jornada abierta y jornada terminada) y mirar la consola; el error se escribe como `partido: …`. Pasar también `eslint no-undef` antes de subir.
 
 - **Jugadores repetidos en el campo (01/11/2026)**: FutbolFantasy metió una 2ª tanda de 11 (sin posición ni %) en el bloque de titulares y salían 22 por equipo. Defensa en 3 capas: `cleanStarters` (`functions/_lib/starters.mjs`: solo con posición, sin repetidos, máx. 11) en `getFFTeam` y de nuevo en `/once`; `alineacion.js` también quita repetidos y corta en 11; tests en `tests/` que corre el GitHub Action ANTES de publicar (si fallan, no se despliega). Si se toca el lector de FutbolFantasy, añadir/ajustar el test.

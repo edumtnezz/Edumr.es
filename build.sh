@@ -7,5 +7,7 @@ for f in index.html theme.css 404.html script.js theme-init.js styles.css favico
 done
 [ -d img ] && cp -r img dist/
 [ -d futmondo ] && cp -r futmondo dist/
+# La versión de cada CSS/JS (?v=) sale del contenido del archivo: no hay que subirla a mano.
+node scripts/version-assets.mjs dist
 echo "dist listo:"
 find dist -type f | sed 's#^dist/##' | sort
