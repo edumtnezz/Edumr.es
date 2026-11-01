@@ -640,6 +640,19 @@
     }
     return box;
   }
+  // Clave de cada cambio para que "Últimos cambios" del Inicio lleve justo a ese (Edu 01/11)
+  const updKey = (x) => [x.cat, x.time, x.title].join("|");
+  let pendingUpdKey = "";
+  function focusUpd() {
+    if (!pendingUpdKey) return false;
+    const r = [...document.querySelectorAll("#updOut .up-row")].find((e) => e.dataset.k === pendingUpdKey);
+    if (!r) return false;
+    pendingUpdKey = "";
+    r.classList.add("up-focus");
+    try { r.scrollIntoView({ block: "center" }); } catch (e) {}
+    setTimeout(() => r.classList.remove("up-focus"), 2600);
+    return true;
+  }
   async function paintActualizaciones() {
     const box = $("updOut"), fb = $("upFilters");
     if (!box || !updData) return;
@@ -659,6 +672,7 @@
         shown++;
         const c = UP_CATS[x.cat] || UP_CATS.otro;
         const row = el("article", "up-row");
+        row.dataset.k = updKey(x);
         row.style.setProperty("--uc", c[1]);
         const left = el("div", "up-left");
         const ph = x.photo ? el("img", "up-photo") : null;
@@ -4139,7 +4153,7 @@
       const cc = UP_CATS[x.cat] || UP_CATS.otro;
       const row = el("div", "feat-chg-row");
       row.style.setProperty("--uc", cc[1]);
-      row.addEventListener("click", () => switchTab("actualizaciones"));
+      row.addEventListener("click", () => { pendingUpdKey = updKey(x); switchTab("actualizaciones"); let n = 0; const t = setInterval(() => { if (focusUpd() || ++n > 12) clearInterval(t); }, 250); });
       if (x.photo) { const ph = el("img", "feat-chg-ph"); ph.alt = ""; ph.loading = "lazy"; ph.src = x.photo; ph.addEventListener("error", () => { const d = el("span", "feat-chg-dot"); ph.replaceWith(d); }, { once: true }); row.appendChild(ph); }
       else row.appendChild(el("span", "feat-chg-dot"));
       row.appendChild(el("span", "feat-chg-cat", cc[0]));

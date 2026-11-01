@@ -3328,3 +3328,6 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 
 /* Inicio sin título: las noticias van pegadas a las tarjetas de la jornada */
 #tab-inicio > .panel:first-of-type { margin-top: 10px; }
+
+/* Cambio al que se llega desde "Últimos cambios" del Inicio */
+#tab-actualizaciones .up-row.up-focus { box-shadow: 0 0 0 2px #16a34a; transition: box-shadow .3s; }
