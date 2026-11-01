@@ -368,3 +368,8 @@ html, body { overflow-anchor: auto; }
 .ffx-top svg.ffx-ha.a,.ffx-r svg.ffx-ha.a{background:#6366f1}
 .pl-ast { position: absolute; right: -3px; bottom: -4px; display: inline-flex; align-items: center; font-size: .78rem; line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,.45)); }
 .pl-ast i { font-style: normal; font-size: .58rem; font-weight: 900; line-height: 1; background: #0f172a; color: #fff; border-radius: 6px; padding: 1px 4px; margin-left: -2px; align-self: flex-end; }
+
+/* Equipos: cabecera sencilla como "Analiza tu equipo" (sin degradado ni buscador) */
+.eqi-hero{padding:0 2px;border:0;border-radius:0;background:none;margin-bottom:12px}
+.eqi-hero .eq-h1{font-size:1.5rem;letter-spacing:-.02em;margin:0 0 4px}
+.eqi-hero .eqi-sub{margin:0;font-size:.84rem;color:var(--muted)}

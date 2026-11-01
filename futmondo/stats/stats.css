@@ -20,3 +20,15 @@ main { max-width: 560px; margin: 0 auto; }
 .st-foot { color: var(--mut); font-size: .8rem; text-align: center; }
 .st-foot a { color: var(--accent); }
 .st-empty { color: var(--mut); font-size: .86rem; padding: 6px 0; }
+
+.st-chips { display: flex; gap: 8px; margin-bottom: 12px; }
+.st-chip { border: 0; background: rgba(15,23,42,.08); color: var(--txt); font: 700 .84rem/1 inherit; font-family: inherit; padding: 9px 14px; border-radius: 999px; cursor: pointer; }
+.st-chip.on { background: #16a34a; color: #fff; }
+.st-hours { display: grid; grid-template-columns: repeat(24, 1fr); gap: 2px; height: 120px; align-items: end; margin-top: 10px; }
+.st-bar { position: relative; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; padding: 0; border: 0; background: none; cursor: pointer; }
+.st-bar i { display: block; width: 100%; border-radius: 3px 3px 0 0; background: #b7d9c5; }
+.st-bar.on i { background: #16a34a; }
+.st-bar em { order: -1; margin-bottom: 2px; font-family: inherit; font-weight: 700; font-size: .55rem; line-height: 1; font-style: normal; color: var(--mut); }
+.st-axis { display: flex; justify-content: space-between; margin-top: 4px; font-size: .68rem; color: var(--mut); }
+.st-card h3 { margin: 12px 0 4px; font-size: .74rem; letter-spacing: .04em; text-transform: uppercase; color: var(--mut); }
+.st-list .st-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 78%; }

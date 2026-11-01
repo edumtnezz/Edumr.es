@@ -5308,14 +5308,36 @@ async function handleGet({ request, env: env0, params }) {
     // Contador de visitas propio, sin cookies y sin guardar nada de nadie:
     // solo "cuántas veces se abrió esta página hoy". Se pide una vez por página y sesión.
     try {
-      const p = String(url.searchParams.get("p") || "/").slice(0, 60).replace(/[^a-zA-Z0-9/_-]/g, "");
-      if (!p) return json({ ok: false });
-      const key = "st:v1:" + dstrMadrid(0);
-      const cur = (await env.PORRA.get(key, "json")) || {};
-      cur[p] = (Number(cur[p]) || 0) + 1;
-      await env.PORRA.put(key, JSON.stringify(cur));
+      const clean = (x, n) => String(x || "").slice(0, n).replace(/[^a-zA-Z0-9/_:.-]/g, "");
+      const ev = clean(url.searchParams.get("e"), 50);
+      const p = clean(url.searchParams.get("p") || "/", 60).replace(/[.:]/g, "");
+      const hh = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", hour: "2-digit", hourCycle: "h23" }).format(new Date());
+      // Por hora (Madrid): páginas vistas "p" y toques "e" (pestaña, noticia, partido...). Sin cookies ni datos personales.
+      const hk = "st:v2:" + dstrMadrid(0) + ":" + hh;
+      const hc = (await env.PORRA.get(hk, "json")) || { p: {}, e: {} };
+      if (ev) hc.e[ev] = (Number(hc.e[ev]) || 0) + 1;
+      else if (p) hc.p[p] = (Number(hc.p[p]) || 0) + 1;
+      await env.PORRA.put(hk, JSON.stringify(hc), { expirationTtl: 90 * 86400 });
+      if (!ev && p) {
+        const key = "st:v1:" + dstrMadrid(0);
+        const cur = (await env.PORRA.get(key, "json")) || {};
+        cur[p] = (Number(cur[p]) || 0) + 1;
+        await env.PORRA.put(key, JSON.stringify(cur));
+      }
       return json({ ok: true });
     } catch (e) { return json({ ok: false }); }
+  }
+  if (path === "vistas-horas") {
+    // Un día entero por horas: { horas: { "00": {p:{...}, e:{...}}, ... } }
+    try {
+      const d = String(url.searchParams.get("dia") || "").match(/^\d{4}-\d{2}-\d{2}$/) ? url.searchParams.get("dia") : dstrMadrid(0);
+      const horas = {};
+      await Promise.all(Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0")).map(async (h) => {
+        const v = await env.PORRA.get("st:v2:" + d + ":" + h, "json");
+        if (v) horas[h] = v;
+      }));
+      return json({ dia: d, horas });
+    } catch (e) { return json({ horas: {} }); }
   }
   if (path === "vistas") {
     try {

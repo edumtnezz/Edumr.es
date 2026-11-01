@@ -3263,3 +3263,23 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 :is(#tab-mercado, #tab-plantillas) .plt-head .plt-row-btns.plt-per .plt-btn:not(.plt-club) { background: rgba(255,255,255,.08); margin: 0 2px; padding: 9px 2px; }
 :is(#tab-mercado, #tab-plantillas) .plt-head .plt-row-btns.plt-per .plt-btn.on { background: #5b6b73; color: #fff; }
 :is(#tab-mercado, #tab-plantillas) .plt-head #pltSort .plt-lbl, :is(#tab-mercado, #tab-plantillas) .plt-head .plt-per .plt-lbl { display: none; }
+
+/* Mercado de fichajes con el mismo aire que el resto de la web (Edu 01/11): fecha discreta, sin rayas negras ni letra condensada */
+#tab-fichajes .fx-date { margin: 20px 0 8px; padding: 0; border: 0; display: flex; align-items: center; gap: 10px; font-family: inherit; font-weight: 800; font-size: .74rem; line-height: 1; letter-spacing: .04em; color: var(--muted); }
+#tab-fichajes .fx-date::before, #tab-fichajes .fx-date::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+#tab-fichajes .fx-day:first-of-type .fx-date { margin-top: 6px; }
+#tab-fichajes .panel-head h2, #tab-fichajes .tab-h h2 { font-size: 1.5rem; letter-spacing: -.02em; }
+#tab-fichajes .fx-title, #tab-fichajes .fx-date { font-family: inherit; }
+#tab-fichajes .fx-title { font-size: .96rem; font-weight: 800; }
+
+/* Notas en directo de FotMob: verde desde 7, naranja por debajo (Edu 01/11) */
+.pl-pts.rt-lo, .lv-rate.rt-lo { background: #f59e0b; color: #fff; border-color: #fff; }
+.lv-rate.rt-lo { border-color: #f59e0b; }
+.pl-pts.rt-hi, .lv-rate.rt-hi { background: #16a34a; color: #fff; border-color: #fff; }
+.lv-rate.rt-hi { border-color: #16a34a; }
+.pl-pts.mvp { background: #2f8cf5; color: #fff; border-color: #fff; }
+
+/* Noticia principal en directo: foto de jugador sobre fondo liso */
+.feat-hero-live { background: #10151c; }
+.feat-hero-live img { object-fit: contain; object-position: center bottom; }
+.feat-live-kind { background: #dc2626; color: #fff; }

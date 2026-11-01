@@ -7,27 +7,33 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="theme-color" content="#f4f7f5">
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
-  <link rel="stylesheet" href="/futmondo/stats/stats.css?v=1">
+  <link rel="stylesheet" href="/futmondo/stats/stats.css?v=2">
 </head>
 <body>
   <main>
     <header class="st-head">
       <h1>Visitas</h1>
-      <p>Contador propio, sin cookies. Una visita por página y sesión.</p>
+      <p>Contador propio, sin cookies ni datos personales.</p>
     </header>
+    <div class="st-chips" id="stChips"></div>
     <section class="st-card">
-      <div class="st-row st-total">
-        <span>Últimos 14 días</span>
-        <b id="stTotal">—</b>
-      </div>
-      <div id="stDays" class="st-days"></div>
+      <div class="st-row st-total"><span id="stDayLbl">Hoy</span><b id="stTotal">—</b></div>
+      <div class="st-hours" id="stHours"></div>
+      <div class="st-axis"><span>0h</span><span>6h</span><span>12h</span><span>18h</span><span>23h</span></div>
     </section>
     <section class="st-card">
-      <h2>Páginas más vistas</h2>
-      <div id="stPages" class="st-pages"></div>
+      <h2 id="stDetTitle">Todo el día</h2>
+      <h3>Páginas vistas</h3>
+      <div id="stPages" class="st-list"></div>
+      <h3>Qué han tocado</h3>
+      <div id="stTaps" class="st-list"></div>
     </section>
-    <p class="st-foot">Datos guardados en Cloudflare (KV). <a href="/futmondo/">Volver</a></p>
+    <section class="st-card">
+      <h2>Últimos 14 días</h2>
+      <div id="stDays" class="st-list"></div>
+    </section>
+    <p class="st-foot">Las horas son de Madrid. Los toques se cuentan desde hoy. <a href="/futmondo/">Volver</a></p>
   </main>
-  <script src="/futmondo/stats/stats.js?v=1"></script>
+  <script src="/futmondo/stats/stats.js?v=2"></script>
 </body>
 </html>

@@ -1950,7 +1950,7 @@
         };
         const [c] = sec("Alineación");
         const top = el("div", "lv-ptop");
-        const rcls = (r) => (r >= 8 ? " rt-hi" : r >= 7 ? " rt-mid" : r ? " rt-lo" : "");
+        const rcls = (r) => (r >= 7 ? " rt-hi" : r ? " rt-lo" : "");
         [[ln.h, "h", m.homeCrest], [ln.a, "a", m.awayCrest]].forEach(([t, w, cr]) => {
           const d = el("div", "lv-pt " + w);
           const im = el("img"); im.alt = ""; im.src = cr || ""; d.appendChild(im);
@@ -4089,6 +4089,37 @@
       grid.appendChild(prev);
     }
     box.appendChild(grid);
+    paintLiveHero(h);
+  }
+
+  // Si hay un partido en juego, la noticia principal es "Sigue el partido en directo" con la foto de un jugador
+  // del equipo que va ganando (al azar de cualquiera de los dos si empatan). Todo sale de /jornada y del mercado real.
+  async function paintLiveHero(h) {
+    try {
+      const jr = await (await fetch(API + "/jornada")).json();
+      const m = ((jr && jr.matches) || []).find((x) => x.live && x.live.state === "live");
+      if (!m || !h.isConnected) return;
+      const sc = String(m.live.score || "").match(/(\d+)\s*-\s*(\d+)/);
+      const gh = sc ? Number(sc[1]) : null, ga = sc ? Number(sc[2]) : null;
+      let team = null;
+      if (gh != null && gh !== ga) team = gh > ga ? m.home : m.away;
+      else team = Math.random() < 0.5 ? m.home : m.away;
+      const cands = (all || []).filter((p) => p.photo && teamCanon(p.team) === teamCanon(team)).sort((a, b) => (Number(b.points) || 0) - (Number(a.points) || 0)).slice(0, 8);
+      const pick = cands.length ? cands[Math.floor(Math.random() * cands.length)] : null;
+      h.classList.add("feat-hero-live");
+      const im = h.querySelector("img");
+      if (im && pick) { im.src = pick.photo; im.addEventListener("error", () => { im.src = NEWS_IMG; }, { once: true }); }
+      const ov = h.querySelector(".feat-hero-overlay");
+      if (ov) {
+        ov.innerHTML = "";
+        const k = el("span", "feat-kind feat-live-kind", "● EN DIRECTO"); ov.appendChild(k);
+        ov.appendChild(el("div", "feat-hero-title", "Sigue el partido en directo"));
+        ov.appendChild(el("div", "feat-hero-date", m.home + " " + (m.live.score || "") + " " + m.away + (m.live.minute ? " · " + m.live.minute : "")));
+      }
+      const nh = h.cloneNode(true);
+      nh.addEventListener("click", () => { location.href = "/futmondo/guiafantasy/directo/" + matchSlug(m.home, m.away) + (jr.jornada ? "?j=" + encodeURIComponent(jr.jornada) : ""); });
+      h.replaceWith(nh);
+    } catch (e) {}
   }
 
   // "Últimos cambios" dentro del recuadro Anteriores: las 3 últimas de /ultimos-cambios (las mismas de la pestaña "Últimas actualizaciones").
@@ -4890,8 +4921,6 @@
     const hero = el("div", "eqi-hero");
     hero.appendChild(el("h2", "eq-h1", "Equipos"));
     hero.appendChild(el("p", "eqi-sub", "Toca un club para ver su partido y su plantilla."));
-    const inp = el("input", "market-search eqi-search"); inp.placeholder = "Buscar club…"; inp.autocomplete = "off";
-    hero.appendChild(inp);
     box.appendChild(hero);
     const grid = el("div", "eq-grid");
     box.appendChild(grid);
@@ -4899,7 +4928,6 @@
     try { teams = await eqTeams(); } catch (e) {}
     if (!teams.length) { grid.appendChild(el("p", "muted small", "No se pudieron cargar los equipos.")); return; }
     if (!all || !all.length) { try { await load(); } catch (e) {} }
-    const tiles = [];
     teams.slice().sort((a, b) => a.name.localeCompare(b.name, "es")).forEach((t) => {
       const a = el("a", "eq-tile");
       a.href = "/equipos/" + teamSlug(t.name);
@@ -4912,14 +4940,7 @@
       if (f.n) tx.appendChild(el("small", null, f.n + " jugadores · " + eqMoney(f.val)));
       a.appendChild(tx);
       a.appendChild(el("span", "eq-tile-go", "›"));
-      a.dataset.n = stripAccents(t.name);
-      grid.appendChild(a); tiles.push(a);
-    });
-    const empty = el("p", "muted small eq-empty", "Ningún club se llama así."); empty.hidden = true; box.appendChild(empty);
-    inp.addEventListener("input", () => {
-      const q = stripAccents(inp.value.trim()); let n = 0;
-      tiles.forEach((a) => { const ok = !q || a.dataset.n.indexOf(q) >= 0; a.hidden = !ok; if (ok) n++; });
-      empty.hidden = n > 0;
+      grid.appendChild(a);
     });
   }
   async function renderTeamPage(slug) {
@@ -6644,33 +6665,38 @@
       if (d.admin) {
         try {
           const h = await (await fetch(API + "/ff-health", { cache: "no-store" })).json();
-          const lines = [];
-          if (h && h.broken && h.broken.length) {
-            lines.push("⚠️ futbolfantasy.com no está cargando jugadores para: " + h.broken.join(", ") + " — puede que hayan cambiado de slug (revisar getFFTeam).");
-          }
-          if (h && h.issues && h.issues.length) {
-            h.issues.forEach((it) => lines.push("⚠️ " + (it.detail || ("Fallo en " + it.source))));
-          }
+          // Resumen de fallos: una línea corta por fuente. Al abrir el menú se marca como leído
+          // y solo vuelve a avisar si aparece un fallo nuevo (o el mismo tras haberse arreglado).
+          const fails = [];
+          if (h && h.broken && h.broken.length) fails.push("FutbolFantasy sin datos de: " + h.broken.join(", "));
+          if (h && h.issues && h.issues.length) h.issues.forEach((it) => fails.push(it.detail || ("Fallo en " + it.source)));
+          const sig = fails.join("|");
+          let seenSig = "";
+          try { seenSig = localStorage.getItem("seen_fail_sig") || ""; } catch (e) {}
+          if (!fails.length && seenSig) { try { localStorage.removeItem("seen_fail_sig"); } catch (e) {} }
           let freshNames = [];
           if (h && h.newAccounts && h.newAccounts.length) {
             // Se avisa una sola vez por cuenta (se recuerda en este dispositivo, al abrir el menú).
             let seen = [];
             try { seen = JSON.parse(localStorage.getItem("seen_new_accounts") || "[]"); } catch (e) {}
             freshNames = h.newAccounts.map((a) => a.name).filter((n) => seen.indexOf(n) < 0);
-            if (freshNames.length) lines.push("🆕 Cuenta(s) nueva(s) estos días: " + freshNames.join(", ") + ". Revisa que no sea nadie ocupando el nombre de otro.");
           }
-          if (lines.length) {
-            // Avisos de admin: un puntito rojo en el avatar y el detalle dentro del menú (no una barra roja en la página).
+          const unreadFail = !!fails.length && sig !== seenSig;
+          if (fails.length || freshNames.length) {
             const av = chip.querySelector(".user-avatar");
-            if (av) av.classList.add("has-alert");
+            if (av && (unreadFail || freshNames.length)) av.classList.add("has-alert");
             const box = el("div", "user-menu-alerts");
-            lines.forEach((t) => box.appendChild(el("p", null, t)));
+            if (fails.length) {
+              box.appendChild(el("p", "uma-h", "Fallos de fuentes (" + fails.length + ")"));
+              fails.forEach((t) => box.appendChild(el("p", "uma-l", t)));
+            }
+            if (freshNames.length) box.appendChild(el("p", "uma-l", "Cuenta nueva: " + freshNames.join(", ")));
             menu.insertBefore(box, menu.firstChild);
             chip.addEventListener("click", () => {
-              if (!freshNames.length) return;
-              try { const seen = JSON.parse(localStorage.getItem("seen_new_accounts") || "[]"); localStorage.setItem("seen_new_accounts", JSON.stringify(seen.concat(freshNames))); } catch (e) {}
-              freshNames = [];
-              if (!h.broken?.length && !(h.issues || []).length && av) av.classList.remove("has-alert");
+              if (!menu.classList.contains("open")) return;
+              try { if (fails.length) localStorage.setItem("seen_fail_sig", sig); } catch (e) {}
+              if (freshNames.length) { try { const seen = JSON.parse(localStorage.getItem("seen_new_accounts") || "[]"); localStorage.setItem("seen_new_accounts", JSON.stringify(seen.concat(freshNames))); } catch (e) {} freshNames = []; }
+              if (av) av.classList.remove("has-alert");
             });
           }
         } catch (e) {}

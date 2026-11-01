@@ -851,3 +851,5 @@ button:not(:disabled):active, [role="button"]:active, .hub-feature:active, .hub-
    Las tiras con su propio scroll (escudos, filtros) siguen deslizándose dentro de su caja. */
 html { overflow-x: hidden; overscroll-behavior-x: none; }
 body { overflow-x: clip; overscroll-behavior-x: none; max-width: 100%; }
+.cx-tools .user-menu-alerts .uma-h { font-size: .7rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--cx-muted, #8a96a3); }
+.cx-tools .user-menu-alerts .uma-l { font-weight: 600; }
