@@ -3292,9 +3292,9 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 /* Inicio en móvil como en el PC: lista a la izquierda y la noticia grande a la derecha (Edu 01/11) */
 @container (max-width: 639px) {
   .feat-grid { grid-template-columns: minmax(0, 52%) minmax(0, 1fr); column-gap: 8px; align-items: stretch; }
-  .feat-hero { grid-column: 2; grid-row: 1; aspect-ratio: auto; height: auto; min-height: 340px; margin-bottom: 14px; }
+  .feat-hero { grid-column: 2; grid-row: 1; aspect-ratio: auto; height: auto; min-height: 0; margin-bottom: 14px; }
   .feat-hero img { position: absolute; inset: 0; }
-  .feat-hero-title { font-size: .95rem; }
+  .feat-hero-title { font-size: .9rem; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
   .feat-hero-overlay { padding: 40px 10px 10px; }
   .feat-prev { grid-column: 1; grid-row: 1; padding: 10px 9px 2px; min-width: 0; overflow: hidden; }
   .feat-prev-row { gap: 7px; }
