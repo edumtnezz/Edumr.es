@@ -4543,7 +4543,7 @@ async function recordPointsHistory(env) {
 
 // Caché de respuestas públicas (Cache API: sin coste ni límite). Evita recalcular en cada visita
 // y mantiene la CPU por petición por debajo del límite del plan gratis de Cloudflare.
-const EDGE_TTL = { "ultimos-cambios": 180, aplazados: 300, calendario: 600, estadios: 3600, "historial-puntos": 120, mercado: 45, rachas: 60, minutos: 300, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 300, "alineaciones-confirmadas": 180, "alineaciones-estado": 300, noticias: 300, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10, "notas-fotmob": 3600 };
+const EDGE_TTL = { "ultimos-cambios": 180, aplazados: 300, calendario: 600, estadios: 3600, "historial-puntos": 120, mercado: 45, rachas: 60, minutos: 300, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 300, "alineaciones-confirmadas": 180, "alineaciones-estado": 300, noticias: 300, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10, "notas-fotmob": 3600, "fm-partido": 21600 };
 export async function onRequestGet(ctx) {
   const path = (ctx.params.path || []).join("/");
   const ttl = EDGE_TTL[path];
@@ -4742,6 +4742,42 @@ async function handleGet({ request, env: env0, params }) {
       } catch (e) {}
     }));
     return json({ notas });
+  }
+  if (path === "fm-partido") {
+    // Eventos reales de un partido TERMINADO en FotMob (goles, asistencias, tarjetas, cambios y alineaciones, con minuto).
+    // Un partido terminado no cambia: caché de borde larga. Sin KV. No inventa nada: si FotMob no lo tiene, devuelve ev:null.
+    const UA = { "user-agent": "Mozilla/5.0 (compatible; edumr)" };
+    const norm = (n) => String(n || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+    const STOP = new Set(["de", "la", "el", "club", "fc", "cf", "ud", "cd", "rcd", "sd", "rc", "real"]);
+    const ALIAS = { atleti: "atletico madrid", barca: "barcelona", athletic: "athletic club" };
+    const toks = (n) => { let k = norm(n); if (ALIAS[k]) k = ALIAS[k]; return k.split(" ").filter((w) => w && !STOP.has(w)); };
+    const same = (a0, b0) => { const a = toks(a0), b = toks(b0); return a.length && b.length && a.some((w) => b.indexOf(w) >= 0); };
+    const d = url.searchParams.get("d") || "", hn = url.searchParams.get("h") || "", an = url.searchParams.get("a") || "";
+    if (!/^\d{8}$/.test(d) || !hn || !an) return json({ ev: null });
+    try {
+      const lj = await (await fetch("https://www.fotmob.com/api/data/matches?date=" + d + "&timezone=Europe%2FMadrid&ccode3=ESP", { headers: UA })).json();
+      let hit = null;
+      for (const lg of ((lj && lj.leagues) || [])) {
+        for (const m of (lg.matches || [])) { if (same(hn, m.home && (m.home.longName || m.home.name)) && same(an, m.away && (m.away.longName || m.away.name))) { hit = m; break; } }
+        if (hit) break;
+      }
+      if (!hit || !hit.status || !hit.status.finished) return json({ ev: null });
+      const j = await (await fetch("https://www.fotmob.com/api/data/matchDetails?matchId=" + hit.id, { headers: UA })).json();
+      const lu = ((j.content || {}).lineup) || {};
+      const side = (t) => {
+        const pl = (x) => [String(x.id), x.name, x.performance && Number(x.performance.rating) > 0 ? Number(x.performance.rating) : null];
+        return { st: ((t && t.starters) || []).map(pl), sb: ((t && t.subs) || []).map(pl) };
+      };
+      const evs = ((((j.content || {}).matchFacts || {}).events || {}).events) || [];
+      const g = [], c = [], s = [];
+      evs.forEach((e) => {
+        if (!e) return;
+        if (e.type === "Goal" && !e.isPenaltyShootoutEvent) g.push({ m: Number(e.time) || 0, x: Number(e.overloadTime) || 0, p: e.playerId != null ? String(e.playerId) : "", as: e.assistPlayerId != null ? String(e.assistPlayerId) : "", og: e.ownGoal ? 1 : 0, h: e.isHome ? 1 : 0 });
+        else if (e.type === "Card") c.push({ m: Number(e.time) || 0, x: Number(e.overloadTime) || 0, p: e.playerId != null ? String(e.playerId) : "", k: String(e.card || "") });
+        else if (e.type === "Substitution" && Array.isArray(e.swap) && e.swap.length >= 2) s.push({ m: Number(e.time) || 0, x: Number(e.overloadTime) || 0, o: String(e.swap[0].id), i: String(e.swap[1].id), h: e.isHome ? 1 : 0 });
+      });
+      return json({ ev: { id: hit.id, home: side(lu.homeTeam), away: side(lu.awayTeam), g, c, s } });
+    } catch (e) { return json({ ev: null }); }
   }
   if (path === "directo") {
     // Directo de un partido: crónica de Comuniate + eventos y estadísticas de FotMob. Sin KV: caché de borde de 30 s.

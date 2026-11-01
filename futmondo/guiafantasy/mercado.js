@@ -2727,6 +2727,9 @@
   }
 
   // Detalle de /jugador reducido a lo que se compara; se guarda el último bueno por si Futmondo falla.
+  function cmpYmd(iso) {
+    try { const d = new Date(iso); if (isNaN(d)) return ""; return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).format(d).replace(/-/g, ""); } catch (e) { return ""; }
+  }
   function cmpCompact(f) {
     const ms = Array.isArray(f.matches) ? f.matches : [];
     const pa = f.participacion || {};
@@ -2743,10 +2746,11 @@
       let pt = valByR[m.r] != null ? valByR[m.r] : null, calc = false;
       if (pt == null && m.lg != null) { pt = Math.round(Number(m.lg)); calc = true; }
       const E = m.ev || {};
-      return { r: m.r, rv, h: casa ? 1 : 0, mn: Number(m.mins) || 0, sb: m.sub ? 1 : 0, g: Number(E.g) || 0, a: Number(E.a) || 0, y: Number(m.yellow) || 0, rd: Number(m.red) || 0, pt, calc: calc ? 1 : 0 };
+      return { r: m.r, dt: cmpYmd(m.date), hm: m.home || "", aw: m.away || "", rv, h: casa ? 1 : 0, mn: Number(m.mins) || 0, sb: m.sub ? 1 : 0, g: Number(E.g) || 0, a: Number(E.a) || 0, y: Number(m.yellow) || 0, rd: Number(m.red) || 0, pt, calc: calc ? 1 : 0 };
     }).sort((x, y) => y.r - x.r);
     return {
       t: Date.now(),
+      nm: f.name || "",
       ms: has ? mlist : null,
       age: Number(f.age) > 0 ? Number(f.age) : null,
       goals: has ? ms.reduce((s, m) => s + (Number(m.ev && m.ev.g) || 0), 0) : null,
@@ -2858,8 +2862,89 @@
     return w;
   }
 
+  // ---------- Minutos reales de FotMob (goles, asistencias, tarjetas, entradas y salidas) ----------
+  // Se piden por partido (/fm-partido, caché de borde) y se guardan en el dispositivo: un partido terminado no cambia.
+  const CMP_FM_KEY = "gf:cmp:fm:v1";
+  let cmpFmStore = null; const cmpFmBusy = {};
+  function cmpFmGet() { if (!cmpFmStore) cmpFmStore = cmpGet(CMP_FM_KEY, {}) || {}; return cmpFmStore; }
+  const cmpFmKey = (m) => (m && m.dt && m.hm && m.aw ? m.dt + "|" + m.hm + "|" + m.aw : "");
+  async function cmpFmFetch(m) {
+    const k = cmpFmKey(m);
+    if (!k) return;
+    const st = cmpFmGet();
+    if (st[k] && st[k].ev) return;
+    if (cmpFmBusy[k]) return cmpFmBusy[k];
+    cmpFmBusy[k] = (async () => {
+      try {
+        const r = await Promise.race([fetch(API + "/fm-partido?d=" + m.dt + "&h=" + encodeURIComponent(m.hm) + "&a=" + encodeURIComponent(m.aw)), new Promise((_, rej) => setTimeout(() => rej(new Error("tiempo")), 15000))]);
+        const d = await r.json();
+        if (d && d.ev) {
+          st[k] = { t: Date.now(), ev: d.ev };
+          const ks = Object.keys(st);
+          if (ks.length > 40) ks.sort((x, y) => (st[x].t || 0) - (st[y].t || 0)).slice(0, ks.length - 40).forEach((x) => { delete st[x]; });
+          cmpSet(CMP_FM_KEY, st);
+        }
+      } catch (e) {}
+      delete cmpFmBusy[k];
+    })();
+    return cmpFmBusy[k];
+  }
+  // Datos del jugador en un partido a partir del partido de FotMob. Si no se le encuentra con seguridad, null.
+  function cmpFmPlayer(m, name) {
+    const k = cmpFmKey(m);
+    const e = k && cmpFmGet()[k] && cmpFmGet()[k].ev;
+    if (!e) return null;
+    const sd = m.h ? e.home : e.away;
+    if (!sd) return null;
+    const nt = cmpTok(name);
+    if (!nt.length) return null;
+    const all = (sd.st || []).map((x) => [x, 1]).concat((sd.sb || []).map((x) => [x, 0]));
+    let hits = all.filter(([x]) => { const t = cmpTok(x[1]); return nt.every((w) => t.indexOf(w) >= 0); });
+    if (hits.length > 1) { const ex = hits.filter(([x]) => cmpTok(x[1]).length === nt.length); if (ex.length === 1) hits = ex; }
+    if (hits.length !== 1) return null;
+    const [pl, starter] = hits[0], id = pl[0];
+    const mm = (x) => ({ m: x.m, x: x.x || 0 });
+    const outE = (e.s || []).find((x) => x.o === id), inE = (e.s || []).find((x) => x.i === id);
+    return {
+      starter: !!starter, rating: pl[2],
+      goals: (e.g || []).filter((x) => x.p === id && !x.og).map(mm),
+      assists: (e.g || []).filter((x) => x.as === id).map(mm),
+      yc: (e.c || []).filter((x) => x.p === id && /yellow/i.test(x.k) && !/red/i.test(x.k)).map(mm),
+      rc: (e.c || []).filter((x) => x.p === id && /red/i.test(x.k)).map(mm),
+      out: outE ? mm(outE) : null, inn: inE ? mm(inE) : null,
+    };
+  }
+  function cmpTok(n) { return String(n || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]/g, " ").split(" ").filter(Boolean); }
+  const cmpMin = (x) => x.m + (x.x ? "+" + x.x : "") + "'";
+  // Pide a FotMob los partidos que se ven (rápido) y luego el resto de la temporada (para el resumen).
+  async function cmpFmLoad(a, b, ra, rb, rangeN) {
+    const mk = (r) => (r && r.c && Array.isArray(r.c.ms) ? r.c.ms : []);
+    const la = mk(ra), lb = mk(rb);
+    const rs = Array.from(new Set(la.map((m) => m.r).concat(lb.map((m) => m.r)))).sort((x, y) => y - x);
+    const vis = rangeN > 0 ? rs.slice(0, rangeN) : rs;
+    const pick = (rr) => la.filter((m) => rr.indexOf(m.r) >= 0).concat(lb.filter((m) => rr.indexOf(m.r) >= 0));
+    const pool = async (list) => {
+      const uniq = []; const seen = {};
+      list.forEach((m) => { const k = cmpFmKey(m); if (k && !seen[k] && !(cmpFmGet()[k] && cmpFmGet()[k].ev)) { seen[k] = 1; uniq.push(m); } });
+      let i = 0;
+      const worker = async () => { while (i < uniq.length) { const m = uniq[i++]; await cmpFmFetch(m); } };
+      await Promise.all([worker(), worker(), worker()]);
+      return uniq.length;
+    };
+    const n1 = await pool(pick(vis));
+    if (n1) cmpFmRepaint(a, b);
+    const n2 = await pool(la.concat(lb));
+    if (n2) cmpFmRepaint(a, b);
+  }
+  function cmpFmRepaint(a, b) {
+    if (currentTab !== "comparador" || !cmpFind(cmpSel.a) || String(cmpSel.a) !== String(a.id) || String(cmpSel.b) !== String(b.id)) return;
+    const sy = window.scrollY;
+    cmpPaintTable();
+    try { if (window.scrollY !== sy) window.scrollTo(0, sy); } catch (e) {}
+  }
+
   let cmpRange = 5; // siempre empieza en "Últimos 5"
-  function cmpMatchCell(m, right) {
+  function cmpMatchCell(m, right, fmd) {
     const c = el("span", "cmp2-cell cmpx-mcell" + (right ? " right" : ""));
     if (!m) { c.appendChild(el("span", "cmpx-mna", CMP_DASH)); return c; }
     const rl = el("span", "cmpx-mrival");
@@ -2871,19 +2956,20 @@
     const pc = el("span", "ficha-chip " + (m.pt != null ? "pt-" + ptClass(m.pt) : "cmpx-na") + (m.calc ? " cmpx-calc" : ""), m.pt != null ? String(m.pt) : "–");
     if (m.calc) pc.title = "Calculado con las reglas de tu liga (Futmondo solo publica los 5 últimos partidos)";
     ln.appendChild(pc);
+    const fm = fmd;
     let tg, cls = "";
     if (m.mn <= 0) { tg = "No jugó"; cls = " out"; }
-    else if (m.sb) { tg = "▲ Entra · jugó " + m.mn + "'"; cls = " in"; }
-    else if (m.mn >= 85) { tg = "90'"; }
-    else { tg = "▼ Sale · " + m.mn + "'"; cls = " out"; }
+    else if (m.sb) { tg = fm && fm.inn ? "▲ Entra · " + cmpMin(fm.inn) : "▲ Entra · jugó " + m.mn + "'"; cls = " in"; }
+    else if (m.mn >= 85 && !(fm && fm.out)) { tg = "90'"; }
+    else { tg = "▼ Sale · " + (fm && fm.out ? cmpMin(fm.out) : m.mn + "'"); cls = " out"; }
     ln.appendChild(el("span", "cmpx-mtag" + cls, tg));
     c.appendChild(ln);
     const evs = el("span", "cmpx-evs");
-    const chip = (cls, ico, n) => evs.appendChild(el("span", "cmpx-evc " + cls, ico + (n > 1 ? " " + n : "")));
-    if (m.g) chip("g", "⚽", m.g);
-    if (m.a) chip("a", "👟", m.a);
-    if (m.y) chip("y", "🟨", m.y);
-    if (m.rd) chip("r", "🟥", m.rd);
+    const chip = (cls2, ico, n, list) => evs.appendChild(el("span", "cmpx-evc " + cls2, ico + (list && list.length === n ? " " + list.map(cmpMin).join(" ") : n > 1 ? " " + n : "")));
+    if (m.g) chip("g", "⚽", m.g, fm && fm.goals);
+    if (m.a) chip("a", "👟", m.a, fm && fm.assists);
+    if (m.y) chip("y", "🟨", m.y, fm && fm.yc);
+    if (m.rd) chip("r", "🟥", m.rd, fm && fm.rc);
     if (evs.firstChild) c.appendChild(evs);
     return c;
   }
@@ -2897,9 +2983,10 @@
     const shown = n > 0 ? rs.slice(0, n) : rs;
     shown.forEach((r) => {
       const row = el("div", "cmp2-row cmpx-mrow");
-      row.appendChild(cmpMatchCell(la.find((m) => m.r === r), false));
+      const ma = la.find((m) => m.r === r), mb = lb.find((m) => m.r === r);
+      row.appendChild(cmpMatchCell(ma, false, ma && ra && ra.c ? cmpFmPlayer(ma, ra.c.nm) : null));
       row.appendChild(el("span", "cmp2-lab cmpx-mj", "J" + r));
-      row.appendChild(cmpMatchCell(lb.find((m) => m.r === r), true));
+      row.appendChild(cmpMatchCell(mb, true, mb && rb && rb.c ? cmpFmPlayer(mb, rb.c.nm) : null));
       box.appendChild(row);
     });
   }
@@ -2917,7 +3004,7 @@
     });
     sel.value = String(cmpRange);
     const body = el("div", "cmpx-mbody");
-    sel.addEventListener("change", () => { cmpRange = Number(sel.value); cmpMatchRows(body, a, b, ra, rb); });
+    sel.addEventListener("change", () => { cmpRange = Number(sel.value); cmpMatchRows(body, a, b, ra, rb); cmpFmLoad(a, b, ra, rb, cmpRange); });
     head.appendChild(sel);
     wrap.appendChild(head);
     wrap.appendChild(body);
@@ -2934,10 +3021,23 @@
     const swapped = starters.filter((m) => m.mn < 85);
     const avgOut = swapped.length ? Math.round(swapped.reduce((t, m) => t + m.mn, 0) / swapped.length) : 0;
     const out = [];
+    // Minutos reales de FotMob (solo si se han podido leer casi todos los partidos del jugador)
+    const fmL = ms.map((m) => ({ m, f: c.nm ? cmpFmPlayer(m, c.nm) : null }));
+    const fmOk = fmL.filter((x) => x.f).length / N >= 0.8;
+    const subsF = fmL.filter((x) => x.m.sb && x.f && x.f.inn);
+    const avgIn = subsF.length ? Math.round(subsF.reduce((t, x) => t + x.f.inn.m, 0) / subsF.length) : 0;
+    const outsF = fmL.filter((x) => !x.m.sb && x.f && x.f.out);
+    const gmins = fmOk ? fmL.reduce((t, x) => t.concat(x.f ? x.f.goals.map((g) => g.m) : []), []) : [];
     const part = subs.filter((m) => m.g || m.a).length;
-    if (subs.length >= 2 && part >= 1) out.push(["🔥", "Buen revulsivo: entra desde el banquillo y participa en gol en <b>" + part + " de " + subs.length + "</b> partidos"]);
+    if (subs.length >= 2 && part >= 1) out.push(["🔥", "Buen revulsivo: entra" + (fmOk && subsF.length >= 2 ? " sobre el <b>min. " + avgIn + "</b>" : " desde el banquillo") + " y participa en gol en <b>" + part + " de " + subs.length + "</b> partidos"]);
+    if (gmins.length >= 3) {
+      const late = gmins.filter((m) => m >= 70).length, s2 = gmins.filter((m) => m > 45).length;
+      if (late / gmins.length >= 0.5) out.push(["⚽", "Sus goles llegan tarde: <b>" + late + " de " + gmins.length + "</b> después del min. 70"]);
+      else if (s2 / gmins.length >= 0.7) out.push(["⚽", "Marca sobre todo en la 2ª parte: <b>" + s2 + " de " + gmins.length + "</b> goles"]);
+      else if ((gmins.length - s2) / gmins.length >= 0.7) out.push(["⚽", "Marca sobre todo en la 1ª parte: <b>" + (gmins.length - s2) + " de " + gmins.length + "</b> goles"]);
+    }
     if (subs.length / N >= 0.5) out.push(["🔼", "Suele salir desde el banquillo: <b>" + subs.length + " de " + N + "</b> partidos"]);
-    if (starters.length >= 3 && swapped.length / starters.length >= 0.5) out.push(["🔄", (swapped.length / starters.length >= 0.8 ? "Casi siempre lo quitan" : "Lo quitan a menudo") + ": <b>" + swapped.length + " de " + starters.length + "</b> titularidades, sobre el <b>min. " + avgOut + "</b>"]);
+    if (starters.length >= 3 && swapped.length / starters.length >= 0.5) out.push(["🔄", (swapped.length / starters.length >= 0.8 ? "Casi siempre lo quitan" : "Lo quitan a menudo") + ": <b>" + swapped.length + " de " + starters.length + "</b> titularidades, sobre el <b>min. " + (fmOk && outsF.length === swapped.length && outsF.length ? Math.round(outsF.reduce((t, x) => t + x.f.out.m, 0) / outsF.length) : avgOut) + "</b>"]);
     const gm = ms.filter((m) => m.g).length, gt = ms.reduce((t, m) => t + m.g, 0);
     if (N >= 4 && gm / N >= 0.4) out.push(["⚽", "Marca en <b>" + gm + " de " + N + "</b> partidos (" + gt + (gt === 1 ? " gol" : " goles") + ")"]);
     const am = ms.filter((m) => m.a).length;
@@ -3145,6 +3245,7 @@
     const sy = window.scrollY;
     cmpPaintTable();
     try { if (window.scrollY !== sy) window.scrollTo(0, sy); } catch (e) {}
+    cmpFmLoad(a, b, x, y, cmpRange);
   }
 
   async function initComparador() {
