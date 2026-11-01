@@ -127,3 +127,8 @@ Antes de tocar partidos/alineaciones/ficha, repasar esta lista y verificar con c
 - Comparaciones guardadas: localStorage del dispositivo (`gf:cmp:saved:v1`, máx. 30), sin gastar escrituras de KV. No se sincronizan entre dispositivos.
 - Se pidió las dos fichas a la vez: releer el almacén DESPUÉS de esperar la respuesta (una versión anterior se pisaba y solo guardaba una).
 - Se eliminó el comparador antiguo huérfano (sin HTML) que calculaba una "Prob. jugar" con una fórmula inventada.
+
+## Reglas para continuar el trabajo (plan B con otro asistente)
+- Después de cada tarea importante, actualiza ESTADO.md.
+- Nunca inventes datos: todo dato debe salir de una fuente real (webs, APIs); si no hay dato, no lo inventes.
+- Comprueba y revisa las cosas tú mismo (entrar en la web, usar las APIs, comparar datos) en vez de pedirme datos que ya puedes consultar.
