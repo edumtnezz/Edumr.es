@@ -1600,7 +1600,7 @@
     const tl = el("div", "mpage-topline");
     tl.appendChild(el("span", "mpage-comp", "LaLiga" + (jn ? " · Jornada " + jn : "")));
     // Partido acabado: sin logos de la tele (DAZN, Movistar…) (Edu 02/11)
-    const tvDone = !!finished || !!(m.live && m.live.state === "final") || /FINALIZADO|^FINAL/.test(String(state || "").toUpperCase());
+    const tvDone = !!finished || !!(m.live && m.live.state === "final") || /FINALIZADO|^FINAL/.test(String((d && d.state) || "").toUpperCase());
     if (m.tv && m.tv.length && !tvDone) {
       const t = el("span", "mpage-tv");
       m.tv.forEach((c) => { if (!c || !c.logo) return; const im = el("img"); im.src = c.logo; im.alt = c.name || ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); t.appendChild(im); });
