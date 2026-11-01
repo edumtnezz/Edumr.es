@@ -3201,9 +3201,10 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 }
 /* El selector de clubes (escudos) y las flechas no son filtros de texto: se dejan como estaban. */
 .plt-btn.plt-club, .plt-btn.plt-arrow { background: none; padding: 0; border-radius: 14px; }
-/* La cabecera de la lista de Mercado es oscura: allí los botones van en claro. */
-.plt-head .plt-btn:not(.plt-club):not(.plt-arrow) { color: #e9f2ee; background: rgba(255,255,255,.14); }
-.plt-head .plt-btn:not(.plt-club):not(.plt-arrow).on { background: #16a34a; color: #fff; }
+/* La cabecera de la lista de Mercado es oscura: allí los botones van en claro.
+   (Se repite el :is(#tab-…) para ganar en especificidad a la regla unificada.) */
+:is(#tab-mercado, #tab-plantillas) .plt-head .plt-btn:not(.plt-club):not(.plt-arrow) { color: #e9f2ee; background: rgba(255,255,255,.14); }
+:is(#tab-mercado, #tab-plantillas) .plt-head .plt-btn:not(.plt-club):not(.plt-arrow).on { background: #16a34a; color: #fff; }
 
 /* Cinta de noticias: sin "Última hora" y en una sola línea, sin marquesina */
 .cx-ticker-tag-hide { display: none !important; }
