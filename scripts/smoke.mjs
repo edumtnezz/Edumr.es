@@ -13,7 +13,10 @@ const paginas = [
   { ruta: "/futmondo/porra/", debe: ["Porra"] },
   { ruta: "/futmondo/lapuja/", debe: ["Puja"] },
   { ruta: "/equipos", debe: ["Equipos"] },
-  { ruta: "/equipos/alaves", debe: ["Alavés"] },
+  // La ficha del club se pinta con JavaScript: del HTML solo se puede comprobar
+  // que responde (el contenido se revisa a mano con captura).
+  { ruta: "/equipos/alaves", debe: [] },
+  { ruta: "/futmondo/stats/", debe: ["Visitas"] },
 ];
 
 const apis = [
