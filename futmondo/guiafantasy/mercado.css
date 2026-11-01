@@ -3003,3 +3003,8 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .rtb-plab { font-size: .95rem; }
 .rtb-range { accent-color: var(--text); }
 .rtb-r { gap: 3px; } .rtb-r b { line-height: 1.1; }
+
+/* Minutos: una sola fila que se desliza, sin saltar de línea */
+.plt-mins { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.plt-mins::-webkit-scrollbar { display: none; }
+.plt-mins .plt-btn { white-space: nowrap; }

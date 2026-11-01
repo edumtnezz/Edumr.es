@@ -101,6 +101,7 @@
     } catch (e) { if (!minsMap) minsFail = true; }
     minsLoading = false;
     if (MQ[quick] && $("marketGrid")) { const y = window.scrollY; renderGrid(); window.scrollTo(0, y); }
+    if (MQ[pltMin] && $("pltList")) { const y = window.scrollY; renderPltList(); window.scrollTo(0, y); }
   }
   document.addEventListener("cx:swr", (ev) => { const u = (ev.detail && ev.detail.url) || ""; if (/\/minutos/.test(u)) loadMinutos(); });
   function renderChips() {
@@ -4859,7 +4860,7 @@
 
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { if (document.querySelector(".eq-page, .mpage, .playerpage, .livepage")) { location.href = "/futmondo/guiafantasy/" + (t.dataset.tab === "plantillas" ? "mercado" : t.dataset.tab); return; } switchTab(t.dataset.tab); }));
   setupMoreMenu();
-  let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltPeriod = "chg7", pltDir = -1, pltShown = 40, pltPlayers = [];
+  let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltPeriod = "chg7", pltDir = -1, pltShown = 40, pltPlayers = [], pltMin = "";
   let rtbInit = false, rtbPos = "", rtbMin = 0, rtbMax = Infinity, rtbShown = 40;
   // En la ficha de jugador esto (14 peticiones de jornadas) se pide DESPUÉS de pintar, para no frenar la carga.
   if (!/\/jugador(?:es)?\/[a-z0-9]{6,40}/i.test(location.pathname)) ensurePlayedJ();
@@ -6192,12 +6193,12 @@
     renderPltList();
   }
   const PLT_PER = [["chg7", "7 días"], ["chg30", "30 días"], ["chgAll", "Temporada"]];
-  function pltSave() { try { sessionStorage.setItem("pltState", JSON.stringify({ c: pltClub, p: pltPos, s: pltSort, d: pltDir, per: pltPeriod, n: pltShown })); } catch (e) {} }
+  function pltSave() { try { sessionStorage.setItem("pltState", JSON.stringify({ c: pltClub, p: pltPos, s: pltSort, d: pltDir, per: pltPeriod, n: pltShown, mn: pltMin })); } catch (e) {} }
   function pltLoadState() {
     try {
       const s = JSON.parse(sessionStorage.getItem("pltState") || "null");
       if (!s) return;
-      pltClub = s.c || ""; pltPos = s.p || ""; pltSort = s.s || "points"; pltDir = s.d === 1 ? 1 : -1; pltPeriod = s.per || "chg7"; pltShown = Number(s.n) > 0 ? Math.min(Number(s.n), 400) : 40;
+      pltClub = s.c || ""; pltPos = s.p || ""; pltSort = s.s || "points"; pltDir = s.d === 1 ? 1 : -1; pltPeriod = s.per || "chg7"; pltShown = Number(s.n) > 0 ? Math.min(Number(s.n), 400) : 40; pltMin = MQ[s.mn] ? s.mn : "";
     } catch (e) {}
   }
   function pltRerender() { pltShown = 40; renderPltControls(); renderPltList(); }
@@ -6235,6 +6236,14 @@
         pltRerender();
       }));
     });
+    const mn = $("pltMins");
+    if (mn) {
+      mn.innerHTML = "";
+      mn.appendChild(el("span", "plt-lbl", "Minutos"));
+      QUICKS.filter(([k]) => MQ[k]).forEach(([k, lab]) => {
+        mn.appendChild(pltBtn(lab, pltMin === k, () => { pltMin = pltMin === k ? "" : k; pltRerender(); }));
+      });
+    }
     per.innerHTML = "";
     per.hidden = pltSort !== "rise";
     if (pltSort === "rise") {
@@ -6333,10 +6342,19 @@
     let list = pltPlayers.filter((p) => (!pltClub || p.team === pltClub) && (!pltPos || String(p.role || "").toLowerCase() === pltPos));
     list = list.slice().sort((a, b) => pltDir * ((Number(a[key]) || 0) - (Number(b[key]) || 0)));
     box.innerHTML = "";
+    const mq = MQ[pltMin];
+    if (mq) {
+      if (!minsMap && !minsLoading && !minsFail) loadMinutos();
+      if (!minsMap) { box.appendChild(el("p", "muted", minsFail ? "Sin datos de minutos ahora mismo." : "Cargando minutos…")); return; }
+      list = list.filter((p) => { const m = minsOf(p); return m && mq.test(m); }).sort((a, b) => mq.sort(minsOf(a), minsOf(b)));
+      const cv = minsCover && minsCover.total ? " · datos de " + minsCover.known + " de " + minsCover.total + " jugadores" : "";
+      box.appendChild(el("div", "mkt-hint mkt-minhint", mq.hint + cv));
+    }
     if (!list.length) { box.appendChild(el("p", "muted", "Sin jugadores.")); return; }
     const j0 = pltPlayers.reduce((m, p) => Math.max(m, Number(p.matches) || 0), 0);
     list.slice(0, pltShown).forEach((p) => {
-      box.appendChild(pltBuildRow(p, { chg: Number(rise ? p[pltPeriod] : p.change) || 0 }));
+      const mm = mq ? minsOf(p) : null;
+      box.appendChild(pltBuildRow(p, { chg: Number(rise ? p[pltPeriod] : p.change) || 0, why: mm ? mq.line(mm) : "" }));
     });
     if (list.length > pltShown) {
       const more = el("button", "btn-ghost market-more", "Ver más (" + (list.length - pltShown) + ")"); more.type = "button";
