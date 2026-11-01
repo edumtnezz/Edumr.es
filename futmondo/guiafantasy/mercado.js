@@ -2726,8 +2726,22 @@
     const pa = f.participacion || {};
     const has = ms.length > 0; // sin partidos de Futmondo no hay goles ni minutos: no se inventan ceros
     const vd = (days) => { const x = (f.valores || []).find((v) => v && v.days === days); return x && x.diff != null ? Number(x.diff) : null; };
+    // Puntos: los 5 últimos partidos vienen de Futmondo (fitness, en orden de fecha); el resto, "lg" calculado con las reglas de la liga.
+    const fit = Array.isArray(f.fitness) ? f.fitness : [];
+    const msd = ms.slice().sort((x, y) => (Date.parse(y.date) || 0) - (Date.parse(x.date) || 0) || y.r - x.r);
+    const valByR = {};
+    msd.forEach((m, k) => { if (k < fit.length && fit[fit.length - 1 - k] != null) valByR[m.r] = Math.round(fit[fit.length - 1 - k]); });
+    const mlist = ms.map((m) => {
+      const casa = m.home === f.team;
+      const rv = casa ? m.away : (m.away === f.team ? m.home : (m.away || m.home || ""));
+      let pt = valByR[m.r] != null ? valByR[m.r] : null, calc = false;
+      if (pt == null && m.lg != null) { pt = Math.round(Number(m.lg)); calc = true; }
+      const E = m.ev || {};
+      return { r: m.r, rv, h: casa ? 1 : 0, mn: Number(m.mins) || 0, sb: m.sub ? 1 : 0, g: Number(E.g) || 0, a: Number(E.a) || 0, y: Number(m.yellow) || 0, rd: Number(m.red) || 0, pt, calc: calc ? 1 : 0 };
+    }).sort((x, y) => y.r - x.r);
     return {
       t: Date.now(),
+      ms: has ? mlist : null,
       age: Number(f.age) > 0 ? Number(f.age) : null,
       goals: has ? ms.reduce((s, m) => s + (Number(m.ev && m.ev.g) || 0), 0) : null,
       assists: has ? ms.reduce((s, m) => s + (Number(m.ev && m.ev.a) || 0), 0) : null,
@@ -2838,6 +2852,73 @@
     return w;
   }
 
+  const CMP_RANGE_KEY = "gf:cmp:range:v1";
+  function cmpMatchCell(m, right) {
+    const c = el("span", "cmp2-cell cmpx-mcell" + (right ? " right" : ""));
+    if (!m) { c.appendChild(el("span", "cmpx-mna", CMP_DASH)); return c; }
+    const rl = el("span", "cmpx-mrival");
+    const rlogo = (all || []).find((x) => x.logo && x.team && teamCanon(x.team) === teamCanon(m.rv));
+    if (rlogo) { const ci = el("img", "cmpx-mcrest"); ci.src = rlogo.logo; ci.alt = ""; ci.loading = "lazy"; ci.addEventListener("error", () => { ci.style.display = "none"; }); rl.appendChild(ci); }
+    rl.appendChild(el("span", null, (m.rv || CMP_DASH) + " · " + (m.h ? "Casa" : "Fuera")));
+    c.appendChild(rl);
+    const ln = el("span", "cmpx-mline");
+    const pc = el("span", "ficha-chip " + (m.pt != null ? "pt-" + ptClass(m.pt) : "cmpx-na") + (m.calc ? " cmpx-calc" : ""), m.pt != null ? String(m.pt) : "–");
+    if (m.calc) pc.title = "Calculado con las reglas de tu liga (Futmondo solo publica los 5 últimos partidos)";
+    ln.appendChild(pc);
+    let tg, cls = "";
+    if (m.mn <= 0) { tg = "No jugó"; cls = " out"; }
+    else if (m.sb) { tg = "▲ Entra · jugó " + m.mn + "'"; cls = " in"; }
+    else if (m.mn >= 85) { tg = "90'"; }
+    else { tg = "▼ Sale · " + m.mn + "'"; cls = " out"; }
+    ln.appendChild(el("span", "cmpx-mtag" + cls, tg));
+    c.appendChild(ln);
+    const ev = [];
+    if (m.g) ev.push(m.g + (m.g > 1 ? " goles" : " gol"));
+    if (m.a) ev.push(m.a + (m.a > 1 ? " asist." : " asist."));
+    if (m.y) ev.push("Amarilla");
+    if (m.rd) ev.push("Roja");
+    if (ev.length) c.appendChild(el("span", "cmpx-mev", ev.join(" · ")));
+    return c;
+  }
+  function cmpMatchRows(box, a, b, ra, rb) {
+    box.innerHTML = "";
+    const la = ra && ra.c && Array.isArray(ra.c.ms) ? ra.c.ms : [];
+    const lb = rb && rb.c && Array.isArray(rb.c.ms) ? rb.c.ms : [];
+    const rs = Array.from(new Set(la.map((m) => m.r).concat(lb.map((m) => m.r)))).sort((x, y) => y - x);
+    if (!rs.length) { box.appendChild(el("p", "muted small cmpx-hint", "Sin partidos de Futmondo todavía.")); return; }
+    const n = Number(cmpGet(CMP_RANGE_KEY, 5));
+    const shown = n > 0 ? rs.slice(0, n) : rs;
+    shown.forEach((r) => {
+      const row = el("div", "cmp2-row cmpx-mrow");
+      row.appendChild(cmpMatchCell(la.find((m) => m.r === r), false));
+      row.appendChild(el("span", "cmp2-lab cmpx-mj", "J" + r));
+      row.appendChild(cmpMatchCell(lb.find((m) => m.r === r), true));
+      box.appendChild(row);
+    });
+    if ([].concat(la, lb).some((m) => m.calc && shown.indexOf(m.r) >= 0)) box.appendChild(el("p", "muted small cmpx-src", "Puntos en cursiva: calculados con las reglas de tu liga (Futmondo solo publica los 5 últimos)."));
+  }
+  function cmpPaintMatches(out, a, b, ra, rb) {
+    if (ra === undefined || rb === undefined) return; // aún cargando
+    if (!(ra && ra.c) && !(rb && rb.c)) return;
+    const wrap = el("div", "cmpx-matches");
+    const head = el("div", "cmpx-head cmpx-mhead");
+    head.appendChild(el("span", null, "Partidos"));
+    const sel = el("select", "cmpx-range");
+    sel.setAttribute("aria-label", "Cuántos partidos ver");
+    const total = Math.max((ra && ra.c && ra.c.ms ? ra.c.ms.length : 0), (rb && rb.c && rb.c.ms ? rb.c.ms.length : 0));
+    [[5, "Últimos 5"], [10, "Últimos 10"], [0, "Todos" + (total ? " (" + total + ")" : "")]].forEach(([v, t]) => {
+      const o = el("option", null, t); o.value = String(v); sel.appendChild(o);
+    });
+    sel.value = String(Number(cmpGet(CMP_RANGE_KEY, 5)));
+    const body = el("div", "cmpx-mbody");
+    sel.addEventListener("change", () => { cmpSet(CMP_RANGE_KEY, Number(sel.value)); cmpMatchRows(body, a, b, ra, rb); });
+    head.appendChild(sel);
+    wrap.appendChild(head);
+    wrap.appendChild(body);
+    cmpMatchRows(body, a, b, ra, rb);
+    out.appendChild(wrap);
+  }
+
   function cmpPaintTable() {
     const out = $("cmpxOut");
     if (!out) return;
@@ -2865,7 +2946,6 @@
       stat("Partidos", cmpCell(a.matches, String), cmpCell(b.matches, String)),
       stat("Goles", cmpDet(ra, "goals", String, la), cmpDet(rb, "goals", String, lb), true),
       stat("Asistencias", cmpDet(ra, "assists", String, la), cmpDet(rb, "assists", String, lb), true),
-      stat("Últimos 5", { v: null, node: cmpChips(a) }, { v: null, node: cmpChips(b) }),
       { head: "Juega" },
       stat("Titular", cmpDet(ra, "pctStart", cmpPct, la), cmpDet(rb, "pctStart", cmpPct, lb), true),
       stat("Minutos", cmpDet(ra, "pctMin", cmpPct, la), cmpDet(rb, "pctMin", cmpPct, lb), true),
@@ -2900,6 +2980,8 @@
       box.appendChild(row);
     });
     out.appendChild(box);
+
+    cmpPaintMatches(out, a, b, ra, rb);
 
     // Avisos del detalle (último dato bueno / fallo) con reintento
     const bad = [ra, rb].some((r) => r === null || (r && r.partial));
@@ -2981,6 +3063,20 @@
     pick.appendChild(cmpSlot(cmpFind(cmpSel.a), "a"));
     pick.appendChild(el("div", "cmp2-vs", "VS"));
     pick.appendChild(cmpSlot(cmpFind(cmpSel.b), "b"));
+    const bar = $("cmpxBar");
+    if (bar) {
+      bar.innerHTML = "";
+      if (cmpSel.a || cmpSel.b) {
+        const nb = el("button", "cmpx-new", "✕ Salir y buscar otros jugadores");
+        nb.type = "button";
+        nb.addEventListener("click", () => {
+          cmpSel.a = null; cmpSel.b = null; cmpSet(CMP_SEL_KEY, cmpSel);
+          cmpDetail = {}; cmpSeq++; cmpNote("");
+          cmpPaint();
+        });
+        bar.appendChild(nb);
+      }
+    }
     cmpPaintTable();
     cmpPaintSaved();
   }
