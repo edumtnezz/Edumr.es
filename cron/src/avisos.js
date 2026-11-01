@@ -121,6 +121,14 @@ function posLine(label, arr, squad, team) {
   return arr && arr.length ? label + ": " + arr.map((p) => esc(star(squad, team, p.name))).join(", ") : "";
 }
 
+// Dinero en español: 131484278 → "131,5M€", 552707 → "553k€"
+function eur(n) {
+  const a = Math.abs(n);
+  if (a >= 1e6) return (a / 1e6).toFixed(a >= 1e7 ? 1 : 2).replace(/\.?0+$/, "").replace(".", ",") + "M€";
+  return Math.round(a / 1e3) + "k€";
+}
+const hash = (str) => { let h = 5381; for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0; return String(h); };
+
 // ---------- Telegram ----------
 async function tg(env, f, method, body) {
   try {
@@ -129,7 +137,7 @@ async function tg(env, f, method, body) {
   } catch (e) { return null; }
 }
 async function send(env, f, chat, text) {
-  const j = await tg(env, f, "sendMessage", { chat_id: chat, text, parse_mode: "HTML", link_preview_options: { is_disabled: false } });
+  const j = await tg(env, f, "sendMessage", { chat_id: chat, text, parse_mode: "HTML", link_preview_options: { is_disabled: false, prefer_large_media: true } });
   return !!(j && j.ok);
 }
 // El primer chat privado que escribe /start al bot queda como dueño (igual que el bot de la web).
@@ -274,6 +282,35 @@ export async function avisar(env, deps) {
         const upd = Math.max((d.home && d.home.updatedAt) || 0, (d.away && d.away.updatedAt) || 0);
         const text = "🔄 <b>Once probable actualizado</b>\n" + esc(m.home) + " – " + esc(m.away) + (upd ? " · act. " + hhmm(upd) : "") + "\n" + lineas.join("\n") + "\n\n" + matchUrl(m.home, m.away);
         queue.push({ text, commit: () => { st.pr[key] = nuevo; dirty = true; } });
+      }
+    } catch (e) {}
+  }
+
+  // 2c) Precios actualizados: top 5 subidas y top 5 bajadas del día (valores de Futmondo).
+  // Se detecta por cambio real de los precios; de noche no se mira, así que el aviso sale a las 08:00.
+  if (!quiet && (all || mnt % 10 === 0)) {
+    try {
+      const mk = await getJson(f, "mercado");
+      const ps = (mk.players || []).filter((p) => p && p.name && Number.isFinite(p.change));
+      if (ps.length > 50) {
+        const sig = hash(ps.map((p) => p.id + ":" + p.change).join("|"));
+        if (sig !== st.px && (!st.pxAt || now - st.pxAt > 6 * 3600e3)) { // mínimo 6 h entre avisos, por si los precios se mueven a lo largo del día
+          const own = new Set(squad.map((p) => String(p.id)));
+          const fila = (p, i, sube) => ["🥇", "🥈", "🥉", "4️⃣", "5️⃣"][i] + " " + (own.has(String(p.id)) ? "⭐" : "") + "<b>" + esc(p.name) + "</b> · " + esc(p.team || "") +
+            "\n" + (sube ? "🟢 +" : "🔴 −") + eur(p.change) + "  ·  💰 " + eur(p.value);
+          const up = ps.filter((p) => p.change > 0).sort((a, b) => b.change - a.change).slice(0, 5);
+          const down = ps.filter((p) => p.change < 0).sort((a, b) => a.change - b.change).slice(0, 5);
+          const commit = () => { st.px = sig; st.pxAt = now; dirty = true; };
+          if (firstRun || (!up.length && !down.length)) commit();
+          else queue.push({
+            text: "💹 <b>Mercado actualizado</b>\n\n" +
+              (up.length ? "📈 <b>Las 5 mayores subidas</b>\n" + up.map((p, i) => fila(p, i, true)).join("\n") : "") +
+              (up.length && down.length ? "\n\n" : "") +
+              (down.length ? "📉 <b>Las 5 mayores bajadas</b>\n" + down.map((p, i) => fila(p, i, false)).join("\n") : "") +
+              "\n\n" + WEB + "mercado",
+            commit,
+          });
+        }
       }
     } catch (e) {}
   }
