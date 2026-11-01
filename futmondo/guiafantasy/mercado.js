@@ -4714,7 +4714,13 @@
           if (Number(m.yellow) > 0) evs.push(["Amarilla", "y"]);
           if (Number(m.red) > 0) evs.push(["Roja", "bad"]);
           if (E.sv >= 3) evs.push([E.sv + " paradas", "cs"]);
-          evs.forEach((x) => { chips.appendChild(el("span", "fm-ev ev-" + x[1], x[0])); });
+          evs.forEach((x) => {
+            const sp = el("span", "fm-ev ev-" + x[1]);
+            if (x[0] === "Amarilla" || x[0] === "Roja") sp.appendChild(el("i", "fm-card " + (x[0] === "Roja" ? "r" : "y"))); // símbolo de la tarjeta (Edu 02/11)
+            sp.appendChild(document.createTextNode(x[0]));
+            chips.appendChild(sp);
+          });
+          chips.classList.toggle("many", chips.children.length >= 4); // con muchos datos se permite pasar a otra línea; si no, todo en una
           // La nota de FotMob se pide aparte (una vez por jugador) y se añade a esta línea cuando llega
           try {
             const dt = new Date(m.date);
@@ -4776,6 +4782,7 @@
             if (nt[x.key] == null || x.chips.querySelector(".ev-rt")) return;
             const sp = el("span", "fm-ev ev-rt"); sp.appendChild(el("small", null, "Nota FotMob")); sp.appendChild(el("b", null, String(nt[x.key].toFixed ? nt[x.key].toFixed(1) : nt[x.key]).replace(".", ",")));
             x.chips.appendChild(sp);
+            x.chips.classList.toggle("many", x.chips.children.length >= 5);
           });
         }).catch(() => {});
       }

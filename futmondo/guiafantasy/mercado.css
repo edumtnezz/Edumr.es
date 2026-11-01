@@ -3413,3 +3413,13 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 #tab-actualizaciones .up-pl img { width: 38px; height: 40px; border-radius: 8px; flex: none; }
 #tab-actualizaciones .up-pl strong { font-weight: 700; }
 #tab-actualizaciones .up-pl .up-tr { font-size: .95rem; font-weight: 700; }
+
+/* Qué pasó en cada partido: siempre dos líneas (1ª: rival y casa/fuera; 2ª: minutos, eventos y nota FotMob, todo en una línea). Tarjetas con su símbolo (Edu 02/11) */
+.fm-chips { flex-wrap: nowrap; gap: 3px 9px; white-space: nowrap; align-items: center; }
+.fm-chips .fm-min, .fm-chips .fm-ev { font-size: .74rem; white-space: nowrap; flex: none; }
+.fm-ev.ev-rt b { font-size: .78rem; }
+.fm-chips.many { flex-wrap: wrap; }
+.fm-card { display: inline-block; width: 9px; height: 12px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; box-shadow: 0 0 0 1px rgba(0,0,0,.18); }
+.fm-card.y { background: #facc15; }
+.fm-card.r { background: #ef4444; }
+.fm-chips .fm-ev.ev-y { color: var(--muted); }
