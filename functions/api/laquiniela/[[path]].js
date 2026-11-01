@@ -1432,6 +1432,40 @@ function stripBalancedDiv(html, openTagRe) {
   return out;
 }
 
+// Convocatorias ("Convocados: Porteros: ...") y enlaces "Posibles alineaciones X - Y":
+// se convierten en bloques propios (cv-*) antes de limpiar enlaces y marcas.
+function prettyArticle(seg) {
+  let out = String(seg || "");
+  const esc = (t) => String(t).replace(/&(?!#?\w+;)/g, "&amp;").replace(/</g, "&lt;");
+  out = out.replace(/<div class="conv noconvocados">[\s\S]*?<\/div>\s*(<div class="mod_wrapper convocados_wrapper[^"]*">)/gi, "$1");
+  let res = "", pos = 0;
+  const reW = /<div class="mod_wrapper convocados_wrapper[^"]*">/gi;
+  let w;
+  while ((w = reW.exec(out))) {
+    const reG = /\s*<div class="conv (\w+)">([\s\S]*?)<\/div>(?=\s*(?:<div class="conv |<\/div>|<[ph]\b|$))/y;
+    reG.lastIndex = w.index + w[0].length;
+    const groups = [];
+    let g, end = reG.lastIndex;
+    while ((g = reG.exec(out))) {
+      const t = (g[2].match(/<div class="subtitle[^>]*>([\s\S]*?)<\/div>/i) || [])[1] || g[1];
+      const names = [...g[2].matchAll(/<a class="jugador"[^>]*>([\s\S]*?)<\/a>/gi)].map((m) => esc(m[1].replace(/<[^>]+>/g, "").trim())).filter(Boolean);
+      if (names.length) groups.push('<div class="cv-grp"><div class="cv-t">' + t.replace(/<[^>]+>/g, "").replace(/:/g, "").trim() + '</div><div class="cv-names">' + names.map((n) => "<span>" + n + "</span>").join("") + "</div></div>");
+      end = g.index + g[0].length;
+      reG.lastIndex = end;
+    }
+    if (!groups.length) continue;
+    const rest = out.slice(end).match(/^\s*<\/div>/);
+    res += out.slice(pos, w.index) + '<div class="cv-box"><div class="cv-h">Convocados</div>' + groups.join("") + "</div>";
+    pos = end + (rest ? rest[0].length : 0);
+    reW.lastIndex = pos;
+  }
+  out = res + out.slice(pos);
+  // Botón a nuestra página de partido (la web resuelve el partido con los nombres)
+  out = out.replace(/<p[^>]*>\s*<a\b[^>]*>\s*(?:Posibles alineaciones|Alineaciones probables)\s*:?\s*([^<]+?)\s+-\s+([^<]+?)\s*<\/a>\s*<\/p>/gi,
+    (m, a, b) => '<p class="cv-p"><span class="cv-btn" data-h="' + esc(a).replace(/"/g, "") + '" data-a="' + esc(b).replace(/"/g, "") + '">Ver alineaciones probables ' + esc(a) + " – " + esc(b) + "</span></p>");
+  return out;
+}
+
 function cleanArticle(s) {
   let out = String(s || "")
     .replace(/<script[\s\S]*?<\/script>/gi, "")
@@ -1633,7 +1667,7 @@ async function getNoticia(url) {
     let seg = html.slice(start, start + 22000);
     const m = seg.search(/(<div class="noticia (prev|next)|class="relacionad|class="mas-noticias|class="relative-noticias|comments-container|btn-ver-comentarios|uc-open-bar|uc-icon-wrap|class="taboola|taboola-|class="descripcion|<h4 class="mb-0"|<footer|class="clearfix")/i);
     if (m > 0) seg = seg.slice(0, m);
-    body = cleanArticle(seg);
+    body = cleanArticle(prettyArticle(seg));
   }
   if (!body || body.replace(/<[^>]+>/g, "").trim().length < 40) {
     const dIdx = html.search(/class="noticia-detail"/i);

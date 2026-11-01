@@ -879,6 +879,26 @@
   function matchSlug(home, away) {
     return stripAccents(String(home + "-" + away).toLowerCase()).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   }
+  // Botones "Ver alineaciones probables X – Y" dentro de las noticias: llevan a la página del partido
+  function wireCvBtns(root) {
+    root.querySelectorAll(".cv-btn").forEach((b) => {
+      const h = b.dataset.h, a = b.dataset.a;
+      b.setAttribute("role", "link"); b.tabIndex = 0;
+      const go = async (e) => {
+        e.preventDefault(); e.stopPropagation();
+        let home = h, away = a, jn = "";
+        try {
+          const jr = await (await fetch(API + "/jornada")).json();
+          const ms = (jr && jr.matches) || [];
+          const f = ms.find((m) => teamCanon(m.home) === teamCanon(h) && teamCanon(m.away) === teamCanon(a));
+          if (f) { home = f.home; away = f.away; jn = jr.matchday || ""; }
+        } catch (x) {}
+        location.href = "/futmondo/guiafantasy/partido/" + matchSlug(home, away) + (jn ? "?j=" + encodeURIComponent(jn) : "");
+      };
+      b.addEventListener("click", go);
+      b.addEventListener("keydown", (e) => { if (e.key === "Enter") go(e); });
+    });
+  }
   function mpPos(pos) {
     const p = String(pos || "").toLowerCase();
     if (p.indexOf("porter") >= 0) return ["PT", "pt"];
@@ -3948,7 +3968,7 @@
         if (d.lead) c.appendChild(el("p", "art-lead", d.lead));
         if (d.html) {
           const art = el("div", "art-body");
-          art.innerHTML = d.html;
+          art.innerHTML = d.html; wireCvBtns(art);
           c.appendChild(art);
         } else {
           c.appendChild(el("p", "muted small", "No pude extraer el texto de esta noticia."));
@@ -4078,7 +4098,7 @@
     if (d.lead) box.appendChild(el("p", "art-lead", d.lead));
     if (d.html) {
       const art = el("div", "art-body");
-      art.innerHTML = d.html;
+      art.innerHTML = d.html; wireCvBtns(art);
       box.appendChild(art);
       try { newsPlayersBlock(box, (d.title || title || "") + " . " + (d.lead || "") + " . " + (art.textContent || "")); } catch (e) {}
     } else {
