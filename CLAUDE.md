@@ -13,7 +13,7 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 
 ## Técnico
 - JS puro: futmondo/guiafantasy/mercado.js, chrome.js, alineacion.js + CSS.
-- Backend: functions/api/laquiniela/[[path]].js (Cloudflare Pages Functions, plan gratis: límites de CPU y KV).
+- Backend: functions/api/laquiniela/[[path]].js (Cloudflare Pages Functions). **Plan de pago de Cloudflare (Workers Paid, 5 $/mes) contratado el 01/11/2026**: 30 s de CPU, miles de llamadas por petición, 1 M de escrituras KV al mes.
 - Fuentes: Futmondo, FutbolFantasy, Comuniate, FotMob, football-data.org.
 - Liga "Con Permisoo": Futmondo Social, AS 50 %, Marca 50 %, SofaScore 50 %, capitán sí, multiposición sí. La jornada acaba el lunes; a las 00:00 de ese lunes pasa a la siguiente.
 
@@ -24,7 +24,6 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 - Histórico de minutos por jugador
 - Web por club (/equipos/alaves) y clasificación en cada club
 - Estabilidad: pruebas automáticas y datos de reserva en todas las pantallas
-- Plan de pago de Cloudflare solo si los fallos siguen
 - Rayo–Athletic (J8) aplazado: aparece solo cuando tenga fecha
 
 ## Hecho

@@ -5,10 +5,10 @@ import { avisar } from "./avisos.js";
 
 export default {
   async scheduled(event, env, ctx) {
-    // "*/5 * * * *" = avisos de Telegram (noticias, alineaciones, cambios en tus
+    // "* * * * *" = avisos (cada minuto) de Telegram (noticias, alineaciones, cambios en tus
     // jugadores). Lee las fuentes directamente; sin el secreto TELEGRAM_BOT_TOKEN
     // no hace nada, y un fallo aquí nunca afecta a lo demás.
-    if (event.cron === "*/5 * * * *") {
+    if (event.cron === "* * * * *") {
       try { await avisar(env); } catch (e) {}
       return;
     }

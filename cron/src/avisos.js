@@ -5,9 +5,9 @@
 //   2) Alineación confirmada de TODOS los partidos (⭐ marca a tus jugadores).
 //   3) Once probable actualizado: quién entra y quién sale (de todos los partidos).
 //   4) Cambios en tus jugadores: el % de jugar de FutbolFantasy y el estado de Futmondo.
-// Corre cada 5 min y lee las fuentes DIRECTAMENTE (endpoints noticias-rapido, probables?...,
+// Corre cada MINUTO (plan de pago de Cloudflare desde 01/11/2026) y lee las fuentes DIRECTAMENTE (endpoints noticias-rapido, probables?...,
 // alineaciones-confirmadas?fresh=1: sin caché ni escrituras de KV) para ser rápido sin gastar el
-// tope de 1.000 escrituras/día del plan gratis. Las alineaciones solo de día (08:00–24:00).
+// escrituras de KV. Noticias y alineaciones confirmadas: cada minuto; once probable: cada minuto el día del partido, menos a menudo si falta más. Solo de día (08:00–24:00).
 // Todo sale de la propia web (/api/laquiniela/...), que a su vez lee fuentes reales.
 // Si un dato falta no se inventa: simplemente no se avisa.
 // Sin TELEGRAM_BOT_TOKEN (secreto de Cloudflare) no hace nada.
@@ -306,8 +306,7 @@ export async function avisar(env, deps) {
     }
   }
 
-  // 2b) Once probable actualizado: quién entra y quién sale. Se lee directo de FutbolFantasy en cada pasada
-  // (cada 5 min) para los partidos de las próximas 72 h; solo avisa si el once cambia de verdad.
+  // 2b) Once probable actualizado: quién entra y quién sale. Se lee directo de FutbolFantasy (partidos de las próximas 72 h, más seguido cuanto más cerca); solo avisa si el once cambia de verdad.
   if (!quiet) {
     try {
       if (doList) {
@@ -316,7 +315,13 @@ export async function avisar(env, deps) {
         if (items.length && JSON.stringify(items) !== JSON.stringify(st.ml || null)) { st.ml = items; st.mlMd = est.matchday || 0; dirty = true; }
       }
       st.pr = st.pr || {};
-      const todo = (st.ml || []).filter((m) => near(m.ko, 0, 72 * 3600e3));
+      // Cuanto más cerca el partido, más seguido: <3 h cada minuto, <24 h cada 5 min, <72 h cada 15 min
+      const todo = (st.ml || []).filter((m) => {
+        if (all || !m.ko) return true;
+        const falta = m.ko - now;
+        if (falta > 72 * 3600e3 || falta < 0) return false;
+        return falta <= 3 * 3600e3 || (falta <= 24 * 3600e3 ? mnt % 5 === 0 : mnt % 15 === 0);
+      });
       const res = await Promise.all(todo.map(async (m) => {
         try { return { m, d: await getJson(f, "probables?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&t=" + now) }; } catch (e) { return null; }
       }));

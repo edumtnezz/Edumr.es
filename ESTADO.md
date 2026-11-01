@@ -22,14 +22,14 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 
 ## Decisiones
 - Solo valores de mercado de Futmondo; nunca inventar datos; si una fuente falla, mostrar el último dato bueno.
-- Plan de pago de Cloudflare (5 $/mes): solo si los fallos siguen; de momento no.
+- Plan de pago de Cloudflare (Workers Paid, 5 $/mes): contratado por Edu el 01/11/2026. Avisos de Telegram cada minuto.
 - Se mantienen los degradados de la cabecera de Equipos y de la tarjeta del próximo partido del club (Edu, 31/10).
 - La Quiniela: cada partido se bloquea cuando empieza; los pronósticos de todos se ven desde el principio.
 - No eludir bloqueos de bots de FutbolFantasy (denegado).
 - Antes de subir: `node --check` de los JS, ESLint `no-undef` en `mercado.js` y subir `?v=` en `futmondo/guiafantasy/index.html`.
 
 ## Errores abiertos
-- Plan gratis de Cloudflare: ~10 ms de CPU, 1.000 escrituras KV al día, ~50 llamadas por petición; fallos sueltos en horas punta.
+- Cloudflare (plan de pago desde 01/11/2026): ya no aplican los topes del plan gratis (10 ms de CPU, 1.000 escrituras KV/día, 50 llamadas por petición). Se mantienen la caché en el borde y no parsear JSON enormes en rutas calientes, por velocidad. Pendiente de comprobar en producción si los fallos sueltos de horas punta desaparecen.
 - football-data.org: ~10 peticiones por minuto.
 - Ninguno visual conocido a 390 px (01/11: corregido el borde derecho de la tarjeta del próximo partido del club, que se salía 8 px).
 
