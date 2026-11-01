@@ -3120,3 +3120,24 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .feat-chg-ph { flex: none; width: 24px; height: 24px; border-radius: 50%; object-fit: cover; object-position: top; background: rgba(127,127,127,.18); box-shadow: 0 0 0 2px var(--uc, #94a3b8); display: block; }
 .feat-chg-row { gap: 9px; }
 @container (min-width: 640px) { .feat-prev-row { flex-direction: row; justify-content: flex-start; } .feat-prev-img { width: 56px; height: 56px; } }
+
+/* === Clausulazo v279: filtros rediseñados (posición = fichas con punto de color; orden = selector compacto) === */
+#tab-clausulazos .claus-filters { align-items: stretch; margin: 8px 0 4px; gap: 8px; }
+#tab-clausulazos #clausPos { display: grid; grid-template-columns: 1.3fr repeat(4, 1fr); gap: 6px; padding: 0; background: none; border-radius: 0; overflow: visible; width: 100%; }
+#tab-clausulazos #clausPos .claus-chip { display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 0; height: 40px; margin: 0; padding: 0 4px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: .76rem; font-weight: 800; letter-spacing: .02em; opacity: 1; box-shadow: none; transition: background-color .16s ease, border-color .16s ease, color .16s ease, transform .12s ease; }
+#tab-clausulazos #clausPos .claus-chip[data-pos]:not([data-pos=""])::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--pc); }
+#tab-clausulazos #clausPos .claus-chip:active { transform: scale(.96); }
+#tab-clausulazos #clausPos .claus-chip.active { background: var(--text); border-color: var(--text); color: var(--card-solid, #fff); box-shadow: none; }
+#tab-clausulazos #clausPos .claus-chip[data-pos]:not([data-pos=""]).active { background: var(--pc); border-color: var(--pc); color: #fff; box-shadow: none; }
+#tab-clausulazos #clausPos .claus-chip[data-pos]:not([data-pos=""]).active::before { background: #fff; }
+:root:not([data-theme="light"]) #tab-clausulazos #clausPos .claus-chip[data-pos]:not([data-pos=""]).active { color: #0b1220; }
+:root:not([data-theme="light"]) #tab-clausulazos #clausPos .claus-chip[data-pos]:not([data-pos=""]).active::before { background: #0b1220; }
+@media (hover: hover) and (pointer: fine) { #tab-clausulazos #clausPos .claus-chip:not(.active):hover { border-color: var(--text); } }
+#tab-clausulazos #clausSort { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; padding: 3px; width: 100%; box-sizing: border-box; border-radius: 12px; background: rgba(127,127,127,.14); overflow: visible; }
+#tab-clausulazos #clausSort .claus-chip { height: 34px; padding: 0 8px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font-size: .76rem; font-weight: 700; box-shadow: none; }
+#tab-clausulazos #clausSort .claus-chip.active { background: var(--card-solid, #fff); color: var(--text); box-shadow: 0 1px 3px rgba(15,23,42,.16); }
+:root:not([data-theme="light"]) #tab-clausulazos #clausSort .claus-chip.active { background: rgba(255,255,255,.14); box-shadow: none; }
+:root:not([data-theme="light"]) #tab-clausulazos #clausPos .claus-chip[data-pos="portero"] { --pc: #22c55e; }
+:root:not([data-theme="light"]) #tab-clausulazos #clausPos .claus-chip[data-pos="defensa"] { --pc: #f59e0b; }
+:root:not([data-theme="light"]) #tab-clausulazos #clausPos .claus-chip[data-pos="centrocampista"] { --pc: #22d3ee; }
+:root:not([data-theme="light"]) #tab-clausulazos #clausPos .claus-chip[data-pos="delantero"] { --pc: #fb7185; }
