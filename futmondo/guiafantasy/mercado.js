@@ -605,11 +605,14 @@
       (t.match(/^([A-ZÁÉÍÓÚÑa-záéíóúñ0-9 .'-]{3,30}?)\s+(?:ya|también|sufre|pierde|vuelve|renueva)/i) || [])[1],
     ].filter(Boolean);
     const alias = (window.EduTeams && EduTeams.TEAMS) || [];
+    // "Convocatoria de Real Madrid disponible" → el club es "Real Madrid", no "Real Madrid disponible".
+    const LIMPIA = /\s+(disponible|confirmad[oa]|publicad[oa]|actualizad[oa]|oficial|en\s+duda|lesionad[oa]|sancionad[oa]|ya)\s*$/i;
     let club = "";
     for (const c of cand) {
-      const k = teamCanon(c);
+      const limpio = String(c).replace(LIMPIA, "").trim();
+      const k = teamCanon(limpio);
       const hit = alias.find((z) => z.k === k);
-      if (hit) { club = c.trim(); break; }
+      if (hit) { club = limpio; break; }
     }
     if (!club) return null;
     const box = el("div", "up-links");
