@@ -5136,38 +5136,49 @@
 
   let anData = null, anStale = false, anDrag = null;
   function openPicker(title, cb) {
-    const root = el("div");
-    root.appendChild(el("h2", "ficha-name", title || "Elegir jugador"));
-    const inp = el("input", "market-search"); inp.placeholder = "Buscar jugador por nombre…"; inp.autocomplete = "off";
+    const root = el("div", "pk");
+    root.appendChild(el("h2", "pk-title", title || "Elegir jugador"));
+    const inp = el("input", "pk-search"); inp.type = "search"; inp.placeholder = "Buscar jugador o club"; inp.autocomplete = "off";
     root.appendChild(inp);
-    const list = el("div", "pick-list");
+    let role = "";
+    const chips = el("div", "pk-chips");
+    [["", "Todos"], ["portero", "POR"], ["defensa", "DEF"], ["centrocampista", "MED"], ["delantero", "DEL"]].forEach(([v, t]) => {
+      const c = el("button", "pk-chip" + (v === role ? " on" : ""), t); c.type = "button";
+      c.addEventListener("click", () => { role = v; chips.querySelectorAll(".pk-chip").forEach((x) => x.classList.toggle("on", x === c)); render(); });
+      chips.appendChild(c);
+    });
+    root.appendChild(chips);
+    const list = el("div", "pk-list");
     root.appendChild(list);
     const render = () => {
       const q = stripAccents(inp.value.trim());
-      let arr = q ? all.filter((p) => stripAccents(p.name).includes(q)) : all.slice().sort((a, b) => b.value - a.value);
+      let arr = all.filter((p) => (!role || String(p.role || "").toLowerCase() === role) && (!q || stripAccents(p.name).includes(q) || stripAccents(p.team || "").includes(q)));
+      arr = q ? arr : arr.slice().sort((a, b) => b.value - a.value);
       list.innerHTML = "";
       arr.slice(0, 60).forEach((p) => {
-        const row = el("button", "cmp-sugrow"); row.type = "button";
-        const ph = el("span", "cmp-sugphoto"); ph.appendChild(photoImg(p.photo)); row.appendChild(ph);
-        const bb = el("span", "cmp-sugbody");
-        bb.appendChild(el("span", "cmp-sugname", p.name));
-        const tl = el("span", "cmp-sugteam");
-        const cr = cmpCrest(p, "cmp-sugcrest"); if (cr) tl.appendChild(cr);
+        const row = el("button", "pk-row"); row.type = "button";
+        const ph = el("span", "pk-photo"); ph.appendChild(photoImg(p.photo));
+        const cr = cmpCrest(p, "pk-crest"); if (cr) ph.appendChild(cr);
+        row.appendChild(ph);
+        const bb = el("span", "pk-body");
+        bb.appendChild(el("span", "pk-name", p.name));
+        const tl = el("span", "pk-sub");
         const rbp = roleBadge(p.role);
-        tl.appendChild(document.createTextNode((p.team || "") + (rbp ? " · " + rbp : "")));
+        if (rbp) tl.appendChild(el("span", "pk-pos posb posb-" + posCls(p.role), rbp));
+        tl.appendChild(el("span", "pk-team", p.team || ""));
         bb.appendChild(tl);
         row.appendChild(bb);
-        const rg = el("span", "cmp-sugright");
-        rg.appendChild(el("span", "cmp-sugval", money(p.value) + " €"));
+        const rg = el("span", "pk-right");
+        rg.appendChild(el("span", "pk-val", money(p.value) + " €"));
         const info = [];
         if (cmpNum(p.points) != null) info.push(p.points + " pts");
         if (cmpNum(p.avg) != null) info.push("media " + cmpDec(Number(p.avg)));
-        if (info.length) rg.appendChild(el("span", "cmp-suginfo", info.join(" · ")));
+        if (info.length) rg.appendChild(el("span", "pk-info", info.join(" · ")));
         row.appendChild(rg);
         row.addEventListener("click", () => { cb(p); closeModal(); });
         list.appendChild(row);
       });
-      if (!arr.length) list.appendChild(el("p", "muted small", "Sin resultados."));
+      if (!arr.length) list.appendChild(el("p", "pk-empty", "Sin resultados"));
     };
     inp.addEventListener("input", render);
     showModal(root);
