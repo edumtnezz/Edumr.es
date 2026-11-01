@@ -4002,7 +4002,7 @@
         it.style.animationDelay = Math.min(idx, 10) * 40 + "ms";
         it.addEventListener("click", (ev) => { if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button === 1) return; ev.preventDefault(); openNoticiaInline(x.link, x.title); });
         const th = el("div", "newscard-thumb" + (isCm(x) ? " cm-crop-bg" : ""));
-        const fbImg = newsFallbackImg(x.title), mainImg = newsImgOf(x);
+        const fbImg = newsFallbackImg(x.title); let mainImg = newsImgOf(x); if (idx !== 0 && mainImg === NEWS_IMG) mainImg = NEWS_MINI; // miniatura cuadrada: el cartel entero, sin cortar
         const setBg = (u) => { th.style.backgroundImage = 'url("' + u + '")'; };
         setBg(mainImg);
         if (mainImg !== fbImg) { const t = new Image(); t.onerror = () => setBg(fbImg); t.src = mainImg; }
@@ -4111,7 +4111,7 @@
       older.forEach((x, i) => {
         const row = el("div", "feat-prev-row");
         row.addEventListener("click", () => open(x));
-        const th = el("img", "feat-prev-img"); th.alt = ""; th.loading = "lazy"; th.src = newsImgOf(x);
+        const th = el("img", "feat-prev-img"); th.alt = ""; th.loading = "lazy"; th.src = newsImgOf(x) === NEWS_IMG ? NEWS_MINI : newsImgOf(x);
         th.addEventListener("error", () => { th.src = newsFallbackImg(x.title); }, { once: true });
         if (isCm(x)) { const w = el("span", "feat-prev-img cm-wrap"); th.className = "cm-in"; w.appendChild(th); row.appendChild(w); } else row.appendChild(th);
         const tx = el("div", "feat-prev-tx");
@@ -4284,7 +4284,7 @@
   };
   const newsHref = (link) => { const sl = newsSlug(link); return sl ? "/futmondo/guiafantasy/noticias/" + sl : "/futmondo/guiafantasy/noticias"; };
   // Foto de cada noticia: el parte médico lleva SU banner y las que no traen foto, el banner de noticias (antes salía un balón gris)
-  const NEWS_IMG = "/img/noticia-ultima-hora.jpg", PARTE_IMG = "/img/parte-medico.jpg?v=2";
+  const NEWS_IMG = "/img/noticia-ultima-hora.jpg?v=2", NEWS_MINI = "/img/noticia-ultima-hora-mini.jpg?v=2", PARTE_IMG = "/img/parte-medico.jpg?v=2";
   const isParteMedico = (title) => /parte\s+m[eé]dico/i.test(String(title || ""));
   const isCm = (x) => /comuniate\.com/i.test(String((x && x.link) || "")) && !isParteMedico(x && x.title); // imágenes de Comuniate: se recorta abajo, donde va su logo (Edu 02/11)
   const newsFallbackImg = (title) => (isParteMedico(title) ? PARTE_IMG : NEWS_IMG);
