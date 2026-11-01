@@ -3093,7 +3093,8 @@
   function cmpInsights(c, pl) {
     const all0 = c && Array.isArray(c.ms) ? c.ms : [];
     const ms = all0.filter((m) => m.mn > 0);
-    const N = ms.length, T = all0.length;
+    const mm = pl ? minsOf(pl) : null;
+    const N = ms.length, T = mm && mm.n >= 4 && mm.n >= N ? mm.n : all0.length;
     if (T >= 3 && N < 3) return [["⚠", "Solo ha jugado <b>" + N + " de " + T + "</b> partidos"]];
     if (N < 3) return [];
     const starters = ms.filter((m) => !m.sb), subs = ms.filter((m) => m.sb);
@@ -3120,10 +3121,10 @@
       else A.push(["🔄", base]);
     }
     const part = subs.filter((m) => m.g || m.a).length;
-    if (subs.length >= 2 && part >= 1) A.push(["🔥", "Buen revulsivo: entra" + (fmOk && subsF.length >= 2 ? " sobre el <b>min. " + avgIn + "</b>" : " desde el banquillo") + " y participa en gol en <b>" + part + " de " + subs.length + "</b> partidos"]);
+    if (subs.length >= 2 && (part >= 2 || part / subs.length >= 0.5)) A.push(["🔥", "Buen revulsivo: entra" + (fmOk && subsF.length >= 2 ? " sobre el <b>min. " + avgIn + "</b>" : " desde el banquillo") + " y participa en gol en <b>" + part + " de " + subs.length + "</b> partidos"]);
+    if (T >= 4 && N / T < 0.5) A.push(["⚠", "Juega poco: <b>" + N + " de " + T + "</b> partidos de su equipo" + (subs.length / N >= 0.5 ? ", casi siempre desde el banquillo" : "")]);
     if (subs.length / N >= 0.5) A.push(["🔼", "Suele salir desde el banquillo: <b>" + subs.length + " de " + N + "</b> partidos" + (subsF.length >= 2 ? ", entra sobre el <b>min. " + avgIn + "</b>" : "")]);
     if (starters.length >= 3 && swapped.length / starters.length <= 0.2) A.push(["✅", "Intocable: juega los 90' en <b>" + (starters.length - swapped.length) + " de " + starters.length + "</b> titularidades" + (good ? " y puntúa bien (media <b>" + dec(avgS) + "</b>)" : "")]);
-    if (T >= 4 && N / T < 0.5) A.push(["⚠", "Juega poco: <b>" + N + " de " + T + "</b> partidos de su equipo"]);
     // ----- B: cómo rinde -----
     if (gmins.length >= 3) {
       const late = gmins.filter((m) => m >= 70).length, s2 = gmins.filter((m) => m > 45).length;
@@ -3153,6 +3154,7 @@
     const yc = ms.filter((m) => m.y).length;
     if (yc >= 3) B.push(["🟨", "Amarilla en <b>" + yc + "</b> partidos"]);
     if (good && !A.some((x) => /puntúa bien/.test(x[1]))) B.push(["⭐", "Puntúa bien: media <b>" + dec(avgS) + "</b>, entre el <b>" + top + " %</b> mejor de LaLiga"]);
+    if (!good && top != null && top >= 70 && N >= 5 && avgS != null) B.push(["📉", "Le cuesta puntuar: media <b>" + dec(avgS) + "</b>, por debajo de la mayoría en LaLiga"]);
     if (ptsL.length) {
       const best = ptsL.slice().sort((x, y) => y.pt - x.pt || y.r - x.r)[0];
       B.push(["⭐", "Su mejor partido: <b>J" + best.r + "</b> con <b>" + best.pt + " pts</b>" + (best.rv ? " ante " + best.rv : "")]);
@@ -3388,6 +3390,7 @@
     cmpPaint();
     cmpLoadDetail(false);
     if (!cmpCal) cmpCalLoad().then(() => { if (cmpCal) cmpRepaintTable(); });
+    if (!minsMap) loadMinutos().then(() => { if (minsMap) cmpRepaintTable(); });
   }
   // Si el mercado se refresca con el comparador abierto, se repinta en el sitio (sin mover el scroll).
   function cmpOnMarket() {
