@@ -77,6 +77,8 @@ Antes de tocar partidos/alineaciones/ficha, repasar esta lista y verificar con c
 
 - **Jugadores repetidos en el campo (01/11/2026)**: FutbolFantasy metió una 2ª tanda de 11 (sin posición ni %) en el bloque de titulares y salían 22 por equipo. Defensa en 3 capas: `cleanStarters` (`functions/_lib/starters.mjs`: solo con posición, sin repetidos, máx. 11) en `getFFTeam` y de nuevo en `/once`; `alineacion.js` también quita repetidos y corta en 11; tests en `tests/` que corre el GitHub Action ANTES de publicar (si fallan, no se despliega). Si se toca el lector de FutbolFantasy, añadir/ajustar el test.
 
+- **Partidos jugados ≠ número de jornada (arreglado 01/11/2026)**: con una jornada aplazada (Rayo–Athletic, J8) el equipo lleva un partido menos que la jornada en curso. El denominador de la ficha (partidos y minutos máximos) tienen que ser los partidos REALES del equipo: `playedDenominator`/`teamPlayedMatches` en `functions/_lib/played.mjs` (los saca del mercado: máximo de partidos de los jugadores de ese equipo). Unai Simón salía "9 de 10" y 900' cuando había jugado los 9 de 9 (810'). Si se añade otra pantalla con "X de Y partidos", usar ese mismo cálculo y su test.
+
 ## 🚫 REGLA GRAVE: NO INVENTAR NADA (pedida por Edu)
 - Nunca inventar datos, cifras, pesos, rangos ni explicaciones. Todo dato sale de una fuente real (Futmondo, FutbolFantasy, football-data…). Si no hay dato, NO se muestra o se dice "sin datos".
 - Si una fórmula necesita parámetros arbitrarios (pesos, bonus, rangos), no usarlos; si no hay más remedio, decirlo claramente al usuario, nunca presentarlos como si fueran datos.

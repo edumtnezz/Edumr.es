@@ -1,4 +1,5 @@
 import { cleanStarters } from "../../_lib/starters.mjs";
+import { teamPlayedMatches, playedDenominator } from "../../_lib/played.mjs";
 const COMPETITION = "PD";
 const CACHE_TTL_MS = 60 * 1000;
 const FORM_TTL_MS = 10 * 60 * 1000;
@@ -1622,11 +1623,17 @@ async function playerFicha(env, id, fast, raw) {
   const pTm = fast ? Promise.resolve(null) : tmo(tmProfile(env, pl.name || "", (a.team && a.team.name) || pl.team || ""), 6000, null);
   let mp = null;
   let lJornada = 0;
+  let teamPlayed = 0;
   try {
     const mk = await pMk;
     const k = String(id);
-    mp = (mk.players || []).find((x) => x.id === k) || (mk.players || []).find((x) => x.name && stripAccents(x.name) === stripAccents(pl.name || ""));
-    lJornada = (mk.players || []).reduce((m, x) => Math.max(m, Number(x.matches) || 0), 0);
+    const marketPlayers = mk.players || [];
+    mp = marketPlayers.find((x) => x.id === k) || marketPlayers.find((x) => x.name && stripAccents(x.name) === stripAccents(pl.name || ""));
+    lJornada = marketPlayers.reduce((m, x) => Math.max(m, Number(x.matches) || 0), 0);
+    // Partidos que ha jugado SU EQUIPO, no la jornada en curso (ver functions/_lib/played.mjs):
+    // el J8 del Athletic está aplazado y el denominador salía uno de más ("9 de 10" con 9 jugados).
+    const teamNameFor = (a.team && a.team.name) || pl.team || (mp && mp.team) || "";
+    teamPlayed = teamPlayedMatches(marketPlayers, teamNameFor, teamKey);
   } catch (e) {}
   if (!pl.name && mp && mp.name) pl = { name: mp.name, value: mp.value, change: mp.change, role: mp.role || "", status: mp.status || "", team: mp.team || "" };
   if (!pl.name) return { error: "sin datos" };
@@ -1730,10 +1737,11 @@ async function playerFicha(env, id, fast, raw) {
   const starts = cats.filter((c) => c.cat === "completo" || c.cat === "sustituido").length;
   const bench = cats.filter((c) => c.cat === "banquillo").length;
   const totalMin = matches.reduce((s, m) => s + (m.mins || 0), 0);
-  // Jornadas que su equipo ya ha jugado = la última jornada con datos suyos en Futmondo (si su equipo aún no ha jugado
-  // la jornada en curso, no cuenta: antes se dividía entre una jornada de más, p. ej. "9/11" y "661 de 990").
+  // Jornadas que su equipo ya ha jugado = los partidos reales de su equipo (si una jornada está
+  // aplazada, p. ej. el Rayo–Athletic del J8, NO cuenta: antes se dividía entre una jornada de más,
+  // "9 de 10" y "810 de 900" para quien los había jugado todos).
   const lastR = matches.reduce((mx, m) => Math.max(mx, Number(m.r) || 0), 0);
-  const jPlayed = lastR > 0 && lastR <= (Number(lJornada) || 0) ? lastR : (Number(lJornada) || 0);
+  const jPlayed = playedDenominator(teamPlayed, lastR, Number(lJornada) || 0, parPlayed);
   const maxMin = jPlayed * 90;
   const participacion = {
     jornada: Number(lJornada) || 0, jPlayed, played: parPlayed, starts, bench,
