@@ -2728,6 +2728,7 @@
     const vd = (days) => { const x = (f.valores || []).find((v) => v && v.days === days); return x && x.diff != null ? Number(x.diff) : null; };
     return {
       t: Date.now(),
+      age: Number(f.age) > 0 ? Number(f.age) : null,
       goals: has ? ms.reduce((s, m) => s + (Number(m.ev && m.ev.g) || 0), 0) : null,
       assists: has ? ms.reduce((s, m) => s + (Number(m.ev && m.ev.a) || 0), 0) : null,
       pctStart: has && pa.played > 0 ? pa.pctStart : null,
@@ -2774,13 +2775,18 @@
       c.appendChild(el("span", "cmpx-plus", "+"));
       c.appendChild(el("div", "cmp2-name", "Elegir jugador"));
     } else {
+      const pw = el("div", "cmpx-photowrap");
       const ph = el("div", "cmp2-photo");
       ph.appendChild(photoImg(p.photo));
-      c.appendChild(ph);
+      pw.appendChild(ph);
+      const cb = cmpCrest(p, "cmpx-crestbadge");
+      if (cb) pw.appendChild(cb);
+      c.appendChild(pw);
       c.appendChild(el("div", "cmp2-name", p.name));
       const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
       if (rb) c.appendChild(el("span", "mcard-role" + (rb2 ? " multi" : "") + " posb posb-" + posCls(p.role), rb + (rb2 ? " · " + rb2 : "")));
       c.appendChild(el("div", "cmp2-team", p.team || ""));
+      if (p.value != null) c.appendChild(el("div", "cmpx-slotval", money(p.value) + " €"));
     }
     c.addEventListener("click", () => {
       openPicker("Elegir jugador", (pl) => {
@@ -2794,6 +2800,12 @@
       });
     });
     return c;
+  }
+  function cmpCrest(p, cls) {
+    if (!p || !p.logo) return null;
+    const i = el("img", cls); i.src = p.logo; i.alt = ""; i.loading = "lazy"; i.decoding = "async";
+    i.addEventListener("error", () => { i.style.display = "none"; });
+    return i;
   }
   function cmpNote(t) { const n = $("cmpxNote"); if (n) n.textContent = t || ""; }
 
@@ -2819,6 +2831,13 @@
     return wrap;
   }
 
+  function cmpTeamNode(p) {
+    const w = el("span", "cmpx-team");
+    const c = cmpCrest(p, "cmpx-teamcrest"); if (c) w.appendChild(c);
+    w.appendChild(el("span", "cmpx-teamname", p.team || CMP_DASH));
+    return w;
+  }
+
   function cmpPaintTable() {
     const out = $("cmpxOut");
     if (!out) return;
@@ -2829,11 +2848,13 @@
     const rb = b.id in cmpDetail ? cmpDetail[b.id] : undefined;
     const la = ra === undefined, lb = rb === undefined;
     const posOf = (p) => (roleBadge(p.role) || CMP_DASH) + (roleBadge(p.role2) ? " / " + roleBadge(p.role2) : "");
-    const stat = (lab, ca, cb, win, tone) => ({ lab, ca, cb, win: !!win, tone });
+    const stat = (lab, ca, cb, win, tone, bar) => ({ lab, ca, cb, win: !!win, tone, bar: !!bar });
     const rows = [
+      stat("Equipo", { v: null, node: cmpTeamNode(a) }, { v: null, node: cmpTeamNode(b) }),
       stat("Posición", { v: null, t: posOf(a) }, { v: null, t: posOf(b) }),
+      stat("Edad", cmpDet(ra, "age", (n) => n + " años", la), cmpDet(rb, "age", (n) => n + " años", lb)),
       { head: "Valor" },
-      stat("Actual", cmpCell(a.value, cmpEur), cmpCell(b.value, cmpEur)),
+      stat("Actual", cmpCell(a.value, cmpEur), cmpCell(b.value, cmpEur), false, null, true),
       stat("Hoy", cmpCell(a.change, cmpDiff), cmpCell(b.change, cmpDiff), false, "diff"),
       stat("5 días", cmpDet(ra, "v5", cmpDiff, la), cmpDet(rb, "v5", cmpDiff, lb), false, "diff"),
       stat("30 días", cmpDet(ra, "v30", cmpDiff, la), cmpDet(rb, "v30", cmpDiff, lb), false, "diff"),
@@ -2863,6 +2884,16 @@
       if (r.ca.node) ca.appendChild(r.ca.node); else ca.textContent = r.ca.t;
       const cb = el("span", "cmp2-cell right" + (wb ? " win" : "") + tone(r.cb));
       if (r.cb.node) cb.appendChild(r.cb.node); else cb.textContent = r.cb.t;
+      // Barra proporcional (solo con dos datos reales)
+      if ((r.win || r.bar) && r.ca.v != null && r.cb.v != null) {
+        const mx = Math.max(Math.abs(r.ca.v), Math.abs(r.cb.v));
+        if (mx > 0) [[ca, r.ca.v, wa], [cb, r.cb.v, wb]].forEach(([cell, v, w]) => {
+          cell.classList.add("hasbar");
+          const bar = el("span", "cmpx-bar" + (w ? " win" : ""));
+          const fill = el("i"); fill.style.width = Math.max(4, Math.round(Math.abs(v) / mx * 100)) + "%";
+          bar.appendChild(fill); cell.appendChild(bar);
+        });
+      }
       row.appendChild(ca);
       row.appendChild(el("span", "cmp2-lab", r.lab));
       row.appendChild(cb);
@@ -2917,6 +2948,7 @@
         const ph = el("span", "cmpx-sv-ph");
         ph.appendChild(photoImg(p && p.photo));
         open.appendChild(ph);
+        const sc = cmpCrest(p, "cmpx-sv-crest"); if (sc) open.appendChild(sc);
         open.appendChild(el("span", "cmpx-sv-name", x.name || (p && p.name) || ""));
       });
       open.addEventListener("click", () => {
@@ -4732,9 +4764,19 @@
         const ph = el("span", "cmp-sugphoto"); ph.appendChild(photoImg(p.photo)); row.appendChild(ph);
         const bb = el("span", "cmp-sugbody");
         bb.appendChild(el("span", "cmp-sugname", p.name));
-        bb.appendChild(el("span", "cmp-sugteam", p.team || ""));
+        const tl = el("span", "cmp-sugteam");
+        const cr = cmpCrest(p, "cmp-sugcrest"); if (cr) tl.appendChild(cr);
+        const rbp = roleBadge(p.role);
+        tl.appendChild(document.createTextNode((p.team || "") + (rbp ? " · " + rbp : "")));
+        bb.appendChild(tl);
         row.appendChild(bb);
-        row.appendChild(el("span", "cmp-sugval", money(p.value) + " €"));
+        const rg = el("span", "cmp-sugright");
+        rg.appendChild(el("span", "cmp-sugval", money(p.value) + " €"));
+        const info = [];
+        if (cmpNum(p.points) != null) info.push(p.points + " pts");
+        if (cmpNum(p.avg) != null) info.push("media " + cmpDec(Number(p.avg)));
+        if (info.length) rg.appendChild(el("span", "cmp-suginfo", info.join(" · ")));
+        row.appendChild(rg);
         row.addEventListener("click", () => { cb(p); closeModal(); });
         list.appendChild(row);
       });
