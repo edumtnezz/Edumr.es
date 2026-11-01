@@ -3144,3 +3144,67 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 
 /* Inicio simplificado: solo la última noticia (grande, con etiqueta) + 3 anteriores en orden + últimos cambios (01/11/2026) */
 .feat-badge { display: inline-block; background: #16a34a; color: #fff; font-size: .66rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; margin-bottom: 8px; text-shadow: none; }
+
+/* ===== 01/11/2026: cabecera de pestaña igual en toda la web =====
+   Mismo sitio (arriba a la izquierda), misma fuente y mismo tamaño en todas las pestañas. */
+.tab-h { display: flex; align-items: baseline; gap: 10px; margin: 2px 0 14px; padding: 0 4px; }
+.tab-h h2 { margin: 0; font-family: var(--font-display, inherit); font-size: 1.5rem; font-weight: 800; letter-spacing: -.025em; line-height: 1.1; color: var(--text); }
+.tab-h-sub { font-size: .78rem; font-weight: 600; color: var(--muted); }
+.tab-h-actions { margin-left: auto; }
+
+/* Probabilidad de jugar: separada del resto de filtros (es un dato aparte, de FutbolFantasy) */
+.mx-row-prob { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 14px; }
+.mx-lab-src { font-weight: 600; letter-spacing: 0; text-transform: none; opacity: .65; font-size: .62rem; margin-left: 4px; }
+
+/* Etiqueta del tipo de noticia de alineación (probable / confirmado) */
+.nk { display: inline-block; font-size: .62rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; }
+.nk.ok { background: rgba(22,163,74,.15); color: #15803d; border: 1px solid rgba(22,163,74,.35); }
+.nk.prob { background: rgba(14,165,233,.14); color: #0369a1; border: 1px solid rgba(14,165,233,.35); }
+:root:not([data-theme="light"]) .nk.ok { color: #4ade80; }
+:root:not([data-theme="light"]) .nk.prob { color: #7dd3fc; }
+.nk.feat-kind { margin: 0 0 6px; align-self: flex-start; }
+.nk.news-kind { margin: 6px 0 2px; }
+
+/* "Anteriores": se marca la más reciente */
+.feat-prev-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 3px; }
+.feat-prev-new { font-size: .6rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #16a34a; }
+:root:not([data-theme="light"]) .feat-prev-new { color: #4ade80; }
+
+/* Enlaces de Últimas actualizaciones: club y partido */
+.up-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.up-club { font-size: .76rem; font-weight: 700; color: var(--text); background: rgba(127,127,127,.14); padding: 5px 11px; border-radius: 999px; text-decoration: none; }
+.up-club:hover { background: rgba(127,127,127,.24); }
+.up-tomatch { font-size: .76rem; font-weight: 800; color: #16a34a; text-decoration: none; padding: 5px 11px; border-radius: 999px; border: 1px solid rgba(22,163,74,.4); }
+:root:not([data-theme="light"]) .up-tomatch { color: #4ade80; }
+
+/* ===== Un solo estilo de botón de filtro en toda la web (el de Destacados) =====
+   Destacados (#tab-inicio) se queda con SU estilo, que es el que gusta: aquí se
+   unifican Mercado, Clausulazos, Rentables, Plantillas y Actualizaciones. */
+:is(#tab-mercado, #tab-clausulazos, #tab-rentables, #tab-plantillas, #tab-actualizaciones) :is(.mx-chip, .claus-chip, .up-chip, .hl-btn) ,
+:is(#tab-mercado, #tab-clausulazos, #tab-rentables, #tab-plantillas, #tab-actualizaciones) .plt-btn:not(.plt-club):not(.plt-arrow) {
+  border: 0;
+  background: rgba(127,127,127,.14);
+  color: var(--text);
+  font: 700 .84rem/1 inherit;
+  padding: 9px 15px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .15s, color .15s, transform .1s;
+}
+:is(#tab-mercado, #tab-clausulazos, #tab-rentables, #tab-plantillas, #tab-actualizaciones) :is(.mx-chip, .claus-chip, .up-chip, .hl-btn):active,
+:is(#tab-mercado, #tab-clausulazos, #tab-rentables, #tab-plantillas, #tab-actualizaciones) .plt-btn:active { transform: scale(.97); }
+:is(#tab-mercado, #tab-clausulazos, #tab-rentables, #tab-plantillas, #tab-actualizaciones) :is(.mx-chip.active, .claus-chip.active, .up-chip.on, .hl-btn.active),
+:is(#tab-mercado, #tab-clausulazos, #tab-rentables, #tab-plantillas, #tab-actualizaciones) .plt-btn.on {
+  background: #16a34a;
+  color: #fff;
+  box-shadow: none;
+}
+/* El selector de clubes (escudos) y las flechas no son filtros de texto: se dejan como estaban. */
+.plt-btn.plt-club, .plt-btn.plt-arrow { background: none; padding: 0; border-radius: 14px; }
+
+/* Cinta de noticias: sin "Última hora" y en una sola línea, sin marquesina */
+.cx-ticker-tag-hide { display: none !important; }
+.cx-ticker-track { animation: none !important; transform: none !important; }
+.cx-ticker-track > *:nth-child(n+2) { display: none !important; }
+.cx-ticker-view { overflow: hidden; }
+

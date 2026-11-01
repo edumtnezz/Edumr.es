@@ -66,6 +66,7 @@
 
   <main class="quiniela-main">
     <section class="tab-panel" id="tab-inicio">
+      <div class="tab-h"><h2>Inicio</h2></div>
       <section class="panel">
         <div id="inicioFeatured"></div>
       </section>
@@ -76,9 +77,9 @@
 
     <section class="tab-panel hidden" id="tab-mercado">
       <section class="panel">
-        <div class="panel-head">
+        <div class="tab-h">
           <h2>Mercado</h2>
-          <span class="muted small" id="mercadoUpdated"></span>
+          <span class="tab-h-sub" id="mercadoUpdated"></span>
         </div>
         <div class="merc-search-hero">
           <label class="msh-lab" for="mjSearch">🔎 Busca cualquier jugador</label>
@@ -120,8 +121,8 @@
               <button type="button" class="mx-chip" data-min="20000000" data-max="0">Más de 20M</button>
             </div>
           </div>
-          <div class="mx-row">
-            <span class="mx-lab">Prob. jugar</span>
+          <div class="mx-row mx-row-prob">
+            <span class="mx-lab">Prob. jugar <span class="mx-lab-src">FutbolFantasy</span></span>
             <div class="mx-chips" id="mxProb">
               <button type="button" class="mx-chip active" data-prob="">Todas</button>
               <button type="button" class="mx-chip" data-prob="90">≥ 90 %</button>
@@ -135,8 +136,8 @@
     </section>
 
     <section class="tab-panel hidden" id="tab-noticias">
+      <div class="tab-h"><h2>Noticias</h2></div>
       <section class="panel">
-        <h2>Noticias</h2>
         <h3 class="estado-title">Noticias de LaLiga <span id="newsUpdated" class="news-updated"></span></h3>
         <div id="newsAnuncios"><div class="cx-sk"></div></div>
         <div id="noticiaView" class="hidden"></div>
@@ -144,8 +145,8 @@
     </section>
 
     <section class="tab-panel hidden" id="tab-analiza">
+      <div class="tab-h"><h2>Analiza tu equipo</h2></div>
       <section class="panel">
-        <h2>Analiza tu equipo</h2>
         <div id="anOut"></div>
         <div class="an-desc">
           <b>¿Qué analiza la IA?</b>
@@ -180,14 +181,12 @@
     </section>
 
     <section class="tab-panel hidden" id="tab-clausulazos">
+      <div class="tab-h">
+        <h2>Clausulazos</h2>
+        <span class="tab-h-sub" id="clausUpdated">Cada 30 min</span>
+      </div>
       <section class="panel">
-        <header class="claus-hero">
-          <div class="claus-hero-top">
-            <h2>Clausulazo jugoso</h2>
-            <span class="claus-upd" id="clausUpdated">Cada 30 min</span>
-          </div>
-          <p class="claus-hero-sub">Jugadores de otros que merece la pena robar pagando su cláusula.</p>
-        </header>
+        <p class="claus-hero-sub">Jugadores de otros que merece la pena robar pagando su cláusula.</p>
         <div class="claus-filters">
           <div class="claus-frow" id="clausPos">
             <button type="button" class="claus-chip active" data-pos="">Todas</button>
@@ -206,8 +205,8 @@
     </section>
 
     <section class="tab-panel hidden" id="tab-rentables">
+      <div class="tab-h"><h2>Jugadores rentables</h2></div>
       <section class="rtb">
-        <h2 class="rtb-title">Jugadores rentables</h2>
         <div class="rtb-sub" id="rtbSub"></div>
         <div class="rtb-tabs" id="rtbPos"></div>
         <div class="rtb-segs" id="rtbPrice"></div>
@@ -216,11 +215,11 @@
     </section>
 
     <section class="tab-panel hidden" id="tab-comparador">
+      <div class="tab-h">
+        <h2>Comparador</h2>
+        <div class="tab-h-actions" id="cmpxBar"></div>
+      </div>
       <section class="panel cmpx-panel">
-        <div class="panel-head cmpx-head-row">
-          <h2>Comparador</h2>
-          <div id="cmpxBar"></div>
-        </div>
         <div class="cmp2" id="cmpxPick"></div>
         <p class="cmpx-note" id="cmpxNote"></p>
         <div id="cmpxOut"></div>
@@ -230,9 +229,9 @@
 
     <section class="tab-panel hidden" id="tab-actualizaciones">
       <section class="panel">
-        <div class="panel-head">
+        <div class="tab-h">
           <h2>Últimas actualizaciones</h2>
-          <span class="muted small" id="updUpdated"></span>
+          <span class="tab-h-sub" id="updUpdated"></span>
         </div>
         <div class="up-filters" id="upFilters"></div>
         <div id="updOut"></div>
@@ -240,14 +239,15 @@
     </section>
     <section class="tab-panel hidden" id="tab-fichajes">
       <section class="panel">
-        <div class="panel-head">
+        <div class="tab-h">
           <h2>Mercado de fichajes</h2>
-          <span class="muted small" id="fichUpdated"></span>
+          <span class="tab-h-sub" id="fichUpdated"></span>
         </div>
         <div id="fichOut"></div>
       </section>
     </section>
     <section class="tab-panel hidden" id="tab-plantillas">
+      <div class="tab-h"><h2>Mercado · plantillas</h2></div>
       <section class="panel plt-panel">
         <div class="plt-head" id="pltHead">
         <div class="plt-clubwrap" id="pltClubWrap">
@@ -258,7 +258,6 @@
         <div class="plt-row-btns" id="pltPos"></div>
         <div class="plt-row-btns" id="pltSort"></div>
         <div class="plt-row-btns plt-mins" id="pltMins"></div>
-        <div class="plt-row-btns" id="pltProb"></div>
         <div class="plt-row-btns plt-per" id="pltPeriod" hidden></div>
         </div>
         <div class="plt-list" id="pltList"><div class="cx-sk"></div></div>

@@ -63,7 +63,7 @@
     if (!host) return;
     host.innerHTML =
       '<div class="cx-ticker" id="cxTicker">' +
-        '<span class="cx-ticker-tag">Última hora</span>' +
+        '<span class="cx-ticker-tag cx-ticker-tag-hide">Última hora</span>' +
         '<div class="cx-ticker-view" id="cxTickerView">' +
           '<div class="cx-ticker-track" id="cxTickerTrack"></div>' +
         '</div>' +
@@ -101,6 +101,11 @@
     // sin tener que recargar la página.
     // Sin jornada elegida a mano se refresca la ACTUAL (así nunca se queda atascada en una anterior)
     setInterval(function () { if (jornada && !document.hidden) loadJornada(pinnedJ || 0, true); }, 30000);
+    // Y cada 3 minutos se mira si ya han publicado el once (sin depender del caché de la jornada).
+    setInterval(function () { if (jornada && !document.hidden) applyConfirmed(pinnedJ || jornada); }, 180000);
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden && jornada) applyConfirmed(pinnedJ || jornada);
+    });
   }
   function mountScrollBar(scrollEl, barEl) {
     if (!scrollEl || !barEl) return;
@@ -170,6 +175,45 @@
         try { localStorage.setItem("cx_prob_" + n, JSON.stringify(probCache[n])); } catch (e) {}
         if (jornada === n) markProb(set);
       }).catch(function () {});
+  }
+  // "Once CONFIRMADO": se pide aparte (no depende de la copia guardada de la jornada, que dura
+  // hasta 6 h) para que la tarjeta cambie en cuanto Comuniate publica el once. Antes, con la
+  // jornada cacheada, el partido seguía en "Once probable" aunque abajo ya saliera el cambio.
+  var confBusy = false;
+  function markConfirmed(set) {
+    var grid = document.getElementById("cxJGrid");
+    if (!grid) return;
+    grid.querySelectorAll(".cx-jn").forEach(function (el) {
+      var k = (el.getAttribute("data-home") || "") + "|" + (el.getAttribute("data-away") || "");
+      var kk = window.EduTeams ? (window.EduTeams.canon(el.getAttribute("data-home")) + "|" + window.EduTeams.canon(el.getAttribute("data-away"))) : k;
+      if (!set[k] && !set[kk]) return;
+      if (el.classList.contains("cx-jn-confirmed")) return;
+      var row = document.createElement("div");
+      row.className = "cx-jn-statusrow cx-jn-statusrow-confirm";
+      row.textContent = "Once confirmado";
+      var old = el.querySelector(".cx-jn-statusrow-prob");
+      if (old) old.replaceWith(row); else el.insertAdjacentHTML("afterbegin", '<div class="cx-jn-statusrow cx-jn-statusrow-confirm">Once confirmado</div>');
+      el.classList.add("cx-jn-confirmed");
+      el.classList.remove("cx-jn-probable");
+    });
+  }
+  function applyConfirmed(n) {
+    if (!n || confBusy) return;
+    confBusy = true;
+    fetch(API + "/alineaciones-confirmadas?jornada=" + n, { cache: "no-store" })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var set = {};
+        ((d && d.matches) || []).forEach(function (m) {
+          var h = (m.home && m.home.name) || "", a = (m.away && m.away.name) || "";
+          if (!h || !a) return;
+          set[h + "|" + a] = 1;
+          if (window.EduTeams) set[window.EduTeams.canon(h) + "|" + window.EduTeams.canon(a)] = 1;
+        });
+        if (jornada === n) markConfirmed(set);
+      })
+      .catch(function () {})
+      .then(function () { confBusy = false; });
   }
   function loadJornada(n, silent) {
     var grid = document.getElementById("cxJGrid");
@@ -253,6 +297,7 @@
         }).join("");
         grid.style.minHeight = "";
         applyProb(jornada);
+        applyConfirmed(jornada);
         var pv = document.getElementById("cxJPrev"), nx = document.getElementById("cxJNext");
         if (pv) pv.disabled = jornada <= 1;
         if (nx) nx.disabled = jornada >= 38;

@@ -561,9 +561,51 @@
   const UP_GROUP = { "once-ok": "once", "once": "once", "convocatoria": "once", "tocado": "lesion", "lesion": "lesion", "duda": "lesion", "recuperado": "lesion", "sancion": "sancion", "mercado": "mercado", "otro": "otro" };
   let updData = null, updFilter = "todo";
   try { const sv = localStorage.getItem("merc_updf"); if (sv && UP_FILTERS.some((f) => f[0] === sv)) updFilter = sv; } catch (e) {}
-  function paintActualizaciones() {
+  // Equipo del titular ("Alineación confirmada de Real Madrid" → "Real Madrid") para poder
+  // llevar al club y al partido desde Últimas actualizaciones.
+  let jmCache = null;
+  async function jornadaMap() {
+    if (jmCache) return jmCache;
+    jmCache = {};
+    try {
+      const d = await (await fetch(API + "/jornada")).json();
+      (d.matches || []).forEach((m) => { [m.home, m.away].forEach((t) => { if (t) jmCache[teamCanon(t)] = m; }); });
+    } catch (e) {}
+    return jmCache;
+  }
+  function updLinks(x, jm) {
+    const t = String(x.title || "");
+    const cand = [
+      (t.match(/\b(?:de|del)\s+([A-ZÁÉÍÓÚÑa-záéíóúñ0-9 .'-]{3,30})$/i) || [])[1],
+      (t.match(/^([A-ZÁÉÍÓÚÑa-záéíóúñ0-9 .'-]{3,30}?)\s+(?:ya|también|sufre|pierde|vuelve|renueva)/i) || [])[1],
+    ].filter(Boolean);
+    const alias = (window.EduTeams && EduTeams.TEAMS) || [];
+    let club = "";
+    for (const c of cand) {
+      const k = teamCanon(c);
+      const hit = alias.find((z) => z.k === k);
+      if (hit) { club = c.trim(); break; }
+    }
+    if (!club) return null;
+    const box = el("div", "up-links");
+    const href = window.EduTeams ? EduTeams.href(club) : "";
+    if (href) {
+      const a = el("a", "up-club", club);
+      a.href = href;
+      box.appendChild(a);
+    }
+    const m = jm[teamCanon(club)];
+    if (m) {
+      const a2 = el("a", "up-tomatch", "Ver partido →");
+      a2.href = "/futmondo/guiafantasy/partido/" + matchSlug(m.home, m.away) + "?j=" + (m.aplazado || m.jornada || "");
+      box.appendChild(a2);
+    }
+    return box;
+  }
+  async function paintActualizaciones() {
     const box = $("updOut"), fb = $("upFilters");
     if (!box || !updData) return;
+    const jm = await jornadaMap();
     if (fb) {
       fb.innerHTML = "";
       UP_FILTERS.forEach((f) => {
@@ -604,6 +646,8 @@
         if (x.time) meta.appendChild(el("span", "up-time", x.time));
         body.appendChild(meta);
         body.appendChild(el("div", "up-title", x.title));
+        const links = updLinks(x, jm);
+        if (links) body.appendChild(links);
         if (x.players && x.players.length) {
           const det = el("div", "up-chg");
           x.players.forEach((p) => {
@@ -3283,11 +3327,21 @@
     sv.addEventListener("click", () => {
       const list = cmpSaved();
       const i = cmpSavedIdx(a, b);
-      if (i >= 0) list.splice(i, 1);
-      else list.unshift({ a: { id: String(a.id), name: a.name }, b: { id: String(b.id), name: b.name }, t: Date.now() });
+      if (i >= 0) {
+        list.splice(i, 1);
+        cmpSet(CMP_SAVED_KEY, list.slice(0, 30));
+        cmpPaintTable();
+        cmpPaintSaved();
+        return;
+      }
+      list.unshift({ a: { id: String(a.id), name: a.name }, b: { id: String(b.id), name: b.name }, t: Date.now() });
       cmpSet(CMP_SAVED_KEY, list.slice(0, 30));
-      cmpPaintTable();
-      cmpPaintSaved();
+      // Al guardar se cierra la comparación para poder empezar otra sin tener que pulsar nada.
+      cmpSel.a = null; cmpSel.b = null; cmpSet(CMP_SEL_KEY, cmpSel);
+      cmpDetail = {}; cmpSeq++;
+      cmpNote("Comparación guardada. Elige otros dos jugadores cuando quieras.");
+      cmpPaint();
+      try { window.scrollTo(0, 0); } catch (e) {}
     });
     out.appendChild(sv);
   }
@@ -3861,6 +3915,8 @@
         it.appendChild(th);
         const bd = el("div", "newscard-body");
         if (idx === 0) bd.appendChild(icoTxt("bolt", "Lo último", "news-badge"));
+        const nkc = newsKindChip(x.title, "news-kind");
+        if (nkc) bd.appendChild(nkc);
         bd.appendChild(el("div", "news-title", x.title));
         const nd = el("div", "news-date"); nd.appendChild(ico("clock")); nd.appendChild(document.createTextNode(x.date + (x.time ? " · " + x.time : ""))); bd.appendChild(nd);
         it.appendChild(bd);
@@ -3918,6 +3974,19 @@
     renderInicioFeatured();
   }
 
+  // Tipo de noticia de alineación: para que se vea de un vistazo si el once es probable o
+  // confirmado (antes solo se deducía leyendo el titular).
+  function newsKind(title) {
+    const s = stripAccents(String(title || "").toLowerCase());
+    if (/alineacion confirmada|once confirmado|onze confirmado/.test(s)) return ["ok", "Once confirmado"];
+    if (/posible alineacion|alineacion probable|once probable|posibles onces/.test(s)) return ["prob", "Once probable"];
+    return null;
+  }
+  function newsKindChip(title, cls) {
+    const k = newsKind(title);
+    if (!k) return null;
+    return el("span", "nk " + k[0] + (cls ? " " + cls : ""), k[1]);
+  }
   function renderInicioFeatured() {
     const box = $("inicioFeatured");
     if (!box) return;
@@ -3935,6 +4004,8 @@
     h.appendChild(him);
     const hov = el("div", "feat-hero-overlay");
     hov.appendChild(el("div", "feat-badge", "Lo último"));
+    const hk = newsKindChip(hero.title, "feat-kind");
+    if (hk) hov.appendChild(hk);
     hov.appendChild(el("div", "feat-hero-title", hero.title));
     hov.appendChild(el("div", "feat-hero-date", (hero.date || "") + (hero.time ? " · " + hero.time : "")));
     h.appendChild(hov);
@@ -3944,13 +4015,18 @@
     if (older.length) {
       const prev = el("div", "feat-prev");
       prev.appendChild(el("div", "feat-prev-title", "Anteriores"));
-      older.forEach((x) => {
+      older.forEach((x, i) => {
         const row = el("div", "feat-prev-row");
         row.addEventListener("click", () => open(x));
         const th = el("img", "feat-prev-img"); th.alt = ""; th.loading = "lazy"; th.src = x.thumb || "/img/balon.svg";
         th.addEventListener("error", () => { th.src = "/img/balon.svg"; }, { once: true });
         row.appendChild(th);
         const tx = el("div", "feat-prev-tx");
+        const tl = el("div", "feat-prev-top");
+        if (i === 0) tl.appendChild(el("span", "feat-prev-new", "Lo más reciente"));
+        const kk = newsKindChip(x.title);
+        if (kk) tl.appendChild(kk);
+        if (tl.childElementCount) tx.appendChild(tl);
         tx.appendChild(el("div", "feat-prev-h", x.title));
         tx.appendChild(el("div", "feat-prev-m", metaTxt(x)));
         row.appendChild(tx);
@@ -5166,7 +5242,7 @@
 
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { if (document.querySelector(".eq-page, .mpage, .playerpage, .livepage")) { location.href = "/futmondo/guiafantasy/" + (t.dataset.tab === "plantillas" ? "mercado" : t.dataset.tab); return; } switchTab(t.dataset.tab); }));
   setupMoreMenu();
-  let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltPeriod = "chg7", pltDir = -1, pltShown = 40, pltPlayers = [], pltMin = "", pltProb = "";
+  let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltPeriod = "chg7", pltDir = -1, pltShown = 40, pltPlayers = [], pltMin = "";
   let rtbInit = false, rtbPos = "", rtbMin = 0, rtbMax = Infinity, rtbShown = 40;
   // En la ficha de jugador esto (14 peticiones de jornadas) se pide DESPUÉS de pintar, para no frenar la carga.
   if (!/\/jugador(?:es)?\/[a-z0-9]{6,40}/i.test(location.pathname)) ensurePlayedJ();
@@ -6564,12 +6640,12 @@
     renderPltList();
   }
   const PLT_PER = [["chg7", "7 días"], ["chg30", "30 días"], ["chgAll", "Temporada"]];
-  function pltSave() { try { sessionStorage.setItem("pltState", JSON.stringify({ c: pltClub, p: pltPos, s: pltSort, d: pltDir, per: pltPeriod, n: pltShown, mn: pltMin, pr: pltProb })); } catch (e) {} }
+  function pltSave() { try { sessionStorage.setItem("pltState", JSON.stringify({ c: pltClub, p: pltPos, s: pltSort, d: pltDir, per: pltPeriod, n: pltShown, mn: pltMin })); } catch (e) {} }
   function pltLoadState() {
     try {
       const s = JSON.parse(sessionStorage.getItem("pltState") || "null");
       if (!s) return;
-      pltClub = s.c || ""; pltPos = s.p || ""; pltSort = s.s || "points"; pltDir = s.d === 1 ? 1 : -1; pltPeriod = s.per || "chg7"; pltShown = Number(s.n) > 0 ? Math.min(Number(s.n), 400) : 40; pltMin = MQ[s.mn] ? s.mn : ""; pltProb = ["90", "70", "low"].indexOf(s.pr) >= 0 ? s.pr : "";
+      pltClub = s.c || ""; pltPos = s.p || ""; pltSort = s.s || "points"; pltDir = s.d === 1 ? 1 : -1; pltPeriod = s.per || "chg7"; pltShown = Number(s.n) > 0 ? Math.min(Number(s.n), 400) : 40; pltMin = MQ[s.mn] ? s.mn : "";
     } catch (e) {}
   }
   function pltRerender() { pltShown = 40; renderPltControls(); renderPltList(); }
@@ -6613,14 +6689,6 @@
       mn.appendChild(el("span", "plt-lbl", "Minutos"));
       QUICKS.filter(([k]) => MQ[k]).forEach(([k, lab]) => {
         mn.appendChild(pltBtn(lab, pltMin === k, () => { pltMin = pltMin === k ? "" : k; pltRerender(); }));
-      });
-    }
-    const pr = $("pltProb");
-    if (pr) {
-      pr.innerHTML = "";
-      pr.appendChild(el("span", "plt-lbl", "Jugar"));
-      [["", "Todos"], ["90", "≥ 90 %"], ["70", "≥ 70 %"], ["low", "En duda"]].forEach(([k, lab]) => {
-        pr.appendChild(pltBtn(lab, pltProb === k, () => { pltProb = pltProb === k ? "" : k; pltRerender(); }));
       });
     }
     per.innerHTML = "";
@@ -6719,9 +6787,6 @@
     const rise = pltSort === "rise";
     const key = rise ? pltPeriod : pltSort;
     let list = pltPlayers.filter((p) => (!pltClub || p.team === pltClub) && (!pltPos || String(p.role || "").toLowerCase() === pltPos));
-    // Mismo filtro de "probabilidad de jugar" que en Mercado (dato de FutbolFantasy).
-    if (pltProb === "90" || pltProb === "70") list = list.filter((p) => Number(p.prob) >= Number(pltProb));
-    else if (pltProb === "low") list = list.filter((p) => p.prob != null && Number(p.prob) < 50);
     list = list.slice().sort((a, b) => pltDir * ((Number(a[key]) || 0) - (Number(b[key]) || 0)));
     box.innerHTML = "";
     const mq = MQ[pltMin];
