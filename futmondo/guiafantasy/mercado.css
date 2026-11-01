@@ -3141,3 +3141,6 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 :root:not([data-theme="light"]) #tab-clausulazos #clausPos .claus-chip[data-pos="defensa"] { --pc: #f59e0b; }
 :root:not([data-theme="light"]) #tab-clausulazos #clausPos .claus-chip[data-pos="centrocampista"] { --pc: #22d3ee; }
 :root:not([data-theme="light"]) #tab-clausulazos #clausPos .claus-chip[data-pos="delantero"] { --pc: #fb7185; }
+
+/* Inicio simplificado: solo la última noticia (grande, con etiqueta) + 3 anteriores en orden + últimos cambios (01/11/2026) */
+.feat-badge { display: inline-block; background: #16a34a; color: #fff; font-size: .66rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; margin-bottom: 8px; text-shadow: none; }

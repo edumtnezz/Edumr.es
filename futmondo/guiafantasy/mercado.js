@@ -3926,26 +3926,13 @@
     him.addEventListener("error", () => { him.src = "/img/balon.svg"; }, { once: true });
     h.appendChild(him);
     const hov = el("div", "feat-hero-overlay");
+    hov.appendChild(el("div", "feat-badge", "Lo último"));
     hov.appendChild(el("div", "feat-hero-title", hero.title));
     hov.appendChild(el("div", "feat-hero-date", (hero.date || "") + (hero.time ? " · " + hero.time : "")));
     h.appendChild(hov);
     grid.appendChild(h);
-    const sub = el("div", "feat-sub");
-    list.slice(1, 4).forEach((x) => {
-      const it = el("div", "feat-card-sm");
-      it.addEventListener("click", () => open(x));
-      const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = x.thumb || "/img/balon.svg";
-      im.addEventListener("error", () => { im.src = "/img/balon.svg"; }, { once: true });
-      it.appendChild(im);
-      const ov = el("div", "feat-card-sm-overlay");
-      ov.appendChild(el("div", "feat-card-sm-title", x.title));
-      ov.appendChild(el("div", "feat-card-sm-date", (x.date || "") + (x.time ? " · " + x.time : "")));
-      it.appendChild(ov);
-      sub.appendChild(it);
-    });
-    grid.appendChild(sub);
     // "Anteriores": las noticias siguientes, en lista (a la izquierda de la foto grande en pantallas anchas)
-    const older = list.slice(4, 7);
+    const older = list.slice(1, 4);
     if (older.length) {
       const prev = el("div", "feat-prev");
       prev.appendChild(el("div", "feat-prev-title", "Anteriores"));
