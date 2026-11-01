@@ -3332,3 +3332,29 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 /* Cambio al que se llega desde "Últimos cambios" del Inicio */
 #tab-actualizaciones .up-row.up-focus { box-shadow: 0 0 0 2px #16a34a; transition: box-shadow .3s; }
 #tab-actualizaciones .up-row { scroll-margin-top: 130px; }
+
+/* Inicio: "Anteriores" y "Últimos cambios" más grandes; la etiqueta, más pequeña (Edu 02/11) */
+.feat-prev-title { font-size: .64rem; margin-bottom: 0; letter-spacing: .05em; }
+.feat-prev-h { font-size: .92rem; }
+.feat-prev-m { font-size: .74rem; }
+.feat-prev-img { width: 72px; height: 72px; }
+.feat-chg-ph { width: 34px; height: 34px; }
+.feat-chg-row { padding: 8px 0; font-size: .9rem; gap: 10px; }
+.feat-chg-cat { font-size: .78rem; }
+.feat-chg-time { font-size: .76rem; }
+.feat-chg-dot { width: 10px; height: 10px; }
+.feat-chg-empty { font-size: .88rem; }
+.feat-chg { min-height: 140px; }
+@container (min-width: 640px) { .feat-prev-img { width: 68px; height: 68px; } }
+@container (max-width: 639px) {
+  .feat-grid { grid-template-columns: minmax(0, 60%) minmax(0, 1fr); column-gap: 8px; }
+  .feat-prev { padding: 8px 8px 2px; }
+  .feat-prev-row { gap: 8px; padding: 8px 0; }
+  .feat-prev-img { width: 52px; height: 52px; border-radius: 10px; }
+  .feat-prev-h { font-size: .8rem; line-height: 1.22; -webkit-line-clamp: 3; }
+  .feat-prev-m { font-size: .66rem; }
+  .feat-hero-title { font-size: .85rem; }
+}
+.feat-chg.feat-chg-solo { padding: 12px 14px 8px; min-height: 0; }
+.feat-chg-solo .feat-chg-ph { width: 36px; height: 36px; }
+.feat-chg-solo .feat-chg-txt { font-size: .92rem; }
