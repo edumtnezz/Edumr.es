@@ -5155,24 +5155,34 @@
   function openPicker(title, cb) {
     const root = el("div", "pk");
     root.appendChild(el("h2", "pk-title", title || "Elegir jugador"));
-    const inp = el("input", "pk-search"); inp.type = "search"; inp.placeholder = "Buscar jugador o club"; inp.autocomplete = "off";
+    const inp = el("input", "pk-search"); inp.type = "search"; inp.placeholder = "Buscar jugador por nombre…"; inp.autocomplete = "off";
     root.appendChild(inp);
-    let role = "";
-    const chips = el("div", "pk-chips");
-    [["", "Todos"], ["portero", "POR"], ["defensa", "DEF"], ["centrocampista", "MED"], ["delantero", "DEL"]].forEach(([v, t]) => {
-      const c = el("button", "pk-chip" + (v === role ? " on" : ""), t); c.type = "button";
-      c.addEventListener("click", () => { role = v; chips.querySelectorAll(".pk-chip").forEach((x) => x.classList.toggle("on", x === c)); render(); });
-      chips.appendChild(c);
-    });
-    root.appendChild(chips);
     const list = el("div", "pk-list");
     root.appendChild(list);
     const render = () => {
       const q = stripAccents(inp.value.trim());
-      let arr = all.filter((p) => (!role || String(p.role || "").toLowerCase() === role) && (!q || stripAccents(p.name).includes(q) || stripAccents(p.team || "").includes(q)));
-      arr = q ? arr : arr.slice().sort((a, b) => b.value - a.value);
       list.innerHTML = "";
-      arr.slice(0, 60).forEach((p) => {
+      let groups;
+      if (q) groups = [[null, all.filter((p) => stripAccents(p.name).includes(q))]];
+      else {
+        let rec = [];
+        try { rec = JSON.parse(localStorage.getItem("gf:cmp:recent:v1") || "[]"); } catch (e) {}
+        const recP = rec.map((id) => all.find((p) => String(p.id) === String(id))).filter(Boolean);
+        const ids = new Set(recP.map((p) => String(p.id)));
+        const top = all.filter((p) => !ids.has(String(p.id))).sort((x, y) => y.value - x.value);
+        groups = [];
+        if (recP.length) groups.push(["Elegidos antes", recP]);
+        groups.push(["Más valiosos", top]);
+      }
+      const arr = groups.reduce((n, g) => n + g[1].length, 0) ? groups : [];
+      arr.forEach(([gt, gl]) => {
+        if (gt) list.appendChild(el("div", "pk-head", gt));
+        gl.slice(0, 40).forEach((p) => addRow(p));
+      });
+      if (!arr.length) list.appendChild(el("p", "pk-empty", "Sin resultados"));
+    };
+    const addRow = (p) => {
+      {
         const row = el("button", "pk-row"); row.type = "button";
         const ph = el("span", "pk-photo"); ph.appendChild(photoImg(p.photo));
         const cr = cmpCrest(p, "pk-crest"); if (cr) ph.appendChild(cr);
@@ -5192,10 +5202,12 @@
         if (cmpNum(p.avg) != null) info.push("media " + cmpDec(Number(p.avg)));
         if (info.length) rg.appendChild(el("span", "pk-info", info.join(" · ")));
         row.appendChild(rg);
-        row.addEventListener("click", () => { cb(p); closeModal(); });
+        row.addEventListener("click", () => {
+          try { const r = JSON.parse(localStorage.getItem("gf:cmp:recent:v1") || "[]").filter((x) => String(x) !== String(p.id)); r.unshift(String(p.id)); localStorage.setItem("gf:cmp:recent:v1", JSON.stringify(r.slice(0, 8))); } catch (e) {}
+          cb(p); closeModal();
+        });
         list.appendChild(row);
-      });
-      if (!arr.length) list.appendChild(el("p", "pk-empty", "Sin resultados"));
+      }
     };
     inp.addEventListener("input", render);
     showModal(root);
