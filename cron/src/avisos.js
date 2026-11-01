@@ -146,16 +146,14 @@ function mercadoTexto(ps, own, sig) {
   const up = ps.filter((p) => p.change > 0).sort((a, b) => b.change - a.change).slice(0, 5);
   const down = ps.filter((p) => p.change < 0).sort((a, b) => a.change - b.change).slice(0, 5);
   if (!up.length && !down.length) return null;
-  // Barra de cuadrados (1 a 5) proporcional al mayor cambio de su lista
-  const barra = (p, lista, ic) => ic.repeat(Math.max(1, Math.round(5 * Math.abs(p.change) / Math.abs(lista[0].change))));
-  const fila = (p, i, lista, sube) => "<b>" + (i + 1) + "</b>  " + (own.has(String(p.id)) ? "⭐" : "") + "<b>" + esc(p.name) + "</b>  <i>" + esc(p.team || "") + "</i>\n" +
-    barra(p, lista, sube ? "🟩" : "🟥") + "  <b>" + (sube ? "+" : "−") + eur(p.change) + "</b>  ·  " + eur(p.value);
+  // Una línea por jugador, bien visible: "1 Berenguer 🟢▲ +888k€" / "1 Comesaña 🔻🔴 −395k€"
+  const fila = (p, i, sube) => "<b>" + (i + 1) + "</b>  " + (own.has(String(p.id)) ? "⭐" : "") + "<b>" + esc(p.name) + "</b>  " + (sube ? "🟢▲ <b>+" : "🔻🔴 <b>−") + eur(p.change) + "</b>";
   const top = up.concat(down).filter((p) => own.has(String(p.id)));
   const gancho = [up[0] ? "🔥 <b>" + esc(up[0].name) + "</b> se dispara 🟢 <b>+" + eur(up[0].change) + "</b>" : "", down[0] ? "🧊 <b>" + esc(down[0].name) + "</b> se hunde 🔴 <b>−" + eur(down[0].change) + "</b>" : "", top.length ? "⭐ Tienes en el top: <b>" + esc(top.map((p) => p.name).join(", ")) + "</b>" : ""].filter(Boolean).join("\n");
   return "💹 <b>MERCADO EN MOVIMIENTO</b>\n\n" + gancho + "\n\n" +
-    (up.length ? "🟢📈 <b>TOP 5 SUBIDAS</b>\n\n" + up.map((p, i) => fila(p, i, up, true)).join("\n\n") : "") +
+    (up.length ? "📈 <b>TOP 5 SUBIDAS</b>\n" + up.map((p, i) => fila(p, i, true)).join("\n") : "") +
     (up.length && down.length ? "\n\n" : "") +
-    (down.length ? "🔴📉 <b>TOP 5 BAJADAS</b>\n\n" + down.map((p, i) => fila(p, i, down, false)).join("\n\n") : "") +
+    (down.length ? "📉 <b>TOP 5 BAJADAS</b>\n" + down.map((p, i) => fila(p, i, false)).join("\n") : "") +
     "\n\n👉 <b>Todo el mercado:</b>\n" + WEB + "mercado?v=" + sig;
 }
 
@@ -407,7 +405,7 @@ export async function avisar(env, deps) {
   }
 
   // PRUEBA ÚNICA (pedida por Edu, 01/11): manda una noticia real y la tabla de mercado real, marcadas como prueba. Se borra tras usarse.
-  if (!firstRun && !quiet && !st.demo3 && !(deps && deps.noDemo)) {
+  if (!firstRun && !quiet && !st.demo4 && !(deps && deps.noDemo)) {
     try {
       const own = new Set(squad.map((p) => String(p.id)));
       const ps = ((await getMk()).players || []).filter((p) => p && p.name && Number.isFinite(p.change));
@@ -419,7 +417,7 @@ export async function avisar(env, deps) {
         try { const n = await getJson(f, "noticia?u=" + encodeURIComponent(n0.link)); resumen = decode(String(n.lead || "")).replace(/\s+/g, " ").trim(); if (resumen.length > 150) resumen = resumen.slice(0, 150).replace(/\s+\S*$/, "") + "…"; } catch (e) {}
         nt = "🧪 <i>PRUEBA</i>\n" + noticiaTexto(decode(n0.title), ownMatch(decode(n0.title), squad), resumen, n0.link);
       }
-      const dcommit = () => { st.demo3 = 1; dirty = true; };
+      const dcommit = () => { st.demo4 = 1; dirty = true; };
       if (mt) queue.unshift({ text: "🧪 <i>PRUEBA</i>\n" + mt, commit: dcommit });
       if (nt) queue.unshift({ text: nt, commit: dcommit });
       if (!mt && !nt) dcommit();
