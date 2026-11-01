@@ -3944,7 +3944,7 @@
     });
     grid.appendChild(sub);
     // "Anteriores": las noticias siguientes, en lista (a la izquierda de la foto grande en pantallas anchas)
-    const older = list.slice(4, 8);
+    const older = list.slice(4, 7);
     if (older.length) {
       const prev = el("div", "feat-prev");
       prev.appendChild(el("div", "feat-prev-title", "Anteriores"));
@@ -3955,10 +3955,45 @@
         row.appendChild(el("div", "feat-prev-m", metaTxt(x)));
         prev.appendChild(row);
       });
+      const chg = el("div", "feat-chg");
+      chg.id = "featChg";
+      prev.appendChild(chg);
+      paintInicioCambios();
+      loadInicioCambios();
       grid.appendChild(prev);
     }
     box.appendChild(grid);
   }
+
+  // "Últimos cambios" dentro del recuadro Anteriores: las 3 últimas de /ultimos-cambios (las mismas de la pestaña "Últimas actualizaciones").
+  function paintInicioCambios() {
+    const c = $("featChg");
+    if (!c) return;
+    c.innerHTML = "";
+    const t = el("div", "feat-prev-title feat-chg-title", "Últimos cambios");
+    c.appendChild(t);
+    const items = [];
+    ((updData && updData.days) || []).forEach((d) => (d.items || []).forEach((x) => { if (items.length < 3) items.push(x); }));
+    if (!items.length) { c.appendChild(el("div", "feat-chg-empty", updData ? "Sin cambios ahora mismo" : "Cargando…")); return; }
+    items.forEach((x) => {
+      const cc = UP_CATS[x.cat] || UP_CATS.otro;
+      const row = el("div", "feat-chg-row");
+      row.style.setProperty("--uc", cc[1]);
+      row.addEventListener("click", () => switchTab("actualizaciones"));
+      row.appendChild(el("span", "feat-chg-dot"));
+      row.appendChild(el("span", "feat-chg-cat", cc[0]));
+      row.appendChild(el("span", "feat-chg-txt", x.title));
+      if (x.time) row.appendChild(el("span", "feat-chg-time", x.time));
+      c.appendChild(row);
+    });
+  }
+  async function loadInicioCambios() {
+    try {
+      const d = await (await fetch(API + "/ultimos-cambios")).json();
+      if (d && d.days && d.days.length) { updData = d; paintInicioCambios(); }
+    } catch (e) {}
+  }
+  document.addEventListener("cx:swr", (ev) => { const u = (ev.detail && ev.detail.url) || ""; if (/\/ultimos-cambios/.test(u)) loadInicioCambios(); });
 
   let newsTry = 0;
   async function loadNoticias() {

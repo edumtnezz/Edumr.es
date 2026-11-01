@@ -3076,7 +3076,8 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 
 /* Inicio: foto grande a la DERECHA y "Anteriores" a la IZQUIERDA (en pantallas anchas); en móvil todo apilado (01/11/2026) */
 #inicioFeatured { container-type: inline-size; }
-.feat-grid { display: grid; grid-template-columns: 1fr; gap: 0; }
+.feat-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+.feat-grid > * { min-width: 0; }
 .feat-prev { border: 1px solid var(--border); border-radius: 16px; padding: 12px 14px 4px; margin-bottom: 14px; background: var(--bg-card-solid, transparent); }
 .feat-prev-title { font-size: .78rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
 .feat-prev-row { padding: 9px 0; border-top: 1px solid var(--border); cursor: pointer; }
@@ -3098,3 +3099,15 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
   .feat-sub .feat-card-sm-date { color: rgba(255,255,255,0.75); }
   .feat-hero-title { font-size: 1.6rem; }
 }
+
+/* Inicio · "Últimos cambios" dentro del recuadro Anteriores (01/11/2026) */
+.feat-chg { border-top: 1px solid var(--border); margin: 4px 0 0; padding: 10px 0 12px; min-height: 118px; }
+.feat-chg-title { margin-bottom: 6px; }
+.feat-chg-row { display: flex; align-items: center; gap: 7px; padding: 5px 0; cursor: pointer; min-width: 0; font-size: .78rem; line-height: 1.2; }
+.feat-chg-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--uc, #94a3b8); }
+.feat-chg-cat { flex: none; font-weight: 800; font-size: .68rem; color: var(--uc, var(--muted)); }
+.feat-chg-txt { flex: 1; min-width: 0; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.feat-chg-time { flex: none; font-size: .66rem; font-weight: 600; color: var(--muted); }
+.feat-chg-empty { font-size: .76rem; color: var(--muted); padding: 4px 0; }
+@media (hover: hover) and (pointer: fine) { .feat-chg-row:hover .feat-chg-txt { text-decoration: underline; } }
+@container (min-width: 640px) { .feat-prev-row { padding: 5px 0; } .feat-chg { margin-top: 0; padding-bottom: 12px; } }
