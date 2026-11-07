@@ -15,6 +15,12 @@ test("solo ruedas de prensa del primer equipo masculino", () => {
   assert.equal(_r.esConferencia("Rueda de prensa de Luis García en la previa del #SevillaAlavés"), true);
   assert.equal(_r.esConferencia("Rueda de prensa | Antonio Hidalgo previa Espanyol"), true);
   assert.equal(_r.esConferencia("Rueda de prensa del Sevilla FC Femenino"), false);
+  assert.equal(_r.esConferencia("Rueda de prensa de Manuel Pablo previa al Arenas Club de Getxo - Fabril"), false);
+  assert.equal(_r.esConferencia("Rueda de prensa de Alberto Rodríguez previa al Madrid CFF - Dépor ABANCA"), false);
+  assert.equal(_r.esConferencia("REAL ZARAGOZA-VILLARREAL B | RUEDA DE PRENSA ALBELDA | PRIMERA RFEF"), false);
+  assert.equal(_r.esConferencia("Rueda de prensa de Giacomo Quagliata tras ser elegido Xogador Estrella Galicia del mes"), false);
+  assert.equal(_r.esConferencia("VILLARREAL-GETAFE | RUEDA DE PRENSA PREVIA IÑIGO | LALIGA"), true);
+  assert.equal(_r.esConferencia("Rueda de prensa de Antonio Hidalgo previa al RCD Espanyol - RC Deportivo"), true);
   assert.equal(_r.esConferencia("Rueda de prensa Juvenil A"), false);
   assert.equal(_r.esConferencia("El Partido #SevillaAlavés EN DIRECTO"), false);
 });

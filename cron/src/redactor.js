@@ -48,7 +48,8 @@ export function parseFeed(xml) {
 export function esConferencia(title) {
   const t = norm(title);
   if (!/\brueda de prensa\b/.test(t)) return false;
-  if (/\b(femenin\w*|cantera|juvenil\w*|cadete|infantil|filial|academia|sub \d+|b)\b/.test(t)) return false;
+  // Fuera: femenino (Dépor ABANCA, CFF), filiales y cantera (Fabril, Villarreal B, RFEF), premios y homenajes
+  if (/\b(femenin\w*|xogadora\w*|jugadora\w*|abanca|cff|cantera|juvenil\w*|cadete|infantil|filial|fabril|academia|rfef|sub \d+|b|elegid[oa]s?|homenaje)\b/.test(t)) return false;
   return true;
 }
 
