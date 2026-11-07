@@ -4933,6 +4933,8 @@ async function handleGet({ request, env: env0, params }) {
     try { const map = await getSeasonMap(env, true, url.searchParams.has("reset")); return json({ n: Object.keys(map).length, map }); } catch (e) { return json({ n: 0, map: {}, error: String(e) }); }
   }
   if (path === "fichajes") {
+    // Copiado de otra web: solo administrador
+    if (!isAdmin(env, await getSessionUser(env, request))) return json({ groups: [] });
     try { return json(await getFichajes(env)); } catch (e) { return json({ groups: [], error: String(e) }); }
   }
   if (path === "once") {

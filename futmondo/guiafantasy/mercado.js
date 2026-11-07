@@ -3669,7 +3669,7 @@
   // Clausulazo jugoso, Analiza tu equipo) viven aquí dentro en vez de obligar
   // a deslizar o poner flechas. Si la pestaña activa es una de las del menú,
   // el botón se pone verde para saber dónde estás sin abrir el desplegable.
-  const MORE_TABS = { actualizaciones: "Últimas actualizaciones", fichajes: "Fichajes", clausulazos: "Clausulazo jugoso", rentables: "Jugadores rentables", comparador: "Comparador", analiza: "Analiza tu equipo", plantillas: "Plantillas (prueba)" };
+  const MORE_TABS = { actualizaciones: "Últimas actualizaciones", clausulazos: "Clausulazo jugoso", rentables: "Jugadores rentables", comparador: "Comparador", analiza: "Analiza tu equipo", plantillas: "Plantillas (prueba)" };
   function closeMoreMenu() {
     const menu = $("cxMoreMenu"), btn = $("cxMoreBtn");
     if (menu) menu.classList.add("hidden");
@@ -3724,7 +3724,6 @@
     if (name === "inicio") { try { if (window.__cxTickerSync) window.__cxTickerSync(); } catch (e) {} }
     if (name === "inicio") renderInicioFeatured();
     if (name === "clausulazos") renderClausulas();
-    if (name === "fichajes") renderFichajes();
     if (name === "actualizaciones") renderActualizaciones();
     if (name === "plantillas") initPlantillas();
     if (name === "rentables") initRentables();
@@ -5465,7 +5464,7 @@
     } catch (e) {}
     let name = "";
     try {
-      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|fichajes|actualizaciones|noticias|analiza|clausulazos|rentables|comparador|plantillas)/);
+      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|actualizaciones|noticias|analiza|clausulazos|rentables|comparador|plantillas)/);
       if (m) name = m[1];
     } catch (e) {}
     if (!name) { try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {} }
