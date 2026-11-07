@@ -5705,7 +5705,9 @@
         if (String(x.id) === seen && $("anOut").children.length) return;
         try { localStorage.setItem("anJobSeen", String(x.id)); } catch (e) {}
         const m = $("anMsg"); if (m) m.textContent = "✅ Análisis terminado mientras no estabas";
+        anTab = "equipo"; try { localStorage.setItem("merc_antab", "equipo"); } catch (e) {}
         renderAnalisis(x.data);
+        anAfterResult();
       } else if (x && x.status === "error") {
         let pend = null; try { pend = localStorage.getItem("anJobPending"); } catch (e) {}
         if (pend) { try { localStorage.removeItem("anJobPending"); } catch (e) {} const m = $("anMsg"); if (m) anMsgSet(m, x.error || "No se pudo analizar."); }
@@ -5831,6 +5833,9 @@
     const box = el("div", "an-claves an-claves2");
     const seen = new Set();
     let n = 0;
+    // Orden fijo POR → DEF → CEN → DEL (antes salían en el orden que los nombrara la IA)
+    const POS_ORDER = { POR: 0, DEF: 1, CEN: 2, DEL: 3 };
+    const pendientes = [];
     const tile = (k, big, sub, wide) => {
       const t = el("div", "an-cl-it" + (wide ? " wide" : ""));
       t.appendChild(el("small", null, k));
@@ -5840,7 +5845,7 @@
     };
     String(txt || "").split(/\n+/).forEach((ln) => {
       const m = ln.trim().match(/^([^:*]{2,40}):\s*(.+)$/);
-      if (!m || n >= 4) return;
+      if (!m || n >= 5) return;
       const pl = findRosterPlayer(m[1].trim(), roster);
       if (!pl || seen.has(pl)) return;
       seen.add(pl);
@@ -5892,7 +5897,9 @@
       if (pl.rival) {
         let when = "";
         if (pl.fecha) { const d = new Date(pl.fecha); if (!isNaN(d)) when = d.toLocaleString("es-ES", { weekday: "long", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }).replace(",", ""); }
-        const t = tile("Próximo partido", (pl.casa === true ? "🏠 En casa" : pl.casa === false ? "✈️ Fuera" : "") + " · contra " + pl.rival, "", true);
+        // Casa/fuera, claro y en grande; el rival y su puesto, debajo.
+        const venue = pl.casa === true ? "🏠 En casa" : pl.casa === false ? "✈️ Fuera" : "Casa o fuera: sin dato";
+        const t = tile("Próximo partido", venue, "", true);
         const paint = () => {
           let rv = "";
           if (pl.rivalPos) {
@@ -5903,7 +5910,7 @@
             else if (rp <= 4 || (pl.casa === false && rp <= Math.floor(nT / 2))) t.t.classList.add("hard");
             else t.t.classList.add("mid");
           }
-          t.sp.textContent = [rv ? pl.rival + " es " + rv : "", jNext ? "J" + jNext : "", when].filter(Boolean).join(" · ");
+          t.sp.textContent = ["contra " + pl.rival, rv ? "es " + rv : "", jNext ? "J" + jNext : "", when].filter(Boolean).join(" · ");
         };
         paint();
         if (!pl.rivalPos) {
@@ -5920,8 +5927,10 @@
         grid.appendChild(t.t);
       }
       card.appendChild(grid);
-      box.appendChild(card); n++;
+      pendientes.push([POS_ORDER[pl.pos] == null ? 9 : POS_ORDER[pl.pos], card]);
+      n++;
     });
+    pendientes.sort((a, b) => a[0] - b[0]).forEach((x) => box.appendChild(x[1]));
     return n ? box : null;
   }
   // ---- Once ideal con reglas fijas ----
@@ -6232,7 +6241,9 @@
     ps.forEach((p) => {
       const it = r.items[p.nombre]; if (!it) return;
       if (it.prob != null && it.prob !== p.prob) { p.prob = it.prob; ch = true; }
-      if (!!it.san !== !!p.san || !!it.inj !== !!p.inj) { p.san = !!it.san; p.inj = !!it.inj; ch = true; }
+      // Lesionado solo si Futmondo lo dice (FutbolFantasy marca a veces a quien está disponible).
+      const inj = !!it.inj && /^LESI/i.test(p.estado || "");
+      if (!!it.san !== !!p.san || inj !== !!p.inj) { p.san = !!it.san; p.inj = inj; ch = true; }
     });
     if (ch) { const y = window.scrollY; renderAnalisis(anData); window.scrollTo(0, y); const m = $("anMsg"); if (m) m.textContent = "🔄 Alineaciones probables actualizadas a las " + new Date().toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }); }
   }
@@ -6672,8 +6683,36 @@
     if (!anImg) { $("anMsg").textContent = "Elige primero una captura de tu equipo."; return; }
     $("anOut").innerHTML = "";
     const d = await runAnaliza({ img: anImg }, "Analizando…");
-    if (d) renderAnalisis(d);
+    if (d) { anTab = "equipo"; try { localStorage.setItem("merc_antab", "equipo"); } catch (e) {} renderAnalisis(d); anAfterResult(); }
   });
+
+  // Con el resultado en pantalla se esconde el bloque de subida (texto, desplegable y zona
+  // de imagen) y queda un solo botón para volver a analizar.
+  function anAfterResult() {
+    try {
+      const tab = $("tab-analiza");
+      if (tab) tab.classList.add("an-done");
+      const out = $("anOut");
+      if (out && !$("anAgain")) {
+        const bar = el("div", "an-again-bar");
+        const b = el("button", "btn-primary big", "🔄 Analizar de nuevo");
+        b.type = "button"; b.id = "anAgain";
+        b.addEventListener("click", () => {
+          const t = $("tab-analiza"); if (t) t.classList.remove("an-done");
+          const o = $("anOut"); if (o) o.innerHTML = "";
+          anImg = null;
+          const pv = $("anPreview"); if (pv) { pv.src = ""; pv.classList.add("hidden"); }
+          const fl = $("anFile"); if (fl) fl.value = "";
+          const m = $("anMsg"); if (m) m.textContent = "";
+          const drop = document.querySelector("#tab-analiza .an-drop");
+          setTimeout(() => { (drop || $("anFile") || t || document.body).scrollIntoView({ block: "center", behavior: "smooth" }); }, 60);
+        });
+        bar.appendChild(b);
+        out.insertBefore(bar, out.firstChild);
+      }
+      setTimeout(() => { const o = $("anOut"); if (o) window.scrollTo({ top: o.getBoundingClientRect().top + window.scrollY - 90, behavior: "smooth" }); }, 120);
+    } catch (e) {}
+  }
 
   const fclose = $("fichaClose"); if (fclose) fclose.addEventListener("click", closeModal);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") { const ov = $("fichaOverlay"); if (ov && !ov.classList.contains("hidden")) closeModal(); } });

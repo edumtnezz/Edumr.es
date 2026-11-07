@@ -3753,17 +3753,29 @@ async function handleAnaliza(request, env, user) {
   // multiposición colocado en el campo como centrocampista (ej. Vinícius)
   // se mostraba como delantero, ignorando dónde lo había puesto el usuario.
   const VALID_POS = ["POR", "DEF", "CEN", "DEL"];
+  // Posición y multiposición REALES: si el jugador está colocado en su posición
+  // secundaria (Raphinha de centrocampista cuando es delantero/centrocampista),
+  // "la otra" tiene que ser su posición natural, no la secundaria otra vez.
+  const posOf = (pl, p) => {
+    const r1 = p ? roleShort(p.role) : "";
+    const r2 = p ? roleShort(p.role2) : "";
+    const placed = VALID_POS.includes(pl.pos) ? pl.pos : "";
+    const pos = placed || r1;
+    const pos2 = [r1, r2].find((x) => x && x !== pos) || "";
+    return { pos, pos2, r1, r2 };
+  };
   const enrich = (list) => (list || []).map((pl) => {
     const nm = String(pl.nombre || pl.name || "").trim();
     const p = findP(nm);
     const mt = p ? matchTeam(p.team) : null;
     const ffe = ffPick(nm, ffm);
     const probFf = ffe && ffe.prob != null ? ffe.prob : null;
+    const pp = posOf(pl, p);
     return {
       nombre: nm,
       id: p ? p.id : "",
-      pos: (VALID_POS.includes(pl.pos) ? pl.pos : "") || (p ? roleShort(p.role) : ""),
-      pos2: p ? roleShort(p.role2) : "",
+      pos: pp.pos,
+      pos2: pp.pos2,
       equipo: p ? p.team : "",
       estado: p ? statusLabelEs(p.status) : "?",
       pronostico: p ? pronosticoFor(p) : "",
@@ -3826,7 +3838,10 @@ async function handleAnaliza(request, env, user) {
       if (m && m.photo) p.photo = m.photo;
       // Misma fuente que "Alineaciones probables" (FutbolFantasy, por equipo):
       // así el % y los sancionados/lesionados coinciden con esa pestaña.
-      if (m) { if (m.prob != null) { p.prob = m.prob; p.probFf = m.prob; } p.san = !!m.san; p.inj = !!m.inj; }
+      // La LESiÓN solo se marca si Futmondo también la da: FutbolFantasy pone
+      // data-lesion=1 en jugadores que están disponibles (Fariñas, 07/11) y
+      // salían con la cruz roja sin estarlo.
+      if (m) { if (m.prob != null) { p.prob = m.prob; p.probFf = m.prob; } p.san = !!m.san; p.inj = !!m.inj && /^LESI/i.test(p.estado || ""); }
       p.last = shortName(p.nombre);
     });
   } catch (e) {}

@@ -3482,3 +3482,15 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .fm-chips .fm-min, .fm-chips .fm-ev { min-width: 0; max-width: 100%; }
 .fm-chips .fm-ev.ev-rt small { margin-right: 4px; }
 
+/* Analiza: con el resultado en pantalla se esconde el bloque de subida y queda
+   un único botón para volver a analizar (Edu, 07/11/2026). */
+#tab-analiza.an-done .an-desc,
+#tab-analiza.an-done .an-quote,
+#tab-analiza.an-done .an-drop,
+#tab-analiza.an-done #anFile,
+#tab-analiza.an-done #anPreview,
+#tab-analiza.an-done #anBtn { display: none !important; }
+.an-again-bar { display: flex; justify-content: center; margin: 2px 0 16px; }
+.an-again-bar .btn-primary { width: 100%; max-width: 420px; }
+
+
