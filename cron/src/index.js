@@ -2,6 +2,7 @@
 // Cada 15 min llama al endpoint que aplica nuestras reglas de limpieza y deja
 // el resultado cacheado en KV, para que la web lo sirva al instante.
 import { avisar } from "./avisos.js";
+import { redactorSombra } from "./redactor.js";
 
 export default {
   async scheduled(event, env, ctx) {
@@ -10,6 +11,9 @@ export default {
     // no hace nada, y un fallo aquí nunca afecta a lo demás.
     if (event.cron === "* * * * *") {
       try { await avisar(env); } catch (e) {}
+      // Redactor en modo sombra (ruedas de prensa de YouTube -> estados de jugadores, sin publicar).
+      // Sin el secreto GEMINI_API_KEY no hace nada; un fallo aquí nunca afecta a los avisos.
+      try { await redactorSombra(env); } catch (e) {}
       return;
     }
     // "0 8 * * *" = vigilante diario: comprueba que las 20 páginas de

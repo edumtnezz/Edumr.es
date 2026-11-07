@@ -117,3 +117,12 @@ Antes de tocar partidos/alineaciones/ficha, repasar esta lista y verificar con c
 - Después de cada tarea importante, actualiza ESTADO.md.
 - Nunca inventes datos: todo dato debe salir de una fuente real (webs, APIs); si no hay dato, no lo inventes.
 - Comprueba y revisa las cosas tú mismo (entrar en la web, usar las APIs, comparar datos) en vez de pedirme datos que ya puedes consultar.
+
+## 🧪 Redactor automático en modo sombra (07/11/2026) — `cron/src/redactor.js`
+- Corre dentro del cron de cada minuto (solo actúa en minutos %10 = 3). **No publica nada en la web.** Sin el secreto `GEMINI_API_KEY` (Worker `edumr-cron`, tipo Secret) no hace nada.
+- Detecta ruedas de prensa nuevas del primer equipo en el YouTube oficial de cada club (`FUENTES`, solo canales comprobados). Lee el RSS público; si responde 404 usa YouTube Data API si existe el secreto `YOUTUBE_API_KEY` (1 unidad por canal).
+- Paso 1: Gemini (`gemini-3.5-flash-lite`, URL de YouTube, fps 0,1 y resolución baja ≈ 30.000 tokens) transcribe literal. Paso 2: con la transcripción y la plantilla de Futmondo saca el estado de cada jugador con frase literal. La frase se VERIFICA contra la transcripción (trigramas ≥ 60 %) y el nombre se cruza con la plantilla; solo es `publicable` si frase verificada + jugador cruzado + confianza alta.
+- Tope propio de 450.000 tokens/día (el plan gratuito da 250.000 tokens/min). Un vídeo por pasada; reintenta hasta 6 veces cada 20 min (un directo aún no es grabación).
+- Guarda `rd:sombra:v1` (vistos, tokens, estado de cada fuente) y `rd:res:v1:<videoId>` (14 días) en KV `PORRA`, y manda a Edu un resumen privado por Telegram con el enlace al vídeo (solo para revisar la precisión).
+- Nunca inventar: sin frase verificada = sin dato. Apodos sin confirmar no se adivinan (`ALIAS_JUGADOR`).
+- Pendiente: probarlo una semana comparando con FutbolFantasy; añadir los canales de YouTube de los demás clubes (uno por línea, comprobando que el feed responde); publicar solo cuando la precisión acompañe.
