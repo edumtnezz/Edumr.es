@@ -285,7 +285,7 @@ export async function redactorSombra(env, deps) {
   const now = (deps && deps.now) || Date.now();
   if (!env || !env.GEMINI_API_KEY || !env.PORRA) return { skipped: "sin clave" };
   const mnt = new Date(now).getUTCMinutes();
-  if (!(deps && deps.allTicks) && mnt % 10 !== 3) return { skipped: "no toca" };
+  if (!(deps && deps.allTicks) && mnt % 2 !== 1) return { skipped: "no toca" }; // cada 2 min (un vídeo por pasada)
 
   let st = null;
   try { st = await env.PORRA.get(STATE_KEY, "json"); } catch (e) { return { skipped: "sin estado" }; }
