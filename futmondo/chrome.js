@@ -467,7 +467,7 @@
     }
     track.classList.remove("cx-ticker-empty");
     var html = items.map(function (x) {
-      var href = x.kind === "match" ? ("/futmondo/guiafantasy/partido/" + tickerSlug(x.home, x.away)) : (x.link || "#");
+      var href = x.kind === "match" ? ("/futmondo/guiafantasy/partido/" + tickerSlug(x.home, x.away)) : (String(x.link || "").replace(/^https:\/\/edumr\.es\/n\/([a-z0-9]+)$/, "/futmondo/guiafantasy/noticias/ed-$1") || "#");
       var when = tickerWhen(x);
       return '<a class="cx-ticker-item" href="' + esc(href) + '" data-kind="' + esc(x.kind || "news") + '" data-title="' + esc(x.title || "") + '" data-link="' + esc(x.link || "") + '">' +
         '<span class="cx-ticker-ico">' + tickerIcon(x) + '</span>' +

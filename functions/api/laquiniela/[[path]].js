@@ -5209,6 +5209,8 @@ async function handleGet({ request, env: env0, params }) {
     try { return json({ teams: await getTeams(env) }); } catch (e) { return json({ teams: [] }); }
   }
   if (path === "ultimahora") {
+    // Noticias de otras webs: solo administrador
+    if (!isAdmin(env, await getSessionUser(env, request))) return json({ updatedAt: Date.now(), items: [] });
     return json(await getUltimaHora(env));
   }
   // Cinta de "Última hora" de la portada (Inicio de Guía Fantasy): mezcla
@@ -5219,13 +5221,13 @@ async function handleGet({ request, env: env0, params }) {
       const j = url.searchParams.get("jornada") || "";
       const now = Date.now();
       const [uh, cf] = await Promise.all([
-        getUltimaHora(env).catch(() => ({ items: [] })),
+        getOwn(env).then((o) => ({ items: ownPublic(o).slice(0, 12).map((x) => ({ title: x.title, link: x.link, thumb: "", date: x.date, time: x.time, own: x.ts })) })).catch(() => ({ items: [] })),
         getAlineacionesConfirmadas(env, j || null).catch(() => ({ matches: [] })),
       ]);
       const items = [];
       ((uh && uh.items) || []).forEach((x) => {
         if (!x || !x.title) return;
-        items.push({ kind: "news", title: x.title, link: x.link || "", thumb: x.thumb || "", date: x.date || "", time: x.time || "", at: ffWhenAt(x.date, x.time) });
+        items.push({ kind: "news", title: x.title, link: x.link || "", thumb: x.thumb || "", date: x.date || "", time: x.time || "", at: x.own || ffWhenAt(x.date, x.time) });
       });
       ((cf && cf.matches) || []).forEach((mm) => {
         const at = mm.confirmedAt || cf.updatedAt || now;

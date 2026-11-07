@@ -3442,6 +3442,7 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .nw-tag { display: inline-flex; align-items: center; gap: 7px; font: 700 .74rem/1 inherit; color: var(--muted); }
 .nw-tag i { display: block; flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--tc, #64748b); }
 .nw-lead-t { font-family: 'Figtree', system-ui, sans-serif; font-size: 1.06rem; font-weight: 700; line-height: 1.3; color: var(--text); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.nw-empty { margin: 4px 0 0; color: var(--muted); font-size: .88rem; }
 .nw-meta { font: 600 .76rem/1 inherit; color: var(--muted); font-variant-numeric: tabular-nums; }
 
 .nw-list { display: flex; flex-direction: column; gap: 14px; }

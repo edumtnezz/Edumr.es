@@ -4119,7 +4119,7 @@
     const box = $("inicioFeatured");
     if (!box) return;
     const list = (lastNews && lastNews.noticias) || [];
-    if (!list.length) { box.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>'; return; }
+    if (!lastNews) { box.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>'; return; }
     box.innerHTML = "";
     const open = (x) => { switchTab("noticias"); openNoticiaInline(x.link, x.title); };
     const wrap = el("div", "nw");
@@ -4138,7 +4138,9 @@
 
     // Pieza principal: texto primero; la foto es solo un ancla pequeña
     const hero = list[0];
-    const lead = el("article", "nw-lead");
+    let lead = null;
+    if (hero) {
+    lead = el("article", "nw-lead");
     lead.tabIndex = 0;
     lead.setAttribute("role", "link");
     const goHero = () => open(hero);
@@ -4159,6 +4161,7 @@
     lb.appendChild(el("div", "nw-meta", newsWhen(hero)));
     lead.appendChild(lb);
     main.appendChild(lead);
+    } else main.appendChild(el("p", "nw-empty", "Sin noticias por ahora."));
 
     // Siguientes: lista limpia, sin recuadros
     const rest = list.slice(1, 6);
@@ -4208,7 +4211,7 @@
     box.appendChild(wrap);
     paintInicioCambios();
     loadInicioCambios();
-    paintLiveHero(lead);
+    if (lead) paintLiveHero(lead);
   }
 
   // Si hay un partido en juego, la pieza principal pasa a "Sigue el partido en directo" con la foto
