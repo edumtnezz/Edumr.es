@@ -3474,3 +3474,10 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
   .nw-lead-img { width: 88px; height: 88px; }
   .nw-lead-t { font-size: 1rem; }
 }
+
+/* "Puntos por jornada": la nota de FotMob y los eventos no se salen por delante del
+   número de puntos (antes la línea se metía debajo del círculo y se cortaba). */
+.fm-chips { min-width: 0; max-width: 100%; }
+.fm-chips .fm-min, .fm-chips .fm-ev { min-width: 0; max-width: 100%; }
+.fm-chips .fm-ev.ev-rt small { margin-right: 4px; }
+

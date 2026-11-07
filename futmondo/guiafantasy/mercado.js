@@ -4836,7 +4836,9 @@
             if (nt[x.key] == null || x.chips.querySelector(".ev-rt")) return;
             const sp = el("span", "fm-ev ev-rt"); sp.appendChild(el("small", null, "Nota FotMob")); sp.appendChild(el("b", null, String(nt[x.key].toFixed ? nt[x.key].toFixed(1) : nt[x.key]).replace(".", ",")));
             x.chips.appendChild(sp);
-            x.chips.classList.toggle("many", x.chips.children.length >= 5);
+            // La nota es un dato más de la línea: si no cabe, que baje a la siguiente en vez de
+            // solaparse con el número de puntos (antes se salía por delante del círculo).
+            x.chips.classList.add("many");
           });
         }).catch(() => {});
       }
