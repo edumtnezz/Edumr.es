@@ -4097,6 +4097,24 @@
     if (!k) return null;
     return el("span", "nk " + k[0] + (cls ? " " + cls : ""), k[1]);
   }
+  // Etiqueta corta del tipo de noticia, deducida del titular (no inventa nada: clasifica lo que dice).
+  function newsTag(title) {
+    const s = stripAccents(String(title || "").toLowerCase());
+    if (/alineacion confirmada|once confirmado/.test(s)) return ["Once confirmado", "#16a34a"];
+    if (/posible alineacion|alineacion probable|once probable|posibles onces/.test(s)) return ["Once probable", "#0ea5e9"];
+    if (/lesion|parte medico|rotura|esguince|molestia|baja/.test(s)) return ["Lesión", "#ef4444"];
+    if (/sancion|apercibid|tarjeta/.test(s)) return ["Sanción", "#dc2626"];
+    if (/convocatoria|convocad|lista de citados/.test(s)) return ["Convocatoria", "#6366f1"];
+    if (/rueda de prensa|compareci|declaracion|declaraciones/.test(s)) return ["Rueda de prensa", "#8b5cf6"];
+    if (/fichaje|ficha por|renueva|traspaso|clausula|rumor/.test(s)) return ["Fichaje", "#0d9488"];
+    return null;
+  }
+  function hoyMadrid() { return new Date().toLocaleDateString("es-ES", { day: "numeric", month: "numeric", timeZone: "Europe/Madrid" }); }
+  function newsWhen(x) {
+    const d = String(x.date || "").trim(), t = String(x.time || "").trim();
+    if (d && d === hoyMadrid()) return t || "hoy";
+    return [d, t].filter(Boolean).join(" · ");
+  }
   function renderInicioFeatured() {
     const box = $("inicioFeatured");
     if (!box) return;
@@ -4104,109 +4122,137 @@
     if (!list.length) { box.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>'; return; }
     box.innerHTML = "";
     const open = (x) => { switchTab("noticias"); openNoticiaInline(x.link, x.title); };
-    const metaTxt = (x) => (x.date || "") + (x.time ? " · " + x.time : "");
-    const grid = el("div", "feat-grid");
+    const wrap = el("div", "nw");
+    // Cabecera del bloque: título, frescura y acceso a todas
+    const head = el("div", "nw-head");
+    head.appendChild(el("h2", "nw-h", "Noticias"));
+    if (lastNews.updatedAt) head.appendChild(el("span", "nw-fresh", "actualizado " + haceTxt(lastNews.updatedAt)));
+    const all = el("button", "nw-all", "Ver todas");
+    all.type = "button";
+    all.addEventListener("click", () => switchTab("noticias"));
+    head.appendChild(all);
+    wrap.appendChild(head);
+
+    const grid = el("div", "nw-grid");
+    const main = el("div", "nw-main");
+
+    // Pieza principal: texto primero; la foto es solo un ancla pequeña
     const hero = list[0];
-    const h = el("div", "feat-hero");
-    h.addEventListener("click", () => open(hero));
-    const him = el("img"); him.alt = ""; him.loading = "lazy"; him.src = newsImgOf(hero); if (isCm(hero)) him.classList.add("cm-crop");
+    const lead = el("article", "nw-lead");
+    lead.tabIndex = 0;
+    lead.setAttribute("role", "link");
+    const goHero = () => open(hero);
+    lead.addEventListener("click", goHero);
+    lead.addEventListener("keydown", (e) => { if (e.key === "Enter") goHero(); });
+    const him = el("img", "nw-lead-img"); him.alt = ""; him.loading = "lazy";
+    him.src = newsImgOf(hero);
+    if (isCm(hero)) him.classList.add("cm-crop");
     him.addEventListener("error", () => { him.src = newsFallbackImg(hero.title); }, { once: true });
-    h.appendChild(him);
-    const hov = el("div", "feat-hero-overlay");
-    const hk = newsKindChip(hero.title, "feat-kind");
-    if (hk) hov.appendChild(hk);
-    hov.appendChild(el("div", "feat-hero-title", hero.title));
-    hov.appendChild(el("div", "feat-hero-date", (hero.date || "") + (hero.time ? " · " + hero.time : "")));
-    h.appendChild(hov);
-    grid.appendChild(h);
-    // "Anteriores": las noticias siguientes, en lista (a la izquierda de la foto grande en pantallas anchas)
-    const older = list.slice(1, 4);
-    let chgBelow = null;
-    if (older.length) {
-      const prev = el("div", "feat-prev");
-      prev.appendChild(el("div", "feat-prev-title", "Anteriores"));
-      older.forEach((x, i) => {
-        const row = el("div", "feat-prev-row");
-        row.addEventListener("click", () => open(x));
-        const th = el("img", "feat-prev-img"); th.alt = ""; th.loading = "lazy"; th.src = squareImg(newsImgOf(x));
-        th.addEventListener("error", () => { th.src = newsFallbackImg(x.title); }, { once: true });
-        if (isCm(x)) { const w = el("span", "feat-prev-img cm-wrap"); th.className = "cm-in"; w.appendChild(th); row.appendChild(w); } else row.appendChild(th);
-        const tx = el("div", "feat-prev-tx");
-        const tl = el("div", "feat-prev-top");
-        const kk = newsKindChip(x.title);
-        if (kk) tl.appendChild(kk);
-        if (tl.childElementCount) tx.appendChild(tl);
-        tx.appendChild(el("div", "feat-prev-h", x.title));
-        tx.appendChild(el("div", "feat-prev-m", metaTxt(x)));
-        row.appendChild(tx);
-        prev.appendChild(row);
+    lead.appendChild(him);
+    const lb = el("div", "nw-lead-b");
+    const tg = newsTag(hero.title);
+    const line = el("div", "nw-tag");
+    if (tg) { line.style.setProperty("--tc", tg[1]); line.appendChild(el("i")); line.appendChild(el("span", null, tg[0])); }
+    else { line.style.setProperty("--tc", "#16a34a"); line.appendChild(el("i")); line.appendChild(el("span", null, "Lo último")); }
+    lb.appendChild(line);
+    lb.appendChild(el("div", "nw-lead-t", hero.title));
+    lb.appendChild(el("div", "nw-meta", newsWhen(hero)));
+    lead.appendChild(lb);
+    main.appendChild(lead);
+
+    // Siguientes: lista limpia, sin recuadros
+    const rest = list.slice(1, 6);
+    if (rest.length) {
+      const ul = el("div", "nw-list");
+      rest.forEach((x) => {
+        const row = el("article", "nw-row");
+        row.tabIndex = 0;
+        row.setAttribute("role", "link");
+        const go = () => open(x);
+        row.addEventListener("click", go);
+        row.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+        const im = el("img", "nw-row-img"); im.alt = ""; im.loading = "lazy";
+        im.src = squareImg(newsImgOf(x));
+        im.addEventListener("error", () => { im.src = squareImg(newsFallbackImg(x.title)); }, { once: true });
+        row.appendChild(im);
+        const b = el("div", "nw-row-b");
+        const t2 = newsTag(x.title);
+        if (t2) {
+          const tl = el("div", "nw-tag"); tl.style.setProperty("--tc", t2[1]);
+          tl.appendChild(el("i")); tl.appendChild(el("span", null, t2[0]));
+          b.appendChild(tl);
+        }
+        b.appendChild(el("div", "nw-row-t", x.title));
+        b.appendChild(el("div", "nw-meta", newsWhen(x)));
+        row.appendChild(b);
+        ul.appendChild(row);
       });
-      const chg = el("div", "feat-chg");
-      chg.id = "featChg";
-      // En móvil "Últimos cambios" va abajo, solo y a todo el ancho; en pantalla ancha, dentro de Anteriores.
-      if ((box.clientWidth || window.innerWidth) < 640) { chg.classList.add("feat-chg-solo"); chgBelow = chg; } else prev.appendChild(chg);
-      paintInicioCambios();
-      loadInicioCambios();
-      grid.appendChild(prev);
+      main.appendChild(ul);
     }
-    box.appendChild(grid);
-    if (chgBelow) box.appendChild(chgBelow);
-    paintLiveHero(h);
+    grid.appendChild(main);
+
+    // Columna de cambios, en su propio tono (sin rayas ni sombras)
+    const side = el("div", "nw-side");
+    const sh = el("div", "nw-side-h");
+    sh.appendChild(el("h3", null, "Últimos cambios"));
+    const sbtn = el("button", "nw-side-all", "Ver todos");
+    sbtn.type = "button";
+    sbtn.addEventListener("click", () => switchTab("actualizaciones"));
+    sh.appendChild(sbtn);
+    side.appendChild(sh);
+    const chg = el("div", "nw-chg");
+    chg.id = "nwChg";
+    side.appendChild(chg);
+    grid.appendChild(side);
+    wrap.appendChild(grid);
+    box.appendChild(wrap);
+    paintInicioCambios();
+    loadInicioCambios();
+    paintLiveHero(lead);
   }
 
-  // Si hay un partido en juego, la noticia principal es "Sigue el partido en directo" con la foto de un jugador
-  // del equipo que va ganando (al azar de cualquiera de los dos si empatan). Todo sale de /jornada y del mercado real.
-  async function paintLiveHero(h) {
+  // Si hay un partido en juego, la pieza principal pasa a "Sigue el partido en directo" con la foto
+  // de un jugador del equipo que va ganando. Todo sale de /jornada y del mercado real.
+  async function paintLiveHero(lead) {
     try {
       const jr = await (await fetch(API + "/jornada")).json();
       const m = ((jr && jr.matches) || []).find((x) => x.live && x.live.state === "live");
-      if (!m || !h.isConnected) return;
+      if (!m || !lead.isConnected) return;
       const sc = String(m.live.score || "").match(/(\d+)\s*-\s*(\d+)/);
       const gh = sc ? Number(sc[1]) : null, ga = sc ? Number(sc[2]) : null;
-      let team = null;
-      if (gh != null && gh !== ga) team = gh > ga ? m.home : m.away;
-      else team = Math.random() < 0.5 ? m.home : m.away;
+      const team = gh != null && gh !== ga ? (gh > ga ? m.home : m.away) : (Math.random() < 0.5 ? m.home : m.away);
       const cands = (all || []).filter((p) => p.photo && teamCanon(p.team) === teamCanon(team)).sort((a, b) => (Number(b.points) || 0) - (Number(a.points) || 0)).slice(0, 8);
       const pick = cands.length ? cands[Math.floor(Math.random() * cands.length)] : null;
-      h.classList.add("feat-hero-live");
-      const im = h.querySelector("img");
+      const im = lead.querySelector("img");
       if (im && pick) { im.src = pick.photo; im.addEventListener("error", () => { im.src = NEWS_IMG; }, { once: true }); }
-      const ov = h.querySelector(".feat-hero-overlay");
-      if (ov) {
-        ov.innerHTML = "";
-        const k = el("span", "feat-kind feat-live-kind", "● EN DIRECTO"); ov.appendChild(k);
-        ov.appendChild(el("div", "feat-hero-title", "Sigue el partido en directo"));
-        ov.appendChild(el("div", "feat-hero-date", m.home + " " + (m.live.score || "") + " " + m.away + (m.live.minute ? " · " + m.live.minute : "")));
-      }
-      const nh = h.cloneNode(true);
+      const tag = lead.querySelector(".nw-tag");
+      if (tag) { tag.innerHTML = ""; tag.style.setProperty("--tc", "#ef4444"); tag.appendChild(el("i")); tag.appendChild(el("span", null, "En directo")); }
+      const ti = lead.querySelector(".nw-lead-t"); if (ti) ti.textContent = "Sigue el partido en directo";
+      const me = lead.querySelector(".nw-meta"); if (me) me.textContent = (m.home + " " + (m.live.score || "") + " " + m.away).trim() + (m.live.minute ? " · " + m.live.minute : "");
+      const nh = lead.cloneNode(true);
       nh.addEventListener("click", () => { location.href = "/futmondo/guiafantasy/directo/" + matchSlug(m.home, m.away) + (jr.jornada ? "?j=" + encodeURIComponent(jr.jornada) : ""); });
-      h.replaceWith(nh);
+      lead.replaceWith(nh);
     } catch (e) {}
   }
 
-  // "Últimos cambios" dentro del recuadro Anteriores: las 3 últimas de /ultimos-cambios (las mismas de la pestaña "Últimas actualizaciones").
+  // "Últimos cambios": línea de tiempo compacta (punto de color + qué + hora)
   function paintInicioCambios() {
-    const c = $("featChg");
+    const c = $("nwChg");
     if (!c) return;
     c.innerHTML = "";
-    const t = el("div", "feat-prev-title feat-chg-title", "Últimos cambios");
-    c.appendChild(t);
     const items = [];
-    ((updData && updData.days) || []).forEach((d) => (d.items || []).forEach((x) => { if (items.length < 3) items.push(x); }));
-    if (!items.length) { c.appendChild(el("div", "feat-chg-empty", updData ? "Sin cambios ahora mismo" : "Cargando…")); return; }
+    ((updData && updData.days) || []).forEach((d) => (d.items || []).forEach((x) => { if (items.length < 8) items.push(x); }));
+    if (!items.length) { c.appendChild(el("div", "nw-chg-empty", updData ? "Sin cambios ahora mismo." : "Cargando…")); return; }
     items.forEach((x) => {
       const cc = UP_CATS[x.cat] || UP_CATS.otro;
-      const row = el("div", "feat-chg-row");
-      row.style.setProperty("--uc", cc[1]);
-      row.addEventListener("click", () => { pendingUpdKey = updKey(x); switchTab("actualizaciones"); let n = 0; const t = setInterval(() => { if (focusUpd() || ++n > 12) clearInterval(t); }, 250); });
-      if (x.photo) { const ph = el("img", "feat-chg-ph"); ph.alt = ""; ph.loading = "lazy"; ph.src = x.photo; ph.addEventListener("error", () => { const d = el("span", "feat-chg-dot"); ph.replaceWith(d); }, { once: true }); row.appendChild(ph); }
-      else row.appendChild(el("span", "feat-chg-dot"));
-      const ctx = el("div", "feat-chg-tx");
-      ctx.appendChild(el("span", "feat-chg-cat", cc[0]));
-      ctx.appendChild(el("span", "feat-chg-txt", x.title));
-      row.appendChild(ctx);
-      if (x.time) row.appendChild(el("span", "feat-chg-time", x.time));
-      c.appendChild(row);
+      const row = el("button", "nw-chg-row");
+      row.type = "button";
+      row.style.setProperty("--tc", cc[1]);
+      row.addEventListener("click", () => { pendingUpdKey = updKey(x); switchTab("actualizaciones"); let n = 0; const t2 = setInterval(() => { if (focusUpd() || ++n > 12) clearInterval(t2); }, 250); });
+      row.appendChild(el("i"));
+      row.appendChild(el("span", "nw-chg-lab", String(cc[0]).replace("Mercado Futmondo", "Mercado")));
+      row.appendChild(el("span", "nw-chg-time", x.time || ""));
+      row.appendChild(el("span", "nw-chg-t", x.title));      c.appendChild(row);
     });
   }
   async function loadInicioCambios() {
