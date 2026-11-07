@@ -4291,12 +4291,14 @@
     if (link.indexOf(NEWS_PFX) === 0) return link.slice(NEWS_PFX.length).replace(/[?#].*$/, "").replace(/\/+$/, "");
     let m = link.match(/^https:\/\/www\.comuniate\.com\/noticias\/(\d+)\/([a-z0-9-]+)\/?$/); if (m) return "cm-" + m[1] + "-" + m[2];
     m = link.match(/^https:\/\/www\.jornadaperfecta\.com\/blog\/([a-z0-9-]+)\/?$/); if (m) return "jp-" + m[1];
+    m = link.match(/^https:\/\/edumr\.es\/n\/([a-z0-9]+)$/); if (m) return "ed-" + m[1]; // noticia propia
     return "";
   };
   const slugToUrl = (sl) => {
     sl = String(sl || "");
     let m = sl.match(/^cm-(\d+)-([a-z0-9-]+)$/); if (m) return "https://www.comuniate.com/noticias/" + m[1] + "/" + m[2];
     m = sl.match(/^jp-([a-z0-9-]+)$/); if (m) return "https://www.jornadaperfecta.com/blog/" + m[1] + "/";
+    m = sl.match(/^ed-([a-z0-9]+)$/); if (m) return "https://edumr.es/n/" + m[1];
     return NEWS_PFX + sl;
   };
   const newsHref = (link) => { const sl = newsSlug(link); return sl ? "/futmondo/guiafantasy/noticias/" + sl : "/futmondo/guiafantasy/noticias"; };
@@ -4381,6 +4383,7 @@
     const bar = el("div", "news-bar");
     bar.appendChild(back);
     box.appendChild(bar);
+    if (d && d.removed) { box.appendChild(el("h2", "ficha-name", title || "")); box.appendChild(el("p", "muted small", "Esta noticia ya no está disponible.")); return; }
     if (d && d.extinguida) { box.appendChild(el("h2", "ficha-name", title || d.title || "")); box.appendChild(el("p", "muted small", "Esta noticia ya no está vigente.")); return; }
     if (d && d.external) {
       // Noticia de otra fuente (Comuniate / Jornada Perfecta): titular, foto y resumen; el texto completo se lee en su web

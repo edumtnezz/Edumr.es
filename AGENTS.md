@@ -126,3 +126,9 @@ Antes de tocar partidos/alineaciones/ficha, repasar esta lista y verificar con c
 - Guarda `rd:sombra:v1` (vistos, tokens, estado de cada fuente) y `rd:res:v1:<videoId>` (14 días) en KV `PORRA`, y manda a Edu un resumen privado por Telegram con el enlace al vídeo (solo para revisar la precisión).
 - Nunca inventar: sin frase verificada = sin dato. Apodos sin confirmar no se adivinan (`ALIAS_JUGADOR`).
 - Pendiente: probarlo una semana comparando con FutbolFantasy; añadir los canales de YouTube de los demás clubes (uno por línea, comprobando que el feed responde); publicar solo cuando la precisión acompañe.
+
+## 📰 Noticias propias y administrador de noticias (07/11/2026)
+- Web pública `/noticias`: SOLO noticias propias publicadas (KV `own:news:v1`, enlace `https://edumr.es/n/<id>`, slug web `ed-<id>`) + cajón de Futmondo. Nada copiado de otras webs.
+- `noticia?u=` de una web externa: solo administrador; para el resto devuelve `{removed:true}`. `noticias-rapido`: solo administrador.
+- Panel privado `/futmondo/admin-noticias/` (noindex): borradores, publicadas, Redactor (vídeos de `rd:res:v1:*`, crear borrador con las frases verificadas), Comparar (FutbolFantasy/Comuniate/Jornada Perfecta solo para ver) y Estado. API `admin-noticias` (GET/POST) solo con `isAdmin`.
+- Los avisos de Telegram leen las noticias externas de KV `ff:news:cron:v1` (la web la rellena en `noticias?warm=1`), sin resumen, y enlazan al panel.

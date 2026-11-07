@@ -1948,6 +1948,96 @@ async function playerFicha(env, id, fast, raw) {
   };
 }
 
+/* ---------- Noticias PROPIAS (redactor) y panel de administrador ---------- */
+const OWN_KEY = "own:news:v1";
+const OWN_LINK = /^https:\/\/edumr\.es\/n\/([a-z0-9]{6,16})$/;
+const OWN_ETIQ = { disponible: "disponible", opcion_titular: "opción de titular", duda: "duda", recuperacion_con_grupo: "entrena con el grupo", recuperacion_parcial: "entrena parcialmente", baja: "baja", titular_confirmado: "titular confirmado", rotacion: "rotación" };
+async function getOwn(env) { try { return (await env.PORRA.get(OWN_KEY, "json")) || []; } catch (e) { return []; } }
+async function putOwn(env, arr) { await env.PORRA.put(OWN_KEY, JSON.stringify(arr.slice(0, 300))); }
+function madridDT(ms) {
+  try {
+    const p = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date(ms));
+    const g = (t) => (p.find((x) => x.type === t) || {}).value || "";
+    return { date: g("day") + "/" + g("month"), time: g("hour") + ":" + g("minute") };
+  } catch (e) { return { date: "", time: "" }; }
+}
+function ownPublic(items) {
+  return items.filter((x) => x.status === "published").sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0)).map((x) => {
+    const d = madridDT(x.publishedAt || x.createdAt);
+    return { title: x.title, link: "https://edumr.es/n/" + x.id, date: d.date, time: d.time, thumb: "", src: "EduMR", ts: x.publishedAt || x.createdAt };
+  });
+}
+const escH = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function ownArticle(x) {
+  const html = String(x.body || "").split(/\n+/).map((l) => l.trim()).filter(Boolean).map((l) => "<p>" + escH(l) + "</p>").join("") +
+    (x.source && x.source.url ? '<p class="muted small">Fuente: <a href="' + escH(x.source.url) + '" target="_blank" rel="noopener">' + escH(x.source.name || "Fuente") + "</a></p>" : "");
+  return { title: x.title, lead: x.lead || "", html, src: "EduMR" };
+}
+function ownDraftFromVideo(v, sel) {
+  const items = (v.items || []).filter((_, i) => (sel ? sel.includes(i) : _.publicable));
+  const secs = (m) => { const a = String(m || "").split(":").map(Number); return a.length === 2 && a.every((n) => !isNaN(n)) ? a[0] * 60 + a[1] : 0; };
+  const body = items.map((it) => (it.nombre || it.jugador) + ": " + (OWN_ETIQ[it.estado] || it.estado) + ". «" + it.frase + "»" + (it.minuto ? " (min " + it.minuto + ")" : "")).join("\n");
+  const first = items.find((i) => i.minuto);
+  return {
+    title: v.club + ": así llegan sus jugadores tras la rueda de prensa",
+    lead: items.length + " jugador" + (items.length === 1 ? "" : "es") + " mencionado" + (items.length === 1 ? "" : "s") + " por el entrenador.",
+    body, club: v.club, players: items.map((i) => i.nombre || i.jugador),
+    source: { name: "Rueda de prensa · " + v.club + " (YouTube)", url: "https://youtu.be/" + v.id + (first ? "?t=" + secs(first.minuto) : ""), videoId: v.id },
+    original: items.map((i) => ({ jugador: i.jugador, estado: i.estado, frase: i.frase, minuto: i.minuto, confianza: i.confianza, verificada: !!i.verificada, cruzado: !!i.cruzado })),
+  };
+}
+async function adminNoticias(env, request, url, data) {
+  const user = await getSessionUser(env, request);
+  if (!isAdmin(env, user)) return json({ error: "No autorizado." }, 403);
+  if (!data) {
+    const own = await getOwn(env);
+    const sombra = [];
+    try {
+      const l = await env.PORRA.list({ prefix: "rd:res:v1:" });
+      const all = await Promise.all((l.keys || []).slice(0, 60).map((k) => env.PORRA.get(k.name, "json").catch(() => null)));
+      all.filter(Boolean).forEach((v) => sombra.push(v));
+      sombra.sort((a, b) => (b.at || 0) - (a.at || 0));
+    } catch (e) {}
+    let estado = null;
+    try { estado = await env.PORRA.get("rd:sombra:v1", "json"); } catch (e) {}
+    let externas = [];
+    try { externas = ((await getNoticias(env)).noticias || []).slice(0, 80); } catch (e) {}
+    const usadas = {}; own.forEach((o) => { if (o.source && o.source.videoId) usadas[o.source.videoId] = o.id; });
+    return json({ own, sombra, usadas, externas, estado: estado ? { fuentes: estado.fuentes || {}, tok: estado.tok || null, seen: Object.entries(estado.seen || {}).slice(-60).map(([id, v]) => Object.assign({ id }, v)) } : null, now: Date.now() });
+  }
+  const own = await getOwn(env);
+  const now = Date.now();
+  const clean = (s, n) => String(s == null ? "" : s).slice(0, n);
+  if (data.action === "crear") {
+    let d = { title: "", lead: "", body: "", club: "", players: [], source: null, original: [] };
+    if (data.videoId) {
+      const v = await env.PORRA.get("rd:res:v1:" + clean(data.videoId, 40), "json");
+      if (!v) return json({ error: "Vídeo no encontrado." }, 404);
+      d = ownDraftFromVideo(v, Array.isArray(data.sel) ? data.sel.map(Number) : null);
+      if (!d.body) return json({ error: "No hay frases publicables en ese vídeo." }, 400);
+    }
+    const id = randomHex(5);
+    const item = Object.assign({ id, status: "draft", createdAt: now, updatedAt: now }, d);
+    own.unshift(item);
+    await putOwn(env, own);
+    return json({ ok: true, item });
+  }
+  const it = own.find((x) => x.id === data.id);
+  if (!it) return json({ error: "No existe." }, 404);
+  if (data.action === "guardar") {
+    it.title = clean(data.title, 200); it.lead = clean(data.lead, 400); it.body = clean(data.body, 8000);
+    it.club = clean(data.club, 60); it.updatedAt = now;
+    if (data.source && typeof data.source === "object") it.source = { name: clean(data.source.name, 160), url: /^https:\/\//.test(String(data.source.url || "")) ? clean(data.source.url, 400) : "", videoId: (it.source && it.source.videoId) || "" };
+  } else if (data.action === "publicar") {
+    if (!it.title || !it.body) return json({ error: "Falta título o texto." }, 400);
+    it.status = "published"; it.publishedAt = it.publishedAt || now; it.updatedAt = now;
+  } else if (data.action === "despublicar") { it.status = "draft"; it.updatedAt = now; }
+  else if (data.action === "borrar") { own.splice(own.indexOf(it), 1); }
+  else return json({ error: "Acción desconocida." }, 400);
+  await putOwn(env, own);
+  return json({ ok: true, item: it });
+}
+
 async function getNoticias(env) {
   let stale = null;
   try {
@@ -2014,6 +2104,8 @@ async function getNoticias(env) {
   } catch (e) {}
   out.updatedAt = Date.now();
   try { await env.PORRA.put("ff:news:v2", JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 6 * 3600 }); } catch (e) {}
+  // Copia duradera (KV) para los avisos de Telegram, que ya no pueden pedir noticias de otras webs a la API pública
+  try { if (out.noticias.length) await env.PORRA.put("ff:news:cron:v1", JSON.stringify({ at: Date.now(), noticias: out.noticias.slice(0, 60) }), { expirationTtl: 7 * 24 * 3600 }); } catch (e) {}
   return out;
 }
 
@@ -5277,14 +5369,27 @@ async function handleGet({ request, env: env0, params }) {
   }
   // Noticias de FutbolFantasy leídas directamente, sin caché ni escrituras de KV (para los avisos de Telegram).
   if (path === "noticias-rapido") {
+    if (!isAdmin(env, await getSessionUser(env, request))) return json({ noticias: [] });
     const list = await getNoticiasMulti(await getFfNoticias(null));
     return json({ noticias: list, at: Date.now() });
   }
   if (path === "noticias") {
-    return json(await getNoticias(env));
+    // Público: SOLO noticias propias publicadas + el cajón de Futmondo. Lo de otras webs queda para el panel de administrador.
+    const full = await getNoticias(env);
+    if (url.searchParams.get("warm") === "1") return json({ ok: true });
+    return json({ noticias: ownPublic(await getOwn(env)), locker: full.locker || [], updatedAt: full.updatedAt || Date.now() });
   }
+  if (path === "admin-noticias") return adminNoticias(env, request, url, null);
   if (path === "noticia") {
-    return json(await getNoticia(url.searchParams.get("u")));
+    const u = url.searchParams.get("u");
+    const m = String(u || "").match(OWN_LINK);
+    if (m) {
+      const x = (await getOwn(env)).find((o) => o.id === m[1] && o.status === "published");
+      return json(x ? ownArticle(x) : { removed: true });
+    }
+    const user = await getSessionUser(env, request);
+    if (!isAdmin(env, user)) return json({ removed: true });
+    return json(await getNoticia(u));
   }
   if (path === "jugador") {
     return json(await playerFicha(env, url.searchParams.get("id"), url.searchParams.get("fast") === "1", url.searchParams.get("raw") === "1"));
@@ -5367,6 +5472,11 @@ async function handleGet({ request, env: env0, params }) {
 export async function onRequestPost({ request, env: env0, params, waitUntil }) {
   const env = withCacheKV(env0);
   const path = (params.path || []).join("/");
+  if (path === "admin-noticias") {
+    let data = null;
+    try { data = await request.json(); } catch (e) {}
+    return adminNoticias(env, request, new URL(request.url), data || {});
+  }
   if (path === "registro") return handleRegistro(request, env);
   if (path === "login") return handleLogin(request, env);
   if (path === "logout") return handleLogout();

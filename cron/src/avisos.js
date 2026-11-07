@@ -14,6 +14,7 @@
 
 const SITE = "https://edumr.es/api/laquiniela/";
 const WEB = "https://edumr.es/futmondo/guiafantasy/";
+const ADMIN_WEB = "https://edumr.es/futmondo/admin-noticias/";
 const NEWS_PFX = "https://www.futbolfantasy.com/laliga/noticias/";
 // Enlaces a TU web (nunca a la fuente): noticia → /noticias/<slug>, partido → /partido/<slug> (mismo slug que usa la web)
 const newsUrl = (link) => {
@@ -22,7 +23,8 @@ const newsUrl = (link) => {
   if (link.indexOf(NEWS_PFX) === 0) sl = link.slice(NEWS_PFX.length).replace(/[?#].*$/, "").replace(/\/+$/, "");
   else if ((m = link.match(/^https:\/\/www\.comuniate\.com\/noticias\/(\d+)\/([a-z0-9-]+)\/?$/))) sl = "cm-" + m[1] + "-" + m[2];
   else if ((m = link.match(/^https:\/\/www\.jornadaperfecta\.com\/blog\/([a-z0-9-]+)\/?$/))) sl = "jp-" + m[1];
-  return WEB + "noticias" + (sl ? "/" + sl : "");
+  // Las noticias de otras webs ya no se publican: el enlace lleva al panel privado de administrador
+  return sl ? ADMIN_WEB : WEB + "noticias";
 };
 // Palabras clave del titular para detectar la misma historia contada por varias fuentes
 const TSTOP = new Set("para sobre ante tras este esta estos estas desde entre hasta como pero sino aunque cuando donde jornada fantasy segun mientras tiene tienen habla hablan confirma confirman vuelve vuelven sigue siguen sera tambien despues antes porque quien dice parte medico oficial lesion lesionado lesiones baja bajas partido equipo entrenador convocatoria convocados convocado jugador jugadores ultima hora ultimo tras sera podria puede pide pasa deja queda recupera recuperacion real madrid barcelona atletico athletic bilbao club sevilla betis valencia villarreal getafe osasuna celta espanyol girona levante alaves mallorca rayo vallecano racing santander deportivo coruna oviedo elche sociedad cadiz granada almeria laliga liga copa".split(" "));
@@ -205,6 +207,14 @@ async function findChat(env, f) {
   return "";
 }
 
+// Las noticias de otras webs ya no son públicas: la web las deja en KV (ff:news:cron:v1) cada vez que se refrescan; aquí se pide el refresco y se lee de ahí.
+async function leerNoticias(env, f, now) {
+  try { await f(SITE + "noticias?warm=1&t=" + now, { headers: { "user-agent": "edumr-cron" } }).then((r) => r.text()); } catch (e) {}
+  const c = await env.PORRA.get("ff:news:cron:v1", "json");
+  if (!c || !Array.isArray(c.noticias)) throw new Error("sin noticias");
+  return { noticias: c.noticias };
+}
+
 async function getJson(f, path) {
   const r = await f(SITE + path, { headers: { "user-agent": "edumr-cron" } });
   if (!r.ok) throw new Error(path + " " + r.status);
@@ -243,7 +253,7 @@ export async function avisar(env, deps) {
 
   // Lecturas directas de la fuente (sin caché ni escrituras de KV): así los avisos son rápidos.
   const [rNews, rCl, rConf] = await Promise.allSettled([
-    getJson(f, "noticias-rapido?t=" + now).catch(() => getJson(f, "noticias")),
+    leerNoticias(env, f, now),
     doMios ? getJson(f, "mios?t=" + now) : skip(),
     wantConf ? getJson(f, "alineaciones-confirmadas?run=1&fresh=1&t=" + now) : skip(),
   ]);
@@ -288,13 +298,7 @@ export async function avisar(env, deps) {
       aceptadas.push({ k: c.k, s: c.s }); nuevas.push(c);
     }
     for (const c of nuevas.slice(0, firstRun || quiet ? 0 : MAX_MSGS)) {
-      // Resumen breve (la entradilla de la noticia); si no hay, el aviso sale sin él
-      let resumen = "";
-      try {
-        const n = await getJson(f, "noticia?u=" + encodeURIComponent(c.x.link));
-        resumen = decode(String(n.lead || "")).replace(/\s+/g, " ").trim();
-        if (resumen.length > 150) resumen = resumen.slice(0, 150).replace(/\s+\S*$/, "") + "…";
-      } catch (e) {}
+      let resumen = ""; // sin resumen: ya no se lee el texto de otras webs
       c.resumen = resumen;
     }
     for (const c of nuevas) {
