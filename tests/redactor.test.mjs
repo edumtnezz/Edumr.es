@@ -189,11 +189,32 @@ test("noticia escrita por la IA cuando pasa la validación", async () => {
 test("un borrador antiguo se reescribe y se publica solo", async () => {
   const kv = new Map();
   const env = { GEMINI_API_KEY: "k", PORRA: { async get(k, tp) { const v = kv.get(k); return v == null ? null : (tp === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } } };
-  kv.set("rd:res:v1:OLD1", JSON.stringify({ id: "OLD1", club: "Sevilla", title: "r", pub: 1, at: 1, items: IT }));
+  kv.set("rd:res:v1:OLD1", JSON.stringify({ id: "OLD1", club: "Sevilla", title: "r", pub: Date.parse("2026-11-06T08:00:00Z"), at: 1, items: IT }));
   kv.set("own:news:v1", JSON.stringify([{ id: "d1", status: "draft", createdAt: 5, updatedAt: 5, source: { videoId: "OLD1", name: "x", url: "https://youtu.be/OLD1" } }, { id: "d2", status: "draft", createdAt: 5, updatedAt: 9, source: { videoId: "OLD2" } }]));
   const f = async () => new Response("", { status: 500 });
   await redactorSombra(env, { fetch: f, now: Date.parse("2026-11-06T10:03:00Z"), fuentes: [] });
   const own = JSON.parse(kv.get("own:news:v1"));
   assert.equal(own.find((o) => o.id === "d1").status, "published");
   assert.equal(own.find((o) => o.id === "d2").status, "draft");   // el que Edu tocó no se toca
+});
+
+test("caducidad: una previa de hace más de 30 h ya no vale; una de después del partido aguanta 40 h", () => {
+  const now = Date.parse("2026-11-07T10:00:00Z");
+  const h = (n) => now - n * 3600e3;
+  assert.equal(_r.caducada("Rueda de prensa de Luis García en la previa del #SevillaAlavés", h(20), now), false);
+  assert.equal(_r.caducada("Rueda de prensa de Luis García en la previa del #SevillaAlavés", h(34), now), true);
+  assert.equal(_r.caducada("Las reacciones de los protagonistas tras el Sevilla - Alavés", h(34), now), false);
+  assert.equal(_r.caducada("Las reacciones de los protagonistas tras el Sevilla - Alavés", h(45), now), true);
+});
+
+test("la noticia de una previa caducada se retira de la web", async () => {
+  const kv = new Map();
+  const env = { GEMINI_API_KEY: "k", PORRA: { async get(k, tp) { const v = kv.get(k); return v == null ? null : (tp === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } } };
+  const now = Date.parse("2026-11-07T10:03:00Z");
+  kv.set("rd:res:v1:V1", JSON.stringify({ id: "V1", club: "Sevilla", title: "Rueda de prensa en la previa del #SevillaAlavés", pub: now - 40 * 3600e3, items: IT }));
+  kv.set("own:news:v1", JSON.stringify([{ id: "n1", status: "published", createdAt: 1, updatedAt: 1, source: { videoId: "V1" } }]));
+  await redactorSombra(env, { fetch: async () => new Response("", { status: 500 }), now, fuentes: [] });
+  const o = JSON.parse(kv.get("own:news:v1"))[0];
+  assert.equal(o.status, "draft");
+  assert.equal(o.caducada, true);
 });

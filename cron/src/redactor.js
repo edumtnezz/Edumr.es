@@ -163,6 +163,14 @@ export function borradorDesdeVideo(v) {
     original: items.map((i) => ({ jugador: i.jugador, estado: i.estado, frase: i.frase, minuto: i.minuto, confianza: i.confianza, verificada: !!i.verificada, cruzado: !!i.cruzado })),
   };
 }
+// Una previa deja de valer cuando ya se ha jugado el partido (~30 h); las de después del partido, algo más
+export function caducada(title, pub, now) {
+  const t = norm2(title);
+  const posterior = /\b(tras|reacciones|declaraciones|posterior\w*|despues)\b/.test(t);
+  const p = Number(pub) || Date.parse(pub) || 0;
+  return !!p && now - p > (posterior ? 40 : 30) * 3600e3;
+}
+
 // ---------- Redacción de la noticia (con palabras propias, solo con datos verificados) ----------
 const norm2 = (x) => String(x || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 function promptNoticia(club, items) {
@@ -213,6 +221,7 @@ function parseObj(t) { const m = String(t || "").match(/\{[\s\S]*\}/); if (!m) r
 
 // Publica la noticia en la web (KV own:news:v1). Si había un borrador de ese vídeo, lo reescribe y lo publica.
 async function publicarNoticia(env, f, res, now) {
+  if (caducada(res.title, res.pub, now)) return null;
   const own = (await env.PORRA.get(OWN_KEY, "json")) || [];
   const prev = own.find((o) => o.source && o.source.videoId === res.id);
   if (prev && prev.status === "published") return null;
@@ -315,6 +324,8 @@ export async function redactorSombra(env, deps) {
   // se olvidan los vistos con más de 10 días
   for (const id of Object.keys(st.seen)) if (now - st.seen[id].pub > 10 * 86400e3) { delete st.seen[id]; dirty = true; }
 
+  for (const id of Object.keys(st.seen)) { const v = st.seen[id]; if (v.status === "pend" && caducada(v.title, v.pub, now)) { v.status = "caducada"; dirty = true; } }
+
   // 2) procesar UNO por pasada
   const cola = Object.keys(st.seen).filter((id) => { const s = st.seen[id]; return s.status === "pend" && s.intentos < MAX_INTENTOS && now - s.last >= ESPERA_REINTENTO; })
     .sort((a, b) => st.seen[b].pub - st.seen[a].pub);
@@ -365,6 +376,16 @@ export async function redactorSombra(env, deps) {
       }
     } catch (e) {}
   }
+  // 2c) las noticias de previas que ya han caducado se retiran de la web (quedan en el panel como borrador)
+  try {
+    const own = (await env.PORRA.get(OWN_KEY, "json")) || [];
+    let cambio = false;
+    for (const o of own.filter((x) => x.status === "published" && x.source && x.source.videoId).slice(0, 12)) {
+      const res = await env.PORRA.get(RES_PREFIX + o.source.videoId, "json");
+      if (res && caducada(res.title, res.pub, now)) { o.status = "draft"; o.caducada = true; o.updatedAt = now; cambio = true; }
+    }
+    if (cambio) await env.PORRA.put(OWN_KEY, JSON.stringify(own));
+  } catch (e) {}
   if (dirty) { try { await env.PORRA.put(STATE_KEY, JSON.stringify(st)); } catch (e) {} }
 
   // 3) resumen privado a Edu (solo si hay token del bot y chat guardado)
@@ -378,4 +399,4 @@ export async function redactorSombra(env, deps) {
   return { procesado: hecho ? hecho.id : null, pendientes: cola.length, tokens: st.tok.n };
 }
 
-export const _r = { validarNoticia, noticiaTelegram, parseFeed, esConferencia, fraseVerificada, cruzarJugador, filtrar, parseJson, resumenTelegram };
+export const _r = { caducada, validarNoticia, noticiaTelegram, parseFeed, esConferencia, fraseVerificada, cruzarJugador, filtrar, parseJson, resumenTelegram };
