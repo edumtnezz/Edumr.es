@@ -4253,7 +4253,8 @@
       row.addEventListener("click", () => { pendingUpdKey = updKey(x); switchTab("actualizaciones"); let n = 0; const t2 = setInterval(() => { if (focusUpd() || ++n > 12) clearInterval(t2); }, 250); });
       // Foto del jugador o escudo del club del cambio (si no carga ninguna, queda el punto de color de siempre)
       const pl0 = (x.players && x.players[0]) || {};
-      const srcs = [pl0.photo, x.photo, clubLogo(pl0.to || pl0.from || "", "")].filter(Boolean);
+      let mk = null; try { mk = pl0.name ? playerByFullName(pl0.name) : null; } catch (e) {}
+      const srcs = [mk && mk.photo, mk && mk.logo, clubLogo(pl0.to || pl0.from || "", "")].filter(Boolean); // fotos del mercado de Futmondo
       const pic = srcs.length ? fichImg(srcs, "nw-chg-img") : null;
       if (pic) { row.classList.add("has-img"); row.appendChild(pic); const im = pic.querySelector("img"); if (im) im.addEventListener("error", () => { if (!pic.isConnected) row.classList.remove("has-img"); }); }
       row.appendChild(el("i"));
