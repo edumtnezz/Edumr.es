@@ -47,7 +47,8 @@ export function parseFeed(xml) {
 // Rueda de prensa del primer equipo masculino (no femenino, cantera ni filiales).
 export function esConferencia(title) {
   const t = norm(title);
-  if (!/\brueda de prensa\b/.test(t)) return false;
+  // Rueda de prensa, o (Sevilla) el vídeo "Las reacciones de los protagonistas tras el partido", donde habla el entrenador tras el partido
+  if (!/\brueda de prensa\b|\breacciones de los protagonistas\b/.test(t)) return false;
   // Fuera: femenino (Dépor ABANCA, CFF), filiales y cantera (Fabril, Villarreal B, RFEF), premios y homenajes
   if (/\b(femenin\w*|xogadora\w*|jugadora\w*|abanca|cff|cantera|juvenil\w*|cadete|infantil|filial|fabril|academia|rfef|sub \d+|b|elegid[oa]s?|homenaje)\b/.test(t)) return false;
   return true;
