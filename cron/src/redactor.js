@@ -23,6 +23,12 @@ const ESTADOS = ["disponible", "opcion_titular", "duda", "recuperacion_con_grupo
 export const FUENTES = [
   { club: "Deportivo de la Coruña", yt: "UCY2s1XaPzO60Hu6M_YZCTgA" },
   { club: "Sevilla", yt: "UCLy9lmj_0cqffXUzbGHNmYA" },
+  // 07/11/2026: comprobados en su pestaña de vídeos (publican ruedas de prensa del primer equipo)
+  { club: "Betis", yt: "UCeB7JZwcar2fVoK2w2f9OwA" },
+  { club: "Valencia", yt: "UCgvyo5x49J8ht5H9imKfxMQ" },
+  { club: "Villarreal", yt: "UC0MLWyQ0L7uEZY8wbkDSTkw" },
+  { club: "Levante", yt: "UCvOegN2N1FGPPv4xBNN2F9A" },
+  { club: "Oviedo", yt: "UCvpFN8tLnBsjPR2BCJ-FJQA" },
 ];
 
 // ---------- funciones puras (con pruebas) ----------
