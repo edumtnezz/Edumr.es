@@ -71,6 +71,8 @@ test("sin clave de Gemini no hace nada", async () => {
 });
 
 // KV y fetch falsos: flujo completo vídeo nuevo -> transcripción -> estados -> KV -> Telegram
+const own0thumb = (kv) => JSON.parse(kv.get("own:news:v1"))[0].thumb;
+
 test("flujo completo en modo sombra", async () => {
   const kv = new Map();
   const env = {
@@ -107,14 +109,16 @@ test("flujo completo en modo sombra", async () => {
   assert.equal(guardado.items[0].nombre, "Marc Casadó");
   assert.equal(tgMsgs.length, 1);
   assert.equal(tgMsgs[0].chat_id, "42");
-  assert.match(tgMsgs[0].text, /📰/);
-  assert.match(tgMsgs[0].text, /guiafantasy\/noticias\/ed-/);
+  assert.match(tgMsgs[0].caption || tgMsgs[0].text, /📰/);
+  assert.match(tgMsgs[0].caption || tgMsgs[0].text, /guiafantasy\/noticias\/ed-/);
+  assert.match(own0thumb(kv), /i\.ytimg\.com\/vi\/AAA111\//);
   const own = JSON.parse(kv.get("own:news:v1"));
   assert.equal(own.length, 1);
   assert.equal(own[0].status, "published");           // se publica sola
   assert.equal(own[0].source.videoId, "AAA111");
   assert.equal(own[0].via, "plantilla");              // el Gemini falso no devuelve noticia válida
-  assert.match(own[0].body, /Marc Casadó: entrena con el grupo/);
+  assert.match(own[0].body, /Entrena con el grupo\. «está completando/);
+  assert.equal(own[0].title, "Marc Casadó: entrena con el grupo");
   // segunda pasada: ya está hecho, no vuelve a gastar
   const r2 = await redactorSombra(env, { fetch: fetchFalso, now: now + 10 * 60e3, fuentes: [{ club: "Deportivo", yt: "X" }] });
   assert.equal(r2.procesado, null);
@@ -171,7 +175,7 @@ test("noticia escrita por la IA cuando pasa la validación", async () => {
     if (url.includes("generativelanguage")) {
       n++;
       const txt = n === 1 ? TRANS + " x".repeat(400) : n === 2 ? JSON.stringify([{ jugador: "Casadó", estado: "recuperacion_con_grupo", frase: "está completando entrenamientos con absoluta normalidad", minuto: "03:04", confianza: "alta" }])
-        : JSON.stringify({ titular: "Casadó se ejercita con normalidad en el Dépor", entradilla: "El centrocampista ya entrena con el grupo.", cuerpo: "Marc Casadó está completando entrenamientos con absoluta normalidad, según explicó el técnico en la rueda de prensa previa al partido." });
+        : JSON.stringify([{ jugador: "Marc Casadó", titular: "Casadó se ejercita con normalidad en el Dépor", entradilla: "El centrocampista ya entrena con el grupo.", cuerpo: "Marc Casadó está completando entrenamientos con absoluta normalidad, según explicó el técnico en la rueda de prensa previa al partido." }]);
       return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: txt }] } }], usageMetadata: { totalTokenCount: 1000 } }));
     }
     if (url.endsWith("/mercado")) return new Response(JSON.stringify({ players: [{ id: "1", name: "Marc Casadó", team: "Deportivo" }] }));
@@ -183,10 +187,11 @@ test("noticia escrita por la IA cuando pasa la validación", async () => {
   assert.equal(own[0].via, "ia");
   assert.equal(own[0].title, "Casadó se ejercita con normalidad en el Dépor");
   assert.equal(own[0].status, "published");
-  assert.match(tg[0].text, /Casadó se ejercita/);
+  assert.match(tg[0].caption || tg[0].text, /Casadó se ejercita/);
+  assert.equal(own[0].players[0], "Marc Casadó");
 });
 
-test("un borrador antiguo se reescribe y se publica solo", async () => {
+test("una noticia antigua (una por vídeo) se rehace por jugador y se publica sola", async () => {
   const kv = new Map();
   const env = { GEMINI_API_KEY: "k", PORRA: { async get(k, tp) { const v = kv.get(k); return v == null ? null : (tp === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } } };
   kv.set("rd:res:v1:OLD1", JSON.stringify({ id: "OLD1", club: "Sevilla", title: "r", pub: Date.parse("2026-11-06T08:00:00Z"), at: 1, items: IT }));
@@ -194,7 +199,10 @@ test("un borrador antiguo se reescribe y se publica solo", async () => {
   const f = async () => new Response("", { status: 500 });
   await redactorSombra(env, { fetch: f, now: Date.parse("2026-11-06T10:03:00Z"), fuentes: [] });
   const own = JSON.parse(kv.get("own:news:v1"));
-  assert.equal(own.find((o) => o.id === "d1").status, "published");
+  assert.equal(own.find((o) => o.id === "d1"), undefined);          // la noticia única de antes se sustituye
+  const nueva = own.find((o) => o.key === "OLD1:" + "marc casado");
+  assert.equal(nueva.status, "published");
+  assert.equal(nueva.thumb, "https://i.ytimg.com/vi/OLD1/mqdefault.jpg");
   assert.equal(own.find((o) => o.id === "d2").status, "draft");   // el que Edu tocó no se toca
 });
 
@@ -217,4 +225,16 @@ test("la noticia de una previa caducada se retira de la web", async () => {
   const o = JSON.parse(kv.get("own:news:v1"))[0];
   assert.equal(o.status, "draft");
   assert.equal(o.caducada, true);
+});
+
+test("una noticia por jugador, agrupando sus frases", () => {
+  const items = [
+    { jugador: "Casadó", nombre: "Marc Casadó", id: "1", estado: "duda", frase: "a", minuto: "1:00", publicable: true },
+    { jugador: "Casadó", nombre: "Marc Casadó", id: "1", estado: "duda", frase: "b", minuto: "2:00", publicable: true },
+    { jugador: "Adama", nombre: "Adama Traore", id: "2", estado: "opcion_titular", frase: "c", minuto: "3:00", publicable: true },
+    { jugador: "Otro", nombre: null, id: null, estado: "baja", frase: "d", minuto: "4:00", publicable: false },
+  ];
+  const g = _r.agruparPorJugador(items);
+  assert.equal(g.length, 2);
+  assert.equal(g[0].items.length, 2);
 });

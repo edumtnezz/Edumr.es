@@ -1964,14 +1964,14 @@ function madridDT(ms) {
 function ownPublic(items) {
   return items.filter((x) => x.status === "published").sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0)).map((x) => {
     const d = madridDT(x.publishedAt || x.createdAt);
-    return { title: x.title, link: "https://edumr.es/n/" + x.id, date: d.date, time: d.time, thumb: "", src: "EduMR", ts: x.publishedAt || x.createdAt, club: x.club || "", players: (x.players || []).slice(0, 3) };
+    return { title: x.title, link: "https://edumr.es/n/" + x.id, date: d.date, time: d.time, thumb: x.thumb || "", src: "EduMR", ts: x.publishedAt || x.createdAt, club: x.club || "", players: (x.players || []).slice(0, 3) };
   });
 }
 const escH = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 function ownArticle(x) {
   const html = String(x.body || "").split(/\n+/).map((l) => l.trim()).filter(Boolean).map((l) => "<p>" + escH(l) + "</p>").join("") +
     (x.source && x.source.url ? '<p class="muted small">Fuente: <a href="' + escH(x.source.url) + '" target="_blank" rel="noopener">' + escH(x.source.name || "Fuente") + "</a></p>" : "");
-  return { title: x.title, lead: x.lead || "", html, src: "EduMR" };
+  return { title: x.title, lead: x.lead || "", html, src: "EduMR", image: x.thumb || "" };
 }
 function ownDraftFromVideo(v, sel) {
   const items = (v.items || []).filter((_, i) => (sel ? sel.includes(i) : _.publicable));

@@ -173,18 +173,18 @@ export function caducada(title, pub, now) {
 
 // ---------- Redacción de la noticia (con palabras propias, solo con datos verificados) ----------
 const norm2 = (x) => String(x || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-function promptNoticia(club, items) {
-  return "Eres redactor de una web de fantasy de LaLiga. Escribe una noticia breve, en español y con tus propias palabras, con SOLO estos datos verificados de la rueda de prensa de un entrenador del " + club + ".\n" +
-    "REGLAS: usa únicamente la información de la lista. No añadas lesiones, fechas, partidos, rivales, cifras, causas ni consecuencias que no estén. No inventes citas: si citas, copia la frase literal entre comillas. Tono informativo, sin exagerar. " +
-    "Escribe el nombre de cada jugador exactamente como aparece en la lista. Titular de máximo 90 caracteres que mencione al club o a un jugador. Entradilla de máximo 160 caracteres. Cuerpo de 2 a 4 párrafos cortos separados por una línea en blanco.\n" +
-    'Devuelve solo JSON: {"titular": "...", "entradilla": "...", "cuerpo": "..."}\n\nDATOS:\n' +
-    items.map((i) => "- " + (i.nombre || i.jugador) + " | " + (ETIQ_TXT[i.estado] || i.estado) + " | frase literal: «" + i.frase + "»" + (i.minuto ? " | min " + i.minuto : "")).join("\n");
+function promptNoticias(club, grupos) {
+  return "Eres redactor de una web de fantasy de LaLiga. Para CADA jugador de la lista escribe una noticia corta, en español y con tus propias palabras, usando SOLO los datos verificados de la rueda de prensa de un entrenador del " + club + ".\n" +
+    "REGLAS: usa únicamente la información de su lista. No añadas lesiones, fechas, partidos, rivales, cifras, causas ni consecuencias que no estén. No inventes citas: si citas, copia la frase literal entre comillas. Tono informativo y directo, como un titular de prensa deportiva, sin exagerar. " +
+    "Titular de máximo 80 caracteres que mencione al jugador. Entradilla de una sola frase, máximo 160 caracteres. Cuerpo de un párrafo de 40 a 400 caracteres. Escribe el nombre del jugador exactamente como en la lista.\n" +
+    'Devuelve solo JSON: [{"jugador": "nombre tal cual", "titular": "...", "entradilla": "...", "cuerpo": "..."}] con un elemento por jugador y en el mismo orden.\n\nDATOS:\n' +
+    grupos.map((g) => "JUGADOR: " + g.nombre + "\n" + g.items.map((i) => "- " + (ETIQ_TXT[i.estado] || i.estado) + " | frase literal: «" + i.frase + "»" + (i.minuto ? " | min " + i.minuto : "")).join("\n")).join("\n\n");
 }
 // Rechaza lo que se pase de largo, meta cifras que no están en las frases o se olvide de algún jugador
 export function validarNoticia(n, items) {
   if (!n || typeof n !== "object") return null;
   const t = String(n.titular || "").trim(), l = String(n.entradilla || "").trim(), c = String(n.cuerpo || "").trim();
-  if (t.length < 12 || t.length > 120 || l.length > 220 || c.length < 60 || c.length > 2500) return null;
+  if (t.length < 12 || t.length > 120 || l.length > 220 || c.length < 40 || c.length > 2500) return null;
   const fuente = norm2(items.map((i) => i.frase + " " + i.minuto).join(" "));
   const nums = (t + " " + l + " " + c).match(/\d+/g) || [];
   if (nums.some((x) => !fuente.includes(x))) return null;
@@ -198,44 +198,83 @@ export function validarNoticia(n, items) {
   }
   return { title: t, lead: l, body: c };
 }
-async function redactarNoticia(env, f, res) {
-  const items = (res.items || []).filter((x) => x.publicable);
-  const base = borradorDesdeVideo(res);
-  if (!base) return null;
-  let tokens = 0;
-  try {
-    const r = await gemini(env, f, { contents: [{ parts: [{ text: promptNoticia(res.club, items) }] }], generationConfig: { temperature: 0.3, responseMimeType: "application/json" } });
-    if (!r.error) {
-      tokens = r.tokens;
-      const v = validarNoticia(parseObj(textoDe(r.j)), items);
-      if (v) return Object.assign(base, v, { via: "ia", tokens });
-    }
-  } catch (e) {}
-  // Plantilla con las frases verificadas, si la IA falla o no pasa la validación
-  const nombres = items.map((i) => i.nombre || i.jugador);
-  base.title = items.length === 1 ? nombres[0] + ": " + (ETIQ_TXT[items[0].estado] || items[0].estado) + " (" + res.club + ")" : res.club + ": " + items.length + " jugadores en la rueda de prensa del entrenador";
-  base.via = "plantilla"; base.tokens = tokens;
-  return base;
-}
-function parseObj(t) { const m = String(t || "").match(/\{[\s\S]*\}/); if (!m) return null; try { return JSON.parse(m[0]); } catch (e) { return null; } }
-
-// Publica la noticia en la web (KV own:news:v1). Si había un borrador de ese vídeo, lo reescribe y lo publica.
-async function publicarNoticia(env, f, res, now) {
-  if (caducada(res.title, res.pub, now)) return null;
-  const own = (await env.PORRA.get(OWN_KEY, "json")) || [];
-  const prev = own.find((o) => o.source && o.source.videoId === res.id);
-  if (prev && prev.status === "published") return null;
-  const n = await redactarNoticia(env, f, res);
-  if (!n) return null;
-  let item;
-  if (prev) { item = prev; Object.assign(item, n, { status: "published", publishedAt: now, updatedAt: now }); }
-  else {
-    const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
-    item = Object.assign({ id: hex, status: "published", createdAt: now, updatedAt: now, publishedAt: now }, n);
-    own.unshift(item);
+function parseArr(t) { const m = String(t || "").match(/\[[\s\S]*\]/); if (!m) return null; try { const j = JSON.parse(m[0]); return Array.isArray(j) ? j : null; } catch (e) { return null; } }
+const secs2 = (m) => { const a = String(m || "").split(":").map(Number); return a.length === 2 && a.every((n) => !isNaN(n)) ? a[0] * 60 + a[1] : 0; };
+function agruparPorJugador(items) {
+  const g = new Map();
+  for (const it of items.filter((x) => x.publicable)) {
+    const k = it.id || norm2(it.nombre || it.jugador);
+    if (!g.has(k)) g.set(k, { key: String(k), id: it.id || "", nombre: it.nombre || it.jugador, items: [] });
+    g.get(k).items.push(it);
   }
+  return [...g.values()];
+}
+// Una noticia por jugador (como hacen las webs de fantasy), con IA validada o, si falla, plantilla con las frases
+async function redactarNoticias(env, f, res) {
+  const grupos = agruparPorJugador(res.items || []);
+  if (!grupos.length) return [];
+  let tokens = 0, arr = null;
+  try {
+    const r = await gemini(env, f, { contents: [{ parts: [{ text: promptNoticias(res.club, grupos) }] }], generationConfig: { temperature: 0.3, responseMimeType: "application/json" } });
+    if (!r.error) { tokens = r.tokens; arr = parseArr(textoDe(r.j)); }
+  } catch (e) {}
+  return grupos.map((g, i) => {
+    const v = arr && arr.find((x) => x && norm2(x.jugador) === norm2(g.nombre)) || (arr && arr[i]);
+    const ok = validarNoticia(v, g.items);
+    const first = g.items.find((x) => x.minuto) || g.items[0];
+    const base = {
+      club: res.club, players: [g.nombre], playerId: g.id, key: res.id + ":" + g.key,
+      source: { name: "Rueda de prensa · " + res.club + " (YouTube)", url: "https://youtu.be/" + res.id + (first && first.minuto ? "?t=" + secs2(first.minuto) : ""), videoId: res.id },
+      original: g.items.map((x) => ({ jugador: x.jugador, estado: x.estado, frase: x.frase, minuto: x.minuto, confianza: x.confianza, verificada: !!x.verificada, cruzado: !!x.cruzado })),
+      tokens: i === 0 ? tokens : 0,
+    };
+    if (ok) return Object.assign(base, ok, { via: "ia" });
+    const et = ETIQ_TXT[g.items[0].estado] || g.items[0].estado;
+    return Object.assign(base, {
+      title: g.nombre + ": " + et, lead: "Así lo ha contado el entrenador del " + res.club + " en rueda de prensa.",
+      body: g.items.map((x) => (ETIQ_TXT[x.estado] || x.estado).replace(/^./, (c) => c.toUpperCase()) + ". «" + x.frase + "»" + (x.minuto ? " (min " + x.minuto + ")" : "")).join("\n"),
+      via: "plantilla",
+    });
+  });
+}
+// Miniatura grande: la del propio vídeo de la rueda de prensa en YouTube (la mejor que exista)
+async function miniatura(f, id) {
+  for (const q of ["maxresdefault", "hqdefault"]) {
+    try { const r = await f("https://i.ytimg.com/vi/" + id + "/" + q + ".jpg", { method: "HEAD" }); if (r.ok) return "https://i.ytimg.com/vi/" + id + "/" + q + ".jpg"; } catch (e) {}
+  }
+  return "https://i.ytimg.com/vi/" + id + "/mqdefault.jpg";
+}
+
+// Publica las noticias en la web (KV own:news:v1). Las de ese vídeo que ya existían como una sola noticia se sustituyen.
+async function publicarNoticias(env, f, res, now) {
+  if (caducada(res.title, res.pub, now)) return [];
+  const nuevas = await redactarNoticias(env, f, res);
+  if (!nuevas.length) return [];
+  let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
+  const claves = new Set(own.map((o) => o.key).filter(Boolean));
+  own = own.filter((o) => !(o.source && o.source.videoId === res.id && !o.key));
+  const thumb = await miniatura(f, res.id);
+  const out = [];
+  nuevas.forEach((n, i) => {
+    if (claves.has(n.key)) return;
+    const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
+    const item = Object.assign({ id: hex, status: "published", createdAt: now + i, updatedAt: now + i, publishedAt: now + i, thumb }, n);
+    own.unshift(item); out.push(item);
+  });
   await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
-  return item;
+  return out;
+}
+
+export function noticiaTelegram(item) {
+  let t = "📰 <b>" + esc(item.title) + "</b>\n\n" + (item.lead ? esc(item.lead) + "\n\n" : "") + esc(String(item.body || "").split(/\n+/).filter(Boolean).join("\n").slice(0, 500));
+  return t + "\n\n🔗 https://edumr.es/futmondo/guiafantasy/noticias/ed-" + item.id;
+}
+async function enviarFoto(env, f, chat, foto, caption) {
+  try {
+    const r = await f("https://api.telegram.org/bot" + env.TELEGRAM_BOT_TOKEN + "/sendPhoto", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chat, photo: foto, caption: caption.slice(0, 1000), parse_mode: "HTML" }) });
+    const j = await r.json(); if (j && j.ok) return true;
+  } catch (e) {}
+  return enviar(env, f, chat, caption);
 }
 
 // ---------- Telegram (solo para Edu) ----------
@@ -249,14 +288,6 @@ export function resumenTelegram(club, titulo, id, items, borrador) {
   if (ok.length) t += "\n" + ok.map((x) => (ETIQ[x.estado] || x.estado) + " · <b>" + esc(x.nombre) + "</b>").join("\n");
   if (dud.length) t += "\n\n<i>No publicables:</i>\n" + dud.map((x) => "· " + esc(x.jugador) + " (" + (ETIQ[x.estado] || x.estado) + ")" + (x.cruzado ? "" : " — sin cruzar con Futmondo") + (x.verificada ? "" : " — frase no verificada")).join("\n");
   return t + "\n\nhttps://youtu.be/" + id + (borrador ? "\n\n📝 Borrador listo para revisar y publicar:\nhttps://edumr.es/futmondo/admin-noticias/" : "");
-}
-export function noticiaTelegram(item, sinVerificar) {
-  const cuerpo = String(item.body || "").split(/\n+/).filter(Boolean).join("\n\n");
-  let t = "📰 <b>" + esc(item.title) + "</b>\n\n" + (item.lead ? "<i>" + esc(item.lead) + "</i>\n\n" : "") + esc(cuerpo.slice(0, 1800));
-  t += "\n\nFuente: " + esc(item.source && item.source.name) + (item.source && item.source.url ? "\n" + item.source.url : "");
-  t += "\n\n🔗 https://edumr.es/futmondo/guiafantasy/noticias/ed-" + item.id;
-  if (sinVerificar) t += "\n\n<i>" + sinVerificar + " dato" + (sinVerificar === 1 ? "" : "s") + " sin verificar (no publicado" + (sinVerificar === 1 ? "" : "s") + ")</i>";
-  return t;
 }
 async function enviar(env, f, chat, text) {
   try {
@@ -356,23 +387,26 @@ export async function redactorSombra(env, deps) {
           s.status = "ok"; delete s.err; s.n = items.length; s.seguros = items.filter((x) => x.publicable).length;
           const res = { id, club: s.club, title: s.title, pub: s.pub, at: now, items, chars: transcripcion.length };
           try { await env.PORRA.put(RES_PREFIX + id, JSON.stringify(res), { expirationTtl: 14 * 86400 }); } catch (e) {}
-          let noticia = null;
-          try { noticia = await publicarNoticia(env, f, res, now); if (noticia) st.tok.n += noticia.tokens || 0; } catch (e) { s.err = "publicar: " + String(e && e.message || e).slice(0, 80); }
-          hecho = { id, items, s, noticia };
+          let noticias = [];
+          try { noticias = await publicarNoticias(env, f, res, now); st.tok.n += noticias.reduce((a, n) => a + (n.tokens || 0), 0); } catch (e) { s.err = "publicar: " + String(e && e.message || e).slice(0, 80); }
+          hecho = { id, items, s, noticias };
         }
       }
     }
   }
-  // 2b) borradores de antes (sin tocar por Edu): se reescriben y se publican, uno por pasada
+  // 2b) noticias de antes (una sola por vídeo, o borradores sin tocar): se rehacen una por jugador, un vídeo por pasada
   if (!hecho) {
     try {
       const own = (await env.PORRA.get(OWN_KEY, "json")) || [];
-      const d = own.find((o) => o.status === "draft" && o.source && o.source.videoId && o.updatedAt === o.createdAt);
+      const d = own.find((o) => !o.key && !o.migrada && !o.caducada && o.source && o.source.videoId && (o.via || (o.status === "draft" && o.updatedAt === o.createdAt)));
       if (d) {
         const res = await env.PORRA.get(RES_PREFIX + d.source.videoId, "json");
-        const n = res ? await publicarNoticia(env, f, res, now) : null;
-        if (n) { st.tok.n += n.tokens || 0; dirty = true; hecho = { id: res.id, items: res.items, s: { club: res.club, title: res.title }, noticia: n }; }
-        else { await env.PORRA.put(OWN_KEY, JSON.stringify(own.filter((o) => o !== d && o.id !== d.id))); }
+        const noticias = res ? await publicarNoticias(env, f, res, now) : [];
+        if (noticias.length) { st.tok.n += noticias.reduce((a, n) => a + (n.tokens || 0), 0); dirty = true; hecho = { id: res.id, items: res.items, s: { club: res.club, title: res.title }, noticias }; }
+        else {
+          const o2 = (await env.PORRA.get(OWN_KEY, "json")) || [];
+          const x = o2.find((o) => o.id === d.id); if (x) { x.migrada = true; await env.PORRA.put(OWN_KEY, JSON.stringify(o2)); }
+        }
       }
     } catch (e) {}
   }
@@ -393,10 +427,10 @@ export async function redactorSombra(env, deps) {
     try {
       const av = await env.PORRA.get(AVISOS_KEY, "json");
       const chat = String(env.TELEGRAM_CHAT_ID || (av && av.chat) || "");
-      if (chat && hecho.noticia) await enviar(env, f, chat, noticiaTelegram(hecho.noticia, hecho.items.filter((x) => !x.publicable).length));
+      if (chat) for (const n of hecho.noticias) await enviarFoto(env, f, chat, n.thumb, noticiaTelegram(n));
     } catch (e) {}
   }
   return { procesado: hecho ? hecho.id : null, pendientes: cola.length, tokens: st.tok.n };
 }
 
-export const _r = { caducada, validarNoticia, noticiaTelegram, parseFeed, esConferencia, fraseVerificada, cruzarJugador, filtrar, parseJson, resumenTelegram };
+export const _r = { caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, cruzarJugador, filtrar, parseJson, resumenTelegram };
