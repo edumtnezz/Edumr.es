@@ -14,17 +14,15 @@
 
 const SITE = "https://edumr.es/api/laquiniela/";
 const WEB = "https://edumr.es/futmondo/guiafantasy/";
-const ADMIN_WEB = "https://edumr.es/futmondo/admin-noticias/";
 const NEWS_PFX = "https://www.futbolfantasy.com/laliga/noticias/";
-// Enlaces a TU web (nunca a la fuente): noticia → /noticias/<slug>, partido → /partido/<slug> (mismo slug que usa la web)
+// Enlace del aviso: las noticias de otras webs ya no se publican en la nuestra, así que el aviso (privado, solo para ti)
+// lleva al artículo original; Telegram saca de él la miniatura. Las noticias propias llevan a nuestra web.
 const newsUrl = (link) => {
   link = String(link || "");
-  let sl = "", m;
-  if (link.indexOf(NEWS_PFX) === 0) sl = link.slice(NEWS_PFX.length).replace(/[?#].*$/, "").replace(/\/+$/, "");
-  else if ((m = link.match(/^https:\/\/www\.comuniate\.com\/noticias\/(\d+)\/([a-z0-9-]+)\/?$/))) sl = "cm-" + m[1] + "-" + m[2];
-  else if ((m = link.match(/^https:\/\/www\.jornadaperfecta\.com\/blog\/([a-z0-9-]+)\/?$/))) sl = "jp-" + m[1];
-  // Las noticias de otras webs ya no se publican: el enlace lleva al panel privado de administrador
-  return sl ? ADMIN_WEB : WEB + "noticias";
+  let m;
+  if ((m = link.match(/^https:\/\/edumr\.es\/n\/([a-z0-9]+)$/))) return WEB + "noticias/ed-" + m[1];
+  if (/^https:\/\//.test(link)) return link;
+  return WEB + "noticias";
 };
 // Palabras clave del titular para detectar la misma historia contada por varias fuentes
 const TSTOP = new Set("para sobre ante tras este esta estos estas desde entre hasta como pero sino aunque cuando donde jornada fantasy segun mientras tiene tienen habla hablan confirma confirman vuelve vuelven sigue siguen sera tambien despues antes porque quien dice parte medico oficial lesion lesionado lesiones baja bajas partido equipo entrenador convocatoria convocados convocado jugador jugadores ultima hora ultimo tras sera podria puede pide pasa deja queda recupera recuperacion real madrid barcelona atletico athletic bilbao club sevilla betis valencia villarreal getafe osasuna celta espanyol girona levante alaves mallorca rayo vallecano racing santander deportivo coruna oviedo elche sociedad cadiz granada almeria laliga liga copa".split(" "));
