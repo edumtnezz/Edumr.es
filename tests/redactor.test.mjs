@@ -101,23 +101,25 @@ test("flujo completo en modo sombra", async () => {
   const now = Date.parse("2026-11-06T10:03:00Z");
   const r = await redactorSombra(env, { fetch: fetchFalso, now, fuentes: [{ club: "Deportivo", yt: "X" }] });
   assert.equal(r.procesado, "AAA111");
-  assert.equal(r.tokens, 58000);
+  assert.equal(r.tokens, 87000);
   const guardado = JSON.parse(kv.get("rd:res:v1:AAA111"));
   assert.equal(guardado.items[0].publicable, true);
   assert.equal(guardado.items[0].nombre, "Marc Casadó");
   assert.equal(tgMsgs.length, 1);
   assert.equal(tgMsgs[0].chat_id, "42");
-  assert.match(tgMsgs[0].text, /SOMBRA · Deportivo/);
-  assert.match(tgMsgs[0].text, /admin-noticias/);
+  assert.match(tgMsgs[0].text, /📰/);
+  assert.match(tgMsgs[0].text, /guiafantasy\/noticias\/ed-/);
   const own = JSON.parse(kv.get("own:news:v1"));
   assert.equal(own.length, 1);
-  assert.equal(own[0].status, "draft");
+  assert.equal(own[0].status, "published");           // se publica sola
   assert.equal(own[0].source.videoId, "AAA111");
+  assert.equal(own[0].via, "plantilla");              // el Gemini falso no devuelve noticia válida
   assert.match(own[0].body, /Marc Casadó: entrena con el grupo/);
   // segunda pasada: ya está hecho, no vuelve a gastar
   const r2 = await redactorSombra(env, { fetch: fetchFalso, now: now + 10 * 60e3, fuentes: [{ club: "Deportivo", yt: "X" }] });
   assert.equal(r2.procesado, null);
-  assert.equal(llamadasGemini, 2);
+  assert.equal(llamadasGemini, 3);                // transcripción + estados + redacción
+  assert.equal(JSON.parse(kv.get('own:news:v1')).length, 1);
 });
 
 test("si el RSS de YouTube falla usa la API oficial (si hay clave) y si no, lo anota sin romper", async () => {
@@ -146,4 +148,52 @@ test("si el RSS de YouTube falla usa la API oficial (si hay clave) y si no, lo a
   assert.equal(st.fuentes.Sevilla.via, "api");
   assert.ok(st.seen.VID1);
   assert.equal(st.seen.VID1.status, "pend");                  // Gemini falló: queda pendiente para reintentar
+});
+
+const IT = [{ jugador: "Casadó", nombre: "Marc Casadó", estado: "recuperacion_con_grupo", frase: "está completando entrenamientos con absoluta normalidad", minuto: "03:04", confianza: "alta", publicable: true }];
+
+test("validarNoticia: acepta una noticia fiel y rechaza cifras inventadas o jugadores olvidados", () => {
+  const ok = { titular: "Casadó se ejercita con normalidad en el Dépor", entradilla: "El centrocampista ya entrena con el grupo.", cuerpo: "Marc Casadó está completando entrenamientos con absoluta normalidad, según explicó el técnico en la rueda de prensa previa." };
+  assert.ok(_r.validarNoticia(ok, IT));
+  assert.equal(_r.validarNoticia({ ...ok, cuerpo: ok.cuerpo + " Estará tres semanas de baja." }, IT), null);
+  assert.equal(_r.validarNoticia({ ...ok, cuerpo: "El centrocampista del Dépor entrena con normalidad desde esta semana sin ningún problema para el próximo encuentro de liga." }, IT), null); // no nombra al jugador
+  assert.equal(_r.validarNoticia({ titular: "x", entradilla: "", cuerpo: "y" }, IT), null);
+});
+
+test("noticia escrita por la IA cuando pasa la validación", async () => {
+  const kv = new Map();
+  const env = { GEMINI_API_KEY: "k", TELEGRAM_BOT_TOKEN: "t", PORRA: { async get(k, tp) { const v = kv.get(k); return v == null ? null : (tp === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } } };
+  kv.set("tg:avisos:v1", JSON.stringify({ chat: "42" }));
+  const tg = []; let n = 0;
+  const f = async (url, o) => {
+    url = String(url);
+    if (url.includes("youtube.com/feeds")) return new Response(`<feed><entry><yt:videoId>AAA111</yt:videoId><title>Rueda de prensa de Hidalgo previa Espanyol</title><published>2026-11-06T09:12:00+00:00</published></entry></feed>`);
+    if (url.includes("generativelanguage")) {
+      n++;
+      const txt = n === 1 ? TRANS + " x".repeat(400) : n === 2 ? JSON.stringify([{ jugador: "Casadó", estado: "recuperacion_con_grupo", frase: "está completando entrenamientos con absoluta normalidad", minuto: "03:04", confianza: "alta" }])
+        : JSON.stringify({ titular: "Casadó se ejercita con normalidad en el Dépor", entradilla: "El centrocampista ya entrena con el grupo.", cuerpo: "Marc Casadó está completando entrenamientos con absoluta normalidad, según explicó el técnico en la rueda de prensa previa al partido." });
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: txt }] } }], usageMetadata: { totalTokenCount: 1000 } }));
+    }
+    if (url.endsWith("/mercado")) return new Response(JSON.stringify({ players: [{ id: "1", name: "Marc Casadó", team: "Deportivo" }] }));
+    if (url.includes("api.telegram.org")) { tg.push(JSON.parse(o.body)); return new Response(JSON.stringify({ ok: true })); }
+    return new Response("", { status: 404 });
+  };
+  await redactorSombra(env, { fetch: f, now: Date.parse("2026-11-06T10:03:00Z"), fuentes: [{ club: "Deportivo", yt: "X" }] });
+  const own = JSON.parse(kv.get("own:news:v1"));
+  assert.equal(own[0].via, "ia");
+  assert.equal(own[0].title, "Casadó se ejercita con normalidad en el Dépor");
+  assert.equal(own[0].status, "published");
+  assert.match(tg[0].text, /Casadó se ejercita/);
+});
+
+test("un borrador antiguo se reescribe y se publica solo", async () => {
+  const kv = new Map();
+  const env = { GEMINI_API_KEY: "k", PORRA: { async get(k, tp) { const v = kv.get(k); return v == null ? null : (tp === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } } };
+  kv.set("rd:res:v1:OLD1", JSON.stringify({ id: "OLD1", club: "Sevilla", title: "r", pub: 1, at: 1, items: IT }));
+  kv.set("own:news:v1", JSON.stringify([{ id: "d1", status: "draft", createdAt: 5, updatedAt: 5, source: { videoId: "OLD1", name: "x", url: "https://youtu.be/OLD1" } }, { id: "d2", status: "draft", createdAt: 5, updatedAt: 9, source: { videoId: "OLD2" } }]));
+  const f = async () => new Response("", { status: 500 });
+  await redactorSombra(env, { fetch: f, now: Date.parse("2026-11-06T10:03:00Z"), fuentes: [] });
+  const own = JSON.parse(kv.get("own:news:v1"));
+  assert.equal(own.find((o) => o.id === "d1").status, "published");
+  assert.equal(own.find((o) => o.id === "d2").status, "draft");   // el que Edu tocó no se toca
 });

@@ -163,15 +163,70 @@ export function borradorDesdeVideo(v) {
     original: items.map((i) => ({ jugador: i.jugador, estado: i.estado, frase: i.frase, minuto: i.minuto, confianza: i.confianza, verificada: !!i.verificada, cruzado: !!i.cruzado })),
   };
 }
-async function crearBorrador(env, v, now) {
-  const d = borradorDesdeVideo(v);
-  if (!d) return false;
+// ---------- Redacción de la noticia (con palabras propias, solo con datos verificados) ----------
+const norm2 = (x) => String(x || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+function promptNoticia(club, items) {
+  return "Eres redactor de una web de fantasy de LaLiga. Escribe una noticia breve, en español y con tus propias palabras, con SOLO estos datos verificados de la rueda de prensa de un entrenador del " + club + ".\n" +
+    "REGLAS: usa únicamente la información de la lista. No añadas lesiones, fechas, partidos, rivales, cifras, causas ni consecuencias que no estén. No inventes citas: si citas, copia la frase literal entre comillas. Tono informativo, sin exagerar. " +
+    "Escribe el nombre de cada jugador exactamente como aparece en la lista. Titular de máximo 90 caracteres que mencione al club o a un jugador. Entradilla de máximo 160 caracteres. Cuerpo de 2 a 4 párrafos cortos separados por una línea en blanco.\n" +
+    'Devuelve solo JSON: {"titular": "...", "entradilla": "...", "cuerpo": "..."}\n\nDATOS:\n' +
+    items.map((i) => "- " + (i.nombre || i.jugador) + " | " + (ETIQ_TXT[i.estado] || i.estado) + " | frase literal: «" + i.frase + "»" + (i.minuto ? " | min " + i.minuto : "")).join("\n");
+}
+// Rechaza lo que se pase de largo, meta cifras que no están en las frases o se olvide de algún jugador
+export function validarNoticia(n, items) {
+  if (!n || typeof n !== "object") return null;
+  const t = String(n.titular || "").trim(), l = String(n.entradilla || "").trim(), c = String(n.cuerpo || "").trim();
+  if (t.length < 12 || t.length > 120 || l.length > 220 || c.length < 60 || c.length > 2500) return null;
+  const fuente = norm2(items.map((i) => i.frase + " " + i.minuto).join(" "));
+  const nums = (t + " " + l + " " + c).match(/\d+/g) || [];
+  if (nums.some((x) => !fuente.includes(x))) return null;
+  // Palabras de lesión/plazo/cifra que la IA podría colar: solo valen si salen en las frases del entrenador
+  const riesgo = norm2(t + " " + l + " " + c).match(/\b(semanas?|meses|dias?|lesion\w*|operad[oa]|rotura|fractura|esguince|desgarro|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\b/g) || [];
+  if (riesgo.some((w) => !new RegExp("\\b" + w + "\\b").test(fuente))) return null;
+  const cuerpo = norm2(c + " " + t);
+  for (const i of items) {
+    const last = norm2(i.nombre || i.jugador).split(/\s+/).filter((w) => w.length > 2).pop();
+    if (last && !cuerpo.includes(last)) return null;
+  }
+  return { title: t, lead: l, body: c };
+}
+async function redactarNoticia(env, f, res) {
+  const items = (res.items || []).filter((x) => x.publicable);
+  const base = borradorDesdeVideo(res);
+  if (!base) return null;
+  let tokens = 0;
+  try {
+    const r = await gemini(env, f, { contents: [{ parts: [{ text: promptNoticia(res.club, items) }] }], generationConfig: { temperature: 0.3, responseMimeType: "application/json" } });
+    if (!r.error) {
+      tokens = r.tokens;
+      const v = validarNoticia(parseObj(textoDe(r.j)), items);
+      if (v) return Object.assign(base, v, { via: "ia", tokens });
+    }
+  } catch (e) {}
+  // Plantilla con las frases verificadas, si la IA falla o no pasa la validación
+  const nombres = items.map((i) => i.nombre || i.jugador);
+  base.title = items.length === 1 ? nombres[0] + ": " + (ETIQ_TXT[items[0].estado] || items[0].estado) + " (" + res.club + ")" : res.club + ": " + items.length + " jugadores en la rueda de prensa del entrenador";
+  base.via = "plantilla"; base.tokens = tokens;
+  return base;
+}
+function parseObj(t) { const m = String(t || "").match(/\{[\s\S]*\}/); if (!m) return null; try { return JSON.parse(m[0]); } catch (e) { return null; } }
+
+// Publica la noticia en la web (KV own:news:v1). Si había un borrador de ese vídeo, lo reescribe y lo publica.
+async function publicarNoticia(env, f, res, now) {
   const own = (await env.PORRA.get(OWN_KEY, "json")) || [];
-  if (own.some((o) => o.source && o.source.videoId === v.id)) return false;
-  const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
-  own.unshift(Object.assign({ id: hex, status: "draft", createdAt: now, updatedAt: now }, d));
+  const prev = own.find((o) => o.source && o.source.videoId === res.id);
+  if (prev && prev.status === "published") return null;
+  const n = await redactarNoticia(env, f, res);
+  if (!n) return null;
+  let item;
+  if (prev) { item = prev; Object.assign(item, n, { status: "published", publishedAt: now, updatedAt: now }); }
+  else {
+    const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
+    item = Object.assign({ id: hex, status: "published", createdAt: now, updatedAt: now, publishedAt: now }, n);
+    own.unshift(item);
+  }
   await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
-  return true;
+  return item;
 }
 
 // ---------- Telegram (solo para Edu) ----------
@@ -185,6 +240,14 @@ export function resumenTelegram(club, titulo, id, items, borrador) {
   if (ok.length) t += "\n" + ok.map((x) => (ETIQ[x.estado] || x.estado) + " · <b>" + esc(x.nombre) + "</b>").join("\n");
   if (dud.length) t += "\n\n<i>No publicables:</i>\n" + dud.map((x) => "· " + esc(x.jugador) + " (" + (ETIQ[x.estado] || x.estado) + ")" + (x.cruzado ? "" : " — sin cruzar con Futmondo") + (x.verificada ? "" : " — frase no verificada")).join("\n");
   return t + "\n\nhttps://youtu.be/" + id + (borrador ? "\n\n📝 Borrador listo para revisar y publicar:\nhttps://edumr.es/futmondo/admin-noticias/" : "");
+}
+export function noticiaTelegram(item, sinVerificar) {
+  const cuerpo = String(item.body || "").split(/\n+/).filter(Boolean).join("\n\n");
+  let t = "📰 <b>" + esc(item.title) + "</b>\n\n" + (item.lead ? "<i>" + esc(item.lead) + "</i>\n\n" : "") + esc(cuerpo.slice(0, 1800));
+  t += "\n\nFuente: " + esc(item.source && item.source.name) + (item.source && item.source.url ? "\n" + item.source.url : "");
+  t += "\n\n🔗 https://edumr.es/futmondo/guiafantasy/noticias/ed-" + item.id;
+  if (sinVerificar) t += "\n\n<i>" + sinVerificar + " dato" + (sinVerificar === 1 ? "" : "s") + " sin verificar (no publicado" + (sinVerificar === 1 ? "" : "s") + ")</i>";
+  return t;
 }
 async function enviar(env, f, chat, text) {
   try {
@@ -282,12 +345,25 @@ export async function redactorSombra(env, deps) {
           s.status = "ok"; delete s.err; s.n = items.length; s.seguros = items.filter((x) => x.publicable).length;
           const res = { id, club: s.club, title: s.title, pub: s.pub, at: now, items, chars: transcripcion.length };
           try { await env.PORRA.put(RES_PREFIX + id, JSON.stringify(res), { expirationTtl: 14 * 86400 }); } catch (e) {}
-          let borrador = false;
-          try { borrador = await crearBorrador(env, res, now); } catch (e) {}
-          hecho = { id, items, s, borrador };
+          let noticia = null;
+          try { noticia = await publicarNoticia(env, f, res, now); if (noticia) st.tok.n += noticia.tokens || 0; } catch (e) { s.err = "publicar: " + String(e && e.message || e).slice(0, 80); }
+          hecho = { id, items, s, noticia };
         }
       }
     }
+  }
+  // 2b) borradores de antes (sin tocar por Edu): se reescriben y se publican, uno por pasada
+  if (!hecho) {
+    try {
+      const own = (await env.PORRA.get(OWN_KEY, "json")) || [];
+      const d = own.find((o) => o.status === "draft" && o.source && o.source.videoId && o.updatedAt === o.createdAt);
+      if (d) {
+        const res = await env.PORRA.get(RES_PREFIX + d.source.videoId, "json");
+        const n = res ? await publicarNoticia(env, f, res, now) : null;
+        if (n) { st.tok.n += n.tokens || 0; dirty = true; hecho = { id: res.id, items: res.items, s: { club: res.club, title: res.title }, noticia: n }; }
+        else { await env.PORRA.put(OWN_KEY, JSON.stringify(own.filter((o) => o !== d && o.id !== d.id))); }
+      }
+    } catch (e) {}
   }
   if (dirty) { try { await env.PORRA.put(STATE_KEY, JSON.stringify(st)); } catch (e) {} }
 
@@ -296,10 +372,10 @@ export async function redactorSombra(env, deps) {
     try {
       const av = await env.PORRA.get(AVISOS_KEY, "json");
       const chat = String(env.TELEGRAM_CHAT_ID || (av && av.chat) || "");
-      if (chat) await enviar(env, f, chat, resumenTelegram(hecho.s.club, hecho.s.title, hecho.id, hecho.items, hecho.borrador));
+      if (chat && hecho.noticia) await enviar(env, f, chat, noticiaTelegram(hecho.noticia, hecho.items.filter((x) => !x.publicable).length));
     } catch (e) {}
   }
   return { procesado: hecho ? hecho.id : null, pendientes: cola.length, tokens: st.tok.n };
 }
 
-export const _r = { parseFeed, esConferencia, fraseVerificada, cruzarJugador, filtrar, parseJson, resumenTelegram };
+export const _r = { validarNoticia, noticiaTelegram, parseFeed, esConferencia, fraseVerificada, cruzarJugador, filtrar, parseJson, resumenTelegram };
