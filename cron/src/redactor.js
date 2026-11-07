@@ -63,7 +63,7 @@ export function fraseVerificada(frase, transcripcion) {
 }
 
 // Cruza el nombre que oyó la IA con la plantilla de Futmondo. Solo vale si hay UN candidato claro.
-const ALIAS_JUGADOR = {}; // apodo -> nombre completo. Se rellena solo con lo que Edu confirme.
+const ALIAS_JUGADOR = { zaka: "Zakaria Eddahchouri" }; // apodo -> nombre completo. Solo lo que Edu confirma (Zaka: 07/11).
 export function cruzarJugador(nombre, plantilla) {
   const n = norm(ALIAS_JUGADOR[norm(nombre)] || nombre);
   const toks = n.split(" ").filter((t) => t.length > 2);

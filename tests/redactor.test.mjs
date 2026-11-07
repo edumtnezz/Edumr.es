@@ -33,7 +33,7 @@ const PL = [{ id: "1", name: "Marc Casadó" }, { id: "2", name: "Zakaria Eddahch
 test("cruzar con la plantilla: solo si hay un candidato claro", () => {
   assert.equal(_r.cruzarJugador("Casadó", PL).id, "1");
   assert.equal(_r.cruzarJugador("Adama", PL).id, "4");
-  assert.equal(_r.cruzarJugador("Zaka", PL), null);       // apodo sin confirmar: no se adivina
+  assert.equal(_r.cruzarJugador("Zaka", PL).id, "2");     // apodo confirmado por Edu
   assert.equal(_r.cruzarJugador("Márquez", PL), null);
 });
 
@@ -48,7 +48,7 @@ test("filtrar: solo es publicable lo verificado, cruzado y con confianza alta", 
   assert.equal(r.length, 3);                       // el estado inválido se descarta
   assert.equal(r[0].publicable, true);
   assert.equal(r[1].publicable, false);            // confianza media
-  assert.equal(r[2].publicable, false);            // sin cruzar y frase no verificada
+  assert.equal(r[2].publicable, false);            // frase no verificada
 });
 
 test("parseJson tolera texto alrededor", () => {
