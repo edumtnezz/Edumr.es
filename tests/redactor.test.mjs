@@ -21,6 +21,9 @@ test("solo ruedas de prensa del primer equipo masculino", () => {
   assert.equal(_r.esConferencia("Rueda de prensa de Giacomo Quagliata tras ser elegido Xogador Estrella Galicia del mes"), false);
   assert.equal(_r.esConferencia("VILLARREAL-GETAFE | RUEDA DE PRENSA PREVIA IÑIGO | LALIGA"), true);
   assert.equal(_r.esConferencia("Las reacciones de los protagonistas tras el Sevilla FC - Deportivo Alavés"), true);
+  assert.equal(_r.esConferencia("Reacciones de Pellegrini, Ceballos, Aitor Ruibal y Ángel Ortiz tras el #BVBRealBetis"), true);
+  assert.equal(_r.esConferencia("DECLARACIONES DE JAVIER AGUIRRE TRAS EL ENCUENTRO ANTE EL ELCHE CF | VALENCIA CF"), true);
+  assert.equal(_r.esConferencia("PRIMERAS DECLARACIONES DE LUCAS PICCINATO COMO ENTRENADOR DEL VALENCIA CF FEMENINO"), false);
   assert.equal(_r.esConferencia("Rueda de prensa de Antonio Hidalgo previa al RCD Espanyol - RC Deportivo"), true);
   assert.equal(_r.esConferencia("Rueda de prensa Juvenil A"), false);
   assert.equal(_r.esConferencia("El Partido #SevillaAlavés EN DIRECTO"), false);

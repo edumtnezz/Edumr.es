@@ -29,6 +29,7 @@ export const FUENTES = [
   { club: "Villarreal", yt: "UC0MLWyQ0L7uEZY8wbkDSTkw" },
   { club: "Levante", yt: "UCvOegN2N1FGPPv4xBNN2F9A" },
   { club: "Oviedo", yt: "UCvpFN8tLnBsjPR2BCJ-FJQA" },
+  { club: "Atlético", yt: "UCuzKFwdh7z2GHcIOX_tXgxA" }, // publica las ruedas de prensa de Simeone (directos)
 ];
 
 // ---------- funciones puras (con pruebas) ----------
@@ -48,7 +49,9 @@ export function parseFeed(xml) {
 export function esConferencia(title) {
   const t = norm(title);
   // Rueda de prensa, o (Sevilla) el vídeo "Las reacciones de los protagonistas tras el partido", donde habla el entrenador tras el partido
-  if (!/\brueda de prensa\b|\breacciones de los protagonistas\b/.test(t)) return false;
+  // y los vídeos de reacciones/declaraciones tras el partido (Betis, Valencia, Sevilla)
+  if (!/\brueda de prensa\b|\breacciones de\b|\bdeclaraciones de\b.*\b(tras|previa|post\w*)\b/.test(t)) return false;
+  if (/\bprimeras declaraciones\b/.test(t)) return false;
   // Fuera: femenino (Dépor ABANCA, CFF), filiales y cantera (Fabril, Villarreal B, RFEF), premios y homenajes
   if (/\b(femenin\w*|xogadora\w*|jugadora\w*|abanca|cff|cantera|juvenil\w*|cadete|infantil|filial|fabril|academia|rfef|sub \d+|b|elegid[oa]s?|homenaje)\b/.test(t)) return false;
   return true;
