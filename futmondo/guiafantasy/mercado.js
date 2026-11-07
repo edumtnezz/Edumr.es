@@ -4251,6 +4251,11 @@
       row.type = "button";
       row.style.setProperty("--tc", cc[1]);
       row.addEventListener("click", () => { pendingUpdKey = updKey(x); switchTab("actualizaciones"); let n = 0; const t2 = setInterval(() => { if (focusUpd() || ++n > 12) clearInterval(t2); }, 250); });
+      // Foto del jugador o escudo del club del cambio (si no carga ninguna, queda el punto de color de siempre)
+      const pl0 = (x.players && x.players[0]) || {};
+      const srcs = [pl0.photo, x.photo, clubLogo(pl0.to || pl0.from || "", "")].filter(Boolean);
+      const pic = srcs.length ? fichImg(srcs, "nw-chg-img") : null;
+      if (pic) { row.classList.add("has-img"); row.appendChild(pic); const im = pic.querySelector("img"); if (im) im.addEventListener("error", () => { if (!pic.isConnected) row.classList.remove("has-img"); }); }
       row.appendChild(el("i"));
       row.appendChild(el("span", "nw-chg-lab", String(cc[0]).replace("Mercado Futmondo", "Mercado")));
       row.appendChild(el("span", "nw-chg-time", x.time || ""));
