@@ -98,6 +98,12 @@ test("flujo completo en modo sombra", async () => {
   assert.equal(tgMsgs.length, 1);
   assert.equal(tgMsgs[0].chat_id, "42");
   assert.match(tgMsgs[0].text, /SOMBRA · Deportivo/);
+  assert.match(tgMsgs[0].text, /admin-noticias/);
+  const own = JSON.parse(kv.get("own:news:v1"));
+  assert.equal(own.length, 1);
+  assert.equal(own[0].status, "draft");
+  assert.equal(own[0].source.videoId, "AAA111");
+  assert.match(own[0].body, /Marc Casadó: entrena con el grupo/);
   // segunda pasada: ya está hecho, no vuelve a gastar
   const r2 = await redactorSombra(env, { fetch: fetchFalso, now: now + 10 * 60e3, fuentes: [{ club: "Deportivo", yt: "X" }] });
   assert.equal(r2.procesado, null);

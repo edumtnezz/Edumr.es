@@ -4383,7 +4383,17 @@
   const isCm = (x) => /comuniate\.com/i.test(String((x && x.link) || "")) && !isParteMedico(x && x.title); // imágenes de Comuniate: se recorta abajo, donde va su logo (Edu 02/11)
   const squareImg = (u) => (u === NEWS_IMG ? NEWS_MINI : u === PARTE_IMG ? PARTE_MINI : u); // versión cuadrada de nuestras dos imágenes para las miniaturas
   const newsFallbackImg = (title) => (isParteMedico(title) ? PARTE_IMG : NEWS_IMG);
-  const newsImgOf = (x) => (isParteMedico(x && x.title) ? PARTE_IMG : (x && x.thumb) || NEWS_IMG);
+  // Noticias propias: miniatura = foto del primer jugador citado (mercado de Futmondo) o, si no, escudo del club
+  const ownImg = (x) => {
+    try {
+      const pl = (x.players || []).map((n) => playerByFullName(n)).find((p) => p && p.photo);
+      if (pl) return pl.photo;
+      const lg = x.club ? clubLogo(x.club, "") : "";
+      if (lg) return lg;
+    } catch (e) {}
+    return "";
+  };
+  const newsImgOf = (x) => (isParteMedico(x && x.title) ? PARTE_IMG : (x && x.thumb) || (x && x.src === "EduMR" && ownImg(x)) || NEWS_IMG);
   const baseTitle = document.title;
   let newsPushed = false;
   // Jugadores de los que habla la noticia (solo los que existen en el mercado; coincidencia por nombre o apellido único)

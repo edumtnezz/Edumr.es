@@ -140,17 +140,46 @@ function promptEstados(club, transcripcion, nombres) {
     "Devuelve solo un array JSON de {jugador, estado, frase, minuto, confianza}.\n\nTRANSCRIPCIÓN:\n" + transcripcion;
 }
 
+
+// ---------- Borrador de noticia propia (solo con frases publicables) ----------
+const OWN_KEY = "own:news:v1";
+const ETIQ_TXT = { disponible: "disponible", opcion_titular: "opción de titular", duda: "duda", recuperacion_con_grupo: "entrena con el grupo", recuperacion_parcial: "entrena parcialmente", baja: "baja", titular_confirmado: "titular confirmado", rotacion: "rotación" };
+export function borradorDesdeVideo(v) {
+  const items = (v.items || []).filter((x) => x.publicable);
+  if (!items.length) return null;
+  const secs = (m) => { const a = String(m || "").split(":").map(Number); return a.length === 2 && a.every((n) => !isNaN(n)) ? a[0] * 60 + a[1] : 0; };
+  const first = items.find((i) => i.minuto);
+  return {
+    title: v.club + ": así llegan sus jugadores tras la rueda de prensa",
+    lead: items.length + " jugador" + (items.length === 1 ? "" : "es") + " mencionado" + (items.length === 1 ? "" : "s") + " por el entrenador.",
+    body: items.map((it) => (it.nombre || it.jugador) + ": " + (ETIQ_TXT[it.estado] || it.estado) + ". «" + it.frase + "»" + (it.minuto ? " (min " + it.minuto + ")" : "")).join("\n"),
+    club: v.club, players: items.map((i) => i.nombre || i.jugador),
+    source: { name: "Rueda de prensa · " + v.club + " (YouTube)", url: "https://youtu.be/" + v.id + (first ? "?t=" + secs(first.minuto) : ""), videoId: v.id },
+    original: items.map((i) => ({ jugador: i.jugador, estado: i.estado, frase: i.frase, minuto: i.minuto, confianza: i.confianza, verificada: !!i.verificada, cruzado: !!i.cruzado })),
+  };
+}
+async function crearBorrador(env, v, now) {
+  const d = borradorDesdeVideo(v);
+  if (!d) return false;
+  const own = (await env.PORRA.get(OWN_KEY, "json")) || [];
+  if (own.some((o) => o.source && o.source.videoId === v.id)) return false;
+  const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
+  own.unshift(Object.assign({ id: hex, status: "draft", createdAt: now, updatedAt: now }, d));
+  await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
+  return true;
+}
+
 // ---------- Telegram (solo para Edu) ----------
 const ETIQ = { disponible: "🟢 disponible", opcion_titular: "🟢 opción de titular", duda: "🟡 duda", recuperacion_con_grupo: "🟡 recuperación (con grupo)", recuperacion_parcial: "🟠 recuperación (parcial)", baja: "🔴 baja", titular_confirmado: "✅ titular", rotacion: "🔄 rotación" };
 const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-export function resumenTelegram(club, titulo, id, items) {
+export function resumenTelegram(club, titulo, id, items, borrador) {
   const ok = items.filter((x) => x.publicable);
   const dud = items.filter((x) => !x.publicable);
   let t = "🧪 <b>SOMBRA · " + esc(club) + "</b>\n" + esc(titulo.slice(0, 90)) + "\n";
   t += "\n" + ok.length + " seguros · " + dud.length + " sin verificar\n";
   if (ok.length) t += "\n" + ok.map((x) => (ETIQ[x.estado] || x.estado) + " · <b>" + esc(x.nombre) + "</b>").join("\n");
   if (dud.length) t += "\n\n<i>No publicables:</i>\n" + dud.map((x) => "· " + esc(x.jugador) + " (" + (ETIQ[x.estado] || x.estado) + ")" + (x.cruzado ? "" : " — sin cruzar con Futmondo") + (x.verificada ? "" : " — frase no verificada")).join("\n");
-  return t + "\n\nhttps://youtu.be/" + id;
+  return t + "\n\nhttps://youtu.be/" + id + (borrador ? "\n\n📝 Borrador listo para revisar y publicar:\nhttps://edumr.es/futmondo/admin-noticias/" : "");
 }
 async function enviar(env, f, chat, text) {
   try {
@@ -246,8 +275,11 @@ export async function redactorSombra(env, deps) {
           st.tok.n += es.tokens;
           const items = filtrar(parseJson(textoDe(es.j)), transcripcion, plantilla);
           s.status = "ok"; delete s.err; s.n = items.length; s.seguros = items.filter((x) => x.publicable).length;
-          try { await env.PORRA.put(RES_PREFIX + id, JSON.stringify({ id, club: s.club, title: s.title, pub: s.pub, at: now, items, chars: transcripcion.length }), { expirationTtl: 14 * 86400 }); } catch (e) {}
-          hecho = { id, items, s };
+          const res = { id, club: s.club, title: s.title, pub: s.pub, at: now, items, chars: transcripcion.length };
+          try { await env.PORRA.put(RES_PREFIX + id, JSON.stringify(res), { expirationTtl: 14 * 86400 }); } catch (e) {}
+          let borrador = false;
+          try { borrador = await crearBorrador(env, res, now); } catch (e) {}
+          hecho = { id, items, s, borrador };
         }
       }
     }
@@ -259,7 +291,7 @@ export async function redactorSombra(env, deps) {
     try {
       const av = await env.PORRA.get(AVISOS_KEY, "json");
       const chat = String(env.TELEGRAM_CHAT_ID || (av && av.chat) || "");
-      if (chat) await enviar(env, f, chat, resumenTelegram(hecho.s.club, hecho.s.title, hecho.id, hecho.items));
+      if (chat) await enviar(env, f, chat, resumenTelegram(hecho.s.club, hecho.s.title, hecho.id, hecho.items, hecho.borrador));
     } catch (e) {}
   }
   return { procesado: hecho ? hecho.id : null, pendientes: cola.length, tokens: st.tok.n };
