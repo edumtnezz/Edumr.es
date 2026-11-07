@@ -4238,6 +4238,29 @@
   }
 
   // "Últimos cambios": línea de tiempo compacta (punto de color + qué + hora)
+  // Imágenes (del mercado de Futmondo) para una fila de "Últimos cambios": solo si hay pareja segura
+  function cambioImgs(x) {
+    const fold = (v) => stripAccents(String(v || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+    const title = " " + fold(x.title) + " ";
+    let crest = "";
+    const seen = new Set();
+    for (const p of (all || [])) {
+      if (!p.team || !p.logo || seen.has(p.team)) continue;
+      seen.add(p.team);
+      const words = window.EduTeams ? window.EduTeams.alias(p.team) : [fold(p.team)];
+      if (words.some((w) => { w = fold(w); return w && title.indexOf(" " + w + " ") >= 0; })) { crest = p.logo; break; }
+    }
+    const pl0 = (x.players && x.players[0]) || {};
+    let mk = null;
+    try { mk = (pl0.name && playerByFullName(pl0.name)) || null; } catch (e) {}
+    if (!mk && !/alineaci/.test(title)) { try { mk = playerByFullName(x.title); } catch (e) {} }
+    const out = [];
+    if (/alineaci/.test(title) && crest) out.push(crest);
+    if (mk) { if (mk.photo) out.push(mk.photo); if (mk.logo) out.push(mk.logo); }
+    if (crest) out.push(crest);
+    if (!out.length) { const cl = clubLogo(pl0.to || pl0.from || "", ""); if (cl) out.push(cl); }
+    return out;
+  }
   function paintInicioCambios() {
     const c = $("nwChg");
     if (!c) return;
@@ -4251,10 +4274,8 @@
       row.type = "button";
       row.style.setProperty("--tc", cc[1]);
       row.addEventListener("click", () => { pendingUpdKey = updKey(x); switchTab("actualizaciones"); let n = 0; const t2 = setInterval(() => { if (focusUpd() || ++n > 12) clearInterval(t2); }, 250); });
-      // Foto del jugador o escudo del club del cambio (si no carga ninguna, queda el punto de color de siempre)
-      const pl0 = (x.players && x.players[0]) || {};
-      let mk = null; try { mk = pl0.name ? playerByFullName(pl0.name) : null; } catch (e) {}
-      const srcs = [mk && mk.photo, mk && mk.logo, clubLogo(pl0.to || pl0.from || "", "")].filter(Boolean); // fotos del mercado de Futmondo
+      // Imagen del cambio, siempre del mercado de Futmondo: escudo si habla de un equipo (alineaciones), foto si habla de un jugador
+      const srcs = cambioImgs(x);
       const pic = srcs.length ? fichImg(srcs, "nw-chg-img") : null;
       if (pic) { row.classList.add("has-img"); row.appendChild(pic); const im = pic.querySelector("img"); if (im) im.addEventListener("error", () => { if (!pic.isConnected) row.classList.remove("has-img"); }); }
       row.appendChild(el("i"));
