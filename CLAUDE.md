@@ -10,6 +10,7 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 - Sin recargas automáticas visibles ni saltos de pantalla.
 - Antes de subir: `node --check` de los JS y `node --test tests/*.test.mjs`. El `?v=` lo pone solo el despliegue (`scripts/version-assets.mjs`).
 - Si una fuente falla, mostrar el último dato bueno, nunca pantalla vacía.
+- **Puntos de un partido: nunca los del partido anterior.** Futmondo marca un partido terminado antes de publicar sus puntos y `fitness` aún acaba en el partido anterior. Todo sitio que reparta `fitness` entre partidos concretos debe comprobar antes que Futmondo ya lo publicó (`fitLag` / `fitIndex` en `functions/_lib/fitness.mjs`, o `jLab`). Si no está publicado: "—" o nada, jamás el valor viejo ni un cálculo. `tests/fitness-guard.test.mjs` falla si se añade código sin esa protección.
 
 ## Técnico
 - JS puro: futmondo/guiafantasy/mercado.js, chrome.js, alineacion.js + CSS.

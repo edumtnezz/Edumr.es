@@ -4852,12 +4852,20 @@ async function recordPointsHistory(env) {
   let hist = {};
   try { hist = (await env.PORRA.get(PTH_KEY, "json")) || {}; } catch (e) {}
   let changed = false;
+  let hdr = null;
   for (const k of pending) {
     const list = fin[k];
     const last = list[list.length - 1];
     // Futmondo tarda en repartir los puntos: hasta 3 h después del final no se da por bueno el dato
     if (!(mk.at && mk.at >= last.t + (105 * 60 + 3 * 3600) * 1000)) { out.skipped.push(k + ":espera"); continue; }
     const roster = players.filter((p) => { const pk = teamKey(p.team || ""); return pk && (pk === k || pk.indexOf(k) >= 0 || k.indexOf(pk) >= 0); });
+    // Si Futmondo aún no ha publicado el último partido terminado de este equipo, el último valor de
+    // fitness es el del partido anterior: no se guarda nada (se reintenta en la siguiente pasada).
+    if (roster.length) {
+      const pubT = teamPlayedMatches(roster, roster[0].team, teamKey);
+      const finT = await teamFinishedCount(hdr || (hdr = await futbolHeader(env)), roster, roster[0].team, 0);
+      if (fitLagOf(pubT, finT) > 0) { out.skipped.push(k + ":sin-publicar"); continue; }
+    }
     let cmp = 0, bad = 0;
     const plan = [];
     roster.forEach((p) => {

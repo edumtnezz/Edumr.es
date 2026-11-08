@@ -2851,12 +2851,15 @@
     const fit = Array.isArray(f.fitness) ? f.fitness : [];
     const msd = ms.slice().sort((x, y) => (Date.parse(y.date) || 0) - (Date.parse(x.date) || 0) || y.r - x.r);
     const valByR = {};
-    msd.forEach((m, k) => { if (k < fit.length && fit[fit.length - 1 - k] != null) valByR[m.r] = Math.round(fit[fit.length - 1 - k]); });
+    // Partidos terminados cuyos puntos Futmondo aún no ha publicado (f.fitLag): se quedan sin valor, no se les pone el del anterior.
+    const lagN = Number(f.fitLag) || 0;
+    const waitR = {};
+    msd.filter((m) => m.finished !== false).forEach((m, k) => { const i = k - lagN; if (i < 0) { waitR[m.r] = true; return; } if (i < fit.length && fit[fit.length - 1 - i] != null) valByR[m.r] = Math.round(fit[fit.length - 1 - i]); });
     const mlist = ms.map((m) => {
       const casa = m.home === f.team;
       const rv = casa ? m.away : (m.away === f.team ? m.home : (m.away || m.home || ""));
       let pt = valByR[m.r] != null ? valByR[m.r] : null, calc = false;
-      if (pt == null && m.lg != null) { pt = Math.round(Number(m.lg)); calc = true; }
+      if (pt == null && m.lg != null && !waitR[m.r]) { pt = Math.round(Number(m.lg)); calc = true; }
       const E = m.ev || {};
       if ((Number(m.mins) || 0) <= 0 && pt == null) { pt = 0; calc = false; } // no jugó: 0 puntos
       return { r: m.r, dt: cmpYmd(m.date), hm: m.home || "", aw: m.away || "", rv, h: casa ? 1 : 0, mn: Number(m.mins) || 0, sb: m.sub ? 1 : 0, g: Number(E.g) || 0, a: Number(E.a) || 0, y: Number(m.yellow) || 0, rd: Number(m.red) || 0, pt, calc: calc ? 1 : 0 };
