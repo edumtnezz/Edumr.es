@@ -3980,14 +3980,26 @@ async function teamFinishedCount(header, players, teamName, upTo) {
   } catch (e) { return 0; }
 }
 
+// Puntos de la liga de un jugador en una jornada, del histórico guardado (KV "pth:v1"). null si no hay dato.
+async function pthPoints(env, id, jornada) {
+  try {
+    const g = globalThis.__pth;
+    let hist = g && Date.now() - g.at < 120000 ? g.h : null;
+    if (!hist) { hist = (await env.PORRA.get(PTH_KEY, "json")) || {}; globalThis.__pth = { at: Date.now(), h: hist }; }
+    const v = hist[id] && hist[id][jornada];
+    return v == null || v === "" || isNaN(Number(v)) ? null : Math.round(Number(v));
+  } catch (e) { return null; }
+}
+
 async function getPlayerJornadaPoints(env, playerId, jornada) {
   if (!playerId) return null;
   // Caché por jugador+jornada: los puntos de un partido terminado ya no
   // cambian (se guardan 30 días); mientras el partido no ha acabado se
   // guardan solo 2 minutos para no machacar la API de Futmondo desde la
   // página de cada partido.
-  // v6 (08/11/2026): se descartan los valores guardados con v5; algunos eran los puntos del partido anterior.
-  const ck = "pjp:v6:" + playerId + ":" + (Number(jornada) || 0);
+  // v6 (08/11/2026): se descartan los valores guardados con v5 (algunos eran los puntos del partido anterior).
+  // v7 (09/11/2026): se descartan los de v6 (partidos antiguos con el modo "stats", que no es la puntuación de la liga).
+  const ck = "pjp:v7:" + playerId + ":" + (Number(jornada) || 0);
   try {
     const c = await env.PORRA.get(ck, "json");
     if (c && (c.finished || Date.now() - (c.at || 0) < 120000)) return { finished: !!c.finished, points: c.finished ? c.points : null };
@@ -4047,16 +4059,16 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
         try { await env.PORRA.put(ck, JSON.stringify({ at: Date.now() - 108000, finished: false, points: null }), { expirationTtl: 60 }); } catch (e) {}
         return { finished: false, points: null };
       }
-      if (pts == null) {
-        const po = (m.ps && m.ps.po) || [];
-        const z = po.find((k) => k.mode === "stats");
-        pts = z ? Number(z.p) || 0 : 0;
-      }
+      // Fuera de los 5 últimos partidos que publica Futmondo: puntos de la liga guardados en el histórico
+      // (los mismos que enseña la ficha). Antes se usaba el modo "stats" de Futmondo, que NO es la puntuación
+      // de la liga (Hancko J5: 12 en "stats" y 7 de verdad). Sin dato real, sin puntos: nunca otro valor.
+      if (pts == null) pts = await pthPoints(env, playerId, jornada);
       out.points = pts;
     }
     try {
+      // Terminado pero sin puntos conocidos: se guarda solo 1 h por si el histórico los consigue después
       await env.PORRA.put(ck, JSON.stringify({ at: Date.now(), finished: out.finished, points: out.points }), {
-        expirationTtl: out.finished ? 30 * 24 * 3600 : 120,
+        expirationTtl: out.finished ? (out.points == null ? 3600 : 30 * 24 * 3600) : 120,
       });
     } catch (e) {}
     return out;
@@ -4067,7 +4079,7 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
 // El cron los busca cada minuto en cuanto Futmondo los publica tras el final de un partido y los deja
 // guardados, así la página del partido ya los trae al abrirla (sin rayas ni esperas). Todo es dato real
 // de Futmondo: si aún no están publicados, no se guarda nada y la página sigue con su método de siempre.
-const PTJ_PREFIX = "ptj:v1:";
+const PTJ_PREFIX = "ptj:v2:"; // v2 (09/11/2026): los guardados con v1 tenían 38 valores del J12 desplazados (fichajes tardíos)
 async function recordMatchPoints(env) {
   const out = { checked: 0, saved: [], waiting: [] };
   if (globalThis.__ptjAt && Date.now() - globalThis.__ptjAt < 20000) return Object.assign(out, { skipped: "reciente" });
