@@ -87,6 +87,13 @@
       row.appendChild(k); row.appendChild(q); row.appendChild(tg); o.appendChild(row);
     });
     if (!(x.original || []).length) o.appendChild(el("p", "ad-meta", "Escrita a mano."));
+    var cmp = D.comparacion && (D.comparacion.propias || []).filter(function (c) { return c.id === x.id; })[0];
+    o.appendChild(el("h3", null, "Otras webs sobre el mismo jugador"));
+    if (cmp && cmp.matches.length) cmp.matches.forEach(function (m) {
+      var r = el("div", "ad-row"); var a2 = el("a", "ad-link", m.title); a2.href = m.link; a2.target = "_blank"; a2.rel = "noopener";
+      r.appendChild(a2); var tg2 = el("div"); tg2.appendChild(tag(m.src)); tg2.appendChild(document.createTextNode([m.date, m.time].filter(Boolean).join(" "))); r.appendChild(tg2); o.appendChild(r);
+    });
+    else o.appendChild(el("p", "ad-meta", cmp ? "Ninguna otra web lo ha contado (por ahora)." : "Aún sin comparar."));
     two.appendChild(o);
 
     var f = el("div", "ad-box"); f.appendChild(el("h3", null, "Versión EduMR"));
@@ -153,7 +160,13 @@
     var bar = el("div", "ad-tabs");
     [""].concat(Object.keys(srcs)).forEach(function (s) { var b = el("button", "ad-chip" + (filtroSrc === s ? " on" : ""), (s || "Todas") + " (" + (s ? srcs[s] : ex.length) + ")"); b.type = "button"; b.addEventListener("click", function () { filtroSrc = s; pinta(); }); bar.appendChild(b); });
     v.appendChild(bar);
-    v.appendChild(el("p", "ad-meta", "Solo para comparar con lo nuestro. No se publica nada de esto en la web."));
+    v.appendChild(el("p", "ad-meta", "Solo para comparar con lo nuestro. No se publica ni se avisa de nada de esto."));
+    var cm = D.comparacion;
+    if (cm) {
+      var rs = el("div", "ad-card"); rs.appendChild(el("h2", null, "Cobertura (últimas 72 h)"));
+      rs.appendChild(el("p", "ad-meta", cm.total + " noticias nuestras · " + cm.coincide + " también las cuentan otras webs · " + (cm.sinCubrir || []).length + " titulares de otras webs que no tratamos (aprox.)"));
+      v.appendChild(rs);
+    }
     var l = ex.filter(function (x) { return !filtroSrc || (x.src || "FutbolFantasy") === filtroSrc; });
     if (!l.length) v.appendChild(el("p", "ad-empty", "Sin datos ahora mismo."));
     l.forEach(function (x) {

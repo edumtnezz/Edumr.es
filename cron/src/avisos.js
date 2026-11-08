@@ -299,9 +299,9 @@ export async function avisar(env, deps) {
       let resumen = ""; // sin resumen: ya no se lee el texto de otras webs
       c.resumen = resumen;
     }
+    // Decisión de Edu (08/11): ya no se avisa de noticias de otras webs. Solo se marcan como vistas; el redactor las compara por dentro.
     for (const c of nuevas) {
-      const text = noticiaTexto(c.title, c.hits, c.resumen, c.x.link, c.x.src);
-      queue.push({ text, commit: () => { st.news = (st.news || []).concat([c.x.link]).slice(-200); st.nt = (st.nt || []).concat([{ k: c.k, t: c.at || now, s: c.s }]).slice(-150); dirty = true; } });
+      st.news = (st.news || []).concat([c.x.link]).slice(-200); st.nt = (st.nt || []).concat([{ k: c.k, t: c.at || now, s: c.s }]).slice(-150); dirty = true;
     }
   }
 

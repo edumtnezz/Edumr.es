@@ -277,6 +277,36 @@ async function enviarFoto(env, f, chat, foto, caption) {
   return enviar(env, f, chat, caption);
 }
 
+
+// ---------- Comparación interna con las otras webs (solo para el panel; nada se publica ni se avisa) ----------
+const CMP_KEY = "rd:cmp:v1", EXT_KEY = "rd:ext:v1";
+export function compararNoticias(own, ext, now) {
+  const palabras = (t) => new Set(norm2(t).replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter(Boolean));
+  const fuertes = (n) => norm2(n).split(/\s+/).filter((w) => w.length >= 4);
+  const recientes = (ext || []).filter((e) => e && e.title && (!e.seen || now - e.seen < 72 * 3600e3));
+  const propias = (own || []).filter((o) => o.status === "published" && o.players && o.players[0] && now - (o.publishedAt || 0) < 72 * 3600e3);
+  const usadas = new Set();
+  const out = propias.map((o) => {
+    const claves = fuertes(o.players[0]);
+    const matches = recientes.filter((e) => { const w = palabras(e.title); return claves.some((k) => w.has(k)); });
+    matches.forEach((m) => usadas.add(m.link));
+    return { id: o.id, title: o.title, players: o.players, matches: matches.slice(0, 6).map((m) => ({ src: m.src || "FutbolFantasy", title: m.title, link: m.link, date: m.date, time: m.time })) };
+  });
+  return { at: now, propias: out, coincide: out.filter((x) => x.matches.length).length, total: out.length, sinCubrir: recientes.filter((e) => !usadas.has(e.link)).slice(0, 40).map((e) => ({ src: e.src || "FutbolFantasy", title: e.title, link: e.link, date: e.date, time: e.time })) };
+}
+async function compararConExternas(env, now) {
+  const c = await env.PORRA.get("ff:news:cron:v1", "json");
+  if (!c || !Array.isArray(c.noticias)) return;
+  // registro de lo que publican las otras webs (titulares y primera vez que los vimos), para estudiar cómo redactan
+  let ext = (await env.PORRA.get(EXT_KEY, "json")) || [];
+  const vistos = new Set(ext.map((e) => e.link));
+  for (const n of c.noticias) if (n && n.link && n.title && !vistos.has(n.link)) ext.unshift({ title: n.title, link: n.link, src: n.src || "FutbolFantasy", date: n.date, time: n.time, thumb: n.thumb || "", seen: now });
+  ext = ext.slice(0, 400);
+  await env.PORRA.put(EXT_KEY, JSON.stringify(ext));
+  const own = (await env.PORRA.get(OWN_KEY, "json")) || [];
+  await env.PORRA.put(CMP_KEY, JSON.stringify(compararNoticias(own, ext, now)));
+}
+
 // ---------- Telegram (solo para Edu) ----------
 const ETIQ = { disponible: "🟢 disponible", opcion_titular: "🟢 opción de titular", duda: "🟡 duda", recuperacion_con_grupo: "🟡 recuperación (con grupo)", recuperacion_parcial: "🟠 recuperación (parcial)", baja: "🔴 baja", titular_confirmado: "✅ titular", rotacion: "🔄 rotación" };
 const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -410,6 +440,9 @@ export async function redactorSombra(env, deps) {
       }
     } catch (e) {}
   }
+  // 2d) comparación interna con las otras webs (cada 10 min)
+  if (mnt % 10 === 1 || (deps && deps.allTicks)) { try { await compararConExternas(env, now); } catch (e) {} }
+
   // 2c) las noticias de previas que ya han caducado se retiran de la web (quedan en el panel como borrador)
   try {
     const own = (await env.PORRA.get(OWN_KEY, "json")) || [];
@@ -433,4 +466,4 @@ export async function redactorSombra(env, deps) {
   return { procesado: hecho ? hecho.id : null, pendientes: cola.length, tokens: st.tok.n };
 }
 
-export const _r = { caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, cruzarJugador, filtrar, parseJson, resumenTelegram };
+export const _r = { compararNoticias, caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, cruzarJugador, filtrar, parseJson, resumenTelegram };

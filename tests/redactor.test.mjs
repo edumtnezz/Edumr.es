@@ -238,3 +238,17 @@ test("una noticia por jugador, agrupando sus frases", () => {
   assert.equal(g.length, 2);
   assert.equal(g[0].items.length, 2);
 });
+
+test("comparar con otras webs: coincidencias por jugador y lo que no cubrimos", () => {
+  const now = Date.parse("2026-11-08T12:00:00Z");
+  const own = [{ id: "a", status: "published", publishedAt: now - 3600e3, title: "Casadó, duda", players: ["Marc Casadó"] }];
+  const ext = [
+    { title: "Casadó, duda para el domingo", link: "l1", src: "FutbolFantasy", seen: now - 1000 },
+    { title: "Fofana pierde brillo", link: "l2", src: "FutbolFantasy", seen: now - 1000 },
+  ];
+  const c = _r.compararNoticias(own, ext, now);
+  assert.equal(c.total, 1);
+  assert.equal(c.coincide, 1);
+  assert.equal(c.propias[0].matches[0].link, "l1");
+  assert.deepEqual(c.sinCubrir.map((x) => x.link), ["l2"]);
+});

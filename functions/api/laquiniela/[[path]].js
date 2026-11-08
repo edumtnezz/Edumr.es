@@ -2003,7 +2003,9 @@ async function adminNoticias(env, request, url, data) {
     let externas = [];
     try { externas = ((await getNoticias(env)).noticias || []).slice(0, 80); } catch (e) {}
     const usadas = {}; own.forEach((o) => { if (o.source && o.source.videoId) usadas[o.source.videoId] = o.id; });
-    return json({ own, sombra, usadas, externas, estado: estado ? { fuentes: estado.fuentes || {}, tok: estado.tok || null, seen: Object.entries(estado.seen || {}).slice(-60).map(([id, v]) => Object.assign({ id }, v)) } : null, now: Date.now() });
+    let comparacion = null;
+    try { comparacion = await env.PORRA.get("rd:cmp:v1", "json"); } catch (e) {}
+    return json({ own, sombra, usadas, externas, comparacion, estado: estado ? { fuentes: estado.fuentes || {}, tok: estado.tok || null, seen: Object.entries(estado.seen || {}).slice(-60).map(([id, v]) => Object.assign({ id }, v)) } : null, now: Date.now() });
   }
   const own = await getOwn(env);
   const now = Date.now();
