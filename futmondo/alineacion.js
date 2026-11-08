@@ -77,7 +77,7 @@
         var inner = '<div class="pl-ph"><img src="' + esc(photo) + '" alt="" data-ff="' + esc(ffPh) + '">';
         if (probable && s.bench && (s.san || s.inj) && (s.prob == null || s.prob < 10)) inner += '<span class="pl-prob pl-out">' + (s.san ? "Sancionado" : "Lesionado") + '</span>';
         else if (probable && s.prob != null) inner += '<span class="pl-prob ' + probCls(s.prob) + '">' + s.prob + '%</span>';
-        if (mode === "played") inner += '<span class="pl-pts" data-full="' + esc(s.full || s.name) + '">–</span>';
+        if (mode === "played") inner += '<span class="pl-pts pl-pts-wait" data-full="' + esc(s.full || s.name) + '">–</span>';
         else if (!probable) { /* confirmada: sin dudas */ }
         else if (s.san || s.inj) inner += '<span class="pl-duda bad">' + (s.san ? "✕" : "+") + '</span>';
         else if (s.prob != null && s.prob < 80 && !s.bench) inner += '<span class="pl-duda">?</span>';

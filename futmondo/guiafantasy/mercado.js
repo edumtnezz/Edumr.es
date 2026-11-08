@@ -1245,7 +1245,7 @@
     }));
     return { starters, bench: [], formation: [g.defensas.length, g.medios.length, g.delanteros.length].join("-") };
   }
-  let mpTeams = { home: "", away: "" }, mpCambios = [], mpPairs = [], mpReds = [], mpGm = null, mpConf = null, mpLive = false;
+  let mpTeams = { home: "", away: "" }, mpCambios = [], mpPairs = [], mpReds = [], mpGm = null, mpConf = null, mpLive = false, mpPtsPre = {};
   function mpNewCard(side, name, crest, subtitle, mode, photoMap, bench) {
     return cardClub(window.EduAlineacion.card(xiToStarters(side, photoMap, mode === "played"), name, crest, subtitle, all, mode, bench), name);
   }
@@ -1426,9 +1426,13 @@
     const ids = Object.keys(idByName).map((k) => idByName[k]).filter((x, i, a) => x && a.indexOf(x) === i);
     if (!ids.length) return false;
     let map = {};
+    // Lo que el servidor ya tiene guardado se pinta al instante; solo se pregunta por los que falten
+    ids.forEach((id) => { const v = mpPtsPre && mpPtsPre[id]; if (v != null && v !== "") map[id] = { p: Number(v), f: true }; });
+    const need = ids.filter((id) => !map[id]);
     try {
+      if (!need.length) throw new Error("completo");
       // En trozos de 8: cada petición al servidor tiene un tope de llamadas externas y con 28 jugadores de golpe fallaban la mayoría
-      const chunks = []; for (let i = 0; i < ids.length; i += 40) chunks.push(ids.slice(i, i + 40));
+      const chunks = []; for (let i = 0; i < need.length; i += 40) chunks.push(need.slice(i, i + 40));
       const rs = await Promise.all(chunks.map((c) => fetch(API + "/puntos?jornada=" + encodeURIComponent(jn) + "&ids=" + c.join(","), { cache: "no-store" }).then((x) => x.json()).catch(() => null)));
       rs.forEach((r) => { if (r && r.points) Object.keys(r.points).forEach((k) => { if (r.points[k]) map[k] = r.points[k]; }); });
       // Si algún trozo falló (el servidor limita las llamadas), se piden de nuevo los que faltan, de 4 en 4 y de uno en uno
@@ -2444,7 +2448,10 @@
       const pC = fetch(API + "/alineaciones-confirmadas?jornada=" + enc(jn), { cache: "no-store" }).then((r) => r.json()).catch(() => null);
       const pO = fetch(API + "/once?home=" + enc(m.home) + "&away=" + enc(m.away) + "&jornada=" + enc(jn), { cache: "no-store" }).then((r) => r.json()).catch(() => null);
       const pL = (!all || !all.length) ? load().catch(() => {}) : Promise.resolve();
-      const [d, cPre, oPre] = await Promise.all([pD, pC, pO, pL]);
+      // Puntos de Futmondo ya guardados por el servidor (se guardan solos al acabar el partido): así llegan con el resto, sin rayas ni esperas
+      const pP = fetch(API + "/puntos-jornada?jornada=" + enc(jn)).then((r) => r.json()).catch(() => null);
+      const [d, cPre, oPre, pPre] = await Promise.all([pD, pC, pO, pP, pL]);
+      if (pPre && pPre.pts && typeof pPre.pts === "object") mpPtsPre = pPre.pts;
       if (!d) { if (first) box.innerHTML = '<p class="muted small">No se pudo cargar el partido. <a href="" onclick="location.reload();return false">Reintentar</a></p>'; return false; }
       const finalNow = (m.live && m.live.state === "final") || /finaliz/i.test(String(d.state || ""));
       // En juego: se enseña lo que hay ahora en el campo (tabla de jugadores) en vez de la probable

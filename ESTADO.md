@@ -64,3 +64,11 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 - FotMob en directo: nota verde desde 7, naranja por debajo. Noticia principal "Sigue el partido en directo" (`paintLiveHero`): foto real de un jugador del equipo que gana (al azar si empatan). Sin probar con un partido en vivo real todavía.
 - Alerta de fallos del menú: resumen "Fallos de fuentes (N)"; se marca leída al abrir el menú (`seen_fail_sig`).
 - Visitas: `vista.js` cuenta páginas y toques por hora (KV `st:v2:<día>:<hora>`, API `vistas-horas`); página `/futmondo/stats/` con barras por hora y detalle al tocar una hora. El histórico por hora empieza el 01/11.
+
+## 08/11/2026 — Puntos de Futmondo ya guardados al abrir un partido terminado
+- Problema (Edu): al abrir un partido finalizado salían rayas "–" en cada jugador y los puntos tardaban segundos (se pedían jugador a jugador a Futmondo).
+- Ahora: el cron (cada minuto) llama a `/api/laquiniela/puntos-jornada?run=1` (`recordMatchPoints`). Para cada partido terminado (>105 min tras el inicio, hasta 40 h) hace UNA consulta de prueba a Futmondo; en cuanto los puntos están publicados pide toda la plantilla de los dos equipos y, si casi todos tienen puntos finales (≥ 80 %, mín. 14), los guarda en KV `ptj:v1:<jornada>` (`{pts:{id:puntos}, teams:[…]}`, 120 días).
+- La página del partido pide `/puntos-jornada?jornada=N` junto al resto (swr, edge 30 s) y pinta los puntos al instante; solo pregunta por los jugadores que falten (método antiguo `/puntos`, sin cambios). Las burbujas "–" ya no se ven: aparecen solo cuando hay puntos (`.pl-pts-wait`, `.mpage-xpts`, `.mpage-subpts`).
+- No se puede leer la notificación del móvil de Futmondo; el cron mira cada minuto si ya están publicados.
+- Lógica pura en `functions/_lib/matchpoints.mjs` con tests (`tests/matchpoints.test.mjs`).
+- Pendiente: comprobar en producción con el primer partido que acabe (Real Sociedad–Rayo J12 ya estaba terminado al hacer el cambio).

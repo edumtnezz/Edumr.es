@@ -10,6 +10,12 @@ export default {
     // jugadores). Lee las fuentes directamente; sin el secreto TELEGRAM_BOT_TOKEN
     // no hace nada, y un fallo aquí nunca afecta a lo demás.
     if (event.cron === "* * * * *") {
+      // Puntos de Futmondo: en cuanto los publica tras el final de un partido, se guardan en KV para que
+      // la página del partido ya los traiga al abrirla. Si no hay partidos pendientes casi no cuesta nada.
+      try {
+        const r = await fetch("https://edumr.es/api/laquiniela/puntos-jornada?run=1&t=" + Date.now(), { headers: { "user-agent": "edumr-cron" } });
+        await r.text();
+      } catch (e) {}
       try { await avisar(env); } catch (e) {}
       // Redactor en modo sombra (ruedas de prensa de YouTube -> estados de jugadores, sin publicar).
       // Sin el secreto GEMINI_API_KEY no hace nada; un fallo aquí nunca afecta a los avisos.

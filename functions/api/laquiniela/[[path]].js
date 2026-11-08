@@ -1,5 +1,6 @@
 import { cleanStarters } from "../../_lib/starters.mjs";
 import { teamPlayedMatches, playedDenominator } from "../../_lib/played.mjs";
+import { sameTeam, pendingMatches, rosterFor, isComplete } from "../../_lib/matchpoints.mjs";
 const COMPETITION = "PD";
 const CACHE_TTL_MS = 60 * 1000;
 const FORM_TTL_MS = 10 * 60 * 1000;
@@ -4029,6 +4030,58 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
   } catch (e) { return null; }
 }
 
+// Puntos de Futmondo guardados por jornada (KV "ptj:v1:<jornada>" = { at, pts: { id: puntos }, teams: [claves] }).
+// El cron los busca cada minuto en cuanto Futmondo los publica tras el final de un partido y los deja
+// guardados, así la página del partido ya los trae al abrirla (sin rayas ni esperas). Todo es dato real
+// de Futmondo: si aún no están publicados, no se guarda nada y la página sigue con su método de siempre.
+const PTJ_PREFIX = "ptj:v1:";
+async function recordMatchPoints(env) {
+  const out = { checked: 0, saved: [], waiting: [] };
+  if (globalThis.__ptjAt && Date.now() - globalThis.__ptjAt < 20000) return Object.assign(out, { skipped: "reciente" });
+  globalThis.__ptjAt = Date.now();
+  let cur = 0;
+  try { cur = Number((await getJornada(env, null)).matchday) || 0; } catch (e) {}
+  if (!cur) return out;
+  const now = Date.now();
+  let players = null;
+  for (const n of [cur, cur - 1]) {
+    if (n < 1) continue;
+    let jd = null;
+    try { jd = await getJornada(env, n); } catch (e) {}
+    let rec = null;
+    try { rec = await env.PORRA.get(PTJ_PREFIX + n, "json"); } catch (e) {}
+    const done = (rec && rec.teams) || [];
+    const pend = pendingMatches((jd && jd.matches) || [], done, teamKey, now);
+    for (const pm of pend) {
+      out.checked++;
+      if (!players) { const mk = await getMarketPlayers(env); players = (mk && mk.players) || []; }
+      const roster = rosterFor(players, [pm.home, pm.away], teamKey);
+      if (roster.length < 14) { out.waiting.push(pm.home + "-" + pm.away + ":sin-plantilla"); continue; }
+      // Una sola consulta de prueba: si Futmondo aún no ha publicado los puntos, no se piden los 40 jugadores.
+      const probe = roster.filter((p) => sameTeam(teamKey(p.team || ""), pm.home)).sort((a, b) => (Number(b.matches) || 0) - (Number(a.matches) || 0))[0] || roster[0];
+      const pr = await getPlayerJornadaPoints(env, probe.id, n);
+      if (!pr || !pr.finished || pr.points == null) { out.waiting.push(pm.home + "-" + pm.away + ":esperando-futmondo"); continue; }
+      const results = {};
+      for (let i = 0; i < roster.length; i += 8) {
+        await Promise.all(roster.slice(i, i + 8).map(async (p) => {
+          const r = await getPlayerJornadaPoints(env, p.id, n);
+          results[p.id] = r ? { p: r.points, f: !!r.finished } : null;
+        }));
+      }
+      if (!isComplete(results, roster.length)) { out.waiting.push(pm.home + "-" + pm.away + ":incompleto"); continue; }
+      // Se relee antes de escribir por si otro partido de la misma jornada se guardó mientras tanto
+      let cur2 = null;
+      try { cur2 = await env.PORRA.get(PTJ_PREFIX + n, "json"); } catch (e) {}
+      const store = cur2 && cur2.pts ? cur2 : { at: 0, pts: {}, teams: [] };
+      Object.keys(results).forEach((id) => { const r = results[id]; if (r && r.f === true && r.p != null) store.pts[id] = r.p; });
+      [pm.home, pm.away].forEach((k) => { if (store.teams.indexOf(k) < 0) store.teams.push(k); });
+      store.at = Date.now();
+      try { await env.PORRA.put(PTJ_PREFIX + n, JSON.stringify(store), { expirationTtl: 120 * 24 * 3600 }); out.saved.push(pm.home + "-" + pm.away); } catch (e) { out.waiting.push(pm.home + "-" + pm.away + ":kv-error"); }
+    }
+  }
+  return out;
+}
+
 // Histórico de "a quién recomendamos de capitán": se resuelve bajo demanda
 // (cuando Edu abre la pestaña) comprobando, para cada jornada todavía sin
 // resolver, si YA ha terminado el partido de las 3 opciones que se le
@@ -4798,7 +4851,7 @@ async function recordPointsHistory(env) {
 
 // Caché de respuestas públicas (Cache API: sin coste ni límite). Evita recalcular en cada visita
 // y mantiene la CPU por petición por debajo del límite del plan gratis de Cloudflare.
-const EDGE_TTL = { "ultimos-cambios": 180, aplazados: 300, calendario: 600, estadios: 3600, "historial-puntos": 120, mercado: 45, rachas: 60, minutos: 300, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 300, "alineaciones-confirmadas": 180, "alineaciones-estado": 300, noticias: 60, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10, "notas-fotmob": 3600, "fm-partido": 21600 };
+const EDGE_TTL = { "ultimos-cambios": 180, aplazados: 300, calendario: 600, estadios: 3600, "historial-puntos": 120, "puntos-jornada": 30, mercado: 45, rachas: 60, minutos: 300, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 300, "alineaciones-confirmadas": 180, "alineaciones-estado": 300, noticias: 60, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10, "notas-fotmob": 3600, "fm-partido": 21600 };
 // Pantallas donde un dato de hace unos minutos no hace daño: cuando caduca la copia fresca se responde AL MOMENTO con la última buena (hasta 15 min) y se refresca por detrás.
 // Fuera de aquí a propósito: directo, detallepartido, alineaciones-confirmadas, notas-fotmob, fm-partido (en juego deben ser frescos).
 const SWR_OK = new Set(["mercado", "jugador", "ultimos-cambios", "equipos", "calendario", "rachas", "minutos", "temporada", "noticias", "clausulas", "fichajes", "portada", "aplazados", "estadios", "historial-puntos", "once", "alineaciones-estado"]);
@@ -5472,6 +5525,19 @@ async function handleGet({ request, env: env0, params }) {
       for (let i = 0; i < dias; i++) { const k = dstrMadrid(i); out[k] = (await env.PORRA.get("st:v1:" + k, "json")) || {}; }
       return json({ dias: out });
     } catch (e) { return json({ dias: {} }); }
+  }
+  // Puntos ya guardados de toda una jornada: { pts: { id: puntos } } (solo equipos con su partido completo).
+  // ?run=1 lo usa el cron cada minuto para buscarlos en Futmondo y guardarlos.
+  if (path === "puntos-jornada") {
+    if (url.searchParams.has("run")) {
+      try { return json({ ok: true, result: await recordMatchPoints(env) }); } catch (e) { return json({ ok: false, error: String(e).slice(0, 200) }); }
+    }
+    try {
+      const j = Number(url.searchParams.get("jornada")) || 0;
+      if (!j) return json({ jornada: 0, pts: {} });
+      const rec = await env.PORRA.get(PTJ_PREFIX + j, "json");
+      return json({ jornada: j, pts: (rec && rec.pts) || {}, teams: (rec && rec.teams) || [] });
+    } catch (e) { return json({ jornada: 0, pts: {} }); }
   }
   if (path === "puntos") {
     try {
