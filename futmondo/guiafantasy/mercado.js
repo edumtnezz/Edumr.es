@@ -4770,7 +4770,17 @@
       const valByR = {}, rivals = {};
       // fitness va en orden cronológico (por fecha), no por jornada: con jornadas aplazadas J6 puede jugarse antes que J5.
       const msd = ms.slice().sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0) || b.r - a.r);
-      msd.forEach((m, k) => { if (k < fit.length) valByR[m.r] = Math.round(fit[fit.length - 1 - k]); });
+      // Futmondo marca un partido como terminado antes de publicar sus puntos: mientras tanto el último valor de
+      // fitness es el del partido anterior. d.fitLag = partidos terminados de su equipo aún sin publicar (el servidor
+      // lo calcula): esos partidos se quedan sin puntos ("—") en vez de enseñar los del anterior. Solo cuentan
+      // los partidos terminados (uno en juego tampoco tiene puntos todavía).
+      const lagN = Number(d.fitLag) || 0;
+      const waitR = {};
+      msd.filter((m) => m.finished !== false).forEach((m, k) => {
+        const i = k - lagN;
+        if (i < 0) { waitR[m.r] = true; return; }
+        if (i < fit.length) valByR[m.r] = Math.round(fit[fit.length - 1 - i]);
+      });
       ms.forEach((m) => { rivals[m.r] = m; });
       const topJ = j0 || Math.max.apply(null, ms.map((x) => x.r).concat([0]));
       const pendingHist = []; let hasCalc = false; const notaRows = [];
@@ -4830,8 +4840,9 @@
           let calc = false;
           // Jornadas fuera de los 5 últimos partidos que publica Futmondo: se calculan con las reglas de la liga
           // (AS, Marca y SofaScore al 50 % + estadísticas básicas) a partir de los datos reales del partido.
-          if (v == null && m.lg != null) { v = Math.round(Number(m.lg)); calc = true; }
+          if (v == null && m.lg != null && !waitR[j]) { v = Math.round(Number(m.lg)); calc = true; }
           const ps = el("span", "fm-pts " + (v != null ? "pt-" + ptClass(v) : "pt-st") + (calc ? " pt-calc" : ""), v != null ? String(v) : "—");
+          if (waitR[j] && v == null) ps.title = "Futmondo aún no ha publicado los puntos de este partido";
           if (calc) { ps.title = "Calculado con las reglas de tu liga (Futmondo solo publica los últimos 5 partidos)"; hasCalc = true; }
           if (v != null) { row.style.setProperty("--bar", Math.max(5, Math.min(100, (v / 20) * 100)) + "%"); row.classList.add("has-bar", "rb-" + ptClass(v)); }
           if (v == null || calc) pendingHist.push([j, ps]);

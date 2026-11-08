@@ -1,6 +1,7 @@
 import { cleanStarters } from "../../_lib/starters.mjs";
 import { teamPlayedMatches, playedDenominator } from "../../_lib/played.mjs";
 import { sameTeam, pendingMatches, rosterFor, isComplete } from "../../_lib/matchpoints.mjs";
+import { fitLagOf, fitIndex } from "../../_lib/fitness.mjs";
 const COMPETITION = "PD";
 const CACHE_TTL_MS = 60 * 1000;
 const FORM_TTL_MS = 10 * 60 * 1000;
@@ -1770,6 +1771,7 @@ async function playerFicha(env, id, fast, raw) {
   let mp = null;
   let lJornada = 0;
   let teamPlayed = 0;
+  let fitLag = 0;
   try {
     const mk = await pMk;
     const k = String(id);
@@ -1780,6 +1782,11 @@ async function playerFicha(env, id, fast, raw) {
     // el J8 del Athletic está aplazado y el denominador salía uno de más ("9 de 10" con 9 jugados).
     const teamNameFor = (a.team && a.team.name) || pl.team || (mp && mp.team) || "";
     teamPlayed = teamPlayedMatches(marketPlayers, teamNameFor, teamKey);
+    // Partidos terminados que Futmondo aún no ha publicado en "fitness" (ver functions/_lib/fitness.mjs).
+    // Si hay retraso, la ficha no debe poner el último valor de fitness en el partido nuevo.
+    const ownFin = (a.matches || []).filter((x) => x.st === "F").length;
+    const teamFin = await teamFinishedCount(header, marketPlayers, teamNameFor, 0);
+    fitLag = fitLagOf(teamPlayed, Math.max(ownFin, teamFin));
   } catch (e) {}
   if (!pl.name && mp && mp.name) pl = { name: mp.name, value: mp.value, change: mp.change, role: mp.role || "", status: mp.status || "", team: mp.team || "" };
   if (!pl.name) return { error: "sin datos" };
@@ -1935,6 +1942,7 @@ async function playerFicha(env, id, fast, raw) {
     average: (mp && mp.avg) || (pl.average && Number(pl.average.average)) || (played ? ptsSum / played : 0),
     matches5: (mp && mp.matches) || (pl.average && Number(pl.average.matches)) || played,
     fitness: fitArr,
+    fitLag,
     jornada: lJornada,
     pronostico: pronosticoFor({ status: pl.status, fitness: fitArr }),
     team: (a.team && a.team.name) || pl.team || "",
@@ -3951,13 +3959,35 @@ async function saveCapitanPrediction(env, user, jornada, alts) {
   return entry;
 }
 
+// Partidos TERMINADOS de un equipo (hasta la hora `upTo`; 0 = todos). La lista de partidos de un
+// jugador que llegó tarde no trae los primeros del equipo, así que se cuenta con el jugador del
+// equipo que más partidos lleva (su lista es la más completa). Se guarda 60 s en memoria.
+async function teamFinishedCount(header, players, teamName, upTo) {
+  try {
+    const key = teamKey(teamName);
+    if (!key || !header) return 0;
+    let pivot = null;
+    (players || []).forEach((p) => { if (teamKey(p.team) === key && (!pivot || (Number(p.matches) || 0) > (Number(pivot.matches) || 0))) pivot = p; });
+    if (!pivot || !pivot.id) return 0;
+    const memo = (globalThis.__tfc = globalThis.__tfc || {});
+    let ms = memo[pivot.id] && Date.now() - memo[pivot.id].at < 60000 ? memo[pivot.id].ms : null;
+    if (!ms) {
+      const r = await futbolPost("/2/player/matches", header, { playerId: pivot.id, championshipId: FUTMONDO_CHAMPIONSHIP });
+      ms = ((r.answer && r.answer.matches) || []).map((x) => ({ st: x.st, t: Date.parse((x.info && x.info.date) || "") || 0 }));
+      memo[pivot.id] = { at: Date.now(), ms };
+    }
+    return ms.filter((x) => x.st === "F" && (!upTo || x.t <= upTo)).length;
+  } catch (e) { return 0; }
+}
+
 async function getPlayerJornadaPoints(env, playerId, jornada) {
   if (!playerId) return null;
   // Caché por jugador+jornada: los puntos de un partido terminado ya no
   // cambian (se guardan 30 días); mientras el partido no ha acabado se
   // guardan solo 2 minutos para no machacar la API de Futmondo desde la
   // página de cada partido.
-  const ck = "pjp:v5:" + playerId + ":" + (Number(jornada) || 0);
+  // v6 (08/11/2026): se descartan los valores guardados con v5; algunos eran los puntos del partido anterior.
+  const ck = "pjp:v6:" + playerId + ":" + (Number(jornada) || 0);
   try {
     const c = await env.PORRA.get(ck, "json");
     if (c && (c.finished || Date.now() - (c.at || 0) < 120000)) return { finished: !!c.finished, points: c.finished ? c.points : null };
@@ -4002,11 +4032,14 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
         // Fitness va en orden CRONOLÓGICO (fecha de juego), no por número de jornada: hay jornadas aplazadas
         // (p. ej. J6 se jugó el 3/9, antes que J5 el 13/9). Se cuentan los partidos terminados hasta la fecha de este.
         const myT = Date.parse((m.info && m.info.date) || "") || 0;
-        const nFinJ = myT ? matches.filter((x) => x.st === "F" && (Date.parse((x.info && x.info.date) || "") || 0) <= myT).length : matches.filter((x) => x.st === "F" && Number(x.r) <= Number(jornada)).length;
+        const nFinOwn = myT ? matches.filter((x) => x.st === "F" && (Date.parse((x.info && x.info.date) || "") || 0) <= myT).length : matches.filter((x) => x.st === "F" && Number(x.r) <= Number(jornada)).length;
+        // Partidos terminados de SU EQUIPO (un fichaje tardío no tiene los primeros en su lista:
+        // Jonathan David enseñaba como suyo el 4 del partido anterior). Se usa el mayor de los dos.
+        const nFinJ = Math.max(nFinOwn, mp ? await teamFinishedCount(header, mk.players || [], mp.team, myT) : 0);
         mkFresh = !!mp && pub >= nFinJ && nFinJ > 0;
         if (mkFresh) {
-          const k = fit.length - 1 - (pub - nFinJ);
-          if (k >= 0 && k < fit.length && fit[k] != null) pts = Math.round(Number(fit[k]) || 0);
+          const k = fitIndex(fit.length, pub, nFinJ);
+          if (k != null && fit[k] != null) pts = Math.round(Number(fit[k]) || 0);
         }
       } catch (e) {}
       if (!mkFresh) {
