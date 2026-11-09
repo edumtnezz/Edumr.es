@@ -15,7 +15,7 @@ const STATE_KEY = "rd:sombra:v1";
 const AVISOS_KEY = "tg:avisos:v1";
 const RES_PREFIX = "rd:res:v1:";
 const MODEL = "gemini-3.5-flash-lite";
-const MAX_TOKENS_DIA = 450000;   // tope propio (el gratuito da 250.000 tokens/min); al llegar se para
+const MAX_TOKENS_DIA = 900000;   // tope propio (el gratuito da 250.000 tokens/min); al llegar se para
 const MAX_INTENTOS = 6;          // un directo aún no es grabación: se reintenta
 const ESPERA_REINTENTO = 20 * 60e3;
 const EDAD_MAX = 36 * 3600e3;    // solo vídeos de las últimas 36 h
@@ -1117,7 +1117,7 @@ export function pistasATratar(doc, vistas, now) {
     if (v && now - Number(v.at || 0) < PISTAS_TTL) sig[id] = v;
   }
   // Un tema descartado por falta de nota oficial se reintenta una vez con la noticia de otra web
-  const reintento = (p) => { const v = sig[p.id]; return !!(p.ref && v && v.estado === "descartada" && v.ext !== 3 && ["sin fuente permitida", "sin hecho verificado", "robots prohíbe la fuente", "no pasa la revisión", "no se pudo leer", "sin hecho ni dato"].includes(v.motivo)); };
+  const reintento = (p) => { const v = sig[p.id]; return !!(p.ref && v && v.estado === "descartada" && v.ext !== 4 && ["sin fuente permitida", "sin hecho verificado", "robots prohíbe la fuente", "no pasa la revisión", "no se pudo leer", "sin hecho ni dato"].includes(v.motivo)); };
   const nuevas = items.filter((p) => p && p.id && (!sig[p.id] || reintento(p)));
   nuevas.sort((a, b) => (Date.parse(b.at || "") || 0) - (Date.parse(a.at || "") || 0));
   return { sig, nuevas };
@@ -1560,9 +1560,9 @@ export function textoDeArticulo(html) {
   if (fin > 0) t = t.slice(0, fin).trim();
   return t.slice(0, 5000);
 }
-// Si el texto nuevo repite 7 palabras seguidas del original, es copia: se tira
+// Si el texto nuevo repite 9 palabras seguidas del original, es copia: se tira
 export function copiaLiteral(texto, fuente, n) {
-  const k = n || 7;
+  const k = n || 9;
   const w = norm2(texto).replace(/[^a-z0-9ñ ]+/g, " ").split(/\s+/).filter(Boolean);
   const base = " " + norm2(fuente).replace(/[^a-z0-9ñ ]+/g, " ").split(/\s+/).filter(Boolean).join(" ") + " ";
   for (let i = 0; i + k <= w.length; i++) if (base.includes(" " + w.slice(i, i + k).join(" ") + " ")) return true;
@@ -1589,7 +1589,7 @@ export function razonesRechazo(j, personas, texto) {
   const pal = [...new Set(todo.match(RIESGO_RE) || [])].filter((w) => !new RegExp("\\b" + w + "\\b").test(fuente));
   if (pal.length) r.push("estas palabras no aparecen en la noticia, quítalas o cámbialas: " + pal.join(", "));
   for (const n of personas) { const ap = norm2(n).split(/\s+/).filter((w) => w.length > 2).pop(); if (ap && !norm2(c + " " + t).includes(ap)) r.push("falta nombrar a " + n); }
-  if (copiaLiteral(t + " " + l + " " + c, texto)) r.push("repites 7 palabras seguidas del original: cambia la redacción");
+  if (copiaLiteral(t + " " + l + " " + c, texto)) r.push("repites 9 palabras seguidas del original: cambia la redacción");
   return r;
 }
 async function tratarExterna(env, f, st, now, pista, own) {
@@ -1640,7 +1640,7 @@ async function tratarExterna(env, f, st, now, pista, own) {
 async function tratarUnaPista(env, f, st, now, fuentes, pista, listas) {
   const una = await tratarUnaPistaOficial(env, f, st, now, fuentes, pista, listas);
   const e = st.pistas[pista.id];
-  if (e && e.estado !== "publicada") e.ext = 3; // 3 = probado con texto limpio y autocorrección
+  if (e && e.estado !== "publicada") e.ext = 4; // 4 = probado con texto limpio, autocorrección y copia a 9 palabras
   if (una && una.noticias && una.noticias.length) return una;
   if (!e || e.estado === "publicada" || !MOTIVOS_EXT.has(e.motivo)) return una;
   let own = [];

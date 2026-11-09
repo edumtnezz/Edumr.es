@@ -32,7 +32,7 @@ test("un tema de otra web se publica reescrito", async () => {
 test("una opinión no se publica", async () => {
   assert.equal((await correr({ tipo: "opinion" })).length, 0);
 });
-test("si copia 7 palabras seguidas, no se publica", async () => {
+test("si copia 9 palabras seguidas, no se publica", async () => {
   const own = await correr({ tipo: "hecho", titular: "Cuti Romero sigue sin jugar con el Atlético", entradilla: "El central acumula semanas fuera.", cuerpo: "Cristian Romero sigue sin jugar desde el 17 de octubre por molestias musculares y Simeone espera recuperarlo." });
   assert.equal(own.length, 0);
 });
@@ -41,13 +41,13 @@ test("un dato que no está en la noticia se rechaza", async () => {
   assert.equal(own.length, 0);
 });
 test("copiaLiteral detecta copia y deja pasar lo reescrito", () => {
-  assert.equal(_r.copiaLiteral("a b c d e f g h", "x a b c d e f g y"), true);
-  assert.equal(_r.copiaLiteral("a b c d e f", "x a b c d e f g y"), false);
+  assert.equal(_r.copiaLiteral("a b c d e f g h i", "x a b c d e f g h i y"), true);
+  assert.equal(_r.copiaLiteral("a b c d e f g h", "x a b c d e f g h i y"), false);
 });
 
 test("un tema ya descartado por falta de nota oficial se reintenta con la otra web", () => {
   const doc = { v: 1, items: [PISTA, Object.assign({}, PISTA, { id: "ff-2", ref: "" }), Object.assign({}, PISTA, { id: "ff-3" })] };
-  const vistas = { [PISTA.id]: { at: 1, estado: "descartada", motivo: "sin fuente permitida" }, "ff-2": { at: 1, estado: "descartada", motivo: "sin fuente permitida" }, "ff-3": { at: 1, estado: "descartada", motivo: "sin fuente permitida", ext: 3 } };
+  const vistas = { [PISTA.id]: { at: 1, estado: "descartada", motivo: "sin fuente permitida" }, "ff-2": { at: 1, estado: "descartada", motivo: "sin fuente permitida" }, "ff-3": { at: 1, estado: "descartada", motivo: "sin fuente permitida", ext: 4 } };
   const r = _r.pistasATratar(doc, vistas, 2);
   assert.deepEqual(r.nuevas.map((p) => p.id), [PISTA.id]);
 });
