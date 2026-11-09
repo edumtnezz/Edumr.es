@@ -112,7 +112,17 @@
     btn("Guardar", "", function () { return post(datos("guardar")).then(function () { return "Guardado"; }); });
     if (x.status === "published") btn("Quitar de la web", "", function () { return post({ action: "despublicar", id: x.id }).then(function () { abierto = null; return "Quitada"; }); });
     else btn("Publicar", "main", function () { return post(datos("guardar")).then(function () { return post({ action: "publicar", id: x.id }); }).then(function () { abierto = null; tab = "publicadas"; return "Publicada"; }); });
-    btn("Generar portada (ChatGPT)", "", function () { return post({ action: "portada", id: x.id }).then(function (j) { return j.conFoto ? "Portada hecha con su foto" : "Portada hecha (sin foto del jugador)"; }); });
+    var pst = el("p", "ad-meta", x.thumb ? "Portada actual: ver abajo." : "");
+    var pim = el("img"); pim.style.cssText = "max-width:100%;border-radius:8px;margin-top:8px;display:" + (x.thumb ? "block" : "none"); if (x.thumb) pim.src = x.thumb;
+    var pb = el("button", "ad-b", "Generar portada (ChatGPT)"); pb.type = "button";
+    pb.addEventListener("click", function () {
+      pb.disabled = true; pst.style.color = ""; pst.textContent = "Generando… puede tardar hasta 1 minuto. No cierres esta pantalla.";
+      post({ action: "portada", id: x.id }).then(function (j) {
+        pst.textContent = j.conFoto ? "Hecha con su foto." : "Hecha SIN foto del jugador (no la encontré).";
+        if (j.item && j.item.thumb) { pim.src = j.item.thumb; pim.style.display = "block"; }
+      }).catch(function (e) { pst.style.color = "#b91c1c"; pst.textContent = "Fallo: " + (e && e.message || "sin respuesta"); }).then(function () { pb.disabled = false; });
+    });
+    bt.appendChild(pb); c.appendChild(pst); c.appendChild(pim);
     btn("Borrar", "del", function () { if (!confirm("¿Borrar esta noticia?")) return Promise.reject(new Error("Cancelado")); return post({ action: "borrar", id: x.id }).then(function () { abierto = null; return "Borrada"; }); });
     c.appendChild(bt);
     if (x.status === "published") { var vl = el("a", "ad-link", "Ver en la web"); vl.href = "/futmondo/guiafantasy/noticias/ed-" + x.id; vl.target = "_blank"; vl.style.display = "inline-block"; vl.style.marginTop = "10px"; c.appendChild(vl); }
