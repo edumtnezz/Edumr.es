@@ -419,3 +419,48 @@ test("comparar con otras webs: coincidencias por jugador y lo que no cubrimos", 
   assert.equal(c.propias[0].matches[0].link, "l1");
   assert.deepEqual(c.sinCubrir.map((x) => x.link), ["l2"]);
 });
+
+test("el aviso usa la página larga y no queda como enviado si Telegram no acepta", async () => {
+  assert.match(_r.noticiaTelegram({ id: "b22eb497ee", title: "T", body: "c" }), /https:\/\/edumr\.es\/futmondo\/guiafantasy\/noticias\/ed-b22eb497ee/);
+  assert.doesNotMatch(_r.noticiaTelegram({ id: "b22eb497ee", title: "T", body: "c" }), /edumr\.es\/n\//);
+  const kv = new Map();
+  const env = {
+    GEMINI_API_KEY: "k", TELEGRAM_BOT_TOKEN: "t",
+    PORRA: { async get(k, t) { const v = kv.get(k); return v == null ? null : (t === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } },
+  };
+  kv.set("tg:avisos:v1", JSON.stringify({ chat: "42" }));
+  let acepta = false;
+  const tg = [];
+  const f = async (url, o) => {
+    url = String(url);
+    if (url.includes("youtube.com/robots.txt")) return new Response(ROBOTS_YT);
+    if (url.includes("club.test/robots.txt")) return new Response("User-agent: *\nAllow: /\n");
+    if (url.endsWith("/sitemap.xml")) return new Response(`<url><loc>https://club.test/es/futbol/primer-equipo/noticias/9/flick</loc><news:title>Entrenador Inventado: "Creo mucho en este equipo de prueba"</news:title><news:publication_date>2026-11-08T23:02:26Z</news:publication_date></url>`);
+    if (url.includes("/noticias/9/")) return new Response('<p>"Creo mucho en este equipo de prueba"</p>');
+    if (url.endsWith("/mercado")) return new Response(JSON.stringify({ players: [] }));
+    if (url.includes("api.telegram.org")) {
+      const body = JSON.parse(o.body);
+      tg.push(url);
+      assert.doesNotMatch(url, /sendPhoto/);
+      assert.match(body.text, /guiafantasy\/noticias\/ed-/);
+      return new Response(JSON.stringify(acepta ? { ok: true } : { ok: false, description: "rechazado" }));
+    }
+    return new Response("", { status: 404 });
+  };
+  const now = Date.parse("2026-11-09T01:03:00Z");
+  const fuentes = [{ club: "Barcelona", noticias: "https://club.test/sitemap.xml" }];
+  await redactorSombra(env, { fetch: f, now, fuentes });
+  let st = JSON.parse(kv.get("rd:sombra:v1"));
+  assert.equal(st.tgUltimo.ok, false);
+  assert.equal(st.tgPend.length, 1);
+  assert.equal(st.tgHecho[st.tgPend[0].id], undefined);
+  acepta = true;
+  await redactorSombra(env, { fetch: f, now: now + 2 * 60e3, fuentes });
+  st = JSON.parse(kv.get("rd:sombra:v1"));
+  assert.equal(st.tgUltimo.ok, true);
+  assert.equal(st.tgPend.length, 0);
+  assert.equal(typeof st.tgHecho[st.tgUltimo.id], "number");
+  const enviados = tg.length;
+  await redactorSombra(env, { fetch: f, now: now + 4 * 60e3, fuentes });
+  assert.equal(tg.length, enviados);
+});

@@ -439,12 +439,22 @@ export function noticiaTelegram(item) {
   let t = "📰 <b>" + esc(item.title) + "</b>\n\n" + (item.lead ? esc(item.lead) + "\n\n" : "") + esc(String(item.body || "").split(/\n+/).filter(Boolean).join("\n").slice(0, 500));
   return t + "\n\n🔗 https://edumr.es/futmondo/guiafantasy/noticias/ed-" + item.id;
 }
-async function enviarFoto(env, f, chat, foto, caption) {
+async function enviarAviso(env, f, chat, n) {
+  const caption = noticiaTelegram(n);
+  const foto = n.thumb && /^https:\/\//.test(n.thumb) ? n.thumb : "";
+  if (foto) {
+    try {
+      const r = await f("https://api.telegram.org/bot" + env.TELEGRAM_BOT_TOKEN + "/sendPhoto", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chat, photo: foto, caption: caption.slice(0, 1000), parse_mode: "HTML" }) });
+      const j = await r.json();
+      if (j && j.ok) return { ok: true, via: "foto" };
+    } catch (e) {}
+  }
   try {
-    const r = await f("https://api.telegram.org/bot" + env.TELEGRAM_BOT_TOKEN + "/sendPhoto", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chat, photo: foto, caption: caption.slice(0, 1000), parse_mode: "HTML" }) });
-    const j = await r.json(); if (j && j.ok) return true;
-  } catch (e) {}
-  return enviar(env, f, chat, caption);
+    const r = await f("https://api.telegram.org/bot" + env.TELEGRAM_BOT_TOKEN + "/sendMessage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chat, text: caption, parse_mode: "HTML", link_preview_options: { is_disabled: true } }) });
+    const j = await r.json();
+    if (j && j.ok) return { ok: true, via: "texto" };
+    return { ok: false, via: "texto", err: String((j && j.description) || "texto no aceptado").slice(0, 120) };
+  } catch (e) { return { ok: false, via: "texto", err: "texto sin respuesta" }; }
 }
 
 
@@ -487,12 +497,6 @@ export function resumenTelegram(club, titulo, id, items) {
   t += "\n" + ok.length + " publicados · " + dud.length + " sin publicar\n";
   if (dud.length) t += "\n" + dud.map((x) => "· " + esc(x.jugador) + (x.motivo ? " — " + esc(x.motivo) : "")).join("\n");
   return t + "\n\nhttps://edumr.es/futmondo/guiafantasy/";
-}
-async function enviar(env, f, chat, text) {
-  try {
-    const r = await f("https://api.telegram.org/bot" + env.TELEGRAM_BOT_TOKEN + "/sendMessage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chat, text, parse_mode: "HTML", link_preview_options: { is_disabled: true } }) });
-    const j = await r.json(); return !!(j && j.ok);
-  } catch (e) { return false; }
 }
 
 
@@ -576,10 +580,15 @@ async function leerFuente(env, f, s) {
 }
 
 const LISTA_MS = 15 * 60e3;
-async function avisarPublicadas(env, f, st, noticias) {
-  if (!env.TELEGRAM_BOT_TOKEN) return false;
+async function avisarPublicadas(env, f, st, noticias, now) {
+  const hay = ((noticias || []).some((n) => n && n.id)) || ((st.tgPend || []).length > 0);
+  if (!env.TELEGRAM_BOT_TOKEN) {
+    if (hay) { st.tgUltimo = { ok: false, err: "sin token", at: now || Date.now() }; return true; }
+    return false;
+  }
   const nuevas = (noticias || []).filter((n) => n && n.id);
   if (!nuevas.length && !(st.tgPend || []).length) return false;
+  st.tgHecho = st.tgHecho || {};
   let chat = "";
   try {
     const av = await env.PORRA.get(AVISOS_KEY, "json");
@@ -590,16 +599,18 @@ async function avisarPublicadas(env, f, st, noticias) {
   const queda = [];
   let enviados = 0;
   for (const n of cola) {
-    if (!n || !n.id || vistos.has(n.id)) continue;
+    if (!n || !n.id || vistos.has(n.id) || st.tgHecho[n.id]) continue;
     vistos.add(n.id);
-    if (!chat || enviados >= 3) { queda.push(n); continue; }
-    const ok = await enviarFoto(env, f, chat, n.thumb, noticiaTelegram(n));
-    if (ok) enviados++;
+    if (!chat || enviados >= 3) { queda.push(n); if (!chat) st.tgUltimo = { id: n.id, ok: false, err: "sin chat", at: now || Date.now() }; continue; }
+    const res = await enviarAviso(env, f, chat, n);
+    st.tgUltimo = { id: n.id, ok: !!res.ok, via: res.via || "", err: res.ok ? "" : (res.err || "no aceptado"), at: now || Date.now() };
+    if (res.ok) { st.tgHecho[n.id] = st.tgUltimo.at; enviados++; }
     else queda.push(n);
   }
-  const antes = JSON.stringify(st.tgPend || []);
+  const hechos = Object.keys(st.tgHecho);
+  if (hechos.length > 40) hechos.slice(0, hechos.length - 40).forEach((id) => { delete st.tgHecho[id]; });
   st.tgPend = queda.slice(0, 5);
-  return JSON.stringify(st.tgPend) !== antes;
+  return true;
 }
 
 // ---------- noticias escritas del club (solo las que robots.txt deja leer) ----------
@@ -936,7 +947,7 @@ export async function redactorSombra(env, deps) {
     if (cambio) await env.PORRA.put(OWN_KEY, JSON.stringify(own));
   } catch (e) {}
 
-  try { if (await avisarPublicadas(env, f, st, nuevas)) dirty = true; } catch (e) {}
+  try { if (await avisarPublicadas(env, f, st, nuevas, now)) dirty = true; } catch (e) { st.tgUltimo = { ok: false, err: String(e && e.message || e).slice(0, 120), at: now }; dirty = true; }
   if (dirty) { try { await env.PORRA.put(STATE_KEY, JSON.stringify(st)); } catch (e) {} }
   return { procesado: hecho ? hecho.id : null, pendientes: cola.length, tokens: st.tok.n };
 }

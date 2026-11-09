@@ -3,6 +3,14 @@
 // se sirve la web normal sin tocar. Los datos salen de la propia noticia en FutbolFantasy.
 const PFX = "https://www.futbolfantasy.com/laliga/noticias/";
 // slug → página de la noticia: FutbolFantasy (tal cual), Comuniate ("cm-<id>-<slug>") o Jornada Perfecta ("jp-<slug>")
+// Noticia propia (ed-<id>): el título sale de lo guardado, no de otra web.
+export function ogDePropia(slug, own) {
+  const m = String(slug || "").match(/^ed-([a-z0-9]{6,16})$/);
+  if (!m) return null;
+  const x = (own || []).find((o) => o && o.id === m[1] && o.status === "published");
+  if (!x) return { missing: true };
+  return { t: x.title || "", d: x.lead || "", i: x.thumb || "" };
+}
 const srcUrl = (slug) => {
   let m = slug.match(/^cm-(\d+)-([a-z0-9-]+)$/); if (m) return "https://www.comuniate.com/noticias/" + m[1] + "/" + m[2];
   m = slug.match(/^jp-([a-z0-9-]+)$/); if (m) return "https://www.jornadaperfecta.com/blog/" + m[1] + "/";
@@ -28,6 +36,13 @@ export async function onRequest(context) {
     let og = null;
     const hit = await cache.match(ck);
     if (hit) og = await hit.json();
+    if (!og && /^ed-/.test(slug)) {
+      let own = [];
+      try { own = (await env.PORRA.get("own:news:v1", "json")) || []; } catch (e) {}
+      const propia = ogDePropia(slug, own);
+      if (propia && !propia.missing) og = propia;
+      else return base;
+    }
     if (!og) {
       const r = await fetch(srcUrl(slug), { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
       if (!r.ok) return base;
