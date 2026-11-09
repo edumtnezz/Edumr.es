@@ -456,5 +456,49 @@ export async function avisar(env, deps) {
   return { sent: sentCount, pending: queue.length - sentCount, quiet, firstRun };
 }
 
+
+// ---------- Aviso: Futmondo ya ha publicado los puntos de un partido ----------
+// El servidor (recordMatchPoints) devuelve los partidos que acaba de guardar; el cron los mete en una cola
+// y aquí se mandan. De 00:00 a 08:00 no suena nada: se quedan en la cola y salen a las 08:00.
+const PTS_Q_KEY = "tg:puntos-cola:v1";
+export function textoPuntos(it) {
+  return "✅ <b>PUNTOS DE FUTMONDO</b>\n" + esc(it.home) + " – " + esc(it.away) + " (J" + Number(it.j) + ")\n\n👉 " + WEB;
+}
+export async function colaPuntos(env, items) {
+  if (!env || !env.PORRA || !Array.isArray(items) || !items.length) return 0;
+  let q = [];
+  try { q = (await env.PORRA.get(PTS_Q_KEY, "json")) || []; } catch (e) { return 0; }
+  if (!Array.isArray(q)) q = [];
+  let n = 0;
+  items.forEach((it) => {
+    if (!it || !it.home || !it.away || !it.j) return;
+    if (q.some((x) => x.j === it.j && x.home === it.home && x.away === it.away)) return;
+    q.push({ j: Number(it.j), home: String(it.home), away: String(it.away) }); n++;
+  });
+  if (n) { try { await env.PORRA.put(PTS_Q_KEY, JSON.stringify(q.slice(-40))); } catch (e) { return 0; } }
+  return n;
+}
+export async function avisarPuntos(env, deps) {
+  const f = (deps && deps.fetch) || fetch;
+  const now = (deps && deps.now) || Date.now();
+  if (!env || !env.TELEGRAM_BOT_TOKEN || !env.PORRA) return { skipped: "sin token" };
+  if (madridHour(now) >= QUIET_FROM && madridHour(now) < QUIET_TO) return { skipped: "noche" };
+  let q = [];
+  try { q = (await env.PORRA.get(PTS_Q_KEY, "json")) || []; } catch (e) { return { skipped: "sin cola" }; }
+  if (!Array.isArray(q) || !q.length) return { sent: 0 };
+  let chat = String(env.TELEGRAM_CHAT_ID || "");
+  if (!chat) { try { const st = await env.PORRA.get(STATE_KEY, "json"); chat = String((st && st.chat) || ""); } catch (e) {} }
+  if (!chat) return { skipped: "sin chat" };
+  const rest = [];
+  let sent = 0;
+  for (const it of q) {
+    if (sent >= 8) { rest.push(it); continue; }
+    const ok = await send(env, f, chat, textoPuntos(it), { noPreview: true });
+    if (ok) sent++; else rest.push(it);
+  }
+  try { await env.PORRA.put(PTS_Q_KEY, JSON.stringify(rest)); } catch (e) {}
+  return { sent, pending: rest.length };
+}
+
 // Solo para pruebas
 export const _t = { norm, ownMatch, sameTeam, newsAt, KW, inLineup, statusLabel, mercadoTexto };

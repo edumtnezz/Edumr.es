@@ -4081,7 +4081,7 @@ async function getPlayerJornadaPoints(env, playerId, jornada) {
 // de Futmondo: si aún no están publicados, no se guarda nada y la página sigue con su método de siempre.
 const PTJ_PREFIX = "ptj:v2:"; // v2 (09/11/2026): los guardados con v1 tenían 38 valores del J12 desplazados (fichajes tardíos)
 async function recordMatchPoints(env) {
-  const out = { checked: 0, saved: [], waiting: [] };
+  const out = { checked: 0, saved: [], savedInfo: [], waiting: [] };
   if (globalThis.__ptjAt && Date.now() - globalThis.__ptjAt < 20000) return Object.assign(out, { skipped: "reciente" });
   globalThis.__ptjAt = Date.now();
   let cur = 0;
@@ -4121,7 +4121,7 @@ async function recordMatchPoints(env) {
       Object.keys(results).forEach((id) => { const r = results[id]; if (r && r.f === true && r.p != null) store.pts[id] = r.p; });
       [pm.home, pm.away].forEach((k) => { if (store.teams.indexOf(k) < 0) store.teams.push(k); });
       store.at = Date.now();
-      try { await env.PORRA.put(PTJ_PREFIX + n, JSON.stringify(store), { expirationTtl: 120 * 24 * 3600 }); out.saved.push(pm.home + "-" + pm.away); } catch (e) { out.waiting.push(pm.home + "-" + pm.away + ":kv-error"); }
+      try { await env.PORRA.put(PTJ_PREFIX + n, JSON.stringify(store), { expirationTtl: 120 * 24 * 3600 }); out.saved.push(pm.home + "-" + pm.away); const nm = (k) => { const q = roster.find((x) => sameTeam(teamKey(x.team || ""), k)); return q ? q.team : k; }; out.savedInfo.push({ j: n, home: nm(pm.home), away: nm(pm.away) }); } catch (e) { out.waiting.push(pm.home + "-" + pm.away + ":kv-error"); }
     }
   }
   return out;

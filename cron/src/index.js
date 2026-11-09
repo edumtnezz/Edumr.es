@@ -1,7 +1,7 @@
 // edumr-cron: agente 24h que mantiene frescas las noticias (y demás cachés).
 // Cada 15 min llama al endpoint que aplica nuestras reglas de limpieza y deja
 // el resultado cacheado en KV, para que la web lo sirva al instante.
-import { avisar } from "./avisos.js";
+import { avisar, colaPuntos, avisarPuntos } from "./avisos.js";
 import { redactorSombra } from "./redactor.js";
 
 export default {
@@ -14,8 +14,11 @@ export default {
       // la página del partido ya los traiga al abrirla. Si no hay partidos pendientes casi no cuesta nada.
       try {
         const r = await fetch("https://edumr.es/api/laquiniela/puntos-jornada?run=1&t=" + Date.now(), { headers: { "user-agent": "edumr-cron" } });
-        await r.text();
+        const j = await r.json().catch(() => null);
+        // Partidos cuyos puntos acaba de guardar el servidor: aviso por Telegram (de noche se retiene hasta las 08:00)
+        if (j && j.result && Array.isArray(j.result.savedInfo)) await colaPuntos(env, j.result.savedInfo);
       } catch (e) {}
+      try { await avisarPuntos(env); } catch (e) {}
       try { await avisar(env); } catch (e) {}
       // Redactor: publica noticias verificadas y avisa por Telegram. Sin GEMINI_API_KEY no hace nada.
       // Un fallo aquí no corta los avisos; el motivo queda en el log del Worker.
