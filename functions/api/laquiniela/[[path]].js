@@ -2021,6 +2021,23 @@ async function adminNoticias(env, request, url, data) {
   const own = await getOwn(env);
   const now = Date.now();
   const clean = (s, n) => String(s == null ? "" : s).slice(0, n);
+  if (data.action === "pista") {
+    const tipos = ["lesion", "rueda", "cronica", "once", "convocatoria", "mercado", "otro"];
+    const tipo = clean(data.tipo, 20);
+    const equipo = clean(data.equipo, 60).trim();
+    const entrenador = clean(data.entrenador, 80).trim();
+    const tema = clean(data.tema, 180).trim();
+    const jugadores = String(data.jugadores == null ? "" : data.jugadores).split(/[,;\n]/).map((s) => clean(s, 60).trim()).filter(Boolean).slice(0, 8);
+    const blob = [equipo, entrenador, tema].concat(jugadores).join(" ");
+    if (!tipos.includes(tipo) || !equipo || !tema) return json({ error: "Falta equipo, tipo o tema." }, 400);
+    if (/\bathletic\b|\bbilbao\b|\balav[eé]s\b/i.test(equipo) || /https?:|x\.com|twitter\.com/i.test(blob)) return json({ error: "Ese club o ese texto no se puede usar." }, 400);
+    const prev = (await env.PORRA.get("rd:pistas:v1", "json")) || { v: 1, items: [] };
+    const items = Array.isArray(prev.items) ? prev.items.filter((x) => x && x.id) : [];
+    const item = { id: "manual-" + randomHex(5), at: new Date(now).toISOString(), tipo, equipo, jugadores, entrenador, tema };
+    items.unshift(item);
+    await env.PORRA.put("rd:pistas:v1", JSON.stringify({ v: 1, items: items.slice(0, 200) }));
+    return json({ ok: true, item });
+  }
   if (data.action === "crear") {
     let d = { title: "", lead: "", body: "", club: "", players: [], source: null, original: [] };
     if (data.videoId) {

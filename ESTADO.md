@@ -1,6 +1,6 @@
 # ESTADO.md — edumr.es (Guía Fantasy / Futmondo)
 
-Última actualización: 01/11/2026. Para continuar: lee AGENTS.md y CLAUDE.md (reglas de Edu) y luego este archivo.
+Última actualización: 09/11/2026. Para continuar el redactor: lee `docs/redactor.md` y después este archivo. Reglas generales: AGENTS.md y CLAUDE.md.
 Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas y sencillas.
 
 ## Hecho (sacado de AGENTS.md, CLAUDE.md y el historial de git)

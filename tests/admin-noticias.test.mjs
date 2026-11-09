@@ -20,6 +20,25 @@ const req = (path, tok, body) => new Request("https://edumr.es/api/laquiniela/" 
 const get = (env, path, tok) => api.onRequestGet({ request: req(path, tok), env, params: { path: path.split("?")[0].split("/") }, waitUntil() {} });
 const post = (env, path, tok, body) => api.onRequestPost({ request: req(path, tok, body), env, params: { path: path.split("/") }, waitUntil() {} });
 
+test("una pista a mano se guarda y un club prohibido no", async () => {
+  const env = mkEnv();
+  assert.equal((await post(env, "admin-noticias", null, { action: "pista", equipo: "Getafe", tipo: "lesion", jugadores: "Dany, Mora", tema: "molestia" })).status, 403);
+  const malo = await post(env, "admin-noticias", "tok", { action: "pista", equipo: "Athletic", tipo: "lesion", tema: "baja" });
+  assert.equal(malo.status, 400);
+  const link = await post(env, "admin-noticias", "tok", { action: "pista", equipo: "Getafe", tipo: "lesion", tema: "ver https://x.com/futbol_fantasy/1" });
+  assert.equal(link.status, 400);
+  const ok = await (await post(env, "admin-noticias", "tok", { action: "pista", equipo: "Getafe", tipo: "lesion", jugadores: "Dany, Mora", entrenador: "", tema: "molestia en un entrenamiento" })).json();
+  assert.equal(ok.ok, true);
+  assert.match(ok.item.id, /^manual-/);
+  assert.equal(ok.item.tipo, "lesion");
+  assert.deepEqual(ok.item.jugadores, ["Dany", "Mora"]);
+  const doc = JSON.parse(env.PORRA && await env.PORRA.get("rd:pistas:v1"));
+  assert.equal(doc.v, 1);
+  assert.equal(doc.items[0].id, ok.item.id);
+  assert.equal(doc.items[0].equipo, "Getafe");
+  assert.doesNotMatch(JSON.stringify(doc), /x\.com|twitter/);
+});
+
 test("el panel solo responde al administrador", async () => {
   const env = mkEnv();
   assert.equal((await get(env, "admin-noticias")).status, 403);
