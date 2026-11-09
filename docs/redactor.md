@@ -11,8 +11,9 @@ Simular el tipo de noticia de FutbolFantasy (título, entradilla, cuerpo, miniat
 - No inventar datos, cifras, minutos, fechas, plazos ni porcentajes. Si no hay dato: «sin datos» o no se muestra.
 - Solo valores de mercado de Futmondo. Nada de Liga Fantasy Oficial, Mister, Comunio, Biwenger ni Fantasy Marca.
 - Nunca secretos ni ids de Cloudflare en el repo ni en el chat. En el código solo nombres de binding (`PORRA`, `GEMINI_API_KEY`, `YOUTUBE_API_KEY`, `TELEGRAM_BOT_TOKEN`). Los secretos viven en el Worker, no aquí.
-- Fuentes prohibidas: Marca, AS, Mundo Deportivo, Google News RSS, El Desmarque, Athletic, Alavés, X/Twitter, y el RSS de YouTube (`/feeds/videos.xml`).
-- El Gol Digital y la cuenta @futbol_fantasy en X solo sirven para detectar temas. Nunca se citan, enlazan ni copian.
+- Fuentes prohibidas como dato: Marca, AS, Mundo Deportivo, Google News RSS, El Desmarque, Athletic, Alavés, X/Twitter, y el RSS de YouTube (`/feeds/videos.xml`).
+- X no se usa. La rutina que leía @futbol_fantasy está parada. El Gol Digital sigue siendo solo detección, si algún día se mira, y no se cita.
+- FutbolFantasy y Comuniate solo detectan temas (titular y tipo). No se copia su texto, no se citan y su URL no sale en la noticia ni en Telegram.
 - `robots.txt` obligatorio. Si no se puede leer, esa URL no se toca.
 - La etiqueta OFICIAL solo si la fuente es el club, la RFEF o LaLiga. Si es otro medio: «Según [medio]» y el enlace a ese medio. Los avisos de Telegram enlazan a edumr.es, no a la fuente externa.
 - Coste extra 0 €. No se contratan APIs de pago. Leer X por su API de pago no va dentro del Worker.
@@ -47,7 +48,7 @@ Tabla completa en ESTADO.md (9 de noviembre de 2026). Resumen: hay listado de no
 4. Fecha: solo si la fuente la escribe como día de calendario. No se convierte un instante UTC a Madrid ni se usa la fecha de hoy. Una frase con otra fecha se tira.
 5. Cuerpo: lo redacta Gemini solo con esos hechos. Si repite el sujeto, se queda corto o mete un dato que no está, no se publica. La entradilla no repite el título.
 6. Tope: 450.000 tokens al día. Al llegar, no hay más llamadas a Gemini ese día.
-7. Pistas: cada 15 minutos se lee `rd:pistas:v1`. Sirven para saber a quién buscar. El dato sale de la fuente oficial. Si no aparece, no se publica y la pista caduca a las 72 h.
+7. Pistas: el Worker lee cada 30 minutos los sitemaps de titulares de FutbolFantasy y Comuniate (después de su robots.txt) y escribe `rd:pistas:v1`. Cada 15 minutos se mira una pista. El dato sale de la fuente oficial. Si no aparece, no se publica y la pista caduca a las 72 h.
 
 ### Claves KV (binding `PORRA`)
 
@@ -60,7 +61,8 @@ Tabla completa en ESTADO.md (9 de noviembre de 2026). Resumen: hay listado de no
 | `rd:cmp:v1` | Comparación con FutbolFantasy, Comuniate y Jornada Perfecta. Solo el panel |
 | `tg:avisos:v1` | Chat de Telegram. No es el registro de envíos |
 | `rd:sombra:v1` → `tgPend`, `tgHecho`, `tgUltimo` | Cola, ids ya aceptados por Telegram, y el último intento |
-| `rd:pistas:v1` | Pistas de tema. Máximo 200, las más nuevas |
+| `rd:pistas:v1` | Pistas de tema. Máximo 200, las más nuevas. Campo `origen`: `futbolfantasy`, `comuniate` o vacío si es manual |
+| `rd:sombra:v1` → `deteccion` | Última lectura de cada web de detección: ok, error y cuántas pistas |
 
 ### Formato de `rd:pistas:v1`
 
@@ -91,9 +93,9 @@ En `/futmondo/admin-noticias/`, pestaña Publicadas, abre la noticia, cambia tí
 
 ### Pistas: quién las escribe
 
-Hoy un proceso de fuera (asistente Grok Bot) escribe `rd:pistas:v1` cada 30 minutos a partir de @futbol_fantasy. Si ese proceso se para, el redactor sigue con YouTube y las webs oficiales. No depende de las pistas.
+X no se usa. La rutina del asistente que leía @futbol_fantasy está parada. Leer X por API cuesta dinero y no entra en el Worker.
 
-Leer X con su API de pago no está en el Worker: cuesta dinero y Edu pidió coste extra 0 €.
+El propio Worker, cada 30 minutos, lee los sitemaps de titulares de FutbolFantasy y Comuniate (solo si su robots.txt lo permite). De cada titular saca equipo, jugador, entrenador y tipo si esas palabras están escritas. No guarda la URL ni el titular. Si no se puede leer el robots.txt, esa web se salta en ese ciclo. Si el detector falla, el redactor sigue con YouTube y las webs oficiales.
 
 Añadir una pista a mano:
 
