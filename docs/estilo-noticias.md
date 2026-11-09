@@ -18,7 +18,7 @@ Abiertas: 154454 Fermín, 154463 Julián, 154461 Canales, 154460 Sivera, 154405 
 - El cuarto es el que suele dejar la consecuencia para el fantasy: si fue titular, cuántos minutos estuvo o si había una duda física. No hay un párrafo aparte etiquetado como fantasy.
 - Hay foto. El enlace a la ficha de puntos va fuera del relato.
 
-En edumr.es: el modelo escribe 2 o 3 párrafos con ese mismo orden (partido, jugada, y la consecuencia solo si el dato está). Mínimo para publicar: 40 palabras. El marcador y los goles de los demás entran en el relato si están en los hechos, no en el título.
+En edumr.es: el título nombra a la persona y lo que hizo (un gol, un doblete), en unas 6 a 9 palabras, sin el marcador. La entradilla no repite ese título: sitúa el partido y, solo si el dato está verificado, la fecha, la jornada o el efecto en la clasificación. El modelo escribe 2 o 3 párrafos con el orden de arriba. Mínimo para publicar: 40 palabras. El minuto de un gol, si el club o LaLiga lo escriben, manda sobre FotMob. Si dos fuentes que no son oficiales no coinciden, el minuto no se publica y sale «sin datos».
 
 ## Marcador y goles
 
@@ -37,7 +37,7 @@ Abiertas: 154455 Flick, 154456 Simeone, 154450 Castro, 154451 Íñigo, 154452 Gi
 - Primer párrafo del cuerpo, unas 100 palabras, sin cita. Ahí está el marcador y el momento.
 - Después, un párrafo por tema. Empieza con un rótulo en negrita (unas 6 a 11 palabras) y sigue la cita entre comillas, metida en el párrafo, no suelta. En Flick y Simeone cada bloque ronda las 75 a 125 palabras. En otras ruedas la cita es más larga y el párrafo pasa de 200.
 - La consecuencia para el fantasy (minutos, cambio, baja, titularidad) va dentro de ese bloque, porque el entrenador la ha dicho. No hay un cierre aparte.
-- En edumr.es: entradilla con la fecha y, si el dato está, tras qué partido habló. Luego la cita literal verificada. Si hay un dato de titularidad, minutos, cambio o estado, un párrafo de qué implica para el fantasy. Si no hay dato, ese párrafo no se escribe. Mínimo: 45 palabras.
+- En edumr.es: entradilla con la fecha solo si la fuente la escribe como día de calendario (la del partido o la de publicación, sin convertir un instante UTC a la hora de Madrid y sin usar la fecha de hoy). Si no hay esa fecha, no se pone. Luego la cita literal verificada. Si hay un dato de titularidad, minutos, cambio o estado, un párrafo de qué implica para el fantasy. Si no hay dato, ese párrafo no se escribe. Cada frase se tira si su fecha no está en los hechos. Mínimo: 45 palabras.
 
 ## Lesión o disponibilidad
 
