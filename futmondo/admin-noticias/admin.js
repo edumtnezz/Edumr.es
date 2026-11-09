@@ -118,38 +118,35 @@
     return c;
   }
 
-  /* ----- Redactor (modo sombra) ----- */
+  /* ----- Redactor (publica solo) ----- */
   function vistaRedactor(v) {
-    if (!D.sombra.length) v.appendChild(el("p", "ad-empty", "Aún no hay ruedas de prensa procesadas. El redactor mira los canales cada 10 minutos y necesita la clave GEMINI_API_KEY."));
+    if (!D.sombra.length) v.appendChild(el("p", "ad-empty", "Aún no hay ruedas procesadas. Publica solo, cada 2 minutos, si la frase, el jugador y el estado cuadran. Hace falta la clave GEMINI_API_KEY."));
     D.sombra.forEach(function (s) {
       var c = el("div", "ad-card");
       c.appendChild(el("h2", null, s.title || s.id));
       var m = el("p", "ad-meta"); m.appendChild(tag(s.club)); m.appendChild(document.createTextNode("Vídeo " + cuando(Date.parse(s.pub) || s.pub) + " · leído " + cuando(s.at)));
       var a = el("a", "ad-link", " ▶ ver vídeo"); a.href = "https://youtu.be/" + s.id; a.target = "_blank"; a.rel = "noopener"; m.appendChild(a); c.appendChild(m);
-      var checks = [];
-      (s.items || []).forEach(function (r, i) {
+      (s.items || []).forEach(function (r) {
         var row = el("div", "ad-row");
-        var k = el("label", "k"); var cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!r.publicable; checks[i] = cb; k.appendChild(cb);
-        k.appendChild(document.createTextNode(" " + (r.nombre || r.jugador) + " · " + (ETIQ[r.estado] || r.estado) + (r.minuto ? " · min " + r.minuto : "")));
+        var k = el("div", "k");
+        k.textContent = (r.nombre || r.jugador) + " · " + (ETIQ[r.estado] || r.estado) + (r.minuto ? " · min " + r.minuto : "");
         row.appendChild(k); row.appendChild(el("q", null, r.frase));
-        var tg = el("div"); tg.appendChild(tag(r.publicable ? "publicable" : "no publicable", r.publicable ? "ok" : "bad"));
+        var tg = el("div"); tg.appendChild(tag(r.publicable ? "se publicó" : "no se publicó", r.publicable ? "ok" : "bad"));
         if (!r.verificada) tg.appendChild(tag("frase no verificada", "bad")); if (!r.cruzado) tg.appendChild(tag("sin cruzar con Futmondo", "bad")); tg.appendChild(tag("confianza " + (r.confianza || "?")));
-        row.appendChild(tg); c.appendChild(row);
+        row.appendChild(tg);
+        if (r.motivo) row.appendChild(el("p", "ad-meta", r.motivo));
+        c.appendChild(row);
       });
       if (!(s.items || []).length) c.appendChild(el("p", "ad-meta", "Sin jugadores mencionados."));
       var usado = D.usadas[s.id];
-      var bt = el("div", "ad-btns");
-      if (usado) { var u = el("button", "ad-b", "Ya tiene borrador"); u.type = "button"; u.addEventListener("click", function () { tab = "borradores"; abierto = usado; pinta(); }); bt.appendChild(u); }
-      else if ((s.items || []).length) {
-        var b = el("button", "ad-b main", "Crear borrador con lo marcado"); b.type = "button";
-        b.addEventListener("click", function () {
-          var sel = []; checks.forEach(function (cb, i) { if (cb && cb.checked) sel.push(i); });
-          b.disabled = true;
-          post({ action: "crear", videoId: s.id, sel: sel }).then(function (j) { tab = "borradores"; abierto = j.item.id; return cargar(); }).catch(function (e) { toast(e.message); b.disabled = false; });
-        });
-        bt.appendChild(b);
+      var ya = (D.own || []).filter(function (o) { return o.id === usado; })[0];
+      if (ya) {
+        var bt = el("div", "ad-btns");
+        var u = el("button", "ad-b", ya.status === "published" ? "Ver publicada" : "Ver guardada"); u.type = "button";
+        u.addEventListener("click", function () { tab = ya.status === "published" ? "publicadas" : "borradores"; abierto = usado; pinta(); });
+        bt.appendChild(u); c.appendChild(bt);
       }
-      c.appendChild(bt); v.appendChild(c);
+      v.appendChild(c);
     });
   }
 
@@ -181,7 +178,8 @@
   /* ----- Estado del redactor ----- */
   function vistaEstado(v) {
     var e = D.estado;
-    var c = el("div", "ad-card"); c.appendChild(el("h2", null, "Redactor en modo sombra"));
+    var c = el("div", "ad-card"); c.appendChild(el("h2", null, "Redactor automático"));
+    c.appendChild(el("p", "ad-meta", "Publica en la web y avisa por Telegram solo lo verificado. No crea borradores. Pasa cada 2 minutos."));
     if (!e) { c.appendChild(el("p", "ad-empty", "Todavía no ha arrancado (falta la clave GEMINI_API_KEY en el Worker edumr-cron).")); v.appendChild(c); return; }
     if (e.tok) c.appendChild(el("p", "ad-meta", "Tokens hoy (" + e.tok.d + "): " + (e.tok.n || 0) + " de 450.000"));
     v.appendChild(c);

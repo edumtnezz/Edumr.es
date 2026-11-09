@@ -17,9 +17,9 @@ export default {
         await r.text();
       } catch (e) {}
       try { await avisar(env); } catch (e) {}
-      // Redactor en modo sombra (ruedas de prensa de YouTube -> estados de jugadores, sin publicar).
-      // Sin el secreto GEMINI_API_KEY no hace nada; un fallo aquí nunca afecta a los avisos.
-      try { await redactorSombra(env); } catch (e) {}
+      // Redactor: publica noticias verificadas y avisa por Telegram. Sin GEMINI_API_KEY no hace nada.
+      // Un fallo aquí no corta los avisos; el motivo queda en el log del Worker.
+      try { await redactorSombra(env); } catch (e) { console.error("redactor", String(e && e.message || e).slice(0, 180)); }
       return;
     }
     // "0 8 * * *" = vigilante diario: comprueba que las 20 páginas de
