@@ -44,3 +44,10 @@ test("copiaLiteral detecta copia y deja pasar lo reescrito", () => {
   assert.equal(_r.copiaLiteral("a b c d e f g h", "x a b c d e f g y"), true);
   assert.equal(_r.copiaLiteral("a b c d e f", "x a b c d e f g y"), false);
 });
+
+test("un tema ya descartado por falta de nota oficial se reintenta con la otra web", () => {
+  const doc = { v: 1, items: [PISTA, Object.assign({}, PISTA, { id: "ff-2", ref: "" }), Object.assign({}, PISTA, { id: "ff-3" })] };
+  const vistas = { [PISTA.id]: { at: 1, estado: "descartada", motivo: "sin fuente permitida" }, "ff-2": { at: 1, estado: "descartada", motivo: "sin fuente permitida" }, "ff-3": { at: 1, estado: "descartada", motivo: "sin fuente permitida", ext: true } };
+  const r = _r.pistasATratar(doc, vistas, 2);
+  assert.deepEqual(r.nuevas.map((p) => p.id), [PISTA.id]);
+});
