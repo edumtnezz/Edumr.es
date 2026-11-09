@@ -79,6 +79,8 @@
       d.appendChild(im);
     } else d.classList.add("eth-nophoto");
     d.appendChild(nodo("span", "eth-tag", ETIQ[k] || "NOTICIA"));
+    var lg = nodo("img", "eth-logo"); lg.alt = ""; lg.src = "/img/noticias-logo.png"; lg.addEventListener("error", function () { lg.remove(); }, { once: true });
+    d.appendChild(lg);
     if (dt) {
       var g = nodo("div", "eth-fig");
       g.appendChild(nodo("b", "eth-big" + (dt.small ? " eth-big-s" : ""), dt.big));

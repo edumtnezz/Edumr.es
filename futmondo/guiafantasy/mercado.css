@@ -3511,6 +3511,7 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .eth-ring { position: absolute; z-index: -1; right: -14cqmin; bottom: -22cqmin; width: 96cqmin; height: 96cqmin; border-radius: 50%; border: 3cqmin solid var(--ac); opacity: .28; }
 .eth-ph { position: absolute; right: 2cqmin; bottom: 0; height: 90cqh; width: auto; max-width: 62cqw; object-fit: contain; object-position: bottom; animation: eth-float 8s ease-in-out infinite; }
 .eth-tag { position: absolute; left: 6cqmin; top: 6cqmin; padding: 1.6cqmin 3.4cqmin; border-radius: 99px; background: var(--ac); color: var(--bg); font: 800 max(9px, 5.4cqmin)/1 'Figtree', system-ui, sans-serif; letter-spacing: .08em; }
+.eth-logo { position: absolute; right: 4cqmin; top: 4cqmin; width: 20cqmin; height: 20cqmin; border-radius: 22%; box-shadow: 0 1.2cqmin 4cqmin rgba(0,0,0,.35); z-index: 2; }
 .eth-fig { position: absolute; left: 6cqmin; top: 50%; transform: translateY(-46%); display: flex; flex-direction: column; gap: 1.5cqmin; max-width: 58cqw; }
 .eth-big { font: 800 27cqmin/.9 'Bricolage Grotesque', 'Figtree', system-ui, sans-serif; letter-spacing: -.04em; color: #fff; white-space: nowrap; }
 .eth-big-s { font-size: 17cqmin; letter-spacing: -.02em; }
@@ -3524,6 +3525,7 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 /* miniaturas pequeñas (filas de lista): solo foto y escudo en insignia, sin textos */
 @container (max-width: 140px) {
   .eth-tag, .eth-fig, .eth-cn, .eth-ring { display: none; }
+  .eth-logo { width: 26cqmin; height: 26cqmin; right: 3cqmin; top: 3cqmin; }
   .eth-ph { left: 0; right: 0; margin: 0 auto; width: 100%; max-width: none; height: 92cqh; object-position: 50% 100%; }
   .eth-club { left: auto; right: 3cqmin; bottom: 3cqmin; padding: 1.5cqmin; }
   .eth-cr { width: 26cqmin; height: 26cqmin; }
