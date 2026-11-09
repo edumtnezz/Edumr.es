@@ -330,12 +330,16 @@ test("un «no» de valoración se publica; no se convierte en baja", () => {
 
 test("crónica solo con goles nombrados; si el marcador no cuadra, nada", () => {
   const ok = _r.cronicaDesdeHechos({ home: "Local", away: "Visitante", marcador: [1, 0], goles: [{ name: "Jugador Prueba", min: 10, side: "home" }] });
-  assert.equal(ok.title, "Local 1-0 Visitante");
-  assert.equal(ok.body, "Goles: Jugador Prueba 10'.");
+  assert.equal(ok.title, "Jugador Prueba marcó un gol del Local");
+  assert.doesNotMatch(ok.title, /\d+\s*[-–]\s*\d+/);
+  assert.match(ok.ficha.title, /Local 1-0 Visitante/);
+  assert.match(ok.body, /10'/);
   assert.equal(_r.cronicaDesdeHechos({ home: "Local", away: "Visitante", marcador: [2, 0], goles: [{ name: "Jugador Prueba", min: 10, side: "home" }] }), null);
   assert.equal(_r.cronicaDesdeHechos({ home: "Local", away: "Visitante", goles: [{ name: "", min: 10, side: "home" }] }), null);
   const ev = { g: [{ m: 12, x: 0, p: "9", h: 1, og: 0 }], home: { st: [["9", "Delantero Fijo"]], sb: [] }, away: { st: [], sb: [] } };
-  assert.equal(_r.cronicaDesdeEv("Local", "Visitante", ev, [1, 0]).body, "Goles: Delantero Fijo 12'.");
+  const deEv = _r.cronicaDesdeEv("Local", "Visitante", ev, [1, 0]);
+  assert.match(deEv.title, /Delantero Fijo marcó un gol/);
+  assert.match(deEv.ficha.lead, /Delantero Fijo 12'/);
   assert.equal(_r.cronicaDesdeEv("Local", "Visitante", { g: [{ m: 1, p: "1", h: 1, og: 1 }], home: { st: [["1", "Portero"]], sb: [] }, away: { st: [], sb: [] } }, [1, 0]), null);
 });
 
@@ -369,7 +373,11 @@ test("la web oficial publica la cita literal y no el párrafo de alrededor", asy
     if (url.endsWith("/sitemap.xml")) return new Response(`<url><loc>https://club.test/es/futbol/primer-equipo/noticias/9/flick</loc><news:title>Entrenador Inventado: "Creo mucho en este equipo de prueba"</news:title><news:publication_date>2026-11-08T23:02:26Z</news:publication_date></url>`);
     if (url.includes("/noticias/9/")) return new Response('<p>Entrenador Inventado ha dicho: "Creo mucho en este equipo de prueba". El resto no va entre comillas y no se copia.</p>');
     if (url.endsWith("/mercado")) return new Response(JSON.stringify({ players: [{ id: "1", name: "Marc Casadó", team: "Barcelona" }] }));
-    if (url.includes("generativelanguage")) { gemini++; return new Response("{}", { status: 500 }); }
+    if (url.includes("generativelanguage")) {
+      gemini++;
+      const cuerpo = "Tras el encuentro, Entrenador Inventado habló del grupo del Barcelona y dejó por escrito una cita que sale tal cual en la nota oficial del club. «Creo mucho en este equipo de prueba». Esa frase es el único dato comprobado de la rueda. Para el fantasy no aparece en los hechos un cambio de rol ni un estado, y por eso este texto no añade nada sobre lo que pueda ocurrir después.";
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify([{ jugador: "Entrenador Inventado", titular: "Entrenador Inventado habla del equipo", entradilla: "Habló del grupo en la rueda oficial.", cuerpo }]) }] } }], usageMetadata: { totalTokenCount: 20 } }));
+    }
     if (url.includes("api.telegram.org")) { tg.push(JSON.parse(o.body)); return new Response(JSON.stringify({ ok: true })); }
     return new Response("", { status: 404 });
   };
@@ -382,7 +390,7 @@ test("la web oficial publica la cita literal y no el párrafo de alrededor", asy
   assert.match(own[0].source.name, /OFICIAL/);
   assert.match(own[0].source.url, /club\.test\/es\/futbol\/primer-equipo\/noticias\/9\//);
   assert.match(tg[0].caption || tg[0].text, /guiafantasy\/noticias\/ed-/);
-  assert.equal(gemini, 0);
+  assert.equal(gemini, 1);
 });
 
 test("crónica: publica los goles del partido de prueba y no un relato", async () => {
@@ -395,15 +403,45 @@ test("crónica: publica los goles del partido de prueba y no un relato", async (
     if (url.endsWith("/sitemap.xml")) return new Response(`<url><loc>https://club.test/es/futbol/primer-equipo/noticias/8/partido</loc><news:title>Equipo A - Equipo B: encuentro de prueba (1-0)</news:title><news:publication_date>2026-11-08T22:00:00Z</news:publication_date></url>`);
     if (url.includes("/noticias/8/")) return new Response("<p>Este relato largo no debe copiarse.</p>");
     if (url.includes("fm-partido")) return new Response(JSON.stringify({ ev: { g: [{ m: 12, x: 0, p: "9", h: 1, og: 0 }], home: { st: [["9", "Delantero Fijo"]], sb: [] }, away: { st: [], sb: [] } } }));
+    if (url.includes("generativelanguage")) {
+      const texto = "En el partido entre Equipo A y Equipo B, Delantero Fijo firmó el tanto en el minuto 12. El marcador quedó 1-0 para el Equipo A. El dato que queda para el fantasy es ese gol, saliendo con el equipo, y no hay otra cifra en estos hechos del encuentro.";
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: texto }] } }], usageMetadata: { totalTokenCount: 12 } }));
+    }
+    if (url.endsWith("/mercado")) return new Response(JSON.stringify({ players: [{ id: "9", name: "Delantero Fijo", photo: "https://fotos.test/delantero.jpg" }] }));
     return new Response("", { status: 404 });
   };
   await redactorSombra(env, { fetch: f, now: Date.parse("2026-11-09T01:03:00Z"), fuentes: [{ club: "Barcelona", noticias: "https://club.test/sitemap.xml" }] });
   const own = JSON.parse(kv.get("own:news:v1"));
-  assert.equal(own.length, 1);
-  assert.equal(own[0].title, "Equipo A 1-0 Equipo B");
-  assert.equal(own[0].body, "Goles: Delantero Fijo 12'.");
+  assert.equal(own.length, 2);
+  const historia = own.find((o) => o.key.indexOf("cronica-") === 0);
+  const ficha = own.find((o) => o.key.indexOf("marcador-") === 0);
+  assert.equal(historia.title, "Delantero Fijo marcó un gol del Equipo A");
+  assert.doesNotMatch(historia.title, /\d+\s*[-–]\s*\d+/);
+  assert.match(ficha.title, /Equipo A 1-0 Equipo B/);
+  assert.match(ficha.lead, /Delantero Fijo 12'/);
+  assert.equal(historia.thumb, "https://fotos.test/delantero.jpg");
+  assert.match(historia.body, /minuto 12/);
+  assert.equal(_r.sujetosSeguidos(historia.body), false);
+  assert.doesNotMatch(historia.body, /Delantero Fijo marcó/);
   assert.doesNotMatch(own[0].body + own[0].title, /relato|remontada|liderato/);
   assert.match(own[0].source.name, /FotMob/);
+});
+
+test("un cuerpo no puede repetir el sujeto ni quedarse por debajo del mínimo", () => {
+  assert.equal(_r.sujetosSeguidos("Fermín López marcó el primero. Fermín López marcó el segundo."), true);
+  const hechos = "Fermín López Atlético de Madrid Barcelona 1 2 45 66 10 Giuliano Simeone Lamine Yamal";
+  const corto = "Fermín López marcó en el 45. El partido acabó 1-2.";
+  assert.equal(_r.depurarCuerpo("cronica", corto, hechos), null);
+  const repetido = "Fermín López marcó en el 45 tras una jugada del Barcelona. Fermín López marcó en el 66 con un pase de Lamine Yamal. El partido acabó 1-2 y Giuliano Simeone había marcado en el 10 para el Atlético de Madrid.";
+  assert.equal(_r.depurarCuerpo("cronica", repetido, hechos), null);
+  const bueno = "En el partido, el Barcelona dio la vuelta al Atlético de Madrid. Fermín López firmó el empate en el 45 y el segundo tanto en el 66, con un pase de Lamine Yamal. Antes Giuliano Simeone había adelantado a los locales en el 10. El encuentro acabó 1-2, así que el fantasy anota dos goles de quien salió en ese ataque.";
+  assert.equal(_r.sujetosSeguidos(bueno), false);
+  assert.ok(_r.depurarCuerpo("cronica", bueno, hechos));
+  const conDatoInventado = bueno + " Fue titular y jugó muchos minutos.";
+  const limpio = _r.depurarCuerpo("cronica", conDatoInventado, hechos);
+  assert.ok(limpio);
+  assert.doesNotMatch(limpio, /titular|minutos/);
+  assert.equal(_r.depurarCuerpo("rueda", "Hansi Flick habló tras el partido. «Creo mucho en este equipo».", "Hansi Flick Creo mucho en este equipo"), null);
 });
 
 test("comparar con otras webs: coincidencias por jugador y lo que no cubrimos", () => {
@@ -438,6 +476,10 @@ test("el aviso usa la página larga y no queda como enviado si Telegram no acept
     if (url.endsWith("/sitemap.xml")) return new Response(`<url><loc>https://club.test/es/futbol/primer-equipo/noticias/9/flick</loc><news:title>Entrenador Inventado: "Creo mucho en este equipo de prueba"</news:title><news:publication_date>2026-11-08T23:02:26Z</news:publication_date></url>`);
     if (url.includes("/noticias/9/")) return new Response('<p>"Creo mucho en este equipo de prueba"</p>');
     if (url.endsWith("/mercado")) return new Response(JSON.stringify({ players: [] }));
+    if (url.includes("generativelanguage")) {
+      const cuerpo = "Tras el encuentro, Entrenador Inventado habló del grupo del Barcelona y dejó por escrito una cita que sale tal cual en la nota oficial del club. «Creo mucho en este equipo de prueba». Esa frase es el único dato comprobado de la rueda. Para el fantasy no aparece en los hechos un cambio de rol ni un estado, y por eso este texto no añade nada sobre lo que pueda ocurrir después.";
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify([{ jugador: "Entrenador Inventado", titular: "Entrenador Inventado habla del equipo", entradilla: "Habló del grupo en la rueda oficial.", cuerpo }]) }] } }], usageMetadata: { totalTokenCount: 20 } }));
+    }
     if (url.includes("api.telegram.org")) {
       const body = JSON.parse(o.body);
       tg.push(url);

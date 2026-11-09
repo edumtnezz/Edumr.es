@@ -332,19 +332,22 @@ export function caducada(title, pub, now) {
 
 // ---------- Redacción de la noticia (con palabras propias, solo con datos verificados) ----------
 const norm2 = (x) => String(x || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-function promptNoticias(club, grupos) {
-  return "Eres redactor de una web de fantasy de LaLiga. Para CADA jugador de la lista escribe una noticia corta, en español y con tus propias palabras, usando SOLO los datos verificados de la rueda de prensa de un entrenador del " + club + ".\n" +
-    "REGLAS: usa únicamente la información de su lista. No añadas posición, día de la semana, fecha, plazo, rival, cifra, lesión ni un estado distinto al de la lista. No inventes citas: si citas, copia la frase literal entre comillas. Tono breve, de móvil, con palabras propias. " +
-    "Titular de máximo 80 caracteres que mencione al jugador. Entradilla de una sola frase, máximo 160 caracteres. Cuerpo de un párrafo de 40 a 400 caracteres. Escribe el nombre del jugador exactamente como en la lista.\n" +
+function promptNoticias(club, grupos, extra) {
+  return "Eres redactor de una web de fantasy de LaLiga. Para CADA jugador escribe la noticia en español periodístico natural. La única fuente son los datos de abajo y el contexto verificado. Si un dato no está escrito, no lo pongas.\n" +
+    "Titular: quien habla y el tema, sin marcador y sin metáforas. Si es una rueda, ábrelo por el entrenador.\n" +
+    "Entradilla: una frase, sin comillas. Di cuándo habló si la fecha está en el contexto, y tras qué partido si el rival está en el contexto o en la cita. Si no está, no lo inventes.\n" +
+    "Cuerpo: un párrafo que integre la cita literal entre comillas, copiada tal cual, sin repetir el nombre al empezar dos frases seguidas y sin encadenar plantillas. Si los datos traen titularidad, minutos, cambio, estado o el rol que dijo, añade un segundo párrafo con lo que eso implica para el fantasy. Si no hay ese dato, no escribas ese párrafo ni rellenes con una suposición.\n" +
+    "Escribe el nombre exactamente como en la lista.\n" +
+    (extra ? "CONTEXTO VERIFICADO:\n" + extra + "\n\n" : "") +
     'Devuelve solo JSON: [{"jugador": "nombre tal cual", "titular": "...", "entradilla": "...", "cuerpo": "..."}] con un elemento por jugador y en el mismo orden.\n\nDATOS:\n' +
     grupos.map((g) => "JUGADOR: " + g.nombre + "\n" + g.items.map((i) => "- " + (ETIQ_TXT[i.estado] || i.estado) + " | frase literal: «" + i.frase + "»" + (i.minuto ? " | min " + i.minuto : "")).join("\n")).join("\n\n");
 }
 // Rechaza lo que se pase de largo, meta cifras que no están en las frases o se olvide de algún jugador
-export function validarNoticia(n, items) {
+export function validarNoticia(n, items, extra) {
   if (!n || typeof n !== "object") return null;
   const t = String(n.titular || "").trim(), l = String(n.entradilla || "").trim(), c = String(n.cuerpo || "").trim();
-  if (t.length < 12 || t.length > 120 || l.length > 220 || c.length < 40 || c.length > 2500) return null;
-  const fuente = norm2(items.map((i) => [i.frase, i.minuto, ETIQ_TXT[i.estado] || ""].join(" ")).join(" "));
+  if (t.length < 12 || t.length > 140 || l.length > 280 || c.length < 40 || c.length > 2500) return null;
+  const fuente = norm2(items.map((i) => [i.frase, i.minuto, ETIQ_TXT[i.estado] || ""].join(" ")).join(" ") + " " + (extra || ""));
   const todo = norm2(t + " " + l + " " + c);
   const nums = (t + " " + l + " " + c).match(/\d+/g) || [];
   if (nums.some((x) => !fuente.includes(x))) return null;
@@ -379,13 +382,15 @@ async function redactarNoticias(env, f, res, opts) {
   let tokens = 0, arr = null;
   if (!(opts && opts.sinIa)) {
     try {
-      const r = await gemini(env, f, { contents: [{ parts: [{ text: promptNoticias(res.club, grupos) }] }], generationConfig: { temperature: 0.3, responseMimeType: "application/json" } });
+      const extra = [res.cuando, res.partidoTexto, res.speaker, res.club].filter(Boolean).join(". ");
+      const r = await gemini(env, f, { contents: [{ parts: [{ text: promptNoticias(res.club, grupos, extra) }] }], generationConfig: { temperature: 0.3, responseMimeType: "application/json" } });
       if (!r.error) { tokens = r.tokens; arr = parseArr(textoDe(r.j)); }
     } catch (e) {}
   }
   return grupos.map((g, i) => {
     const v = arr && arr.find((x) => x && norm2(x.jugador) === norm2(g.nombre)) || (arr && arr[i]);
-    const ok = validarNoticia(v, g.items);
+    const extra = [res.cuando, res.partidoTexto, res.speaker, res.club].filter(Boolean).join(". ");
+    const ok = validarNoticia(v, g.items, extra);
     const first = g.items.find((x) => x.minuto) || g.items[0];
     const enlace = res.url || ("https://youtu.be/" + res.id + (first && first.minuto ? "?t=" + secs2(first.minuto) : ""));
     const base = {
@@ -394,15 +399,25 @@ async function redactarNoticias(env, f, res, opts) {
       original: g.items.map((x) => ({ jugador: x.jugador, estado: x.estado, frase: x.frase, minuto: x.minuto, confianza: x.confianza, verificada: !!x.verificada, cruzado: !!x.cruzado })),
       tokens: i === 0 ? tokens : 0,
     };
-    if (ok) return Object.assign(base, ok, { via: "ia" });
     const et = ETIQ_TXT[g.items[0].estado] || g.items[0].estado;
-    return Object.assign(base, {
-      title: g.nombre + ": " + et,
-      lead: res.lead || (res.oficial ? "Según " + (res.speaker ? res.speaker + ", fuente oficial." : res.club + ", fuente oficial.") : "Según " + res.club + "."),
-      body: g.items.map((x) => "«" + x.frase + "»" + (x.minuto ? " (min " + x.minuto + ")" : "")).join("\n"),
-      via: "plantilla",
-    });
-  });
+    const esRueda = g.items[0].tema && g.items[0].tema !== "disponibilidad";
+    let title = g.nombre + ": " + et;
+    let lead = res.lead || (res.oficial ? "Según " + (res.speaker ? res.speaker + ", fuente oficial." : res.club + ", fuente oficial.") : "Según " + res.club + ".");
+    let body = g.items.map((x) => "«" + x.frase + "»" + (x.minuto ? " (min " + x.minuto + ")" : "")).join("\n");
+    let via = "plantilla";
+    if (ok) { title = ok.title; lead = ok.lead; body = ok.body; via = "ia"; }
+    else if (esRueda) {
+      title = res.speaker
+        ? res.speaker + " habla de " + (g.nombre && g.nombre !== res.speaker ? g.nombre : et)
+        : g.nombre + " habla de " + et;
+    }
+    if (esRueda) {
+      const hechos = [extra, res.title || "", g.nombre || "", g.items.map((x) => x.frase).join(". ")].filter(Boolean).join("\n");
+      body = depurarCuerpo("rueda", body, hechos);
+      if (!body) return null;
+    }
+    return Object.assign(base, { title, lead, body, via });
+  }).filter(Boolean);
 }
 // Miniatura grande: la del propio vídeo de la rueda de prensa en YouTube (la mejor que exista)
 async function miniatura(f, id) {
@@ -413,6 +428,22 @@ async function miniatura(f, id) {
     try { const r = await f(foto(q), { method: "HEAD" }); if (r.ok) return foto(q); } catch (e) {}
   }
   return foto("mqdefault");
+}
+
+async function fotoDeMercado(f, nombres) {
+  const lista = (nombres || []).map((n) => String(n || "").trim()).filter((n) => n.length > 2);
+  if (!lista.length) return "";
+  try {
+    const r = await f(SITE + "mercado", { headers: { "user-agent": "edumr-cron" } });
+    if (!r.ok) return "";
+    const players = ((await r.json()).players) || [];
+    for (const name of lista) {
+      const p = cruzarJugador(name, players);
+      const hit = p && players.find((pl) => String(pl.id) === String(p.id) && /^https:\/\//.test(String(pl.photo || "")));
+      if (hit) return hit.photo;
+    }
+  } catch (e) {}
+  return "";
 }
 
 // Publica las noticias en la web (KV own:news:v1). Las de ese vídeo que ya existían como una sola noticia se sustituyen.
@@ -649,6 +680,11 @@ export function citasDeHtml(html) {
   }
   return out;
 }
+function fechaMadrid(ms) {
+  try {
+    return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "numeric", month: "long", year: "numeric" }).format(new Date(ms));
+  } catch (e) { return ""; }
+}
 function ymdMadrid(ms) {
   try {
     return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(ms)).replace(/-/g, "");
@@ -660,11 +696,73 @@ function ymdAdd(ymd, days) {
   const t = new Date(Date.UTC(y, m - 1, d + days));
   return t.toISOString().slice(0, 10).replace(/-/g, "");
 }
-// Crónica solo con goles nombrados. Si falta un nombre, hay propia o el marcador no cuadra, no se publica.
+const MIN_CUERPO = { cronica: 40, rueda: 45, marcador: 8, once: 20 };
+const PALABRAS_DE_RELLENO = new Set("el la los las un una y o de del al en con por para que se su sus le les lo es son fue fueron como mas pero tras ante sobre cuando donde este esta esto porque sin ya no si al".split(" "));
+const DATOS_QUE_EXIGEN_FUENTE = ["titular", "titulares", "suplente", "banquillo", "minutos", "baja", "bajas", "lesion", "lesionado", "lesionada", "duda", "asistencia", "penalti", "expulsion"];
+export function sujetosSeguidos(texto) {
+  const frases = String(texto || "").split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter((s) => s.length > 8);
+  const cabeza = (f) => {
+    const w = norm2(f).replace(/^[^a-z0-9]+/, "").split(/\s+/).filter(Boolean);
+    const salto = new Set(["en", "el", "la", "los", "las", "un", "una", "y", "pero", "antes", "luego", "despues", "al", "del", "tras", "con", "para", "por"]);
+    let i = 0;
+    while (i < w.length && salto.has(w[i])) i++;
+    return w.slice(i, i + 2).join(" ");
+  };
+  for (let i = 1; i < frases.length; i++) {
+    const a = cabeza(frases[i - 1]), b = cabeza(frases[i]);
+    if (a && a === b) return true;
+  }
+  return false;
+}
+export function depurarCuerpo(tipo, texto, hechos) {
+  const bag = norm2(hechos);
+  const minimo = MIN_CUERPO[tipo] || 40;
+  const frases = String(texto || "").split(/(?<=[.!?])\s+/).map((s) => s.trim()).filter((s) => s.length > 8);
+  const ok = [];
+  for (const frase of frases) {
+    const nums = frase.match(/\d+/g) || [];
+    if (nums.some((n) => !bag.includes(n))) continue;
+    const plano = norm2(frase);
+    if (DATOS_QUE_EXIGEN_FUENTE.some((w) => new RegExp("\\b" + w + "\\b").test(plano) && !new RegExp("\\b" + w + "\\b").test(bag))) continue;
+    let rara = false;
+    for (const trozo of frase.split(/\s+/)) {
+      const raw = trozo.replace(/^[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+|[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+$/g, "");
+      if (!raw || raw[0] !== raw[0].toUpperCase() || raw[0] === raw[0].toLowerCase()) continue;
+      const n = norm2(raw);
+      if (n.length < 4 || PALABRAS_DE_RELLENO.has(n)) continue;
+      if (!bag.includes(n)) { rara = true; break; }
+    }
+    if (!rara) ok.push(frase);
+  }
+  const out = ok.join(" ");
+  if (!out || sujetosSeguidos(out)) return null;
+  const pals = norm2(out).split(/\s+/).filter(Boolean).length;
+  if (pals < minimo) return null;
+  return out;
+}
+async function redactarCuerpo(env, f, tipo, hechos) {
+  if (!env || !env.GEMINI_API_KEY) return null;
+  const guia = tipo === "rueda"
+    ? "Entradilla de una frase, sin comillas: cuándo habló, si la fecha está en los hechos, y tras qué partido, si el rival está en los hechos. Luego un párrafo con la cita literal entre comillas, tal cual. Si los hechos traen titularidad, minutos, cambio o estado, cierra con un párrafo de qué implica eso para el fantasy. Si no está, no lo escribas."
+    : "Dos o tres párrafos, separados por una línea en blanco. El primero sitúa el partido sin abrir por el nombre del goleador. Los siguientes cuentan sus goles con el minuto que figure en los hechos. El último, solo si los hechos dicen que fue titular, cuántos minutos jugó, un cambio o el estado físico, explica esa consecuencia para el fantasy. Si ese dato no está, no lo inventes y no rellenes. Sin citas y sin metáforas.";
+  const prompt = "Redacta en español periodístico natural. Usa solo los hechos de abajo. Si un dato no está escrito, no lo pongas. No repitas el mismo sujeto al empezar dos frases seguidas. No encadenes frases con la misma plantilla. " + guia + " Devuelve solo el cuerpo.\n\nHECHOS:\n" + hechos;
+  const r = await gemini(env, f, { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4 } });
+  if (!r || r.error) return null;
+  return depurarCuerpo(tipo, textoDe(r.j), hechos);
+}
+
+function minutoGol(g) {
+  return Number(g.min) + (Number(g.extra) ? "+" + Number(g.extra) : "") + "'";
+}
+function cuentaEnPalabras(n) {
+  return { 1: "un gol", 2: "dos goles", 3: "tres goles" }[n] || (n + " goles");
+}
+// Dos piezas, como en las webs de fantasy: la crónica habla de quien marcó; el marcador va en otra ficha.
+// Si falta un nombre, hay propia o el marcador no cuadra, no se publica nada.
 export function cronicaDesdeHechos(p) {
   if (!p || !p.home || !p.away || !Array.isArray(p.goles) || !p.goles.length) return null;
   let h = 0, a = 0;
-  const lineas = [];
+  const buenos = [];
   for (const g of p.goles) {
     if (!g || g.og) return null;
     if (g.side !== "home" && g.side !== "away") return null;
@@ -672,15 +770,35 @@ export function cronicaDesdeHechos(p) {
     if (!name) return null;
     if (!Number.isFinite(Number(g.min)) || Number(g.min) < 0 || Number(g.min) > 130) return null;
     if (g.side === "home") h++; else a++;
-    lineas.push(name + " " + Number(g.min) + (Number(g.extra) ? "+" + Number(g.extra) : "") + "'");
+    buenos.push({ name, side: g.side, min: minutoGol(g) });
   }
   if (p.marcador && (Number(p.marcador[0]) !== h || Number(p.marcador[1]) !== a)) return null;
-  return {
-    title: p.home + " " + h + "-" + a + " " + p.away,
-    lead: "Según los datos del partido.",
-    body: "Goles: " + lineas.join(", ") + ".",
-    players: [...new Set(p.goles.map((g) => String(g.name).trim()))],
+  const por = new Map();
+  for (const g of buenos) por.set(g.name, (por.get(g.name) || []).concat(g));
+  let protagonista = buenos[0].name, mejor = 0;
+  for (const [name, gs] of por) if (gs.length >= mejor) { mejor = gs.length; protagonista = name; }
+  const suyos = por.get(protagonista);
+  const equipo = suyos[0].side === "home" ? p.home : p.away;
+  const titulo = mejor > 1 ? protagonista + " marcó " + cuentaEnPalabras(mejor) : protagonista + " marcó un gol del " + equipo;
+  const cuando = suyos.map((g) => "en el " + g.min).join(" y ");
+  const hechos = [
+    "Partido: " + p.home + " contra " + p.away,
+    "Marcador: " + h + "-" + a,
+  ].concat(buenos.map((g) => "Gol: " + g.name + ", equipo " + (g.side === "home" ? p.home : p.away) + ", minuto " + g.min)).join("\n");
+  const ficha = {
+    title: (p.jornada ? "Jornada " + p.jornada + ": " : "") + p.home + " " + h + "-" + a + " " + p.away,
+    lead: "Goles: " + buenos.map((g) => g.name + " " + g.min).join(", ") + ".",
+    body: buenos.map((g) => g.name + " " + g.min).join("\n"),
+    players: [...new Set(buenos.map((g) => g.name))],
   };
+  const cronica = {
+    title: titulo,
+    lead: protagonista + " marcó " + cuentaEnPalabras(mejor) + " ante el " + (suyos[0].side === "home" ? p.away : p.home) + ".",
+    body: protagonista + " marcó " + cuando + ". El partido acabó " + h + "-" + a + ".",
+    hechos,
+    players: [protagonista],
+  };
+  return { title: cronica.title, lead: cronica.lead, body: cronica.body, players: cronica.players, hechos, cronica, ficha };
 }
 export function cronicaDesdeEv(home, away, ev, marcador) {
   if (!ev || !Array.isArray(ev.g) || !ev.g.length) return null;
@@ -698,7 +816,30 @@ export function cronicaDesdeEv(home, away, ev, marcador) {
     if (!name) return null;
     goles.push({ name, min: Number(g.m), extra: Number(g.x) || 0, side });
   }
-  return cronicaDesdeHechos({ home, away, goles, marcador });
+  const out = cronicaDesdeHechos({ home, away, goles, marcador });
+  if (!out) return null;
+  const protagonista = out.players[0];
+  const suyo = goles.find((g) => g.name === protagonista);
+  const bag = suyo && (suyo.side === "home" ? ev.home : ev.away);
+  const st = (bag && bag.st) || [];
+  const iguales = st.filter((x) => x && x[1] && mismaPersona(protagonista, x[1]));
+  if (iguales.length === 1) {
+    const linea = protagonista + " salió de titular";
+    out.hechos = out.hechos + "\n" + linea;
+    out.cronica.hechos = out.hechos;
+  }
+  return out;
+}
+function mismaPersona(a, b) {
+  const x = norm2(a), y = norm2(b);
+  if (!x || !y) return false;
+  if (x === y) return true;
+  const toks = (s) => s.split(" ").filter((w) => w.length > 3);
+  const pa = toks(x), pb = toks(y);
+  if (!pa.length || !pb.length) return false;
+  const corto = pa.length <= pb.length ? pa : pb;
+  const largo = pa.length <= pb.length ? pb : pa;
+  return corto.every((w) => largo.includes(w));
 }
 function temaDeFrase(frase) {
   const texto = norm(frase);
@@ -786,18 +927,28 @@ async function unaNoticiaWeb(env, f, st, now, fuentes) {
         items: [{ jugador: "", nombre: partido.home + " - " + partido.away, estado: "valoracion", tema: "valoracion", frase: cronica.body.replace(/^Goles: /, "").replace(/\.$/, ""), minuto: "", confianza: "alta", publicable: true, verificada: true, cruzado: false }],
       };
       // La crónica no pasa por el filtro de citas: el cuerpo ya son solo los goles comprobados.
-      const item = {
-        club: s.club, players: cronica.players, key: "cronica-" + id,
-        source: { name: "Según FotMob", url: pendiente.url, videoId: "" },
-        title: cronica.title, lead: res.lead, body: cronica.body, via: "datos",
-      };
+      const piezas = [
+        { suf: "cronica", data: cronica.cronica },
+        { suf: "marcador", data: cronica.ficha },
+      ];
       let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
-      if (own.some((o) => o.key === item.key)) return { dirty: true };
-      const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
-      const pub = Object.assign({ id: hex, status: "published", expira: true, createdAt: now, updatedAt: now, publishedAt: now, thumb: "" }, item);
-      own.unshift(pub);
+      const pubs = [];
+      for (const pz of piezas) {
+        const key = pz.suf + "-" + id;
+        if (own.some((o) => o.key === key)) continue;
+        let cuerpo = pz.data.body;
+        if (pz.suf === "cronica") {
+          cuerpo = pz.data.hechos ? await redactarCuerpo(env, f, "cronica", pz.data.hechos) : null;
+          if (!cuerpo) continue;
+        }
+        const thumb = await fotoDeMercado(f, pz.data.players);
+        const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
+        pubs.push({ id: hex, status: "published", expira: true, createdAt: now, updatedAt: now, publishedAt: now, thumb, club: s.club, players: pz.data.players, key, source: { name: "Según FotMob", url: pendiente.url, videoId: "" }, title: pz.data.title, lead: pz.data.lead, body: cuerpo, via: pz.suf === "cronica" ? "ia" : "datos" });
+        own.unshift(pubs[pubs.length - 1]);
+      }
+      if (!pubs.length) return { dirty: true };
       await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
-      return { dirty: true, noticias: [pub], id: "cronica-" + id };
+      return { dirty: true, noticias: pubs, id: "cronica-" + id };
     }
     const citas = citasDeHtml(html);
     const titular = citaEnTitulo(pendiente.title);
@@ -820,9 +971,14 @@ async function unaNoticiaWeb(env, f, st, now, fuentes) {
     slot.status = "ok"; slot.n = items.length; slot.err = items.length ? "" : "sin citas que cuadren";
     st.web[id] = slot;
     if (!items.length) return { dirty: true };
-    const res = { id: "web-" + id, club: s.club, title: pendiente.title, pub: pendiente.published, url: pendiente.url, oficial: true, speaker: titular && titular.speaker || "", sinMiniatura: true, items };
+    const cerca = lista.find((n) => {
+      const p = n.url !== pendiente.url && partidoEnTitulo(n.title);
+      return p && Math.abs((n.published || 0) - (pendiente.published || 0)) < 6 * 3600e3;
+    });
+    const partidoCerca = cerca ? partidoEnTitulo(cerca.title) : null;
+    const res = { id: "web-" + id, club: s.club, title: pendiente.title, pub: pendiente.published, url: pendiente.url, oficial: true, speaker: titular && titular.speaker || "", sinMiniatura: true, items, cuando: fechaMadrid(pendiente.published), partidoTexto: partidoCerca ? "Partido: " + partidoCerca.home + " contra " + partidoCerca.away + ". Marcador: " + partidoCerca.marcador[0] + "-" + partidoCerca.marcador[1] : "" };
     let noticias = [];
-    try { noticias = await publicarNoticias(env, f, res, now, { sinIa: true }); } catch (e) { slot.err = "publicar"; }
+    try { noticias = await publicarNoticias(env, f, res, now, { sinIa: false }); } catch (e) { slot.err = "publicar"; }
     return { dirty: true, noticias, id: "web-" + id };
   }
   return null;
@@ -952,4 +1108,4 @@ export async function redactorSombra(env, deps) {
   return { procesado: hecho ? hecho.id : null, pendientes: cola.length, tokens: st.tok.n };
 }
 
-export const _r = { compararNoticias, caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, localizarFrase, ventanaFrase, atribucionJugador, estadoRespaldado, temaRespaldado, robotsPermite, cruzarJugador, filtrar, parseJson, resumenTelegram, parseSitemapNews, esNotaPrimerEquipo, citaEnTitulo, partidoEnTitulo, citasDeHtml, cronicaDesdeHechos, cronicaDesdeEv };
+export const _r = { compararNoticias, caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, localizarFrase, ventanaFrase, atribucionJugador, estadoRespaldado, temaRespaldado, robotsPermite, cruzarJugador, filtrar, parseJson, resumenTelegram, parseSitemapNews, esNotaPrimerEquipo, citaEnTitulo, partidoEnTitulo, citasDeHtml, cronicaDesdeHechos, cronicaDesdeEv, sujetosSeguidos, depurarCuerpo };
