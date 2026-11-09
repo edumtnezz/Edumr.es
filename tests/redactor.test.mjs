@@ -320,6 +320,92 @@ test("una noticia por jugador, agrupando sus frases", () => {
   assert.equal(g[0].items.length, 2);
 });
 
+test("un «no» de valoración se publica; no se convierte en baja", () => {
+  const texto = "[20:10] No hemos sido contundentes en el área rival";
+  const r = _r.filtrar([{ jugador: "", tema: "valoracion", frase: "No hemos sido contundentes en el área", confianza: "alta" }], texto, PL);
+  assert.equal(r[0].publicable, true);
+  assert.equal(r[0].estado, "valoracion");
+  assert.notEqual(r[0].estado, "baja");
+});
+
+test("crónica solo con goles nombrados; si el marcador no cuadra, nada", () => {
+  const ok = _r.cronicaDesdeHechos({ home: "Local", away: "Visitante", marcador: [1, 0], goles: [{ name: "Jugador Prueba", min: 10, side: "home" }] });
+  assert.equal(ok.title, "Local 1-0 Visitante");
+  assert.equal(ok.body, "Goles: Jugador Prueba 10'.");
+  assert.equal(_r.cronicaDesdeHechos({ home: "Local", away: "Visitante", marcador: [2, 0], goles: [{ name: "Jugador Prueba", min: 10, side: "home" }] }), null);
+  assert.equal(_r.cronicaDesdeHechos({ home: "Local", away: "Visitante", goles: [{ name: "", min: 10, side: "home" }] }), null);
+  const ev = { g: [{ m: 12, x: 0, p: "9", h: 1, og: 0 }], home: { st: [["9", "Delantero Fijo"]], sb: [] }, away: { st: [], sb: [] } };
+  assert.equal(_r.cronicaDesdeEv("Local", "Visitante", ev, [1, 0]).body, "Goles: Delantero Fijo 12'.");
+  assert.equal(_r.cronicaDesdeEv("Local", "Visitante", { g: [{ m: 1, p: "1", h: 1, og: 1 }], home: { st: [["1", "Portero"]], sb: [] }, away: { st: [], sb: [] } }, [1, 0]), null);
+});
+
+test("nota oficial: se lee la cita del título y el marcador, no el resto", () => {
+  const sm = `<url><loc>https://www.fcbarcelona.es/es/futbol/primer-equipo/noticias/9/x</loc><news:title>Entrenador: "Creo mucho en este equipo"</news:title><news:publication_date>2026-11-08T23:02:26Z</news:publication_date></url>`;
+  const n = _r.parseSitemapNews(sm)[0];
+  assert.equal(_r.esNotaPrimerEquipo(n.url), true);
+  assert.equal(_r.esNotaPrimerEquipo("https://www.fcbarcelona.es/es/futbol/femenino-a/noticias/1/x"), false);
+  assert.equal(_r.citaEnTitulo(n.title).frase, "Creo mucho en este equipo");
+  assert.deepEqual(_r.partidoEnTitulo("Equipo A - Equipo B: un encuentro (1-0)"), { home: "Equipo A", away: "Equipo B", marcador: [1, 0] });
+  assert.deepEqual(_r.partidoEnTitulo("Atlético de Madrid - FC Barcelona: Remontada de líder (1-2)").marcador, [1, 2]);
+  const html = '<p>El técnico ha dicho: "No hemos sido contundentes en el área". El resto del párrafo no es una cita.</p>';
+  const c = _r.citasDeHtml(html);
+  assert.equal(c.length, 1);
+  assert.match(c[0].frase, /^No hemos sido contundentes/);
+});
+
+test("la web oficial publica la cita literal y no el párrafo de alrededor", async () => {
+  const kv = new Map();
+  const env = {
+    GEMINI_API_KEY: "k", TELEGRAM_BOT_TOKEN: "t",
+    PORRA: { async get(k, t) { const v = kv.get(k); return v == null ? null : (t === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } },
+  };
+  kv.set("tg:avisos:v1", JSON.stringify({ chat: "42" }));
+  const tg = [];
+  let gemini = 0;
+  const f = async (url, o) => {
+    url = String(url);
+    if (url.includes("youtube.com/robots.txt")) return new Response(ROBOTS_YT);
+    if (url.includes("club.test/robots.txt")) return new Response("User-agent: *\nAllow: /\n");
+    if (url.endsWith("/sitemap.xml")) return new Response(`<url><loc>https://club.test/es/futbol/primer-equipo/noticias/9/flick</loc><news:title>Entrenador Inventado: "Creo mucho en este equipo de prueba"</news:title><news:publication_date>2026-11-08T23:02:26Z</news:publication_date></url>`);
+    if (url.includes("/noticias/9/")) return new Response('<p>Entrenador Inventado ha dicho: "Creo mucho en este equipo de prueba". El resto no va entre comillas y no se copia.</p>');
+    if (url.endsWith("/mercado")) return new Response(JSON.stringify({ players: [{ id: "1", name: "Marc Casadó", team: "Barcelona" }] }));
+    if (url.includes("generativelanguage")) { gemini++; return new Response("{}", { status: 500 }); }
+    if (url.includes("api.telegram.org")) { tg.push(JSON.parse(o.body)); return new Response(JSON.stringify({ ok: true })); }
+    return new Response("", { status: 404 });
+  };
+  await redactorSombra(env, { fetch: f, now: Date.parse("2026-11-09T01:03:00Z"), fuentes: [{ club: "Barcelona", noticias: "https://club.test/sitemap.xml" }] });
+  const own = JSON.parse(kv.get("own:news:v1"));
+  assert.equal(own.length, 1);
+  assert.equal(own[0].status, "published");
+  assert.match(own[0].body, /«Creo mucho en este equipo de prueba»/);
+  assert.doesNotMatch(own[0].body, /no se copia|resto/);
+  assert.match(own[0].source.name, /OFICIAL/);
+  assert.match(own[0].source.url, /club\.test\/es\/futbol\/primer-equipo\/noticias\/9\//);
+  assert.match(tg[0].caption || tg[0].text, /guiafantasy\/noticias\/ed-/);
+  assert.equal(gemini, 0);
+});
+
+test("crónica: publica los goles del partido de prueba y no un relato", async () => {
+  const kv = new Map();
+  const env = { GEMINI_API_KEY: "k", PORRA: { async get(k, t) { const v = kv.get(k); return v == null ? null : (t === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } } };
+  const f = async (url) => {
+    url = String(url);
+    if (url.includes("youtube.com/robots.txt")) return new Response(ROBOTS_YT);
+    if (url.includes("club.test/robots.txt")) return new Response("User-agent: *\nAllow: /\n");
+    if (url.endsWith("/sitemap.xml")) return new Response(`<url><loc>https://club.test/es/futbol/primer-equipo/noticias/8/partido</loc><news:title>Equipo A - Equipo B: encuentro de prueba (1-0)</news:title><news:publication_date>2026-11-08T22:00:00Z</news:publication_date></url>`);
+    if (url.includes("/noticias/8/")) return new Response("<p>Este relato largo no debe copiarse.</p>");
+    if (url.includes("fm-partido")) return new Response(JSON.stringify({ ev: { g: [{ m: 12, x: 0, p: "9", h: 1, og: 0 }], home: { st: [["9", "Delantero Fijo"]], sb: [] }, away: { st: [], sb: [] } } }));
+    return new Response("", { status: 404 });
+  };
+  await redactorSombra(env, { fetch: f, now: Date.parse("2026-11-09T01:03:00Z"), fuentes: [{ club: "Barcelona", noticias: "https://club.test/sitemap.xml" }] });
+  const own = JSON.parse(kv.get("own:news:v1"));
+  assert.equal(own.length, 1);
+  assert.equal(own[0].title, "Equipo A 1-0 Equipo B");
+  assert.equal(own[0].body, "Goles: Delantero Fijo 12'.");
+  assert.doesNotMatch(own[0].body + own[0].title, /relato|remontada|liderato/);
+  assert.match(own[0].source.name, /FotMob/);
+});
+
 test("comparar con otras webs: coincidencias por jugador y lo que no cubrimos", () => {
   const now = Date.parse("2026-11-08T12:00:00Z");
   const own = [{ id: "a", status: "published", publishedAt: now - 3600e3, title: "Casadó, duda", players: ["Marc Casadó"] }];

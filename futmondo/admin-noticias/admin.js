@@ -187,7 +187,7 @@
     Object.keys(e.fuentes || {}).forEach(function (club) {
       var s = e.fuentes[club]; var row = el("div", "ad-row");
       var k = el("div", null, club); row.appendChild(k);
-      var tg = el("div"); tg.appendChild(tag(s.ok ? "funciona" : "falla", s.ok ? "ok" : "bad")); if (s.via) tg.appendChild(tag("vía " + s.via)); if (s.at) tg.appendChild(document.createTextNode(cuando(s.at)));
+      var tg = el("div"); tg.appendChild(tag(s.ok ? "funciona" : "falla", s.ok ? "ok" : "bad")); if (s.via) tg.appendChild(tag("vía " + s.via)); if (s.web) tg.appendChild(tag(String(s.web).slice(0, 42), /prohib|ilegible|sin |html|sitemap/.test(s.web) ? "bad" : "ok")); if (s.at) tg.appendChild(document.createTextNode(cuando(s.at)));
       row.appendChild(tg); f.appendChild(row);
     });
     v.appendChild(f);

@@ -31,7 +31,11 @@ export const FUENTES = [
   { club: "Levante", yt: "UCvOegN2N1FGPPv4xBNN2F9A" },
   { club: "Oviedo", yt: "UCvpFN8tLnBsjPR2BCJ-FJQA" },
   { club: "Atlético", yt: "UCuzKFwdh7z2GHcIOX_tXgxA" }, // publica las ruedas de prensa de Simeone (directos)
+  // 09/11/2026: canal oficial @fcbarcelona (externalId en la página del canal) y sitemap de noticias del primer equipo, permitido por su robots.txt.
+  { club: "Barcelona", yt: "UC14UlmYlSNiQCBe9Eookf_A", noticias: "https://www.fcbarcelona.es/es/sitemap/articles/detailed.xml" },
 ];
+// Solo esta rueda ya leída con 0 frases: se vuelve a mirar una vez con los temas nuevos. No se reabre el histórico.
+const RELECTURA_UNA_VEZ = new Set(["szC6cvFXHDs"]);
 
 // ---------- funciones puras (con pruebas) ----------
 export function parseFeed(xml) {
@@ -188,6 +192,23 @@ export function estadoRespaldado(estado, frase, transcripcion) {
   return { ok: true };
 }
 
+// Declaraciones que no son de lesión ni de titularidad. El «no» puede ser el dato («no hemos sido contundentes»): no se invierte ni se tira.
+const TEMAS = ["cambios", "rendimiento", "minutos", "tactica", "gestion_fisica", "valoracion"];
+const PISTAS_TEMA = {
+  cambios: ["cambio", "cambios", "sustitu", "plan inicial"],
+  rendimiento: ["presion", "segunda parte", "segunda mitad", "ritmo", "intensidad"],
+  minutos: ["minutos"],
+  tactica: ["tactic", "lateral", "sistema", "plan inicial"],
+  gestion_fisica: ["cansad", "fisic", "carga fisica"],
+  valoracion: ["contundent", "creo mucho", "importante", "fantastic", "gran papel", "muy bien", "no hemos"],
+};
+export function temaRespaldado(tema, frase) {
+  if (!PISTAS_TEMA[tema]) return { ok: false, motivo: "tema no válido" };
+  const texto = norm(frase);
+  if (!PISTAS_TEMA[tema].some((p) => texto.includes(p))) return { ok: false, motivo: "el tema no se sostiene en la frase" };
+  return { ok: true };
+}
+
 export function parseJson(txt) {
   try { return JSON.parse(txt); } catch (e) {}
   const m = String(txt || "").match(/[\[{][\s\S]*[\]}]/);
@@ -199,30 +220,47 @@ export function parseJson(txt) {
 export function filtrar(items, transcripcion, plantilla) {
   const out = [];
   for (const it of Array.isArray(items) ? items : []) {
-    if (!it || typeof it.jugador !== "string" || !ESTADOS.includes(it.estado)) continue;
-    const frase = String(it.frase || "").slice(0, 200);
+    if (!it || typeof it.jugador !== "string") continue;
+    const tema = TEMAS.includes(it.tema) ? it.tema : (ESTADOS.includes(it.estado) ? "disponibilidad" : "");
+    if (!tema) continue;
+    const frase = String(it.frase || "").slice(0, 220);
     const verificada = fraseVerificada(frase, transcripcion);
-    const p = cruzarJugador(it.jugador, plantilla);
+    const p = it.jugador ? cruzarJugador(it.jugador, plantilla) : null;
     let motivo = "";
     let atribOk = false;
     let estadoOk = false;
     if (!verificada) motivo = "frase no está en la transcripción";
-    else if (!p) motivo = "sin cruzar con Futmondo";
-    else {
-      const a = atribucionJugador(it.jugador, p.name, plantilla, frase, transcripcion);
-      if (!a.ok) motivo = a.motivo;
+    else if (tema === "disponibilidad") {
+      if (!p) motivo = "sin cruzar con Futmondo";
       else {
-        atribOk = true;
-        const e = estadoRespaldado(it.estado, frase, transcripcion);
-        if (!e.ok) motivo = e.motivo;
-        else estadoOk = true;
+        const a = atribucionJugador(it.jugador, p.name, plantilla, frase, transcripcion);
+        if (!a.ok) motivo = a.motivo;
+        else {
+          atribOk = true;
+          const e = estadoRespaldado(it.estado, frase, transcripcion);
+          if (!e.ok) motivo = e.motivo;
+          else estadoOk = true;
+        }
+      }
+    } else {
+      const t = temaRespaldado(tema, frase);
+      if (!t.ok) motivo = t.motivo;
+      else if (p) {
+        const a = atribucionJugador(it.jugador, p.name, plantilla, frase, transcripcion);
+        if (!a.ok) motivo = a.motivo;
+        else { atribOk = true; estadoOk = true; }
+      } else {
+        const texto = ventanaFrase(frase, transcripcion);
+        const otro = (plantilla || []).find((pl) => pl && ultimaClave(clavesJugador(pl.name, pl.name), texto) >= 0);
+        if (otro) motivo = "la frase nombra a " + otro.name + " y no está cruzada";
+        else { atribOk = true; estadoOk = true; }
       }
     }
     if (!motivo && it.confianza !== "alta") motivo = "confianza no alta";
-    const publicable = verificada && !!p && atribOk && estadoOk && it.confianza === "alta";
+    const publicable = verificada && atribOk && estadoOk && it.confianza === "alta" && (tema !== "disponibilidad" || !!p);
     out.push({
-      jugador: it.jugador, id: p ? p.id : null, nombre: p ? p.name : null,
-      estado: it.estado, frase, minuto: String(it.minuto || ""),
+      jugador: it.jugador, id: p ? p.id : null, nombre: p ? p.name : (it.nombre || null),
+      estado: tema === "disponibilidad" ? it.estado : tema, tema, frase, minuto: String(it.minuto || ""),
       confianza: it.confianza || "",
       verificada, cruzado: !!p, motivo: publicable ? "" : motivo,
       publicable,
@@ -258,16 +296,18 @@ const PROMPT_TRANSCRIPCION = "Transcribe de forma LITERAL y completa lo que se d
 function promptEstados(club, transcripcion, nombres) {
   return "Rueda de prensa de un entrenador o jugador del " + club + ". Con SOLO la transcripción de abajo, lista la DISPONIBILIDAD de cada FUTBOLISTA en activo para el próximo partido, " +
     "únicamente si se dice de forma explícita. Recorre la transcripción ENTERA de principio a fin y no te dejes a ningún jugador del que se hable.\nReglas:\n1. Ignora fallecimientos, homenajes, rivales y otros equipos.\n" +
-    "2. estado: uno de " + ESTADOS.join(" | ") + ".\n3. Si no se compromete, usa duda. Si no habla de su disponibilidad, NO lo incluyas.\n" +
-    "4. frase: cita LITERAL de la MISMA frase en la que se nombra a ese jugador (máx 25 palabras). No juntes palabras de otro jugador.\n5. minuto: el [mm:ss] más cercano.\n6. confianza: alta solo si el estado se dice claro; si hay un «no», un «veremos» o no se sabe de quién habla, baja.\n" +
-    (nombres && nombres.length ? "7. jugador: la transcripción puede oír mal los nombres. Plantilla del equipo: " + nombres.join(", ") + ". Si el nombre oído corresponde claramente a alguien de la lista, devuelve EXACTAMENTE el nombre de la lista; si no corresponde a nadie, devuelve el nombre tal cual y confianza baja.\n" : "") +
-    "Devuelve solo un array JSON de {jugador, estado, frase, minuto, confianza}.\n\nTRANSCRIPCIÓN:\n" + transcripcion;
+    "2. tema: disponibilidad, o uno de " + TEMAS.join(" | ") + " si habla de cambios, rendimiento, minutos, táctica, gestión física o una valoración.\n" +
+    "3. estado: solo si tema es disponibilidad, uno de " + ESTADOS.join(" | ") + ". Si no se compromete, usa duda. En los otros temas deja estado vacío.\n" +
+    "4. Un «no» que forma parte de lo dicho (por ejemplo «no hemos sido contundentes») SÍ se incluye, con el tema que corresponda. No lo conviertas en una baja ni en un titular.\n" +
+    "5. frase: cita LITERAL de la MISMA frase (máx 25 palabras). No juntes palabras de otro sitio.\n6. minuto: el [mm:ss] más cercano.\n7. confianza: alta si la frase es literal y se entiende de quién habla; baja si no.\n" +
+    (nombres && nombres.length ? "8. jugador: plantilla del equipo: " + nombres.join(", ") + ". Si nombra a alguien de la lista, devuelve EXACTAMENTE ese nombre. Si habla del equipo y de nadie en concreto, jugador vacío.\n" : "") +
+    "Devuelve solo un array JSON de {jugador, tema, estado, frase, minuto, confianza}.\n\nTRANSCRIPCIÓN:\n" + transcripcion;
 }
 
 
 // ---------- Borrador de noticia propia (solo con frases publicables) ----------
 const OWN_KEY = "own:news:v1";
-const ETIQ_TXT = { disponible: "disponible", opcion_titular: "opción de titular", duda: "duda", recuperacion_con_grupo: "entrena con el grupo", recuperacion_parcial: "entrena parcialmente", baja: "baja", titular_confirmado: "titular confirmado", rotacion: "rotación" };
+const ETIQ_TXT = { disponible: "disponible", opcion_titular: "opción de titular", duda: "duda", recuperacion_con_grupo: "entrena con el grupo", recuperacion_parcial: "entrena parcialmente", baja: "baja", titular_confirmado: "titular confirmado", rotacion: "rotación", cambios: "cambios", rendimiento: "rendimiento", minutos: "minutos", tactica: "planteamiento", gestion_fisica: "gestión física", valoracion: "valoración" };
 export function borradorDesdeVideo(v) {
   const items = (v.items || []).filter((x) => x.publicable);
   if (!items.length) return null;
@@ -347,9 +387,10 @@ async function redactarNoticias(env, f, res, opts) {
     const v = arr && arr.find((x) => x && norm2(x.jugador) === norm2(g.nombre)) || (arr && arr[i]);
     const ok = validarNoticia(v, g.items);
     const first = g.items.find((x) => x.minuto) || g.items[0];
+    const enlace = res.url || ("https://youtu.be/" + res.id + (first && first.minuto ? "?t=" + secs2(first.minuto) : ""));
     const base = {
-      club: res.club, players: [g.nombre], playerId: g.id, key: res.id + ":" + g.key,
-      source: { name: "Según " + res.club, url: "https://youtu.be/" + res.id + (first && first.minuto ? "?t=" + secs2(first.minuto) : ""), videoId: res.id },
+      club: res.club, players: [g.nombre].filter(Boolean), playerId: g.id, key: res.id + ":" + g.key,
+      source: { name: res.oficial ? "OFICIAL · " + res.club : (res.fuente || "Según " + res.club), url: enlace, videoId: res.sinMiniatura ? "" : res.id },
       original: g.items.map((x) => ({ jugador: x.jugador, estado: x.estado, frase: x.frase, minuto: x.minuto, confianza: x.confianza, verificada: !!x.verificada, cruzado: !!x.cruzado })),
       tokens: i === 0 ? tokens : 0,
     };
@@ -357,7 +398,7 @@ async function redactarNoticias(env, f, res, opts) {
     const et = ETIQ_TXT[g.items[0].estado] || g.items[0].estado;
     return Object.assign(base, {
       title: g.nombre + ": " + et,
-      lead: "Según " + res.club + ".",
+      lead: res.lead || (res.oficial ? "Según " + (res.speaker ? res.speaker + ", fuente oficial." : res.club + ", fuente oficial.") : "Según " + res.club + "."),
       body: g.items.map((x) => "«" + x.frase + "»" + (x.minuto ? " (min " + x.minuto + ")" : "")).join("\n"),
       via: "plantilla",
     });
@@ -382,7 +423,7 @@ async function publicarNoticias(env, f, res, now, opts) {
   let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
   const claves = new Set(own.map((o) => o.key).filter(Boolean));
   own = own.filter((o) => !(o.source && o.source.videoId === res.id && !o.key));
-  const thumb = await miniatura(f, res.id);
+  const thumb = res.sinMiniatura ? "" : await miniatura(f, res.id);
   const out = [];
   nuevas.forEach((n, i) => {
     if (claves.has(n.key)) return;
@@ -508,6 +549,7 @@ async function leerRobots(f, origin) {
 // El RSS de YouTube está prohibido por su robots.txt. La lista sale de la API oficial
 // (clave ya existente). googleapis.com no publica robots.txt: no se raspa esa web, solo esta llamada.
 async function leerFuente(env, f, s) {
+  if (!s.yt) return { via: "web", videos: [] };
   const motivos = [];
   const feed = "https://www.youtube.com/feeds/videos.xml?channel_id=" + encodeURIComponent(s.yt);
   const robots = await leerRobots(f, "https://www.youtube.com");
@@ -560,6 +602,221 @@ async function avisarPublicadas(env, f, st, noticias) {
   return JSON.stringify(st.tgPend) !== antes;
 }
 
+// ---------- noticias escritas del club (solo las que robots.txt deja leer) ----------
+export function parseSitemapNews(xml) {
+  const out = [];
+  for (const b of String(xml || "").matchAll(/<url>([\s\S]*?)<\/url>/g)) {
+    const e = b[1];
+    const loc = (e.match(/<loc>([^<]+)<\/loc>/) || [])[1];
+    const title = (e.match(/<news:title>([^<]*)<\/news:title>/) || [])[1];
+    const date = (e.match(/<news:publication_date>([^<]+)/) || [])[1];
+    if (!loc || !title) continue;
+    out.push({ url: loc.trim(), title: title.replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&#39;/g, "'"), published: Date.parse(date || "") || 0 });
+  }
+  return out;
+}
+export function esNotaPrimerEquipo(url) {
+  return /\/futbol\/primer-equipo\/noticias\/\d+\//.test(String(url || ""));
+}
+export function citaEnTitulo(title) {
+  const m = String(title || "").match(/^([^:]{2,40}):\s*["«']([^"»']{10,180})["»']/);
+  return m ? { speaker: m[1].trim(), frase: m[2].trim() } : null;
+}
+export function partidoEnTitulo(title) {
+  const m = String(title || "").match(/^(.+?)\s[-–]\s(.+?):\s*.*\((\d+)\s*[-–]\s*(\d+)\)\s*$/);
+  if (!m) return null;
+  return { home: m[1].trim(), away: m[2].trim(), marcador: [Number(m[3]), Number(m[4])] };
+}
+export function citasDeHtml(html) {
+  const out = [];
+  for (const m of String(html || "").matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)) {
+    const p = m[1].replace(/<[^>]+>/g, " ").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+    for (const q of p.matchAll(/["«]([^"»]{15,220})["»]/g)) {
+      const frase = q[1].trim();
+      if (frase && p.includes(frase)) out.push({ frase, parrafo: p });
+    }
+  }
+  return out;
+}
+function ymdMadrid(ms) {
+  try {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(ms)).replace(/-/g, "");
+  } catch (e) { return ""; }
+}
+function ymdAdd(ymd, days) {
+  const y = Number(String(ymd).slice(0, 4)), m = Number(String(ymd).slice(4, 6)), d = Number(String(ymd).slice(6, 8));
+  if (!y || !m || !d) return "";
+  const t = new Date(Date.UTC(y, m - 1, d + days));
+  return t.toISOString().slice(0, 10).replace(/-/g, "");
+}
+// Crónica solo con goles nombrados. Si falta un nombre, hay propia o el marcador no cuadra, no se publica.
+export function cronicaDesdeHechos(p) {
+  if (!p || !p.home || !p.away || !Array.isArray(p.goles) || !p.goles.length) return null;
+  let h = 0, a = 0;
+  const lineas = [];
+  for (const g of p.goles) {
+    if (!g || g.og) return null;
+    if (g.side !== "home" && g.side !== "away") return null;
+    const name = String(g.name || "").trim();
+    if (!name) return null;
+    if (!Number.isFinite(Number(g.min)) || Number(g.min) < 0 || Number(g.min) > 130) return null;
+    if (g.side === "home") h++; else a++;
+    lineas.push(name + " " + Number(g.min) + (Number(g.extra) ? "+" + Number(g.extra) : "") + "'");
+  }
+  if (p.marcador && (Number(p.marcador[0]) !== h || Number(p.marcador[1]) !== a)) return null;
+  return {
+    title: p.home + " " + h + "-" + a + " " + p.away,
+    lead: "Según los datos del partido.",
+    body: "Goles: " + lineas.join(", ") + ".",
+    players: [...new Set(p.goles.map((g) => String(g.name).trim()))],
+  };
+}
+export function cronicaDesdeEv(home, away, ev, marcador) {
+  if (!ev || !Array.isArray(ev.g) || !ev.g.length) return null;
+  const nombre = (id, side) => {
+    const bag = side === "home" ? ev.home : ev.away;
+    const all = [].concat((bag && bag.st) || [], (bag && bag.sb) || []);
+    const hits = all.filter((x) => x && String(x[0]) === String(id) && x[1]);
+    return hits.length === 1 ? String(hits[0][1]) : "";
+  };
+  const goles = [];
+  for (const g of ev.g) {
+    if (!g || g.og) return null;
+    const side = g.h ? "home" : "away";
+    const name = nombre(g.p, side);
+    if (!name) return null;
+    goles.push({ name, min: Number(g.m), extra: Number(g.x) || 0, side });
+  }
+  return cronicaDesdeHechos({ home, away, goles, marcador });
+}
+function temaDeFrase(frase) {
+  const texto = norm(frase);
+  for (const tema of ["gestion_fisica", "tactica", "cambios", "minutos", "rendimiento", "valoracion"]) {
+    if ((PISTAS_TEMA[tema] || []).some((p) => texto.includes(p))) return tema;
+  }
+  return "";
+}
+function quienEnFrase(frase, plantilla) {
+  const texto = norm(frase);
+  return (plantilla || []).filter((pl) => pl && ultimaClave(clavesJugador(pl.name, pl.name), texto) >= 0);
+}
+
+async function hechosPartido(f, home, away, ms) {
+  const base = ymdMadrid(ms);
+  const dias = [base, ymdAdd(base, -1)].filter(Boolean);
+  for (const d of dias) {
+    try {
+      const r = await f(SITE + "fm-partido?d=" + d + "&h=" + encodeURIComponent(home) + "&a=" + encodeURIComponent(away), { headers: { "user-agent": "edumr-cron" } });
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (j && j.ev && Array.isArray(j.ev.g) && j.ev.g.length) return j.ev;
+    } catch (e) {}
+  }
+  return null;
+}
+
+// Una noticia escrita del club por pasada. No copia el artículo: o citas literales, o goles del partido si cuadran.
+async function unaNoticiaWeb(env, f, st, now, fuentes) {
+  const fuentesWeb = (fuentes || []).filter((s) => s.noticias);
+  if (!fuentesWeb.length) return null;
+  st.web = st.web || {};
+  for (const s of fuentesWeb) {
+    let origin = "";
+    try { origin = new URL(s.noticias).origin; } catch (e) { continue; }
+    const robots = await leerRobots(f, origin);
+    if (!robotsPermite(robots, s.noticias)) {
+      st.fuentes = st.fuentes || {};
+      st.fuentes[s.club] = Object.assign({}, st.fuentes[s.club], { web: robots ? "robots prohíbe las noticias" : "robots de la web ilegible", webAt: now });
+      return { dirty: true };
+    }
+    let lista = [];
+    try {
+      const r = await f(s.noticias, { headers: UA_RED });
+      if (!r.ok) throw new Error("sitemap " + r.status);
+      lista = parseSitemapNews(await r.text());
+    } catch (e) {
+      st.fuentes = st.fuentes || {};
+      st.fuentes[s.club] = Object.assign({}, st.fuentes[s.club], { web: String(e && e.message || e).slice(0, 80), webAt: now });
+      return { dirty: true };
+    }
+    const pendiente = lista.find((n) => {
+      const id = (String(n.url).match(/\/noticias\/(\d+)\//) || [])[1];
+      if (!id || !esNotaPrimerEquipo(n.url)) return false;
+      const prev = st.web[id];
+      if (prev && (prev.status === "ok" || prev.status === "caducada" || (prev.intentos || 0) >= 4)) return false;
+      if (now - n.published > EDAD_MAX || n.published > now + 3600e3) return false;
+      return !!(citaEnTitulo(n.title) || partidoEnTitulo(n.title));
+    });
+    if (!pendiente) continue;
+    const id = (pendiente.url.match(/\/noticias\/(\d+)\//) || [])[1];
+    const slot = st.web[id] || { intentos: 0 };
+    slot.intentos = (slot.intentos || 0) + 1;
+    slot.last = now;
+    slot.title = pendiente.title;
+    slot.pub = pendiente.published;
+    if (!robotsPermite(robots, pendiente.url)) { slot.status = "ok"; slot.err = "robots prohíbe el artículo"; st.web[id] = slot; return { dirty: true }; }
+    let html = "";
+    try {
+      const r = await f(pendiente.url, { headers: UA_RED });
+      if (!r.ok) throw new Error("html " + r.status);
+      html = await r.text();
+    } catch (e) { slot.err = String(e && e.message || e).slice(0, 80); st.web[id] = slot; return { dirty: true }; }
+    const partido = partidoEnTitulo(pendiente.title);
+    if (partido) {
+      const ev = await hechosPartido(f, partido.home, partido.away, pendiente.published);
+      const cronica = cronicaDesdeEv(partido.home, partido.away, ev, partido.marcador);
+      slot.status = "ok"; slot.n = cronica ? 1 : 0; slot.err = cronica ? "" : "sin datos del partido que cuadren";
+      st.web[id] = slot;
+      if (!cronica) return { dirty: true };
+      const res = {
+        id: "cronica-" + id, club: s.club, title: cronica.title, pub: pendiente.published, url: pendiente.url,
+        fuente: "Según FotMob", lead: "Según los datos del partido. El marcador coincide con la web oficial del club.",
+        sinMiniatura: true, speaker: "",
+        items: [{ jugador: "", nombre: partido.home + " - " + partido.away, estado: "valoracion", tema: "valoracion", frase: cronica.body.replace(/^Goles: /, "").replace(/\.$/, ""), minuto: "", confianza: "alta", publicable: true, verificada: true, cruzado: false }],
+      };
+      // La crónica no pasa por el filtro de citas: el cuerpo ya son solo los goles comprobados.
+      const item = {
+        club: s.club, players: cronica.players, key: "cronica-" + id,
+        source: { name: "Según FotMob", url: pendiente.url, videoId: "" },
+        title: cronica.title, lead: res.lead, body: cronica.body, via: "datos",
+      };
+      let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
+      if (own.some((o) => o.key === item.key)) return { dirty: true };
+      const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
+      const pub = Object.assign({ id: hex, status: "published", expira: true, createdAt: now, updatedAt: now, publishedAt: now, thumb: "" }, item);
+      own.unshift(pub);
+      await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
+      return { dirty: true, noticias: [pub], id: "cronica-" + id };
+    }
+    const citas = citasDeHtml(html);
+    const titular = citaEnTitulo(pendiente.title);
+    if (titular && html.includes(titular.frase) && !citas.some((c) => c.frase === titular.frase)) citas.unshift({ frase: titular.frase, parrafo: titular.frase });
+    let plantilla = [];
+    try {
+      const r = await f(SITE + "mercado", { headers: { "user-agent": "edumr-cron" } });
+      plantilla = ((await r.json()).players || []).filter((p) => sameTeam(p.team, s.club)).map((p) => ({ id: p.id, name: p.name }));
+    } catch (e) {}
+    const texto = citas.map((c) => c.parrafo).join(" ");
+    const crudos = [];
+    for (const c of citas) {
+      const quienes = quienEnFrase(c.frase, plantilla);
+      if (quienes.length > 1) continue;
+      const tema = temaDeFrase(c.frase);
+      if (!tema) continue;
+      crudos.push({ jugador: quienes.length === 1 ? quienes[0].name : "", nombre: quienes.length === 1 ? quienes[0].name : (titular && titular.speaker) || "", tema, estado: "", frase: c.frase, minuto: "", confianza: "alta" });
+    }
+    const items = filtrar(crudos, texto, plantilla).filter((x) => x.publicable).slice(0, 4);
+    slot.status = "ok"; slot.n = items.length; slot.err = items.length ? "" : "sin citas que cuadren";
+    st.web[id] = slot;
+    if (!items.length) return { dirty: true };
+    const res = { id: "web-" + id, club: s.club, title: pendiente.title, pub: pendiente.published, url: pendiente.url, oficial: true, speaker: titular && titular.speaker || "", sinMiniatura: true, items };
+    let noticias = [];
+    try { noticias = await publicarNoticias(env, f, res, now, { sinIa: true }); } catch (e) { slot.err = "publicar"; }
+    return { dirty: true, noticias, id: "web-" + id };
+  }
+  return null;
+}
+
 // ---------- lo principal ----------
 // deps solo sirve para las pruebas (fetch falso, reloj, fuentes).
 export async function redactorSombra(env, deps) {
@@ -610,6 +867,10 @@ export async function redactorSombra(env, deps) {
   for (const id of Object.keys(st.seen)) if (now - st.seen[id].pub > 10 * 86400e3) { delete st.seen[id]; dirty = true; }
 
   for (const id of Object.keys(st.seen)) { const v = st.seen[id]; if (v.status === "pend" && caducada(v.title, v.pub, now)) { v.status = "caducada"; dirty = true; } }
+  for (const id of RELECTURA_UNA_VEZ) {
+    const v = st.seen[id];
+    if (v && v.status === "ok" && !v.releido && !(v.n > 0)) { v.status = "pend"; v.intentos = 0; v.last = 0; v.releido = 1; dirty = true; }
+  }
 
   // 2) procesar UNO por pasada
   const cola = Object.keys(st.seen).filter((id) => { const s = st.seen[id]; return s.status === "pend" && s.intentos < MAX_INTENTOS && now - s.last >= ESPERA_REINTENTO; })
@@ -651,6 +912,15 @@ export async function redactorSombra(env, deps) {
       }
     }
   }
+  let nuevas = (hecho && hecho.noticias) || [];
+  try {
+    const w = await unaNoticiaWeb(env, f, st, now, fuentes);
+    if (w && w.dirty) dirty = true;
+    if (w && w.noticias && w.noticias.length) {
+      nuevas = nuevas.concat(w.noticias);
+      if (!hecho) hecho = { id: w.id, noticias: w.noticias };
+    }
+  } catch (e) {}
   // Los borradores y las noticias ya guardadas no se reescriben ni se reenvían.
   // 2d) comparación interna con las otras webs (cada 10 min). Solo el panel.
   if (mnt % 10 === 1 || (deps && deps.allTicks)) { try { await compararConExternas(env, now); } catch (e) {} }
@@ -666,9 +936,9 @@ export async function redactorSombra(env, deps) {
     if (cambio) await env.PORRA.put(OWN_KEY, JSON.stringify(own));
   } catch (e) {}
 
-  try { if (await avisarPublicadas(env, f, st, hecho && hecho.noticias)) dirty = true; } catch (e) {}
+  try { if (await avisarPublicadas(env, f, st, nuevas)) dirty = true; } catch (e) {}
   if (dirty) { try { await env.PORRA.put(STATE_KEY, JSON.stringify(st)); } catch (e) {} }
   return { procesado: hecho ? hecho.id : null, pendientes: cola.length, tokens: st.tok.n };
 }
 
-export const _r = { compararNoticias, caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, localizarFrase, ventanaFrase, atribucionJugador, estadoRespaldado, robotsPermite, cruzarJugador, filtrar, parseJson, resumenTelegram };
+export const _r = { compararNoticias, caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, localizarFrase, ventanaFrase, atribucionJugador, estadoRespaldado, temaRespaldado, robotsPermite, cruzarJugador, filtrar, parseJson, resumenTelegram, parseSitemapNews, esNotaPrimerEquipo, citaEnTitulo, partidoEnTitulo, citasDeHtml, cronicaDesdeHechos, cronicaDesdeEv };
