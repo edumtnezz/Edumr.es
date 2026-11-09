@@ -7,6 +7,7 @@
     return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
   function tipo(item) {
+    if (item && item.tipo === "analisis") return "analisis";
     var title = String(item && item.title || "");
     if (!/\d+\s*[-–]\s*\d+/.test(title) && /lesi|baja|duda|molest|descartad/i.test(title)) return "lesion";
     var lead = String(item && item.lead || "");
@@ -43,7 +44,7 @@
   function url(item) {
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg(item));
   }
-  var ETIQ = { cronica: "CRÓNICA", once: "ONCE", rueda: "RUEDA", lesion: "PARTE", nota: "NOTICIA" };
+  var ETIQ = { cronica: "CRÓNICA", once: "ONCE", rueda: "RUEDA", lesion: "PARTE", analisis: "ANÁLISIS", nota: "NOTICIA" };
   // Miniatura en DOM (se adapta a cualquier tamaño con CSS): foto del jugador y escudo, marcador si es crónica.
   // o = { photo, crest }. La animación es suave y se apaga con "reducir movimiento".
   function el(item, o) {

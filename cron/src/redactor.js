@@ -1,3 +1,4 @@
+import { analisisDatos } from "./analisis.js";
 // Redactor automático. Publica en la web y avisa por Telegram al chat ya guardado.
 // No crea borradores ni manda un resumen "sombra".
 //
@@ -1121,7 +1122,7 @@ export function pistasATratar(doc, vistas, now) {
   nuevas.sort((a, b) => (Date.parse(b.at || "") || 0) - (Date.parse(a.at || "") || 0));
   return { sig, nuevas };
 }
-const PISTAS_POR_CICLO = 8;
+const PISTAS_POR_CICLO = 12;
 const PISTA_VENTANA = 48 * 3600e3;
 export function notaParaPista(pista, notas, now) {
   const nombres = apellidosPista(pista);
@@ -1255,7 +1256,7 @@ function itemsDeCitas(html, title, plantilla) {
   }
   return filtrar(crudos, texto, plantilla).filter((x) => x.publicable);
 }
-const DETECCION_MS = 30 * 60e3;
+const DETECCION_MS = 10 * 60e3;
 const DETECCION = [
   { origen: "futbolfantasy", url: "https://www.futbolfantasy.com/sitemap-news.xml" },
   { origen: "comuniate", url: "https://www.comuniate.com/sitemap_news.xml" },
@@ -1538,9 +1539,10 @@ export function copiaLiteral(texto, fuente, n) {
   return false;
 }
 function promptExterna(origen, texto) {
-  return "Eres redactor de una web de fantasy de LaLiga. Abajo hay una noticia de " + origen + ". Reescríbela con tus palabras, SOLO con los hechos que contiene (lesiones, convocatorias, entrenamientos, ruedas de prensa, onces, fichajes).\n" +
-    "Si es un análisis o una opinión, conserva solo los datos y cifras comprobables y escríbelo como análisis propio, sin atribuir juicios a nadie y sin copiar su valoración (tipo \"analisis\"). Si no aporta ningún hecho ni dato concreto, devuelve tipo \"vacio\" y nada más.\n" +
-    "REGLAS: no añadas ningún dato, cifra, fecha, plazo ni causa que no esté escrito. No copies frases: cambia la estructura. Titular sin comillas ni marcador, máx 90 caracteres, con el protagonista. Entradilla de una frase (máx 180). Cuerpo de 2 a 4 frases cortas; no cites la web de origen; si no se da plazo o no se sabe algo, dilo en vez de suponerlo. Una cita solo si es literal y corta.\n" +
+  return "Eres redactor de EduMR, una web de Futmondo (fantasy de LaLiga). Abajo hay una noticia de " + origen + ". Escribe tu propia noticia, corta y rápida, para alguien que juega a Futmondo y quiere saber si fichar, vender o cambiar su once.\n" +
+    "Usa SOLO los hechos del texto (lesiones, plazos, convocatorias, entrenamientos, ruedas de prensa, onces, fichajes, datos de partido). Si es un análisis u opinión, quédate solo con los datos y cifras comprobables. Si no hay ningún hecho ni dato, devuelve tipo \"vacio\".\n" +
+    "ESTILO: titular de 6 a 12 palabras, sin comillas, que diga qué pasa y a quién (ej. «Rafita se pierde de tres a cuatro meses»). Entradilla de una frase (máx 180) que describa al protagonista («El central del Málaga…», «El técnico del…»). Cuerpo de 2 a 4 frases cortas: el hecho, el dato que lo concreta (plazo, rival, minutos) y, si lo dicho lo permite, qué significa para quien lo tiene en su once. Si el club no da plazo o no se sabe algo, dilo claramente. Empieza describiendo, no por el nombre.\n" +
+    "REGLAS: no añadas ningún dato, cifra, fecha, plazo ni causa que no esté escrito. No copies frases: cambia la estructura. No cites la web de origen. Una cita solo si es literal y corta.\n" +
     'Devuelve solo JSON: {"tipo":"hecho|analisis|vacio","titular":"...","entradilla":"...","cuerpo":"..."}\n\nNOTICIA:\n' + texto;
 }
 async function tratarExterna(env, f, st, now, pista, own) {
@@ -1551,7 +1553,7 @@ async function tratarExterna(env, f, st, now, pista, own) {
   if (!/(^|\.)(futbolfantasy|comuniate)\.com$/.test(u.hostname)) return null;
   const robots = await leerRobots(f, u.origin);
   if (!robotsPermite(robots, pista.ref)) { st.pistas[pista.id].motivo = "robots prohíbe la fuente"; return null; }
-  if (now - (Date.parse(pista.at || "") || now) > 3 * 3600e3) { st.pistas[pista.id].motivo = "tema viejo"; return null; }
+  if (now - (Date.parse(pista.at || "") || now) > 30 * 3600e3) { st.pistas[pista.id].motivo = "tema viejo"; return null; }
   let html = "";
   try { const r = await f(pista.ref, { headers: UA_RED }); if (r.ok) html = await r.text(); } catch (e) {}
   const texto = textoDeArticulo(html);
@@ -1719,6 +1721,17 @@ export async function redactorSombra(env, deps) {
       dirty = true;
     }
   }
+  // Análisis propios con los datos de Futmondo (3 por pasada, 30 al día)
+  try {
+    const own = (await env.PORRA.get(OWN_KEY, "json")) || [];
+    const an = await analisisDatos(env, f, SITE, own, now, 3);
+    if (an.length) {
+      await env.PORRA.put(OWN_KEY, JSON.stringify(an.concat(own).slice(0, 300)));
+      nuevas = nuevas.concat(an);
+      if (!hecho) hecho = { id: "analisis", noticias: an };
+      dirty = true;
+    }
+  } catch (e) {}
   // Los borradores y las noticias ya guardadas no se reescriben ni se reenvían.
   // 2d) comparación interna con las otras webs (cada 10 min). Solo el panel.
   if (mnt % 10 === 1 || (deps && deps.allTicks)) { try { await compararConExternas(env, now); } catch (e) {} }

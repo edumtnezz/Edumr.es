@@ -4136,7 +4136,7 @@
   }
   // Inicio: noticias y últimos cambios en UN solo bloque, en orden de hora (Edu 09/11/2026)
   let inicioFiltro = "todo";
-  const OWN_TAG = { cronica: ["Crónica", "#16a34a"], once: ["Once", "#2563eb"], rueda: ["Rueda de prensa", "#7c3aed"], lesion: ["Parte", "#dc2626"], nota: ["Noticia", "#16a34a"] };
+  const OWN_TAG = { cronica: ["Crónica", "#16a34a"], once: ["Once", "#2563eb"], rueda: ["Rueda de prensa", "#7c3aed"], lesion: ["Parte", "#dc2626"], analisis: ["Análisis", "#0891b2"], nota: ["Noticia", "#16a34a"] };
   const ownTag = (x) => OWN_TAG[(window.EduThumb && window.EduThumb.tipo(x)) || "nota"] || OWN_TAG.nota;
   function cambiosHoy() {
     const out = [];
