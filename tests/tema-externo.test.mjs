@@ -70,3 +70,25 @@ test("el texto de la noticia sale limpio: acentos bien, sin menú ni calendario"
   assert.equal(t, "El Málaga ha confirmado la lesión de Rafita, de tres a cuatro meses.");
   assert.equal(_r.decodificar("&iquest;S&iacute;&#33;"), "¿Sí!");
 });
+
+test("si el primer intento trae algo que no está en la noticia, se corrige y se publica", async () => {
+  const kv = new Map();
+  kv.set("rd:pistas:v1", JSON.stringify({ v: 1, items: [PISTA] }));
+  const env = { GEMINI_API_KEY: "k", PORRA: { async get(k, t) { const v = kv.get(k); return v == null ? null : (t === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } } };
+  const respuestas = [
+    { tipo: "hecho", titular: "Cuti Romero sigue sin jugar con el Atlético", entradilla: "El central sigue apartado.", cuerpo: "Lleva 25 días sin competir por molestias musculares y Cardoso se ha sumado al grupo." },
+    { tipo: "hecho", titular: "Cuti Romero continúa sin jugar en el Atlético", entradilla: "El central sigue apartado del grupo.", cuerpo: "El central lleva sin competir desde el 17 de octubre, con problemas musculares. Cardoso se ha sumado al grupo." },
+  ];
+  let n = 0; const prompts = [];
+  const f = async (url, o) => {
+    url = String(url);
+    if (url.endsWith("/robots.txt")) return new Response("User-agent: *\nDisallow:\n");
+    if (url === PISTA.ref) return new Response(ART);
+    if (url.includes("generativelanguage")) { prompts.push(JSON.parse(o.body).contents[0].parts[0].text); return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify(respuestas[Math.min(n++, 1)]) }] } }], usageMetadata: { totalTokenCount: 500 } })); }
+    return new Response("", { status: 404 });
+  };
+  await redactorSombra(env, { fetch: f, now: Date.parse("2026-11-09T14:00:00Z"), allTicks: true, fuentes: [] });
+  const own = JSON.parse(kv.get("own:news:v1") || "[]");
+  assert.equal(own.length, 1);
+  assert.match(prompts[1], /RECHAZADO: .*25/);
+});

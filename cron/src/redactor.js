@@ -1575,6 +1575,23 @@ function promptExterna(origen, texto) {
     "REGLAS: no añadas ningún dato, cifra, fecha, plazo ni causa que no esté escrito. No copies frases: cambia la estructura. No cites la web de origen. Una cita solo si es literal y corta.\n" +
     'Devuelve solo JSON: {"tipo":"hecho|analisis|vacio","titular":"...","entradilla":"...","cuerpo":"..."}\n\nNOTICIA:\n' + texto;
 }
+// Por qué se rechazaría un texto: sirve para pedirle a la IA que se corrija una vez
+const RIESGO_RE = /\b(semanas?|meses|dias?|lunes|martes|miercoles|jueves|viernes|sabado|domingo|hoy|manana|ayer|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre|jornada|porteros?|porteras?|defensas?|delanteros?|delanteras?|centrocampistas?|extremos?|mediocentros?|laterales?|lesion\w*|operad[oa]|rotura|fractura|esguince|desgarro|baja|bajas|descartad\w*|titular|titulares|disponible|rotacion|duda|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\b/g;
+export function razonesRechazo(j, personas, texto) {
+  const t = String(j.titular || "").trim(), l = String(j.entradilla || "").trim(), c = String(j.cuerpo || "").trim();
+  const r = [];
+  if (t.length < 12 || t.length > 140) r.push("el titular debe tener entre 12 y 140 caracteres");
+  if (l.length > 280) r.push("la entradilla es demasiado larga (máx 280)");
+  if (c.length < 40 || c.length > 2500) r.push("el cuerpo debe tener entre 40 y 2500 caracteres");
+  const fuente = norm2(texto), todo = norm2(t + " " + l + " " + c);
+  const nums = [...new Set((t + " " + l + " " + c).match(/\d+/g) || [])].filter((x) => !fuente.includes(x));
+  if (nums.length) r.push("estas cifras no están en la noticia: " + nums.join(", "));
+  const pal = [...new Set(todo.match(RIESGO_RE) || [])].filter((w) => !new RegExp("\\b" + w + "\\b").test(fuente));
+  if (pal.length) r.push("estas palabras no aparecen en la noticia, quítalas o cámbialas: " + pal.join(", "));
+  for (const n of personas) { const ap = norm2(n).split(/\s+/).filter((w) => w.length > 2).pop(); if (ap && !norm2(c + " " + t).includes(ap)) r.push("falta nombrar a " + n); }
+  if (copiaLiteral(t + " " + l + " " + c, texto)) r.push("repites 7 palabras seguidas del original: cambia la redacción");
+  return r;
+}
 async function tratarExterna(env, f, st, now, pista, own) {
   const nombre = ORIGEN_NOMBRE[pista.origen];
   if (!nombre || !pista.ref || clubProhibido(pista.equipo)) return null;
@@ -1588,20 +1605,28 @@ async function tratarExterna(env, f, st, now, pista, own) {
   try { const r = await f(pista.ref, { headers: UA_RED }); if (r.ok) html = await r.text(); } catch (e) {}
   const texto = textoDeArticulo(html);
   if (texto.length < 150) { st.pistas[pista.id].motivo = "no se pudo leer"; return null; }
-  let r;
-  try { r = await gemini(env, f, { contents: [{ parts: [{ text: promptExterna(nombre, texto) }] }], generationConfig: { temperature: 0.3, responseMimeType: "application/json" } }); } catch (e) { return null; }
-  if (!r || r.error) return null;
-  st.tok.n += r.tokens || 0;
-  let j = null;
-  try { j = parseJson(textoDe(r.j)); } catch (e) {}
-  if (!j || (j.tipo !== "hecho" && j.tipo !== "analisis")) { st.pistas[pista.id].motivo = "sin hecho ni dato"; return null; }
   const fuenteNorm = norm2(texto);
   const personas = [pista.entrenador].concat(pista.jugadores || []).filter(Boolean).filter((n) => {
     const ap = norm2(n).split(/\s+/).filter((w) => w.length > 3).pop();
     return ap && fuenteNorm.includes(ap);
   });
-  const val = validarNoticia({ titular: j.titular, entradilla: j.entradilla, cuerpo: j.cuerpo }, personas.map((n) => ({ frase: "", minuto: "", nombre: n })), texto);
-  if (!val || copiaLiteral(val.title + " " + val.lead + " " + val.body, texto)) { st.pistas[pista.id].motivo = "no pasa la revisión"; return null; }
+  let val = null, correccion = "", ultimo = "sin hecho ni dato";
+  for (let intento = 0; intento < 2 && !val; intento++) {
+    let r;
+    try { r = await gemini(env, f, { contents: [{ parts: [{ text: promptExterna(nombre, texto) + correccion }] }], generationConfig: { temperature: 0.3, responseMimeType: "application/json" } }); } catch (e) { return null; }
+    if (!r || r.error) return null;
+    st.tok.n += r.tokens || 0;
+    let j = null;
+    try { j = parseJson(textoDe(r.j)); } catch (e) {}
+    if (!j || (j.tipo !== "hecho" && j.tipo !== "analisis")) { ultimo = "sin hecho ni dato"; break; }
+    const razones = razonesRechazo(j, personas, texto);
+    const v = razones.length ? null : validarNoticia({ titular: j.titular, entradilla: j.entradilla, cuerpo: j.cuerpo }, personas.map((n) => ({ frase: "", minuto: "", nombre: n })), texto);
+    if (v) { val = v; break; }
+    ultimo = "no pasa la revisión";
+    st.pistas[pista.id].detalle = (razones.join("; ") || "validación").slice(0, 160);
+    correccion = "\n\nTU INTENTO ANTERIOR FUE RECHAZADO: " + (razones.join("; ") || "no cumple las reglas") + ". Reescríbelo corrigiéndolo, sin añadir nada que no esté en la noticia.";
+  }
+  if (!val) { st.pistas[pista.id].motivo = ultimo; return null; }
   const key = "ext-" + pista.id;
   if (own.some((o) => o.key === key)) { st.pistas[pista.id].motivo = "ya publicada"; return null; }
   const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
