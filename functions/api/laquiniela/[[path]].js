@@ -2090,12 +2090,16 @@ async function generarPortada(env, request, own, it, now) {
   let conFoto = false;
   try { if (pl) { fd.append("image[]", await bajar(pl.photo), "jugador.png"); conFoto = true; } } catch (e) {}
   try { fd.append("image[]", await bajar(origin + "/img/noticias-logo.png"), "logo.png"); } catch (e) {}
-  const prompt = "Portada de noticia de fútbol en formato apaisado 3:2, estilo cartel deportivo moderno, de aspecto realista y cuidado. " +
-    (conFoto ? "Usa la PRIMERA imagen como referencia fiel de la cara del jugador (" + pl.name + ", " + pl.team + "). " : "") +
-    "Noticia: «" + clean2(it.title, 160) + "». " + (it.lead ? "Contexto: " + clean2(it.lead, 200) + ". " : "") +
-    "Muestra al jugador con la equipación del club, en un estadio, con una expresión acorde a la noticia. " +
-    "En la esquina superior derecha coloca, tal cual, el logo verde cuadrado NOTICIAS (la última imagen de referencia). " +
-    "Texto en español, muy corto y bien escrito, como máximo una frase de titular. Sin marcas de agua ni otros logos.";
+  let conEstilo = false;
+  try { fd.append("image[]", await bajar(origin + "/img/n/2b50b6910d.jpg"), "estilo.jpg"); conEstilo = true; } catch (e) {}
+  const club = clean2(it.club || (pl && pl.team) || "", 60);
+  const jug = pl ? pl.name : (Array.isArray(it.players) && it.players[0] ? (typeof it.players[0] === "string" ? it.players[0] : it.players[0].name) : "");
+  const imgs = (conFoto ? "Imagen 1: foto del jugador. " : "") + "Imagen " + (conFoto ? 2 : 1) + ": logo de NOTICIAS. " + (conEstilo ? "Imagen " + (conFoto ? 3 : 2) + ": miniatura anterior, ES LA REFERENCIA DE ESTILO a seguir. " : "");
+  const prompt = "Quiero una miniatura de noticia de fútbol siguiendo EXACTAMENTE el estilo visual de la miniatura de referencia. " + imgs +
+    "DISEÑO: formato horizontal, alta resolución. Estética deportiva profesional, estilo miniaturas de noticias de fútbol de YouTube. Colores intensos, predominio de los colores del equipo" + (club ? " (" + club + ")" : "") + ". Fondo de estadio con público desenfocado. Escudo oficial del equipo grande en el lado izquierdo, con efectos de iluminación. Un único jugador" + (jug ? " (" + jug + ")" : "") + ", centro-derecha, en primer plano o celebrando; NO repetirlo ni poner dos versiones. Camiseta oficial del equipo. Iluminación cinematográfica, contraste alto, pinceladas y diagonales dinámicas. " +
+    "MARCA DE AGUA: usa el logo de NOTICIAS de la imagen de referencia, en la esquina superior derecha, algo pequeño y discreto, con «edumr.es» debajo, manteniendo diseño y colores originales del logo. " +
+    "IMPORTANTE: sin titulares, textos de la noticia, minutos, estadísticas ni frases. Solo el logo, edumr.es, el escudo y el jugador. Misma identidad visual que la referencia. " +
+    "FIDELIDAD (prioridad máxima): respeta al máximo el rostro real del futbolista (rasgos, peinado, expresión), sin rostros inventados. Escudo oficial auténtico del club, sin rediseñarlo. Equipación oficial fiel (colores, franjas, cuello, mangas), con logotipos originales del fabricante y patrocinadores reales en su sitio. No inventes detalles que alteren la identidad del jugador o del equipo.";
   fd.append("prompt", prompt);
   const r = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: "Bearer " + env.OPENAI_API_KEY }, body: fd });
   const j = await r.json().catch(() => ({}));
