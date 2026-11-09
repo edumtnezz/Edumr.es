@@ -89,5 +89,31 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 - 09/11 (cobertura): Barcelona entra por su canal oficial y por las noticias del primer equipo en fcbarcelona.es. Además de la disponibilidad, salen citas de cambios, táctica, minutos, gestión física y valoración. La crónica de un partido solo lista goles con nombre si cuadran con el marcador. La rueda de Simeone ya leída vacía (`szC6cvFXHDs`) se vuelve a mirar una sola vez. El vídeo posterior de Flick en YouTube no está localizado; la nota oficial escrita sí (`/noticias/4606585/`).
 - 09/11 (cuerpo): el relato ya no sale de una plantilla. Gemini lo escribe solo con los hechos verificados y, si una frase mete un número, un nombre o un estado que no está en esos hechos, o si dos frases seguidas empiezan igual, no se publica. Guía medida en `docs/estilo-noticias.md`.
 - 09/11 (minutos y fecha): el minuto del club manda sobre FotMob; si las fuentes no oficiales no coinciden, el minuto queda en «sin datos». La fecha solo entra si la fuente la escribe como día (no se convierte un instante UTC a Madrid ni se usa la fecha de hoy). La entradilla de la crónica no repite el título.
-- 09/11 (pistas): `rd:pistas:v1` solo dice de qué tema buscar. Se publica si el hecho está en la web oficial del club (Barcelona y Atlético tienen sitemap comprobado; Athletic y Alavés no se consultan). Si no está, no se publica. El contador queda en el estado del redactor.
+- 09/11 (pistas): `rd:pistas:v1` solo dice de qué tema buscar. Se publica si el hecho está en la web oficial del club. Athletic y Alavés no se consultan. Si no está, no se publica. El contador queda en el estado del redactor.
+- 09/11 (fuentes de LaLiga): listados y canales comprobados uno a uno. YouTube solo por la API (el RSS lo prohíbe su robots.txt). Si el robots.txt no se puede leer, ese listado no entra.
+
+| Club | Fuente | Permitido | Motivo |
+| --- | --- | --- | --- |
+| Barcelona | sitemap de noticias + YouTube UC14UlmYlSNiQCBe9Eookf_A | sí | robots.txt deja el sitemap |
+| Atlético | sitemap /sitemaps/noticias.xml + YouTube UCuzKFwdh7z2GHcIOX_tXgxA | sí | robots.txt no tapa ese sitemap |
+| Real Madrid | YouTube UCWV3obpZVGgJ3j9FVhEjF2Q | canal sí, web no | realmadrid.com/robots.txt devuelve HTML, no se puede leer |
+| Betis | YouTube UCeB7JZwcar2fVoK2w2f9OwA | canal sí, web no | robots.txt deja la web, pero el listado no respondió |
+| Real Sociedad | /es/noticias + YouTube UCfeqewEKWQ8CXY8OiXoMxxw | sí | robots.txt solo tapa /cup y /es/hospitality |
+| Celta | YouTube UCCJLVZYqRb_85b2Flpg04cg | canal sí, web no | el RSS /feed/ solo trae piezas de 2014 a 2018 |
+| Alavés | — | no | prohibido |
+| Athletic | — | no | prohibido |
+| Deportivo | sitemap /es/sitemap.xml + YouTube UCY2s1XaPzO60Hu6M_YZCTgA | sí | robots.txt solo tapa el perfil |
+| Rayo | /noticias + YouTube UCUTkI-vFAO7BjfpqIDFO8rQ | sí | robots.txt tapa /api, /preview y /_next; el listado trae las piezas |
+| Espanyol | /es/noticias + YouTube UClywhnD01yUU5kO6OgAeHUQ | sí | robots.txt solo tapa /assets |
+| Getafe | /noticias + YouTube UC34fUqq4rxJc0cj5Hart0zQ | sí | mismo robots; la pieza se abre en /noticias/el-slug |
+| Elche | /noticias + YouTube UCeY_BssoWHlT-juP90UcZZg | sí | igual que Getafe |
+| Osasuna | /noticias-primer-equipo + YouTube UC2JTagDPIChbcEeiLjypuYA | sí | robots.txt no tapa nada |
+| Villarreal | YouTube UC0MLWyQ0L7uEZY8wbkDSTkw | canal sí, web no | ni el sitemap ni el HTML traen la pieza, solo secciones |
+| Valencia | sitemap-club-2026.xml + YouTube UCgvyo5x49J8ht5H9imKfxMQ | sí | robots.txt no tapa nada |
+| Sevilla | YouTube UCLy9lmj_0cqffXUzbGHNmYA | canal sí, web no | /actualidad/noticias no trae enlaces de piezas |
+| Levante | /noticias + YouTube UCvOegN2N1FGPPv4xBNN2F9A | sí | igual que Getafe |
+| Málaga | /noticias + YouTube UCo_PhWZulZooYfQRo00vU-Q | sí | igual que Getafe |
+| Racing | /noticias + YouTube UCPkCdE745MkHLx8YWOwi8ew | sí | robots.txt no tapa nada |
+| LaLiga | /noticias | no | la página no trae piezas; el sitemap de noticias está en assets.laliga.com y su robots.txt no se puede leer |
+| Oviedo | YouTube UCvpFN8tLnBsjPR2BCJ-FJQA | canal sí | ya estaba; no es uno de los 20 con ficha |
 - 09/11 (4.ª parte): aviso automático de Telegram cuando Futmondo publica los puntos de un partido ("✅ PUNTOS DE FUTMONDO · Atlético de Madrid – Barcelona (J12)"). `recordMatchPoints` devuelve `savedInfo` con los nombres; el cron (`colaPuntos` / `avisarPuntos` en `cron/src/avisos.js`) los mete en la cola KV `tg:puntos-cola:v1` y los manda; de 00:00 a 08:00 se retienen hasta las 08:00 (misma regla de silencio que el resto). Tests: `tests/avisos-puntos.test.mjs`. Sin probar con el bot real (el token solo está en Cloudflare): comprobar el primer aviso con el siguiente partido.
