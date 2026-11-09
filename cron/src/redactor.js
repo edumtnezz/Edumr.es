@@ -1117,7 +1117,7 @@ export function pistasATratar(doc, vistas, now) {
     if (v && now - Number(v.at || 0) < PISTAS_TTL) sig[id] = v;
   }
   // Un tema descartado por falta de nota oficial se reintenta una vez con la noticia de otra web
-  const reintento = (p) => { const v = sig[p.id]; return !!(p.ref && v && v.estado === "descartada" && v.ext !== 5 && ["sin fuente permitida", "sin hecho verificado", "robots prohíbe la fuente", "no pasa la revisión", "no se pudo leer", "sin hecho ni dato"].includes(v.motivo)); };
+  const reintento = (p) => { const v = sig[p.id]; return !!(p.ref && v && v.estado === "descartada" && v.ext !== 6 && ["sin fuente permitida", "sin hecho verificado", "robots prohíbe la fuente", "no pasa la revisión", "no se pudo leer", "sin hecho ni dato"].includes(v.motivo)); };
   const numDe = (p) => Number((String(p.ref || p.id).match(/\/(\d{4,})-|-(\d{4,})-/) || [])[1] || (String(p.id).match(/-(\d{3,})-/) || [])[1] || 0);
   const ap = (n) => norm2(n).split(/\s+/).filter((w) => w.length > 3).pop();
   // Si hay una noticia más nueva del mismo club y jugador, la anterior ya está superada
@@ -1631,7 +1631,7 @@ async function tratarExterna(env, f, st, now, pista, own) {
     const v = razones.length ? null : validarNoticia({ titular: j.titular, entradilla: j.entradilla, cuerpo: j.cuerpo }, personas.map((n) => ({ frase: "", minuto: "", nombre: n })), texto);
     if (v) { val = v; break; }
     ultimo = "no pasa la revisión";
-    st.pistas[pista.id].detalle = (razones.join("; ") || "validación").slice(0, 160);
+    st.pistas[pista.id].detalle = ((razones.join("; ") || "validación") + " [" + String(j.titular || "").slice(0, 70) + " / " + String(j.cuerpo || "").slice(0, 90) + "]").slice(0, 330);
     correccion = "\n\nTU INTENTO ANTERIOR FUE RECHAZADO: " + (razones.join("; ") || "no cumple las reglas") + ". Reescríbelo corrigiéndolo, sin añadir nada que no esté en la noticia.";
   }
   if (!val) { st.pistas[pista.id].motivo = ultimo; return null; }
@@ -1654,7 +1654,7 @@ async function tratarExterna(env, f, st, now, pista, own) {
 async function tratarUnaPista(env, f, st, now, fuentes, pista, listas) {
   const una = await tratarUnaPistaOficial(env, f, st, now, fuentes, pista, listas);
   const e = st.pistas[pista.id];
-  if (e && e.estado !== "publicada") e.ext = 5; // 5 = probado con texto limpio, autocorrección (3 intentos) y copia a 9 palabras
+  if (e && e.estado !== "publicada") e.ext = 6; // 5 = probado con texto limpio, autocorrección (3 intentos) y copia a 9 palabras
   if (una && una.noticias && una.noticias.length) return una;
   if (!e || e.estado === "publicada" || !MOTIVOS_EXT.has(e.motivo)) return una;
   let own = [];
