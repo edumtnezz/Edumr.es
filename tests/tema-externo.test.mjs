@@ -92,3 +92,11 @@ test("si el primer intento trae algo que no está en la noticia, se corrige y se
   assert.equal(own.length, 1);
   assert.match(prompts[1], /RECHAZADO: .*25/);
 });
+
+test("la noticia más nueva del mismo jugador va primero y deja atrás a la vieja", () => {
+  const vieja = { id: "ff-154485-malaga", at: "2026-11-08T23:00:00.000Z", tipo: "otro", equipo: "Málaga", jugadores: ["Rafita", "Puga"], origen: "futbolfantasy", ref: "https://www.futbolfantasy.com/laliga/noticias/154485-el-malaga-retoma" };
+  const nueva = { id: "ff-154499-malaga", at: "2026-11-08T23:00:00.000Z", tipo: "lesion", equipo: "Málaga", jugadores: ["Rafita"], origen: "futbolfantasy", ref: "https://www.futbolfantasy.com/laliga/noticias/154499-malaga-confirma" };
+  const otra = { id: "ff-154500-celta", at: "2026-11-08T23:00:00.000Z", tipo: "otro", equipo: "Celta", jugadores: ["Aspas"], origen: "futbolfantasy", ref: "https://www.futbolfantasy.com/laliga/noticias/154500-aspas" };
+  const r = _r.pistasATratar({ v: 1, items: [vieja, nueva, otra] }, {}, 2);
+  assert.deepEqual(r.nuevas.map((p) => p.id), ["ff-154500-celta", "ff-154499-malaga"]);
+});

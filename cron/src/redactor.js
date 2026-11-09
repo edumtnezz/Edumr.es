@@ -1118,8 +1118,16 @@ export function pistasATratar(doc, vistas, now) {
   }
   // Un tema descartado por falta de nota oficial se reintenta una vez con la noticia de otra web
   const reintento = (p) => { const v = sig[p.id]; return !!(p.ref && v && v.estado === "descartada" && v.ext !== 4 && ["sin fuente permitida", "sin hecho verificado", "robots prohíbe la fuente", "no pasa la revisión", "no se pudo leer", "sin hecho ni dato"].includes(v.motivo)); };
-  const nuevas = items.filter((p) => p && p.id && (!sig[p.id] || reintento(p)));
-  nuevas.sort((a, b) => (Date.parse(b.at || "") || 0) - (Date.parse(a.at || "") || 0));
+  const numDe = (p) => Number((String(p.ref || p.id).match(/\/(\d{4,})-|-(\d{4,})-/) || [])[1] || (String(p.id).match(/-(\d{3,})-/) || [])[1] || 0);
+  const ap = (n) => norm2(n).split(/\s+/).filter((w) => w.length > 3).pop();
+  // Si hay una noticia más nueva del mismo club y jugador, la anterior ya está superada
+  const superada = (p) => {
+    const mios = (p.jugadores || []).map(ap).filter(Boolean);
+    if (!mios.length || !p.ref) return false;
+    return items.some((q) => q && q.id !== p.id && q.origen === p.origen && q.equipo === p.equipo && numDe(q) > numDe(p) && (q.jugadores || []).map(ap).some((x) => mios.includes(x)));
+  };
+  const nuevas = items.filter((p) => p && p.id && (!sig[p.id] || reintento(p)) && !superada(p));
+  nuevas.sort((a, b) => (Date.parse(b.at || "") || 0) - (Date.parse(a.at || "") || 0) || numDe(b) - numDe(a));
   return { sig, nuevas };
 }
 const PISTAS_POR_CICLO = 12;
@@ -1631,6 +1639,12 @@ async function tratarExterna(env, f, st, now, pista, own) {
   if (own.some((o) => o.key === key)) { st.pistas[pista.id].motivo = "ya publicada"; return null; }
   const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
   const item = { id: hex, status: "published", expira: true, createdAt: now, updatedAt: now, publishedAt: now, thumb: "", tipo: pista.tipo || "", club: pista.equipo, players: personas, key, source: { name: nombre, url: pista.ref, videoId: "" }, title: val.title, lead: val.lead, body: val.body, via: "ia" };
+  // Una noticia nueva del mismo jugador deja atrás la anterior (que queda retirada)
+  const apl = (n) => norm2(n).split(/\s+/).filter((w) => w.length > 3).pop();
+  const mios = personas.map(apl).filter(Boolean);
+  for (const o of own) {
+    if (o.status === "published" && String(o.key || "").startsWith("ext-") && o.club === pista.equipo && (o.players || []).map(apl).some((x) => mios.includes(x))) { o.status = "draft"; o.superada = true; o.updatedAt = now; }
+  }
   own.unshift(item);
   try { await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300))); } catch (e) {}
   st.pistas[pista.id] = { at: now, estado: "publicada", motivo: "" };
