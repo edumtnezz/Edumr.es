@@ -2053,6 +2053,7 @@ async function adminNoticias(env, request, url, data) {
   }
   const it = own.find((x) => x.id === data.id);
   if (!it) return json({ error: "No existe." }, 404);
+  if (data.action === "portada") return generarPortada(env, request, own, it, now);
   if (data.action === "guardar") {
     it.title = clean(data.title, 200); it.lead = clean(data.lead, 400); it.body = clean(data.body, 8000);
     it.club = clean(data.club, 60); it.updatedAt = now;
@@ -2066,6 +2067,46 @@ async function adminNoticias(env, request, url, data) {
   await putOwn(env, own);
   return json({ ok: true, item: it });
 }
+
+// Portada hecha con ChatGPT (API de OpenAI). Solo admin, solo si hay OPENAI_API_KEY.
+// Usa la foto Futmondo del jugador del titular y el logo NOTICIAS como referencias.
+async function generarPortada(env, request, own, it, now) {
+  if (!env.OPENAI_API_KEY) return json({ error: "Falta la clave OPENAI_API_KEY en Cloudflare." }, 400);
+  const fold = (v) => stripAccents(String(v || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w.length > 3);
+  const tt = fold(it.title);
+  let pl = null;
+  try {
+    const m = await getMarketPlayers(env);
+    const club = fold(it.club);
+    pl = (m.players || []).find((p) => p.photo && fold(p.name).some((w) => tt.includes(w)) && (!club.length || fold(p.team).some((w) => club.includes(w)))) || null;
+  } catch (e) {}
+  const fd = new FormData();
+  fd.append("model", String(env.OPENAI_IMAGE_MODEL || "gpt-image-1.5"));
+  fd.append("size", "1536x1024");
+  fd.append("quality", "medium");
+  fd.append("n", "1");
+  const origin = new URL(request.url).origin;
+  const bajar = async (u) => { const r = await fetch(u); if (!r.ok) throw new Error("imagen " + r.status); return new Blob([await r.arrayBuffer()], { type: "image/png" }); };
+  let conFoto = false;
+  try { if (pl) { fd.append("image[]", await bajar(pl.photo), "jugador.png"); conFoto = true; } } catch (e) {}
+  try { fd.append("image[]", await bajar(origin + "/img/noticias-logo.png"), "logo.png"); } catch (e) {}
+  const prompt = "Portada de noticia de fútbol en formato apaisado 3:2, estilo cartel deportivo moderno, de aspecto realista y cuidado. " +
+    (conFoto ? "Usa la PRIMERA imagen como referencia fiel de la cara del jugador (" + pl.name + ", " + pl.team + "). " : "") +
+    "Noticia: «" + clean2(it.title, 160) + "». " + (it.lead ? "Contexto: " + clean2(it.lead, 200) + ". " : "") +
+    "Muestra al jugador con la equipación del club, en un estadio, con una expresión acorde a la noticia. " +
+    "En la esquina superior derecha coloca, tal cual, el logo verde cuadrado NOTICIAS (la última imagen de referencia). " +
+    "Texto en español, muy corto y bien escrito, como máximo una frase de titular. Sin marcas de agua ni otros logos.";
+  fd.append("prompt", prompt);
+  const r = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: "Bearer " + env.OPENAI_API_KEY }, body: fd });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.data || !j.data[0] || !j.data[0].b64_json) return json({ error: "OpenAI: " + String((j.error && j.error.message) || r.status).slice(0, 200) }, 502);
+  await env.PORRA.put("portada:v1:" + it.id, j.data[0].b64_json);
+  it.thumb = "/api/laquiniela/portada/" + it.id + "?v=" + now.toString(36);
+  it.updatedAt = now;
+  await putOwn(env, own);
+  return json({ ok: true, item: it, conFoto });
+}
+function clean2(s, n) { return String(s == null ? "" : s).replace(/\s+/g, " ").trim().slice(0, n); }
 
 async function getNoticias(env) {
   let stale = null;
@@ -5531,6 +5572,12 @@ async function handleGet({ request, env: env0, params }) {
     const full = await getNoticias(env);
     if (url.searchParams.get("warm") === "1") return json({ ok: true });
     return json({ noticias: ownPublic(await getOwn(env)), locker: full.locker || [], updatedAt: full.updatedAt || Date.now() });
+  }
+  if (/^portada\/[a-f0-9]{6,12}$/.test(path)) {
+    const b64 = await env.PORRA.get("portada:v1:" + path.slice(8));
+    if (!b64) return new Response("no hay portada", { status: 404 });
+    const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    return new Response(bin, { headers: { "content-type": "image/png", "cache-control": "public, max-age=31536000, immutable" } });
   }
   if (path === "admin-noticias") return adminNoticias(env, request, url, null);
   if (path === "noticia") {

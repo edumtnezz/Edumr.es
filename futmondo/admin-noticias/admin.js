@@ -112,6 +112,7 @@
     btn("Guardar", "", function () { return post(datos("guardar")).then(function () { return "Guardado"; }); });
     if (x.status === "published") btn("Quitar de la web", "", function () { return post({ action: "despublicar", id: x.id }).then(function () { abierto = null; return "Quitada"; }); });
     else btn("Publicar", "main", function () { return post(datos("guardar")).then(function () { return post({ action: "publicar", id: x.id }); }).then(function () { abierto = null; tab = "publicadas"; return "Publicada"; }); });
+    btn("Generar portada (ChatGPT)", "", function () { return post({ action: "portada", id: x.id }).then(function (j) { return j.conFoto ? "Portada hecha con su foto" : "Portada hecha (sin foto del jugador)"; }); });
     btn("Borrar", "del", function () { if (!confirm("¿Borrar esta noticia?")) return Promise.reject(new Error("Cancelado")); return post({ action: "borrar", id: x.id }).then(function () { abierto = null; return "Borrada"; }); });
     c.appendChild(bt);
     if (x.status === "published") { var vl = el("a", "ad-link", "Ver en la web"); vl.href = "/futmondo/guiafantasy/noticias/ed-" + x.id; vl.target = "_blank"; vl.style.display = "inline-block"; vl.style.marginTop = "10px"; c.appendChild(vl); }
