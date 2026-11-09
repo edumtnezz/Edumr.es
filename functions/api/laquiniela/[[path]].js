@@ -1979,7 +1979,7 @@ function ownPublic(items) {
 }
 const escH = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 function ownArticle(x) {
-  const html = String(x.body || "").split(/\n+/).map((l) => l.trim()).filter(Boolean).map((l) => "<p>" + escH(l) + "</p>").join("");
+  const html = String(x.body || "").split(/\n+/).map((l) => l.trim()).filter(Boolean).map((l) => "<p>" + escH(l).replace(/\*\*([^*]{1,160})\*\*/g, "<b>$1</b>") + "</p>").join("");
   return { title: x.title, lead: x.lead || "", html, src: "EduMR", image: x.thumb || "", club: x.club || "", players: x.players || [], date: x.publishedAt || x.createdAt || 0 };
 }
 function ownDraftFromVideo(v, sel) {

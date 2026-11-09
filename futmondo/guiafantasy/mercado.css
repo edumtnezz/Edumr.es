@@ -3576,3 +3576,17 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .nw-feed .nw-lead-b { margin-top: 10px; gap: 6px; }
 .nw-feed .nw-meta { font-size: .76rem; font-weight: 600; }
 .nw-more { display: block; width: 100%; margin: 18px 0 4px; padding: 12px; border: 1px solid var(--border, rgba(127,127,127,.3)); border-radius: 12px; background: none; color: var(--text); font-size: .88rem; font-weight: 700; line-height: 1; cursor: pointer; }
+
+/* Inicio: 3 noticias pequeñas y debajo los últimos cambios con avatar */
+.nw-home .nw-head { justify-content: space-between; align-items: center; margin: 18px 0 10px; }
+.nw-home .nw-head:first-child { margin-top: 0; }
+.nw-h-s { font-size: 1.05rem; }
+.nw-home .nw-row { grid-template-columns: 48px 1fr; }
+.nw-home .nw-row-pic { width: 48px; height: 48px; }
+.nw-home .nw-row-c .nw-sum { font-size: .78rem; -webkit-line-clamp: 1; }
+.nw-home .nw-list { gap: 9px; }
+.nw-home .nw-row { grid-template-columns: 42px 1fr; gap: 10px; }
+.nw-home .nw-row-pic { width: 42px; height: 42px; border-radius: 10px; }
+.nw-home .nw-row-pic-c { border-radius: 50%; }
+.nw-home .nw-row-t { font-size: .85rem; -webkit-line-clamp: 2; }
+.nw-home .nw-tag { font-size: .7rem; }

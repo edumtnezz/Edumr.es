@@ -4161,6 +4161,10 @@
     tl.appendChild(el("span", "nw-time", e.kind === "n" ? (x.time || "") : (x.time || "")));
     b.appendChild(tl);
     b.appendChild(el("div", "nw-row-t", x.title));
+    if (e.kind === "c") {
+      const pl = (x.players || []).slice(0, 1).map((p) => p.name + (p.from && p.to ? ": " + p.from + " → " + p.to : "")).join(" · ");
+      if (pl) b.appendChild(el("div", "nw-sum", pl));
+    }
     row.appendChild(b);
     return row;
   }
@@ -4190,27 +4194,19 @@
     box.classList.remove("news-grid");
     box.innerHTML = "";
     const wrap = el("div", "nw nw-feed");
-    const chips = el("div", "nw-chips");
-    [["todo", "Todo"], ["noticias", "Noticias"], ["cambios", "Última hora"]].forEach(([k, t]) => {
-      const c = el("button", "nw-chip" + (feedFiltro === k ? " on" : ""), t);
-      c.type = "button";
-      c.addEventListener("click", () => { feedFiltro = k; feedLimit = 30; renderNoticiasFeed(); });
-      chips.appendChild(c);
-    });
-    wrap.appendChild(chips);
     const open = (x) => openNoticiaInline(x.link, x.title);
     let list = lastNews.noticias || [];
     if (newsMineOnly && myTeam.length) list = list.filter(newsMatchMyTeam);
     const noticias = list.map((x) => ({ kind: "n", x, ts: Number(x.ts) || 0 }));
     const cambios = cambiosLista(3);
-    const hero = feedFiltro !== "cambios" ? noticias[0] : null;
+    const hero = noticias[0] || null;
     if (hero) wrap.appendChild(leadCard(hero.x, open, true));
-    let rows = feedFiltro === "noticias" ? noticias : feedFiltro === "cambios" ? cambios : noticias.concat(cambios);
+    let rows = noticias.concat(cambios);
     if (hero) rows = rows.filter((e) => e !== hero);
     rows.sort((a, b) => b.ts - a.ts);
     const total = rows.length;
     rows = rows.slice(0, feedLimit);
-    if (!hero && !rows.length) wrap.appendChild(el("p", "nw-empty", feedFiltro === "cambios" && !updData ? "Cargando…" : "Sin novedades por ahora."));
+    if (!hero && !rows.length) wrap.appendChild(el("p", "nw-empty", "Sin novedades por ahora."));
     let lastDia = "";
     let ul = null;
     rows.forEach((e) => {
@@ -4235,43 +4231,34 @@
     if (!lastNews) { box.innerHTML = '<div class="mpage-skel" aria-hidden="true"><i class="h"></i><i></i><i></i></div>'; return; }
     box.innerHTML = "";
     const open = (x) => { switchTab("noticias"); openNoticiaInline(x.link, x.title); };
-    const wrap = el("div", "nw");
-    const head = el("div", "nw-head");
-    head.appendChild(el("h2", "nw-h", "Lo último"));
-    if (lastNews.updatedAt) head.appendChild(el("span", "nw-fresh", haceTxt(lastNews.updatedAt)));
-    const all = el("button", "nw-all", "Ver todas");
-    all.type = "button";
-    all.addEventListener("click", () => switchTab(inicioFiltro === "cambios" ? "actualizaciones" : "noticias"));
-    head.appendChild(all);
-    wrap.appendChild(head);
-    const chips = el("div", "nw-chips");
-    [["todo", "Todo"], ["noticias", "Noticias"], ["cambios", "Cambios"]].forEach(([k, t]) => {
-      const c = el("button", "nw-chip" + (inicioFiltro === k ? " on" : ""), t);
-      c.type = "button";
-      c.addEventListener("click", () => { inicioFiltro = k; renderInicioFeatured(); });
-      chips.appendChild(c);
-    });
-    wrap.appendChild(chips);
-
-    const noticias = list.map((x) => ({ kind: "n", x, ts: Number(x.ts) || 0 }));
-    const cambios = cambiosHoy();
-    // Pieza principal: la noticia más reciente, con su miniatura grande
-    const hero = inicioFiltro !== "cambios" ? noticias[0] : null;
-    let lead = null;
-    if (hero) { lead = leadCard(hero.x, open); wrap.appendChild(lead); }
-    let rows = inicioFiltro === "noticias" ? noticias : inicioFiltro === "cambios" ? cambios : noticias.concat(cambios);
-    if (hero) rows = rows.filter((e) => e !== hero);
-    rows.sort((a, b) => b.ts - a.ts);
-    rows = rows.slice(0, 8);
-    if (!hero && !rows.length) wrap.appendChild(el("p", "nw-empty", inicioFiltro === "cambios" ? (updData ? "Sin cambios hoy." : "Cargando…") : "Sin noticias por ahora."));
-    if (rows.length) {
+    const wrap = el("div", "nw nw-home");
+    const sec = (titulo, destino) => {
+      const head = el("div", "nw-head");
+      head.appendChild(el("h2", "nw-h nw-h-s", titulo));
+      const all = el("button", "nw-all", "Ver todas");
+      all.type = "button";
+      all.addEventListener("click", () => switchTab(destino));
+      head.appendChild(all);
+      return head;
+    };
+    // 1) Tres noticias, en pequeño
+    wrap.appendChild(sec("Noticias", "noticias"));
+    const tres = list.slice(0, 3).map((x) => ({ kind: "n", x, ts: Number(x.ts) || 0 }));
+    if (tres.length) {
       const ul = el("div", "nw-list");
-      rows.forEach((e) => ul.appendChild(inicioRow(e, open)));
+      tres.forEach((e) => ul.appendChild(inicioRow(e, open)));
       wrap.appendChild(ul);
-    }
+    } else wrap.appendChild(el("p", "nw-empty", "Sin noticias por ahora."));
+    // 2) Últimos cambios, justo debajo: avatar pequeño y resumen
+    wrap.appendChild(sec("Últimos cambios", "actualizaciones"));
+    const cambios = cambiosLista(2).sort((a, b) => b.ts - a.ts).slice(0, 5);
+    if (cambios.length) {
+      const ul = el("div", "nw-list");
+      cambios.forEach((e) => ul.appendChild(inicioRow(e, open)));
+      wrap.appendChild(ul);
+    } else wrap.appendChild(el("p", "nw-empty", updData ? "Sin cambios ahora mismo." : "Cargando…"));
     box.appendChild(wrap);
     if (!updData || !updData.days) loadInicioCambios();
-    if (lead) paintLiveHero(lead);
   }
 
   // Si hay un partido en juego, la pieza principal pasa a "Sigue el partido en directo" con la foto
@@ -4327,7 +4314,7 @@
     try {
       const d = await (await fetch(API + "/ultimos-cambios")).json();
       if (d && d.days && d.days.length) { updData = d; paintInicioCambios(); }
-    } catch (e) {}
+    } catch (e) { console.error("LIC", e && e.stack); }
   }
   document.addEventListener("cx:swr", (ev) => { const u = (ev.detail && ev.detail.url) || ""; if (/\/ultimos-cambios/.test(u)) loadInicioCambios(); });
 
@@ -4436,7 +4423,15 @@
   const ethFor = (x) => {
     let photo = "", crest = "";
     try {
-      const pl = (x.players || []).map((n) => playerByFullName(typeof n === "string" ? n : (n && n.name))).find((p) => p && p.photo);
+      // Solo el jugador del que habla el titular (nunca otro citado al final del texto)
+      const fold = (v) => String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w.length > 3);
+      const tt = fold(x.title);
+      const enTit = (nom) => fold(nom).some((w) => tt.indexOf(w) >= 0);
+      let pl = (x.players || []).map((n) => typeof n === "string" ? n : (n && n.name)).filter(enTit).map((n) => playerByFullName(n)).find((p) => p && p.photo);
+      if (!pl && (x.players || []).some((n) => enTit(typeof n === "string" ? n : (n && n.name))) && all && all.length && x.club) {
+        const cc = teamCanon(x.club);
+        pl = all.find((p) => p.photo && teamCanon(p.team) === cc && fold(p.name).some((w) => tt.indexOf(w) >= 0)) || null;
+      }
       if (pl) { photo = pl.photo; crest = pl.logo || ""; }
       if (!crest && x.club) crest = clubLogo(x.club, "") || "";
     } catch (e) {}

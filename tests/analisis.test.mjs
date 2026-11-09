@@ -8,9 +8,9 @@ const P = (o) => Object.assign({ id: "p1", name: "Camello", role: "delantero", t
 test("bajón: dos partidos flojos seguidos de un jugador de media alta", () => {
   const r = reglas(P(), J).find((x) => x.tipo === "bajon");
   assert.ok(r);
-  assert.match(r.cuerpo, /11 puntos en 10 partidos/);
+  assert.match(r.cuerpo, /11\*\* puntos en 10 partidos/);
   assert.match(r.cuerpo, /14, 12, 13, 3, 2/);
-  assert.match(r.cuerpo, /Valencia en casa el Sáb 21\/11 a las 16:15/);
+  assert.match(r.cuerpo, /Valencia\*\* en casa el Sáb 21\/11 a las 16:15/);
 });
 test("un 0 no es un bajón (no jugó)", () => {
   assert.equal(reglas(P({ fitness: [14, 12, 13, 0, 0] }), J).some((x) => x.tipo === "bajon"), false);
@@ -41,4 +41,14 @@ test("no repite la misma noticia y hay variedad", () => {
 test("próximo partido", () => {
   assert.equal(proximo(P(), J).hora, "16:15");
   assert.equal(proximo(P({ jornadaFf: "12" }), J).dia, "");
+});
+
+import { serieJornadas, canon } from "../cron/src/analisis.js";
+test("puntos por jornada: solo con las jornadas reales del equipo", () => {
+  const p = { team: "Barcelona" };
+  const jug = { barcelona: [1, 2, 3, 4, 5, 6, 7, 9, 10, 11] };
+  assert.equal(serieJornadas(p, [4, 6, 8, 2, 9], jug, 10), "J6: 4 · J7: 6 · J9: 8 · J10: 2 · J11: 9");
+  assert.equal(serieJornadas(p, [1, 2, 3], null, 10), null);
+  assert.equal(canon("Barça"), canon("Barcelona"));
+  assert.equal(canon("Atleti"), canon("Atlético de Madrid"));
 });
