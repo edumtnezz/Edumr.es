@@ -4436,7 +4436,7 @@
       if (pl) { photo = pl.photo; crest = pl.logo || ""; }
       if (!crest && x.club) crest = clubLogo(x.club, "") || "";
     } catch (e) {}
-    const n = window.EduThumb.el(x, { photo, crest });
+    const n = window.EduThumb.el(x, { photo, crest, club: x.club || "" });
     if (!photo && !crest && !(all && all.length)) ethPend.push([n, x]); // aún sin mercado: se rellena al llegar, sin mover nada
     return n;
   };

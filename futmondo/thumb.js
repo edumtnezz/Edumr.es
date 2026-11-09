@@ -45,21 +45,53 @@
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg(item));
   }
   var ETIQ = { cronica: "CRÓNICA", once: "ONCE", rueda: "RUEDA", lesion: "PARTE", analisis: "ANÁLISIS", nota: "NOTICIA" };
-  // Miniatura en DOM (se adapta a cualquier tamaño con CSS): foto del jugador y escudo, marcador si es crónica.
-  // o = { photo, crest }. La animación es suave y se apaga con "reducir movimiento".
+  // Dato clave de la noticia, leído de SU propio texto (nunca se calcula ni se inventa).
+  // Devuelve { big, cap } o null.
+  function dato(item) {
+    var title = String(item && item.title || ""), lead = String(item && item.lead || "");
+    var all = title + " " + lead, m;
+    if (tipo(item) === "cronica" && (m = marcador(title))) return { big: m, cap: "Resultado" };
+    if ((m = all.match(/(\d{1,3})\s?%\s+de\s+(?:jugar|opciones)/i))) return { big: m[1] + " %", cap: "de jugar" };
+    if ((m = all.match(/(\d{1,2}(?:,\d)?)\s+de\s+media|promedia\s+(?:un\s+)?(\d{1,2}(?:,\d)?)/i))) return { big: m[1] || m[2], cap: "de media" };
+    if ((m = title.match(/(\d{1,2}), (\d{1,2}), (\d{1,2})\b/))) return { big: m[1] + " · " + m[2] + " · " + m[3], cap: "últimos 3", small: true };
+    if ((m = all.match(/(\d{1,3}(?:,\d{1,2})?)\s?M\b/))) return { big: m[1] + " M", cap: "valor" };
+    if (tipo(item) === "lesion") {
+      if (/\bbaja\b/i.test(title)) return { big: "BAJA", cap: "", small: true };
+      if (/duda/i.test(title)) return { big: "DUDA", cap: "", small: true };
+      return { big: "PARTE", cap: "", small: true };
+    }
+    if (tipo(item) === "once") return { big: "ONCE", cap: "", small: true };
+    return null;
+  }
+  function nodo(tag, cls, txt) { var n = document.createElement(tag); n.className = cls; if (txt != null) n.textContent = txt; return n; }
+  // Cartel propio en DOM (se adapta a cualquier tamaño): fondo por tipo, dato grande, foto del jugador,
+  // y el club con su escudo. o = { photo, crest, club }.
   function el(item, o) {
     o = o || {};
     var k = tipo(item);
-    var d = document.createElement("div");
-    d.className = "eth eth-" + k;
-    var bg = document.createElement("i"); bg.className = "eth-bg"; d.appendChild(bg);
-    var tg = document.createElement("span"); tg.className = "eth-tag"; tg.textContent = ETIQ[k] || "NOTICIA"; d.appendChild(tg);
-    var m = k === "cronica" ? marcador(item && item.title) : "";
-    if (m) { var sc = document.createElement("b"); sc.className = "eth-score"; sc.textContent = m; d.appendChild(sc); }
-    else if (o.photo) { var im = document.createElement("img"); im.className = "eth-ph"; im.alt = ""; im.loading = "lazy"; im.src = o.photo; im.addEventListener("error", function () { im.remove(); d.classList.add("eth-nophoto"); }, { once: true }); d.appendChild(im); }
-    else d.classList.add("eth-nophoto");
-    if (o.crest) { var cr = document.createElement("img"); cr.className = "eth-cr"; cr.alt = ""; cr.loading = "lazy"; cr.src = o.crest; cr.addEventListener("error", function () { cr.remove(); }, { once: true }); d.appendChild(cr); }
+    var d = nodo("div", "eth eth-" + k);
+    d.appendChild(nodo("i", "eth-bg"));
+    d.appendChild(nodo("i", "eth-ring"));
+    var dt = dato(item);
+    if (o.photo) {
+      var im = nodo("img", "eth-ph"); im.alt = ""; im.loading = "lazy"; im.src = o.photo;
+      im.addEventListener("error", function () { im.remove(); d.classList.add("eth-nophoto"); }, { once: true });
+      d.appendChild(im);
+    } else d.classList.add("eth-nophoto");
+    d.appendChild(nodo("span", "eth-tag", ETIQ[k] || "NOTICIA"));
+    if (dt) {
+      var g = nodo("div", "eth-fig");
+      g.appendChild(nodo("b", "eth-big" + (dt.small ? " eth-big-s" : ""), dt.big));
+      if (dt.cap) g.appendChild(nodo("span", "eth-cap", dt.cap));
+      d.appendChild(g);
+    }
+    if (o.crest || o.club) {
+      var c = nodo("div", "eth-club");
+      if (o.crest) { var cr = nodo("img", "eth-cr"); cr.alt = ""; cr.loading = "lazy"; cr.src = o.crest; cr.addEventListener("error", function () { cr.remove(); }, { once: true }); c.appendChild(cr); }
+      if (o.club) c.appendChild(nodo("span", "eth-cn", o.club));
+      d.appendChild(c);
+    }
     return d;
   }
-  root.EduThumb = { tipo: tipo, marcador: marcador, svg: svg, url: url, el: el };
+  root.EduThumb = { tipo: tipo, marcador: marcador, dato: dato, svg: svg, url: url, el: el };
 })(typeof window !== "undefined" ? window : globalThis);

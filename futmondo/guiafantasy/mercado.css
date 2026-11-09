@@ -3504,22 +3504,35 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 
 
 
-/* ===== Miniatura propia (EduThumb.el): plana, se adapta al tamaño y se mueve muy despacio ===== */
-.eth { position: relative; overflow: hidden; container-type: size; background: #14532d; color: #f0fdf4; border-radius: inherit; isolation: isolate; }
-.eth-bg { position: absolute; inset: -20%; z-index: -1; opacity: .5; background:
-  repeating-linear-gradient(90deg, transparent 0 22cqmin, rgba(255,255,255,.07) 22cqmin 44cqmin);
-  animation: eth-drift 24s linear infinite; }
-.eth-lesion { background: #7f1d1d; } .eth-analisis { background: #164e63; } .eth-cronica { background: #14532d; } .eth-once { background: #1e3a8a; } .eth-rueda { background: #3b2a6b; } .eth-nota { background: #14532d; }
-.eth-tag { position: absolute; left: 8cqmin; top: 8cqmin; font: 800 max(9px, 7cqmin)/1 'Figtree', system-ui, sans-serif; letter-spacing: .06em; opacity: .85; }
-.eth-ph { position: absolute; right: 8cqmin; bottom: 0; height: 78cqh; width: auto; max-width: 60cqw; object-fit: contain; object-position: bottom; animation: eth-float 7s ease-in-out infinite; }
-.eth-cr { position: absolute; left: 8cqmin; bottom: 8cqmin; width: 24cqmin; height: 24cqmin; object-fit: contain; background: #fff; border-radius: 50%; padding: 2cqmin; }
-.eth-score { position: absolute; left: 8cqmin; bottom: 14cqmin; font: 800 26cqmin/1 'Bricolage Grotesque', system-ui, sans-serif; letter-spacing: -.03em; animation: eth-float 7s ease-in-out infinite; }
-.eth-cronica .eth-cr { left: auto; right: 8cqmin; }
-.eth-nophoto .eth-cr { left: 50%; top: 50%; bottom: auto; right: auto; width: 44cqmin; height: 44cqmin; margin: -22cqmin 0 0 -22cqmin; animation: eth-float 7s ease-in-out infinite; }
-@container (max-width: 90px) { .eth-tag { display: none; } .eth-ph { left: 0; right: 0; width: 100%; max-width: none; height: 88cqh; object-position: 50% 100%; } .eth-cr { width: 30cqmin; height: 30cqmin; left: auto; right: 4cqmin; bottom: 4cqmin; } }
-@keyframes eth-drift { to { transform: translateX(44cqmin); } }
-@keyframes eth-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5cqmin); } }
-@media (prefers-reduced-motion: reduce) { .eth-bg, .eth-ph, .eth-score, .eth-nophoto .eth-cr { animation: none; } }
+/* ===== Cartel propio (EduThumb.el): fondo por tipo, dato grande, foto, club con escudo ===== */
+.eth { --bg: #14532d; --ac: #bbf7d0; position: relative; overflow: hidden; container-type: size; background: var(--bg); color: #fff; border-radius: inherit; isolation: isolate; }
+.eth-lesion { --bg: #7f1d1d; --ac: #fecaca; } .eth-analisis { --bg: #0f3d4c; --ac: #5eead4; } .eth-cronica { --bg: #14532d; --ac: #bbf7d0; } .eth-once { --bg: #1e3a8a; --ac: #bfdbfe; } .eth-rueda { --bg: #4c1d95; --ac: #ddd6fe; } .eth-nota { --bg: #14532d; --ac: #bbf7d0; }
+.eth-bg { position: absolute; inset: 0; z-index: -2; background: rgba(255,255,255,.07); clip-path: polygon(0 0, 66% 0, 40% 100%, 0 100%); }
+.eth-ring { position: absolute; z-index: -1; right: -14cqmin; bottom: -22cqmin; width: 96cqmin; height: 96cqmin; border-radius: 50%; border: 3cqmin solid var(--ac); opacity: .28; }
+.eth-ph { position: absolute; right: 2cqmin; bottom: 0; height: 90cqh; width: auto; max-width: 62cqw; object-fit: contain; object-position: bottom; animation: eth-float 8s ease-in-out infinite; }
+.eth-tag { position: absolute; left: 6cqmin; top: 6cqmin; padding: 1.6cqmin 3.4cqmin; border-radius: 99px; background: var(--ac); color: var(--bg); font: 800 max(9px, 5.4cqmin)/1 'Figtree', system-ui, sans-serif; letter-spacing: .08em; }
+.eth-fig { position: absolute; left: 6cqmin; top: 50%; transform: translateY(-46%); display: flex; flex-direction: column; gap: 1.5cqmin; max-width: 58cqw; }
+.eth-big { font: 800 27cqmin/.9 'Bricolage Grotesque', 'Figtree', system-ui, sans-serif; letter-spacing: -.04em; color: #fff; white-space: nowrap; }
+.eth-big-s { font-size: 17cqmin; letter-spacing: -.02em; }
+.eth-cap { font: 800 max(9px, 5.2cqmin)/1 'Figtree', system-ui, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--ac); }
+.eth-club { position: absolute; left: 6cqmin; bottom: 6cqmin; display: flex; align-items: center; gap: 2.4cqmin; padding: 1.6cqmin 4cqmin 1.6cqmin 1.6cqmin; border-radius: 99px; background: #fff; color: #0f172a; max-width: 56cqw; }
+.eth-club:not(:has(.eth-cn)) { padding: 1.6cqmin; }
+.eth-cr { width: 9cqmin; height: 9cqmin; object-fit: contain; flex: 0 0 auto; }
+.eth-cn { font: 800 max(9px, 5.2cqmin)/1 'Figtree', system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.eth-nophoto .eth-fig { max-width: 88cqw; }
+.eth-nophoto .eth-big { font-size: 34cqmin; } .eth-nophoto .eth-big-s { font-size: 21cqmin; }
+/* miniaturas pequeñas (filas de lista): solo foto y escudo en insignia, sin textos */
+@container (max-width: 140px) {
+  .eth-tag, .eth-fig, .eth-cn, .eth-ring { display: none; }
+  .eth-ph { left: 0; right: 0; margin: 0 auto; width: 100%; max-width: none; height: 92cqh; object-position: 50% 100%; }
+  .eth-club { left: auto; right: 3cqmin; bottom: 3cqmin; padding: 1.5cqmin; }
+  .eth-cr { width: 26cqmin; height: 26cqmin; }
+  .eth-club:not(:has(.eth-cr)) { display: none; }
+  .eth-nophoto .eth-club { left: 50%; right: auto; top: 50%; bottom: auto; transform: translate(-50%, -50%); }
+  .eth-nophoto .eth-cr { width: 52cqmin; height: 52cqmin; }
+}
+@keyframes eth-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5cqmin); } }
+@media (prefers-reduced-motion: reduce) { .eth-ph { animation: none; } }
 
 /* ===== Inicio: "Lo último" (noticias + cambios en un solo bloque) ===== */
 .nw-chips { display: flex; gap: 6px; margin: 10px 0 14px; }
