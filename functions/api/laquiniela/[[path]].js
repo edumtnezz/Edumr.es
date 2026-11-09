@@ -5518,6 +5518,14 @@ async function handleGet({ request, env: env0, params }) {
     const list = await getNoticiasMulti(await getFfNoticias(null));
     return json({ noticias: list, at: Date.now() });
   }
+  // Diagnóstico de solo lectura: qué pasó con cada tema detectado (sin secretos)
+  if (path === "redactor-estado") {
+    let st = null, doc = null;
+    try { st = await env.PORRA.get("rd:sombra:v1", "json"); doc = await env.PORRA.get("rd:pistas:v1", "json"); } catch (e) {}
+    const vistas = (st && st.pistas) || {};
+    const items = ((doc && doc.items) || []).slice(0, 120).map((p) => ({ id: p.id, tipo: p.tipo, equipo: p.equipo, jugadores: p.jugadores, tieneRef: !!p.ref, at: p.at, estado: (vistas[p.id] || {}).estado || "sin mirar", motivo: (vistas[p.id] || {}).motivo || "", detalle: (vistas[p.id] || {}).detalle || "", ext: (vistas[p.id] || {}).ext || 0 }));
+    return json({ n: items.length, contadores: (st && st.pistasN) || null, deteccion: (st && st.deteccion) || null, tokens: (st && st.tok) || null, items });
+  }
   if (path === "noticias") {
     // Público: SOLO noticias propias publicadas + el cajón de Futmondo. Lo de otras webs queda para el panel de administrador.
     const full = await getNoticias(env);
