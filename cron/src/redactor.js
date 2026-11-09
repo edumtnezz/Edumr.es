@@ -1117,7 +1117,7 @@ export function pistasATratar(doc, vistas, now) {
     if (v && now - Number(v.at || 0) < PISTAS_TTL) sig[id] = v;
   }
   // Un tema descartado por falta de nota oficial se reintenta una vez con la noticia de otra web
-  const reintento = (p) => { const v = sig[p.id]; return !!(p.ref && v && v.estado === "descartada" && !v.ext && ["sin fuente permitida", "sin hecho verificado", "robots prohíbe la fuente"].includes(v.motivo)); };
+  const reintento = (p) => { const v = sig[p.id]; return !!(p.ref && v && v.estado === "descartada" && v.ext !== 2 && ["sin fuente permitida", "sin hecho verificado", "robots prohíbe la fuente", "no pasa la revisión", "no se pudo leer", "sin hecho ni dato"].includes(v.motivo)); };
   const nuevas = items.filter((p) => p && p.id && (!sig[p.id] || reintento(p)));
   nuevas.sort((a, b) => (Date.parse(b.at || "") || 0) - (Date.parse(a.at || "") || 0));
   return { sig, nuevas };
@@ -1542,7 +1542,7 @@ async function tratarUnaPistaOficial(env, f, st, now, fuentes, pista, listas) {
 // Edu (09/11/2026): si la nota oficial no está, se cogen los HECHOS de FutbolFantasy/Comuniate y se escriben de nuevo.
 // Solo hechos (nada de opinión), robots.txt obligatorio, sin frases copiadas y con la fuente dicha: «Según …».
 const ORIGEN_NOMBRE = { futbolfantasy: "FutbolFantasy", comuniate: "Comuniate" };
-const MOTIVOS_EXT = new Set(["sin fuente permitida", "sin hecho verificado", "robots prohíbe la fuente"]);
+const MOTIVOS_EXT = new Set(["sin fuente permitida", "sin hecho verificado", "robots prohíbe la fuente", "no pasa la revisión", "no se pudo leer", "sin hecho ni dato"]);
 const ENT = { aacute: "á", eacute: "é", iacute: "í", oacute: "ó", uacute: "ú", Aacute: "Á", Eacute: "É", Iacute: "Í", Oacute: "Ó", Uacute: "Ú", ntilde: "ñ", Ntilde: "Ñ", uuml: "ü", iexcl: "¡", iquest: "¿", quot: '"', amp: "&", lt: "<", gt: ">", nbsp: " ", apos: "'", laquo: "«", raquo: "»", ndash: "–", mdash: "—", hellip: "…", rsquo: "'", lsquo: "'", ldquo: '"', rdquo: '"' };
 export function decodificar(t) {
   return String(t || "").replace(/&#(\d+);/g, (m, n) => String.fromCharCode(+n)).replace(/&#x([0-9a-f]+);/gi, (m, n) => String.fromCharCode(parseInt(n, 16))).replace(/&([a-zA-Z]+);/g, (m, n) => (ENT[n] != null ? ENT[n] : " "));
@@ -1615,7 +1615,7 @@ async function tratarExterna(env, f, st, now, pista, own) {
 async function tratarUnaPista(env, f, st, now, fuentes, pista, listas) {
   const una = await tratarUnaPistaOficial(env, f, st, now, fuentes, pista, listas);
   const e = st.pistas[pista.id];
-  if (e && e.estado !== "publicada") e.ext = true; // ya se probó también con la otra web
+  if (e && e.estado !== "publicada") e.ext = 2; // 2 = probado con el lector de texto limpio
   if (una && una.noticias && una.noticias.length) return una;
   if (!e || e.estado === "publicada" || !MOTIVOS_EXT.has(e.motivo)) return una;
   let own = [];
