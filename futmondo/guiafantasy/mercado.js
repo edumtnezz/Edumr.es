@@ -3901,6 +3901,7 @@
       renderEstado();
       try { if (rtbInit) renderRentables(); } catch (e) {}
       try { cmpOnMarket(); } catch (e) {}
+      try { ethFill(); } catch (e) {}
       if (all.length && !rangeInit) {
         rangeInit = true;
         setupRange();
@@ -4033,10 +4034,13 @@
         it.style.animationDelay = Math.min(idx, 10) * 40 + "ms";
         it.addEventListener("click", (ev) => { if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button === 1) return; ev.preventDefault(); openNoticiaInline(x.link, x.title); });
         const th = el("div", "newscard-thumb" + (isCm(x) ? " cm-crop-bg" : ""));
-        const fbImg = newsFallbackImg(x.title); let mainImg = newsImgOf(x); if (idx !== 0) mainImg = squareImg(mainImg); // miniatura cuadrada: el cartel entero, sin cortar
+        if (usaEth(x)) th.appendChild(ethFor(x));
+        else {
+        const fbImg = newsFallbackImg(x.title); let mainImg = newsImgOf(x); if (idx !== 0 && !x.thumb) mainImg = squareImg(mainImg); // miniatura cuadrada: el cartel entero, sin cortar
         const setBg = (u) => { th.style.backgroundImage = 'url("' + u + '")'; };
         setBg(mainImg);
         if (mainImg !== fbImg) { const t = new Image(); t.onerror = () => setBg(fbImg); t.src = mainImg; }
+        }
         it.appendChild(th);
         const bd = el("div", "newscard-body");
         const nkc = newsKindChip(x.title, "news-kind");
@@ -4130,6 +4134,56 @@
     if (d && d === hoyMadrid()) return t || "hoy";
     return [d, t].filter(Boolean).join(" · ");
   }
+  // Inicio: noticias y últimos cambios en UN solo bloque, en orden de hora (Edu 09/11/2026)
+  let inicioFiltro = "todo";
+  const OWN_TAG = { cronica: ["Crónica", "#16a34a"], once: ["Once", "#2563eb"], rueda: ["Rueda de prensa", "#7c3aed"], lesion: ["Parte", "#dc2626"], nota: ["Noticia", "#16a34a"] };
+  const ownTag = (x) => OWN_TAG[(window.EduThumb && window.EduThumb.tipo(x)) || "nota"] || OWN_TAG.nota;
+  function cambiosHoy() {
+    const out = [];
+    const days = (updData && updData.days) || [];
+    const d0 = days[0];
+    const now = new Date();
+    if (!d0 || !String(d0.day || "").endsWith(String(now.getDate()).padStart(2, "0"))) return out;
+    (d0.items || []).forEach((x) => {
+      const m = String(x.time || "").match(/(\d+):(\d+)/);
+      if (!m) return;
+      let t = new Date(now.getFullYear(), now.getMonth(), now.getDate(), +m[1], +m[2]).getTime();
+      if (t > now.getTime() + 6e4) t -= 864e5;
+      out.push({ kind: "c", x, ts: t });
+    });
+    return out;
+  }
+  function inicioRow(e, open) {
+    const x = e.x;
+    const row = el("article", "nw-row" + (e.kind === "c" ? " nw-row-c" : ""));
+    row.tabIndex = 0;
+    row.setAttribute("role", "link");
+    let pic;
+    if (e.kind === "n") {
+      pic = thumbBox(x, "nw-row-pic");
+      row.addEventListener("click", () => open(x));
+    } else {
+      const srcs = cambioImgs(x);
+      pic = srcs.length ? fichImg(srcs, "nw-row-pic nw-row-pic-c") : el("div", "nw-row-pic nw-row-pic-c");
+      row.addEventListener("click", () => { pendingUpdKey = updKey(x); switchTab("actualizaciones"); let n = 0; const t2 = setInterval(() => { if (focusUpd() || ++n > 12) clearInterval(t2); }, 250); });
+    }
+    row.addEventListener("keydown", (ev) => { if (ev.key === "Enter") row.click(); });
+    row.appendChild(pic);
+    const b = el("div", "nw-row-b");
+    const tl = el("div", "nw-tag");
+    if (e.kind === "n") {
+      const t2 = newsTag(x.title) || ownTag(x);
+      tl.style.setProperty("--tc", t2[1]); tl.appendChild(el("i")); tl.appendChild(el("span", null, t2[0]));
+    } else {
+      const cc = UP_CATS[x.cat] || UP_CATS.otro;
+      tl.style.setProperty("--tc", cc[1]); tl.appendChild(el("i")); tl.appendChild(el("span", null, String(cc[0]).replace("Mercado Futmondo", "Mercado")));
+    }
+    tl.appendChild(el("span", "nw-time", e.kind === "n" ? (x.time || "") : (x.time || "")));
+    b.appendChild(tl);
+    b.appendChild(el("div", "nw-row-t", x.title));
+    row.appendChild(b);
+    return row;
+  }
   function renderInicioFeatured() {
     const box = $("inicioFeatured");
     if (!box) return;
@@ -4138,96 +4192,58 @@
     box.innerHTML = "";
     const open = (x) => { switchTab("noticias"); openNoticiaInline(x.link, x.title); };
     const wrap = el("div", "nw");
-    // Cabecera del bloque: título, frescura y acceso a todas
     const head = el("div", "nw-head");
-    head.appendChild(el("h2", "nw-h", "Noticias"));
-    if (lastNews.updatedAt) head.appendChild(el("span", "nw-fresh", "actualizado " + haceTxt(lastNews.updatedAt)));
+    head.appendChild(el("h2", "nw-h", "Lo último"));
+    if (lastNews.updatedAt) head.appendChild(el("span", "nw-fresh", haceTxt(lastNews.updatedAt)));
     const all = el("button", "nw-all", "Ver todas");
     all.type = "button";
-    all.addEventListener("click", () => switchTab("noticias"));
+    all.addEventListener("click", () => switchTab(inicioFiltro === "cambios" ? "actualizaciones" : "noticias"));
     head.appendChild(all);
     wrap.appendChild(head);
+    const chips = el("div", "nw-chips");
+    [["todo", "Todo"], ["noticias", "Noticias"], ["cambios", "Cambios"]].forEach(([k, t]) => {
+      const c = el("button", "nw-chip" + (inicioFiltro === k ? " on" : ""), t);
+      c.type = "button";
+      c.addEventListener("click", () => { inicioFiltro = k; renderInicioFeatured(); });
+      chips.appendChild(c);
+    });
+    wrap.appendChild(chips);
 
-    const grid = el("div", "nw-grid");
-    const main = el("div", "nw-main");
-
-    // Pieza principal: texto primero; la foto es solo un ancla pequeña
-    const hero = list[0];
+    const noticias = list.map((x) => ({ kind: "n", x, ts: Number(x.ts) || 0 }));
+    const cambios = cambiosHoy();
+    // Pieza principal: la noticia más reciente, con su miniatura grande
+    const hero = inicioFiltro !== "cambios" ? noticias[0] : null;
     let lead = null;
     if (hero) {
-    lead = el("article", "nw-lead");
-    lead.tabIndex = 0;
-    lead.setAttribute("role", "link");
-    const goHero = () => open(hero);
-    lead.addEventListener("click", goHero);
-    lead.addEventListener("keydown", (e) => { if (e.key === "Enter") goHero(); });
-    const him = el("img", "nw-lead-img"); him.alt = ""; him.loading = "lazy";
-    him.src = newsImgOf(hero);
-    if (isCm(hero)) him.classList.add("cm-crop");
-    him.addEventListener("error", () => { him.src = newsFallbackImg(hero.title); }, { once: true });
-    lead.appendChild(him);
-    const lb = el("div", "nw-lead-b");
-    const tg = newsTag(hero.title);
-    const line = el("div", "nw-tag");
-    if (tg) { line.style.setProperty("--tc", tg[1]); line.appendChild(el("i")); line.appendChild(el("span", null, tg[0])); }
-    else { line.style.setProperty("--tc", "#16a34a"); line.appendChild(el("i")); line.appendChild(el("span", null, "Lo último")); }
-    lb.appendChild(line);
-    lb.appendChild(el("div", "nw-lead-t", hero.title));
-    if (hero.lead) lb.appendChild(el("div", "nw-sum", hero.lead));
-    lb.appendChild(el("div", "nw-meta", newsWhen(hero)));
-    lead.appendChild(lb);
-    main.appendChild(lead);
-    } else main.appendChild(el("p", "nw-empty", "Sin noticias por ahora."));
-
-    // Siguientes: lista limpia, sin recuadros
-    const rest = list.slice(1, 6);
-    if (rest.length) {
-      const ul = el("div", "nw-list");
-      rest.forEach((x) => {
-        const row = el("article", "nw-row");
-        row.tabIndex = 0;
-        row.setAttribute("role", "link");
-        const go = () => open(x);
-        row.addEventListener("click", go);
-        row.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
-        const im = el("img", "nw-row-img"); im.alt = ""; im.loading = "lazy";
-        im.src = squareImg(newsImgOf(x));
-        im.addEventListener("error", () => { im.src = squareImg(newsFallbackImg(x.title)); }, { once: true });
-        row.appendChild(im);
-        const b = el("div", "nw-row-b");
-        const t2 = newsTag(x.title);
-        if (t2) {
-          const tl = el("div", "nw-tag"); tl.style.setProperty("--tc", t2[1]);
-          tl.appendChild(el("i")); tl.appendChild(el("span", null, t2[0]));
-          b.appendChild(tl);
-        }
-        b.appendChild(el("div", "nw-row-t", x.title));
-        if (x.lead) b.appendChild(el("div", "nw-sum", x.lead));
-        b.appendChild(el("div", "nw-meta", newsWhen(x)));
-        row.appendChild(b);
-        ul.appendChild(row);
-      });
-      main.appendChild(ul);
+      const x = hero.x;
+      lead = el("article", "nw-lead");
+      lead.tabIndex = 0;
+      lead.setAttribute("role", "link");
+      lead.addEventListener("click", () => open(x));
+      lead.addEventListener("keydown", (ev) => { if (ev.key === "Enter") open(x); });
+      lead.appendChild(thumbBox(x, "nw-lead-pic"));
+      const lb = el("div", "nw-lead-b");
+      const tg = newsTag(x.title) || ownTag(x);
+      const line = el("div", "nw-tag");
+      line.style.setProperty("--tc", tg[1]); line.appendChild(el("i")); line.appendChild(el("span", null, tg[0]));
+      lb.appendChild(line);
+      lb.appendChild(el("div", "nw-lead-t", x.title));
+      lb.appendChild(el("div", "nw-meta", newsWhen(x)));
+      lead.appendChild(lb);
+      wrap.appendChild(lead);
     }
-    grid.appendChild(main);
-
-    // Columna de cambios, en su propio tono (sin rayas ni sombras)
-    const side = el("div", "nw-side");
-    const sh = el("div", "nw-side-h");
-    sh.appendChild(el("h3", null, "Últimos cambios"));
-    const sbtn = el("button", "nw-side-all", "Ver todos");
-    sbtn.type = "button";
-    sbtn.addEventListener("click", () => switchTab("actualizaciones"));
-    sh.appendChild(sbtn);
-    side.appendChild(sh);
-    const chg = el("div", "nw-chg");
-    chg.id = "nwChg";
-    side.appendChild(chg);
-    grid.appendChild(side);
-    wrap.appendChild(grid);
+    let rows = inicioFiltro === "noticias" ? noticias : inicioFiltro === "cambios" ? cambios : noticias.concat(cambios);
+    if (hero) rows = rows.filter((e) => e !== hero);
+    rows.sort((a, b) => b.ts - a.ts);
+    rows = rows.slice(0, 8);
+    if (!hero && !rows.length) wrap.appendChild(el("p", "nw-empty", inicioFiltro === "cambios" ? (updData ? "Sin cambios hoy." : "Cargando…") : "Sin noticias por ahora."));
+    if (rows.length) {
+      const ul = el("div", "nw-list");
+      rows.forEach((e) => ul.appendChild(inicioRow(e, open)));
+      wrap.appendChild(ul);
+    }
     box.appendChild(wrap);
-    paintInicioCambios();
-    loadInicioCambios();
+    if (!updData || !updData.days) loadInicioCambios();
     if (lead) paintLiveHero(lead);
   }
 
@@ -4279,29 +4295,7 @@
     if (!out.length) { const cl = clubLogo(pl0.to || pl0.from || "", ""); if (cl) out.push(cl); }
     return out;
   }
-  function paintInicioCambios() {
-    const c = $("nwChg");
-    if (!c) return;
-    c.innerHTML = "";
-    const items = [];
-    ((updData && updData.days) || []).forEach((d) => (d.items || []).forEach((x) => { if (items.length < 8) items.push(x); }));
-    if (!items.length) { c.appendChild(el("div", "nw-chg-empty", updData ? "Sin cambios ahora mismo." : "Cargando…")); return; }
-    items.forEach((x) => {
-      const cc = UP_CATS[x.cat] || UP_CATS.otro;
-      const row = el("button", "nw-chg-row");
-      row.type = "button";
-      row.style.setProperty("--tc", cc[1]);
-      row.addEventListener("click", () => { pendingUpdKey = updKey(x); switchTab("actualizaciones"); let n = 0; const t2 = setInterval(() => { if (focusUpd() || ++n > 12) clearInterval(t2); }, 250); });
-      // Imagen del cambio, siempre del mercado de Futmondo: escudo si habla de un equipo (alineaciones), foto si habla de un jugador
-      const srcs = cambioImgs(x);
-      const pic = srcs.length ? fichImg(srcs, "nw-chg-img") : null;
-      if (pic) { row.classList.add("has-img"); row.appendChild(pic); const im = pic.querySelector("img"); if (im) im.addEventListener("error", () => { if (!pic.isConnected) row.classList.remove("has-img"); }); }
-      row.appendChild(el("i"));
-      row.appendChild(el("span", "nw-chg-lab", String(cc[0]).replace("Mercado Futmondo", "Mercado")));
-      row.appendChild(el("span", "nw-chg-time", x.time || ""));
-      row.appendChild(el("span", "nw-chg-t", x.title));      c.appendChild(row);
-    });
-  }
+  function paintInicioCambios() { if ($("inicioFeatured") && lastNews) renderInicioFeatured(); }
   async function loadInicioCambios() {
     try {
       const d = await (await fetch(API + "/ultimos-cambios")).json();
@@ -4411,7 +4405,30 @@
     } catch (e) {}
     return "";
   };
+  // Miniatura propia (DOM, animada): foto del jugador + escudo del club (mercado de Futmondo)
+  const ethFor = (x) => {
+    let photo = "", crest = "";
+    try {
+      const pl = (x.players || []).map((n) => playerByFullName(typeof n === "string" ? n : (n && n.name))).find((p) => p && p.photo);
+      if (pl) { photo = pl.photo; crest = pl.logo || ""; }
+      if (!crest && x.club) crest = clubLogo(x.club, "") || "";
+    } catch (e) {}
+    const n = window.EduThumb.el(x, { photo, crest });
+    if (!photo && !crest && !(all && all.length)) ethPend.push([n, x]); // aún sin mercado: se rellena al llegar, sin mover nada
+    return n;
+  };
+  const ethPend = [];
+  const ethFill = () => { while (ethPend.length) { const [n, x] = ethPend.shift(); if (n.isConnected) { const m = ethFor(x); n.replaceWith(m); } } };
+  const usaEth = (x) => !!(x && x.src === "EduMR" && !x.thumb && window.EduThumb && window.EduThumb.el);
+  // Caja de miniatura: la foto del vídeo si la hay; si no, la nuestra
+  const thumbBox = (x, cls) => {
+    const b = el("div", cls);
+    if (usaEth(x)) b.appendChild(ethFor(x));
+    else { const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = newsImgOf(x); im.addEventListener("error", () => { im.src = newsFallbackImg(x.title); }, { once: true }); b.appendChild(im); }
+    return b;
+  };
   const newsImgOf = (x) => {
+    if (x && x.src === "EduMR" && x.thumb) return x.thumb;
     if (x && x.src === "EduMR" && window.EduThumb) return window.EduThumb.url(x);
     return isParteMedico(x && x.title) ? PARTE_IMG : (x && x.thumb) || (x && x.src === "EduMR" && ownImg(x)) || NEWS_IMG;
   };
@@ -4501,6 +4518,12 @@
       return;
     }
     box.appendChild(el("h2", "ficha-name", title || d.title || ""));
+    if (d.src === "EduMR") {
+      const bn = el("div", "art-banner");
+      if (d.image) { const im = el("img"); im.alt = ""; im.src = d.image; bn.appendChild(im); }
+      else if (window.EduThumb && window.EduThumb.el) bn.appendChild(ethFor({ title: d.title || title, lead: d.lead, club: d.club, players: d.players, src: "EduMR" }));
+      box.appendChild(bn);
+    }
     try { if (title || d.title) document.title = (title || d.title) + " · EduMR"; } catch (e) {}
     const shareUrl = location.origin + newsHref(url);
     const sh = el("button", "bk news-share", "🔗 Copiar enlace"); sh.type = "button";
