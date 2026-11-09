@@ -4,7 +4,7 @@ Medido el 9 de noviembre de 2026 (hora de Madrid) en FutbolFantasy. Su robots.tx
 
 Piezas abiertas, como mínimo cinco por tipo. Las tres que pidió Edu entran en la cuenta: 154454 (Fermín), 154455 (Flick) y 154456 (Simeone). El último párrafo de unas 20 palabras, idéntico en todas, es el pie de la web (lleva el año 2011). No es parte del texto y no lo imitamos.
 
-En edumr.es el cuerpo lo redacta el modelo con los hechos verificados como única entrada. Después se tira cualquier frase que meta un número, un nombre o una palabra de estado (titular, minutos, baja, lesión, suplente, banquillo, asistencia, penalti, expulsión) que no esté en esos hechos. Si dos frases seguidas empiezan por el mismo sujeto, no se publica. Si se queda por debajo del mínimo de palabras del tipo, tampoco. Sin datos, no se rellena.
+Una pista de tema (también las que salen de una cuenta de X) no es una fuente: no se cita, no se enlaza y no se copia. El cuerpo lo redacta el modelo con los hechos verificados de una web oficial como única entrada. Después se tira cualquier frase que meta un número, un nombre o una palabra de estado (titular, minutos, baja, lesión, suplente, banquillo, asistencia, penalti, expulsión) que no esté en esos hechos. Si dos frases seguidas empiezan por el mismo sujeto, no se publica. Si se queda por debajo del mínimo de palabras del tipo, tampoco. Sin datos, no se rellena.
 
 ## Crónica de un jugador
 

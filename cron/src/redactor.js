@@ -30,7 +30,7 @@ export const FUENTES = [
   { club: "Villarreal", yt: "UC0MLWyQ0L7uEZY8wbkDSTkw" },
   { club: "Levante", yt: "UCvOegN2N1FGPPv4xBNN2F9A" },
   { club: "Oviedo", yt: "UCvpFN8tLnBsjPR2BCJ-FJQA" },
-  { club: "Atlético", yt: "UCuzKFwdh7z2GHcIOX_tXgxA" }, // publica las ruedas de prensa de Simeone (directos)
+  { club: "Atlético", yt: "UCuzKFwdh7z2GHcIOX_tXgxA", noticias: "https://www.atleticodemadrid.com/sitemaps/noticias.xml" }, // ruedas en YouTube; el sitemap de noticias lo permite su robots.txt. Athletic y Alavés no se añaden.
   // 09/11/2026: canal oficial @fcbarcelona (externalId en la página del canal) y sitemap de noticias del primer equipo, permitido por su robots.txt.
   { club: "Barcelona", yt: "UC14UlmYlSNiQCBe9Eookf_A", noticias: "https://www.fcbarcelona.es/es/sitemap/articles/detailed.xml" },
 ];
@@ -1066,6 +1066,173 @@ async function unaNoticiaWeb(env, f, st, now, fuentes) {
   return null;
 }
 
+// ---------- pistas de tema (nunca son la fuente) ----------
+// Un proceso de fuera escribe rd:pistas:v1. Aquí solo se usa para saber a quién buscar.
+// El dato sale de la web oficial del club o de una transcripción ya verificada. Nunca de X:
+// no se cita, no se enlaza y no se copia el texto de la pista.
+const PISTAS_KEY = "rd:pistas:v1";
+const PISTAS_MS = 15 * 60e3;
+const PISTAS_TTL = 72 * 3600e3;
+const TIPOS_PISTA = new Set(["lesion", "rueda", "cronica", "once", "convocatoria", "mercado", "otro"]);
+export function clubProhibido(nombre) {
+  const t = norm2(nombre);
+  return /\bathletic\b|\bbilbao\b|\balaves\b/.test(t);
+}
+export function pistaAceptable(p) {
+  if (!p || typeof p.id !== "string" || !p.id.trim() || !TIPOS_PISTA.has(p.tipo)) return { ok: false, motivo: "pista mal formada" };
+  if (clubProhibido(p.equipo)) return { ok: false, motivo: "club prohibido" };
+  const blob = [p.id, p.tema, p.equipo, p.entrenador].concat(p.jugadores || []).join(" ");
+  if (/https?:|x\.com|twitter\.com|\bt\.co\b/i.test(blob)) return { ok: false, motivo: "pista con enlace" };
+  if (p.tema && String(p.tema).length > 180) return { ok: false, motivo: "pista mal formada" };
+  return { ok: true };
+}
+function apellidosPista(p) {
+  return [p.entrenador].concat(p.jugadores || []).map((n) => norm2(n).split(/\s+/).filter((w) => w.length > 3).pop()).filter(Boolean);
+}
+export function pistasATratar(doc, vistas, now) {
+  const items = (doc && Number(doc.v) === 1 && Array.isArray(doc.items) ? doc.items : []).slice(0, 200);
+  const sig = {};
+  for (const [id, v] of Object.entries(vistas || {})) {
+    if (v && now - Number(v.at || 0) < PISTAS_TTL) sig[id] = v;
+  }
+  const nuevas = items.filter((p) => p && p.id && !sig[p.id]);
+  nuevas.sort((a, b) => (Date.parse(b.at || "") || 0) - (Date.parse(a.at || "") || 0));
+  return { sig, nuevas };
+}
+export function notaParaPista(pista, notas, now) {
+  const nombres = apellidosPista(pista);
+  if (!nombres.length) return null;
+  let best = null, score = 0;
+  for (const n of notas || []) {
+    if (!n || !n.url) continue;
+    if (n.published && now && now - n.published > PISTAS_TTL) continue;
+    const t = norm2((n.title || "") + " " + n.url);
+    let s = 0;
+    for (const nom of nombres) if (t.includes(nom)) s += 3;
+    if (s > score) { score = s; best = n; }
+  }
+  return score >= 3 ? best : null;
+}
+export function pistaDuplicada(pista, own) {
+  const nombres = apellidosPista(pista);
+  return (own || []).some((o) => {
+    if (!o || o.status !== "published") return false;
+    if (o.key && String(o.key).indexOf("pista-" + pista.id) === 0) return true;
+    const blob = norm2([o.title, o.lead].concat(o.players || []).join(" "));
+    return nombres.some((n) => blob.includes(n));
+  });
+}
+export function enlacesDeSitemap(xml) {
+  const out = [];
+  for (const b of String(xml || "").matchAll(/<url>([\s\S]*?)<\/url>/g)) {
+    const e = b[1];
+    const loc = (e.match(/<loc>([^<]+)<\/loc>/) || [])[1];
+    if (!loc) continue;
+    const title = (e.match(/<news:title>([^<]*)<\/news:title>/) || [])[1];
+    const date = (e.match(/<news:publication_date>([^<]+)/) || [])[1] || (e.match(/<lastmod>([^<]+)/) || [])[1];
+    const slug = decodeURIComponent(loc.split("/").filter(Boolean).pop() || "").replace(/[-_]+/g, " ");
+    out.push({ url: loc.trim(), title: title ? title.replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&#39;/g, "'") : slug, published: Date.parse(date || "") || 0 });
+  }
+  return out;
+}
+function sumaPista(st, campo, motivo) {
+  const n = st.pistasN || { recibidas: 0, verificadas: 0, publicadas: 0, descartadas: 0, motivos: {} };
+  if (campo) n[campo] = (n[campo] || 0) + 1;
+  if (motivo) n.motivos[motivo] = (n.motivos[motivo] || 0) + 1;
+  st.pistasN = n;
+}
+function itemsDeCitas(html, title, plantilla) {
+  const citas = citasDeHtml(html);
+  const titular = citaEnTitulo(title);
+  if (titular && html.includes(titular.frase) && !citas.some((c) => c.frase === titular.frase)) citas.unshift({ frase: titular.frase, parrafo: titular.frase });
+  const texto = citas.map((c) => c.parrafo).join(" ");
+  const crudos = [];
+  for (const c of citas) {
+    const quienes = quienEnFrase(c.frase, plantilla);
+    if (quienes.length > 1) continue;
+    const tema = temaDeFrase(c.frase);
+    if (!tema) continue;
+    crudos.push({ jugador: quienes.length === 1 ? quienes[0].name : "", nombre: quienes.length === 1 ? quienes[0].name : (titular && titular.speaker) || "", tema, estado: "", frase: c.frase, minuto: "", confianza: "alta" });
+  }
+  return filtrar(crudos, texto, plantilla).filter((x) => x.publicable);
+}
+async function tratarPistas(env, f, st, now, fuentes) {
+  let doc = null;
+  try { doc = await env.PORRA.get(PISTAS_KEY, "json"); } catch (e) { return null; }
+  st.pistas = st.pistas || {};
+  const antes = Object.keys(st.pistas).length;
+  const prep = pistasATratar(doc, st.pistas, now);
+  st.pistas = prep.sig;
+  const pista = prep.nuevas[0];
+  if (!pista) return { dirty: Object.keys(prep.sig).length !== antes };
+  const aceptable = pistaAceptable(pista);
+  sumaPista(st, "recibidas");
+  st.pistas[pista.id] = { at: now, estado: "descartada", motivo: aceptable.ok ? "" : aceptable.motivo };
+  if (!aceptable.ok) { sumaPista(st, "descartadas", aceptable.motivo); return { dirty: true }; }
+  let own = [];
+  try { own = (await env.PORRA.get(OWN_KEY, "json")) || []; } catch (e) {}
+  if (pistaDuplicada(pista, own)) {
+    st.pistas[pista.id].motivo = "ya publicada";
+    sumaPista(st, "descartadas", "ya publicada");
+    return { dirty: true };
+  }
+  const fuente = (fuentes || []).find((s) => s && (sameTeam(s.club, pista.equipo) || sameTeam(pista.equipo, s.club)));
+  if (!fuente || !fuente.noticias || clubProhibido(fuente.club)) {
+    st.pistas[pista.id].motivo = "sin fuente permitida";
+    sumaPista(st, "descartadas", "sin fuente permitida");
+    return { dirty: true };
+  }
+  let origin = "";
+  try { origin = new URL(fuente.noticias).origin; } catch (e) {}
+  const robots = origin ? await leerRobots(f, origin) : null;
+  if (!robotsPermite(robots, fuente.noticias)) {
+    st.pistas[pista.id].motivo = "robots prohíbe la fuente";
+    sumaPista(st, "descartadas", "robots prohíbe la fuente");
+    return { dirty: true };
+  }
+  let notas = [];
+  try {
+    const r = await f(fuente.noticias, { headers: UA_RED });
+    if (r.ok) notas = enlacesDeSitemap(await r.text());
+  } catch (e) {}
+  const nota = notaParaPista(pista, notas, now);
+  if (!nota || !robotsPermite(robots, nota.url)) {
+    st.pistas[pista.id].motivo = "sin fuente permitida";
+    sumaPista(st, "descartadas", "sin fuente permitida");
+    return { dirty: true };
+  }
+  let html = "";
+  try {
+    const r = await f(nota.url, { headers: UA_RED });
+    if (r.ok) html = await r.text();
+  } catch (e) {}
+  let plantilla = [];
+  try {
+    const r = await f(SITE + "mercado", { headers: { "user-agent": "edumr-cron" } });
+    plantilla = ((await r.json()).players || []).filter((p) => sameTeam(p.team, fuente.club)).map((p) => ({ id: p.id, name: p.name }));
+  } catch (e) {}
+  const items = itemsDeCitas(html, nota.title, plantilla);
+  if (!items.length) {
+    st.pistas[pista.id].motivo = "sin hecho verificado";
+    sumaPista(st, "descartadas", "sin hecho verificado");
+    return { dirty: true };
+  }
+  sumaPista(st, "verificadas");
+  const titular = citaEnTitulo(nota.title);
+  const res = { id: "pista-" + pista.id, club: fuente.club, title: nota.title, pub: nota.published || Date.parse(pista.at || "") || now, url: nota.url, oficial: true, speaker: (titular && titular.speaker) || pista.entrenador || "", sinMiniatura: true, items, cuando: fechaDeFuente(html) };
+  let noticias = [];
+  try { noticias = await publicarNoticias(env, f, res, now, { sinIa: st.tok.n >= MAX_TOKENS_DIA }); } catch (e) { noticias = []; }
+  if (!noticias.length) {
+    st.pistas[pista.id].motivo = "ya publicada";
+    sumaPista(st, "descartadas", "ya publicada");
+    return { dirty: true };
+  }
+  st.tok.n += noticias.reduce((a, n) => a + (n.tokens || 0), 0);
+  st.pistas[pista.id] = { at: now, estado: "publicada", motivo: "" };
+  sumaPista(st, "publicadas");
+  return { dirty: true, noticias };
+}
+
 // ---------- lo principal ----------
 // deps solo sirve para las pruebas (fetch falso, reloj, fuentes).
 export async function redactorSombra(env, deps) {
@@ -1170,6 +1337,20 @@ export async function redactorSombra(env, deps) {
       if (!hecho) hecho = { id: w.id, noticias: w.noticias };
     }
   } catch (e) {}
+  if ((deps && deps.allTicks) || now - (st.pistasAt || 0) >= PISTAS_MS) {
+    if (st.tok.n < MAX_TOKENS_DIA) {
+      try {
+        const pz = await tratarPistas(env, f, st, now, fuentes);
+        if (pz && pz.dirty) dirty = true;
+        if (pz && pz.noticias && pz.noticias.length) {
+          nuevas = nuevas.concat(pz.noticias);
+          if (!hecho) hecho = { id: "pistas", noticias: pz.noticias };
+        }
+      } catch (e) {}
+      st.pistasAt = now;
+      dirty = true;
+    }
+  }
   // Los borradores y las noticias ya guardadas no se reescriben ni se reenvían.
   // 2d) comparación interna con las otras webs (cada 10 min). Solo el panel.
   if (mnt % 10 === 1 || (deps && deps.allTicks)) { try { await compararConExternas(env, now); } catch (e) {} }
@@ -1190,4 +1371,4 @@ export async function redactorSombra(env, deps) {
   return { procesado: hecho ? hecho.id : null, pendientes: cola.length, tokens: st.tok.n };
 }
 
-export const _r = { compararNoticias, caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, localizarFrase, ventanaFrase, atribucionJugador, estadoRespaldado, temaRespaldado, robotsPermite, cruzarJugador, filtrar, parseJson, resumenTelegram, parseSitemapNews, esNotaPrimerEquipo, citaEnTitulo, partidoEnTitulo, citasDeHtml, cronicaDesdeHechos, cronicaDesdeEv, sujetosSeguidos, depurarCuerpo, elegirMinuto, minutosOficiales, fechaDeFuente, fechaTexto, entradillaRepiteTitulo, revisarEntradilla };
+export const _r = { compararNoticias, caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, localizarFrase, ventanaFrase, atribucionJugador, estadoRespaldado, temaRespaldado, robotsPermite, cruzarJugador, filtrar, parseJson, resumenTelegram, parseSitemapNews, esNotaPrimerEquipo, citaEnTitulo, partidoEnTitulo, citasDeHtml, cronicaDesdeHechos, cronicaDesdeEv, sujetosSeguidos, depurarCuerpo, elegirMinuto, minutosOficiales, fechaDeFuente, fechaTexto, entradillaRepiteTitulo, revisarEntradilla, clubProhibido, pistaAceptable, pistasATratar, notaParaPista, pistaDuplicada, enlacesDeSitemap };

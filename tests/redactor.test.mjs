@@ -545,3 +545,76 @@ test("el aviso usa la página larga y no queda como enviado si Telegram no acept
   await redactorSombra(env, { fetch: f, now: now + 4 * 60e3, fuentes });
   assert.equal(tg.length, enviados);
 });
+
+test("una pista sin fuente permitida no publica, y un club prohibido tampoco", async () => {
+  assert.equal(_r.clubProhibido("Athletic Club"), true);
+  assert.equal(_r.clubProhibido("Deportivo Alavés"), true);
+  assert.equal(_r.clubProhibido("Atlético de Madrid"), false);
+  assert.equal(_r.pistaAceptable({ id: "x1", tipo: "lesion", equipo: "Athletic", tema: "baja" }).motivo, "club prohibido");
+  assert.equal(_r.pistaAceptable({ id: "x2", tipo: "rueda", equipo: "Barcelona", tema: "ver https://x.com/futbol_fantasy/1" }).motivo, "pista con enlace");
+  const kv = new Map();
+  const env = { GEMINI_API_KEY: "k", PORRA: { async get(k, t) { const v = kv.get(k); return v == null ? null : (t === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } } };
+  kv.set("rd:pistas:v1", JSON.stringify({ v: 1, items: [{ id: "p-getafe", at: "2026-11-08T21:00:00Z", tipo: "lesion", equipo: "Getafe", jugadores: ["Jugador Sin Ficha"], entrenador: "", tema: "molestia en un entrenamiento" }] }));
+  const f = async (url) => {
+    url = String(url);
+    if (url.includes("robots.txt")) return new Response("User-agent: *\nAllow: /\n");
+    if (url.endsWith("/sitemap.xml")) return new Response("<urlset></urlset>");
+    return new Response("", { status: 404 });
+  };
+  await redactorSombra(env, { fetch: f, now: Date.parse("2026-11-09T01:03:00Z"), allTicks: true, fuentes: [{ club: "Barcelona", noticias: "https://club.test/sitemap.xml" }] });
+  assert.equal(kv.get("own:news:v1"), undefined);
+  const st = JSON.parse(kv.get("rd:sombra:v1"));
+  assert.equal(st.pistasN.recibidas, 1);
+  assert.equal(st.pistasN.publicadas, 0);
+  assert.equal(st.pistasN.descartadas, 1);
+  assert.equal(st.pistasN.motivos["sin fuente permitida"], 1);
+  assert.equal(st.pistas["p-getafe"].motivo, "sin fuente permitida");
+});
+
+test("una pista verificada en la web oficial se publica una vez y la repetida no", async () => {
+  const kv = new Map();
+  const env = {
+    GEMINI_API_KEY: "k", TELEGRAM_BOT_TOKEN: "t",
+    PORRA: { async get(k, t) { const v = kv.get(k); return v == null ? null : (t === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } },
+  };
+  kv.set("tg:avisos:v1", JSON.stringify({ chat: "42" }));
+  const pista = { id: "post1", at: "2026-11-08T21:00:00Z", tipo: "rueda", equipo: "Barcelona", jugadores: [], entrenador: "Entrenador Inventado", tema: "sensaciones del vestuario" };
+  kv.set("rd:pistas:v1", JSON.stringify({ v: 1, items: [pista] }));
+  const tg = [];
+  const f = async (url, o) => {
+    url = String(url);
+    if (url.includes("robots.txt")) return new Response("User-agent: *\nAllow: /\n");
+    if (url.endsWith("/sitemap.xml")) return new Response(`<url><loc>https://club.test/noticias/inventado-habla</loc><news:title>Entrenador Inventado: "Creo mucho en este equipo de prueba"</news:title><news:publication_date>2026-11-08T20:00:00Z</news:publication_date></url>`);
+    if (url.includes("/noticias/inventado-habla")) return new Response('<p>Entrenador Inventado ha dicho: "Creo mucho en este equipo de prueba". El resto no se copia.</p>');
+    if (url.endsWith("/mercado")) return new Response(JSON.stringify({ players: [] }));
+    if (url.includes("generativelanguage")) {
+      const cuerpo = "Tras el encuentro, Entrenador Inventado habló del grupo del Barcelona y dejó por escrito una cita que sale tal cual en la nota oficial del club. «Creo mucho en este equipo de prueba». Esa frase es el único dato comprobado de la rueda. Para el fantasy no aparece en los hechos un cambio de rol ni un estado, y por eso este texto no añade nada sobre lo que pueda ocurrir después.";
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify([{ jugador: "Entrenador Inventado", titular: "Entrenador Inventado habla del equipo", entradilla: "Habló del grupo en la rueda oficial.", cuerpo }]) }] } }], usageMetadata: { totalTokenCount: 20 } }));
+    }
+    if (url.includes("api.telegram.org")) { tg.push(JSON.parse(o.body)); return new Response(JSON.stringify({ ok: true })); }
+    return new Response("", { status: 404 });
+  };
+  const fuentes = [{ club: "Barcelona", noticias: "https://club.test/sitemap.xml" }];
+  const now = Date.parse("2026-11-09T01:03:00Z");
+  await redactorSombra(env, { fetch: f, now, allTicks: true, fuentes });
+  const own = JSON.parse(kv.get("own:news:v1"));
+  assert.equal(own.length, 1);
+  assert.equal(own[0].status, "published");
+  assert.match(own[0].body, /«Creo mucho en este equipo de prueba»/);
+  assert.doesNotMatch(own[0].body + own[0].title + own[0].lead, /vestuario|x\.com|twitter/i);
+  assert.match(own[0].source.url, /club\.test\/noticias\/inventado-habla/);
+  assert.match(own[0].source.name, /OFICIAL/);
+  assert.equal(tg.length, 1);
+  let st = JSON.parse(kv.get("rd:sombra:v1"));
+  assert.equal(st.pistasN.verificadas, 1);
+  assert.equal(st.pistasN.publicadas, 1);
+  await redactorSombra(env, { fetch: f, now: now + 60e3, allTicks: true, fuentes });
+  assert.equal(JSON.parse(kv.get("own:news:v1")).length, 1);
+  assert.equal(tg.length, 1);
+  kv.set("rd:pistas:v1", JSON.stringify({ v: 1, items: [pista, Object.assign({}, pista, { id: "post2" })] }));
+  await redactorSombra(env, { fetch: f, now: now + 120e3, allTicks: true, fuentes });
+  assert.equal(JSON.parse(kv.get("own:news:v1")).length, 1);
+  assert.equal(tg.length, 1);
+  st = JSON.parse(kv.get("rd:sombra:v1"));
+  assert.equal(st.pistas.post2.motivo, "ya publicada");
+});
