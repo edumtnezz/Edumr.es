@@ -335,7 +335,7 @@ const norm2 = (x) => String(x || "").normalize("NFD").replace(/[\u0300-\u036f]/g
 function promptNoticias(club, grupos) {
   return "Eres redactor de una web de fantasy de LaLiga. Para CADA jugador de la lista escribe una noticia corta, en español y con tus propias palabras, usando SOLO los datos verificados de la rueda de prensa de un entrenador del " + club + ".\n" +
     "REGLAS: usa únicamente la información de su lista. No añadas posición, día de la semana, fecha, plazo, rival, cifra, lesión ni un estado distinto al de la lista. No inventes citas: si citas, copia la frase literal entre comillas. Tono breve, de móvil, con palabras propias. " +
-    "Titular de máximo 80 caracteres que mencione al jugador. Entradilla de una sola frase, máximo 160 caracteres. Cuerpo de un párrafo de 40 a 400 caracteres. Escribe el nombre del jugador exactamente como en la lista.\n" +
+    "Titular: quien habla y el tema, en una línea, sin marcador y sin metáforas. Si es una rueda, empieza por el entrenador. Entradilla: una sola frase. Cuerpo: un rótulo corto y, si hay cita, la frase literal entre comillas. No hagas un acta de goles. Máximo 160 caracteres la entradilla y 400 el cuerpo. Escribe el nombre del jugador exactamente como en la lista.\n" +
     'Devuelve solo JSON: [{"jugador": "nombre tal cual", "titular": "...", "entradilla": "...", "cuerpo": "..."}] con un elemento por jugador y en el mismo orden.\n\nDATOS:\n' +
     grupos.map((g) => "JUGADOR: " + g.nombre + "\n" + g.items.map((i) => "- " + (ETIQ_TXT[i.estado] || i.estado) + " | frase literal: «" + i.frase + "»" + (i.minuto ? " | min " + i.minuto : "")).join("\n")).join("\n\n");
 }
@@ -397,7 +397,9 @@ async function redactarNoticias(env, f, res, opts) {
     if (ok) return Object.assign(base, ok, { via: "ia" });
     const et = ETIQ_TXT[g.items[0].estado] || g.items[0].estado;
     return Object.assign(base, {
-      title: g.nombre + ": " + et,
+      title: res.speaker
+        ? res.speaker + " habla de " + (g.nombre && g.nombre !== res.speaker ? g.nombre : et)
+        : (g.items[0].tema && g.items[0].tema !== "disponibilidad" ? g.nombre + " habla de " + et : g.nombre + ": " + et),
       lead: res.lead || (res.oficial ? "Según " + (res.speaker ? res.speaker + ", fuente oficial." : res.club + ", fuente oficial.") : "Según " + res.club + "."),
       body: g.items.map((x) => "«" + x.frase + "»" + (x.minuto ? " (min " + x.minuto + ")" : "")).join("\n"),
       via: "plantilla",
@@ -413,6 +415,22 @@ async function miniatura(f, id) {
     try { const r = await f(foto(q), { method: "HEAD" }); if (r.ok) return foto(q); } catch (e) {}
   }
   return foto("mqdefault");
+}
+
+async function fotoDeMercado(f, nombres) {
+  const lista = (nombres || []).map((n) => String(n || "").trim()).filter((n) => n.length > 2);
+  if (!lista.length) return "";
+  try {
+    const r = await f(SITE + "mercado", { headers: { "user-agent": "edumr-cron" } });
+    if (!r.ok) return "";
+    const players = ((await r.json()).players) || [];
+    for (const name of lista) {
+      const p = cruzarJugador(name, players);
+      const hit = p && players.find((pl) => String(pl.id) === String(p.id) && /^https:\/\//.test(String(pl.photo || "")));
+      if (hit) return hit.photo;
+    }
+  } catch (e) {}
+  return "";
 }
 
 // Publica las noticias en la web (KV own:news:v1). Las de ese vídeo que ya existían como una sola noticia se sustituyen.
@@ -660,11 +678,18 @@ function ymdAdd(ymd, days) {
   const t = new Date(Date.UTC(y, m - 1, d + days));
   return t.toISOString().slice(0, 10).replace(/-/g, "");
 }
-// Crónica solo con goles nombrados. Si falta un nombre, hay propia o el marcador no cuadra, no se publica.
+function minutoGol(g) {
+  return Number(g.min) + (Number(g.extra) ? "+" + Number(g.extra) : "") + "'";
+}
+function cuentaEnPalabras(n) {
+  return { 1: "un gol", 2: "dos goles", 3: "tres goles" }[n] || (n + " goles");
+}
+// Dos piezas, como en las webs de fantasy: la crónica habla de quien marcó; el marcador va en otra ficha.
+// Si falta un nombre, hay propia o el marcador no cuadra, no se publica nada.
 export function cronicaDesdeHechos(p) {
   if (!p || !p.home || !p.away || !Array.isArray(p.goles) || !p.goles.length) return null;
   let h = 0, a = 0;
-  const lineas = [];
+  const buenos = [];
   for (const g of p.goles) {
     if (!g || g.og) return null;
     if (g.side !== "home" && g.side !== "away") return null;
@@ -672,15 +697,30 @@ export function cronicaDesdeHechos(p) {
     if (!name) return null;
     if (!Number.isFinite(Number(g.min)) || Number(g.min) < 0 || Number(g.min) > 130) return null;
     if (g.side === "home") h++; else a++;
-    lineas.push(name + " " + Number(g.min) + (Number(g.extra) ? "+" + Number(g.extra) : "") + "'");
+    buenos.push({ name, side: g.side, min: minutoGol(g) });
   }
   if (p.marcador && (Number(p.marcador[0]) !== h || Number(p.marcador[1]) !== a)) return null;
-  return {
-    title: p.home + " " + h + "-" + a + " " + p.away,
-    lead: "Según los datos del partido.",
-    body: "Goles: " + lineas.join(", ") + ".",
-    players: [...new Set(p.goles.map((g) => String(g.name).trim()))],
+  const por = new Map();
+  for (const g of buenos) por.set(g.name, (por.get(g.name) || []).concat(g));
+  let protagonista = buenos[0].name, mejor = 0;
+  for (const [name, gs] of por) if (gs.length >= mejor) { mejor = gs.length; protagonista = name; }
+  const suyos = por.get(protagonista);
+  const equipo = suyos[0].side === "home" ? p.home : p.away;
+  const titulo = mejor > 1 ? protagonista + " marcó " + cuentaEnPalabras(mejor) : protagonista + " marcó un gol del " + equipo;
+  const cuando = suyos.map((g) => "en el " + g.min).join(" y ");
+  const ficha = {
+    title: (p.jornada ? "Jornada " + p.jornada + ": " : "") + p.home + " " + h + "-" + a + " " + p.away,
+    lead: "Goles: " + buenos.map((g) => g.name + " " + g.min).join(", ") + ".",
+    body: buenos.map((g) => g.name + " " + g.min).join("\n"),
+    players: [...new Set(buenos.map((g) => g.name))],
   };
+  const cronica = {
+    title: titulo,
+    lead: protagonista + " marcó " + cuentaEnPalabras(mejor) + " ante el " + (suyos[0].side === "home" ? p.away : p.home) + ".",
+    body: protagonista + " marcó " + cuando + ". El partido acabó " + h + "-" + a + ".",
+    players: [protagonista],
+  };
+  return { title: cronica.title, lead: cronica.lead, body: cronica.body, players: cronica.players, cronica, ficha };
 }
 export function cronicaDesdeEv(home, away, ev, marcador) {
   if (!ev || !Array.isArray(ev.g) || !ev.g.length) return null;
@@ -786,18 +826,23 @@ async function unaNoticiaWeb(env, f, st, now, fuentes) {
         items: [{ jugador: "", nombre: partido.home + " - " + partido.away, estado: "valoracion", tema: "valoracion", frase: cronica.body.replace(/^Goles: /, "").replace(/\.$/, ""), minuto: "", confianza: "alta", publicable: true, verificada: true, cruzado: false }],
       };
       // La crónica no pasa por el filtro de citas: el cuerpo ya son solo los goles comprobados.
-      const item = {
-        club: s.club, players: cronica.players, key: "cronica-" + id,
-        source: { name: "Según FotMob", url: pendiente.url, videoId: "" },
-        title: cronica.title, lead: res.lead, body: cronica.body, via: "datos",
-      };
+      const piezas = [
+        { suf: "cronica", data: cronica.cronica },
+        { suf: "marcador", data: cronica.ficha },
+      ];
       let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
-      if (own.some((o) => o.key === item.key)) return { dirty: true };
-      const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
-      const pub = Object.assign({ id: hex, status: "published", expira: true, createdAt: now, updatedAt: now, publishedAt: now, thumb: "" }, item);
-      own.unshift(pub);
+      const pubs = [];
+      for (const pz of piezas) {
+        const key = pz.suf + "-" + id;
+        if (own.some((o) => o.key === key)) continue;
+        const thumb = await fotoDeMercado(f, pz.data.players);
+        const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
+        pubs.push({ id: hex, status: "published", expira: true, createdAt: now, updatedAt: now, publishedAt: now, thumb, club: s.club, players: pz.data.players, key, source: { name: "Según FotMob", url: pendiente.url, videoId: "" }, title: pz.data.title, lead: pz.data.lead, body: pz.data.body, via: "datos" });
+        own.unshift(pubs[pubs.length - 1]);
+      }
+      if (!pubs.length) return { dirty: true };
       await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
-      return { dirty: true, noticias: [pub], id: "cronica-" + id };
+      return { dirty: true, noticias: pubs, id: "cronica-" + id };
     }
     const citas = citasDeHtml(html);
     const titular = citaEnTitulo(pendiente.title);

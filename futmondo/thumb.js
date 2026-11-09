@@ -27,8 +27,9 @@
     var k = tipo(item);
     var title = String(item && item.title || "");
     var lead = String(item && item.lead || "");
-    var grande = k === "cronica" ? marcador(title) : (k === "once" ? "ONCE" : "«");
-    var pie = k === "cronica" ? corto(title.replace(/\d+\s*[-–]\s*\d+/, "").trim() || lead, 42) : corto(lead || title, 46);
+    var nombre = corto(String(title || "").split(/[:|,]/)[0], 22);
+    var grande = k === "cronica" ? marcador(title) : (k === "once" ? "ONCE" : nombre);
+    var pie = k === "cronica" ? corto(lead || title, 42) : corto(lead || title, 46);
     var etiqueta = k === "cronica" ? "CRÓNICA" : (k === "once" ? "ONCE" : (k === "rueda" ? "RUEDA" : "NOTICIA"));
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360">' +
       '<rect width="640" height="360" fill="#14532d"/>' +

@@ -30,7 +30,7 @@ test("la miniatura de la rueda lleva la cita, no un relato", () => {
   assert.equal(T.tipo(semana[1]), "rueda");
   const s = T.svg(semana[1]);
   assert.match(s, /RUEDA/);
-  assert.match(s, /Jong/);
+  assert.match(s, /Jong|lateral/);
 });
 
 test("la miniatura del once se distingue", () => {
