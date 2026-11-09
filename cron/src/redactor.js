@@ -1091,7 +1091,7 @@ async function unaNoticiaWeb(env, f, st, now, fuentes) {
 // El dato sale de la web oficial del club o de una transcripción ya verificada. Nunca de X:
 // no se cita, no se enlaza y no se copia el texto de la pista.
 const PISTAS_KEY = "rd:pistas:v1";
-const PISTAS_MS = 15 * 60e3;
+const PISTAS_MS = 2 * 60e3;
 const PISTAS_TTL = 72 * 3600e3;
 const TIPOS_PISTA = new Set(["lesion", "rueda", "cronica", "once", "convocatoria", "mercado", "otro"]);
 export function clubProhibido(nombre) {
@@ -1457,6 +1457,12 @@ async function tratarUnaPistaOficial(env, f, st, now, fuentes, pista, listas) {
     plantilla = ((await r.json()).players || []).filter((p) => sameTeam(p.team, fuente.club)).map((p) => ({ id: p.id, name: p.name }));
   } catch (e) {}
   const items = itemsDeCitas(html, nota.title, plantilla);
+  if (!items.length) {
+    // «X en la nota del Y» no cuenta nada: no se publica (Edu 09/11/2026). Se prueba con el hecho de otra web.
+    st.pistas[pista.id].motivo = "sin hecho verificado";
+    sumaPista(st, "descartadas", "sin hecho verificado");
+    return null;
+  }
   const hechos = items.length ? "" : hechosDesdeNota(html, nota.title, pista, fuente.club);
   if (!items.length && !hechos) {
     st.pistas[pista.id].motivo = "sin hecho verificado";
@@ -1531,9 +1537,9 @@ export function copiaLiteral(texto, fuente, n) {
 }
 function promptExterna(origen, texto) {
   return "Eres redactor de una web de fantasy de LaLiga. Abajo hay una noticia de " + origen + ". Reescríbela con tus palabras, SOLO con los hechos que contiene (lesiones, convocatorias, entrenamientos, ruedas de prensa, onces, fichajes).\n" +
-    "Si la pieza es opinión, análisis, balance, reportaje o no aporta un hecho concreto, devuelve tipo \"opinion\" y nada más.\n" +
-    "REGLAS: no añadas ningún dato, cifra, fecha, plazo ni causa que no esté escrito. No copies frases: cambia la estructura. Titular sin comillas ni marcador, máx 90 caracteres, con el protagonista. Entradilla de una frase (máx 180). Cuerpo de 2 a 4 frases cortas; di siempre que es «según " + origen + "»; si no se da plazo o no se sabe algo, dilo en vez de suponerlo. Una cita solo si es literal y corta.\n" +
-    'Devuelve solo JSON: {"tipo":"hecho|opinion","titular":"...","entradilla":"...","cuerpo":"..."}\n\nNOTICIA:\n' + texto;
+    "Si es un análisis o una opinión, conserva solo los datos y cifras comprobables y escríbelo como análisis propio, sin atribuir juicios a nadie y sin copiar su valoración (tipo \"analisis\"). Si no aporta ningún hecho ni dato concreto, devuelve tipo \"vacio\" y nada más.\n" +
+    "REGLAS: no añadas ningún dato, cifra, fecha, plazo ni causa que no esté escrito. No copies frases: cambia la estructura. Titular sin comillas ni marcador, máx 90 caracteres, con el protagonista. Entradilla de una frase (máx 180). Cuerpo de 2 a 4 frases cortas; no cites la web de origen; si no se da plazo o no se sabe algo, dilo en vez de suponerlo. Una cita solo si es literal y corta.\n" +
+    'Devuelve solo JSON: {"tipo":"hecho|analisis|vacio","titular":"...","entradilla":"...","cuerpo":"..."}\n\nNOTICIA:\n' + texto;
 }
 async function tratarExterna(env, f, st, now, pista, own) {
   const nombre = ORIGEN_NOMBRE[pista.origen];
@@ -1543,7 +1549,7 @@ async function tratarExterna(env, f, st, now, pista, own) {
   if (!/(^|\.)(futbolfantasy|comuniate)\.com$/.test(u.hostname)) return null;
   const robots = await leerRobots(f, u.origin);
   if (!robotsPermite(robots, pista.ref)) { st.pistas[pista.id].motivo = "robots prohíbe la fuente"; return null; }
-  if (Date.now && now - (Date.parse(pista.at || "") || now) > 36 * 3600e3) { st.pistas[pista.id].motivo = "tema viejo"; return null; }
+  if (now - (Date.parse(pista.at || "") || now) > 3 * 3600e3) { st.pistas[pista.id].motivo = "tema viejo"; return null; }
   let html = "";
   try { const r = await f(pista.ref, { headers: UA_RED }); if (r.ok) html = await r.text(); } catch (e) {}
   const texto = textoDeArticulo(html);
@@ -1554,7 +1560,7 @@ async function tratarExterna(env, f, st, now, pista, own) {
   st.tok.n += r.tokens || 0;
   let j = null;
   try { j = parseJson(textoDe(r.j)); } catch (e) {}
-  if (!j || j.tipo !== "hecho") { st.pistas[pista.id].motivo = "opinión o sin hecho"; return null; }
+  if (!j || (j.tipo !== "hecho" && j.tipo !== "analisis")) { st.pistas[pista.id].motivo = "sin hecho ni dato"; return null; }
   const fuenteNorm = norm2(texto);
   const personas = [pista.entrenador].concat(pista.jugadores || []).filter(Boolean).filter((n) => {
     const ap = norm2(n).split(/\s+/).filter((w) => w.length > 3).pop();
@@ -1565,7 +1571,7 @@ async function tratarExterna(env, f, st, now, pista, own) {
   const key = "ext-" + pista.id;
   if (own.some((o) => o.key === key)) { st.pistas[pista.id].motivo = "ya publicada"; return null; }
   const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
-  const item = { id: hex, status: "published", expira: true, createdAt: now, updatedAt: now, publishedAt: now, thumb: "", tipo: pista.tipo || "", club: pista.equipo, players: personas, key, source: { name: "Según " + nombre, url: pista.ref, videoId: "" }, title: val.title, lead: val.lead, body: val.body, via: "ia" };
+  const item = { id: hex, status: "published", expira: true, createdAt: now, updatedAt: now, publishedAt: now, thumb: "", tipo: pista.tipo || "", club: pista.equipo, players: personas, key, source: { name: nombre, url: pista.ref, videoId: "" }, title: val.title, lead: val.lead, body: val.body, via: "ia" };
   own.unshift(item);
   try { await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300))); } catch (e) {}
   st.pistas[pista.id] = { at: now, estado: "publicada", motivo: "" };
@@ -1722,6 +1728,8 @@ export async function redactorSombra(env, deps) {
       const res = await env.PORRA.get(RES_PREFIX + o.source.videoId, "json");
       if (res && caducada(res.title, res.pub, now)) { o.status = "draft"; o.caducada = true; o.updatedAt = now; cambio = true; }
     }
+    // Las notas vacías «X en la nota del Y» se retiran (Edu 09/11/2026)
+    for (const o of own) if (o.status === "published" && /\ben la nota del\b|^Nota oficial del\b/i.test(o.title || "")) { o.status = "draft"; o.vacia = true; o.updatedAt = now; cambio = true; }
     if (cambio) await env.PORRA.put(OWN_KEY, JSON.stringify(own));
   } catch (e) {}
 

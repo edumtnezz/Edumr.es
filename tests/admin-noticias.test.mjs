@@ -67,7 +67,7 @@ test("borrador desde la rueda de prensa, publicar y leer; lo de otras webs no sa
   assert.equal(pub.noticias[0].link, "https://edumr.es/n/" + a.item.id);
   const art = await (await get(env, "noticia?u=" + encodeURIComponent(pub.noticias[0].link))).json();
   assert.match(art.html, /<p>Marc Casadó/);
-  assert.match(art.html, /youtu\.be\/VID1/);
+  assert.doesNotMatch(art.html, /Fuente|youtu\.be/);
   // una web externa: solo el administrador
   const ext = "https://www.futbolfantasy.com/laliga/noticias/algo";
   assert.deepEqual(await (await get(env, "noticia?u=" + encodeURIComponent(ext))).json(), { removed: true });

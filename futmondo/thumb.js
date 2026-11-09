@@ -8,6 +8,7 @@
   }
   function tipo(item) {
     var title = String(item && item.title || "");
+    if (!/\d+\s*[-–]\s*\d+/.test(title) && /lesi|baja|duda|molest|descartad/i.test(title)) return "lesion";
     var lead = String(item && item.lead || "");
     if (/\d+\s*[-–]\s*\d+/.test(title)) return "cronica";
     if (/once|alineaci/i.test(title)) return "once";
@@ -42,5 +43,22 @@
   function url(item) {
     return "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg(item));
   }
-  root.EduThumb = { tipo: tipo, marcador: marcador, svg: svg, url: url };
+  var ETIQ = { cronica: "CRÓNICA", once: "ONCE", rueda: "RUEDA", lesion: "PARTE", nota: "NOTICIA" };
+  // Miniatura en DOM (se adapta a cualquier tamaño con CSS): foto del jugador y escudo, marcador si es crónica.
+  // o = { photo, crest }. La animación es suave y se apaga con "reducir movimiento".
+  function el(item, o) {
+    o = o || {};
+    var k = tipo(item);
+    var d = document.createElement("div");
+    d.className = "eth eth-" + k;
+    var bg = document.createElement("i"); bg.className = "eth-bg"; d.appendChild(bg);
+    var tg = document.createElement("span"); tg.className = "eth-tag"; tg.textContent = ETIQ[k] || "NOTICIA"; d.appendChild(tg);
+    var m = k === "cronica" ? marcador(item && item.title) : "";
+    if (m) { var sc = document.createElement("b"); sc.className = "eth-score"; sc.textContent = m; d.appendChild(sc); }
+    else if (o.photo) { var im = document.createElement("img"); im.className = "eth-ph"; im.alt = ""; im.loading = "lazy"; im.src = o.photo; im.addEventListener("error", function () { im.remove(); d.classList.add("eth-nophoto"); }, { once: true }); d.appendChild(im); }
+    else d.classList.add("eth-nophoto");
+    if (o.crest) { var cr = document.createElement("img"); cr.className = "eth-cr"; cr.alt = ""; cr.loading = "lazy"; cr.src = o.crest; cr.addEventListener("error", function () { cr.remove(); }, { once: true }); d.appendChild(cr); }
+    return d;
+  }
+  root.EduThumb = { tipo: tipo, marcador: marcador, svg: svg, url: url, el: el };
 })(typeof window !== "undefined" ? window : globalThis);

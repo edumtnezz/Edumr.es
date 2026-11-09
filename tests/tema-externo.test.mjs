@@ -23,10 +23,10 @@ async function correr(gem) {
   return JSON.parse(kv.get("own:news:v1") || "[]");
 }
 
-test("un tema de otra web se publica reescrito y con «Según»", async () => {
-  const own = await correr({ tipo: "hecho", titular: "Cuti Romero sigue sin jugar con el Atlético", entradilla: "El central sigue fuera del grupo, según FutbolFantasy.", cuerpo: "Según FutbolFantasy, el central lleva sin competir desde el 17 de octubre, con problemas musculares. Cardoso se ha sumado al grupo." });
+test("un tema de otra web se publica reescrito", async () => {
+  const own = await correr({ tipo: "hecho", titular: "Cuti Romero sigue sin jugar con el Atlético", entradilla: "El central sigue fuera del grupo, según el parte.", cuerpo: "El central lleva sin competir desde el 17 de octubre, con problemas musculares. Cardoso se ha sumado al grupo." });
   assert.equal(own.length, 1);
-  assert.equal(own[0].source.name, "Según FutbolFantasy");
+  assert.equal(own[0].source.name, "FutbolFantasy");
   assert.equal(own[0].key, "ext-ff-154476-atletico");
 });
 test("una opinión no se publica", async () => {
@@ -37,7 +37,7 @@ test("si copia 7 palabras seguidas, no se publica", async () => {
   assert.equal(own.length, 0);
 });
 test("un dato que no está en la noticia se rechaza", async () => {
-  const own = await correr({ tipo: "hecho", titular: "Cuti Romero estará tres semanas de baja", entradilla: "El central acumula semanas fuera.", cuerpo: "Según FutbolFantasy, el defensa estará tres semanas de baja por una rotura." });
+  const own = await correr({ tipo: "hecho", titular: "Cuti Romero estará tres semanas de baja", entradilla: "El central acumula semanas fuera.", cuerpo: "El defensa estará tres semanas de baja por una rotura." });
   assert.equal(own.length, 0);
 });
 test("copiaLiteral detecta copia y deja pasar lo reescrito", () => {

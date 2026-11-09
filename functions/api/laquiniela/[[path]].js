@@ -1979,9 +1979,8 @@ function ownPublic(items) {
 }
 const escH = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 function ownArticle(x) {
-  const html = String(x.body || "").split(/\n+/).map((l) => l.trim()).filter(Boolean).map((l) => "<p>" + escH(l) + "</p>").join("") +
-    (x.source && x.source.url ? '<p class="muted small">Fuente: <a href="' + escH(x.source.url) + '" target="_blank" rel="noopener">' + escH(x.source.name || "Fuente") + "</a></p>" : "");
-  return { title: x.title, lead: x.lead || "", html, src: "EduMR", image: x.thumb || "" };
+  const html = String(x.body || "").split(/\n+/).map((l) => l.trim()).filter(Boolean).map((l) => "<p>" + escH(l) + "</p>").join("");
+  return { title: x.title, lead: x.lead || "", html, src: "EduMR", image: x.thumb || "", club: x.club || "", players: x.players || [], date: x.publishedAt || x.createdAt || 0 };
 }
 function ownDraftFromVideo(v, sel) {
   const items = (v.items || []).filter((_, i) => (sel ? sel.includes(i) : _.publicable));
