@@ -1117,7 +1117,7 @@ export function pistasATratar(doc, vistas, now) {
     if (v && now - Number(v.at || 0) < PISTAS_TTL) sig[id] = v;
   }
   // Un tema descartado por falta de nota oficial se reintenta una vez con la noticia de otra web
-  const reintento = (p) => { const v = sig[p.id]; return !!(p.ref && v && v.estado === "descartada" && v.ext !== 4 && ["sin fuente permitida", "sin hecho verificado", "robots prohíbe la fuente", "no pasa la revisión", "no se pudo leer", "sin hecho ni dato"].includes(v.motivo)); };
+  const reintento = (p) => { const v = sig[p.id]; return !!(p.ref && v && v.estado === "descartada" && v.ext !== 5 && ["sin fuente permitida", "sin hecho verificado", "robots prohíbe la fuente", "no pasa la revisión", "no se pudo leer", "sin hecho ni dato"].includes(v.motivo)); };
   const numDe = (p) => Number((String(p.ref || p.id).match(/\/(\d{4,})-|-(\d{4,})-/) || [])[1] || (String(p.id).match(/-(\d{3,})-/) || [])[1] || 0);
   const ap = (n) => norm2(n).split(/\s+/).filter((w) => w.length > 3).pop();
   // Si hay una noticia más nueva del mismo club y jugador, la anterior ya está superada
@@ -1619,7 +1619,7 @@ async function tratarExterna(env, f, st, now, pista, own) {
     return ap && fuenteNorm.includes(ap);
   });
   let val = null, correccion = "", ultimo = "sin hecho ni dato";
-  for (let intento = 0; intento < 2 && !val; intento++) {
+  for (let intento = 0; intento < 3 && !val; intento++) {
     let r;
     try { r = await gemini(env, f, { contents: [{ parts: [{ text: promptExterna(nombre, texto) + correccion }] }], generationConfig: { temperature: 0.3, responseMimeType: "application/json" } }); } catch (e) { return null; }
     if (!r || r.error) return null;
@@ -1654,7 +1654,7 @@ async function tratarExterna(env, f, st, now, pista, own) {
 async function tratarUnaPista(env, f, st, now, fuentes, pista, listas) {
   const una = await tratarUnaPistaOficial(env, f, st, now, fuentes, pista, listas);
   const e = st.pistas[pista.id];
-  if (e && e.estado !== "publicada") e.ext = 4; // 4 = probado con texto limpio, autocorrección y copia a 9 palabras
+  if (e && e.estado !== "publicada") e.ext = 5; // 5 = probado con texto limpio, autocorrección (3 intentos) y copia a 9 palabras
   if (una && una.noticias && una.noticias.length) return una;
   if (!e || e.estado === "publicada" || !MOTIVOS_EXT.has(e.motivo)) return una;
   let own = [];
