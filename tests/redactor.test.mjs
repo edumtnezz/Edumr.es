@@ -330,7 +330,9 @@ test("un «no» de valoración se publica; no se convierte en baja", () => {
 
 test("crónica solo con goles nombrados; si el marcador no cuadra, nada", () => {
   const ok = _r.cronicaDesdeHechos({ home: "Local", away: "Visitante", marcador: [1, 0], goles: [{ name: "Jugador Prueba", min: 10, side: "home" }] });
-  assert.equal(ok.title, "Jugador Prueba marcó un gol del Local");
+  assert.equal(ok.title, "El gol de Jugador Prueba ante el Visitante");
+  assert.equal(_r.entradillaRepiteTitulo(ok.title, ok.lead), false);
+  assert.equal(_r.entradillaRepiteTitulo("Fermín López marcó dos goles", "Fermín López marcó dos goles ante el Atlético de Madrid."), true);
   assert.doesNotMatch(ok.title, /\d+\s*[-–]\s*\d+/);
   assert.match(ok.ficha.title, /Local 1-0 Visitante/);
   assert.match(ok.body, /10'/);
@@ -338,7 +340,7 @@ test("crónica solo con goles nombrados; si el marcador no cuadra, nada", () => 
   assert.equal(_r.cronicaDesdeHechos({ home: "Local", away: "Visitante", goles: [{ name: "", min: 10, side: "home" }] }), null);
   const ev = { g: [{ m: 12, x: 0, p: "9", h: 1, og: 0 }], home: { st: [["9", "Delantero Fijo"]], sb: [] }, away: { st: [], sb: [] } };
   const deEv = _r.cronicaDesdeEv("Local", "Visitante", ev, [1, 0]);
-  assert.match(deEv.title, /Delantero Fijo marcó un gol/);
+  assert.match(deEv.title, /El gol de Delantero Fijo ante el Visitante/);
   assert.match(deEv.ficha.lead, /Delantero Fijo 12'/);
   assert.equal(_r.cronicaDesdeEv("Local", "Visitante", { g: [{ m: 1, p: "1", h: 1, og: 1 }], home: { st: [["1", "Portero"]], sb: [] }, away: { st: [], sb: [] } }, [1, 0]), null);
 });
@@ -415,7 +417,9 @@ test("crónica: publica los goles del partido de prueba y no un relato", async (
   assert.equal(own.length, 2);
   const historia = own.find((o) => o.key.indexOf("cronica-") === 0);
   const ficha = own.find((o) => o.key.indexOf("marcador-") === 0);
-  assert.equal(historia.title, "Delantero Fijo marcó un gol del Equipo A");
+  assert.equal(historia.title, "El gol de Delantero Fijo ante el Equipo B");
+  assert.equal(_r.entradillaRepiteTitulo(historia.title, historia.lead), false);
+  assert.doesNotMatch(historia.lead, /9 de noviembre|marcó un gol/);
   assert.doesNotMatch(historia.title, /\d+\s*[-–]\s*\d+/);
   assert.match(ficha.title, /Equipo A 1-0 Equipo B/);
   assert.match(ficha.lead, /Delantero Fijo 12'/);
@@ -442,6 +446,41 @@ test("un cuerpo no puede repetir el sujeto ni quedarse por debajo del mínimo", 
   assert.ok(limpio);
   assert.doesNotMatch(limpio, /titular|minutos/);
   assert.equal(_r.depurarCuerpo("rueda", "Hansi Flick habló tras el partido. «Creo mucho en este equipo».", "Hansi Flick Creo mucho en este equipo"), null);
+});
+
+test("el minuto oficial manda; si no hay oficial y las fuentes no coinciden, sin datos", () => {
+  assert.equal(_r.elegirMinuto([{ min: 9, oficial: false }, { min: 10, oficial: true }]), 10);
+  assert.equal(_r.elegirMinuto([{ min: 9, oficial: false }, { min: 10, oficial: false }]), null);
+  assert.equal(_r.elegirMinuto([{ min: 9, oficial: false }]), 9);
+  const html = "<p>Giuliano abrió el marcador (1-0, min 10).</p>";
+  assert.deepEqual(_r.minutosOficiales(html), [{ h: 1, a: 0, min: 10, extra: 0 }]);
+  const ev = { g: [{ m: 9, x: 0, p: "7", h: 1, og: 0 }], home: { st: [["7", "Giuliano Simeone"]], sb: [] }, away: { st: [], sb: [] } };
+  const oficial = _r.cronicaDesdeEv("Atlético", "Barcelona", ev, [1, 0], { oficiales: _r.minutosOficiales(html) });
+  assert.match(oficial.ficha.lead, /10'/);
+  assert.doesNotMatch(oficial.ficha.lead + oficial.hechos, /9'/);
+  const sin = _r.cronicaDesdeHechos({ home: "Atlético", away: "Barcelona", marcador: [1, 0], goles: [{ name: "Giuliano Simeone", min: null, side: "home" }] });
+  assert.match(sin.ficha.lead, /sin datos/);
+  assert.doesNotMatch(sin.hechos, /\b9\b/);
+});
+
+test("la fecha sale de la fuente y una frase con otro día se tira", () => {
+  assert.equal(_r.fechaDeFuente('<script type="application/ld+json">{"datePublished":"2026-11-08"}</script>'), "8 de noviembre de 2026");
+  assert.equal(_r.fechaDeFuente('<script type="application/ld+json">{"datePublished":"2026-11-08T23:02:26Z"}</script>'), "");
+  assert.equal(_r.fechaTexto("2026-11-08"), "8 de noviembre de 2026");
+  const hechos = "Fecha: 8 de noviembre de 2026. Gol: Giuliano Simeone, minuto 9.";
+  const malo = "Flick habló el 9 de noviembre de 2026 tras el partido.";
+  assert.equal(_r.depurarCuerpo("rueda", malo + " " + "palabra ".repeat(40), hechos), null);
+  const limpio = _r.revisarEntradilla("Hansi Flick habla del equipo", "Habló el 9 de noviembre. Giuliano Simeone marcó en el minuto 9.", hechos);
+  assert.doesNotMatch(limpio, /9 de noviembre/);
+  assert.match(limpio, /minuto 9/);
+  assert.equal(_r.revisarEntradilla("Hansi Flick habla del equipo", "Habló el 9 de noviembre de 2026.", hechos), null);
+  const conFecha = _r.cronicaDesdeHechos({ home: "Atlético de Madrid", away: "Barcelona", marcador: [1, 2], fecha: "8 de noviembre de 2026", goles: [{ name: "Fermín López", min: 45, side: "away" }, { name: "Fermín López", min: 66, side: "away" }, { name: "Giuliano Simeone", min: 10, side: "home" }] });
+  assert.match(conFecha.title, /El doblete de Fermín López/);
+  assert.doesNotMatch(conFecha.title, /\d+\s*[-–]\s*\d+/);
+  assert.match(conFecha.lead, /8 de noviembre de 2026/);
+  assert.doesNotMatch(conFecha.lead, /9 de noviembre/);
+  assert.equal(_r.entradillaRepiteTitulo(conFecha.title, conFecha.lead), false);
+  assert.equal(_r.entradillaRepiteTitulo(conFecha.title, "Fermín López marcó dos goles ante el Atlético de Madrid."), true);
 });
 
 test("comparar con otras webs: coincidencias por jugador y lo que no cubrimos", () => {
