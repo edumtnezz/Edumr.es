@@ -20,20 +20,36 @@ const ESPERA_REINTENTO = 20 * 60e3;
 const EDAD_MAX = 36 * 3600e3;    // solo vídeos de las últimas 36 h
 const ESTADOS = ["disponible", "opcion_titular", "duda", "recuperacion_con_grupo", "recuperacion_parcial", "baja", "titular_confirmado", "rotacion"];
 
-// Solo canales COMPROBADOS (el feed responde y es del club). Añadir un club = una línea.
+// Canales y listados comprobados el 09/11/2026. YouTube: la lista sigue saliendo de la API
+// (1 unidad por canal, como mucho cada 15 min). El RSS de YouTube lo prohíbe su robots.txt.
+// Athletic y Alavés no están. Si el robots.txt de un club no se puede leer, no hay listado.
 export const FUENTES = [
-  { club: "Deportivo de la Coruña", yt: "UCY2s1XaPzO60Hu6M_YZCTgA" },
-  { club: "Sevilla", yt: "UCLy9lmj_0cqffXUzbGHNmYA" },
-  // 07/11/2026: comprobados en su pestaña de vídeos (publican ruedas de prensa del primer equipo)
-  { club: "Betis", yt: "UCeB7JZwcar2fVoK2w2f9OwA" },
-  { club: "Valencia", yt: "UCgvyo5x49J8ht5H9imKfxMQ" },
-  { club: "Villarreal", yt: "UC0MLWyQ0L7uEZY8wbkDSTkw" },
-  { club: "Levante", yt: "UCvOegN2N1FGPPv4xBNN2F9A" },
-  { club: "Oviedo", yt: "UCvpFN8tLnBsjPR2BCJ-FJQA" },
-  { club: "Atlético", yt: "UCuzKFwdh7z2GHcIOX_tXgxA", noticias: "https://www.atleticodemadrid.com/sitemaps/noticias.xml" }, // ruedas en YouTube; el sitemap de noticias lo permite su robots.txt. Athletic y Alavés no se añaden.
-  // 09/11/2026: canal oficial @fcbarcelona (externalId en la página del canal) y sitemap de noticias del primer equipo, permitido por su robots.txt.
   { club: "Barcelona", yt: "UC14UlmYlSNiQCBe9Eookf_A", noticias: "https://www.fcbarcelona.es/es/sitemap/articles/detailed.xml" },
+  { club: "Atlético", yt: "UCuzKFwdh7z2GHcIOX_tXgxA", noticias: "https://www.atleticodemadrid.com/sitemaps/noticias.xml" },
+  { club: "Real Madrid", yt: "UCWV3obpZVGgJ3j9FVhEjF2Q" },
+  { club: "Betis", yt: "UCeB7JZwcar2fVoK2w2f9OwA" },
+  { club: "Real Sociedad", yt: "UCfeqewEKWQ8CXY8OiXoMxxw", noticias: "https://www.realsociedad.eus/es/noticias" },
+  { club: "Celta", yt: "UCCJLVZYqRb_85b2Flpg04cg" },
+  { club: "Deportivo de la Coruña", yt: "UCY2s1XaPzO60Hu6M_YZCTgA", noticias: "https://www.rcdeportivo.es/es/sitemap.xml" },
+  { club: "Rayo Vallecano", yt: "UCUTkI-vFAO7BjfpqIDFO8rQ", noticias: "https://www.rayovallecano.es/noticias" },
+  { club: "Espanyol", yt: "UClywhnD01yUU5kO6OgAeHUQ", noticias: "https://www.rcdespanyol.com/es/noticias" },
+  { club: "Getafe", yt: "UC34fUqq4rxJc0cj5Hart0zQ", noticias: "https://www.getafecf.com/noticias" },
+  { club: "Elche", yt: "UCeY_BssoWHlT-juP90UcZZg", noticias: "https://www.elchecf.es/noticias" },
+  { club: "Osasuna", yt: "UC2JTagDPIChbcEeiLjypuYA", noticias: "https://www.osasuna.es/noticias-primer-equipo" },
+  { club: "Villarreal", yt: "UC0MLWyQ0L7uEZY8wbkDSTkw" },
+  { club: "Valencia", yt: "UCgvyo5x49J8ht5H9imKfxMQ", noticias: "https://www.valenciacf.com/sitemaps/sitemap-club-2026.xml" },
+  { club: "Sevilla", yt: "UCLy9lmj_0cqffXUzbGHNmYA" },
+  { club: "Levante", yt: "UCvOegN2N1FGPPv4xBNN2F9A", noticias: "https://www.levanteud.com/noticias" },
+  { club: "Málaga", yt: "UCo_PhWZulZooYfQRo00vU-Q", noticias: "https://www.malagacf.com/noticias" },
+  { club: "Racing", yt: "UCPkCdE745MkHLx8YWOwi8ew", noticias: "https://www.realracingclub.es/noticias" },
+  { club: "Oviedo", yt: "UCvpFN8tLnBsjPR2BCJ-FJQA" },
 ];
+const HOSTS_PROHIBIDOS = ["athletic-club.eus", "athletic-club.net", "deportivoalaves.com", "alaves.com", "marca.com", "as.com", "mundodeportivo.com", "twitter.com", "x.com"];
+export function dominioProhibido(url) {
+  let host = "";
+  try { host = new URL(url).hostname.replace(/^www\./, "").toLowerCase(); } catch (e) { return true; }
+  return HOSTS_PROHIBIDOS.some((h) => host === h || host.endsWith("." + h));
+}
 // Solo esta rueda ya leída con 0 frases: se vuelve a mirar una vez con los temas nuevos. No se reabre el histórico.
 const RELECTURA_UNA_VEZ = new Set(["szC6cvFXHDs"]);
 
@@ -1135,6 +1151,57 @@ export function enlacesDeSitemap(xml) {
   }
   return out;
 }
+// Sitemap, RSS o el HTML del listado (enlaces y el JSON que algunas webs meten en la página).
+export function enlacesDeFuente(body, pageUrl) {
+  const raw = String(body || "");
+  const xml = enlacesDeSitemap(raw);
+  if (xml.length) return xml;
+  const rss = [];
+  for (const m of raw.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
+    const link = (m[1].match(/<link>([^<]+)<\/link>/) || [])[1];
+    const title = (m[1].match(/<title>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/title>/) || [])[1];
+    const date = (m[1].match(/<pubDate>([^<]+)/) || [])[1];
+    if (link) rss.push({ url: link.trim(), title: String(title || "").replace(/<!\[CDATA\[|\]\]>/g, "").trim(), published: Date.parse(date || "") || 0 });
+  }
+  if (rss.length) return rss;
+  let origin = "";
+  try { origin = new URL(pageUrl).origin; } catch (e) {}
+  const out = [];
+  const seen = new Set();
+  const push = (url, title, published) => {
+    if (!url || seen.has(url) || dominioProhibido(url)) return;
+    seen.add(url);
+    out.push({ url, title: title || "", published: published || 0 });
+  };
+  const nd = raw.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+  if (nd && origin) {
+    try {
+      const walk = (o) => {
+        if (o && typeof o === "object" && !Array.isArray(o) && typeof o.slug === "string" && o.slug.includes("-") && o.publishedAt && typeof o.title === "string") {
+          push(origin + "/noticias/" + o.slug, o.title, Date.parse(o.publishedAt) || 0);
+        }
+        if (Array.isArray(o)) o.forEach(walk);
+        else if (o && typeof o === "object") Object.values(o).forEach(walk);
+      };
+      walk(JSON.parse(nd[1]));
+    } catch (e) {}
+  }
+  if (out.length) return out;
+  for (const m of raw.matchAll(/href="([^"]+)"/g)) {
+    let href = m[1];
+    if (href.startsWith("/")) { try { href = new URL(href, pageUrl).href; } catch (e) { continue; } }
+    let u;
+    try { u = new URL(href); } catch (e) { continue; }
+    if (origin && u.origin !== origin) continue;
+    const path = decodeURIComponent(u.pathname);
+    const hy = (path.match(/-/g) || []).length;
+    const esNoticia = /\/noticias?\//.test(path) && hy >= 1 && path.replace(/\/+$/, "").split("/").pop().length > 8;
+    const raiz = path.split("/").filter(Boolean).length === 1 && hy >= 3;
+    if (!esNoticia && !raiz) continue;
+    push(u.origin + u.pathname, path.split("/").filter(Boolean).pop().replace(/[-_]+/g, " "), 0);
+  }
+  return out;
+}
 function sumaPista(st, campo, motivo) {
   const n = st.pistasN || { recibidas: 0, verificadas: 0, publicadas: 0, descartadas: 0, motivos: {} };
   if (campo) n[campo] = (n[campo] || 0) + 1;
@@ -1193,7 +1260,7 @@ async function tratarPistas(env, f, st, now, fuentes) {
   let notas = [];
   try {
     const r = await f(fuente.noticias, { headers: UA_RED });
-    if (r.ok) notas = enlacesDeSitemap(await r.text());
+    if (r.ok) notas = enlacesDeFuente(await r.text(), fuente.noticias);
   } catch (e) {}
   const nota = notaParaPista(pista, notas, now);
   if (!nota || !robotsPermite(robots, nota.url)) {
@@ -1371,4 +1438,4 @@ export async function redactorSombra(env, deps) {
   return { procesado: hecho ? hecho.id : null, pendientes: cola.length, tokens: st.tok.n };
 }
 
-export const _r = { compararNoticias, caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, localizarFrase, ventanaFrase, atribucionJugador, estadoRespaldado, temaRespaldado, robotsPermite, cruzarJugador, filtrar, parseJson, resumenTelegram, parseSitemapNews, esNotaPrimerEquipo, citaEnTitulo, partidoEnTitulo, citasDeHtml, cronicaDesdeHechos, cronicaDesdeEv, sujetosSeguidos, depurarCuerpo, elegirMinuto, minutosOficiales, fechaDeFuente, fechaTexto, entradillaRepiteTitulo, revisarEntradilla, clubProhibido, pistaAceptable, pistasATratar, notaParaPista, pistaDuplicada, enlacesDeSitemap };
+export const _r = { compararNoticias, caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, localizarFrase, ventanaFrase, atribucionJugador, estadoRespaldado, temaRespaldado, robotsPermite, cruzarJugador, filtrar, parseJson, resumenTelegram, parseSitemapNews, esNotaPrimerEquipo, citaEnTitulo, partidoEnTitulo, citasDeHtml, cronicaDesdeHechos, cronicaDesdeEv, sujetosSeguidos, depurarCuerpo, elegirMinuto, minutosOficiales, fechaDeFuente, fechaTexto, entradillaRepiteTitulo, revisarEntradilla, clubProhibido, pistaAceptable, pistasATratar, notaParaPista, pistaDuplicada, enlacesDeSitemap, enlacesDeFuente, dominioProhibido, FUENTES };
