@@ -91,6 +91,7 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 - 09/11 (minutos y fecha): el minuto del club manda sobre FotMob; si las fuentes no oficiales no coinciden, el minuto queda en «sin datos». La fecha solo entra si la fuente la escribe como día (no se convierte un instante UTC a Madrid ni se usa la fecha de hoy). La entradilla de la crónica no repite el título.
 - 09/11 (pistas): `rd:pistas:v1` solo dice de qué tema buscar. Se publica si el hecho está en la web oficial del club. Athletic y Alavés no se consultan. Si no está, no se publica. El contador queda en el estado del redactor.
 - 09/11 (detector): X ya no se usa. El Worker lee cada 30 minutos los sitemaps de titulares de FutbolFantasy y Comuniate, después de su robots.txt, y escribe pistas sin URL. Esas webs no se citan. El estado `deteccion` se ve en el panel.
+- 09/11 (pistas que no salían): el duplicado ya no es solo el apellido (hace falta el mismo tipo y 48 h, o la misma URL). Cada ciclo mira hasta 5 pistas. Una nota oficial vale si el título encaja con el tema, aunque no lleve cita ni marcador. Oviedo entra por https://www.realoviedo.es/noticias (robots.txt lo deja). Real Madrid, Betis, Celta, Villarreal y Sevilla siguen solo con YouTube.
 - 09/11 (fuentes de LaLiga): listados y canales comprobados uno a uno. YouTube solo por la API (el RSS lo prohíbe su robots.txt). Si el robots.txt no se puede leer, ese listado no entra.
 
 | Club | Fuente | Permitido | Motivo |
@@ -116,5 +117,5 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 | Málaga | /noticias + YouTube UCo_PhWZulZooYfQRo00vU-Q | sí | igual que Getafe |
 | Racing | /noticias + YouTube UCPkCdE745MkHLx8YWOwi8ew | sí | robots.txt no tapa nada |
 | LaLiga | /noticias | no | la página no trae piezas; el sitemap de noticias está en assets.laliga.com y su robots.txt no se puede leer |
-| Oviedo | YouTube UCvpFN8tLnBsjPR2BCJ-FJQA | canal sí | ya estaba; no es uno de los 20 con ficha |
+| Oviedo | /noticias en realoviedo.es + YouTube UCvpFN8tLnBsjPR2BCJ-FJQA | sí | robots.txt tapa /api, /preview y /_next; el listado trae las piezas |
 - 09/11 (4.ª parte): aviso automático de Telegram cuando Futmondo publica los puntos de un partido ("✅ PUNTOS DE FUTMONDO · Atlético de Madrid – Barcelona (J12)"). `recordMatchPoints` devuelve `savedInfo` con los nombres; el cron (`colaPuntos` / `avisarPuntos` en `cron/src/avisos.js`) los mete en la cola KV `tg:puntos-cola:v1` y los manda; de 00:00 a 08:00 se retienen hasta las 08:00 (misma regla de silencio que el resto). Tests: `tests/avisos-puntos.test.mjs`. Sin probar con el bot real (el token solo está en Cloudflare): comprobar el primer aviso con el siguiente partido.

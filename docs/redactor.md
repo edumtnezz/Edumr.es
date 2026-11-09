@@ -48,7 +48,7 @@ Tabla completa en ESTADO.md (9 de noviembre de 2026). Resumen: hay listado de no
 4. Fecha: solo si la fuente la escribe como día de calendario. No se convierte un instante UTC a Madrid ni se usa la fecha de hoy. Una frase con otra fecha se tira.
 5. Cuerpo: lo redacta Gemini solo con esos hechos. Si repite el sujeto, se queda corto o mete un dato que no está, no se publica. La entradilla no repite el título.
 6. Tope: 450.000 tokens al día. Al llegar, no hay más llamadas a Gemini ese día.
-7. Pistas: el Worker lee cada 30 minutos los sitemaps de titulares de FutbolFantasy y Comuniate (después de su robots.txt) y escribe `rd:pistas:v1`. Cada 15 minutos se mira una pista. El dato sale de la fuente oficial. Si no aparece, no se publica y la pista caduca a las 72 h.
+7. Pistas: el Worker lee cada 30 minutos los sitemaps de titulares de FutbolFantasy y Comuniate (después de su robots.txt) y escribe `rd:pistas:v1`. En cada ciclo mira hasta 5 pistas, dentro del tope de tokens. Elige la nota oficial del club cuyo título encaja con el tema, aunque no lleve una cita ni un marcador. Una noticia vieja del mismo apellido y de otro tema no cuenta como duplicada: hace falta el mismo tipo y menos de 48 horas, o la misma URL oficial. Si el dato no está en esa nota, no se publica.
 
 ### Claves KV (binding `PORRA`)
 
