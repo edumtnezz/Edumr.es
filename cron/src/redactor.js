@@ -415,6 +415,22 @@ async function miniatura(f, id) {
   return foto("mqdefault");
 }
 
+async function fotoDeMercado(f, nombres) {
+  const lista = (nombres || []).map((n) => String(n || "").trim()).filter((n) => n.length > 2);
+  if (!lista.length) return "";
+  try {
+    const r = await f(SITE + "mercado", { headers: { "user-agent": "edumr-cron" } });
+    if (!r.ok) return "";
+    const players = ((await r.json()).players) || [];
+    for (const name of lista) {
+      const p = cruzarJugador(name, players);
+      const hit = p && players.find((pl) => String(pl.id) === String(p.id) && /^https:\/\//.test(String(pl.photo || "")));
+      if (hit) return hit.photo;
+    }
+  } catch (e) {}
+  return "";
+}
+
 // Publica las noticias en la web (KV own:news:v1). Las de ese vídeo que ya existían como una sola noticia se sustituyen.
 async function publicarNoticias(env, f, res, now, opts) {
   if (caducada(res.title, res.pub, now)) return [];
@@ -423,14 +439,16 @@ async function publicarNoticias(env, f, res, now, opts) {
   let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
   const claves = new Set(own.map((o) => o.key).filter(Boolean));
   own = own.filter((o) => !(o.source && o.source.videoId === res.id && !o.key));
-  const thumb = res.sinMiniatura ? "" : await miniatura(f, res.id);
+  let thumb = res.sinMiniatura ? "" : await miniatura(f, res.id);
   const out = [];
-  nuevas.forEach((n, i) => {
-    if (claves.has(n.key)) return;
+  for (let i = 0; i < nuevas.length; i++) {
+    const n = nuevas[i];
+    if (claves.has(n.key)) continue;
+    const foto = thumb || await fotoDeMercado(f, n.players || []);
     const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
-    const item = Object.assign({ id: hex, status: "published", expira: true, createdAt: now + i, updatedAt: now + i, publishedAt: now + i, thumb }, n);
+    const item = Object.assign({ id: hex, status: "published", expira: true, createdAt: now + i, updatedAt: now + i, publishedAt: now + i, thumb: foto }, n);
     own.unshift(item); out.push(item);
-  });
+  }
   await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
   return out;
 }
@@ -783,7 +801,8 @@ async function unaNoticiaWeb(env, f, st, now, fuentes) {
       let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
       if (own.some((o) => o.key === item.key)) return { dirty: true };
       const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
-      const pub = Object.assign({ id: hex, status: "published", expira: true, createdAt: now, updatedAt: now, publishedAt: now, thumb: "" }, item);
+      const thumb = await fotoDeMercado(f, cronica.players);
+      const pub = Object.assign({ id: hex, status: "published", expira: true, createdAt: now, updatedAt: now, publishedAt: now, thumb }, item);
       own.unshift(pub);
       await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
       return { dirty: true, noticias: [pub], id: "cronica-" + id };

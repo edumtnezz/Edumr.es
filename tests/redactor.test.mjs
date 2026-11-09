@@ -395,6 +395,7 @@ test("crónica: publica los goles del partido de prueba y no un relato", async (
     if (url.endsWith("/sitemap.xml")) return new Response(`<url><loc>https://club.test/es/futbol/primer-equipo/noticias/8/partido</loc><news:title>Equipo A - Equipo B: encuentro de prueba (1-0)</news:title><news:publication_date>2026-11-08T22:00:00Z</news:publication_date></url>`);
     if (url.includes("/noticias/8/")) return new Response("<p>Este relato largo no debe copiarse.</p>");
     if (url.includes("fm-partido")) return new Response(JSON.stringify({ ev: { g: [{ m: 12, x: 0, p: "9", h: 1, og: 0 }], home: { st: [["9", "Delantero Fijo"]], sb: [] }, away: { st: [], sb: [] } } }));
+    if (url.endsWith("/mercado")) return new Response(JSON.stringify({ players: [{ id: "9", name: "Delantero Fijo", photo: "https://fotos.test/delantero.jpg" }] }));
     return new Response("", { status: 404 });
   };
   await redactorSombra(env, { fetch: f, now: Date.parse("2026-11-09T01:03:00Z"), fuentes: [{ club: "Barcelona", noticias: "https://club.test/sitemap.xml" }] });
@@ -404,6 +405,8 @@ test("crónica: publica los goles del partido de prueba y no un relato", async (
   assert.equal(own[0].body, "Goles: Delantero Fijo 12'.");
   assert.doesNotMatch(own[0].body + own[0].title, /relato|remontada|liderato/);
   assert.match(own[0].source.name, /FotMob/);
+  assert.ok(own[0].lead.length > 12);
+  assert.equal(own[0].thumb, "https://fotos.test/delantero.jpg");
 });
 
 test("comparar con otras webs: coincidencias por jugador y lo que no cubrimos", () => {

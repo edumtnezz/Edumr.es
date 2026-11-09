@@ -4037,6 +4037,7 @@
         const nkc = newsKindChip(x.title, "news-kind");
         if (nkc) bd.appendChild(nkc);
         bd.appendChild(el("div", "news-title", x.title));
+        if (x.lead) bd.appendChild(el("div", "news-sum", x.lead));
         const nd = el("div", "news-date"); nd.appendChild(ico("clock")); nd.appendChild(document.createTextNode(x.date + (x.time ? " · " + x.time : ""))); bd.appendChild(nd);
         it.appendChild(bd);
         a.appendChild(it);
@@ -4167,6 +4168,7 @@
     else { line.style.setProperty("--tc", "#16a34a"); line.appendChild(el("i")); line.appendChild(el("span", null, "Lo último")); }
     lb.appendChild(line);
     lb.appendChild(el("div", "nw-lead-t", hero.title));
+    if (hero.lead) lb.appendChild(el("div", "nw-sum", hero.lead));
     lb.appendChild(el("div", "nw-meta", newsWhen(hero)));
     lead.appendChild(lb);
     main.appendChild(lead);
@@ -4195,6 +4197,7 @@
           b.appendChild(tl);
         }
         b.appendChild(el("div", "nw-row-t", x.title));
+        if (x.lead) b.appendChild(el("div", "nw-sum", x.lead));
         b.appendChild(el("div", "nw-meta", newsWhen(x)));
         row.appendChild(b);
         ul.appendChild(row);
