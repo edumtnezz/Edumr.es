@@ -2951,14 +2951,16 @@
     const pickPl = (pl) => { closePop(); inp.value = ""; inp.blur(); choose(pl); };
     const fillPop = () => pickFill(popList, inp.value, pickPl, st);
     const openPop = () => {
-      document.querySelectorAll(".cmpx-pop").forEach((o) => { if (o !== pop) o.hidden = true; });
+      // Ya abierto: no volver a pintar la lista (en el móvil rompía el foco y no dejaba escribir)
+      if (!pop.hidden) return;
+      document.querySelectorAll(".cmpx-pop").forEach((o) => { if (o !== pop) { o.hidden = true; const sl = o.closest(".cmpx-slot2"); if (sl) sl.classList.remove("open"); } });
       fillPop(); pop.hidden = false; c.classList.add("open");
       document.addEventListener("pointerdown", outside, true);
     };
     inp.addEventListener("focus", openPop);
     inp.addEventListener("input", () => { st.mode = null; fillPop(); popList.scrollTop = 0; if (pop.hidden) openPop(); });
     inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { const f = popList.querySelector(".pk-row"); if (f) f.click(); } else if (e.key === "Escape") closePop(); });
-    arrow.addEventListener("click", () => { if (pop.hidden) { openPop(); } else closePop(); });
+    arrow.addEventListener("click", () => { if (pop.hidden) { openPop(); try { inp.focus(); } catch (e) {} } else closePop(); });
     c.appendChild(pop);
     body.appendChild(box);
     c.appendChild(body);
@@ -3577,6 +3579,9 @@
   // Si el mercado se refresca con el comparador abierto, se repinta en el sitio (sin mover el scroll).
   function cmpOnMarket() {
     if (!cmpInit || currentTab !== "comparador") return;
+    // Si estás escribiendo o tienes la lista abierta, no se repinta: se perdería el campo y el teclado
+    const pk = $("cmpxPick");
+    if (pk && (pk.contains(document.activeElement) || pk.querySelector(".cmpx-pop:not([hidden])"))) return;
     const sy = window.scrollY;
     cmpPaint();
     try { if (window.scrollY !== sy) window.scrollTo(0, sy); } catch (e) {}

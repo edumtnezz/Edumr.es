@@ -408,3 +408,7 @@ svg.ffx-ha.a{background:rgba(99,102,241,.16);color:#6366f1}
 /* Dentro de un club: el botón de volver se queda fijo ARRIBA de la lista, aunque bajes por los jugadores (Edu 02/11) */
 .cmpx-pop .pk-back, .pk-list .pk-back { position: sticky; top: 0; z-index: 3; display: block; width: 100%; text-align: left; padding: 14px 4px; margin: 0; font-size: 15px; background: var(--card-solid, var(--card, #0f172a)); border-bottom: 1px solid rgba(127,127,127,.22); }
 .cmpx-pop { padding-top: 0; }
+
+/* Comparador: el VS siempre por encima de las dos tarjetas, con el aro del color del panel (Edu 09/11) */
+.cmpx-panel .cmp2-vs { z-index: 20; border: 4px solid var(--card-solid, #fff); box-shadow: 0 0 0 1px rgba(127,127,127,.25); pointer-events: none; }
+.cmpx-panel .cmp2 .cmpx-slot2, .cmpx-panel .cmp2 .cmpx-slot2.open { z-index: auto; }
