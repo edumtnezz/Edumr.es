@@ -86,3 +86,4 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 - El RSS de YouTube está prohibido por su robots.txt; la lista va por la API oficial. Si robots.txt no se lee, no se toca esa URL.
 - Una frase cierta de otro jugador (ejemplo de prueba: Leo Román / Moleiro) no se publica. La duda y el «no» tampoco se convierten en un estado firme.
 - No se reescriben ni se reenvían los borradores y las noticias que ya estaban guardados.
+- 09/11 (cobertura): Barcelona entra por su canal oficial y por las noticias del primer equipo en fcbarcelona.es. Además de la disponibilidad, salen citas de cambios, táctica, minutos, gestión física y valoración. La crónica de un partido solo lista goles con nombre si cuadran con el marcador. La rueda de Simeone ya leída vacía (`szC6cvFXHDs`) se vuelve a mirar una sola vez. El vídeo posterior de Flick en YouTube no está localizado; la nota oficial escrita sí (`/noticias/4606585/`).
