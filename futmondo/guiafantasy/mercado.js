@@ -4009,7 +4009,7 @@
   }
 
   // Portadas hechas a mano para noticias propias concretas: id de la noticia (edumr.es/n/<id>) -> imagen en /img/n/
-  const PORTADAS = { "2b50b6910d": "/img/n/2b50b6910d.jpg" };
+  const PORTADAS = { "2b50b6910d": "/img/n/2b50b6910d.jpg", "7a9a8a24b4": "/img/n/7a9a8a24b4.jpg" };
   const portadaDe = (link) => PORTADAS[(String(link || "").match(/\/n\/([a-z0-9]+)$/) || [])[1]] || "";
   function renderNews(d) {
     (d.noticias || []).forEach((x) => { if (x && x.src === "EduMR" && !x.thumb) { const pt = portadaDe(x.link); if (pt) x.thumb = pt; } });
