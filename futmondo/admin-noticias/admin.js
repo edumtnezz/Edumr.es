@@ -182,6 +182,7 @@
     c.appendChild(el("p", "ad-meta", "Publica en la web y avisa por Telegram solo lo verificado. No crea borradores. Pasa cada 2 minutos."));
     if (!e) { c.appendChild(el("p", "ad-empty", "Todavía no ha arrancado (falta la clave GEMINI_API_KEY en el Worker edumr-cron).")); v.appendChild(c); return; }
     if (e.tok) c.appendChild(el("p", "ad-meta", "Tokens hoy (" + e.tok.d + "): " + (e.tok.n || 0) + " de 450.000"));
+    if (e.pistas) c.appendChild(el("p", "ad-meta", "Pistas: " + (e.pistas.recibidas || 0) + " recibidas, " + (e.pistas.verificadas || 0) + " verificadas, " + (e.pistas.publicadas || 0) + " publicadas, " + (e.pistas.descartadas || 0) + " descartadas"));
     if (e.tg) c.appendChild(el("p", "ad-meta", (e.tg.ok ? "Telegram: el último aviso fue aceptado" : "Telegram: el último aviso no fue aceptado") + (e.tg.err ? " (" + e.tg.err + ")" : "") + (e.tg.pendientes ? " · pendientes " + e.tg.pendientes : "")));
     v.appendChild(c);
     var f = el("div", "ad-card"); f.appendChild(el("h2", null, "Canales de YouTube"));
