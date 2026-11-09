@@ -63,3 +63,10 @@ test("un titular sin club se resuelve por el enlace o por el club del jugador", 
   const con = _r.pistasDesdeTitulares(notas, "futbolfantasy", 1, [{ name: "Camello", team: "Rayo Vallecano" }, { name: "Rafita", team: "Málaga" }]);
   assert.deepEqual(con.map((p) => p.equipo).sort(), ["Málaga", "Rayo Vallecano"]);
 });
+
+test("el texto de la noticia sale limpio: acentos bien, sin menú ni calendario", () => {
+  const html = "<nav>Mercado Comunio Premier League</nav><h1>Rafita, lesionado</h1><p>Sigue todas las noticias Deja tu comentario El M&aacute;laga ha confirmado la lesi&oacute;n de Rafita, de tres a cuatro meses.</p><p>Ver comentarios</p><div>Sab 14:00h 1 2 Dom 21:00h 0 3</div>";
+  const t = _r.textoDeArticulo(html);
+  assert.equal(t, "El Málaga ha confirmado la lesión de Rafita, de tres a cuatro meses.");
+  assert.equal(_r.decodificar("&iquest;S&iacute;&#33;"), "¿Sí!");
+});

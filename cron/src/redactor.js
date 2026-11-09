@@ -1543,11 +1543,22 @@ async function tratarUnaPistaOficial(env, f, st, now, fuentes, pista, listas) {
 // Solo hechos (nada de opinión), robots.txt obligatorio, sin frases copiadas y con la fuente dicha: «Según …».
 const ORIGEN_NOMBRE = { futbolfantasy: "FutbolFantasy", comuniate: "Comuniate" };
 const MOTIVOS_EXT = new Set(["sin fuente permitida", "sin hecho verificado", "robots prohíbe la fuente"]);
+const ENT = { aacute: "á", eacute: "é", iacute: "í", oacute: "ó", uacute: "ú", Aacute: "Á", Eacute: "É", Iacute: "Í", Oacute: "Ó", Uacute: "Ú", ntilde: "ñ", Ntilde: "Ñ", uuml: "ü", iexcl: "¡", iquest: "¿", quot: '"', amp: "&", lt: "<", gt: ">", nbsp: " ", apos: "'", laquo: "«", raquo: "»", ndash: "–", mdash: "—", hellip: "…", rsquo: "'", lsquo: "'", ldquo: '"', rdquo: '"' };
+export function decodificar(t) {
+  return String(t || "").replace(/&#(\d+);/g, (m, n) => String.fromCharCode(+n)).replace(/&#x([0-9a-f]+);/gi, (m, n) => String.fromCharCode(parseInt(n, 16))).replace(/&([a-zA-Z]+);/g, (m, n) => (ENT[n] != null ? ENT[n] : " "));
+}
+// Solo el cuerpo de la noticia: sin menú, sin calendario ni comentarios, con los acentos bien
 export function textoDeArticulo(html) {
-  let h = String(html || "").replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ");
+  let h = String(html || "").replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<(nav|footer|header|aside|form)[\s\S]*?<\/\1>/gi, " ");
   const art = h.match(/<article[\s\S]*?<\/article>/i);
   if (art) h = art[0];
-  return h.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/\s+/g, " ").trim().slice(0, 7000);
+  else { const i = h.search(/<h1[\s>]/i); if (i >= 0) h = h.slice(i); }
+  let t = decodificar(h.replace(/<[^>]+>/g, " ")).replace(/\s+/g, " ").trim();
+  const ini = t.indexOf("Deja tu comentario");
+  if (ini >= 0) t = t.slice(ini + "Deja tu comentario".length).trim();
+  const fin = t.search(/Ver comentarios|Noticias relacionadas|Comentarios \(|Jugadores lesionados de LaLiga/);
+  if (fin > 0) t = t.slice(0, fin).trim();
+  return t.slice(0, 5000);
 }
 // Si el texto nuevo repite 7 palabras seguidas del original, es copia: se tira
 export function copiaLiteral(texto, fuente, n) {
@@ -1576,7 +1587,7 @@ async function tratarExterna(env, f, st, now, pista, own) {
   let html = "";
   try { const r = await f(pista.ref, { headers: UA_RED }); if (r.ok) html = await r.text(); } catch (e) {}
   const texto = textoDeArticulo(html);
-  if (texto.length < 300) { st.pistas[pista.id].motivo = "no se pudo leer"; return null; }
+  if (texto.length < 150) { st.pistas[pista.id].motivo = "no se pudo leer"; return null; }
   let r;
   try { r = await gemini(env, f, { contents: [{ parts: [{ text: promptExterna(nombre, texto) }] }], generationConfig: { temperature: 0.3, responseMimeType: "application/json" } }); } catch (e) { return null; }
   if (!r || r.error) return null;
@@ -1773,4 +1784,4 @@ export async function redactorSombra(env, deps) {
   return { procesado: hecho ? hecho.id : null, pendientes: cola.length, tokens: st.tok.n };
 }
 
-export const _r = { compararNoticias, caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, localizarFrase, ventanaFrase, atribucionJugador, estadoRespaldado, temaRespaldado, robotsPermite, cruzarJugador, filtrar, parseJson, resumenTelegram, parseSitemapNews, esNotaPrimerEquipo, citaEnTitulo, partidoEnTitulo, citasDeHtml, cronicaDesdeHechos, cronicaDesdeEv, sujetosSeguidos, depurarCuerpo, elegirMinuto, minutosOficiales, fechaDeFuente, fechaTexto, entradillaRepiteTitulo, revisarEntradilla, clubProhibido, pistaAceptable, pistasATratar, notaParaPista, pistaDuplicada, enlacesDeSitemap, enlacesDeFuente, dominioProhibido, FUENTES, pistasDesdeTitulares, mezclarPistas, textoConFuenteDetectada, hechosDesdeNota, textoDeArticulo, copiaLiteral };
+export const _r = { compararNoticias, caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, localizarFrase, ventanaFrase, atribucionJugador, estadoRespaldado, temaRespaldado, robotsPermite, cruzarJugador, filtrar, parseJson, resumenTelegram, parseSitemapNews, esNotaPrimerEquipo, citaEnTitulo, partidoEnTitulo, citasDeHtml, cronicaDesdeHechos, cronicaDesdeEv, sujetosSeguidos, depurarCuerpo, elegirMinuto, minutosOficiales, fechaDeFuente, fechaTexto, entradillaRepiteTitulo, revisarEntradilla, clubProhibido, pistaAceptable, pistasATratar, notaParaPista, pistaDuplicada, enlacesDeSitemap, enlacesDeFuente, dominioProhibido, FUENTES, pistasDesdeTitulares, mezclarPistas, textoConFuenteDetectada, hechosDesdeNota, textoDeArticulo, copiaLiteral, decodificar };
