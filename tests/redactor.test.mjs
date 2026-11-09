@@ -2,6 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { _r, redactorSombra } from "../cron/src/redactor.js";
 
+const ROBOTS_YT = "User-agent: *\nDisallow: /feeds/videos.xml\n";
+const ROBOTS_IMG = "User-agent: *\nDisallow: /sb/\n";
+const YT = "UCdeportivo0000001";
+
 const XML = `<feed><entry><yt:videoId>AAA111</yt:videoId><title>Rueda de prensa de Luis García en la previa del #SevillaAlavés 📡 EN DIRECTO</title><published>2026-11-05T14:42:00+00:00</published></entry>
 <entry><yt:videoId>BBB222</yt:videoId><title>De la élite a la base: el primer equipo femenino visita los entrenamientos</title><published>2026-11-04T16:00:00+00:00</published></entry></feed>`;
 
@@ -57,8 +61,43 @@ test("filtrar: solo es publicable lo verificado, cruzado y con confianza alta", 
   const r = _r.filtrar(items, TRANS, PL);
   assert.equal(r.length, 3);                       // el estado inválido se descarta
   assert.equal(r[0].publicable, true);
+  assert.equal(r[0].confianza, "alta");
   assert.equal(r[1].publicable, false);            // confianza media
+  assert.equal(r[1].motivo, "confianza no alta");
   assert.equal(r[2].publicable, false);            // frase no verificada
+});
+
+test("Leo Román: una frase real de otro jugador no se publica como suya (ejemplo ficticio, solo test)", () => {
+  const texto = "[12:00] Leo Román ha estado hablando con la prensa sobre la afición del equipo. [14:10] Moleiro está descartado y no podrá jugar el domingo según el míster.";
+  const plantilla = [{ id: "77", name: "Leo Román" }, { id: "88", name: "Moleiro" }];
+  const frase = "está descartado y no podrá jugar";
+  const leo = _r.filtrar([{ jugador: "Leo Román", estado: "baja", frase, minuto: "14:10", confianza: "alta" }], texto, plantilla);
+  assert.equal(_r.fraseVerificada(frase, texto), true);
+  assert.equal(leo[0].publicable, false);
+  assert.match(leo[0].motivo, /no va con este jugador/);
+  const moleiro = _r.filtrar([{ jugador: "Moleiro", estado: "baja", frase, minuto: "14:10", confianza: "alta" }], texto, plantilla);
+  assert.equal(moleiro[0].publicable, true);
+  assert.equal(moleiro[0].nombre, "Moleiro");
+});
+
+test("no junta palabras de frases distintas ni publica un «no» como si fuera una baja", () => {
+  const collage = "Casadó está completando la sesión. El extremo podrá estar en la convocatoria del domingo si el míster lo decide.";
+  assert.equal(_r.fraseVerificada("Casadó podrá estar en la convocatoria", collage), false);
+  const t = "[01:02] Casadó no está descartado y sigue con el grupo";
+  const r = _r.filtrar([{ jugador: "Casadó", estado: "baja", frase: "no está descartado", minuto: "01:02", confianza: "alta" }], t, PL);
+  assert.equal(r[0].verificada, true);
+  assert.equal(r[0].publicable, false);
+  assert.match(r[0].motivo, /no se sostiene/);
+});
+
+test("robots.txt: el RSS de YouTube está prohibido; si no se puede leer, también", () => {
+  const yt = "User-agent: *\nDisallow: /feeds/videos.xml\n";
+  assert.equal(_r.robotsPermite(yt, "https://www.youtube.com/feeds/videos.xml?channel_id=UC1"), false);
+  assert.equal(_r.robotsPermite(yt, "https://www.youtube.com/watch?v=abc"), true);
+  assert.equal(_r.robotsPermite("User-agent: *\nDisallow: /sb/\n", "https://i.ytimg.com/vi/abc/hqdefault.jpg"), true);
+  assert.equal(_r.robotsPermite("", "https://www.youtube.com/watch?v=abc"), false);
+  assert.equal(_r.robotsPermite(null, "https://www.youtube.com/watch?v=abc"), false);
+  assert.equal(_r.robotsPermite("<!doctype html><html>", "https://www.youtube.com/watch?v=abc"), false);
 });
 
 test("parseJson tolera texto alrededor", () => {
@@ -73,10 +112,10 @@ test("sin clave de Gemini no hace nada", async () => {
 // KV y fetch falsos: flujo completo vídeo nuevo -> transcripción -> estados -> KV -> Telegram
 const own0thumb = (kv) => JSON.parse(kv.get("own:news:v1"))[0].thumb;
 
-test("flujo completo en modo sombra", async () => {
+test("flujo completo: publica la noticia verificada y avisa una sola vez", async () => {
   const kv = new Map();
   const env = {
-    GEMINI_API_KEY: "k", TELEGRAM_BOT_TOKEN: "t",
+    GEMINI_API_KEY: "k", YOUTUBE_API_KEY: "y", TELEGRAM_BOT_TOKEN: "t",
     PORRA: {
       async get(k, t) { const v = kv.get(k); return v == null ? null : (t === "json" ? JSON.parse(v) : v); },
       async put(k, v) { kv.set(k, v); },
@@ -85,9 +124,16 @@ test("flujo completo en modo sombra", async () => {
   kv.set("tg:avisos:v1", JSON.stringify({ chat: "42" }));
   const tgMsgs = [];
   let llamadasGemini = 0;
+  let feeds = 0;
   const fetchFalso = async (url, opts) => {
     url = String(url);
-    if (url.includes("youtube.com/feeds")) return new Response(`<feed><entry><yt:videoId>AAA111</yt:videoId><title>Rueda de prensa de Hidalgo previa Espanyol</title><published>2026-11-06T09:12:00+00:00</published></entry></feed>`);
+    if (url.includes("youtube.com/robots.txt")) return new Response(ROBOTS_YT);
+    if (url.includes("i.ytimg.com/robots.txt")) return new Response(ROBOTS_IMG);
+    if (url.includes("/feeds/videos.xml")) { feeds++; return new Response("no", { status: 500 }); }
+    if (url.includes("playlistItems")) {
+      assert.match(url, /playlistId=UUdeportivo0000001/);
+      return new Response(JSON.stringify({ items: [{ snippet: { title: "Rueda de prensa de Hidalgo previa Espanyol", publishedAt: "2026-11-06T09:12:00Z", resourceId: { videoId: "AAA111" } } }] }));
+    }
     if (url.includes("generativelanguage")) {
       llamadasGemini++;
       const body = JSON.parse(opts.body);
@@ -101,7 +147,7 @@ test("flujo completo en modo sombra", async () => {
     return new Response("", { status: 404 });
   };
   const now = Date.parse("2026-11-06T10:03:00Z");
-  const r = await redactorSombra(env, { fetch: fetchFalso, now, fuentes: [{ club: "Deportivo", yt: "X" }] });
+  const r = await redactorSombra(env, { fetch: fetchFalso, now, fuentes: [{ club: "Deportivo", yt: YT }] });
   assert.equal(r.procesado, "AAA111");
   assert.equal(r.tokens, 87000);
   const guardado = JSON.parse(kv.get("rd:res:v1:AAA111"));
@@ -117,25 +163,33 @@ test("flujo completo en modo sombra", async () => {
   assert.equal(own[0].status, "published");           // se publica sola
   assert.equal(own[0].source.videoId, "AAA111");
   assert.equal(own[0].via, "plantilla");              // el Gemini falso no devuelve noticia válida
-  assert.match(own[0].body, /Entrena con el grupo\. «está completando/);
+  assert.match(own[0].body, /«está completando entrenamientos con absoluta normalidad»/);
+  assert.doesNotMatch(own[0].body, /Entrena con el grupo/);
   assert.equal(own[0].title, "Marc Casadó: entrena con el grupo");
-  // segunda pasada: ya está hecho, no vuelve a gastar
-  const r2 = await redactorSombra(env, { fetch: fetchFalso, now: now + 10 * 60e3, fuentes: [{ club: "Deportivo", yt: "X" }] });
+  assert.match(own[0].lead, /^Según Deportivo/);
+  assert.match(own[0].source.name, /^Según Deportivo/);
+  assert.equal(own[0].expira, true);
+  assert.equal(feeds, 0);
+  // segunda pasada: ya está hecho, no vuelve a gastar ni a reenviar
+  const r2 = await redactorSombra(env, { fetch: fetchFalso, now: now + 10 * 60e3, fuentes: [{ club: "Deportivo", yt: YT }] });
   assert.equal(r2.procesado, null);
   assert.equal(llamadasGemini, 3);                // transcripción + estados + redacción
+  assert.equal(tgMsgs.length, 1);
   assert.equal(JSON.parse(kv.get('own:news:v1')).length, 1);
 });
 
-test("si el RSS de YouTube falla usa la API oficial (si hay clave) y si no, lo anota sin romper", async () => {
+test("el RSS prohibido no se pide; sin clave de YouTube se anota y con clave se usa la API", async () => {
   const kv = new Map();
   const mk = (extra) => ({
     GEMINI_API_KEY: "k", ...extra,
     PORRA: { async get(k, t) { const v = kv.get(k); return v == null ? null : (t === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } },
   });
   const now = Date.parse("2026-11-06T10:03:00Z");
+  let feeds = 0;
   const f = async (url) => {
     url = String(url);
-    if (url.includes("youtube.com/feeds")) return new Response("no", { status: 404 });
+    if (url.includes("youtube.com/robots.txt")) return new Response(ROBOTS_YT);
+    if (url.includes("/feeds/videos.xml")) { feeds++; return new Response("<feed></feed>"); }
     if (url.includes("googleapis.com/youtube/v3/playlistItems")) {
       assert.match(url, /playlistId=UUabc/);
       return new Response(JSON.stringify({ items: [{ snippet: { title: "Rueda de prensa de X", publishedAt: "2026-11-06T09:12:00Z", resourceId: { videoId: "VID1" } } }] }));
@@ -145,44 +199,67 @@ test("si el RSS de YouTube falla usa la API oficial (si hay clave) y si no, lo a
   const fuentes = [{ club: "Sevilla", yt: "UCabc" }];
   await redactorSombra(mk({}), { fetch: f, now, fuentes });
   let st = JSON.parse(kv.get("rd:sombra:v1"));
-  assert.equal(st.fuentes.Sevilla.ok, false);                 // sin clave de YouTube: se anota el fallo
+  assert.equal(feeds, 0);
+  assert.equal(st.fuentes.Sevilla.ok, false);
+  assert.match(st.fuentes.Sevilla.error, /robots/);
   assert.deepEqual(Object.keys(st.seen), []);
   await redactorSombra(mk({ YOUTUBE_API_KEY: "y" }), { fetch: f, now, fuentes, allTicks: true });
   st = JSON.parse(kv.get("rd:sombra:v1"));
+  assert.equal(feeds, 0);
   assert.equal(st.fuentes.Sevilla.via, "api");
   assert.ok(st.seen.VID1);
   assert.equal(st.seen.VID1.status, "pend");                  // Gemini falló: queda pendiente para reintentar
 });
 
+test("si robots.txt no se puede leer no se toca el RSS", async () => {
+  const kv = new Map();
+  const env = { GEMINI_API_KEY: "k", YOUTUBE_API_KEY: "y", PORRA: { async get(k, t) { const v = kv.get(k); return v == null ? null : (t === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } } };
+  let feeds = 0;
+  const f = async (url) => {
+    url = String(url);
+    if (url.includes("/feeds/videos.xml")) { feeds++; return new Response("<feed><entry><yt:videoId>Z</yt:videoId><title>Rueda de prensa</title><published>2026-11-06T09:12:00Z</published></entry></feed>"); }
+    return new Response("no", { status: 503 });
+  };
+  await redactorSombra(env, { fetch: f, now: Date.parse("2026-11-06T10:03:00Z"), fuentes: [{ club: "Sevilla", yt: "UCabc" }] });
+  assert.equal(feeds, 0);
+  const st = JSON.parse(kv.get("rd:sombra:v1"));
+  assert.equal(st.fuentes.Sevilla.ok, false);
+  assert.match(st.fuentes.Sevilla.error, /ilegible|robots/);
+});
+
 const IT = [{ jugador: "Casadó", nombre: "Marc Casadó", estado: "recuperacion_con_grupo", frase: "está completando entrenamientos con absoluta normalidad", minuto: "03:04", confianza: "alta", publicable: true }];
 
 test("validarNoticia: acepta una noticia fiel y rechaza cifras inventadas o jugadores olvidados", () => {
-  const ok = { titular: "Casadó se ejercita con normalidad en el Dépor", entradilla: "El centrocampista ya entrena con el grupo.", cuerpo: "Marc Casadó está completando entrenamientos con absoluta normalidad, según explicó el técnico en la rueda de prensa previa." };
+  const ok = { titular: "Casadó se ejercita con normalidad en el Dépor", entradilla: "Ya entrena con el grupo.", cuerpo: "Marc Casadó está completando entrenamientos con absoluta normalidad, según explicó el técnico en la rueda de prensa previa." };
   assert.ok(_r.validarNoticia(ok, IT));
   assert.equal(_r.validarNoticia({ ...ok, cuerpo: ok.cuerpo + " Estará tres semanas de baja." }, IT), null);
-  assert.equal(_r.validarNoticia({ ...ok, cuerpo: "El centrocampista del Dépor entrena con normalidad desde esta semana sin ningún problema para el próximo encuentro de liga." }, IT), null); // no nombra al jugador
+  assert.equal(_r.validarNoticia({ ...ok, cuerpo: "El jugador del Dépor entrena con normalidad desde esta semana sin ningún problema para el próximo encuentro de liga." }, IT), null); // no nombra al jugador
+  assert.equal(_r.validarNoticia({ ...ok, cuerpo: ok.cuerpo + " El domingo." }, IT), null);
+  assert.equal(_r.validarNoticia({ ...ok, titular: "Casadó, baja en el Dépor" }, IT), null);
   assert.equal(_r.validarNoticia({ titular: "x", entradilla: "", cuerpo: "y" }, IT), null);
 });
 
 test("noticia escrita por la IA cuando pasa la validación", async () => {
   const kv = new Map();
-  const env = { GEMINI_API_KEY: "k", TELEGRAM_BOT_TOKEN: "t", PORRA: { async get(k, tp) { const v = kv.get(k); return v == null ? null : (tp === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } } };
+  const env = { GEMINI_API_KEY: "k", YOUTUBE_API_KEY: "y", TELEGRAM_BOT_TOKEN: "t", PORRA: { async get(k, tp) { const v = kv.get(k); return v == null ? null : (tp === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } } };
   kv.set("tg:avisos:v1", JSON.stringify({ chat: "42" }));
   const tg = []; let n = 0;
   const f = async (url, o) => {
     url = String(url);
-    if (url.includes("youtube.com/feeds")) return new Response(`<feed><entry><yt:videoId>AAA111</yt:videoId><title>Rueda de prensa de Hidalgo previa Espanyol</title><published>2026-11-06T09:12:00+00:00</published></entry></feed>`);
+    if (url.includes("youtube.com/robots.txt")) return new Response(ROBOTS_YT);
+    if (url.includes("i.ytimg.com/robots.txt")) return new Response(ROBOTS_IMG);
+    if (url.includes("playlistItems")) return new Response(JSON.stringify({ items: [{ snippet: { title: "Rueda de prensa de Hidalgo previa Espanyol", publishedAt: "2026-11-06T09:12:00Z", resourceId: { videoId: "AAA111" } } }] }));
     if (url.includes("generativelanguage")) {
       n++;
       const txt = n === 1 ? TRANS + " x".repeat(400) : n === 2 ? JSON.stringify([{ jugador: "Casadó", estado: "recuperacion_con_grupo", frase: "está completando entrenamientos con absoluta normalidad", minuto: "03:04", confianza: "alta" }])
-        : JSON.stringify([{ jugador: "Marc Casadó", titular: "Casadó se ejercita con normalidad en el Dépor", entradilla: "El centrocampista ya entrena con el grupo.", cuerpo: "Marc Casadó está completando entrenamientos con absoluta normalidad, según explicó el técnico en la rueda de prensa previa al partido." }]);
+        : JSON.stringify([{ jugador: "Marc Casadó", titular: "Casadó se ejercita con normalidad en el Dépor", entradilla: "Ya entrena con el grupo.", cuerpo: "Marc Casadó está completando entrenamientos con absoluta normalidad, según explicó el técnico en la rueda de prensa previa al partido." }]);
       return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: txt }] } }], usageMetadata: { totalTokenCount: 1000 } }));
     }
     if (url.endsWith("/mercado")) return new Response(JSON.stringify({ players: [{ id: "1", name: "Marc Casadó", team: "Deportivo" }] }));
     if (url.includes("api.telegram.org")) { tg.push(JSON.parse(o.body)); return new Response(JSON.stringify({ ok: true })); }
     return new Response("", { status: 404 });
   };
-  await redactorSombra(env, { fetch: f, now: Date.parse("2026-11-06T10:03:00Z"), fuentes: [{ club: "Deportivo", yt: "X" }] });
+  await redactorSombra(env, { fetch: f, now: Date.parse("2026-11-06T10:03:00Z"), fuentes: [{ club: "Deportivo", yt: YT }] });
   const own = JSON.parse(kv.get("own:news:v1"));
   assert.equal(own[0].via, "ia");
   assert.equal(own[0].title, "Casadó se ejercita con normalidad en el Dépor");
@@ -191,7 +268,7 @@ test("noticia escrita por la IA cuando pasa la validación", async () => {
   assert.equal(own[0].players[0], "Marc Casadó");
 });
 
-test("una noticia antigua (una por vídeo) se rehace por jugador y se publica sola", async () => {
+test("los borradores ya guardados no se republican ni se borran", async () => {
   const kv = new Map();
   const env = { GEMINI_API_KEY: "k", PORRA: { async get(k, tp) { const v = kv.get(k); return v == null ? null : (tp === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } } };
   kv.set("rd:res:v1:OLD1", JSON.stringify({ id: "OLD1", club: "Sevilla", title: "r", pub: Date.parse("2026-11-06T08:00:00Z"), at: 1, items: IT }));
@@ -199,11 +276,10 @@ test("una noticia antigua (una por vídeo) se rehace por jugador y se publica so
   const f = async () => new Response("", { status: 500 });
   await redactorSombra(env, { fetch: f, now: Date.parse("2026-11-06T10:03:00Z"), fuentes: [] });
   const own = JSON.parse(kv.get("own:news:v1"));
-  assert.equal(own.find((o) => o.id === "d1"), undefined);          // la noticia única de antes se sustituye
-  const nueva = own.find((o) => o.key === "OLD1:" + "marc casado");
-  assert.equal(nueva.status, "published");
-  assert.equal(nueva.thumb, "https://i.ytimg.com/vi/OLD1/mqdefault.jpg");
-  assert.equal(own.find((o) => o.id === "d2").status, "draft");   // el que Edu tocó no se toca
+  assert.equal(own.length, 2);
+  assert.equal(own.find((o) => o.id === "d1").status, "draft");
+  assert.equal(own.find((o) => o.id === "d2").status, "draft");
+  assert.equal(own.some((o) => o.status === "published"), false);
 });
 
 test("caducidad: una previa de hace más de 30 h ya no vale; una de después del partido aguanta 40 h", () => {
@@ -220,11 +296,16 @@ test("la noticia de una previa caducada se retira de la web", async () => {
   const env = { GEMINI_API_KEY: "k", PORRA: { async get(k, tp) { const v = kv.get(k); return v == null ? null : (tp === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } } };
   const now = Date.parse("2026-11-07T10:03:00Z");
   kv.set("rd:res:v1:V1", JSON.stringify({ id: "V1", club: "Sevilla", title: "Rueda de prensa en la previa del #SevillaAlavés", pub: now - 40 * 3600e3, items: IT }));
-  kv.set("own:news:v1", JSON.stringify([{ id: "n1", status: "published", createdAt: 1, updatedAt: 1, source: { videoId: "V1" } }]));
+  kv.set("own:news:v1", JSON.stringify([
+    { id: "n1", status: "published", expira: true, createdAt: 1, updatedAt: 1, source: { videoId: "V1" } },
+    { id: "vieja", status: "published", createdAt: 1, updatedAt: 1, source: { videoId: "V1" } },
+  ]));
   await redactorSombra(env, { fetch: async () => new Response("", { status: 500 }), now, fuentes: [] });
-  const o = JSON.parse(kv.get("own:news:v1"))[0];
+  const own = JSON.parse(kv.get("own:news:v1"));
+  const o = own.find((x) => x.id === "n1");
   assert.equal(o.status, "draft");
   assert.equal(o.caducada, true);
+  assert.equal(own.find((x) => x.id === "vieja").status, "published");
 });
 
 test("una noticia por jugador, agrupando sus frases", () => {

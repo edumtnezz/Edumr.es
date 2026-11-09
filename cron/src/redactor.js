@@ -1,10 +1,11 @@
-// Redactor automático en MODO SOMBRA.
-// Detecta ruedas de prensa nuevas en el YouTube oficial de cada club, las transcribe con Gemini
-// (la API oficial acepta la URL de YouTube; no descargamos nada), saca el estado de cada jugador
-// con una frase literal y la VERIFICA contra la transcripción. Guarda el resultado en KV y manda un
-// resumen privado a Edu por Telegram. NO publica nada en la web.
+// Redactor automático. Publica en la web y avisa por Telegram al chat ya guardado.
+// No crea borradores ni manda un resumen "sombra".
 //
-// Reglas: nunca inventar. Sin frase verificada = sin dato. Sin clave de Gemini = no hace nada.
+// De cada canal oficial: la API de YouTube (el RSS /feeds/videos.xml lo prohíbe robots.txt).
+// Gemini transcribe. Solo se publica si la frase está en UN solo tramo de la transcripción,
+// el jugador nombrado es el de ese tramo y el estado se sostiene en esas palabras
+// (niega, duda y otro jugador tiran la noticia). Si no cuadra, no se publica y queda el motivo.
+// Sin clave de Gemini no hace nada. Nunca se inventa un dato.
 import { _t } from "./avisos.js";
 
 const { norm, sameTeam } = _t;
@@ -60,17 +61,51 @@ export function esConferencia(title) {
 function palabras(s) { return norm(s).split(" ").filter(Boolean); }
 function trigramas(w) { const s = new Set(); for (let i = 0; i + 2 < w.length; i++) s.add(w[i] + " " + w[i + 1] + " " + w[i + 2]); return s; }
 
-// La frase que dice la IA debe EXISTIR en la transcripción (tolera pequeños cambios).
-export function fraseVerificada(frase, transcripcion) {
+// La frase tiene que estar en UN tramo corto de la transcripción, en orden.
+// No vale juntar palabras sueltas de sitios distintos (el 60 % es dentro de esa ventana).
+export function localizarFrase(frase, transcripcion) {
   const w = palabras(frase);
-  if (w.length < 3) return false;
   const T = palabras(transcripcion);
-  const tg = trigramas(T);
+  if (w.length < 3 || T.length < 3) return null;
+  const joined = T.join(" ");
+  const at = joined.indexOf(w.join(" "));
+  if (at >= 0) {
+    const before = joined.slice(0, at).trim();
+    const start = before ? before.split(" ").length : 0;
+    return { start, end: start + w.length };
+  }
   const fg = trigramas(w);
-  if (!fg.size) return false;
-  let ok = 0;
-  for (const g of fg) if (tg.has(g)) ok++;
-  return ok / fg.size >= 0.6;
+  if (!fg.size) return null;
+  const win = w.length + 2;
+  for (let i = 0; i < T.length; i++) {
+    const slice = T.slice(i, Math.min(T.length, i + win));
+    if (slice.length < 3) break;
+    const tg = trigramas(slice);
+    let ok = 0;
+    for (const g of fg) if (tg.has(g)) ok++;
+    if (ok / fg.size < 0.6) continue;
+    let j = 0;
+    for (const word of slice) if (word === w[j]) j++;
+    if (j >= 3 && j / w.length >= 0.6) return { start: i, end: i + slice.length };
+  }
+  return null;
+}
+export function fraseVerificada(frase, transcripcion) {
+  return !!localizarFrase(frase, transcripcion);
+}
+
+// Ventana de la frase: unas pocas palabras antes, sin cruzar la marca de tiempo anterior.
+export function ventanaFrase(frase, transcripcion) {
+  const T = palabras(transcripcion);
+  const loc = localizarFrase(frase, transcripcion);
+  if (!loc) return "";
+  let from = loc.start;
+  const limit = Math.max(0, loc.start - 24);
+  for (let i = loc.start - 1; i >= limit; i--) {
+    if (/^\d+$/.test(T[i]) && i > 0 && /^\d+$/.test(T[i - 1])) { from = i + 1; break; }
+    from = i;
+  }
+  return T.slice(from, loc.end).join(" ");
 }
 
 // Cruza el nombre que oyó la IA con la plantilla de Futmondo. Solo vale si hay UN candidato claro.
@@ -84,6 +119,73 @@ export function cruzarJugador(nombre, plantilla) {
     return toks.every((t) => pt.includes(t));
   });
   return c.length === 1 ? c[0] : null;
+}
+
+function clavesJugador(oido, oficial) {
+  const s = new Set();
+  for (const t of norm(oido).split(" ")) if (t.length >= 3) s.add(t);
+  for (const t of norm(oficial).split(" ")) if (t.length >= 4) s.add(t);
+  for (const [k, v] of Object.entries(ALIAS_JUGADOR)) if (norm(v) === norm(oficial)) s.add(norm(k));
+  return [...s];
+}
+function ultimaClave(claves, texto) {
+  const w = String(texto || "").split(" ").filter(Boolean);
+  let best = -1;
+  for (let i = 0; i < w.length; i++) if (claves.includes(w[i])) best = i;
+  return best;
+}
+
+// El nombre tiene que caer en el mismo tramo que la frase, y más cerca que otro jugador de la plantilla.
+export function atribucionJugador(jugador, oficial, plantilla, frase, transcripcion) {
+  const texto = ventanaFrase(frase, transcripcion);
+  if (!texto) return { ok: false, motivo: "frase no localizada junto al jugador" };
+  const mia = ultimaClave(clavesJugador(jugador, oficial), texto);
+  if (mia < 0) return { ok: false, motivo: "la frase no va con este jugador" };
+  let otro = null, posOtro = -1;
+  for (const pl of plantilla || []) {
+    if (!pl || norm(pl.name) === norm(oficial)) continue;
+    const p = ultimaClave(clavesJugador(pl.name, pl.name), texto);
+    if (p > posOtro) { posOtro = p; otro = pl; }
+  }
+  if (otro && posOtro > mia) return { ok: false, motivo: "la frase parece de " + otro.name };
+  if (otro && posOtro >= 0 && posOtro === mia) return { ok: false, motivo: "no se distingue de quién habla la frase" };
+  return { ok: true };
+}
+
+const PISTAS_ESTADO = {
+  baja: ["descartad", "de baja", "no podra jugar", "no puede jugar", "no jugara", "no esta disponible", "fuera de la convocatoria", "no entra en la convocatoria"],
+  disponible: ["disponible", "sin problemas", "sin molestias", "alta medica", "apto para jugar", "puede jugar", "podra jugar"],
+  recuperacion_con_grupo: ["completando entrenamiento", "entrena con el grupo", "entrenando con el grupo", "trabajando con el grupo"],
+  recuperacion_parcial: ["entrenamiento parcial", "trabajo especifico", "al margen del grupo", "en el gimnasio", "parte de la sesion"],
+  duda: ["duda", "no esta claro", "veremos", "habria que ver", "en el aire", "decision de ultima hora", "puede que"],
+  opcion_titular: ["opcion", "puede ser titular", "entra en los planes"],
+  titular_confirmado: ["sera titular", "va de inicio", "titular indiscutible", "en el once inicial"],
+  rotacion: ["rotacion", "va a rotar", "descansara", "no sera titular", "gestionaremos minutos"],
+};
+const MARCA_DUDA = ["puede que", "quizas", "quiza", "veremos", "en principio", "no esta claro", "habria que ver", "todavia no se", "ya veremos", "no lo se"];
+const ESTADO_FIRME = new Set(["baja", "titular_confirmado", "disponible", "recuperacion_con_grupo", "recuperacion_parcial", "rotacion"]);
+
+function pistaApoya(pista, texto) {
+  let from = 0;
+  while (from < texto.length) {
+    const i = texto.indexOf(pista, from);
+    if (i < 0) return false;
+    const antes = texto.slice(0, i).trim().split(" ").filter(Boolean).slice(-3);
+    const negado = antes.includes("no") || antes.includes("nunca") || antes.includes("tampoco") || antes.includes("ni");
+    if (pista.startsWith("no ") || !negado) return true;
+    from = i + pista.length;
+  }
+  return false;
+}
+
+// El estado que propone la IA tiene que leerse en la misma ventana. Si no, no se publica (no se cambia por otro).
+export function estadoRespaldado(estado, frase, transcripcion) {
+  if (!ESTADOS.includes(estado)) return { ok: false, motivo: "estado no válido" };
+  const texto = ventanaFrase(frase, transcripcion);
+  if (!texto) return { ok: false, motivo: "frase no localizada" };
+  if (ESTADO_FIRME.has(estado) && MARCA_DUDA.some((d) => texto.includes(d))) return { ok: false, motivo: "hay duda en la frase, no se afirma ese estado" };
+  if (!(PISTAS_ESTADO[estado] || []).some((p) => pistaApoya(p, texto))) return { ok: false, motivo: "el estado no se sostiene en la frase" };
+  return { ok: true };
 }
 
 export function parseJson(txt) {
@@ -101,12 +203,29 @@ export function filtrar(items, transcripcion, plantilla) {
     const frase = String(it.frase || "").slice(0, 200);
     const verificada = fraseVerificada(frase, transcripcion);
     const p = cruzarJugador(it.jugador, plantilla);
+    let motivo = "";
+    let atribOk = false;
+    let estadoOk = false;
+    if (!verificada) motivo = "frase no está en la transcripción";
+    else if (!p) motivo = "sin cruzar con Futmondo";
+    else {
+      const a = atribucionJugador(it.jugador, p.name, plantilla, frase, transcripcion);
+      if (!a.ok) motivo = a.motivo;
+      else {
+        atribOk = true;
+        const e = estadoRespaldado(it.estado, frase, transcripcion);
+        if (!e.ok) motivo = e.motivo;
+        else estadoOk = true;
+      }
+    }
+    if (!motivo && it.confianza !== "alta") motivo = "confianza no alta";
+    const publicable = verificada && !!p && atribOk && estadoOk && it.confianza === "alta";
     out.push({
       jugador: it.jugador, id: p ? p.id : null, nombre: p ? p.name : null,
       estado: it.estado, frase, minuto: String(it.minuto || ""),
-      verificada, cruzado: !!p,
-      // Publicable solo si la frase existe, el jugador es de la plantilla y la IA no dudó.
-      publicable: verificada && !!p && it.confianza === "alta",
+      confianza: it.confianza || "",
+      verificada, cruzado: !!p, motivo: publicable ? "" : motivo,
+      publicable,
     });
   }
   return out;
@@ -140,7 +259,7 @@ function promptEstados(club, transcripcion, nombres) {
   return "Rueda de prensa de un entrenador o jugador del " + club + ". Con SOLO la transcripción de abajo, lista la DISPONIBILIDAD de cada FUTBOLISTA en activo para el próximo partido, " +
     "únicamente si se dice de forma explícita. Recorre la transcripción ENTERA de principio a fin y no te dejes a ningún jugador del que se hable.\nReglas:\n1. Ignora fallecimientos, homenajes, rivales y otros equipos.\n" +
     "2. estado: uno de " + ESTADOS.join(" | ") + ".\n3. Si no se compromete, usa duda. Si no habla de su disponibilidad, NO lo incluyas.\n" +
-    "4. frase: cita LITERAL copiada de la transcripción (máx 20 palabras).\n5. minuto: el [mm:ss] más cercano.\n6. confianza: alta | media | baja.\n" +
+    "4. frase: cita LITERAL de la MISMA frase en la que se nombra a ese jugador (máx 25 palabras). No juntes palabras de otro jugador.\n5. minuto: el [mm:ss] más cercano.\n6. confianza: alta solo si el estado se dice claro; si hay un «no», un «veremos» o no se sabe de quién habla, baja.\n" +
     (nombres && nombres.length ? "7. jugador: la transcripción puede oír mal los nombres. Plantilla del equipo: " + nombres.join(", ") + ". Si el nombre oído corresponde claramente a alguien de la lista, devuelve EXACTAMENTE el nombre de la lista; si no corresponde a nadie, devuelve el nombre tal cual y confianza baja.\n" : "") +
     "Devuelve solo un array JSON de {jugador, estado, frase, minuto, confianza}.\n\nTRANSCRIPCIÓN:\n" + transcripcion;
 }
@@ -159,7 +278,7 @@ export function borradorDesdeVideo(v) {
     lead: items.length + " jugador" + (items.length === 1 ? "" : "es") + " mencionado" + (items.length === 1 ? "" : "s") + " por el entrenador.",
     body: items.map((it) => (it.nombre || it.jugador) + ": " + (ETIQ_TXT[it.estado] || it.estado) + ". «" + it.frase + "»" + (it.minuto ? " (min " + it.minuto + ")" : "")).join("\n"),
     club: v.club, players: items.map((i) => i.nombre || i.jugador),
-    source: { name: "Rueda de prensa · " + v.club + " (YouTube)", url: "https://youtu.be/" + v.id + (first ? "?t=" + secs(first.minuto) : ""), videoId: v.id },
+    source: { name: "Según " + v.club, url: "https://youtu.be/" + v.id + (first ? "?t=" + secs(first.minuto) : ""), videoId: v.id },
     original: items.map((i) => ({ jugador: i.jugador, estado: i.estado, frase: i.frase, minuto: i.minuto, confianza: i.confianza, verificada: !!i.verificada, cruzado: !!i.cruzado })),
   };
 }
@@ -175,7 +294,7 @@ export function caducada(title, pub, now) {
 const norm2 = (x) => String(x || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 function promptNoticias(club, grupos) {
   return "Eres redactor de una web de fantasy de LaLiga. Para CADA jugador de la lista escribe una noticia corta, en español y con tus propias palabras, usando SOLO los datos verificados de la rueda de prensa de un entrenador del " + club + ".\n" +
-    "REGLAS: usa únicamente la información de su lista. No añadas lesiones, fechas, partidos, rivales, cifras, causas ni consecuencias que no estén. No inventes citas: si citas, copia la frase literal entre comillas. Tono informativo y directo, como un titular de prensa deportiva, sin exagerar. " +
+    "REGLAS: usa únicamente la información de su lista. No añadas posición, día de la semana, fecha, plazo, rival, cifra, lesión ni un estado distinto al de la lista. No inventes citas: si citas, copia la frase literal entre comillas. Tono breve, de móvil, con palabras propias. " +
     "Titular de máximo 80 caracteres que mencione al jugador. Entradilla de una sola frase, máximo 160 caracteres. Cuerpo de un párrafo de 40 a 400 caracteres. Escribe el nombre del jugador exactamente como en la lista.\n" +
     'Devuelve solo JSON: [{"jugador": "nombre tal cual", "titular": "...", "entradilla": "...", "cuerpo": "..."}] con un elemento por jugador y en el mismo orden.\n\nDATOS:\n' +
     grupos.map((g) => "JUGADOR: " + g.nombre + "\n" + g.items.map((i) => "- " + (ETIQ_TXT[i.estado] || i.estado) + " | frase literal: «" + i.frase + "»" + (i.minuto ? " | min " + i.minuto : "")).join("\n")).join("\n\n");
@@ -185,12 +304,16 @@ export function validarNoticia(n, items) {
   if (!n || typeof n !== "object") return null;
   const t = String(n.titular || "").trim(), l = String(n.entradilla || "").trim(), c = String(n.cuerpo || "").trim();
   if (t.length < 12 || t.length > 120 || l.length > 220 || c.length < 40 || c.length > 2500) return null;
-  const fuente = norm2(items.map((i) => i.frase + " " + i.minuto).join(" "));
+  const fuente = norm2(items.map((i) => [i.frase, i.minuto, ETIQ_TXT[i.estado] || ""].join(" ")).join(" "));
+  const todo = norm2(t + " " + l + " " + c);
   const nums = (t + " " + l + " " + c).match(/\d+/g) || [];
   if (nums.some((x) => !fuente.includes(x))) return null;
-  // Palabras de lesión/plazo/cifra que la IA podría colar: solo valen si salen en las frases del entrenador
-  const riesgo = norm2(t + " " + l + " " + c).match(/\b(semanas?|meses|dias?|lesion\w*|operad[oa]|rotura|fractura|esguince|desgarro|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\b/g) || [];
+  // Día, plazo, posición o estado que no esté en la frase (o en la etiqueta ya comprobada) se rechaza.
+  const riesgo = todo.match(/\b(semanas?|meses|dias?|lunes|martes|miercoles|jueves|viernes|sabado|domingo|hoy|manana|ayer|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre|jornada|porteros?|porteras?|defensas?|delanteros?|delanteras?|centrocampistas?|extremos?|mediocentros?|laterales?|lesion\w*|operad[oa]|rotura|fractura|esguince|desgarro|baja|bajas|descartad\w*|titular|titulares|disponible|rotacion|duda|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\b/g) || [];
   if (riesgo.some((w) => !new RegExp("\\b" + w + "\\b").test(fuente))) return null;
+  const utiles = [];
+  for (const i of items) for (const w of norm2(i.frase).split(" ")) if (w.length > 4) utiles.push(w);
+  if (utiles.length && utiles.filter((w) => todo.includes(w)).length / utiles.length < 0.34) return null;
   const cuerpo = norm2(c + " " + t);
   for (const i of items) {
     const last = norm2(i.nombre || i.jugador).split(/\s+/).filter((w) => w.length > 2).pop();
@@ -210,45 +333,51 @@ function agruparPorJugador(items) {
   return [...g.values()];
 }
 // Una noticia por jugador (como hacen las webs de fantasy), con IA validada o, si falla, plantilla con las frases
-async function redactarNoticias(env, f, res) {
+async function redactarNoticias(env, f, res, opts) {
   const grupos = agruparPorJugador(res.items || []);
   if (!grupos.length) return [];
   let tokens = 0, arr = null;
-  try {
-    const r = await gemini(env, f, { contents: [{ parts: [{ text: promptNoticias(res.club, grupos) }] }], generationConfig: { temperature: 0.3, responseMimeType: "application/json" } });
-    if (!r.error) { tokens = r.tokens; arr = parseArr(textoDe(r.j)); }
-  } catch (e) {}
+  if (!(opts && opts.sinIa)) {
+    try {
+      const r = await gemini(env, f, { contents: [{ parts: [{ text: promptNoticias(res.club, grupos) }] }], generationConfig: { temperature: 0.3, responseMimeType: "application/json" } });
+      if (!r.error) { tokens = r.tokens; arr = parseArr(textoDe(r.j)); }
+    } catch (e) {}
+  }
   return grupos.map((g, i) => {
     const v = arr && arr.find((x) => x && norm2(x.jugador) === norm2(g.nombre)) || (arr && arr[i]);
     const ok = validarNoticia(v, g.items);
     const first = g.items.find((x) => x.minuto) || g.items[0];
     const base = {
       club: res.club, players: [g.nombre], playerId: g.id, key: res.id + ":" + g.key,
-      source: { name: "Rueda de prensa · " + res.club + " (YouTube)", url: "https://youtu.be/" + res.id + (first && first.minuto ? "?t=" + secs2(first.minuto) : ""), videoId: res.id },
+      source: { name: "Según " + res.club, url: "https://youtu.be/" + res.id + (first && first.minuto ? "?t=" + secs2(first.minuto) : ""), videoId: res.id },
       original: g.items.map((x) => ({ jugador: x.jugador, estado: x.estado, frase: x.frase, minuto: x.minuto, confianza: x.confianza, verificada: !!x.verificada, cruzado: !!x.cruzado })),
       tokens: i === 0 ? tokens : 0,
     };
     if (ok) return Object.assign(base, ok, { via: "ia" });
     const et = ETIQ_TXT[g.items[0].estado] || g.items[0].estado;
     return Object.assign(base, {
-      title: g.nombre + ": " + et, lead: "Así lo ha contado el entrenador del " + res.club + " en rueda de prensa.",
-      body: g.items.map((x) => (ETIQ_TXT[x.estado] || x.estado).replace(/^./, (c) => c.toUpperCase()) + ". «" + x.frase + "»" + (x.minuto ? " (min " + x.minuto + ")" : "")).join("\n"),
+      title: g.nombre + ": " + et,
+      lead: "Según " + res.club + ".",
+      body: g.items.map((x) => "«" + x.frase + "»" + (x.minuto ? " (min " + x.minuto + ")" : "")).join("\n"),
       via: "plantilla",
     });
   });
 }
 // Miniatura grande: la del propio vídeo de la rueda de prensa en YouTube (la mejor que exista)
 async function miniatura(f, id) {
+  const foto = (q) => "https://i.ytimg.com/vi/" + id + "/" + q + ".jpg";
+  const robots = await leerRobots(f, "https://i.ytimg.com");
+  if (!robotsPermite(robots, foto("hqdefault"))) return "";
   for (const q of ["maxresdefault", "hqdefault"]) {
-    try { const r = await f("https://i.ytimg.com/vi/" + id + "/" + q + ".jpg", { method: "HEAD" }); if (r.ok) return "https://i.ytimg.com/vi/" + id + "/" + q + ".jpg"; } catch (e) {}
+    try { const r = await f(foto(q), { method: "HEAD" }); if (r.ok) return foto(q); } catch (e) {}
   }
-  return "https://i.ytimg.com/vi/" + id + "/mqdefault.jpg";
+  return foto("mqdefault");
 }
 
 // Publica las noticias en la web (KV own:news:v1). Las de ese vídeo que ya existían como una sola noticia se sustituyen.
-async function publicarNoticias(env, f, res, now) {
+async function publicarNoticias(env, f, res, now, opts) {
   if (caducada(res.title, res.pub, now)) return [];
-  const nuevas = await redactarNoticias(env, f, res);
+  const nuevas = await redactarNoticias(env, f, res, opts);
   if (!nuevas.length) return [];
   let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
   const claves = new Set(own.map((o) => o.key).filter(Boolean));
@@ -258,7 +387,7 @@ async function publicarNoticias(env, f, res, now) {
   nuevas.forEach((n, i) => {
     if (claves.has(n.key)) return;
     const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
-    const item = Object.assign({ id: hex, status: "published", createdAt: now + i, updatedAt: now + i, publishedAt: now + i, thumb }, n);
+    const item = Object.assign({ id: hex, status: "published", expira: true, createdAt: now + i, updatedAt: now + i, publishedAt: now + i, thumb }, n);
     own.unshift(item); out.push(item);
   });
   await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
@@ -310,14 +439,13 @@ async function compararConExternas(env, now) {
 // ---------- Telegram (solo para Edu) ----------
 const ETIQ = { disponible: "🟢 disponible", opcion_titular: "🟢 opción de titular", duda: "🟡 duda", recuperacion_con_grupo: "🟡 recuperación (con grupo)", recuperacion_parcial: "🟠 recuperación (parcial)", baja: "🔴 baja", titular_confirmado: "✅ titular", rotacion: "🔄 rotación" };
 const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-export function resumenTelegram(club, titulo, id, items, borrador) {
+export function resumenTelegram(club, titulo, id, items) {
   const ok = items.filter((x) => x.publicable);
   const dud = items.filter((x) => !x.publicable);
-  let t = "🧪 <b>SOMBRA · " + esc(club) + "</b>\n" + esc(titulo.slice(0, 90)) + "\n";
-  t += "\n" + ok.length + " seguros · " + dud.length + " sin verificar\n";
-  if (ok.length) t += "\n" + ok.map((x) => (ETIQ[x.estado] || x.estado) + " · <b>" + esc(x.nombre) + "</b>").join("\n");
-  if (dud.length) t += "\n\n<i>No publicables:</i>\n" + dud.map((x) => "· " + esc(x.jugador) + " (" + (ETIQ[x.estado] || x.estado) + ")" + (x.cruzado ? "" : " — sin cruzar con Futmondo") + (x.verificada ? "" : " — frase no verificada")).join("\n");
-  return t + "\n\nhttps://youtu.be/" + id + (borrador ? "\n\n📝 Borrador listo para revisar y publicar:\nhttps://edumr.es/futmondo/admin-noticias/" : "");
+  let t = "📰 <b>" + esc(club) + "</b>\n" + esc(String(titulo || "").slice(0, 90)) + "\n";
+  t += "\n" + ok.length + " publicados · " + dud.length + " sin publicar\n";
+  if (dud.length) t += "\n" + dud.map((x) => "· " + esc(x.jugador) + (x.motivo ? " — " + esc(x.motivo) : "")).join("\n");
+  return t + "\n\nhttps://edumr.es/futmondo/guiafantasy/";
 }
 async function enviar(env, f, chat, text) {
   try {
@@ -327,25 +455,109 @@ async function enviar(env, f, chat, text) {
 }
 
 
-// Lee los últimos vídeos de un canal. 1º el RSS público de YouTube; si falla (a veces responde 404 a
-// ciertas IPs) y hay clave oficial de YouTube Data API (YOUTUBE_API_KEY), usa la lista de subidas (1 unidad).
-async function leerFuente(env, f, s) {
-  let motivo = "";
-  try {
-    const r = await f("https://www.youtube.com/feeds/videos.xml?channel_id=" + s.yt, { headers: { "user-agent": "edumr-redactor/1.0 (+https://edumr.es)" } });
-    if (r.ok) return { via: "rss", videos: parseFeed(await r.text()).map((v) => ({ ...v, club: s.club })) };
-    motivo = "rss " + r.status;
-  } catch (e) { motivo = "rss red"; }
-  if (env.YOUTUBE_API_KEY && /^UC/.test(s.yt)) {
-    const r = await f("https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=15&playlistId=UU" + s.yt.slice(2), { headers: { "x-goog-api-key": env.YOUTUBE_API_KEY } });
-    if (r.ok) {
-      const j = await r.json();
-      const videos = (j.items || []).map((it) => it.snippet && { id: it.snippet.resourceId && it.snippet.resourceId.videoId, title: it.snippet.title, published: Date.parse(it.snippet.publishedAt), club: s.club }).filter((v) => v && v.id && v.title && v.published);
-      return { via: "api", videos };
-    }
-    motivo += " · api " + r.status;
+// robots.txt: si no se puede leer, esa URL queda prohibida. YouTube prohíbe /feeds/videos.xml.
+let robotsCache = new Map();
+let robotsT0 = 0;
+const UA_RED = { "user-agent": "edumr-redactor/1.0 (+https://edumr.es)" };
+export function robotsPermite(txt, targetUrl) {
+  if (txt == null || !String(txt).trim()) return false;
+  if (/^\s*</.test(txt)) return false;
+  let url;
+  try { url = new URL(targetUrl); } catch (e) { return false; }
+  const path = url.pathname || "/";
+  const groups = [];
+  let cur = null;
+  for (const raw of String(txt).split(/\r?\n/)) {
+    const line = raw.replace(/#.*/, "").trim();
+    if (!line) continue;
+    const m = line.match(/^([^:]+)\s*:\s*(.*)$/);
+    if (!m) continue;
+    const k = m[1].toLowerCase();
+    const v = m[2].trim();
+    if (k === "user-agent") {
+      if (!cur || cur.rules.length) { cur = { agents: [], rules: [] }; groups.push(cur); }
+      cur.agents.push(v.toLowerCase());
+    } else if ((k === "allow" || k === "disallow") && cur) cur.rules.push({ allow: k === "allow", path: v });
   }
-  throw new Error(motivo);
+  const ua = "edumr-redactor";
+  let group = groups.find((g) => g.agents.some((a) => a !== "*" && ua.includes(a.replace(/\*$/, ""))));
+  if (!group) group = groups.find((g) => g.agents.includes("*"));
+  if (!group) return true;
+  let best = null;
+  for (const rule of group.rules) {
+    if (!rule.path) continue;
+    if (path.startsWith(rule.path) && (!best || rule.path.length >= best.len)) best = { len: rule.path.length, allow: rule.allow };
+  }
+  return best ? best.allow : true;
+}
+async function leerRobots(f, origin) {
+  if (Date.now() - robotsT0 > 6 * 3600e3) { robotsCache = new Map(); robotsT0 = Date.now(); }
+  if (robotsCache.has(origin)) return robotsCache.get(origin);
+  let txt = null;
+  try {
+    const r = await f(origin + "/robots.txt", { headers: UA_RED });
+    if (r.ok) {
+      const t = await r.text();
+      if (t && t.trim() && !/^\s*</.test(t)) txt = t;
+    }
+  } catch (e) {}
+  robotsCache.set(origin, txt);
+  return txt;
+}
+
+// El RSS de YouTube está prohibido por su robots.txt. La lista sale de la API oficial
+// (clave ya existente). googleapis.com no publica robots.txt: no se raspa esa web, solo esta llamada.
+async function leerFuente(env, f, s) {
+  const motivos = [];
+  const feed = "https://www.youtube.com/feeds/videos.xml?channel_id=" + encodeURIComponent(s.yt);
+  const robots = await leerRobots(f, "https://www.youtube.com");
+  if (!robotsPermite(robots, feed)) motivos.push(robots ? "robots prohíbe el RSS" : "robots de YouTube ilegible");
+  else {
+    try {
+      const r = await f(feed, { headers: UA_RED });
+      if (r.ok) return { via: "rss", videos: parseFeed(await r.text()).map((v) => ({ ...v, club: s.club })) };
+      motivos.push("rss " + r.status);
+    } catch (e) { motivos.push("rss red"); }
+  }
+  if (env.YOUTUBE_API_KEY && /^UC/.test(s.yt)) {
+    try {
+      const r = await f("https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=15&playlistId=UU" + s.yt.slice(2), { headers: { "x-goog-api-key": env.YOUTUBE_API_KEY } });
+      if (r.ok) {
+        const j = await r.json();
+        const videos = (j.items || []).map((it) => it.snippet && { id: it.snippet.resourceId && it.snippet.resourceId.videoId, title: it.snippet.title, published: Date.parse(it.snippet.publishedAt), club: s.club }).filter((v) => v && v.id && v.title && v.published);
+        return { via: "api", videos };
+      }
+      motivos.push("api " + r.status);
+    } catch (e) { motivos.push("api red"); }
+  } else if (!env.YOUTUBE_API_KEY) motivos.push("sin clave de YouTube");
+  throw new Error(motivos.join(" · ") || "sin fuente");
+}
+
+const LISTA_MS = 15 * 60e3;
+async function avisarPublicadas(env, f, st, noticias) {
+  if (!env.TELEGRAM_BOT_TOKEN) return false;
+  const nuevas = (noticias || []).filter((n) => n && n.id);
+  if (!nuevas.length && !(st.tgPend || []).length) return false;
+  let chat = "";
+  try {
+    const av = await env.PORRA.get(AVISOS_KEY, "json");
+    chat = String(env.TELEGRAM_CHAT_ID || (av && av.chat) || "");
+  } catch (e) {}
+  const cola = (st.tgPend || []).concat(nuevas.map((n) => ({ id: n.id, title: n.title, lead: n.lead, body: n.body, thumb: n.thumb || "" })));
+  const vistos = new Set();
+  const queda = [];
+  let enviados = 0;
+  for (const n of cola) {
+    if (!n || !n.id || vistos.has(n.id)) continue;
+    vistos.add(n.id);
+    if (!chat || enviados >= 3) { queda.push(n); continue; }
+    const ok = await enviarFoto(env, f, chat, n.thumb, noticiaTelegram(n));
+    if (ok) enviados++;
+    else queda.push(n);
+  }
+  const antes = JSON.stringify(st.tgPend || []);
+  st.tgPend = queda.slice(0, 5);
+  return JSON.stringify(st.tgPend) !== antes;
 }
 
 // ---------- lo principal ----------
@@ -353,6 +565,7 @@ async function leerFuente(env, f, s) {
 export async function redactorSombra(env, deps) {
   const f = (deps && deps.fetch) || fetch;
   const now = (deps && deps.now) || Date.now();
+  if (deps && deps.fetch) { robotsCache = new Map(); robotsT0 = Date.now(); }
   if (!env || !env.GEMINI_API_KEY || !env.PORRA) return { skipped: "sin clave" };
   const mnt = new Date(now).getUTCMinutes();
   if (!(deps && deps.allTicks) && mnt % 2 !== 1) return { skipped: "no toca" }; // cada 2 min (un vídeo por pasada)
@@ -364,15 +577,26 @@ export async function redactorSombra(env, deps) {
   const dia = new Date(now).toISOString().slice(0, 10);
   if (st.tok.d !== dia) { st.tok = { d: dia, n: 0 }; dirty = true; }
 
-  // 1) vídeos nuevos
+  // 1) vídeos nuevos. La lista de cada canal se refresca como mucho cada 15 min (la API gasta cuota).
   const fuentes = (deps && deps.fuentes) || FUENTES;
-  const feeds = await Promise.allSettled(fuentes.map((s) => leerFuente(env, f, s)));
+  const feeds = await Promise.allSettled(fuentes.map(async (s) => {
+    const prev = (st.fuentes || {})[s.club];
+    if (prev && prev.ok && Array.isArray(prev.videos) && now - (prev.listAt || 0) < LISTA_MS && !(deps && deps.allTicks)) {
+      return { via: prev.via, videos: prev.videos, listAt: prev.listAt, cache: true };
+    }
+    const got = await leerFuente(env, f, s);
+    got.listAt = now;
+    return got;
+  }));
   st.fuentes = st.fuentes || {};
   feeds.forEach((fd, i) => {
     const c = fuentes[i].club;
-    const est = fd.status === "fulfilled" ? { ok: true, via: fd.value.via } : { ok: false, error: String(fd.reason && fd.reason.message || fd.reason) };
-    if (JSON.stringify(st.fuentes[c] && { ok: st.fuentes[c].ok, via: st.fuentes[c].via, error: st.fuentes[c].error }) !== JSON.stringify(est)) dirty = true;
-    st.fuentes[c] = { ...est, at: now };
+    const est = fd.status === "fulfilled"
+      ? { ok: true, via: fd.value.via, listAt: fd.value.listAt || now, videos: (fd.value.videos || []).slice(0, 15).map((v) => ({ id: v.id, title: v.title, published: v.published, club: v.club })) }
+      : { ok: false, error: String(fd.reason && fd.reason.message || fd.reason).slice(0, 160) };
+    const firma = (x) => JSON.stringify({ ok: !!(x && x.ok), via: (x && x.via) || "", error: (x && x.error) || "", ids: ((x && x.videos) || []).map((v) => v.id).join(","), listAt: (x && x.listAt) || 0 });
+    if (firma(st.fuentes[c]) !== firma(est)) dirty = true;
+    st.fuentes[c] = Object.assign({}, est, { at: now });
   });
   for (const fd of feeds) {
     if (fd.status !== "fulfilled") continue;
@@ -418,52 +642,33 @@ export async function redactorSombra(env, deps) {
           const res = { id, club: s.club, title: s.title, pub: s.pub, at: now, items, chars: transcripcion.length };
           try { await env.PORRA.put(RES_PREFIX + id, JSON.stringify(res), { expirationTtl: 14 * 86400 }); } catch (e) {}
           let noticias = [];
-          try { noticias = await publicarNoticias(env, f, res, now); st.tok.n += noticias.reduce((a, n) => a + (n.tokens || 0), 0); } catch (e) { s.err = "publicar: " + String(e && e.message || e).slice(0, 80); }
+          try {
+            noticias = await publicarNoticias(env, f, res, now, { sinIa: st.tok.n >= MAX_TOKENS_DIA });
+            st.tok.n += noticias.reduce((a, n) => a + (n.tokens || 0), 0);
+          } catch (e) { s.err = "publicar: " + String(e && e.message || e).slice(0, 80); }
           hecho = { id, items, s, noticias };
         }
       }
     }
   }
-  // 2b) noticias de antes (una sola por vídeo, o borradores sin tocar): se rehacen una por jugador, un vídeo por pasada
-  if (!hecho) {
-    try {
-      const own = (await env.PORRA.get(OWN_KEY, "json")) || [];
-      const d = own.find((o) => !o.key && !o.migrada && !o.caducada && o.source && o.source.videoId && (o.via || (o.status === "draft" && o.updatedAt === o.createdAt)));
-      if (d) {
-        const res = await env.PORRA.get(RES_PREFIX + d.source.videoId, "json");
-        const noticias = res ? await publicarNoticias(env, f, res, now) : [];
-        if (noticias.length) { st.tok.n += noticias.reduce((a, n) => a + (n.tokens || 0), 0); dirty = true; hecho = { id: res.id, items: res.items, s: { club: res.club, title: res.title }, noticias }; }
-        else {
-          const o2 = (await env.PORRA.get(OWN_KEY, "json")) || [];
-          const x = o2.find((o) => o.id === d.id); if (x) { x.migrada = true; await env.PORRA.put(OWN_KEY, JSON.stringify(o2)); }
-        }
-      }
-    } catch (e) {}
-  }
-  // 2d) comparación interna con las otras webs (cada 10 min)
+  // Los borradores y las noticias ya guardadas no se reescriben ni se reenvían.
+  // 2d) comparación interna con las otras webs (cada 10 min). Solo el panel.
   if (mnt % 10 === 1 || (deps && deps.allTicks)) { try { await compararConExternas(env, now); } catch (e) {} }
 
-  // 2c) las noticias de previas que ya han caducado se retiran de la web (quedan en el panel como borrador)
+  // Las previas NUEVAS (expira) se retiran pasadas 30 h / 40 h. Lo anterior se queda como está.
   try {
     const own = (await env.PORRA.get(OWN_KEY, "json")) || [];
     let cambio = false;
-    for (const o of own.filter((x) => x.status === "published" && x.source && x.source.videoId).slice(0, 12)) {
+    for (const o of own.filter((x) => x.status === "published" && x.expira && x.source && x.source.videoId).slice(0, 12)) {
       const res = await env.PORRA.get(RES_PREFIX + o.source.videoId, "json");
       if (res && caducada(res.title, res.pub, now)) { o.status = "draft"; o.caducada = true; o.updatedAt = now; cambio = true; }
     }
     if (cambio) await env.PORRA.put(OWN_KEY, JSON.stringify(own));
   } catch (e) {}
-  if (dirty) { try { await env.PORRA.put(STATE_KEY, JSON.stringify(st)); } catch (e) {} }
 
-  // 3) resumen privado a Edu (solo si hay token del bot y chat guardado)
-  if (hecho && env.TELEGRAM_BOT_TOKEN) {
-    try {
-      const av = await env.PORRA.get(AVISOS_KEY, "json");
-      const chat = String(env.TELEGRAM_CHAT_ID || (av && av.chat) || "");
-      if (chat) for (const n of hecho.noticias) await enviarFoto(env, f, chat, n.thumb, noticiaTelegram(n));
-    } catch (e) {}
-  }
+  try { if (await avisarPublicadas(env, f, st, hecho && hecho.noticias)) dirty = true; } catch (e) {}
+  if (dirty) { try { await env.PORRA.put(STATE_KEY, JSON.stringify(st)); } catch (e) {} }
   return { procesado: hecho ? hecho.id : null, pendientes: cola.length, tokens: st.tok.n };
 }
 
-export const _r = { compararNoticias, caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, cruzarJugador, filtrar, parseJson, resumenTelegram };
+export const _r = { compararNoticias, caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, localizarFrase, ventanaFrase, atribucionJugador, estadoRespaldado, robotsPermite, cruzarJugador, filtrar, parseJson, resumenTelegram };

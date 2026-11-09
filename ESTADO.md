@@ -80,3 +80,9 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 - Pendiente: otras pantallas que leen `fitness` sin esta comprobación (Analiza, forma, comparador). Y fuera de los últimos 5 partidos `/puntos` aún usa el modo `stats` de Futmondo, que no son los puntos de la liga.
 - 09/11 (2.ª parte): mismo fallo cerrado en el comparador y en el histórico de puntos (`recordPointsHistory` salta el equipo si hay partidos sin publicar). Test de guardia `tests/fitness-guard.test.mjs`. Medias, rachas y pronósticos usan solo valores publicados (reales), sin atribuirlos a un partido.
 - 09/11 (3.ª parte): partidos de hace más de 5 jornadas: `/puntos` ya no usa el modo `stats` de Futmondo (Hancko J5 salía 12 y eran 7); usa el histórico guardado (`pth:v1`, `pthPoints`) y, sin dato real, no pone puntos. Cachés `pjp:v7` y `ptj:v2` (recalculan solos).
+
+## 09/11/2026 — Redactor: publica solo si la frase es de ese jugador y de ese estado
+- Ya no hay modo sombra ni borradores nuevos. Publica en la web y avisa por Telegram con el enlace de edumr.es.
+- El RSS de YouTube está prohibido por su robots.txt; la lista va por la API oficial. Si robots.txt no se lee, no se toca esa URL.
+- Una frase cierta de otro jugador (ejemplo de prueba: Leo Román / Moleiro) no se publica. La duda y el «no» tampoco se convierten en un estado firme.
+- No se reescriben ni se reenvían los borradores y las noticias que ya estaban guardados.
