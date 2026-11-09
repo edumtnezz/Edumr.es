@@ -564,8 +564,8 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 .newscard { border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--cx-surface, #fff); cursor: pointer; transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 4px 14px rgba(15, 23, 42, 0.05); }
 @media (hover: hover) and (pointer: fine) { .newscard:hover { border-color: var(--border-hover, var(--accent)); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12); } }
 .newscard-thumb { width: 100%; aspect-ratio: 16 / 9; background: rgba(127, 127, 127, 0.12); overflow: hidden; }
-.newscard-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.newscard-thumb.ball img { object-fit: contain; padding: 22px; }
+.newscard-thumb > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.newscard-thumb.ball > img { object-fit: contain; padding: 22px; }
 .newscard-body { padding: 9px 11px 11px; }
 .newscard .news-title { font-weight: 700; font-size: 0.82rem; line-height: 1.25; }
 .newscard .news-date { color: var(--muted); font-size: 0.68rem; margin-top: 5px; }
@@ -3551,3 +3551,13 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .art-banner > img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .art-banner > .eth { position: absolute; inset: 0; }
 .nw-lead-pic > .eth, .nw-row-pic > .eth { position: absolute; inset: 0; border-radius: 0; }
+
+/* ===== Noticias: noticias propias + última hora en un solo flujo ===== */
+#tab-noticias .estado-title { margin: 0 0 4px; }
+.nw-feed .nw-chips { margin-top: 4px; }
+.nw-day { margin: 14px 0 10px; font-size: .72rem; font-weight: 800; line-height: 1; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.nw-feed .nw-list { gap: 12px; }
+.nw-feed .nw-lead { margin: 6px 0 0; }
+.nw-feed .nw-lead-b { margin-top: 10px; gap: 6px; }
+.nw-feed .nw-meta { font-size: .76rem; font-weight: 600; }
+.nw-more { display: block; width: 100%; margin: 18px 0 4px; padding: 12px; border: 1px solid var(--border, rgba(127,127,127,.3)); border-radius: 12px; background: none; color: var(--text); font-size: .88rem; font-weight: 700; line-height: 1; cursor: pointer; }

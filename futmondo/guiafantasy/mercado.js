@@ -4012,46 +4012,7 @@
     lastNews = d;
     const upd = $("newsUpdated");
     if (upd) upd.textContent = d.updatedAt ? "· actualizado " + haceTxt(d.updatedAt) : "";
-    const a = $("newsAnuncios");
-    if (a) {
-      a.innerHTML = "";
-      a.classList.add("news-grid");
-      let list = d.noticias || [];
-      if (newsMineOnly && myTeam.length) {
-        list = list.filter(newsMatchMyTeam);
-        if (!list.length) a.appendChild(el("p", "muted small", "Ninguna noticia de tus jugadores ahora mismo."));
-      }
-      if (!list.length && !(newsMineOnly && myTeam.length)) a.appendChild(el("p", "muted small", "Sin noticias ahora mismo."));
-      let lastDate = "";
-      list.forEach((x, idx) => {
-        if (x.date && x.date !== lastDate) {
-          lastDate = x.date;
-          const dh = el("div", "news-day");
-          dh.appendChild(el("span", "news-day-txt", x.date));
-          a.appendChild(dh);
-        }
-        const it = el("a", "newscard news-link" + (idx === 0 ? " news-hero" : "")); it.href = newsHref(x.link);
-        it.style.animationDelay = Math.min(idx, 10) * 40 + "ms";
-        it.addEventListener("click", (ev) => { if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button === 1) return; ev.preventDefault(); openNoticiaInline(x.link, x.title); });
-        const th = el("div", "newscard-thumb" + (isCm(x) ? " cm-crop-bg" : ""));
-        if (usaEth(x)) th.appendChild(ethFor(x));
-        else {
-        const fbImg = newsFallbackImg(x.title); let mainImg = newsImgOf(x); if (idx !== 0 && !x.thumb) mainImg = squareImg(mainImg); // miniatura cuadrada: el cartel entero, sin cortar
-        const setBg = (u) => { th.style.backgroundImage = 'url("' + u + '")'; };
-        setBg(mainImg);
-        if (mainImg !== fbImg) { const t = new Image(); t.onerror = () => setBg(fbImg); t.src = mainImg; }
-        }
-        it.appendChild(th);
-        const bd = el("div", "newscard-body");
-        const nkc = newsKindChip(x.title, "news-kind");
-        if (nkc) bd.appendChild(nkc);
-        bd.appendChild(el("div", "news-title", x.title));
-        if (x.lead) bd.appendChild(el("div", "news-sum", x.lead));
-        const nd = el("div", "news-date"); nd.appendChild(ico("clock")); nd.appendChild(document.createTextNode(x.date + (x.time ? " · " + x.time : ""))); bd.appendChild(nd);
-        it.appendChild(bd);
-        a.appendChild(it);
-      });
-    }
+    renderNoticiasFeed();
     const l = $("newsLocker");
     if (l) {
       l.innerHTML = "";
@@ -4138,20 +4099,35 @@
   let inicioFiltro = "todo";
   const OWN_TAG = { cronica: ["Crónica", "#16a34a"], once: ["Once", "#2563eb"], rueda: ["Rueda de prensa", "#7c3aed"], lesion: ["Parte", "#dc2626"], analisis: ["Análisis", "#0891b2"], nota: ["Noticia", "#16a34a"] };
   const ownTag = (x) => OWN_TAG[(window.EduThumb && window.EduThumb.tipo(x)) || "nota"] || OWN_TAG.nota;
-  function cambiosHoy() {
+  // Últimos cambios de los últimos días (mercado, partes, onces) con su fecha y hora reales
+  function cambiosLista(dias) {
     const out = [];
-    const days = (updData && updData.days) || [];
-    const d0 = days[0];
     const now = new Date();
-    if (!d0 || !String(d0.day || "").endsWith(String(now.getDate()).padStart(2, "0"))) return out;
-    (d0.items || []).forEach((x) => {
-      const m = String(x.time || "").match(/(\d+):(\d+)/);
-      if (!m) return;
-      let t = new Date(now.getFullYear(), now.getMonth(), now.getDate(), +m[1], +m[2]).getTime();
-      if (t > now.getTime() + 6e4) t -= 864e5;
-      out.push({ kind: "c", x, ts: t });
+    ((updData && updData.days) || []).slice(0, dias).forEach((d) => {
+      const dn = parseInt(String(d.day || "").replace(/\D+/g, ""), 10);
+      if (!dn) return;
+      (d.items || []).forEach((x) => {
+        const m = String(x.time || "").match(/(\d+):(\d+)/);
+        if (!m) return;
+        let dt = new Date(now.getFullYear(), now.getMonth(), dn, +m[1], +m[2]);
+        if (dt.getTime() > now.getTime() + 36e5) dt = new Date(now.getFullYear(), now.getMonth() - 1, dn, +m[1], +m[2]);
+        out.push({ kind: "c", x, ts: dt.getTime() });
+      });
     });
     return out;
+  }
+  function cambiosHoy() {
+    const hoy = new Date().getDate();
+    return cambiosLista(1).filter((e) => new Date(e.ts).getDate() === hoy);
+  }
+  function diaTxt(ts) {
+    const d = new Date(ts), n = new Date();
+    const k = (v) => v.getFullYear() * 400 + v.getMonth() * 32 + v.getDate();
+    const ayer = new Date(n.getFullYear(), n.getMonth(), n.getDate() - 1);
+    if (k(d) === k(n)) return "Hoy";
+    if (k(d) === k(ayer)) return "Ayer";
+    const t = d.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
+    return t.charAt(0).toUpperCase() + t.slice(1);
   }
   function inicioRow(e, open) {
     const x = e.x;
@@ -4184,6 +4160,70 @@
     row.appendChild(b);
     return row;
   }
+  function leadCard(x, open, conResumen) {
+    const lead = el("article", "nw-lead");
+    lead.tabIndex = 0;
+    lead.setAttribute("role", "link");
+    lead.addEventListener("click", () => open(x));
+    lead.addEventListener("keydown", (ev) => { if (ev.key === "Enter") open(x); });
+    lead.appendChild(thumbBox(x, "nw-lead-pic"));
+    const lb = el("div", "nw-lead-b");
+    const tg = newsTag(x.title) || ownTag(x);
+    const line = el("div", "nw-tag");
+    line.style.setProperty("--tc", tg[1]); line.appendChild(el("i")); line.appendChild(el("span", null, tg[0]));
+    lb.appendChild(line);
+    lb.appendChild(el("div", "nw-lead-t", x.title));
+    if (conResumen && x.lead) lb.appendChild(el("div", "nw-sum", x.lead));
+    lb.appendChild(el("div", "nw-meta", newsWhen(x)));
+    lead.appendChild(lb);
+    return lead;
+  }
+  // Pestaña Noticias: noticias propias y última hora (cambios) en UN solo flujo, por hora
+  let feedFiltro = "todo", feedLimit = 30;
+  function renderNoticiasFeed() {
+    const box = $("newsAnuncios");
+    if (!box || !lastNews) return;
+    box.classList.remove("news-grid");
+    box.innerHTML = "";
+    const wrap = el("div", "nw nw-feed");
+    const chips = el("div", "nw-chips");
+    [["todo", "Todo"], ["noticias", "Noticias"], ["cambios", "Última hora"]].forEach(([k, t]) => {
+      const c = el("button", "nw-chip" + (feedFiltro === k ? " on" : ""), t);
+      c.type = "button";
+      c.addEventListener("click", () => { feedFiltro = k; feedLimit = 30; renderNoticiasFeed(); });
+      chips.appendChild(c);
+    });
+    wrap.appendChild(chips);
+    const open = (x) => openNoticiaInline(x.link, x.title);
+    let list = lastNews.noticias || [];
+    if (newsMineOnly && myTeam.length) list = list.filter(newsMatchMyTeam);
+    const noticias = list.map((x) => ({ kind: "n", x, ts: Number(x.ts) || 0 }));
+    const cambios = cambiosLista(3);
+    const hero = feedFiltro !== "cambios" ? noticias[0] : null;
+    if (hero) wrap.appendChild(leadCard(hero.x, open, true));
+    let rows = feedFiltro === "noticias" ? noticias : feedFiltro === "cambios" ? cambios : noticias.concat(cambios);
+    if (hero) rows = rows.filter((e) => e !== hero);
+    rows.sort((a, b) => b.ts - a.ts);
+    const total = rows.length;
+    rows = rows.slice(0, feedLimit);
+    if (!hero && !rows.length) wrap.appendChild(el("p", "nw-empty", feedFiltro === "cambios" && !updData ? "Cargando…" : "Sin novedades por ahora."));
+    let lastDia = "";
+    let ul = null;
+    rows.forEach((e) => {
+      const dt = e.ts ? diaTxt(e.ts) : "";
+      if (dt && dt !== lastDia) { lastDia = dt; wrap.appendChild(el("div", "nw-day", dt)); ul = el("div", "nw-list"); wrap.appendChild(ul); }
+      if (!ul) { ul = el("div", "nw-list"); wrap.appendChild(ul); }
+      ul.appendChild(inicioRow(e, open));
+    });
+    if (total > feedLimit) {
+      const more = el("button", "nw-more", "Ver más");
+      more.type = "button";
+      more.addEventListener("click", () => { feedLimit += 30; renderNoticiasFeed(); });
+      wrap.appendChild(more);
+    }
+    box.appendChild(wrap);
+    if (!updData || !updData.days) loadInicioCambios();
+  }
   function renderInicioFeatured() {
     const box = $("inicioFeatured");
     if (!box) return;
@@ -4214,24 +4254,7 @@
     // Pieza principal: la noticia más reciente, con su miniatura grande
     const hero = inicioFiltro !== "cambios" ? noticias[0] : null;
     let lead = null;
-    if (hero) {
-      const x = hero.x;
-      lead = el("article", "nw-lead");
-      lead.tabIndex = 0;
-      lead.setAttribute("role", "link");
-      lead.addEventListener("click", () => open(x));
-      lead.addEventListener("keydown", (ev) => { if (ev.key === "Enter") open(x); });
-      lead.appendChild(thumbBox(x, "nw-lead-pic"));
-      const lb = el("div", "nw-lead-b");
-      const tg = newsTag(x.title) || ownTag(x);
-      const line = el("div", "nw-tag");
-      line.style.setProperty("--tc", tg[1]); line.appendChild(el("i")); line.appendChild(el("span", null, tg[0]));
-      lb.appendChild(line);
-      lb.appendChild(el("div", "nw-lead-t", x.title));
-      lb.appendChild(el("div", "nw-meta", newsWhen(x)));
-      lead.appendChild(lb);
-      wrap.appendChild(lead);
-    }
+    if (hero) { lead = leadCard(hero.x, open); wrap.appendChild(lead); }
     let rows = inicioFiltro === "noticias" ? noticias : inicioFiltro === "cambios" ? cambios : noticias.concat(cambios);
     if (hero) rows = rows.filter((e) => e !== hero);
     rows.sort((a, b) => b.ts - a.ts);
@@ -4295,7 +4318,7 @@
     if (!out.length) { const cl = clubLogo(pl0.to || pl0.from || "", ""); if (cl) out.push(cl); }
     return out;
   }
-  function paintInicioCambios() { if ($("inicioFeatured") && lastNews) renderInicioFeatured(); }
+  function paintInicioCambios() { if (lastNews) { if ($("inicioFeatured")) renderInicioFeatured(); renderNoticiasFeed(); } }
   async function loadInicioCambios() {
     try {
       const d = await (await fetch(API + "/ultimos-cambios")).json();
