@@ -11,6 +11,7 @@ const ROBOTS = {
   "https://www.realracingclub.es/noticias": "User-agent: *\nDisallow:\n",
   "https://www.realsociedad.eus/es/noticias": "User-agent: *\nAllow: /\nDisallow: /cup\nDisallow: /es/hospitality\n",
   "https://www.osasuna.es/noticias-primer-equipo": "User-agent: *\nDisallow:\n",
+  "https://www.realoviedo.es/noticias": "User-agent: *\nDisallow: /api/\nDisallow: /preview/\nDisallow: /_next/\n",
 };
 const ROBOTS_MAKER = "User-agent: *\nDisallow: /api/\nDisallow: /preview/\nDisallow: /_next/\n";
 for (const url of [

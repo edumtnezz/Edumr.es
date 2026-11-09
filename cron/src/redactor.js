@@ -42,7 +42,7 @@ export const FUENTES = [
   { club: "Levante", yt: "UCvOegN2N1FGPPv4xBNN2F9A", noticias: "https://www.levanteud.com/noticias" },
   { club: "Málaga", yt: "UCo_PhWZulZooYfQRo00vU-Q", noticias: "https://www.malagacf.com/noticias" },
   { club: "Racing", yt: "UCPkCdE745MkHLx8YWOwi8ew", noticias: "https://www.realracingclub.es/noticias" },
-  { club: "Oviedo", yt: "UCvpFN8tLnBsjPR2BCJ-FJQA" },
+  { club: "Oviedo", yt: "UCvpFN8tLnBsjPR2BCJ-FJQA", noticias: "https://www.realoviedo.es/noticias" },
 ];
 const HOSTS_PROHIBIDOS = ["athletic-club.eus", "athletic-club.net", "deportivoalaves.com", "alaves.com", "marca.com", "as.com", "mundodeportivo.com", "twitter.com", "x.com"];
 export function dominioProhibido(url) {
@@ -480,7 +480,7 @@ async function publicarNoticias(env, f, res, now, opts) {
     if (claves.has(n.key)) return;
     if (textoConFuenteDetectada(n)) return;
     const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
-    const item = Object.assign({ id: hex, status: "published", expira: true, createdAt: now + i, updatedAt: now + i, publishedAt: now + i, thumb }, n);
+    const item = Object.assign({ id: hex, status: "published", expira: true, createdAt: now + i, updatedAt: now + i, publishedAt: now + i, thumb, tipo: res.tipo || "" }, n);
     own.unshift(item); out.push(item);
   });
   await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
@@ -747,7 +747,7 @@ function ymdAdd(ymd, days) {
   const t = new Date(Date.UTC(y, m - 1, d + days));
   return t.toISOString().slice(0, 10).replace(/-/g, "");
 }
-const MIN_CUERPO = { cronica: 40, rueda: 45, marcador: 8, once: 20 };
+const MIN_CUERPO = { cronica: 40, rueda: 45, marcador: 8, once: 20, nota: 20 };
 const PALABRAS_DE_RELLENO = new Set("el la los las un una y o de del al en con por para que se su sus le les lo es son fue fueron como mas pero tras ante sobre cuando donde este esta esto porque sin ya no si al".split(" "));
 const DATOS_QUE_EXIGEN_FUENTE = ["titular", "titulares", "suplente", "banquillo", "minutos", "baja", "bajas", "lesion", "lesionado", "lesionada", "duda", "asistencia", "penalti", "expulsion"];
 const PALABRAS_DE_FECHA = "enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre|lunes|martes|miercoles|jueves|viernes|sabado|domingo|hoy|manana|ayer";
@@ -816,13 +816,16 @@ export function depurarCuerpo(tipo, texto, hechos) {
   if (pals < minimo) return null;
   return out;
 }
-async function redactarCuerpo(env, f, tipo, hechos) {
+async function redactarCuerpo(env, f, tipo, hechos, cuenta) {
   if (!env || !env.GEMINI_API_KEY) return null;
   const guia = tipo === "rueda"
     ? "Entradilla de una frase, sin comillas: cuándo habló, si la fecha está en los hechos, y tras qué partido, si el rival está en los hechos. Luego un párrafo con la cita literal entre comillas, tal cual. Si los hechos traen titularidad, minutos, cambio o estado, cierra con un párrafo de qué implica eso para el fantasy. Si no está, no lo escribas."
+    : tipo === "nota"
+    ? "Uno o dos párrafos. Di que la web oficial del club ha publicado una nota. Si hay fecha en los hechos, ponla. Nombra solo a quien esté escrito y di de qué trata con esas palabras. No afirmes una lesión, una baja, un titular, unos minutos ni un resultado si esa palabra no está en los hechos. No cuentes un partido y no copies una frase de la nota."
     : "Dos o tres párrafos, separados por una línea en blanco. El primero sitúa el partido sin abrir por el nombre del goleador. Los siguientes cuentan sus goles con el minuto que figure en los hechos. El último, solo si los hechos dicen que fue titular, cuántos minutos jugó, un cambio o el estado físico, explica esa consecuencia para el fantasy. Si ese dato no está, no lo inventes y no rellenes. Sin citas y sin metáforas.";
   const prompt = "Redacta en español periodístico natural. Usa solo los hechos de abajo. Si un dato no está escrito, no lo pongas. No escribas una fecha que no esté en los hechos y no uses la fecha de hoy. No repitas el mismo sujeto al empezar dos frases seguidas. No encadenes frases con la misma plantilla. " + guia + " Devuelve solo el cuerpo.\n\nHECHOS:\n" + hechos;
   const r = await gemini(env, f, { contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4 } });
+  if (cuenta) cuenta.n = (r && r.tokens) || 0;
   if (!r || r.error) return null;
   return depurarCuerpo(tipo, textoDe(r.j), hechos);
 }
@@ -1116,28 +1119,54 @@ export function pistasATratar(doc, vistas, now) {
   nuevas.sort((a, b) => (Date.parse(b.at || "") || 0) - (Date.parse(a.at || "") || 0));
   return { sig, nuevas };
 }
+const PISTAS_POR_CICLO = 5;
+const PISTA_VENTANA = 48 * 3600e3;
 export function notaParaPista(pista, notas, now) {
   const nombres = apellidosPista(pista);
-  if (!nombres.length) return null;
+  const tema = norm2(pista.tema || "").split(/\s+/).filter((w) => w.length > 4);
+  const tipoClave = { lesion: ["lesion", "molest", "baja", "entren"], rueda: ["habla", "rueda", "analiza", "valora"], once: ["alineacion", "once"], convocatoria: ["convoc"], mercado: ["mercado", "fichaj", "entrenador"], cronica: ["gol", "entren"], otro: ["entren", "internacional"] }[pista.tipo] || [];
   let best = null, score = 0;
   for (const n of notas || []) {
     if (!n || !n.url) continue;
     if (n.published && now && now - n.published > PISTAS_TTL) continue;
     const t = norm2((n.title || "") + " " + n.url);
-    let s = 0;
-    for (const nom of nombres) if (t.includes(nom)) s += 3;
-    if (s > score) { score = s; best = n; }
+    let s = 0, propio = 0;
+    for (const nom of nombres) if (t.includes(nom)) { s += 5; propio += 5; }
+    for (const w of tema) if (t.includes(w)) { s += 1; propio += 1; }
+    for (const c of tipoClave) if (t.includes(c)) s += 2;
+    if (propio > 0 && s > score) { score = s; best = n; }
   }
-  return score >= 3 ? best : null;
+  return score >= 2 ? best : null;
 }
-export function pistaDuplicada(pista, own) {
+export function pistaDuplicada(pista, own, now) {
   const nombres = apellidosPista(pista);
+  const cuandoP = Date.parse(pista.at || "") || now || 0;
   return (own || []).some((o) => {
     if (!o || o.status !== "published") return false;
     if (o.key && String(o.key).indexOf("pista-" + pista.id) === 0) return true;
-    const blob = norm2([o.title, o.lead].concat(o.players || []).join(" "));
-    return nombres.some((n) => blob.includes(n));
+    if (pista.fuenteUrl && o.source && o.source.url && o.source.url === pista.fuenteUrl) return true;
+    if (!o.tipo || !pista.tipo || o.tipo !== pista.tipo) return false;
+    const cuandoO = o.publishedAt || o.createdAt || 0;
+    if (!cuandoP || !cuandoO || Math.abs(cuandoP - cuandoO) > PISTA_VENTANA) return false;
+    const bag = norm2([o.title, o.lead].concat(o.players || []).join(" "));
+    return nombres.some((n) => bag.includes(n));
   });
+}
+export function hechosDesdeNota(html, title, pista, club) {
+  const text = norm2(String(html || "").replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " "));
+  const bolsa = norm2(title) + " " + text;
+  const nombres = apellidosPista(pista).filter((n) => bolsa.includes(n));
+  const tema = norm2(pista.tema || "").split(/\s+/).filter((w) => w.length > 4 && bolsa.includes(w));
+  const coach = pista.entrenador && bolsa.includes(norm2(pista.entrenador)) ? pista.entrenador : "";
+  if (!nombres.length && !tema.length && !coach) return "";
+  const fecha = fechaDeFuente(html);
+  return [
+    "Club: " + (club || pista.equipo || ""),
+    fecha ? "Fecha: " + fecha : "",
+    coach ? "Entrenador escrito en la nota oficial: " + coach : "",
+    nombres.length ? "Nombres escritos en la nota oficial: " + nombres.join(", ") : "",
+    tema.length ? "La nota oficial trata de: " + tema.join(", ") : "",
+  ].filter(Boolean).join("\n");
 }
 export function enlacesDeSitemap(xml) {
   const out = [];
@@ -1365,15 +1394,25 @@ async function tratarPistas(env, f, st, now, fuentes) {
   const antes = Object.keys(st.pistas).length;
   const prep = pistasATratar(doc, st.pistas, now);
   st.pistas = prep.sig;
-  const pista = prep.nuevas[0];
-  if (!pista) return { dirty: Object.keys(prep.sig).length !== antes };
+  const lote = prep.nuevas.slice(0, PISTAS_POR_CICLO);
+  if (!lote.length) return { dirty: Object.keys(prep.sig).length !== antes };
+  const todas = [];
+  const listas = new Map();
+  for (const pista of lote) {
+    if (st.tok.n >= MAX_TOKENS_DIA) break;
+    const una = await tratarUnaPista(env, f, st, now, fuentes, pista, listas);
+    if (una && una.noticias) todas.push.apply(todas, una.noticias);
+  }
+  return { dirty: true, noticias: todas };
+}
+async function tratarUnaPista(env, f, st, now, fuentes, pista, listas) {
   const aceptable = pistaAceptable(pista);
   sumaPista(st, "recibidas");
   st.pistas[pista.id] = { at: now, estado: "descartada", motivo: aceptable.ok ? "" : aceptable.motivo };
-  if (!aceptable.ok) { sumaPista(st, "descartadas", aceptable.motivo); return { dirty: true }; }
+  if (!aceptable.ok) { sumaPista(st, "descartadas", aceptable.motivo); return null; }
   let own = [];
   try { own = (await env.PORRA.get(OWN_KEY, "json")) || []; } catch (e) {}
-  if (pistaDuplicada(pista, own)) {
+  if (pistaDuplicada(pista, own, now)) {
     st.pistas[pista.id].motivo = "ya publicada";
     sumaPista(st, "descartadas", "ya publicada");
     return { dirty: true };
@@ -1392,11 +1431,15 @@ async function tratarPistas(env, f, st, now, fuentes) {
     sumaPista(st, "descartadas", "robots prohíbe la fuente");
     return { dirty: true };
   }
-  let notas = [];
-  try {
-    const r = await f(fuente.noticias, { headers: UA_RED });
-    if (r.ok) notas = enlacesDeFuente(await r.text(), fuente.noticias);
-  } catch (e) {}
+  let notas = listas.get(fuente.noticias);
+  if (!notas) {
+    notas = [];
+    try {
+      const r = await f(fuente.noticias, { headers: UA_RED });
+      if (r.ok) notas = enlacesDeFuente(await r.text(), fuente.noticias);
+    } catch (e) {}
+    listas.set(fuente.noticias, notas);
+  }
   const nota = notaParaPista(pista, notas, now);
   if (!nota || !robotsPermite(robots, nota.url)) {
     st.pistas[pista.id].motivo = "sin fuente permitida";
@@ -1414,14 +1457,45 @@ async function tratarPistas(env, f, st, now, fuentes) {
     plantilla = ((await r.json()).players || []).filter((p) => sameTeam(p.team, fuente.club)).map((p) => ({ id: p.id, name: p.name }));
   } catch (e) {}
   const items = itemsDeCitas(html, nota.title, plantilla);
-  if (!items.length) {
+  const hechos = items.length ? "" : hechosDesdeNota(html, nota.title, pista, fuente.club);
+  if (!items.length && !hechos) {
     st.pistas[pista.id].motivo = "sin hecho verificado";
     sumaPista(st, "descartadas", "sin hecho verificado");
-    return { dirty: true };
+    return null;
+  }
+  if (!items.length) {
+    const cuenta = { n: 0 };
+    const cuerpo = await redactarCuerpo(env, f, "nota", hechos, cuenta);
+    st.tok.n += cuenta.n || 0;
+    const personas = [pista.entrenador].concat(pista.jugadores || []).filter((n) => {
+      const ap = norm2(n).split(/\s+/).filter((w) => w.length > 3).pop();
+      return ap && norm2(hechos).includes(ap);
+    });
+    const title = personas.length ? personas[0] + " en la nota del " + fuente.club : "Nota oficial del " + fuente.club;
+    const lead = revisarEntradilla(title, "La web oficial del " + fuente.club + " publica una nota.", hechos);
+    if (!cuerpo || !lead || textoConFuenteDetectada({ title, lead, body: cuerpo, source: { url: nota.url } })) {
+      st.pistas[pista.id].motivo = "sin hecho verificado";
+      sumaPista(st, "descartadas", "sin hecho verificado");
+      return null;
+    }
+    const key = "pista-" + pista.id;
+    if (own.some((o) => o.key === key)) {
+      st.pistas[pista.id].motivo = "ya publicada";
+      sumaPista(st, "descartadas", "ya publicada");
+      return null;
+    }
+    sumaPista(st, "verificadas");
+    const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
+    const item = { id: hex, status: "published", expira: true, createdAt: now, updatedAt: now, publishedAt: now, thumb: "", tipo: pista.tipo || "", club: fuente.club, players: personas, key, source: { name: "OFICIAL · " + fuente.club, url: nota.url, videoId: "" }, title, lead, body: cuerpo, via: "ia" };
+    own.unshift(item);
+    try { await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300))); } catch (e) {}
+    st.pistas[pista.id] = { at: now, estado: "publicada", motivo: "" };
+    sumaPista(st, "publicadas");
+    return { noticias: [item] };
   }
   sumaPista(st, "verificadas");
   const titular = citaEnTitulo(nota.title);
-  const res = { id: "pista-" + pista.id, club: fuente.club, title: nota.title, pub: nota.published || Date.parse(pista.at || "") || now, url: nota.url, oficial: true, speaker: (titular && titular.speaker) || pista.entrenador || "", sinMiniatura: true, items, cuando: fechaDeFuente(html) };
+  const res = { id: "pista-" + pista.id, club: fuente.club, title: nota.title, pub: nota.published || Date.parse(pista.at || "") || now, url: nota.url, oficial: true, speaker: (titular && titular.speaker) || pista.entrenador || "", sinMiniatura: true, items, cuando: fechaDeFuente(html), tipo: pista.tipo || "" };
   let noticias = [];
   try { noticias = await publicarNoticias(env, f, res, now, { sinIa: st.tok.n >= MAX_TOKENS_DIA }); } catch (e) { noticias = []; }
   if (!noticias.length) {
@@ -1579,4 +1653,4 @@ export async function redactorSombra(env, deps) {
   return { procesado: hecho ? hecho.id : null, pendientes: cola.length, tokens: st.tok.n };
 }
 
-export const _r = { compararNoticias, caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, localizarFrase, ventanaFrase, atribucionJugador, estadoRespaldado, temaRespaldado, robotsPermite, cruzarJugador, filtrar, parseJson, resumenTelegram, parseSitemapNews, esNotaPrimerEquipo, citaEnTitulo, partidoEnTitulo, citasDeHtml, cronicaDesdeHechos, cronicaDesdeEv, sujetosSeguidos, depurarCuerpo, elegirMinuto, minutosOficiales, fechaDeFuente, fechaTexto, entradillaRepiteTitulo, revisarEntradilla, clubProhibido, pistaAceptable, pistasATratar, notaParaPista, pistaDuplicada, enlacesDeSitemap, enlacesDeFuente, dominioProhibido, FUENTES, pistasDesdeTitulares, mezclarPistas, textoConFuenteDetectada };
+export const _r = { compararNoticias, caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, localizarFrase, ventanaFrase, atribucionJugador, estadoRespaldado, temaRespaldado, robotsPermite, cruzarJugador, filtrar, parseJson, resumenTelegram, parseSitemapNews, esNotaPrimerEquipo, citaEnTitulo, partidoEnTitulo, citasDeHtml, cronicaDesdeHechos, cronicaDesdeEv, sujetosSeguidos, depurarCuerpo, elegirMinuto, minutosOficiales, fechaDeFuente, fechaTexto, entradillaRepiteTitulo, revisarEntradilla, clubProhibido, pistaAceptable, pistasATratar, notaParaPista, pistaDuplicada, enlacesDeSitemap, enlacesDeFuente, dominioProhibido, FUENTES, pistasDesdeTitulares, mezclarPistas, textoConFuenteDetectada, hechosDesdeNota };
