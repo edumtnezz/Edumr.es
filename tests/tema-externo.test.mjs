@@ -51,3 +51,15 @@ test("un tema ya descartado por falta de nota oficial se reintenta con la otra w
   const r = _r.pistasATratar(doc, vistas, 2);
   assert.deepEqual(r.nuevas.map((p) => p.id), [PISTA.id]);
 });
+
+test("un titular sin club se resuelve por el enlace o por el club del jugador", () => {
+  const notas = [
+    { url: "https://www.futbolfantasy.com/laliga/noticias/154499-malaga-confirma-lesion-muscular-rafita", title: "Rafita, lesionado en el tendón: parte médico oficial", published: 1 },
+    { url: "https://www.futbolfantasy.com/laliga/noticias/154500-camello-no-para", title: "Camello no para de marcar", published: 1 },
+  ];
+  const sin = _r.pistasDesdeTitulares(notas, "futbolfantasy", 1, []);
+  assert.equal(sin.length, 1); // solo el que trae el club en el enlace
+  assert.equal(sin[0].equipo, "Málaga");
+  const con = _r.pistasDesdeTitulares(notas, "futbolfantasy", 1, [{ name: "Camello", team: "Rayo Vallecano" }, { name: "Rafita", team: "Málaga" }]);
+  assert.deepEqual(con.map((p) => p.equipo).sort(), ["Málaga", "Rayo Vallecano"]);
+});

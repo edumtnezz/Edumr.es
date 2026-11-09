@@ -1324,14 +1324,31 @@ function nombresEnTitulo(titulo, equipos) {
   cerrar();
   return { jugadores: jugadores.slice(0, 6), entrenador };
 }
-export function pistasDesdeTitulares(notas, origen, now) {
+// Si el titular no nombra al club, se mira el final del enlace y, si no, el club de los jugadores que nombra (mercado de Futmondo)
+function equiposDeNota(n, plantillas) {
+  const slug = decodeURIComponent(String(n.url || "").split("/").filter(Boolean).pop() || "").replace(/^\d+-/, "").replace(/[-_]+/g, " ");
+  let eq = equiposEnTitulo(n.title);
+  if (!eq.length) eq = equiposEnTitulo(slug);
+  if (!eq.length && plantillas && plantillas.length) {
+    const toks = String(n.title).split(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+/).filter((w) => w.length >= 4).map(norm2);
+    const hit = new Set();
+    for (const t of toks) {
+      const m = plantillas.filter((p) => { const parts = norm2(p.name).split(/\s+/); return parts.includes(t) && (parts.length === 1 || parts[parts.length - 1] === t || parts[0] === t); });
+      if (m.length === 1) hit.add(m[0].team);
+    }
+    if (hit.size === 1) eq = equiposEnTitulo([...hit][0]);
+  }
+  return eq;
+}
+export function pistasDesdeTitulares(notas, origen, now, plantillas) {
   const out = [];
   const seen = new Set();
   for (const n of notas || []) {
     if (!n || !n.title || !n.url) continue;
-    const equipos = equiposEnTitulo(n.title).filter((e) => !clubProhibido(e));
+    const todos = equiposDeNota(n, plantillas);
+    const equipos = todos.filter((e) => !clubProhibido(e));
     if (!equipos.length) continue;
-    if (equiposEnTitulo(n.title).length && equiposEnTitulo(n.title).every(clubProhibido)) continue;
+    if (todos.length && todos.every(clubProhibido)) continue;
     const tipo = tipoDeTitulo(n.title);
     const quienes = nombresEnTitulo(n.title, equipos);
     const num = (String(n.url).match(/\/(\d{3,})/) || [])[1] || "";
@@ -1364,6 +1381,8 @@ async function detectarTemas(env, f, st, now) {
   let doc = { v: 1, items: [] };
   try { doc = (await env.PORRA.get(PISTAS_KEY, "json")) || doc; } catch (e) {}
   let nuevas = [];
+  let plantillas = [];
+  try { const r = await f(SITE + "mercado", { headers: { "user-agent": "edumr-cron" } }); plantillas = ((await r.json()).players || []).map((p) => ({ name: p.name, team: p.team })); } catch (e) {}
   for (const src of DETECCION) {
     let origin = "";
     try { origin = new URL(src.url).origin; } catch (e) {}
@@ -1376,7 +1395,7 @@ async function detectarTemas(env, f, st, now) {
       const r = await f(src.url, { headers: UA_RED });
       if (!r.ok) throw new Error("lista " + r.status);
       const notas = enlacesDeSitemap(await r.text()).slice(0, 80);
-      const pistas = pistasDesdeTitulares(notas, src.origen, now);
+      const pistas = pistasDesdeTitulares(notas, src.origen, now, plantillas);
       nuevas = nuevas.concat(pistas);
       st.deteccion[src.origen] = { ok: true, at: now, n: pistas.length, err: "" };
     } catch (e) {
