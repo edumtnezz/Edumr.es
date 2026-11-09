@@ -14,6 +14,7 @@ Simular el tipo de noticia de FutbolFantasy (título, entradilla, cuerpo, miniat
 - Fuentes prohibidas como dato: Marca, AS, Mundo Deportivo, Google News RSS, El Desmarque, Athletic, Alavés, X/Twitter, y el RSS de YouTube (`/feeds/videos.xml`).
 - X no se usa. La rutina que leía @futbol_fantasy está parada. El Gol Digital sigue siendo solo detección, si algún día se mira, y no se cita.
 - FutbolFantasy y Comuniate solo detectan temas (titular y tipo). No se copia su texto, no se citan y su URL no sale en la noticia ni en Telegram.
+- Edu autorizó (09/11/2026) leer sus noticias enteras, solo para aprender estructura e ideas de estilo (robots.txt obligatorio). Nunca se copian frases ni se publica nada suyo.
 - `robots.txt` obligatorio. Si no se puede leer, esa URL no se toca.
 - La etiqueta OFICIAL solo si la fuente es el club, la RFEF o LaLiga. Si es otro medio: «Según [medio]» y el enlace a ese medio. Los avisos de Telegram enlazan a edumr.es, no a la fuente externa.
 - Coste extra 0 €. No se contratan APIs de pago. Leer X por su API de pago no va dentro del Worker.
