@@ -44,6 +44,7 @@ test("borrador desde la rueda de prensa, publicar y leer; lo de otras webs no sa
   pub = await (await get(env, "noticias")).json();
   assert.equal(pub.noticias.length, 1);
   assert.equal(pub.noticias[0].src, "EduMR");
+  assert.equal(pub.noticias[0].lead, "x");
   assert.equal(pub.noticias[0].link, "https://edumr.es/n/" + a.item.id);
   const art = await (await get(env, "noticia?u=" + encodeURIComponent(pub.noticias[0].link))).json();
   assert.match(art.html, /<p>Marc Casadó/);
