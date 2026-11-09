@@ -180,11 +180,13 @@
     var e = D.estado;
     var c = el("div", "ad-card"); c.appendChild(el("h2", null, "Redactor automático"));
     c.appendChild(el("p", "ad-meta", "Publica en la web y avisa por Telegram solo lo verificado. No crea borradores. Pasa cada 2 minutos."));
-    if (!e) { c.appendChild(el("p", "ad-empty", "Todavía no ha arrancado (falta la clave GEMINI_API_KEY en el Worker edumr-cron).")); v.appendChild(c); return; }
+    if (!e) c.appendChild(el("p", "ad-empty", "Todavía no ha arrancado (falta la clave GEMINI_API_KEY en el Worker edumr-cron)."));
+    v.appendChild(c);
+    v.appendChild(formPista());
+    if (!e) return;
     if (e.tok) c.appendChild(el("p", "ad-meta", "Tokens hoy (" + e.tok.d + "): " + (e.tok.n || 0) + " de 450.000"));
     if (e.pistas) c.appendChild(el("p", "ad-meta", "Pistas: " + (e.pistas.recibidas || 0) + " recibidas, " + (e.pistas.verificadas || 0) + " verificadas, " + (e.pistas.publicadas || 0) + " publicadas, " + (e.pistas.descartadas || 0) + " descartadas"));
     if (e.tg) c.appendChild(el("p", "ad-meta", (e.tg.ok ? "Telegram: el último aviso fue aceptado" : "Telegram: el último aviso no fue aceptado") + (e.tg.err ? " (" + e.tg.err + ")" : "") + (e.tg.pendientes ? " · pendientes " + e.tg.pendientes : "")));
-    v.appendChild(c);
     var f = el("div", "ad-card"); f.appendChild(el("h2", null, "Canales de YouTube"));
     Object.keys(e.fuentes || {}).forEach(function (club) {
       var s = e.fuentes[club]; var row = el("div", "ad-row");
@@ -201,6 +203,28 @@
     });
     if (!(e.seen || []).length) p.appendChild(el("p", "ad-empty", "Ninguno aún."));
     v.appendChild(p);
+  }
+
+  function formPista() {
+    var c = el("div", "ad-card");
+    c.appendChild(el("h2", null, "Añadir pista"));
+    c.appendChild(el("p", "ad-meta", "Solo el tema. El redactor busca el dato en la web oficial. No publica desde aquí."));
+    var equipo = el("input", "ad-i"); equipo.placeholder = "Equipo";
+    var tipo = el("select", "ad-i");
+    ["lesion", "rueda", "cronica", "once", "convocatoria", "mercado", "otro"].forEach(function (t) { var o = el("option", null, t); o.value = t; tipo.appendChild(o); });
+    var jugadores = el("input", "ad-i"); jugadores.placeholder = "Jugadores, separados por comas";
+    var entrenador = el("input", "ad-i"); entrenador.placeholder = "Entrenador, si habla él";
+    var tema = el("input", "ad-i"); tema.placeholder = "Tema, con tus palabras";
+    var b = el("button", "ad-b main", "Guardar pista"); b.type = "button";
+    b.addEventListener("click", function () {
+      post({ action: "pista", equipo: equipo.value, tipo: tipo.value, jugadores: jugadores.value, entrenador: entrenador.value, tema: tema.value }).then(function () {
+        equipo.value = jugadores.value = entrenador.value = tema.value = "";
+        toast("Pista guardada");
+        return cargar(true);
+      }).catch(function (e) { toast(e.message); });
+    });
+    [equipo, tipo, jugadores, entrenador, tema, b].forEach(function (x) { c.appendChild(x); });
+    return c;
   }
 
   cargar();

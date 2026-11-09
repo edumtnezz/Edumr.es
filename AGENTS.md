@@ -119,20 +119,19 @@ Antes de tocar partidos/alineaciones/ficha, repasar esta lista y verificar con c
 - Nunca inventes datos: todo dato debe salir de una fuente real (webs, APIs); si no hay dato, no lo inventes.
 - Comprueba y revisa las cosas tú mismo (entrar en la web, usar las APIs, comparar datos) en vez de pedirme datos que ya puedes consultar.
 
-## 🧪 Redactor automático (09/11/2026) — `cron/src/redactor.js`
-- Corre en el cron de cada minuto y actúa en los minutos impares (cada 2 minutos). **Publica solo** en la web y avisa por Telegram al chat ya guardado, con enlace a `edumr.es`. No crea borradores ni manda tarjeta de sombra. Sin `GEMINI_API_KEY` no hace nada.
-- Canales oficiales en `FUENTES`. El RSS `youtube.com/feeds/videos.xml` lo prohíbe el `robots.txt` de YouTube: no se pide. La lista sale de la API oficial (`YOUTUBE_API_KEY`, como mucho cada 15 min por canal). Si `robots.txt` no se puede leer, esa URL queda prohibida.
-- Gemini transcribe. Publica disponibilidad solo si la frase, el jugador y el estado cuadran (un «no» médico o una duda tiran esa noticia). También publica citas de cambios, rendimiento, minutos, táctica, gestión física o valoración: ahí un «no» puede ser el dato y no se convierte en baja. Si no cuadra, no se publica.
-- Barcelona (09/11): canal oficial `UC14UlmYlSNiQCBe9Eookf_A` y sitemap `fcbarcelona.es` (robots lo permite, solo primer equipo). Citas literales con etiqueta OFICIAL. La crónica de un partido sale de `fm-partido` (goles con nombre); si el marcador no cuadra con el título oficial, no se publica. No se copia el texto del club ni de otras webs.
-- Tope 450.000 tokens/día. Un vídeo por pasada. No reescribe ni reenvía borradores o noticias viejas. Las previas nuevas (`expira`) caducan a las 30 h (40 h si son de después del partido).
-- Estado en KV `rd:sombra:v1` y `rd:res:v1:<videoId>`. Apodos solo los que Edu confirma (`ALIAS_JUGADOR`).
+## 🧪 Redactor automático — lee `docs/redactor.md` antes de tocarlo
+- Publica directo en la web y avisa por Telegram con enlace a edumr.es. No crea borradores. Sin `GEMINI_API_KEY` no hace nada. Tope 450.000 tokens/día.
+- Código: `cron/src/redactor.js`. Clubes y listados: `FUENTES` (tabla en ESTADO.md). Estilo: `docs/estilo-noticias.md`.
+- YouTube solo por la API. El RSS está prohibido. `robots.txt` ilegible = no se toca esa URL. Athletic, Alavés, Marca, AS, Mundo Deportivo y X no son fuente. @futbol_fantasy solo alimenta pistas (`rd:pistas:v1`), que escribe un proceso de fuera. Una pista a mano se añade en el panel, pestaña Estado.
+- Minuto oficial manda. Fecha solo si la fuente la escribe como día. Sin dato: «sin datos». Corregir una publicada: Guardar el mismo id en el panel. No se duplica ni se reenvía Telegram.
+- No pongas secretos ni ids de Cloudflare en el repo. Binding del KV: `PORRA`.
 
 ## 📰 Noticias propias y administrador de noticias (07/11/2026)
 - Web pública `/noticias`: SOLO noticias propias publicadas (KV `own:news:v1`, enlace `https://edumr.es/n/<id>`, slug web `ed-<id>`) + cajón de Futmondo. Nada copiado de otras webs.
 - `noticia?u=` de una web externa: solo administrador; para el resto devuelve `{removed:true}`. `noticias-rapido`: solo administrador.
 - Panel privado `/futmondo/admin-noticias/` (noindex): lo ya guardado (borradores antiguos y publicadas), Redactor (vídeos leídos, con el motivo si no se publicó), Comparar (FutbolFantasy/Comuniate/Jornada Perfecta solo para ver) y Estado. El redactor ya no crea borradores. API `admin-noticias` (GET/POST) solo con `isAdmin`.
-- Los avisos de Telegram leen las noticias externas de KV `ff:news:cron:v1` (la web la rellena en `noticias?warm=1`), sin resumen, y enlazan al panel.
-- Canales del redactor: Dépor, Sevilla, Betis, Valencia, Villarreal, Levante, Oviedo, Atlético y Barcelona (09/11, canal oficial y noticias escritas del primer equipo). Sin añadir: Athletic, Alavés y el resto hasta comprobar canal y robots.
+- Telegram no avisa de noticias de otras webs. Esas piezas solo se comparan en el panel (`ff:news:cron:v1`, `rd:cmp:v1`, `rd:ext:v1`).
+- Fuentes del redactor: las de `FUENTES` en `cron/src/redactor.js` y la tabla de ESTADO.md (09/11). Athletic y Alavés no se añaden. El resto de la guía del redactor está en `docs/redactor.md`.
 - 07/11: publica una noticia por jugador (clave `videoId:jugador`), miniatura del vídeo si `robots.txt` de i.ytimg.com lo permite, Telegram con foto y enlace a la web.
 - 09/11: la frase tiene que ir con ESE jugador y ESE estado. Si no, no hay noticia. No se republican los borradores ya guardados ni se reenvían las noticias viejas. Atribución «Según el club» y enlace al vídeo oficial.
 - 08/11: Telegram YA NO avisa de noticias de otras webs (decisión de Edu): solo llegan las propias (redactor) y los demás avisos (alineaciones, mercado…). Por dentro, el redactor compara cada 10 min nuestras noticias con FutbolFantasy/Comuniate/Jornada Perfecta (`rd:cmp:v1`: coincidencias por jugador, cobertura, lo que no tratamos) y guarda un registro de sus titulares (`rd:ext:v1`, 400) para estudiar cómo redactan. Se ve solo en el panel de administrador (pestaña Comparar y dentro de cada noticia).
