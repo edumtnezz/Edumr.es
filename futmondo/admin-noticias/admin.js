@@ -123,6 +123,13 @@
       }).catch(function (e) { pst.style.color = "#b91c1c"; pst.textContent = "Fallo: " + (e && e.message || "sin respuesta"); }).then(function () { pb.disabled = false; });
     });
     bt.appendChild(pb); c.appendChild(pst); c.appendChild(pim);
+    var det = el("details", "ad-meta"); det.appendChild(el("summary", null, "Ver / cambiar el texto (prompt) que se manda a ChatGPT"));
+    var clave = x.tipo === "once" ? "once" : "jugador";
+    det.appendChild(el("p", "ad-meta", "Se rellena solo: {club} {jugador} {local} {visitante} {jugador1} {jugador2}. Vale para todas las noticias de este tipo (" + (clave === "once" ? "onces" : "jugador") + ")."));
+    var pta = el("textarea", "ad-i"); pta.rows = 10; pta.value = (D.prompts && D.prompts[clave]) || ""; det.appendChild(pta);
+    var psv = el("button", "ad-b", "Guardar texto"); psv.type = "button";
+    psv.addEventListener("click", function () { var o = { action: "prompts", jugador: D.prompts.jugador, once: D.prompts.once }; o[clave] = pta.value; post(o).then(function (j) { D.prompts = j.prompts; toast("Texto guardado"); }).catch(function (e) { toast(e.message); }); });
+    det.appendChild(psv); c.appendChild(det);
     btn("Borrar", "del", function () { if (!confirm("¿Borrar esta noticia?")) return Promise.reject(new Error("Cancelado")); return post({ action: "borrar", id: x.id }).then(function () { abierto = null; return "Borrada"; }); });
     c.appendChild(bt);
     if (x.status === "published") { var vl = el("a", "ad-link", "Ver en la web"); vl.href = "/futmondo/guiafantasy/noticias/ed-" + x.id; vl.target = "_blank"; vl.style.display = "inline-block"; vl.style.marginTop = "10px"; c.appendChild(vl); }

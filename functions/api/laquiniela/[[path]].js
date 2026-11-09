@@ -2015,7 +2015,12 @@ async function adminNoticias(env, request, url, data) {
     let comparacion = null;
     try { comparacion = await env.PORRA.get("rd:cmp:v1", "json"); } catch (e) {}
     const tg = estado && estado.tgUltimo ? { id: String(estado.tgUltimo.id || ""), ok: !!estado.tgUltimo.ok, err: String(estado.tgUltimo.err || "").slice(0, 120), at: estado.tgUltimo.at || 0, pendientes: Array.isArray(estado.tgPend) ? estado.tgPend.length : 0 } : null;
-    return json({ own, sombra, usadas, externas, comparacion, estado: estado ? { fuentes: estado.fuentes || {}, tok: estado.tok || null, tg, pistas: estado.pistasN || null, deteccion: estado.deteccion || null, seen: Object.entries(estado.seen || {}).slice(-60).map(([id, v]) => Object.assign({ id }, v)) } : null, now: Date.now() });
+    return json({ prompts: await getPortadaPrompts(env), own, sombra, usadas, externas, comparacion, estado: estado ? { fuentes: estado.fuentes || {}, tok: estado.tok || null, tg, pistas: estado.pistasN || null, deteccion: estado.deteccion || null, seen: Object.entries(estado.seen || {}).slice(-60).map(([id, v]) => Object.assign({ id }, v)) } : null, now: Date.now() });
+  }
+  if (data.action === "prompts") {
+    const g = { jugador: String(data.jugador || "").slice(0, 4000), once: String(data.once || "").slice(0, 4000) };
+    await env.PORRA.put(PORTADA_PROMPTS_KEY, JSON.stringify(g));
+    return json({ ok: true, prompts: await getPortadaPrompts(env) });
   }
   const own = await getOwn(env);
   const now = Date.now();
@@ -2070,6 +2075,17 @@ async function adminNoticias(env, request, url, data) {
 
 // Portada hecha con ChatGPT (API de OpenAI). Solo admin, solo si hay OPENAI_API_KEY.
 // Usa la foto Futmondo del jugador del titular y el logo NOTICIAS como referencias.
+const PORTADA_PROMPTS_KEY = "portada:prompts:v1";
+const PORTADA_PROMPTS_DEF = {
+  jugador: "Quiero una miniatura de noticia de fútbol siguiendo EXACTAMENTE el estilo visual de la miniatura de referencia. DISEÑO: formato horizontal, alta resolución. Estética deportiva profesional, estilo miniaturas de noticias de fútbol de YouTube. Colores intensos, predominio de los colores del equipo ({club}). Fondo de estadio con público desenfocado. Escudo oficial del equipo grande en el lado izquierdo, con efectos de iluminación. Un único jugador ({jugador}), centro-derecha, en primer plano o celebrando; NO repetirlo ni poner dos versiones. Camiseta oficial del equipo. Iluminación cinematográfica, contraste alto, pinceladas y diagonales dinámicas. MARCA DE AGUA: copia TAL CUAL la marca de la imagen de referencia (logo NOTICIAS con «edumr.es» debajo, mismos colores y proporciones), sin redibujarla, pero PEQUEÑA y discreta (aprox. 10 % del ancho), en la esquina superior derecha. IMPORTANTE: sin titulares, textos de la noticia, minutos, estadísticas ni frases. Solo el logo, edumr.es, el escudo y el jugador. Misma identidad visual que la referencia. FIDELIDAD (prioridad máxima): respeta al máximo el rostro real del futbolista, sin rostros inventados. Escudo oficial auténtico, sin rediseñarlo. Equipación oficial fiel, con logotipos del fabricante y patrocinadores reales. No inventes detalles.",
+  once: "Quiero una miniatura de noticia de fútbol de un partido ({local} contra {visitante}) siguiendo EXACTAMENTE el estilo visual de la miniatura de referencia. DISEÑO: formato horizontal, alta resolución, estética deportiva profesional de miniaturas de YouTube. Dos jugadores, uno de cada equipo ({jugador1} de {local} a la izquierda y {jugador2} de {visitante} a la derecha), enfrentados, en primer plano, cada uno con la camiseta oficial de su club. De fondo, los dos escudos oficiales grandes con efectos de luz, uno a cada lado, y el estadio del equipo local ({local}) con el césped y el público desenfocado. Colores intensos mezclando los de los dos clubes, iluminación cinematográfica, contraste alto, pinceladas y diagonales dinámicas. MARCA DE AGUA: copia TAL CUAL la marca NOTICIAS con «edumr.es» de la imagen de referencia, PEQUEÑA y discreta, en la esquina superior derecha. IMPORTANTE: sin titulares, textos, minutos ni estadísticas; solo marca, escudos, jugadores y estadio. FIDELIDAD (máxima): rostros reales de los futbolistas sin inventar, escudos oficiales sin rediseñar, equipaciones oficiales fieles con fabricante y patrocinadores reales."
+};
+async function getPortadaPrompts(env) {
+  let g = null;
+  try { g = await env.PORRA.get(PORTADA_PROMPTS_KEY, "json"); } catch (e) {}
+  return { jugador: (g && g.jugador) || PORTADA_PROMPTS_DEF.jugador, once: (g && g.once) || PORTADA_PROMPTS_DEF.once };
+}
+
 async function generarPortada(env, request, own, it, now) {
   if (!env.OPENAI_API_KEY) return json({ error: "Falta la clave OPENAI_API_KEY en Cloudflare." }, 400);
   const fold = (v) => stripAccents(String(v || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w.length > 3);
@@ -2088,18 +2104,32 @@ async function generarPortada(env, request, own, it, now) {
   const origin = new URL(request.url).origin;
   const bajar = async (u) => { const r = await fetch(u); if (!r.ok) throw new Error("imagen " + r.status); return new Blob([await r.arrayBuffer()], { type: "image/png" }); };
   let conFoto = false;
-  try { if (pl) { fd.append("image[]", await bajar(pl.photo), "jugador.png"); conFoto = true; } } catch (e) {}
+  let dos = null;
+  if (it.tipo === "once") {
+    try {
+      const mm = String(it.title || "").match(/:\s*(.+?)\s+[–-]\s+(.+)$/);
+      const m = await getMarketPlayers(env);
+      const mejor = (eq) => (m.players || []).filter((p) => p.photo && fold(p.team).some((w) => fold(eq).includes(w))).sort((a, b) => (b.avg || 0) - (a.avg || 0))[0];
+      if (mm) { const a = mejor(mm[1]), b = mejor(mm[2]); if (a && b) dos = [a, b]; }
+    } catch (e) {}
+  }
+  try { if (dos) { for (const q of dos) fd.append("image[]", await bajar(q.photo), "jugador.png"); conFoto = true; } } catch (e) {}
+  try { if (pl && !dos) { fd.append("image[]", await bajar(pl.photo), "jugador.png"); conFoto = true; } } catch (e) {}
   try { fd.append("image[]", await bajar(origin + "/img/noticias-marca.png"), "marca.png"); } catch (e) {}
   let conEstilo = false;
   try { fd.append("image[]", await bajar(origin + "/img/n/2b50b6910d.jpg"), "estilo.jpg"); conEstilo = true; } catch (e) {}
   const club = clean2(it.club || (pl && pl.team) || "", 60);
   const jug = pl ? pl.name : (Array.isArray(it.players) && it.players[0] ? (typeof it.players[0] === "string" ? it.players[0] : it.players[0].name) : "");
-  const imgs = (conFoto ? "Imagen 1: foto del jugador. " : "") + "Imagen " + (conFoto ? 2 : 1) + ": marca NOTICIAS con «edumr.es» debajo, ya montada. " + (conEstilo ? "Imagen " + (conFoto ? 3 : 2) + ": miniatura anterior, ES LA REFERENCIA DE ESTILO a seguir. " : "");
-  const prompt = "Quiero una miniatura de noticia de fútbol siguiendo EXACTAMENTE el estilo visual de la miniatura de referencia. " + imgs +
-    "DISEÑO: formato horizontal, alta resolución. Estética deportiva profesional, estilo miniaturas de noticias de fútbol de YouTube. Colores intensos, predominio de los colores del equipo" + (club ? " (" + club + ")" : "") + ". Fondo de estadio con público desenfocado. Escudo oficial del equipo grande en el lado izquierdo, con efectos de iluminación. Un único jugador" + (jug ? " (" + jug + ")" : "") + ", centro-derecha, en primer plano o celebrando; NO repetirlo ni poner dos versiones. Camiseta oficial del equipo. Iluminación cinematográfica, contraste alto, pinceladas y diagonales dinámicas. " +
-    "MARCA DE AGUA: copia TAL CUAL la marca de la imagen de referencia (logo NOTICIAS con «edumr.es» debajo, mismos colores, mismas proporciones y mismo ancho relativo del logo y de la etiqueta), sin redibujarla ni cambiar su diseño, pero PEQUEÑA y discreta (aprox. 10 % del ancho de la imagen), en la esquina superior derecha. " +
-    "IMPORTANTE: sin titulares, textos de la noticia, minutos, estadísticas ni frases. Solo el logo, edumr.es, el escudo y el jugador. Misma identidad visual que la referencia. " +
-    "FIDELIDAD (prioridad máxima): respeta al máximo el rostro real del futbolista (rasgos, peinado, expresión), sin rostros inventados. Escudo oficial auténtico del club, sin rediseñarlo. Equipación oficial fiel (colores, franjas, cuello, mangas), con logotipos originales del fabricante y patrocinadores reales en su sitio. No inventes detalles que alteren la identidad del jugador o del equipo.";
+  const prompts = await getPortadaPrompts(env);
+  let plantilla = prompts.jugador, extra = {};
+  if (it.tipo === "once") {
+    plantilla = prompts.once;
+    const mm = String(it.title || "").match(/:\s*(.+?)\s+[–-]\s+(.+)$/);
+    extra.local = mm ? mm[1] : ""; extra.visitante = mm ? mm[2] : ""; if (dos) { extra.j1 = dos[0].name; extra.j2 = dos[1].name; }
+  }
+  const nF = dos ? 2 : (conFoto ? 1 : 0);
+  const imgs = (dos ? "Imágenes 1 y 2: fotos de los dos jugadores. " : (conFoto ? "Imagen 1: foto del jugador. " : "")) + "Imagen " + (nF + 1) + ": marca NOTICIAS con «edumr.es» debajo, ya montada. " + (conEstilo ? "Imagen " + (nF + 2) + ": miniatura anterior, ES LA REFERENCIA DE ESTILO a seguir. " : "");
+  const prompt = imgs + String(plantilla).replace(/\{(club|jugador|local|visitante|jugador1|jugador2)\}/g, (_, k) => ({ club, jugador: jug, local: extra.local || "", visitante: extra.visitante || "", jugador1: extra.j1 || "", jugador2: extra.j2 || "" })[k] || "");
   fd.append("prompt", prompt);
   const r = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: "Bearer " + env.OPENAI_API_KEY }, body: fd });
   const j = await r.json().catch(() => ({}));
