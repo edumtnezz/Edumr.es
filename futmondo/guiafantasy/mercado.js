@@ -4008,7 +4008,11 @@
     return t;
   }
 
+  // Portadas hechas a mano para noticias propias concretas: id de la noticia (edumr.es/n/<id>) -> imagen en /img/n/
+  const PORTADAS = { "2b50b6910d": "/img/n/2b50b6910d.jpg" };
+  const portadaDe = (link) => PORTADAS[(String(link || "").match(/\/n\/([a-z0-9]+)$/) || [])[1]] || "";
   function renderNews(d) {
+    (d.noticias || []).forEach((x) => { if (x && x.src === "EduMR" && !x.thumb) { const pt = portadaDe(x.link); if (pt) x.thumb = pt; } });
     lastNews = d;
     const upd = $("newsUpdated");
     if (upd) upd.textContent = d.updatedAt ? "· actualizado " + haceTxt(d.updatedAt) : "";
@@ -4542,6 +4546,7 @@
     }
     box.appendChild(el("h2", "ficha-name", title || d.title || ""));
     if (d.src === "EduMR") {
+      if (!d.image) d.image = portadaDe(url);
       const bn = el("div", "art-banner");
       if (d.image) { const im = el("img"); im.alt = ""; im.src = d.image; bn.appendChild(im); }
       else if (window.EduThumb && window.EduThumb.el) bn.appendChild(ethFor({ title: d.title || title, lead: d.lead, club: d.club, players: d.players, src: "EduMR" }));
