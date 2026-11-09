@@ -330,6 +330,7 @@ export async function avisar(env, deps) {
         "\n\n" + bloque(m.home) + "\n\n\n" + bloque(m.away) + (fuera.length ? "\n\n\n⚠️ <b>Tuyos fuera del once:</b> " + esc(fuera.join(", ")) : "") +
         "\n\n👉 <b>Míralo en tu web:</b>\n" + matchUrl(web.home, web.away);
       queue.push({ text, commit, noPreview: true });
+      try { await publicarOnceWeb(env, m, md, key); } catch (e) {}
     }
   }
 
@@ -501,4 +502,28 @@ export async function avisarPuntos(env, deps) {
 }
 
 // Solo para pruebas
+// Noticia propia con el once CONFIRMADO de cada partido, solo con nuestros datos (los de la lista oficial).
+// Nada de texto de otras webs. Se retira sola 2 h después (regla del redactor).
+async function publicarOnceWeb(env, m, md, key) {
+  const lado = (t) => [["Portero", t.portero], ["Defensas", t.defensas], ["Medios", t.medios], ["Delanteros", t.delanteros]]
+    .map(([et, l]) => { const n = (l || []).map((p) => p && p.name).filter(Boolean); return n.length ? et + ": " + n.join(", ") : ""; }).filter(Boolean);
+  const h = lado(m.home), a = lado(m.away);
+  if (!h.length || !a.length) return;
+  const OWN = "own:news:v1";
+  const own = (await env.PORRA.get(OWN, "json")) || [];
+  const k = "once-" + key;
+  if (own.some((o) => o.key === k)) return;
+  const now = Date.now();
+  const id = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
+  const cab = (t) => t.name + (t.formation ? " (" + t.formation + ")" : "");
+  own.unshift({
+    id, status: "published", expira: true, createdAt: now, updatedAt: now, publishedAt: now, thumb: "", tipo: "once", key: k,
+    title: "Once confirmado: " + m.home.name + " – " + m.away.name,
+    lead: "Alineaciones oficiales de la jornada " + md + ".",
+    body: [cab(m.home)].concat(h, [""], [cab(m.away)], a).filter((x) => x !== "").join("\n"),
+    club: m.home.name, players: [], source: null,
+  });
+  await env.PORRA.put(OWN, JSON.stringify(own.slice(0, 300)));
+}
+
 export const _t = { norm, ownMatch, sameTeam, newsAt, KW, inLineup, statusLabel, mercadoTexto };

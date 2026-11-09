@@ -1609,6 +1609,7 @@ async function tratarExterna(env, f, st, now, pista, own) {
   const robots = await leerRobots(f, u.origin);
   if (!robotsPermite(robots, pista.ref)) { st.pistas[pista.id].motivo = "robots prohíbe la fuente"; return null; }
   if (now - (Date.parse(pista.at || "") || now) > 30 * 3600e3) { st.pistas[pista.id].motivo = "tema viejo"; return null; }
+  if (pista.tipo === "once") { st.pistas[pista.id].motivo = "once: lo publica la alineación confirmada con datos propios"; return null; }
   if (pista.tipo === "once" && now - (Date.parse(pista.at || "") || now) > 2 * 3600e3) { st.pistas[pista.id].motivo = "tema viejo"; return null; }
   let html = "";
   try { const r = await f(pista.ref, { headers: UA_RED }); if (r.ok) html = await r.text(); } catch (e) {}
