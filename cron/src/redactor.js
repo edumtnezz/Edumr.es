@@ -478,6 +478,7 @@ async function publicarNoticias(env, f, res, now, opts) {
   const out = [];
   nuevas.forEach((n, i) => {
     if (claves.has(n.key)) return;
+    if (textoConFuenteDetectada(n)) return;
     const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
     const item = Object.assign({ id: hex, status: "published", expira: true, createdAt: now + i, updatedAt: now + i, publishedAt: now + i, thumb }, n);
     own.unshift(item); out.push(item);
@@ -645,7 +646,7 @@ async function avisarPublicadas(env, f, st, noticias, now) {
     const av = await env.PORRA.get(AVISOS_KEY, "json");
     chat = String(env.TELEGRAM_CHAT_ID || (av && av.chat) || "");
   } catch (e) {}
-  const cola = (st.tgPend || []).concat(nuevas.map((n) => ({ id: n.id, title: n.title, lead: n.lead, body: n.body, thumb: n.thumb || "" })));
+  const cola = (st.tgPend || []).concat(nuevas.map((n) => ({ id: n.id, title: n.title, lead: n.lead, body: n.body, thumb: n.thumb || "" }))).filter((n) => !textoConFuenteDetectada(n));
   const vistos = new Set();
   const queda = [];
   let enviados = 0;
@@ -1223,6 +1224,140 @@ function itemsDeCitas(html, title, plantilla) {
   }
   return filtrar(crudos, texto, plantilla).filter((x) => x.publicable);
 }
+const DETECCION_MS = 30 * 60e3;
+const DETECCION = [
+  { origen: "futbolfantasy", url: "https://www.futbolfantasy.com/sitemap-news.xml" },
+  { origen: "comuniate", url: "https://www.comuniate.com/sitemap_news.xml" },
+];
+const ALIAS_CLUB = [
+  ["real sociedad", "Real Sociedad"], ["real madrid", "Real Madrid"], ["rayo vallecano", "Rayo Vallecano"], ["rayo", "Rayo Vallecano"],
+  ["atletico de madrid", "Atlético"], ["atletico", "Atlético"], ["atleti", "Atlético"],
+  ["deportivo alaves", "Alavés"], ["alaves", "Alavés"], ["athletic", "Athletic"], ["bilbao", "Athletic"],
+  ["barcelona", "Barcelona"], ["barca", "Barcelona"], ["espanyol", "Espanyol"], ["espanol", "Espanyol"],
+  ["villarreal", "Villarreal"], ["valencia", "Valencia"], ["sevilla", "Sevilla"], ["levante", "Levante"],
+  ["malaga", "Málaga"], ["getafe", "Getafe"], ["osasuna", "Osasuna"], ["celta", "Celta"], ["elche", "Elche"],
+  ["girona", "Girona"], ["mallorca", "Mallorca"], ["oviedo", "Oviedo"], ["racing", "Racing"],
+  ["deportivo", "Deportivo"], ["depor", "Deportivo"], ["coruna", "Deportivo"],
+];
+const ENTRENADORES = ["flick", "simeone", "aguirre", "pellegrini", "ancelotti", "arrasate", "alguacil", "bordalas", "giraldez", "michel"];
+const NO_JUGADOR = new Set("el la los las del para con por una como ante tras sobre pese parte medico lista jornada copa fifa seleccion selecciones fantasy comunio biwenger marca mister futmondo laliga portadas hoy bueno mala sorpresa alineaciones alineacion confirmadas confirmada probables probable noviembre internacional internacionales real club futbol entre del".split(" "));
+export function textoConFuenteDetectada(item) {
+  const s = item && item.source;
+  const blob = [item && item.title, item && item.lead, item && item.body, item && item.url, s && s.url, s && s.name].join(" ");
+  return /futbolfantasy\.com|comuniate\.com|twitter\.com|\bx\.com\b/i.test(blob);
+}
+function equiposEnTitulo(titulo) {
+  const t = norm2(titulo);
+  const hits = [];
+  for (const [alias, nombre] of ALIAS_CLUB) {
+    const re = new RegExp("\\b" + alias + "\\b", "g");
+    let m;
+    while ((m = re.exec(t))) hits.push({ nombre, i: m.index, len: alias.length });
+  }
+  hits.sort((a, b) => b.len - a.len || a.i - b.i);
+  const kept = [];
+  for (const h of hits) {
+    if (kept.some((k) => h.i >= k.i && h.i < k.i + k.len)) continue;
+    if (kept.some((k) => k.nombre === h.nombre)) continue;
+    kept.push(h);
+  }
+  return kept.map((h) => h.nombre);
+}
+function tipoDeTitulo(titulo) {
+  const t = norm2(titulo);
+  if (/lesion|lesionad|molest|parte medico|baja|rotura|tobillo|rodilla|angina|problema fisico/.test(t)) return "lesion";
+  if (/alineacion|once probable|once confirmad|probables|confirmad/.test(t)) return "once";
+  if (/convoc/.test(t)) return "convocatoria";
+  if (/mercado|fichaj|nuevo entrenador/.test(t)) return "mercado";
+  if (/\bhabla\b|analiza|valora|explica|repasa/.test(t)) return "rueda";
+  return "otro";
+}
+function nombresEnTitulo(titulo, equipos) {
+  const equipoTok = new Set(equipos.flatMap((e) => norm2(e).split(/\s+/)));
+  const toks = String(titulo || "").split(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+/).filter(Boolean);
+  const jugadores = [];
+  let entrenador = "";
+  let buf = [];
+  const cerrar = () => {
+    if (buf.length) jugadores.push(buf.join(" "));
+    buf = [];
+  };
+  for (const raw of toks) {
+    const n = norm2(raw);
+    const nombre = raw[0] === raw[0].toUpperCase() && raw[0] !== raw[0].toLowerCase() && n.length >= 4 && !NO_JUGADOR.has(n) && !equipoTok.has(n) && !ENTRENADORES.includes(n);
+    if (nombre) buf.push(raw);
+    else cerrar();
+    if (!entrenador && ENTRENADORES.includes(n)) entrenador = raw;
+  }
+  cerrar();
+  return { jugadores: jugadores.slice(0, 6), entrenador };
+}
+export function pistasDesdeTitulares(notas, origen, now) {
+  const out = [];
+  const seen = new Set();
+  for (const n of notas || []) {
+    if (!n || !n.title || !n.url) continue;
+    const equipos = equiposEnTitulo(n.title).filter((e) => !clubProhibido(e));
+    if (!equipos.length) continue;
+    if (equiposEnTitulo(n.title).length && equiposEnTitulo(n.title).every(clubProhibido)) continue;
+    const tipo = tipoDeTitulo(n.title);
+    const quienes = nombresEnTitulo(n.title, equipos);
+    const num = (String(n.url).match(/\/(\d{3,})/) || [])[1] || "";
+    if (!num) continue;
+    const pref = origen === "comuniate" ? "cm-" : "ff-";
+    for (const equipo of equipos) {
+      const id = pref + num + "-" + norm2(equipo).replace(/\s+/g, "-");
+      if (seen.has(id)) continue;
+      seen.add(id);
+      const tema = (tipo === "lesion" ? "lesión" : tipo) + (quienes.entrenador ? " de " + quienes.entrenador : quienes.jugadores.length ? " de " + quienes.jugadores.slice(0, 3).join(", ") : "");
+      out.push({ id, at: n.published ? new Date(n.published).toISOString() : new Date(now || Date.now()).toISOString(), tipo, equipo, jugadores: quienes.jugadores, entrenador: quienes.entrenador || "", tema, origen });
+    }
+  }
+  return out;
+}
+export function mezclarPistas(doc, nuevas) {
+  const items = [];
+  const seen = new Set();
+  for (const p of [].concat(nuevas || [], (doc && doc.items) || [])) {
+    if (!p || !p.id || seen.has(p.id) || clubProhibido(p.equipo)) continue;
+    if (textoConFuenteDetectada(p)) continue;
+    seen.add(p.id);
+    items.push(p);
+    if (items.length >= 200) break;
+  }
+  return { v: 1, items };
+}
+async function detectarTemas(env, f, st, now) {
+  st.deteccion = st.deteccion || {};
+  let doc = { v: 1, items: [] };
+  try { doc = (await env.PORRA.get(PISTAS_KEY, "json")) || doc; } catch (e) {}
+  let nuevas = [];
+  for (const src of DETECCION) {
+    let origin = "";
+    try { origin = new URL(src.url).origin; } catch (e) {}
+    const robots = origin ? await leerRobots(f, origin) : null;
+    if (!robotsPermite(robots, src.url)) {
+      st.deteccion[src.origen] = { ok: false, at: now, n: 0, err: robots ? "robots" : "robots ilegible" };
+      continue;
+    }
+    try {
+      const r = await f(src.url, { headers: UA_RED });
+      if (!r.ok) throw new Error("lista " + r.status);
+      const notas = enlacesDeSitemap(await r.text()).slice(0, 80);
+      const pistas = pistasDesdeTitulares(notas, src.origen, now);
+      nuevas = nuevas.concat(pistas);
+      st.deteccion[src.origen] = { ok: true, at: now, n: pistas.length, err: "" };
+    } catch (e) {
+      st.deteccion[src.origen] = { ok: false, at: now, n: 0, err: String(e && e.message || e).slice(0, 80) };
+    }
+  }
+  if (nuevas.length) {
+    try { await env.PORRA.put(PISTAS_KEY, JSON.stringify(mezclarPistas(doc, nuevas))); } catch (e) {}
+  }
+  st.deteccionAt = now;
+  return { dirty: true };
+}
+
 async function tratarPistas(env, f, st, now, fuentes) {
   let doc = null;
   try { doc = await env.PORRA.get(PISTAS_KEY, "json"); } catch (e) { return null; }
@@ -1404,6 +1539,12 @@ export async function redactorSombra(env, deps) {
       if (!hecho) hecho = { id: w.id, noticias: w.noticias };
     }
   } catch (e) {}
+  if ((deps && deps.allTicks) || now - (st.deteccionAt || 0) >= DETECCION_MS) {
+    try {
+      const d = await detectarTemas(env, f, st, now);
+      if (d && d.dirty) dirty = true;
+    } catch (e) {}
+  }
   if ((deps && deps.allTicks) || now - (st.pistasAt || 0) >= PISTAS_MS) {
     if (st.tok.n < MAX_TOKENS_DIA) {
       try {
@@ -1438,4 +1579,4 @@ export async function redactorSombra(env, deps) {
   return { procesado: hecho ? hecho.id : null, pendientes: cola.length, tokens: st.tok.n };
 }
 
-export const _r = { compararNoticias, caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, localizarFrase, ventanaFrase, atribucionJugador, estadoRespaldado, temaRespaldado, robotsPermite, cruzarJugador, filtrar, parseJson, resumenTelegram, parseSitemapNews, esNotaPrimerEquipo, citaEnTitulo, partidoEnTitulo, citasDeHtml, cronicaDesdeHechos, cronicaDesdeEv, sujetosSeguidos, depurarCuerpo, elegirMinuto, minutosOficiales, fechaDeFuente, fechaTexto, entradillaRepiteTitulo, revisarEntradilla, clubProhibido, pistaAceptable, pistasATratar, notaParaPista, pistaDuplicada, enlacesDeSitemap, enlacesDeFuente, dominioProhibido, FUENTES };
+export const _r = { compararNoticias, caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, localizarFrase, ventanaFrase, atribucionJugador, estadoRespaldado, temaRespaldado, robotsPermite, cruzarJugador, filtrar, parseJson, resumenTelegram, parseSitemapNews, esNotaPrimerEquipo, citaEnTitulo, partidoEnTitulo, citasDeHtml, cronicaDesdeHechos, cronicaDesdeEv, sujetosSeguidos, depurarCuerpo, elegirMinuto, minutosOficiales, fechaDeFuente, fechaTexto, entradillaRepiteTitulo, revisarEntradilla, clubProhibido, pistaAceptable, pistasATratar, notaParaPista, pistaDuplicada, enlacesDeSitemap, enlacesDeFuente, dominioProhibido, FUENTES, pistasDesdeTitulares, mezclarPistas, textoConFuenteDetectada };

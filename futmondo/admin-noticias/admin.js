@@ -186,6 +186,10 @@
     if (!e) return;
     if (e.tok) c.appendChild(el("p", "ad-meta", "Tokens hoy (" + e.tok.d + "): " + (e.tok.n || 0) + " de 450.000"));
     if (e.pistas) c.appendChild(el("p", "ad-meta", "Pistas: " + (e.pistas.recibidas || 0) + " recibidas, " + (e.pistas.verificadas || 0) + " verificadas, " + (e.pistas.publicadas || 0) + " publicadas, " + (e.pistas.descartadas || 0) + " descartadas"));
+    if (e.deteccion) Object.keys(e.deteccion).forEach(function (k) {
+      var d = e.deteccion[k] || {};
+      c.appendChild(el("p", "ad-meta", "Detector " + k + ": " + (d.ok ? "bien, " + (d.n || 0) + " pistas" : "sin lectura") + (d.err ? " (" + d.err + ")" : "")));
+    });
     if (e.tg) c.appendChild(el("p", "ad-meta", (e.tg.ok ? "Telegram: el último aviso fue aceptado" : "Telegram: el último aviso no fue aceptado") + (e.tg.err ? " (" + e.tg.err + ")" : "") + (e.tg.pendientes ? " · pendientes " + e.tg.pendientes : "")));
     var f = el("div", "ad-card"); f.appendChild(el("h2", null, "Canales de YouTube"));
     Object.keys(e.fuentes || {}).forEach(function (club) {

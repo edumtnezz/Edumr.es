@@ -122,7 +122,7 @@ Antes de tocar partidos/alineaciones/ficha, repasar esta lista y verificar con c
 ## 🧪 Redactor automático — lee `docs/redactor.md` antes de tocarlo
 - Publica directo en la web y avisa por Telegram con enlace a edumr.es. No crea borradores. Sin `GEMINI_API_KEY` no hace nada. Tope 450.000 tokens/día.
 - Código: `cron/src/redactor.js`. Clubes y listados: `FUENTES` (tabla en ESTADO.md). Estilo: `docs/estilo-noticias.md`.
-- YouTube solo por la API. El RSS está prohibido. `robots.txt` ilegible = no se toca esa URL. Athletic, Alavés, Marca, AS, Mundo Deportivo y X no son fuente. @futbol_fantasy solo alimenta pistas (`rd:pistas:v1`), que escribe un proceso de fuera. Una pista a mano se añade en el panel, pestaña Estado.
+- YouTube solo por la API. El RSS está prohibido. `robots.txt` ilegible = no se toca esa URL. Athletic, Alavés, Marca, AS, Mundo Deportivo y X no son fuente. X ya no se usa ni para pistas. Las pistas las escribe el Worker desde los titulares de FutbolFantasy y Comuniate (solo detección) y el formulario del panel.
 - Minuto oficial manda. Fecha solo si la fuente la escribe como día. Sin dato: «sin datos». Corregir una publicada: Guardar el mismo id en el panel. No se duplica ni se reenvía Telegram.
 - No pongas secretos ni ids de Cloudflare en el repo. Binding del KV: `PORRA`.
 

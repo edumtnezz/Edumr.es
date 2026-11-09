@@ -90,6 +90,7 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 - 09/11 (cuerpo): el relato ya no sale de una plantilla. Gemini lo escribe solo con los hechos verificados y, si una frase mete un número, un nombre o un estado que no está en esos hechos, o si dos frases seguidas empiezan igual, no se publica. Guía medida en `docs/estilo-noticias.md`.
 - 09/11 (minutos y fecha): el minuto del club manda sobre FotMob; si las fuentes no oficiales no coinciden, el minuto queda en «sin datos». La fecha solo entra si la fuente la escribe como día (no se convierte un instante UTC a Madrid ni se usa la fecha de hoy). La entradilla de la crónica no repite el título.
 - 09/11 (pistas): `rd:pistas:v1` solo dice de qué tema buscar. Se publica si el hecho está en la web oficial del club. Athletic y Alavés no se consultan. Si no está, no se publica. El contador queda en el estado del redactor.
+- 09/11 (detector): X ya no se usa. El Worker lee cada 30 minutos los sitemaps de titulares de FutbolFantasy y Comuniate, después de su robots.txt, y escribe pistas sin URL. Esas webs no se citan. El estado `deteccion` se ve en el panel.
 - 09/11 (fuentes de LaLiga): listados y canales comprobados uno a uno. YouTube solo por la API (el RSS lo prohíbe su robots.txt). Si el robots.txt no se puede leer, ese listado no entra.
 
 | Club | Fuente | Permitido | Motivo |
