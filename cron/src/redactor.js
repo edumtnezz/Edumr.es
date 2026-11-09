@@ -1117,7 +1117,7 @@ export function pistasATratar(doc, vistas, now) {
     if (v && now - Number(v.at || 0) < PISTAS_TTL) sig[id] = v;
   }
   // Un tema descartado por falta de nota oficial se reintenta una vez con la noticia de otra web
-  const reintento = (p) => { const v = sig[p.id]; return !!(p.ref && v && v.estado === "descartada" && v.ext !== 2 && ["sin fuente permitida", "sin hecho verificado", "robots prohíbe la fuente", "no pasa la revisión", "no se pudo leer", "sin hecho ni dato"].includes(v.motivo)); };
+  const reintento = (p) => { const v = sig[p.id]; return !!(p.ref && v && v.estado === "descartada" && v.ext !== 3 && ["sin fuente permitida", "sin hecho verificado", "robots prohíbe la fuente", "no pasa la revisión", "no se pudo leer", "sin hecho ni dato"].includes(v.motivo)); };
   const nuevas = items.filter((p) => p && p.id && (!sig[p.id] || reintento(p)));
   nuevas.sort((a, b) => (Date.parse(b.at || "") || 0) - (Date.parse(a.at || "") || 0));
   return { sig, nuevas };
@@ -1640,7 +1640,7 @@ async function tratarExterna(env, f, st, now, pista, own) {
 async function tratarUnaPista(env, f, st, now, fuentes, pista, listas) {
   const una = await tratarUnaPistaOficial(env, f, st, now, fuentes, pista, listas);
   const e = st.pistas[pista.id];
-  if (e && e.estado !== "publicada") e.ext = 2; // 2 = probado con el lector de texto limpio
+  if (e && e.estado !== "publicada") e.ext = 3; // 3 = probado con texto limpio y autocorrección
   if (una && una.noticias && una.noticias.length) return una;
   if (!e || e.estado === "publicada" || !MOTIVOS_EXT.has(e.motivo)) return una;
   let own = [];
