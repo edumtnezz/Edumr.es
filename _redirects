@@ -21,6 +21,7 @@
 /futmondo/guiafantasy/alineaciones /futmondo/guiafantasy/ 200
 /futmondo/guiafantasy/noticias /futmondo/guiafantasy/ 200
 /futmondo/guiafantasy/noticias/* /futmondo/guiafantasy/ 200
+/n/:id /futmondo/guiafantasy/noticias/ed-:id 301
 /futmondo/guiafantasy/analiza /futmondo/guiafantasy/ 200
 /futmondo/guiafantasy/clausulazos /futmondo/guiafantasy/ 200
 /futmondo/guiafantasy/rentables /futmondo/guiafantasy/ 200

@@ -2014,7 +2014,8 @@ async function adminNoticias(env, request, url, data) {
     const usadas = {}; own.forEach((o) => { if (o.source && o.source.videoId) usadas[o.source.videoId] = o.id; });
     let comparacion = null;
     try { comparacion = await env.PORRA.get("rd:cmp:v1", "json"); } catch (e) {}
-    return json({ own, sombra, usadas, externas, comparacion, estado: estado ? { fuentes: estado.fuentes || {}, tok: estado.tok || null, seen: Object.entries(estado.seen || {}).slice(-60).map(([id, v]) => Object.assign({ id }, v)) } : null, now: Date.now() });
+    const tg = estado && estado.tgUltimo ? { id: String(estado.tgUltimo.id || ""), ok: !!estado.tgUltimo.ok, err: String(estado.tgUltimo.err || "").slice(0, 120), at: estado.tgUltimo.at || 0, pendientes: Array.isArray(estado.tgPend) ? estado.tgPend.length : 0 } : null;
+    return json({ own, sombra, usadas, externas, comparacion, estado: estado ? { fuentes: estado.fuentes || {}, tok: estado.tok || null, tg, seen: Object.entries(estado.seen || {}).slice(-60).map(([id, v]) => Object.assign({ id }, v)) } : null, now: Date.now() });
   }
   const own = await getOwn(env);
   const now = Date.now();
