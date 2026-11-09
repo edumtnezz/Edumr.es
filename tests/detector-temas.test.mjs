@@ -35,7 +35,8 @@ test("de un titular solo salen equipo, persona y tipo que están escritos", () =
   const flick = p.find((x) => x.entrenador === "Flick");
   assert.equal(flick.equipo, "Barcelona");
   assert.equal(flick.tipo, "rueda");
-  assert.equal(JSON.stringify(p).includes("futbolfantasy.com"), false);
+  assert.equal(JSON.stringify(p.map((x) => Object.assign({}, x, { ref: "" }))).includes("futbolfantasy.com"), false);
+  assert.ok(p.every((x) => /^https:\/\/www\.futbolfantasy\.com\//.test(x.ref)));
   const rayo = _r.pistasDesdeTitulares(_r.enlacesDeSitemap(CM), "comuniate", Date.now());
   assert.equal(rayo[0].equipo, "Rayo Vallecano");
   assert.deepEqual(rayo[0].jugadores, ["Barrenetxea"]);
@@ -74,8 +75,9 @@ test("una URL de esas webs no llega a la noticia ni a Telegram", async () => {
   await redactorSombra(env, { fetch: f, now: Date.parse("2026-11-09T01:03:00Z"), allTicks: true, fuentes: [] });
   const doc = JSON.parse(kv.get("rd:pistas:v1"));
   assert.ok(doc.items.length >= 2);
-  assert.equal(JSON.stringify(doc).includes("futbolfantasy.com"), false);
-  assert.equal(JSON.stringify(doc).includes("comuniate.com"), false);
+  const sinRef = JSON.stringify(doc.items.map((x) => Object.assign({}, x, { ref: "" })));
+  assert.equal(sinRef.includes("futbolfantasy.com"), false);
+  assert.equal(sinRef.includes("comuniate.com"), false);
   assert.equal(kv.get("own:news:v1"), undefined);
   assert.equal(tg.length, 0);
   const st = JSON.parse(kv.get("rd:sombra:v1"));

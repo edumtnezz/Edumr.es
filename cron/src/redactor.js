@@ -1119,7 +1119,7 @@ export function pistasATratar(doc, vistas, now) {
   nuevas.sort((a, b) => (Date.parse(b.at || "") || 0) - (Date.parse(a.at || "") || 0));
   return { sig, nuevas };
 }
-const PISTAS_POR_CICLO = 5;
+const PISTAS_POR_CICLO = 8;
 const PISTA_VENTANA = 48 * 3600e3;
 export function notaParaPista(pista, notas, now) {
   const nombres = apellidosPista(pista);
@@ -1339,7 +1339,7 @@ export function pistasDesdeTitulares(notas, origen, now) {
       if (seen.has(id)) continue;
       seen.add(id);
       const tema = (tipo === "lesion" ? "lesión" : tipo) + (quienes.entrenador ? " de " + quienes.entrenador : quienes.jugadores.length ? " de " + quienes.jugadores.slice(0, 3).join(", ") : "");
-      out.push({ id, at: n.published ? new Date(n.published).toISOString() : new Date(now || Date.now()).toISOString(), tipo, equipo, jugadores: quienes.jugadores, entrenador: quienes.entrenador || "", tema, origen });
+      out.push({ id, at: n.published ? new Date(n.published).toISOString() : new Date(now || Date.now()).toISOString(), tipo, equipo, jugadores: quienes.jugadores, entrenador: quienes.entrenador || "", tema, origen, ref: String(n.url) });
     }
   }
   return out;
@@ -1405,7 +1405,7 @@ async function tratarPistas(env, f, st, now, fuentes) {
   }
   return { dirty: true, noticias: todas };
 }
-async function tratarUnaPista(env, f, st, now, fuentes, pista, listas) {
+async function tratarUnaPistaOficial(env, f, st, now, fuentes, pista, listas) {
   const aceptable = pistaAceptable(pista);
   sumaPista(st, "recibidas");
   st.pistas[pista.id] = { at: now, estado: "descartada", motivo: aceptable.ok ? "" : aceptable.motivo };
@@ -1507,6 +1507,83 @@ async function tratarUnaPista(env, f, st, now, fuentes, pista, listas) {
   st.pistas[pista.id] = { at: now, estado: "publicada", motivo: "" };
   sumaPista(st, "publicadas");
   return { dirty: true, noticias };
+}
+
+
+// ---------- tema de otra web, reescrito con palabras propias ----------
+// Edu (09/11/2026): si la nota oficial no está, se cogen los HECHOS de FutbolFantasy/Comuniate y se escriben de nuevo.
+// Solo hechos (nada de opinión), robots.txt obligatorio, sin frases copiadas y con la fuente dicha: «Según …».
+const ORIGEN_NOMBRE = { futbolfantasy: "FutbolFantasy", comuniate: "Comuniate" };
+const MOTIVOS_EXT = new Set(["sin fuente permitida", "sin hecho verificado", "robots prohíbe la fuente"]);
+export function textoDeArticulo(html) {
+  let h = String(html || "").replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ");
+  const art = h.match(/<article[\s\S]*?<\/article>/i);
+  if (art) h = art[0];
+  return h.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&quot;/g, '"').replace(/&amp;/g, "&").replace(/&#39;/g, "'").replace(/\s+/g, " ").trim().slice(0, 7000);
+}
+// Si el texto nuevo repite 7 palabras seguidas del original, es copia: se tira
+export function copiaLiteral(texto, fuente, n) {
+  const k = n || 7;
+  const w = norm2(texto).replace(/[^a-z0-9ñ ]+/g, " ").split(/\s+/).filter(Boolean);
+  const base = " " + norm2(fuente).replace(/[^a-z0-9ñ ]+/g, " ").split(/\s+/).filter(Boolean).join(" ") + " ";
+  for (let i = 0; i + k <= w.length; i++) if (base.includes(" " + w.slice(i, i + k).join(" ") + " ")) return true;
+  return false;
+}
+function promptExterna(origen, texto) {
+  return "Eres redactor de una web de fantasy de LaLiga. Abajo hay una noticia de " + origen + ". Reescríbela con tus palabras, SOLO con los hechos que contiene (lesiones, convocatorias, entrenamientos, ruedas de prensa, onces, fichajes).\n" +
+    "Si la pieza es opinión, análisis, balance, reportaje o no aporta un hecho concreto, devuelve tipo \"opinion\" y nada más.\n" +
+    "REGLAS: no añadas ningún dato, cifra, fecha, plazo ni causa que no esté escrito. No copies frases: cambia la estructura. Titular sin comillas ni marcador, máx 90 caracteres, con el protagonista. Entradilla de una frase (máx 180). Cuerpo de 2 a 4 frases cortas; di siempre que es «según " + origen + "»; si no se da plazo o no se sabe algo, dilo en vez de suponerlo. Una cita solo si es literal y corta.\n" +
+    'Devuelve solo JSON: {"tipo":"hecho|opinion","titular":"...","entradilla":"...","cuerpo":"..."}\n\nNOTICIA:\n' + texto;
+}
+async function tratarExterna(env, f, st, now, pista, own) {
+  const nombre = ORIGEN_NOMBRE[pista.origen];
+  if (!nombre || !pista.ref || clubProhibido(pista.equipo)) return null;
+  let u;
+  try { u = new URL(pista.ref); } catch (e) { return null; }
+  if (!/(^|\.)(futbolfantasy|comuniate)\.com$/.test(u.hostname)) return null;
+  const robots = await leerRobots(f, u.origin);
+  if (!robotsPermite(robots, pista.ref)) { st.pistas[pista.id].motivo = "robots prohíbe la fuente"; return null; }
+  if (Date.now && now - (Date.parse(pista.at || "") || now) > 36 * 3600e3) { st.pistas[pista.id].motivo = "tema viejo"; return null; }
+  let html = "";
+  try { const r = await f(pista.ref, { headers: UA_RED }); if (r.ok) html = await r.text(); } catch (e) {}
+  const texto = textoDeArticulo(html);
+  if (texto.length < 300) { st.pistas[pista.id].motivo = "no se pudo leer"; return null; }
+  let r;
+  try { r = await gemini(env, f, { contents: [{ parts: [{ text: promptExterna(nombre, texto) }] }], generationConfig: { temperature: 0.3, responseMimeType: "application/json" } }); } catch (e) { return null; }
+  if (!r || r.error) return null;
+  st.tok.n += r.tokens || 0;
+  let j = null;
+  try { j = parseJson(textoDe(r.j)); } catch (e) {}
+  if (!j || j.tipo !== "hecho") { st.pistas[pista.id].motivo = "opinión o sin hecho"; return null; }
+  const fuenteNorm = norm2(texto);
+  const personas = [pista.entrenador].concat(pista.jugadores || []).filter(Boolean).filter((n) => {
+    const ap = norm2(n).split(/\s+/).filter((w) => w.length > 3).pop();
+    return ap && fuenteNorm.includes(ap);
+  });
+  const val = validarNoticia({ titular: j.titular, entradilla: j.entradilla, cuerpo: j.cuerpo }, personas.map((n) => ({ frase: "", minuto: "", nombre: n })), texto);
+  if (!val || copiaLiteral(val.title + " " + val.lead + " " + val.body, texto)) { st.pistas[pista.id].motivo = "no pasa la revisión"; return null; }
+  const key = "ext-" + pista.id;
+  if (own.some((o) => o.key === key)) { st.pistas[pista.id].motivo = "ya publicada"; return null; }
+  const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
+  const item = { id: hex, status: "published", expira: true, createdAt: now, updatedAt: now, publishedAt: now, thumb: "", tipo: pista.tipo || "", club: pista.equipo, players: personas, key, source: { name: "Según " + nombre, url: pista.ref, videoId: "" }, title: val.title, lead: val.lead, body: val.body, via: "ia" };
+  own.unshift(item);
+  try { await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300))); } catch (e) {}
+  st.pistas[pista.id] = { at: now, estado: "publicada", motivo: "" };
+  sumaPista(st, "publicadas");
+  return { dirty: true, noticias: [item] };
+}
+async function tratarUnaPista(env, f, st, now, fuentes, pista, listas) {
+  const una = await tratarUnaPistaOficial(env, f, st, now, fuentes, pista, listas);
+  const e = st.pistas[pista.id];
+  if (una && una.noticias && una.noticias.length) return una;
+  if (!e || e.estado === "publicada" || !MOTIVOS_EXT.has(e.motivo)) return una;
+  let own = [];
+  try { own = (await env.PORRA.get(OWN_KEY, "json")) || []; } catch (er) {}
+  try {
+    const ext = await tratarExterna(env, f, st, now, pista, own);
+    if (ext) return ext;
+  } catch (er) {}
+  return una || { dirty: true };
 }
 
 // ---------- lo principal ----------
@@ -1653,4 +1730,4 @@ export async function redactorSombra(env, deps) {
   return { procesado: hecho ? hecho.id : null, pendientes: cola.length, tokens: st.tok.n };
 }
 
-export const _r = { compararNoticias, caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, localizarFrase, ventanaFrase, atribucionJugador, estadoRespaldado, temaRespaldado, robotsPermite, cruzarJugador, filtrar, parseJson, resumenTelegram, parseSitemapNews, esNotaPrimerEquipo, citaEnTitulo, partidoEnTitulo, citasDeHtml, cronicaDesdeHechos, cronicaDesdeEv, sujetosSeguidos, depurarCuerpo, elegirMinuto, minutosOficiales, fechaDeFuente, fechaTexto, entradillaRepiteTitulo, revisarEntradilla, clubProhibido, pistaAceptable, pistasATratar, notaParaPista, pistaDuplicada, enlacesDeSitemap, enlacesDeFuente, dominioProhibido, FUENTES, pistasDesdeTitulares, mezclarPistas, textoConFuenteDetectada, hechosDesdeNota };
+export const _r = { compararNoticias, caducada, validarNoticia, noticiaTelegram, agruparPorJugador, parseFeed, esConferencia, fraseVerificada, localizarFrase, ventanaFrase, atribucionJugador, estadoRespaldado, temaRespaldado, robotsPermite, cruzarJugador, filtrar, parseJson, resumenTelegram, parseSitemapNews, esNotaPrimerEquipo, citaEnTitulo, partidoEnTitulo, citasDeHtml, cronicaDesdeHechos, cronicaDesdeEv, sujetosSeguidos, depurarCuerpo, elegirMinuto, minutosOficiales, fechaDeFuente, fechaTexto, entradillaRepiteTitulo, revisarEntradilla, clubProhibido, pistaAceptable, pistasATratar, notaParaPista, pistaDuplicada, enlacesDeSitemap, enlacesDeFuente, dominioProhibido, FUENTES, pistasDesdeTitulares, mezclarPistas, textoConFuenteDetectada, hechosDesdeNota, textoDeArticulo, copiaLiteral };

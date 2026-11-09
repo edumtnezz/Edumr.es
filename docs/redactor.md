@@ -129,3 +129,7 @@ Añadir una pista a mano:
 4. Rama nueva desde `main`, con el prefijo que pida el entorno. PR nuevo. No fusiones si no te lo piden.
 5. Para ver producción: la web es https://edumr.es . Una noticia propia es `https://edumr.es/n/<id>`. El panel es https://edumr.es/futmondo/admin-noticias/ (hace falta la sesión de Edu). Desde esta máquina la web a veces responde 403 por el reto de Cloudflare: no lo tomes como «no existe».
 6. Después de un cambio gordo, añade una línea en ESTADO.md.
+
+
+## Tema de otra web reescrito (09/11/2026)
+Decisión de Edu: para no quedarnos con 2 noticias cuando FutbolFantasy saca 20, si la nota oficial del club no aparece, `tratarExterna` (cron/src/redactor.js) abre la noticia de FutbolFantasy o Comuniate (tras su robots.txt), Gemini separa hecho de opinión y la reescribe. Se publica solo si: es un hecho (no opinión), tiene menos de 36 h, toda cifra, nombre y palabra de riesgo (plazos, lesión, posición…) está en el texto original, y no repite 7 palabras seguidas. Sale como «Según FutbolFantasy» con enlace a la fuente; el Telegram enlaza a edumr.es. Pistas por ciclo: 8. Tests: `tests/tema-externo.test.mjs`.
