@@ -2074,6 +2074,11 @@ async function adminNoticias(env, request, url, data) {
     const b = String(data.b64 || "");
     if (!/^[A-Za-z0-9+/=]+$/.test(b) || b.length < 1000 || b.length > 4000000) return json({ error: "Imagen no válida." }, 400);
     await env.PORRA.put("portada:v1:" + it.id, b);
+    for (const [k, suf] of [["b64m", "m"], ["b64s", "s"]]) {
+      const v = String(data[k] || "");
+      if (/^[A-Za-z0-9+/=]+$/.test(v) && v.length > 500 && v.length < 1500000) await env.PORRA.put("portada:v1:" + it.id + ":" + suf, v);
+      else await env.PORRA.delete("portada:v1:" + it.id + ":" + suf).catch(() => {});
+    }
     it.thumb = "/api/laquiniela/portada/" + it.id + "?v=" + now.toString(36); it.updatedAt = now;
     await putOwn(env, own);
     await admLog(env, { a: "portada", id: it.id, t: it.title });
@@ -5668,7 +5673,10 @@ async function handleGet({ request, env: env0, params }) {
     return json({ noticias: ownPublic(await getOwn(env)), locker: full.locker || [], updatedAt: full.updatedAt || Date.now() });
   }
   if (/^portada\/[a-f0-9]{6,12}$/.test(path)) {
-    const b64 = await env.PORRA.get("portada:v1:" + path.slice(8));
+    const t = url.searchParams.get("t");
+    const id8 = path.slice(8);
+    let b64 = (t === "m" || t === "s") ? await env.PORRA.get("portada:v1:" + id8 + ":" + t) : null;
+    if (!b64) b64 = await env.PORRA.get("portada:v1:" + id8);
     if (!b64) return new Response("no hay portada", { status: 404 });
     const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
     return new Response(bin, { headers: { "content-type": "image/jpeg", "cache-control": "public, max-age=31536000, immutable" } });

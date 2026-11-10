@@ -4133,14 +4133,14 @@
     const t = d.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
     return t.charAt(0).toUpperCase() + t.slice(1);
   }
-  function inicioRow(e, open) {
+  function inicioRow(e, open, big) {
     const x = e.x;
     const row = el("article", "nw-row" + (e.kind === "c" ? " nw-row-c" : ""));
     row.tabIndex = 0;
     row.setAttribute("role", "link");
     let pic;
     if (e.kind === "n") {
-      pic = thumbBox(x, "nw-row-pic");
+      pic = thumbBox(x, "nw-row-pic", big ? "m" : "s");
       row.addEventListener("click", () => open(x));
     } else {
       const srcs = cambioImgs(x);
@@ -4174,7 +4174,7 @@
     lead.setAttribute("role", "link");
     lead.addEventListener("click", () => open(x));
     lead.addEventListener("keydown", (ev) => { if (ev.key === "Enter") open(x); });
-    lead.appendChild(thumbBox(x, "nw-lead-pic"));
+    lead.appendChild(thumbBox(x, "nw-lead-pic", "m"));
     const lb = el("div", "nw-lead-b");
     const tg = newsTag(x.title) || ownTag(x);
     const line = el("div", "nw-tag");
@@ -4246,7 +4246,7 @@
     const tres = list.slice(0, 3).map((x) => ({ kind: "n", x, ts: Number(x.ts) || 0 }));
     if (tres.length) {
       const ul = el("div", "nw-list");
-      tres.forEach((e, i) => { const r = inicioRow(e, open); if (i === 0) r.classList.add("nw-big"); ul.appendChild(r); });
+      tres.forEach((e, i) => { const r = inicioRow(e, open, i === 0); if (i === 0) r.classList.add("nw-big"); ul.appendChild(r); });
       wrap.appendChild(ul);
     } else wrap.appendChild(el("p", "nw-empty", "Sin noticias por ahora."));
     // 2) Últimos cambios, justo debajo: avatar pequeño y resumen
@@ -4453,10 +4453,13 @@
   const ethFill = () => { while (ethPend.length) { const [n, x] = ethPend.shift(); if (n.isConnected) { const m = ethFor(x); n.replaceWith(m); } } };
   const usaEth = (x) => !!(x && x.src === "EduMR" && !x.thumb && window.EduThumb && window.EduThumb.el);
   // Caja de miniatura: la foto del vídeo si la hay; si no, la nuestra
-  const thumbBox = (x, cls) => {
+  // Portada de ChatGPT: tamaño justo para cada sitio (s = cuadrada centrada en el jugador, m = mediana), sin perder calidad
+  const esPortada = (u) => /\/api\/laquiniela\/portada\//.test(String(u || ""));
+  const portadaSz = (u, sz) => esPortada(u) && sz ? u + (u.indexOf("?") >= 0 ? "&" : "?") + "t=" + sz : u;
+  const thumbBox = (x, cls, sz) => {
     const b = el("div", cls);
     if (usaEth(x)) b.appendChild(ethFor(x));
-    else { const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = newsImgOf(x); im.addEventListener("error", () => { im.src = newsFallbackImg(x.title); }, { once: true }); b.appendChild(im); }
+    else { const im = el("img"); im.alt = ""; im.loading = "lazy"; if (esPortada(x.thumb)) im.className = "pt-img"; im.src = portadaSz(newsImgOf(x), sz); im.addEventListener("error", () => { im.src = newsFallbackImg(x.title); }, { once: true }); b.appendChild(im); }
     return b;
   };
   const newsImgOf = (x) => {
@@ -4553,7 +4556,7 @@
     if (d.src === "EduMR") {
       if (!d.image) d.image = portadaDe(url);
       const bn = el("div", "art-banner");
-      if (d.image) { const im = el("img"); im.alt = ""; im.src = d.image; bn.appendChild(im); }
+      if (d.image) { const im = el("img"); im.alt = ""; im.src = portadaSz(d.image, "m"); bn.appendChild(im); }
       else if (window.EduThumb && window.EduThumb.el) bn.appendChild(ethFor({ title: d.title || title, lead: d.lead, club: d.club, players: d.players, src: "EduMR" }));
       box.appendChild(bn);
     }
