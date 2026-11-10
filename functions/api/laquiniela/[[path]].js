@@ -2132,9 +2132,9 @@ async function generarPortada(env, request, own, it, now) {
     pl = (m.players || []).find((p) => p.photo && fold(p.name).some((w) => tt.includes(w)) && (!club.length || fold(p.team).some((w) => club.includes(w)))) || null;
   } catch (e) {}
   const fd = new FormData();
-  fd.append("model", String(env.OPENAI_IMAGE_MODEL || "gpt-image-1.5"));
+  fd.append("model", String(env.OPENAI_IMAGE_MODEL || "gpt-image-2.6-flare"));
   fd.append("size", "1536x1024");
-  fd.append("quality", String(env.OPENAI_IMAGE_QUALITY || "medium"));
+  fd.append("quality", String(env.OPENAI_IMAGE_QUALITY || "low"));
   fd.append("n", "1");
   const origin = new URL(request.url).origin;
   const bajar = async (u) => { const r = await fetch(u); if (!r.ok) throw new Error("imagen " + r.status); return new Blob([await r.arrayBuffer()], { type: "image/png" }); };
