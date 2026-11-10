@@ -2112,7 +2112,7 @@ async function generarPortada(env, request, own, it, now) {
     pl = (m.players || []).find((p) => p.photo && fold(p.name).some((w) => tt.includes(w)) && (!club.length || fold(p.team).some((w) => club.includes(w)))) || null;
   } catch (e) {}
   const fd = new FormData();
-  fd.append("model", String(env.OPENAI_IMAGE_MODEL || "gpt-image-1.5"));
+  fd.append("model", String(env.OPENAI_IMAGE_MODEL || "gpt-image-1-mini"));
   fd.append("size", "1536x1024");
   fd.append("quality", "medium");
   fd.append("n", "1");
