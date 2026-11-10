@@ -48,7 +48,7 @@
   function pinta() {
     $("adGate").classList.add("hidden"); $("adApp").classList.remove("hidden");
     var nb = D.own.filter(function (x) { return x.status !== "published"; }).length;
-    var tabs = [["borradores", "Borradores" + (nb ? " (" + nb + ")" : "")], ["publicadas", "Publicadas"], ["redactor", "Redactor"], ["comparar", "Comparar"], ["historial", "Historial"], ["estado", "Estado"]];
+    var tabs = [["borradores", "Borradores" + (nb ? " " + nb : "")], ["publicadas", "Publicadas " + (D.own.length - nb)], ["redactor", "Redactor " + (D.sombra || []).length], ["comparar", "Comparar"], ["historial", "Historial"], ["estado", "Estado"]];
     var t = $("adTabs"); t.innerHTML = "";
     tabs.forEach(function (x) { var b = el("button", "ad-chip" + (tab === x[0] ? " on" : ""), x[1]); b.type = "button"; b.addEventListener("click", function () { tab = x[0]; abierto = null; pinta(); }); t.appendChild(b); });
     var v = $("adView"); v.innerHTML = "";
@@ -111,20 +111,24 @@ function componer(j, x) {
     lista.forEach(function (x) { v.appendChild(tarjetaPropia(x)); });
   }
   function tarjetaPropia(x) {
-    var c = el("div", "ad-card");
-    var h = el("h2", null, x.title || "(sin título)");
-    h.style.cursor = "pointer";
-    h.addEventListener("click", function () { abierto = abierto === x.id ? null : x.id; pinta(); });
-    c.appendChild(h);
-    var m = el("p", "ad-meta"); m.appendChild(tag(x.status === "published" ? "Publicada" : "Borrador", x.status === "published" ? "ok" : "warn"));
-    if (x.club) m.appendChild(tag(x.club));
-    m.appendChild(document.createTextNode("Editada " + cuando(x.updatedAt) + (x.publishedAt ? " · publicada " + cuando(x.publishedAt) : "")));
-    c.appendChild(m);
-    if (abierto !== x.id) return c;
+    var w = el("div", "ad-w"), c = el("div", "ad-edit");
+    var row = el("div", "ad-item" + (abierto === x.id ? " open" : ""));
+    var pic = el("div", "ad-pic");
+    if (x.thumb) { var im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = x.thumb + (/\/portada\//.test(x.thumb) ? (x.thumb.indexOf("?") >= 0 ? "&" : "?") + "t=s" : ""); pic.appendChild(im); } else pic.textContent = "sin foto";
+    var tx = el("div"); tx.appendChild(el("div", "ad-it-t", x.title || "(sin título)"));
+    var m = el("div", "ad-it-m"); m.appendChild(tag(x.status === "published" ? "Publicada" : "Borrador", x.status === "published" ? "ok" : "warn"));
+    if (x.club) m.appendChild(tag(x.club, "plain"));
+    m.appendChild(el("span", null, cuando(x.publishedAt || x.updatedAt)));
+    if (x.portadaUsd != null) m.appendChild(el("span", null, " · " + x.portadaUsd.toFixed(3) + " $"));
+    tx.appendChild(m); row.appendChild(pic); row.appendChild(tx);
+    row.addEventListener("click", function () { abierto = abierto === x.id ? null : x.id; pinta(); });
+    w.appendChild(row);
+    if (abierto !== x.id) return w;
+    w.appendChild(c);
 
     var two = el("div", "ad-two");
     // Izquierda: original (lo que dijo la fuente). Derecha: versión nuestra, editable.
-    var o = el("div", "ad-box"); o.appendChild(el("h3", null, "Original (fuente)"));
+    var o = el("div", "ad-box ro"); o.appendChild(el("h3", null, "Original (fuente)"));
     if (x.source && x.source.url) { var a = el("a", "ad-link", x.source.name || "Fuente"); a.href = x.source.url; a.target = "_blank"; a.rel = "noopener"; o.appendChild(a); }
     else o.appendChild(el("p", "ad-meta", "Sin fuente: añade una abajo."));
     var orig = el("div", "ad-orig"); o.appendChild(orig);
@@ -140,10 +144,9 @@ function componer(j, x) {
     }
     (x.original || []).forEach(function (r) {
       var row = el("div", "ad-row");
-      var k = el("div", "k"); k.textContent = r.jugador + " · " + (ETIQ[r.estado] || r.estado) + (r.minuto ? " · min " + r.minuto : "");
-      var q = el("q", null, r.frase);
-      var tg = el("div"); tg.appendChild(tag(r.verificada ? "frase verificada" : "frase sin verificar", r.verificada ? "ok" : "bad")); tg.appendChild(tag(r.cruzado ? "jugador reconocido" : "jugador sin cruzar", r.cruzado ? "ok" : "bad")); tg.appendChild(tag("confianza " + (r.confianza || "?")));
-      row.appendChild(k); row.appendChild(q); row.appendChild(tg); o.appendChild(row);
+      row.appendChild(filaJugador(r)); row.appendChild(el("q", null, r.frase));
+      var tg = problemas(r); if (tg) row.appendChild(tg);
+      o.appendChild(row);
     });
     if (!(x.original || []).length && !(x.source && x.source.url)) o.appendChild(el("p", "ad-meta", "Escrita a mano."));
     var cmp = D.comparacion && (D.comparacion.propias || []).filter(function (c) { return c.id === x.id; })[0];
@@ -161,18 +164,28 @@ function componer(j, x) {
     var bo = el("textarea", "ad-i"); bo.value = x.body || "";
     var sn = el("input", "ad-i"); sn.value = (x.source && x.source.name) || "";
     var su = el("input", "ad-i"); su.value = (x.source && x.source.url) || ""; su.placeholder = "https://…";
-    [["Título", ti], ["Entradilla", le], ["Texto (una línea = un párrafo)", bo], ["Fuente (nombre)", sn], ["Fuente (enlace)", su]].forEach(function (p) { f.appendChild(el("label", "ad-l", p[0])); f.appendChild(p[1]); });
+    var sucio = el("span", "ad-dirty", ""); var baseT = ti.value + "|" + le.value + "|" + bo.value + "|" + sn.value + "|" + su.value;
+    function marca() { sucio.textContent = (ti.value + "|" + le.value + "|" + bo.value + "|" + sn.value + "|" + su.value) !== baseT ? "Sin guardar" : ""; }
+    function campo(txt, inp, max) {
+      var l = el("label", "ad-l", txt); f.appendChild(l);
+      if (max) { var cn = el("span", "cnt", ""); l.appendChild(cn); var up = function () { cn.textContent = inp.value.length + " / " + max; cn.className = "cnt" + (inp.value.length > max ? " bad" : ""); }; inp.addEventListener("input", up); up(); }
+      inp.addEventListener("input", marca); f.appendChild(inp);
+    }
+    campo("Título", ti, 140); campo("Entradilla", le, 280); campo("Texto (una línea = un párrafo)", bo);
+    var dsrc = el("details", "ad-det"); dsrc.appendChild(el("summary", null, "Fuente (no se muestra al público)")); f.appendChild(dsrc);
+    [["Nombre", sn], ["Enlace", su]].forEach(function (p) { dsrc.appendChild(el("label", "ad-l", p[0])); p[1].addEventListener("input", marca); dsrc.appendChild(p[1]); });
     two.appendChild(f);
     c.appendChild(two);
 
-    var bt = el("div", "ad-btns");
+    var bt = el("div", "ad-btns sticky");
     function btn(txt, cls, fn) { var b = el("button", "ad-b " + (cls || ""), txt); b.type = "button"; b.addEventListener("click", function () { b.disabled = true; fn().then(function (msg) { toast(msg); return cargar(true); }).catch(function (e) { toast(e.message); b.disabled = false; }); }); bt.appendChild(b); }
     var datos = function (action) { return { action: action, id: x.id, title: ti.value, lead: le.value, body: bo.value, club: x.club || "", source: { name: sn.value, url: su.value } }; };
     btn("Guardar", "", function () { return post(datos("guardar")).then(function () { return "Guardado"; }); });
+    var gBtn = bt.lastChild; [ti, le, bo].forEach(function (i) { i.addEventListener("keydown", function (ev) { if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") { ev.preventDefault(); gBtn.click(); } }); });
     if (x.status === "published") btn("Quitar de la web", "", function () { return post({ action: "despublicar", id: x.id }).then(function () { abierto = null; return "Quitada"; }); });
     else btn("Publicar", "main", function () { return post(datos("guardar")).then(function () { return post({ action: "publicar", id: x.id }); }).then(function () { abierto = null; tab = "publicadas"; return "Publicada"; }); });
     var pst = el("p", "ad-meta", x.thumb ? "Portada actual: " + (x.portadaUsd != null ? x.portadaUsd.toFixed(3) + " $ (" + (x.portadaModelo || "modelo ?") + ")" : "coste no registrado") + ". Ver abajo." : "");
-    var pim = el("img"); pim.style.cssText = "max-width:100%;border-radius:8px;margin-top:8px;display:" + (x.thumb ? "block" : "none"); if (x.thumb) pim.src = x.thumb;
+    var pim = el("img"); pim.style.cssText = "max-width:100%;border-radius:10px;margin-top:8px;display:" + (x.thumb ? "block" : "none"); if (x.thumb) pim.src = x.thumb;
     var pb = el("button", "ad-b", "Generar portada (ChatGPT)"); pb.type = "button";
     pb.addEventListener("click", function () {
       pb.disabled = true; pst.style.color = ""; pst.textContent = "Generando con ChatGPT… puede tardar 1 minuto. No cierres esta pantalla.";
@@ -184,7 +197,7 @@ function componer(j, x) {
       }).then(function (j) {
         pst.textContent = "Portada guardada · " + (modeloUsado || "?") + ". Si no te gusta, pulsa otra vez.";
         if (j.item && j.item.thumb) { pim.src = j.item.thumb; pim.style.display = "block"; }
-      }).catch(function (e) { pst.style.color = "#b91c1c"; pst.textContent = "Fallo: " + (e && e.message || "sin respuesta"); }).then(function () { pb.disabled = false; });
+      }).catch(function (e) { pst.style.color = "var(--bad)"; pst.textContent = "Fallo: " + (e && e.message || "sin respuesta"); }).then(function () { pb.disabled = false; });
     });
     bt.appendChild(pb); c.appendChild(pst); c.appendChild(pim);
     var det = el("details", "ad-meta"); det.appendChild(el("summary", null, "Ver / cambiar el texto (prompt) que se manda a ChatGPT"));
@@ -200,10 +213,29 @@ function componer(j, x) {
       clearTimeout(borT); bor.disabled = true;
       post({ action: "borrar", id: x.id }).then(function () { abierto = null; toast("Borrada"); return cargar(true); }).catch(function (e) { bor.disabled = false; toast(e.message); });
     });
-    bt.appendChild(bor);
+    bt.appendChild(bor); bt.appendChild(sucio);
     c.appendChild(bt);
     if (x.status === "published") { var vl = el("a", "ad-link", "Ver en la web"); vl.href = "/futmondo/guiafantasy/noticias/ed-" + x.id; vl.target = "_blank"; vl.style.display = "inline-block"; vl.style.marginTop = "10px"; c.appendChild(vl); }
-    return c;
+    return w;
+  }
+
+  /* Una línea por jugador: punto de confianza + nombre + estado + minuto. Las etiquetas solo salen si hay un problema. */
+  function nivel(r) { if (!r.verificada || !r.cruzado) return "bad"; var c = String(r.confianza || "").toLowerCase(); if (c === "alta" || c === "high") return ""; return c ? "warn" : "warn"; }
+  function filaJugador(r) {
+    var k = el("div", "k"); var d = el("span", "ad-dot " + nivel(r)); d.title = "Confianza: " + (r.confianza || "?"); k.appendChild(d);
+    k.appendChild(el("span", null, r.nombre || r.jugador));
+    k.appendChild(el("span", "sub", (ETIQ[r.estado] || r.estado) + (r.minuto ? " · min " + r.minuto : "")));
+    return k;
+  }
+  function problemas(r) {
+    var l = [];
+    if (!r.verificada) l.push(["frase sin verificar", "bad"]);
+    if (!r.cruzado) l.push(["sin cruzar con Futmondo", "bad"]);
+    if (r.publicable === false) l.push(["no se publicó", "warn"]);
+    if (!l.length && !r.motivo) return null;
+    var tg = el("div"); l.forEach(function (p) { tg.appendChild(tag(p[0], p[1])); });
+    if (r.motivo) { var mo = el("p", "ad-meta", r.motivo); mo.style.margin = "4px 0 0"; tg.appendChild(mo); }
+    return tg;
   }
 
   /* ----- Redactor (publica solo) ----- */
@@ -212,17 +244,12 @@ function componer(j, x) {
     D.sombra.forEach(function (s) {
       var c = el("div", "ad-card");
       c.appendChild(el("h2", null, s.title || s.id));
-      var m = el("p", "ad-meta"); m.appendChild(tag(s.club)); m.appendChild(document.createTextNode("Vídeo " + cuando(Date.parse(s.pub) || s.pub) + " · leído " + cuando(s.at)));
+      var m = el("p", "ad-meta"); m.appendChild(tag(s.club, "plain")); m.appendChild(document.createTextNode("Vídeo " + cuando(Date.parse(s.pub) || s.pub) + " · leído " + cuando(s.at)));
       var a = el("a", "ad-link", " ▶ ver vídeo"); a.href = "https://youtu.be/" + s.id; a.target = "_blank"; a.rel = "noopener"; m.appendChild(a); c.appendChild(m);
       (s.items || []).forEach(function (r) {
         var row = el("div", "ad-row");
-        var k = el("div", "k");
-        k.textContent = (r.nombre || r.jugador) + " · " + (ETIQ[r.estado] || r.estado) + (r.minuto ? " · min " + r.minuto : "");
-        row.appendChild(k); row.appendChild(el("q", null, r.frase));
-        var tg = el("div"); tg.appendChild(tag(r.publicable ? "se publicó" : "no se publicó", r.publicable ? "ok" : "bad"));
-        if (!r.verificada) tg.appendChild(tag("frase no verificada", "bad")); if (!r.cruzado) tg.appendChild(tag("sin cruzar con Futmondo", "bad")); tg.appendChild(tag("confianza " + (r.confianza || "?")));
-        row.appendChild(tg);
-        if (r.motivo) row.appendChild(el("p", "ad-meta", r.motivo));
+        row.appendChild(filaJugador(r)); row.appendChild(el("q", null, r.frase));
+        var tg = problemas(r); if (tg) row.appendChild(tg);
         c.appendChild(row);
       });
       if (!(s.items || []).length) c.appendChild(el("p", "ad-meta", "Sin jugadores mencionados."));
