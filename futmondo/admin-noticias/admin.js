@@ -150,11 +150,13 @@
     }
     pb.addEventListener("click", function () {
       pb.disabled = true; pst.style.color = ""; pst.textContent = "Generando con ChatGPT… puede tardar 1 minuto. No cierres esta pantalla.";
+      var modeloUsado = "";
       post({ action: "portada", id: x.id }).then(function (j) {
+        modeloUsado = j.modelo || "";
         pst.textContent = (j.conFoto ? "Hecha con la foto de " + (j.jugador || "el jugador") + ". " : "Sin foto del jugador. ") + "Pegando escudo y marca…";
         return componer(j).then(function (b64) { return post({ action: "portada-guardar", id: x.id, b64: b64 }); });
       }).then(function (j) {
-        pst.textContent = "Portada guardada. Si no te gusta, pulsa otra vez.";
+        pst.textContent = "Portada guardada (modelo " + (modeloUsado || "?") + "). Si no te gusta, pulsa otra vez.";
         if (j.item && j.item.thumb) { pim.src = j.item.thumb; pim.style.display = "block"; }
       }).catch(function (e) { pst.style.color = "#b91c1c"; pst.textContent = "Fallo: " + (e && e.message || "sin respuesta"); }).then(function () { pb.disabled = false; });
     });

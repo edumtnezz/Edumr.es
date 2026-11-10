@@ -2165,9 +2165,19 @@ async function generarPortada(env, request, own, it, now) {
   const imgs = (dos ? "Imágenes 1 y 2: fotos de los dos jugadores. " : (conFoto ? "Imagen 1: foto del jugador. " : "")) + (conEstilo ? "Imagen " + (nF + 1) + ": referencia de ESTILO (solo el estilo). " : "");
   const prompt = imgs + String(plantilla).replace(/\{(club|jugador|local|visitante|jugador1|jugador2)\}/g, (_, k) => ({ club, jugador: jug, local: extra.local || "", visitante: extra.visitante || "", jugador1: extra.j1 || "", jugador2: extra.j2 || "" })[k] || "");
   fd.append("prompt", prompt);
-  const r = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: "Bearer " + env.OPENAI_API_KEY }, body: fd });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok || !j.data || !j.data[0] || !j.data[0].b64_json) return json({ error: "OpenAI: " + String((j.error && j.error.message) || r.status).slice(0, 200) }, 502);
+  // Si el proyecto no tiene acceso a un modelo, se prueba el siguiente (de mejor a más básico)
+  const modelos = env.OPENAI_IMAGE_MODEL ? [String(env.OPENAI_IMAGE_MODEL)] : ["gpt-image-1.5", "gpt-image-1", "gpt-image-1-mini"];
+  let r = null, j = {}, usado = "", ultimoErr = "";
+  for (const mo of modelos) {
+    fd.set("model", mo);
+    if (mo === "gpt-image-1-mini" && !env.OPENAI_IMAGE_QUALITY) fd.set("quality", "high");
+    r = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: "Bearer " + env.OPENAI_API_KEY }, body: fd });
+    j = await r.json().catch(() => ({}));
+    if (r.ok && j.data && j.data[0] && j.data[0].b64_json) { usado = mo; break; }
+    ultimoErr = String((j.error && j.error.message) || r.status).slice(0, 200);
+    if (!/does not have access|must be verified|not found|does not exist|access to model/i.test(ultimoErr)) break;
+  }
+  if (!usado) return json({ error: "OpenAI: " + ultimoErr }, 502);
   let crest = "";
   try {
     if (pl && pl.logo && it.tipo !== "once") {
@@ -2177,7 +2187,7 @@ async function generarPortada(env, request, own, it, now) {
     }
   } catch (e) {}
   // La imagen NO se publica todavía: el panel le pega encima el escudo y la marca reales y la guarda (portada-guardar)
-  return json({ ok: true, b64: j.data[0].b64_json, crest, conFoto, jugador: jug, usage: j.usage || null });
+  return json({ ok: true, b64: j.data[0].b64_json, crest, conFoto, jugador: jug, modelo: usado, usage: j.usage || null });
 }
 function clean2(s, n) { return String(s == null ? "" : s).replace(/\s+/g, " ").trim().slice(0, n); }
 
