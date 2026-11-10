@@ -95,7 +95,7 @@ function serie(f) { return f.join(", "); }
 function nombreClub(p) { return p.team; }
 
 // Cada regla devuelve null o { tipo, titulo, entradilla, cuerpo, prio }
-export function reglas(p, jornada, jugadas, pub) {
+export function reglas(p, jornada, jugadas, pub, mins) {
   const f = (Array.isArray(p.fitness) ? p.fitness : []).filter((x) => typeof x === "number");
   if (f.length < 4 || (p.matches || 0) < 6 || !(p.avg > 0)) return [];
   const last2 = f.slice(-2), last3 = f.slice(-3), ult = f[f.length - 1];
@@ -145,6 +145,15 @@ export function reglas(p, jornada, jugadas, pub) {
       entradilla: "El " + (p.role || "jugador") + " del " + nombreClub(p) + " tiene un " + prob + " % de jugar el próximo partido.",
       cuerpo: base + " Su valor actual es de " + mill(p.value) + (typeof p.chg7 === "number" ? " y ha cambiado " + (p.chg7 >= 0 ? "+" : "-") + mill(Math.abs(p.chg7)) + " en la última semana" : "") + "." + (sig ? " " + sig : "") + "\n**Nuestra lectura:** puntos por millón muy buenos; mejor comprarlo antes de que suba." });
   }
+  // 6) Fijo: juega casi todo, casi nunca lo cambian y puntúa (minutos reales de Futmondo; sin ese dato no sale)
+  const mn = mins && mins[p.id];
+  if (mn && mn.n >= 8 && mn.j >= 0.9 * mn.n && (mn.c + mn.s) >= 0.85 * mn.j && mn.c >= 0.6 * (mn.c + mn.s) && mn.t / mn.j >= 80 && p.avg >= 6 && prob != null && prob >= 70 && p.status !== "doubt" && !/^injured/.test(String(p.status || ""))) {
+    const tit = mn.c + mn.s;
+    out.push({ tipo: "fijo", prio: 2.2 + p.avg / 10,
+      titulo: elige([p.name + " no se baja del once: " + mn.j + " partidos de " + mn.n, "Fijo en el " + nombreClub(p) + ": " + p.name + " juega casi todo y promedia " + num(p.avg), p.name + " juega " + mn.j + " de " + mn.n + " partidos y casi nunca sale del campo"], seed),
+      entradilla: "El " + (p.role || "jugador") + " del " + nombreClub(p) + " ha jugado " + mn.j + " de los " + mn.n + " partidos de su equipo y promedia " + num(p.avg) + " puntos.",
+      cuerpo: "Ha jugado **" + mn.j + "** de **" + mn.n + "** partidos del " + nombreClub(p) + ": **" + mn.t + "** minutos, unos " + Math.round(mn.t / mn.j) + " por partido. Como titular, ha completado **" + mn.c + "** de " + tit + " y lo han cambiado " + mn.s + (mn.s === 1 ? " vez" : " veces") + ". Media de **" + num(p.avg) + "** puntos en " + p.matches + " partidos." + (sig ? " " + sig : "") + "\n**Nuestra lectura:** jugar casi todo y puntuar da seguridad a tu once" + (prob != null ? " (" + prob + " % de jugar el próximo partido)" : "") + "." });
+  }
   // 5) Duda: titular habitual marcado como duda
   if (p.status === "doubt" && p.avg >= 6) {
     out.push({ tipo: "duda", prio: 2.8 + p.avg / 10,
@@ -156,7 +165,7 @@ export function reglas(p, jornada, jugadas, pub) {
 }
 
 // Elige lo mejor que aún no está publicado. own = noticias propias ya guardadas.
-export function elegirAnalisis(players, jornada, own, now, max, jugadas) {
+export function elegirAnalisis(players, jornada, own, now, max, jugadas, mins) {
   const hoy = new Date(now).toISOString().slice(0, 10);
   const claves = new Set((own || []).map((o) => o.key).filter(Boolean));
   const hechasHoy = (own || []).filter((o) => String(o.key || "").startsWith("an-") && new Date(o.createdAt || 0).toISOString().slice(0, 10) === hoy).length;
@@ -165,7 +174,7 @@ export function elegirAnalisis(players, jornada, own, now, max, jugadas) {
   const pubMax = {};
   for (const p of players || []) { const k = canon(p.team), m = Number(p.matches) || 0; if (m > (pubMax[k] || 0)) pubMax[k] = m; }
   for (const p of players || []) {
-    for (const r of reglas(p, jornada, jugadas, pubMax[canon(p.team)])) {
+    for (const r of reglas(p, jornada, jugadas, pubMax[canon(p.team)], mins)) {
       const key = "an-" + p.id + "-" + r.tipo + "-" + (p.jornadaFf || "x");
       if (claves.has(key)) continue;
       cand.push(Object.assign({ key, p }, r));
@@ -190,10 +199,17 @@ export async function analisisDatos(env, f, site, own, now, max) {
   try { const r = await f(site + "mercado", { headers: { "user-agent": "edumr-cron" } }); const d = await r.json(); players = Array.isArray(d.players) ? d.players : []; } catch (e) {}
   try { const r = await f(site + "jornada", { headers: { "user-agent": "edumr-cron" } }); jornada = await r.json(); } catch (e) {}
   if (!players.length) return [];
-  const prev = elegirAnalisis(players, jornada, own, now, max);
+  let mins = null;
+  try {
+    const r = await f(site + "minutos", { headers: { "user-agent": "edumr-cron" } }); const d = await r.json();
+    const mp = {};
+    Object.keys((d && d.map) || {}).forEach((id) => { const v = d.map[id]; if (v && typeof v.n === "number") mp[id] = v; });
+    mins = Object.keys(mp).length ? mp : null;
+  } catch (e) {}
+  const prev = elegirAnalisis(players, jornada, own, now, max, null, mins);
   let jugadas = null;
   if (prev.length) { try { jugadas = await jornadasJugadas(f, site, jornada); } catch (e) {} }
-  return (jugadas ? elegirAnalisis(players, jornada, own, now, max, jugadas) : prev).map((c) => {
+  return (jugadas ? elegirAnalisis(players, jornada, own, now, max, jugadas, mins) : prev).map((c) => {
     const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
     return { id: hex, status: "published", createdAt: now, updatedAt: now, publishedAt: now, thumb: "", tipo: "analisis", club: c.p.team, players: [c.p.name], playerId: c.p.id, key: c.key, source: { name: "Datos de Futmondo", url: "", videoId: "" }, title: c.titulo, lead: c.entradilla.slice(0, 200), body: c.cuerpo, via: "datos" };
   });

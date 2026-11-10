@@ -81,3 +81,18 @@ test("chollo: no si juega fuera, está en duda o en bache", () => {
   assert.equal(reglas(ME({ status: "doubt" }), J, g).some((x) => x.tipo === "chollo"), false);
   assert.equal(reglas(ME({ fitness: [8, 9, 8, 2, 2] }), J, g).some((x) => x.tipo === "chollo"), false);
 });
+
+test("fijo: juega casi todo, casi nunca lo cambian y puntúa", () => {
+  const p = P({ id: "f1", name: "Fijo", fitness: [7, 6, 7, 8, 6], avg: 6.8, matches: 11, status: "" });
+  const mins = { f1: { n: 12, j: 12, t: 1020, c: 10, s: 2, x: 70, b: 0, bm: 0, z: 0, rd: 0 } };
+  const r = reglas(p, J, null, 11, mins).find((x) => x.tipo === "fijo");
+  assert.ok(r);
+  assert.match(r.cuerpo, /12\*\* de \*\*12\*\* partidos/);
+  assert.match(r.cuerpo, /completado \*\*10\*\* de 12/);
+});
+test("fijo: no sale sin minutos, ni si lo cambian mucho, ni si no puntúa", () => {
+  const p = P({ id: "f1", fitness: [7, 6, 7, 8, 6], avg: 6.8, matches: 11 });
+  assert.equal(reglas(p, J, null, 11, null).some((x) => x.tipo === "fijo"), false);
+  assert.equal(reglas(p, J, null, 11, { f1: { n: 12, j: 12, t: 800, c: 4, s: 8 } }).some((x) => x.tipo === "fijo"), false);
+  assert.equal(reglas(P({ id: "f1", fitness: [3, 4, 3, 5, 4], avg: 4, matches: 11 }), J, null, 11, { f1: { n: 12, j: 12, t: 1020, c: 10, s: 2 } }).some((x) => x.tipo === "fijo"), false);
+});
