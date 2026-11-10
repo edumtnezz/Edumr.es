@@ -5607,6 +5607,17 @@ async function handleGet({ request, env: env0, params }) {
     if (url.searchParams.get("warm") === "1") return json({ ok: true });
     return json({ noticias: ownPublic(await getOwn(env)), locker: full.locker || [], updatedAt: full.updatedAt || Date.now() });
   }
+  if (path === "x-prueba") {
+    const u = String(url.searchParams.get("u") || "futbol_fantasy").replace(/[^A-Za-z0-9_]/g, "").slice(0, 30);
+    try {
+      const r = await fetch("https://syndication.twitter.com/srv/timeline-profile/screen-name/" + u, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+      const h = await r.text();
+      const m = h.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+      let n = 0, muestra = [];
+      if (m) { const d = JSON.parse(m[1]); const ent = (((d.props || {}).pageProps || {}).timeline || {}).entries || []; n = ent.length; muestra = ent.slice(0, 3).map((e) => ({ at: e.content && e.content.tweet && e.content.tweet.created_at, len: String((e.content && e.content.tweet && e.content.tweet.full_text) || "").length })); }
+      return json({ status: r.status, bytes: h.length, nextData: !!m, entradas: n, muestra });
+    } catch (e) { return json({ error: String(e && e.message || e).slice(0, 120) }); }
+  }
   if (/^portada\/[a-f0-9]{6,12}$/.test(path)) {
     const b64 = await env.PORRA.get("portada:v1:" + path.slice(8));
     if (!b64) return new Response("no hay portada", { status: 404 });
