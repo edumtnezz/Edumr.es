@@ -4246,7 +4246,7 @@
     const tres = list.slice(0, 3).map((x) => ({ kind: "n", x, ts: Number(x.ts) || 0 }));
     if (tres.length) {
       const ul = el("div", "nw-list");
-      tres.forEach((e) => ul.appendChild(inicioRow(e, open)));
+      tres.forEach((e, i) => { const r = inicioRow(e, open); if (i === 0) r.classList.add("nw-big"); ul.appendChild(r); });
       wrap.appendChild(ul);
     } else wrap.appendChild(el("p", "nw-empty", "Sin noticias por ahora."));
     // 2) Últimos cambios, justo debajo: avatar pequeño y resumen

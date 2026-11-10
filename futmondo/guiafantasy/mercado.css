@@ -3590,3 +3590,7 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .nw-home .nw-row-pic-c { border-radius: 50%; }
 .nw-home .nw-row-t { font-size: .85rem; -webkit-line-clamp: 2; }
 .nw-home .nw-tag { font-size: .7rem; }
+/* Inicio: la primera noticia, grande y sin resumen */
+.nw-home .nw-big { grid-template-columns: 1fr; gap: 10px; }
+.nw-home .nw-big .nw-row-pic { width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 14px; }
+.nw-home .nw-big .nw-row-t { font-size: 1.1rem; font-weight: 800; -webkit-line-clamp: 3; }
