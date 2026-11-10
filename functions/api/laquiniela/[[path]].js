@@ -2166,7 +2166,7 @@ async function generarPortada(env, request, own, it, now) {
   const prompt = imgs + String(plantilla).replace(/\{(club|jugador|local|visitante|jugador1|jugador2)\}/g, (_, k) => ({ club, jugador: jug, local: extra.local || "", visitante: extra.visitante || "", jugador1: extra.j1 || "", jugador2: extra.j2 || "" })[k] || "");
   fd.append("prompt", prompt);
   // Si el proyecto no tiene acceso a un modelo, se prueba el siguiente (de mejor a más básico)
-  const modelos = env.OPENAI_IMAGE_MODEL ? [String(env.OPENAI_IMAGE_MODEL)] : ["gpt-image-2.5-flare", "gpt-image-2.5-sunburst", "gpt-image-2.6-flare", "gpt-image-1-mini"];
+  const modelos = env.OPENAI_IMAGE_MODEL ? [String(env.OPENAI_IMAGE_MODEL)] : ["gpt-image-2.6-flare", "gpt-image-2.5-flare", "gpt-image-2.5-sunburst", "gpt-image-1-mini"];
   let r = null, j = {}, usado = "", ultimoErr = "";
   for (const mo of modelos) {
     fd.set("model", mo);
