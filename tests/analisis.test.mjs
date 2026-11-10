@@ -96,3 +96,13 @@ test("fijo: no sale sin minutos, ni si lo cambian mucho, ni si no puntúa", () =
   assert.equal(reglas(p, J, null, 11, { f1: { n: 12, j: 12, t: 800, c: 4, s: 8 } }).some((x) => x.tipo === "fijo"), false);
   assert.equal(reglas(P({ id: "f1", fitness: [3, 4, 3, 5, 4], avg: 4, matches: 11 }), J, null, 11, { f1: { n: 12, j: 12, t: 1020, c: 10, s: 2 } }).some((x) => x.tipo === "fijo"), false);
 });
+
+test("rentable y estrella: salen con buena media, valor que no baja y prob >= 70", () => {
+  const p = P({ id: "r1", fitness: [9, 10, 11, 9, 10], avg: 10.2, matches: 11, value: 9e6, chg7: 5e5, change: 1e5, prob: 85, status: "" });
+  const t = reglas(p, J, null, 11, null).map((x) => x.tipo);
+  assert.ok(t.includes("rentable")); assert.ok(t.includes("estrella"));
+  const baja = reglas({ ...p, chg7: -1e5 }, J, null, 11, null).map((x) => x.tipo);
+  assert.equal(baja.includes("rentable"), false);
+  const duda = reglas({ ...p, prob: 50 }, J, null, 11, null).map((x) => x.tipo);
+  assert.equal(duda.includes("estrella"), false);
+});

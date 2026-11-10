@@ -154,6 +154,20 @@ export function reglas(p, jornada, jugadas, pub, mins) {
       entradilla: "El " + (p.role || "jugador") + " del " + nombreClub(p) + " ha jugado " + mn.j + " de los " + mn.n + " partidos de su equipo y promedia " + num(p.avg) + " puntos.",
       cuerpo: "Ha jugado **" + mn.j + "** de **" + mn.n + "** partidos del " + nombreClub(p) + ": **" + mn.t + "** minutos, unos " + Math.round(mn.t / mn.j) + " por partido. Como titular, ha completado **" + mn.c + "** de " + tit + " y lo han cambiado " + mn.s + (mn.s === 1 ? " vez" : " veces") + ". Media de **" + num(p.avg) + "** puntos en " + p.matches + " partidos." + (sig ? " " + sig : "") + "\n**Nuestra lectura:** jugar casi todo y puntuar da seguridad a tu once" + (prob != null ? " (" + prob + " % de jugar el próximo partido)" : "") + "." });
   }
+  // 7) Rentable: mismo criterio que "Jugadores rentables" de la web (media >= 8, valor que no baja, sin lesión) + prob >= 70
+  if (p.value > 0 && ppm >= 0.3 && p.avg >= 8 && p.matches >= 6 && (Number(p.change) || 0) >= 0 && valorSube && !/injured|redcard/.test(String(p.status || "")) && sano && prob != null && prob >= 70 && enCasa) {
+    out.push({ tipo: "rentable", prio: 2.4 + Math.min(ppm, 1.2) / 1.2 * 0.8,
+      titulo: elige(["Rentable: " + p.name + " da " + num(p.avg) + " de media y cuesta " + mill(p.value), p.name + ", de los más rentables: " + num(p.avg) + " puntos por " + mill(p.value), "Calidad-precio: " + p.name + " promedia " + num(p.avg) + " a " + mill(p.value)], seed),
+      entradilla: "El " + (p.role || "jugador") + " del " + nombreClub(p) + " rinde " + num(ppm) + " puntos de media por cada millón de valor.",
+      cuerpo: base + " Su valor es de " + mill(p.value) + (typeof p.chg7 === "number" ? " y en la última semana ha cambiado " + (p.chg7 >= 0 ? "+" : "-") + mill(Math.abs(p.chg7)) : "") + "." + (sig ? " " + sig : "") + "\n**Nuestra lectura:** de los jugadores con mejor relación puntos-precio de la liga, con " + prob + " % de jugar el próximo partido." });
+  }
+  // 8) Muchos puntos: media de 10 o más, sano y con opciones de jugar
+  if (p.avg >= 10 && p.matches >= 6 && prob != null && prob >= 70 && sano && !/injured|redcard/.test(String(p.status || "")) && !enBache) {
+    out.push({ tipo: "estrella", prio: 2.6 + p.avg / 20,
+      titulo: elige([p.name + " suma " + num(p.avg) + " puntos de media y es de los que más puntúan", "Máximo anotador de puntos: " + p.name + " promedia " + num(p.avg), p.name + " rinde a lo grande: " + num(p.avg) + " de media"], seed),
+      entradilla: "El " + (p.role || "jugador") + " del " + nombreClub(p) + " promedia " + num(p.avg) + " puntos y su valor es de " + mill(p.value) + ".",
+      cuerpo: base + (sig ? " " + sig : "") + "\n**Nuestra lectura:** entre los que más puntos dan; con " + prob + " % de jugar es una apuesta segura para tu once." });
+  }
   // 5) Duda: titular habitual marcado como duda
   if (p.status === "doubt" && p.avg >= 6) {
     out.push({ tipo: "duda", prio: 2.8 + p.avg / 10,
