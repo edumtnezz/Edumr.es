@@ -1854,8 +1854,8 @@ export async function redactorSombra(env, deps) {
       await env.PORRA.put("rd:portadas-reset:v1", String(now));
     }
     // Una sola vez (Edu 10/11/2026): reabre la última noticia externa para que el redactor la reescriba con el prompt nuevo
-    if (!(await env.PORRA.get("rd:reabrir:v2"))) {
-      const o = own.filter((x) => x.status === "published" && String(x.key || "").startsWith("ext-")).sort((x, y) => (y.publishedAt || 0) - (x.publishedAt || 0))[0];
+    if (!(await env.PORRA.get("rd:reabrir:v3"))) {
+      const o = own.find((x) => x.status === "published" && x.key === "ext-ff-154570-barcelona");
       if (o) {
         const pid = o.key.slice(4);
         o.status = "draft"; o.reabierta = true; o.key = "old-" + o.key; o.updatedAt = now; cambio = true;
@@ -1863,7 +1863,7 @@ export async function redactorSombra(env, deps) {
         st.pistas[pid] = { at: now, estado: "descartada", motivo: "sin hecho ni dato", ext: 5 };
         dirty = true;
       }
-      await env.PORRA.put("rd:reabrir:v2", String(now));
+      await env.PORRA.put("rd:reabrir:v3", String(now));
     }
     // Un once/alineación solo vale antes del partido: pasadas 2 h se retira (Edu 10/11/2026)
     for (const o of own) if (o.status === "published" && (o.tipo === "once" || /\bonces?\b|alineacion(es)?\b/i.test(o.title || "")) && now - (o.publishedAt || o.createdAt || now) > 2 * 3600e3) { o.status = "draft"; o.caducada = true; o.updatedAt = now; cambio = true; }
