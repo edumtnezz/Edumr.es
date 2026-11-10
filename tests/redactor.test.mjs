@@ -618,3 +618,13 @@ test("una pista verificada en la web oficial se publica una vez y la repetida no
   st = JSON.parse(kv.get("rd:sombra:v1"));
   assert.equal(st.pistas.post2.motivo, "ya publicada");
 });
+
+import { decisionDe } from "../cron/src/redactor.js";
+import test2 from "node:test";
+import assert2 from "node:assert/strict";
+test2("decisionDe: vender exige plazo escrito en el texto", () => {
+  const t = "El club confirma que será baja de tres a cuatro meses por lesión.";
+  assert2.equal(decisionDe({ veredicto: "vender", plazo: "tres a cuatro meses", motivo: "x" }, t).veredicto, "vender");
+  assert2.equal(decisionDe({ veredicto: "vender", plazo: "6 meses", motivo: "x" }, t).veredicto, "duda");
+  assert2.equal(decisionDe({ veredicto: "raro" }, t).veredicto, "ninguno");
+});

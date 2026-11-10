@@ -1589,12 +1589,26 @@ async function leccionesEdu(env) {
     return t;
   } catch (e) { return ""; }
 }
-function promptExterna(origen, texto) {
-  return "Eres redactor de EduMR, una web de Futmondo (fantasy de LaLiga). Abajo hay una noticia de " + origen + ". Escribe tu propia noticia, corta y rápida, para alguien que juega a Futmondo y quiere saber si fichar, vender o cambiar su once.\n" +
+export const VEREDICTOS = ["vender", "duda", "fichar", "alinear", "ninguno"];
+export function promptExterna(origen, texto) {
+  return "Eres redactor de EduMR, una web de Futmondo (fantasy de LaLiga). Abajo hay una noticia de " + origen + ". Escribe tu propia crónica, corta y rápida, para alguien que juega a Futmondo y quiere saber si fichar, vender o cambiar su once.\n" +
+    "TONO: crónica de fútbol real, amigable pero serio, igual en todas las noticias. Sin bromas ni exageraciones. Frases cortas mezcladas con alguna más larga, sin repetir plantillas. Vocabulario de fútbol natural (se cae del once, entra en la rotación, recupera sensaciones) solo si lo dicho lo permite.\n" +
     "Usa SOLO los hechos del texto (lesiones, plazos, convocatorias, entrenamientos, ruedas de prensa, onces, fichajes, datos de partido). Si es un análisis u opinión, quédate solo con los datos y cifras comprobables. Si no hay ningún hecho ni dato, devuelve tipo \"vacio\".\n" +
-    "ESTILO: titular de 6 a 12 palabras, sin comillas, que diga qué pasa y a quién (ej. «Rafita se pierde de tres a cuatro meses»). Entradilla de una frase (máx 180) que describa al protagonista («El central del Málaga…», «El técnico del…»). Cuerpo de 2 a 4 frases cortas: el hecho, el dato que lo concreta (plazo, rival, minutos) y, si lo dicho lo permite, qué significa para quien lo tiene en su once. Si el club no da plazo o no se sabe algo, dilo claramente. Empieza describiendo, no por el nombre.\n" +
+    "ESTILO: titular de 6 a 12 palabras, sin comillas, que diga qué pasa y a quién (ej. «Rafita se pierde de tres a cuatro meses»). Entradilla de una frase (máx 180) que describa al protagonista («El central del Málaga…», «El técnico del…»). Cuerpo de 2 a 4 frases cortas: empieza con lo que ocurre (no por el nombre), sigue con el dato que lo concreta (plazo, rival, minutos) y, si lo dicho lo permite, cierra con qué significa para quien lo tiene en su once o con lo que viene después. Si el club no da plazo o no se sabe algo, dilo claramente.\n" +
+    "DECISIÓN FUTMONDO: veredicto = vender (baja larga con plazo escrito en el texto), duda (no se sabe si juega), fichar (buen momento o chollo con datos escritos), alinear (titular confirmado o en buena racha) o ninguno. Si no hay base clara en el texto, ninguno. plazo = el plazo tal como está escrito en el texto («3-4 meses») o «sin plazo». motivo = una línea que explique por qué eliges ese veredicto, con palabras del texto. Solo si el veredicto es vender, el titular puede terminar con la consecuencia (ej. «Rafita, baja de tres a cuatro meses: véndelo»).\n" +
     "REGLAS: no añadas ningún dato, cifra, fecha, plazo ni causa que no esté escrito. No copies frases: cambia la estructura. No cites la web de origen. Una cita solo si es literal y corta.\n" +
-    'Devuelve solo JSON: {"tipo":"hecho|analisis|vacio","titular":"...","entradilla":"...","cuerpo":"..."}\n\nNOTICIA:\n' + texto;
+    'Devuelve solo JSON: {"tipo":"hecho|analisis|vacio","titular":"...","entradilla":"...","cuerpo":"...","veredicto":"vender|duda|fichar|alinear|ninguno","plazo":"...","motivo":"..."}\n\nNOTICIA:\n' + texto;
+}
+// Etiqueta de decisión: solo vale si el texto la respalda; si no, "ninguno"
+export function decisionDe(j, texto) {
+  let v = String(j.veredicto || "").toLowerCase().trim();
+  if (!VEREDICTOS.includes(v)) v = "ninguno";
+  let plazo = String(j.plazo || "").trim().slice(0, 40);
+  const fuente = norm2(texto);
+  if (!plazo || /^sin plazo/i.test(plazo) || !norm2(plazo).split(/\s+/).every((w) => fuente.includes(w))) plazo = "sin plazo";
+  if (v === "vender" && plazo === "sin plazo") v = "duda";
+  const motivo = v === "ninguno" ? "" : String(j.motivo || "").trim().slice(0, 160);
+  return { veredicto: v, plazo, motivo };
 }
 // Por qué se rechazaría un texto: sirve para pedirle a la IA que se corrija una vez
 const RIESGO_RE = /\b(semanas?|meses|dias?|lunes|martes|miercoles|jueves|viernes|sabado|domingo|hoy|manana|ayer|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre|jornada|porteros?|porteras?|defensas?|delanteros?|delanteras?|centrocampistas?|extremos?|mediocentros?|laterales?|lesion\w*|operad[oa]|rotura|fractura|esguince|desgarro|baja|bajas|descartad\w*|titular|titulares|disponible|rotacion|duda|uno|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\b/g;
@@ -1633,9 +1647,10 @@ async function tratarExterna(env, f, st, now, pista, own) {
     const ap = norm2(n).split(/\s+/).filter((w) => w.length > 3).pop();
     return ap && fuenteNorm.includes(ap);
   });
-  let val = null, correccion = "", ultimo = "sin hecho ni dato";
+  let val = null, correccion = "", ultimo = "sin hecho ni dato", promptUsado = "", jFinal = null;
   for (let intento = 0; intento < 3 && !val; intento++) {
     let r;
+    promptUsado = promptExterna(nombre, "") + (await leccionesEdu(env)) + correccion;
     try { r = await gemini(env, f, { contents: [{ parts: [{ text: promptExterna(nombre, texto) + (await leccionesEdu(env)) + correccion }] }], generationConfig: { temperature: 0.3, responseMimeType: "application/json" } }); } catch (e) { return null; }
     if (!r || r.error) return null;
     st.tok.n += r.tokens || 0;
@@ -1644,7 +1659,7 @@ async function tratarExterna(env, f, st, now, pista, own) {
     if (!j || (j.tipo !== "hecho" && j.tipo !== "analisis")) { ultimo = "sin hecho ni dato"; break; }
     const razones = razonesRechazo(j, personas, texto);
     const v = razones.length ? null : validarNoticia({ titular: j.titular, entradilla: j.entradilla, cuerpo: j.cuerpo }, personas.map((n) => ({ frase: "", minuto: "", nombre: n })), texto);
-    if (v) { val = v; break; }
+    if (v) { val = v; jFinal = j; break; }
     ultimo = "no pasa la revisión";
     st.pistas[pista.id].detalle = ((razones.join("; ") || "validación") + " [" + String(j.titular || "").slice(0, 70) + " / " + String(j.cuerpo || "").slice(0, 90) + "]").slice(0, 330);
     correccion = "\n\nTU INTENTO ANTERIOR FUE RECHAZADO: " + (razones.join("; ") || "no cumple las reglas") + ". Reescríbelo corrigiéndolo, sin añadir nada que no esté en la noticia.";
@@ -1653,7 +1668,7 @@ async function tratarExterna(env, f, st, now, pista, own) {
   const key = "ext-" + pista.id;
   if (own.some((o) => o.key === key)) { st.pistas[pista.id].motivo = "ya publicada"; return null; }
   const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
-  const item = { id: hex, status: "published", expira: true, createdAt: now, updatedAt: now, publishedAt: now, thumb: "", tipo: pista.tipo || "", club: pista.equipo, players: personas, key, source: { name: nombre, url: pista.ref, videoId: "" }, title: val.title, lead: val.lead, body: val.body, via: "ia" };
+  const item = { id: hex, status: "published", expira: true, createdAt: now, updatedAt: now, publishedAt: now, thumb: "", tipo: pista.tipo || "", club: pista.equipo, players: personas, key, source: { name: nombre, url: pista.ref, videoId: "" }, title: val.title, lead: val.lead, body: val.body, via: "ia", ...decisionDe(jFinal || {}, texto), porque: { prompt: promptUsado.slice(0, 4500), datos: texto.slice(0, 1500), tema: pista.tipo || "", fuente: nombre } };
   // Una noticia nueva del mismo jugador deja atrás la anterior (que queda retirada)
   const apl = (n) => norm2(n).split(/\s+/).filter((w) => w.length > 3).pop();
   const mios = personas.map(apl).filter(Boolean);
