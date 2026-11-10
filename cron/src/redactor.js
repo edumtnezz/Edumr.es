@@ -1830,6 +1830,14 @@ export async function redactorSombra(env, deps) {
     }
     // Las notas vacías «X en la nota del Y» se retiran (Edu 09/11/2026)
     for (const o of own) if (o.status === "published" && /\ben la nota del\b|^Nota oficial del\b/i.test(o.title || "")) { o.status = "draft"; o.vacia = true; o.updatedAt = now; cambio = true; }
+    // Una sola vez (Edu 10/11/2026): se quitan todas las portadas generadas para que las rehaga él de cero
+    if (!(await env.PORRA.get("rd:portadas-reset:v1"))) {
+      for (const o of own) if (o.thumb && String(o.thumb).startsWith("/api/laquiniela/portada/")) {
+        for (const suf of ["", ":m", ":s"]) { try { await env.PORRA.delete("portada:v1:" + o.id + suf); } catch (e) {} }
+        o.thumb = ""; o.updatedAt = now; cambio = true;
+      }
+      await env.PORRA.put("rd:portadas-reset:v1", String(now));
+    }
     // Un once/alineación solo vale antes del partido: pasadas 2 h se retira (Edu 10/11/2026)
     for (const o of own) if (o.status === "published" && (o.tipo === "once" || /\bonces?\b|alineacion(es)?\b/i.test(o.title || "")) && now - (o.publishedAt || o.createdAt || now) > 2 * 3600e3) { o.status = "draft"; o.caducada = true; o.updatedAt = now; cambio = true; }
     if (cambio) await env.PORRA.put(OWN_KEY, JSON.stringify(own));

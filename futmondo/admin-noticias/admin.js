@@ -144,7 +144,7 @@
           var ch = H * 0.5, cw = ch * r[2].naturalWidth / r[2].naturalHeight, cx = W * 0.045, cy = (H - ch) / 2;
           g.save(); g.shadowColor = "rgba(255,255,255,.55)"; g.shadowBlur = H * 0.05; g.drawImage(r[2], cx, cy, cw, ch); g.restore();
         }
-        var lw = W * 0.075, lh = lw * r[1].naturalHeight / r[1].naturalWidth; g.drawImage(r[1], W - lw - W * 0.025, H * 0.035, lw, lh);
+        var lw = W * 0.09, lh = lw * r[1].naturalHeight / r[1].naturalWidth; g.save(); g.globalAlpha = 0.6; g.drawImage(r[1], W - lw - W * 0.025, H - lh - H * 0.035, lw, lh); g.restore(); // marca de agua transparente, abajo a la derecha
         // Tres tamaños sin perder calidad: completa, mediana (Noticias/Inicio grande) y cuadrada centrada en el jugador (miniaturas)
         function redim(w, h, sx, sy, sw, sh, q) { var k = document.createElement("canvas"); k.width = w; k.height = h; var gg = k.getContext("2d"); gg.imageSmoothingEnabled = true; gg.imageSmoothingQuality = "high"; gg.drawImage(c, sx, sy, sw, sh, 0, 0, w, h); return k.toDataURL("image/jpeg", q).split(",")[1]; }
         var mw = Math.min(W, 960), side = Math.round(H * 0.88), fx = x.tipo === "once" ? 0.5 : 0.6;
