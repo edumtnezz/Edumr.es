@@ -4302,6 +4302,16 @@
     let mk = null;
     try { mk = (pl0.name && playerByFullName(pl0.name)) || null; } catch (e) {}
     if (!mk && !/alineaci/.test(title)) { try { mk = playerByFullName(x.title); } catch (e) {} }
+    // Títulos tipo «Rueda está ahora tocado…»: solo el apellido. Se usa solo si UN único jugador del mercado lo lleva.
+    if (!mk && !/alineaci/.test(title)) {
+      try {
+        const sujeto = fold(String(x.title || "").split(/\s+(?:est[aá]|queda|pasa|es|vuelve|se|ya|sigue|entra|sale)(?=\s|$)/i)[0]).split(" ").filter(Boolean);
+        if (sujeto.length && sujeto.length <= 3) {
+          const hit = (all || []).filter((p) => p.id && p.photo && sujeto.every((w) => fold(p.name).split(" ").indexOf(w) >= 0));
+          if (hit.length === 1) mk = hit[0];
+        }
+      } catch (e) {}
+    }
     const out = [];
     if (/alineaci/.test(title) && crest) out.push(crest);
     if (mk) { if (mk.photo) out.push(mk.photo); if (mk.logo) out.push(mk.logo); }
@@ -7268,6 +7278,24 @@
     }
   }
 
+  // Noticias al día: la web mira cada 20 s (solo con la pestaña a la vista) y repinta SOLO si hay algo nuevo,
+  // para que salga a la vez que el aviso de Telegram, tanto en Inicio como en Noticias.
+  (function noticiasAlDia() {
+    const firma = (d) => ((d && d.noticias) || []).slice(0, 40).map((x) => (x.link || "") + "|" + (x.title || "") + "|" + (x.thumb || "")).join("~");
+    let busy = false;
+    const mira = async () => {
+      if (busy || document.hidden || !lastNews) return;
+      busy = true;
+      try {
+        const r = await fetch(API + "/noticias", { cache: "no-store" });
+        const d = await r.json();
+        if (d && d.noticias && d.noticias.length && firma(d) !== firma(lastNews)) { renderNews(d); updateNewsFilter(); }
+      } catch (e) {}
+      busy = false;
+    };
+    setInterval(mira, 20000);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) mira(); });
+  })();
   loadNoticias();
   load();
 })();

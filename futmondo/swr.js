@@ -32,7 +32,7 @@
     var url = typeof input === "string" ? input : (input && input.url) || "";
     var method = (init && init.method) || (input && input.method) || "GET";
     var path = url.replace(location.origin, "");
-    if (method !== "GET" || !EPS.test(path)) return native(input, init);
+    if (method !== "GET" || !EPS.test(path) || (init && init.cache === "no-store")) return native(input, init);
     var c = lsGet(path);
     if (c && c.b && Date.now() - c.t < MAXAGE) {
       // pinta ya con lo guardado y actualiza detrás
