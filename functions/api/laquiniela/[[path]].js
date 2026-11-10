@@ -2080,6 +2080,7 @@ async function adminNoticias(env, request, url, data) {
       else await env.PORRA.delete("portada:v1:" + it.id + ":" + suf).catch(() => {});
     }
     it.thumb = "/api/laquiniela/portada/" + it.id + "?v=" + now.toString(36); it.updatedAt = now;
+    { const u = Number(data.usd); it.portadaUsd = isFinite(u) && u >= 0 && u < 5 ? Math.round(u * 1e4) / 1e4 : null; it.portadaModelo = String(data.modelo || "").slice(0, 60); it.portadaAt = now; }
     await putOwn(env, own);
     await admLog(env, { a: "portada", id: it.id, t: it.title });
     return json({ ok: true, item: it });

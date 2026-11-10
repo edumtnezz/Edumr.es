@@ -88,6 +88,9 @@ function componer(j, x) {
     }
     if (pub) {
       var sin = lista.filter(function (x) { return !x.thumb; }).sort(function (a, b) { return (b.date || b.updatedAt || 0) - (a.date || a.updatedAt || 0); }).slice(0, 10);
+      var conCoste = D.own.filter(function (x) { return x.portadaUsd != null; }), tot = conCoste.reduce(function (a, x) { return a + x.portadaUsd; }, 0);
+      var resumen = el("p", "ad-meta", "Gasto en portadas (las que hay ahora): " + tot.toFixed(3) + " $ en " + conCoste.length + " portadas" + (conCoste.length ? " · media " + (tot / conCoste.length).toFixed(3) + " $" : "") + ".");
+      resumen.style.fontWeight = "700"; v.appendChild(resumen);
       var box = el("div", "ad-box"); var info = el("p", "ad-meta", sin.length ? "Hay " + lista.filter(function (x) { return !x.thumb; }).length + " publicadas sin portada. Se hacen una a una, las más nuevas primero (≈ 1 min cada una). No cierres esta pantalla." : "Todas las publicadas tienen portada.");
       var go = el("button", "ad-b main", "Generar portadas de las próximas " + sin.length + " (ChatGPT)"); go.type = "button"; var parar = false;
       var stop = el("button", "ad-b", "Parar"); stop.type = "button"; stop.style.display = "none"; stop.addEventListener("click", function () { parar = true; stop.disabled = true; });
@@ -96,8 +99,8 @@ function componer(j, x) {
         (function sigue(i) {
           if (parar || i >= sin.length) { info.textContent = hechas + " portadas hechas, ≈ " + coste.toFixed(2) + " $" + (fallos ? ", " + fallos + " con fallo" : "") + "."; return cargar(true); }
           var x = sin[i]; info.textContent = "Portada " + (i + 1) + " de " + sin.length + ": " + (x.title || "").slice(0, 60) + "…";
-          post({ action: "portada", id: x.id }).then(function (j) { if (j.usd != null) coste += j.usd; return componer(j, x); })
-            .then(function (o) { return post({ action: "portada-guardar", id: x.id, b64: o.b64, b64m: o.b64m, b64s: o.b64s }); })
+          var usd1 = null, mod1 = ""; post({ action: "portada", id: x.id }).then(function (j) { usd1 = j.usd; mod1 = j.modelo || ""; if (j.usd != null) coste += j.usd; return componer(j, x); })
+            .then(function (o) { return post({ action: "portada-guardar", id: x.id, b64: o.b64, b64m: o.b64m, b64s: o.b64s, usd: usd1, modelo: mod1 }); })
             .then(function () { hechas++; }, function () { fallos++; })
             .then(function () { sigue(i + 1); });
         })(0);
@@ -168,7 +171,7 @@ function componer(j, x) {
     btn("Guardar", "", function () { return post(datos("guardar")).then(function () { return "Guardado"; }); });
     if (x.status === "published") btn("Quitar de la web", "", function () { return post({ action: "despublicar", id: x.id }).then(function () { abierto = null; return "Quitada"; }); });
     else btn("Publicar", "main", function () { return post(datos("guardar")).then(function () { return post({ action: "publicar", id: x.id }); }).then(function () { abierto = null; tab = "publicadas"; return "Publicada"; }); });
-    var pst = el("p", "ad-meta", x.thumb ? "Portada actual: ver abajo." : "");
+    var pst = el("p", "ad-meta", x.thumb ? "Portada actual: " + (x.portadaUsd != null ? x.portadaUsd.toFixed(3) + " $ (" + (x.portadaModelo || "modelo ?") + ")" : "coste no registrado") + ". Ver abajo." : "");
     var pim = el("img"); pim.style.cssText = "max-width:100%;border-radius:8px;margin-top:8px;display:" + (x.thumb ? "block" : "none"); if (x.thumb) pim.src = x.thumb;
     var pb = el("button", "ad-b", "Generar portada (ChatGPT)"); pb.type = "button";
     pb.addEventListener("click", function () {
@@ -177,9 +180,9 @@ function componer(j, x) {
       post({ action: "portada", id: x.id }).then(function (j) {
         modeloUsado = (j.modelo || "") + (j.usd != null ? ", ≈ " + j.usd.toFixed(3) + " $" : "");
         pst.textContent = (j.conFoto ? "Hecha con la foto de " + (j.jugador || "el jugador") + ". " : "Sin foto del jugador. ") + "Pegando escudo y marca…";
-        return componer(j, x).then(function (o) { return post({ action: "portada-guardar", id: x.id, b64: o.b64, b64m: o.b64m, b64s: o.b64s }); });
+        return componer(j, x).then(function (o) { return post({ action: "portada-guardar", id: x.id, b64: o.b64, b64m: o.b64m, b64s: o.b64s, usd: j.usd, modelo: j.modelo }); });
       }).then(function (j) {
-        pst.textContent = "Portada guardada (modelo " + (modeloUsado || "?") + "). Si no te gusta, pulsa otra vez.";
+        pst.textContent = "Portada guardada · " + (modeloUsado || "?") + ". Si no te gusta, pulsa otra vez.";
         if (j.item && j.item.thumb) { pim.src = j.item.thumb; pim.style.display = "block"; }
       }).catch(function (e) { pst.style.color = "#b91c1c"; pst.textContent = "Fallo: " + (e && e.message || "sin respuesta"); }).then(function () { pb.disabled = false; });
     });
