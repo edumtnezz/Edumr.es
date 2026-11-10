@@ -3291,7 +3291,8 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 /* Todas las tarjetas de la jornada con la misma altura (Edu 01/11): el once probable no la agranda */
 #cxChrome .cx-jn-grid { grid-auto-rows: 50px; }
 #cxChrome .cx-jn { height: 50px; box-sizing: border-box; overflow: hidden; justify-content: center; }
-#cxChrome .cx-jn .cx-jn-tvrow { display: none; }
+/* El canal (DAZN / Movistar) se vuelve a ver en los partidos por jugar (Edu 10/11); en directo o terminados sigue oculto */
+#cxChrome .cx-jn:not(.cx-jn-isfinal):not(.cx-jn-islive) .cx-jn-tvrow { display: flex; justify-content: center; align-items: center; min-height: 0; margin: 0; }
 
 /* Inicio en móvil como en el PC: lista a la izquierda y la noticia grande a la derecha (Edu 01/11) */
 @container (max-width: 639px) {
@@ -3309,8 +3310,8 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 }
 
 /* Tarjetas de la jornada un poco más grandes, todas iguales (Edu 01/11) */
-#cxChrome .cx-jn-grid { grid-auto-rows: 60px; gap: 5px; }
-#cxChrome .cx-jn { height: 60px; padding: 4px 6px; }
+#cxChrome .cx-jn-grid { grid-auto-rows: 68px; gap: 5px; }
+#cxChrome .cx-jn { height: 68px; padding: 4px 6px; }
 #cxChrome .cx-jn-crest { width: 33px; height: 33px; }
 #cxChrome .cx-jn-score { font-size: 1.2rem; }
 #cxChrome .cx-jn-statusrow { font-size: .6rem; }
