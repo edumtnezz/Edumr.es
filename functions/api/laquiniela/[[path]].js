@@ -1995,6 +1995,16 @@ function ownDraftFromVideo(v, sel) {
     original: items.map((i) => ({ jugador: i.jugador, estado: i.estado, frase: i.frase, minuto: i.minuto, confianza: i.confianza, verificada: !!i.verificada, cruzado: !!i.cruzado })),
   };
 }
+// Registro de TODO lo que Edu hace en el administrador (para verlo y para que el redactor aprenda de sus correcciones)
+const ADM_LOG_KEY = "adm:log:v1";
+async function admLog(env, e) {
+  try {
+    const l = (await env.PORRA.get(ADM_LOG_KEY, "json")) || [];
+    l.unshift(Object.assign({ at: Date.now() }, e));
+    await env.PORRA.put(ADM_LOG_KEY, JSON.stringify(l.slice(0, 300)));
+  } catch (err) {}
+}
+
 async function adminNoticias(env, request, url, data) {
   const user = await getSessionUser(env, request);
   if (!isAdmin(env, user)) return json({ error: "No autorizado." }, 403);
@@ -2015,11 +2025,13 @@ async function adminNoticias(env, request, url, data) {
     let comparacion = null;
     try { comparacion = await env.PORRA.get("rd:cmp:v1", "json"); } catch (e) {}
     const tg = estado && estado.tgUltimo ? { id: String(estado.tgUltimo.id || ""), ok: !!estado.tgUltimo.ok, err: String(estado.tgUltimo.err || "").slice(0, 120), at: estado.tgUltimo.at || 0, pendientes: Array.isArray(estado.tgPend) ? estado.tgPend.length : 0 } : null;
-    return json({ prompts: await getPortadaPrompts(env), own, sombra, usadas, externas, comparacion, estado: estado ? { fuentes: estado.fuentes || {}, tok: estado.tok || null, tg, pistas: estado.pistasN || null, deteccion: estado.deteccion || null, seen: Object.entries(estado.seen || {}).slice(-60).map(([id, v]) => Object.assign({ id }, v)) } : null, now: Date.now() });
+    let log = []; try { log = ((await env.PORRA.get(ADM_LOG_KEY, "json")) || []).slice(0, 80); } catch (e) {}
+    return json({ log, prompts: await getPortadaPrompts(env), own, sombra, usadas, externas, comparacion, estado: estado ? { fuentes: estado.fuentes || {}, tok: estado.tok || null, tg, pistas: estado.pistasN || null, deteccion: estado.deteccion || null, seen: Object.entries(estado.seen || {}).slice(-60).map(([id, v]) => Object.assign({ id }, v)) } : null, now: Date.now() });
   }
   if (data.action === "prompts") {
     const g = { jugador: String(data.jugador || "").slice(0, 4000), once: String(data.once || "").slice(0, 4000) };
     await env.PORRA.put(PORTADA_PROMPTS_KEY, JSON.stringify(g));
+    await admLog(env, { a: "prompts" });
     return json({ ok: true, prompts: await getPortadaPrompts(env) });
   }
   const own = await getOwn(env);
@@ -2058,16 +2070,19 @@ async function adminNoticias(env, request, url, data) {
   }
   const it = own.find((x) => x.id === data.id);
   if (!it) return json({ error: "No existe." }, 404);
-  if (data.action === "portada") return generarPortada(env, request, own, it, now);
+  if (data.action === "portada") { await admLog(env, { a: "portada", id: it.id, t: it.title }); return generarPortada(env, request, own, it, now); }
   if (data.action === "guardar") {
+    const antes = { title: it.title || "", lead: it.lead || "", body: it.body || "" };
     it.title = clean(data.title, 200); it.lead = clean(data.lead, 400); it.body = clean(data.body, 8000);
     it.club = clean(data.club, 60); it.updatedAt = now;
     if (data.source && typeof data.source === "object") it.source = { name: clean(data.source.name, 160), url: /^https:\/\//.test(String(data.source.url || "")) ? clean(data.source.url, 400) : "", videoId: (it.source && it.source.videoId) || "" };
+    if (antes.title !== it.title || antes.lead !== it.lead || antes.body !== it.body) await admLog(env, { a: "guardar", id: it.id, t: it.title, antes: { title: antes.title, lead: antes.lead, body: antes.body.slice(0, 700) }, despues: { title: it.title, lead: it.lead, body: String(it.body).slice(0, 700) } });
   } else if (data.action === "publicar") {
     if (!it.title || !it.body) return json({ error: "Falta título o texto." }, 400);
     it.status = "published"; it.publishedAt = it.publishedAt || now; it.updatedAt = now;
-  } else if (data.action === "despublicar") { it.status = "draft"; it.updatedAt = now; }
-  else if (data.action === "borrar") { own.splice(own.indexOf(it), 1); }
+    await admLog(env, { a: "publicar", id: it.id, t: it.title });
+  } else if (data.action === "despublicar") { it.status = "draft"; it.updatedAt = now; await admLog(env, { a: "quitar", id: it.id, t: it.title }); }
+  else if (data.action === "borrar") { await admLog(env, { a: "borrar", id: it.id, t: it.title, antes: { title: it.title || "", lead: it.lead || "" } }); own.splice(own.indexOf(it), 1); }
   else return json({ error: "Acción desconocida." }, 400);
   await putOwn(env, own);
   return json({ ok: true, item: it });

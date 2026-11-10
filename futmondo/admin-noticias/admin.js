@@ -41,13 +41,14 @@
   function pinta() {
     $("adGate").classList.add("hidden"); $("adApp").classList.remove("hidden");
     var nb = D.own.filter(function (x) { return x.status !== "published"; }).length;
-    var tabs = [["borradores", "Borradores" + (nb ? " (" + nb + ")" : "")], ["publicadas", "Publicadas"], ["redactor", "Redactor"], ["comparar", "Comparar"], ["estado", "Estado"]];
+    var tabs = [["borradores", "Borradores" + (nb ? " (" + nb + ")" : "")], ["publicadas", "Publicadas"], ["redactor", "Redactor"], ["comparar", "Comparar"], ["historial", "Historial"], ["estado", "Estado"]];
     var t = $("adTabs"); t.innerHTML = "";
     tabs.forEach(function (x) { var b = el("button", "ad-chip" + (tab === x[0] ? " on" : ""), x[1]); b.type = "button"; b.addEventListener("click", function () { tab = x[0]; abierto = null; pinta(); }); t.appendChild(b); });
     var v = $("adView"); v.innerHTML = "";
     if (tab === "borradores" || tab === "publicadas") vistaPropias(v, tab === "publicadas");
     else if (tab === "redactor") vistaRedactor(v);
     else if (tab === "comparar") vistaComparar(v);
+    else if (tab === "historial") vistaHistorial(v);
     else vistaEstado(v);
   }
 
@@ -79,6 +80,17 @@
     var o = el("div", "ad-box"); o.appendChild(el("h3", null, "Original (fuente)"));
     if (x.source && x.source.url) { var a = el("a", "ad-link", x.source.name || "Fuente"); a.href = x.source.url; a.target = "_blank"; a.rel = "noopener"; o.appendChild(a); }
     else o.appendChild(el("p", "ad-meta", "Sin fuente: añade una abajo."));
+    var orig = el("div", "ad-orig"); o.appendChild(orig);
+    if (x.source && /^https:\/\/www\.(futbolfantasy|comuniate)\.com\//.test(x.source.url || "")) {
+      orig.appendChild(el("p", "ad-meta ad-load", "Cargando el original…"));
+      fetch(API + "/noticia?u=" + encodeURIComponent(x.source.url), { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
+        orig.innerHTML = "";
+        if (!d || d.error || d.removed || (!d.title && !d.html)) { orig.appendChild(el("p", "ad-meta", "No he podido leer el original (abre el enlace de arriba).")); return; }
+        if (d.title) orig.appendChild(el("h4", null, d.title));
+        if (d.lead) orig.appendChild(el("p", "ad-lead", d.lead));
+        try { new DOMParser().parseFromString("<body>" + (d.html || "") + "</body>", "text/html").body.querySelectorAll("p,li").forEach(function (n) { var s = (n.textContent || "").replace(/\s+/g, " ").trim(); if (s) orig.appendChild(el("p", "ad-par", s)); }); } catch (e) {}
+      }).catch(function () { orig.innerHTML = ""; orig.appendChild(el("p", "ad-meta", "No he podido leer el original.")); });
+    }
     (x.original || []).forEach(function (r) {
       var row = el("div", "ad-row");
       var k = el("div", "k"); k.textContent = r.jugador + " · " + (ETIQ[r.estado] || r.estado) + (r.minuto ? " · min " + r.minuto : "");
@@ -86,7 +98,7 @@
       var tg = el("div"); tg.appendChild(tag(r.verificada ? "frase verificada" : "frase sin verificar", r.verificada ? "ok" : "bad")); tg.appendChild(tag(r.cruzado ? "jugador reconocido" : "jugador sin cruzar", r.cruzado ? "ok" : "bad")); tg.appendChild(tag("confianza " + (r.confianza || "?")));
       row.appendChild(k); row.appendChild(q); row.appendChild(tg); o.appendChild(row);
     });
-    if (!(x.original || []).length) o.appendChild(el("p", "ad-meta", "Escrita a mano."));
+    if (!(x.original || []).length && !(x.source && x.source.url)) o.appendChild(el("p", "ad-meta", "Escrita a mano."));
     var cmp = D.comparacion && (D.comparacion.propias || []).filter(function (c) { return c.id === x.id; })[0];
     o.appendChild(el("h3", null, "Otras webs sobre el mismo jugador"));
     if (cmp && cmp.matches.length) cmp.matches.forEach(function (m) {
@@ -130,7 +142,13 @@
     var psv = el("button", "ad-b", "Guardar texto"); psv.type = "button";
     psv.addEventListener("click", function () { var o = { action: "prompts", jugador: D.prompts.jugador, once: D.prompts.once }; o[clave] = pta.value; post(o).then(function (j) { D.prompts = j.prompts; toast("Texto guardado"); }).catch(function (e) { toast(e.message); }); });
     det.appendChild(psv); c.appendChild(det);
-    btn("Borrar", "del", function () { if (!confirm("¿Borrar esta noticia?")) return Promise.reject(new Error("Cancelado")); return post({ action: "borrar", id: x.id }).then(function () { abierto = null; return "Borrada"; }); });
+    var bor = el("button", "ad-b del", "Borrar"); bor.type = "button"; var borT = null;
+    bor.addEventListener("click", function () {
+      if (!bor.dataset.sure) { bor.dataset.sure = "1"; bor.textContent = "¿Seguro? Pulsa otra vez"; bor.classList.add("sure"); borT = setTimeout(function () { delete bor.dataset.sure; bor.textContent = "Borrar"; bor.classList.remove("sure"); }, 4000); return; }
+      clearTimeout(borT); bor.disabled = true;
+      post({ action: "borrar", id: x.id }).then(function () { abierto = null; toast("Borrada"); return cargar(true); }).catch(function (e) { bor.disabled = false; toast(e.message); });
+    });
+    bt.appendChild(bor);
     c.appendChild(bt);
     if (x.status === "published") { var vl = el("a", "ad-link", "Ver en la web"); vl.href = "/futmondo/guiafantasy/noticias/ed-" + x.id; vl.target = "_blank"; vl.style.display = "inline-block"; vl.style.marginTop = "10px"; c.appendChild(vl); }
     return c;
@@ -163,6 +181,26 @@
         var u = el("button", "ad-b", ya.status === "published" ? "Ver publicada" : "Ver guardada"); u.type = "button";
         u.addEventListener("click", function () { tab = ya.status === "published" ? "publicadas" : "borradores"; abierto = usado; pinta(); });
         bt.appendChild(u); c.appendChild(bt);
+      }
+      v.appendChild(c);
+    });
+  }
+
+  /* ----- Historial de movimientos ----- */
+  var ACC = { guardar: ["Editó", "ok"], publicar: ["Publicó", "ok"], quitar: ["Quitó de la web", "warn"], borrar: ["Borró", "bad"], portada: ["Generó portada", ""], prompts: ["Cambió el texto de portadas", ""] };
+  function vistaHistorial(v) {
+    v.appendChild(el("p", "ad-meta", "Todo lo que haces aquí queda guardado. El redactor aprende de tus ediciones y de lo que borras."));
+    var l = D.log || [];
+    if (!l.length) v.appendChild(el("p", "ad-empty", "Aún no hay movimientos."));
+    l.forEach(function (e) {
+      var c = el("div", "ad-card ad-ev");
+      var a = ACC[e.a] || [e.a, ""];
+      var top = el("div", "ad-evtop"); top.appendChild(tag(a[0], a[1])); top.appendChild(el("span", "ad-meta", cuando(e.at))); c.appendChild(top);
+      c.appendChild(el("div", "ad-evt", e.t || ""));
+      if (e.antes && e.despues) {
+        var dd = el("details", "ad-det"); dd.appendChild(el("summary", null, "Ver qué cambió"));
+        [["Antes", e.antes], ["Después", e.despues]].forEach(function (p) { var b = el("div", "ad-diff"); b.appendChild(el("b", null, p[0])); b.appendChild(el("p", null, (p[1].title || "") + (p[1].lead ? " — " + p[1].lead : ""))); if (p[1].body) b.appendChild(el("p", "ad-meta", p[1].body)); dd.appendChild(b); });
+        c.appendChild(dd);
       }
       v.appendChild(c);
     });

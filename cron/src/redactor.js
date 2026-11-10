@@ -1576,6 +1576,19 @@ export function copiaLiteral(texto, fuente, n) {
   for (let i = 0; i + k <= w.length; i++) if (base.includes(" " + w.slice(i, i + k).join(" ") + " ")) return true;
   return false;
 }
+// Lo que Edu corrige o borra en el administrador (registro «adm:log:v1»): se enseña al redactor como ejemplos de estilo.
+async function leccionesEdu(env) {
+  try {
+    const l = (await env.PORRA.get("adm:log:v1", "json")) || [];
+    const rec = (s, n) => String(s || "").replace(/\s+/g, " ").trim().slice(0, n);
+    const cor = l.filter((e) => e.a === "guardar" && e.antes && e.despues).slice(0, 5).map((e) => "- Antes: «" + rec(e.antes.title, 120) + "» → Edu lo dejó: «" + rec(e.despues.title, 120) + "»" + (e.antes.lead !== e.despues.lead ? " | entradilla: «" + rec(e.despues.lead, 140) + "»" : ""));
+    const bor = l.filter((e) => e.a === "borrar" && e.antes).slice(0, 5).map((e) => "- «" + rec(e.antes.title, 120) + "»");
+    let t = "";
+    if (cor.length) t += "\n\nCORRECCIONES RECIENTES DE EDU (aprende su estilo; no repitas lo que él cambió):\n" + cor.join("\n");
+    if (bor.length) t += "\n\nNOTICIAS QUE EDU HA BORRADO (no escribas cosas parecidas):\n" + bor.join("\n");
+    return t;
+  } catch (e) { return ""; }
+}
 function promptExterna(origen, texto) {
   return "Eres redactor de EduMR, una web de Futmondo (fantasy de LaLiga). Abajo hay una noticia de " + origen + ". Escribe tu propia noticia, corta y rápida, para alguien que juega a Futmondo y quiere saber si fichar, vender o cambiar su once.\n" +
     "Usa SOLO los hechos del texto (lesiones, plazos, convocatorias, entrenamientos, ruedas de prensa, onces, fichajes, datos de partido). Si es un análisis u opinión, quédate solo con los datos y cifras comprobables. Si no hay ningún hecho ni dato, devuelve tipo \"vacio\".\n" +
@@ -1623,7 +1636,7 @@ async function tratarExterna(env, f, st, now, pista, own) {
   let val = null, correccion = "", ultimo = "sin hecho ni dato";
   for (let intento = 0; intento < 3 && !val; intento++) {
     let r;
-    try { r = await gemini(env, f, { contents: [{ parts: [{ text: promptExterna(nombre, texto) + correccion }] }], generationConfig: { temperature: 0.3, responseMimeType: "application/json" } }); } catch (e) { return null; }
+    try { r = await gemini(env, f, { contents: [{ parts: [{ text: promptExterna(nombre, texto) + (await leccionesEdu(env)) + correccion }] }], generationConfig: { temperature: 0.3, responseMimeType: "application/json" } }); } catch (e) { return null; }
     if (!r || r.error) return null;
     st.tok.n += r.tokens || 0;
     let j = null;
