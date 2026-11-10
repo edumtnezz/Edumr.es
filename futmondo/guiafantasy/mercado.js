@@ -510,7 +510,7 @@
     const list = (urls || []).filter(Boolean);
     if (!list.length) return null;
     const wrap = el("div", cls);
-    const im = el("img"); im.alt = ""; im.loading = "lazy";
+    const im = el("img"); im.alt = ""; im.decoding = "async"; // sin loading=lazy: en "Últimos cambios" las fotos pequeñas se quedaban en blanco hasta recargar
     let i = 0;
     im.addEventListener("error", () => { i++; if (i < list.length) im.src = list[i]; else wrap.remove(); });
     im.src = list[0];
