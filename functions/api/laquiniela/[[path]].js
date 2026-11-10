@@ -2134,7 +2134,7 @@ async function generarPortada(env, request, own, it, now) {
   const fd = new FormData();
   fd.append("model", String(env.OPENAI_IMAGE_MODEL || "gpt-image-1.5"));
   fd.append("size", "1536x1024");
-  fd.append("quality", String(env.OPENAI_IMAGE_QUALITY || "high"));
+  fd.append("quality", String(env.OPENAI_IMAGE_QUALITY || "medium"));
   fd.append("n", "1");
   const origin = new URL(request.url).origin;
   const bajar = async (u) => { const r = await fetch(u); if (!r.ok) throw new Error("imagen " + r.status); return new Blob([await r.arrayBuffer()], { type: "image/png" }); };
@@ -2166,11 +2166,10 @@ async function generarPortada(env, request, own, it, now) {
   const prompt = imgs + String(plantilla).replace(/\{(club|jugador|local|visitante|jugador1|jugador2)\}/g, (_, k) => ({ club, jugador: jug, local: extra.local || "", visitante: extra.visitante || "", jugador1: extra.j1 || "", jugador2: extra.j2 || "" })[k] || "");
   fd.append("prompt", prompt);
   // Si el proyecto no tiene acceso a un modelo, se prueba el siguiente (de mejor a más básico)
-  const modelos = env.OPENAI_IMAGE_MODEL ? [String(env.OPENAI_IMAGE_MODEL)] : ["gpt-image-1.5", "gpt-image-1", "gpt-image-1-mini"];
+  const modelos = env.OPENAI_IMAGE_MODEL ? [String(env.OPENAI_IMAGE_MODEL)] : ["gpt-image-2.5-flare", "gpt-image-2.5-sunburst", "gpt-image-2.6-flare", "gpt-image-1-mini"];
   let r = null, j = {}, usado = "", ultimoErr = "";
   for (const mo of modelos) {
     fd.set("model", mo);
-    if (mo === "gpt-image-1-mini" && !env.OPENAI_IMAGE_QUALITY) fd.set("quality", "high");
     r = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: "Bearer " + env.OPENAI_API_KEY }, body: fd });
     j = await r.json().catch(() => ({}));
     if (r.ok && j.data && j.data[0] && j.data[0].b64_json) { usado = mo; break; }
@@ -2187,7 +2186,15 @@ async function generarPortada(env, request, own, it, now) {
     }
   } catch (e) {}
   // La imagen NO se publica todavía: el panel le pega encima el escudo y la marca reales y la guarda (portada-guardar)
-  return json({ ok: true, b64: j.data[0].b64_json, crest, conFoto, jugador: jug, modelo: usado, usage: j.usage || null });
+  return json({ ok: true, b64: j.data[0].b64_json, crest, conFoto, jugador: jug, modelo: usado, usd: costeUsd(j.usage), usage: j.usage || null });
+}
+// Coste real de la petición: tokens devueltos por OpenAI × tarifas de la página de modelos (texto 5 $, imagen entrada 8 $, imagen salida 30 $ por millón)
+function costeUsd(u) {
+  if (!u) return null;
+  const d = u.input_tokens_details || {};
+  const txt = Number(d.text_tokens) || 0, img = Number(d.image_tokens) || 0, out = Number(u.output_tokens) || 0;
+  if (!out) return null;
+  return Math.round((txt * 5 + img * 8 + out * 30) / 1e6 * 1000) / 1000;
 }
 function clean2(s, n) { return String(s == null ? "" : s).replace(/\s+/g, " ").trim().slice(0, n); }
 
