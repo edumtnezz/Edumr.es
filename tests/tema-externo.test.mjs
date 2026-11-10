@@ -8,7 +8,7 @@ const PISTA = { id: "ff-154476-atletico", at: "2026-11-09T13:30:00.000Z", tipo: 
 async function correr(gem) {
   const kv = new Map();
   kv.set("rd:pistas:v1", JSON.stringify({ v: 1, items: [PISTA] }));
-  kv.set("rd:reabrir:v1", "1");
+  kv.set("rd:reabrir:v2", "1");
   const env = { GEMINI_API_KEY: "k", PORRA: {
     async get(k, t) { const v = kv.get(k); return v == null ? null : (t === "json" ? JSON.parse(v) : v); },
     async put(k, v) { kv.set(k, v); } } };
@@ -75,7 +75,7 @@ test("el texto de la noticia sale limpio: acentos bien, sin menú ni calendario"
 test("si el primer intento trae algo que no está en la noticia, se corrige y se publica", async () => {
   const kv = new Map();
   kv.set("rd:pistas:v1", JSON.stringify({ v: 1, items: [PISTA] }));
-  kv.set("rd:reabrir:v1", "1");
+  kv.set("rd:reabrir:v2", "1");
   const env = { GEMINI_API_KEY: "k", PORRA: { async get(k, t) { const v = kv.get(k); return v == null ? null : (t === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } } };
   const respuestas = [
     { tipo: "hecho", titular: "Cuti Romero sigue sin jugar con el Atlético", entradilla: "El central sigue apartado.", cuerpo: "Lleva 25 días sin competir por molestias musculares y Cardoso se ha sumado al grupo." },
