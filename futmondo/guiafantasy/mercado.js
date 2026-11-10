@@ -5567,6 +5567,8 @@
 
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => { if (document.querySelector(".eq-page, .mpage, .playerpage, .livepage")) { location.href = "/futmondo/guiafantasy/" + (t.dataset.tab === "plantillas" ? "mercado" : t.dataset.tab); return; } switchTab(t.dataset.tab); }));
   setupMoreMenu();
+  // Enlace «Administrador» en el menú Más: solo lo ve el administrador (comprobado en el servidor)
+  try { fetch(API + "/me", { cache: "no-store", credentials: "same-origin" }).then((r) => r.json()).then((d) => { const a = $("cxAdminLink"); if (a && d && d.admin) a.classList.remove("hidden"); }).catch(() => {}); } catch (e) {}
   let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltPeriod = "chg7", pltDir = -1, pltShown = 40, pltPlayers = [], pltMin = "";
   let rtbInit = false, rtbPos = "", rtbMin = 0, rtbMax = Infinity, rtbShown = 40;
   // En la ficha de jugador esto (14 peticiones de jornadas) se pide DESPUÉS de pintar, para no frenar la carga.

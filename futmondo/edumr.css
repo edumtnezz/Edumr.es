@@ -227,6 +227,7 @@ body {
   box-shadow: 0 12px 28px rgba(0,0,0,0.22);
 }
 .cx-more-menu.hidden { display: none; }
+.cx-more-item.hidden { display: none; }
 .cx-more-item {
   text-align: left; border: none; background: transparent; color: var(--cx-text);
   font-family: inherit; font-size: 0.86rem; font-weight: 600;
