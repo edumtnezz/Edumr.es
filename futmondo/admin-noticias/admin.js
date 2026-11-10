@@ -2,7 +2,7 @@
 (function () {
   var API = "/api/laquiniela";
   var $ = function (id) { return document.getElementById(id); };
-  var D = null, tab = "borradores", abierto = null, filtroSrc = "";
+  var D = null, tab = "actividad", abierto = null, filtroSrc = "";
   var ETIQ = { disponible: "disponible", opcion_titular: "opción de titular", duda: "duda", recuperacion_con_grupo: "entrena con el grupo", recuperacion_parcial: "entrena parcialmente", baja: "baja", titular_confirmado: "titular confirmado", rotacion: "rotación" };
 
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
@@ -48,15 +48,87 @@
   function pinta() {
     $("adGate").classList.add("hidden"); $("adApp").classList.remove("hidden");
     var nb = D.own.filter(function (x) { return x.status !== "published"; }).length;
-    var tabs = [["borradores", "Borradores" + (nb ? " " + nb : "")], ["publicadas", "Publicadas " + (D.own.length - nb)], ["redactor", "Redactor " + (D.sombra || []).length], ["comparar", "Comparar"], ["historial", "Historial"], ["estado", "Estado"]];
+    var tabs = [["actividad", "Actividad"], ["publicadas", "Publicadas " + (D.own.length - nb)], ["borradores", "Borradores" + (nb ? " " + nb : "")], ["redactor", "Redactor " + (D.sombra || []).length], ["comparar", "Comparar"], ["historial", "Historial"], ["estado", "Estado"]];
     var t = $("adTabs"); t.innerHTML = "";
     tabs.forEach(function (x) { var b = el("button", "ad-chip" + (tab === x[0] ? " on" : ""), x[1]); b.type = "button"; b.addEventListener("click", function () { tab = x[0]; abierto = null; pinta(); }); t.appendChild(b); });
     var v = $("adView"); v.innerHTML = "";
-    if (tab === "borradores" || tab === "publicadas") vistaPropias(v, tab === "publicadas");
+    if (tab === "actividad") vistaActividad(v);
+    else if (tab === "borradores" || tab === "publicadas") vistaPropias(v, tab === "publicadas");
     else if (tab === "redactor") vistaRedactor(v);
     else if (tab === "comparar") vistaComparar(v);
     else if (tab === "historial") vistaHistorial(v);
     else vistaEstado(v);
+  }
+
+
+  var ICO = {
+    pub: '<path d="M4 5h13a2 2 0 0 1 2 2v12H6a2 2 0 0 1-2-2V5z"/><path d="M8 9h7M8 13h7"/>',
+    off: '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>',
+    img: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 9"/>',
+    tg: '<path d="M21 3L3 11l6 2 2 7 3-5 5 4z"/>',
+    stat: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+    warn: '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/>'
+  };
+  function ico(k) { var s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("viewBox", "0 0 24 24"); s.setAttribute("width", "16"); s.setAttribute("height", "16"); s.setAttribute("fill", "none"); s.setAttribute("stroke", "currentColor"); s.setAttribute("stroke-width", "2"); s.setAttribute("stroke-linecap", "round"); s.setAttribute("stroke-linejoin", "round"); s.innerHTML = ICO[k] || ""; return s; }
+  var VER = { vender: ["VENDER", "v"], duda: ["DUDA", "a"], fichar: ["FICHAR", "g"], alinear: ["ALINEAR", "g"] };
+  function chipVer(x) { var v = VER[x.veredicto]; if (!v) return null; var c = el("span", "ad-ver " + v[1], v[0] + (x.veredicto === "vender" && x.plazo && x.plazo !== "sin plazo" ? " · " + x.plazo : "")); return c; }
+  function origenDe(x) {
+    var k = String(x.key || ""), p = x.porque || {};
+    if (k.indexOf("ext-") === 0 || p.fuente) return "Tema de " + (p.fuente || (x.source && x.source.name) || "otra web") + ", reescrito con palabras propias";
+    if (x.source && x.source.videoId) return "Rueda de prensa de " + (x.club || "un club");
+    if (x.tipo === "analisis") return "Análisis propio con datos de Futmondo";
+    return "Redactor automático";
+  }
+  function porQue(x) {
+    var d = el("details", "ad-det ad-why"); d.appendChild(el("summary", null, "Por qué salió"));
+    d.appendChild(el("p", "ad-meta", origenDe(x) + "."));
+    if (x.motivo) d.appendChild(el("p", "ad-meta", "Etiqueta: " + x.motivo));
+    d.appendChild(el("p", "ad-meta", "Comprobado: cifras y palabras de riesgo en el texto, nombres, sin frases copiadas."));
+    var p = x.porque;
+    if (p && p.prompt) {
+      d.appendChild(el("p", "ad-sec", "Prompt exacto"));
+      d.appendChild(el("pre", "ad-pre", p.prompt));
+      if (p.datos) { d.appendChild(el("p", "ad-sec", "Datos que recibió")); d.appendChild(el("pre", "ad-pre", p.datos)); }
+    } else d.appendChild(el("p", "ad-meta", "Esta noticia es anterior al registro del prompt."));
+    return d;
+  }
+  function hora(ms) { try { return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" }).format(new Date(ms)); } catch (e) { return ""; } }
+  function dia(ms) { try { return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "long", day: "numeric", month: "long" }).format(new Date(ms)); } catch (e) { return ""; } }
+  function vistaActividad(v) {
+    var pubs = D.own.filter(function (x) { return x.status === "published"; }).sort(function (a, b) { return (b.publishedAt || 0) - (a.publishedAt || 0); });
+    var tg = D.estado && D.estado.tg;
+    if (tg && tg.ok === false) { var w = el("div", "ad-alert"); w.appendChild(ico("warn")); w.appendChild(el("span", null, "Telegram no aceptó el último aviso" + (tg.err ? " (" + tg.err + ")" : ""))); v.appendChild(w); }
+    var u = pubs[0];
+    if (u) {
+      var b = el("div", "ad-last"); b.appendChild(el("div", "ad-sec", "Última enviada · " + hora(u.publishedAt || u.createdAt)));
+      var t = el("div", "ad-last-t", u.title || ""); b.appendChild(t);
+      var m = el("div", "ad-meta"); var cv = chipVer(u); if (cv) m.appendChild(cv);
+      m.appendChild(document.createTextNode(origenDe(u))); b.appendChild(m);
+      b.addEventListener("click", function () { tab = "publicadas"; abierto = u.id; pinta(); });
+      v.appendChild(b);
+    }
+    var ev = [];
+    D.own.forEach(function (x) {
+      if (x.status === "published" && (x.publishedAt || x.createdAt)) ev.push({ at: x.publishedAt || x.createdAt, k: "pub", t: x.title, w: origenDe(x), x: x });
+      if (x.portadaAt) ev.push({ at: x.portadaAt, k: "img", t: "Portada de «" + (x.title || "").slice(0, 60) + "»", w: (x.portadaUsd != null ? x.portadaUsd.toFixed(3) + " $ · " : "") + (x.portadaModelo || ""), x: x });
+      if (x.status !== "published" && (x.superada || x.caducada || x.vacia || x.reabierta)) ev.push({ at: x.updatedAt || 0, k: "off", t: "Retirada: " + (x.title || ""), w: x.reabierta ? "Reabierta para reescribirla con el prompt nuevo" : x.superada ? "Hay una noticia más nueva del mismo jugador" : x.caducada ? "Ya no vale (pasó el partido)" : "Nota vacía", x: x });
+    });
+    ev.sort(function (a, b) { return b.at - a.at; });
+    var ult = "";
+    ev.slice(0, 40).forEach(function (e) {
+      var d = dia(e.at); if (d !== ult) { ult = d; v.appendChild(el("div", "ad-sec", d)); }
+      var r = el("div", "ad-ev2"); var i = el("span", "ad-ic " + e.k); i.appendChild(ico(e.k)); r.appendChild(i);
+      var c = el("div"); var top = el("div", "ad-meta", hora(e.at) + " · " + ({ pub: "Publicada", img: "Portada", off: "Retirada" })[e.k]); top.style.margin = "0"; c.appendChild(top);
+      c.appendChild(el("div", "ad-evt", e.t || ""));
+      var vv = e.k === "pub" ? chipVer(e.x) : null; var ww = el("div", "ad-meta", e.w); ww.style.margin = "2px 0 0";
+      if (vv) { c.appendChild(vv); }
+      c.appendChild(ww);
+      if (e.k === "pub") { r.addEventListener("click", function () { tab = "publicadas"; abierto = e.x.id; pinta(); }); r.style.cursor = "pointer"; }
+      r.appendChild(c); v.appendChild(r);
+    });
+    var cn = D.estado && D.estado.pistas;
+    if (cn) { var rs = el("p", "ad-meta", "Total del redactor: " + (cn.recibidas || 0) + " temas recibidos · " + (cn.publicadas || 0) + " publicados · " + (cn.descartadas || 0) + " descartados."); rs.style.marginTop = "14px"; v.appendChild(rs); }
+    if (!ev.length) v.appendChild(el("p", "ad-empty", "Todavía no hay actividad."));
   }
 
   /* ----- Propias ----- */
@@ -81,11 +153,6 @@ function componer(j, x) {
 
   function vistaPropias(v, pub) {
     var lista = D.own.filter(function (x) { return (x.status === "published") === pub; });
-    if (!pub) {
-      var nuevo = el("button", "ad-b", "+ Noticia en blanco"); nuevo.type = "button";
-      nuevo.addEventListener("click", function () { post({ action: "crear" }).then(function (j) { abierto = j.item.id; return cargar(); }).catch(function (e) { toast(e.message); }); });
-      v.appendChild(nuevo);
-    }
     if (pub) {
       var sin = lista.filter(function (x) { return !x.thumb; }).sort(function (a, b) { return (b.date || b.updatedAt || 0) - (a.date || a.updatedAt || 0); }).slice(0, 10);
       var conCoste = D.own.filter(function (x) { return x.portadaUsd != null; }), tot = conCoste.reduce(function (a, x) { return a + x.portadaUsd; }, 0);
@@ -112,11 +179,12 @@ function componer(j, x) {
   }
   function tarjetaPropia(x) {
     var w = el("div", "ad-w"), c = el("div", "ad-edit");
-    var row = el("div", "ad-item" + (abierto === x.id ? " open" : ""));
-    var pic = el("div", "ad-pic");
-    if (x.thumb) { var im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = x.thumb + (/\/portada\//.test(x.thumb) ? (x.thumb.indexOf("?") >= 0 ? "&" : "?") + "t=s" : ""); pic.appendChild(im); } else pic.textContent = "sin foto";
-    var tx = el("div"); tx.appendChild(el("div", "ad-it-t", x.title || "(sin título)"));
-    var m = el("div", "ad-it-m"); m.appendChild(tag(x.status === "published" ? "Publicada" : "Borrador", x.status === "published" ? "ok" : "warn"));
+    var row = el("div", "ad-card-n" + (abierto === x.id ? " open" : ""));
+    var pic = el("div", "ad-bigpic");
+    if (x.thumb) { var im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = x.thumb + (/\/portada\//.test(x.thumb) ? (x.thumb.indexOf("?") >= 0 ? "&" : "?") + "t=m" : ""); pic.appendChild(im); } else pic.appendChild(el("span", null, "sin portada"));
+    var cv = chipVer(x); if (cv) { cv.classList.add("over"); pic.appendChild(cv); }
+    var tx = el("div", "ad-bigtx"); tx.appendChild(el("div", "ad-it-t", x.title || "(sin título)"));
+    var m = el("div", "ad-it-m"); if (x.status !== "published") m.appendChild(tag("Borrador", "warn"));
     if (x.club) m.appendChild(tag(x.club, "plain"));
     m.appendChild(el("span", null, cuando(x.publishedAt || x.updatedAt)));
     if (x.portadaUsd != null) m.appendChild(el("span", null, " · " + x.portadaUsd.toFixed(3) + " $"));
@@ -125,6 +193,7 @@ function componer(j, x) {
     w.appendChild(row);
     if (abierto !== x.id) return w;
     w.appendChild(c);
+    c.appendChild(porQue(x));
 
     var two = el("div", "ad-two");
     // Izquierda: original (lo que dijo la fuente). Derecha: versión nuestra, editable.
@@ -175,7 +244,7 @@ function componer(j, x) {
     var dsrc = el("details", "ad-det"); dsrc.appendChild(el("summary", null, "Fuente (no se muestra al público)")); f.appendChild(dsrc);
     [["Nombre", sn], ["Enlace", su]].forEach(function (p) { dsrc.appendChild(el("label", "ad-l", p[0])); p[1].addEventListener("input", marca); dsrc.appendChild(p[1]); });
     two.appendChild(f);
-    c.appendChild(two);
+    var ed = el("details", "ad-det"); ed.appendChild(el("summary", null, "Editar el texto (opcional)")); ed.appendChild(two); c.appendChild(ed);
 
     var bt = el("div", "ad-btns sticky");
     function btn(txt, cls, fn) { var b = el("button", "ad-b " + (cls || ""), txt); b.type = "button"; b.addEventListener("click", function () { b.disabled = true; fn().then(function (msg) { toast(msg); return cargar(true); }).catch(function (e) { toast(e.message); b.disabled = false; }); }); bt.appendChild(b); }
