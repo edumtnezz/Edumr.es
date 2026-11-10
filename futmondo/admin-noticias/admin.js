@@ -127,10 +127,27 @@
     var pst = el("p", "ad-meta", x.thumb ? "Portada actual: ver abajo." : "");
     var pim = el("img"); pim.style.cssText = "max-width:100%;border-radius:8px;margin-top:8px;display:" + (x.thumb ? "block" : "none"); if (x.thumb) pim.src = x.thumb;
     var pb = el("button", "ad-b", "Generar portada (ChatGPT)"); pb.type = "button";
+    function cargaImg(src) { return new Promise(function (ok, ko) { var i = new Image(); i.onload = function () { ok(i); }; i.onerror = function () { ko(new Error("imagen")); }; i.src = src; }); }
+    // Le pega encima el escudo real (izquierda) y la marca NOTICIAS real, pequeña, arriba a la derecha
+    function componer(j) {
+      return Promise.all([cargaImg("data:image/png;base64," + j.b64), cargaImg("/img/noticias-marca.png"), j.crest ? cargaImg("data:image/png;base64," + j.crest) : Promise.resolve(null)]).then(function (r) {
+        var W = r[0].naturalWidth, H = r[0].naturalHeight, c = document.createElement("canvas"); c.width = W; c.height = H;
+        var g = c.getContext("2d"); g.drawImage(r[0], 0, 0, W, H);
+        if (r[2]) {
+          var ch = H * 0.5, cw = ch * r[2].naturalWidth / r[2].naturalHeight, cx = W * 0.045, cy = (H - ch) / 2;
+          g.save(); g.shadowColor = "rgba(255,255,255,.55)"; g.shadowBlur = H * 0.05; g.drawImage(r[2], cx, cy, cw, ch); g.restore();
+        }
+        var lw = W * 0.075, lh = lw * r[1].naturalHeight / r[1].naturalWidth; g.drawImage(r[1], W - lw - W * 0.025, H * 0.035, lw, lh);
+        return c.toDataURL("image/jpeg", 0.9).split(",")[1];
+      });
+    }
     pb.addEventListener("click", function () {
-      pb.disabled = true; pst.style.color = ""; pst.textContent = "Generando… puede tardar hasta 1 minuto. No cierres esta pantalla.";
+      pb.disabled = true; pst.style.color = ""; pst.textContent = "Generando con ChatGPT… puede tardar 1 minuto. No cierres esta pantalla.";
       post({ action: "portada", id: x.id }).then(function (j) {
-        pst.textContent = j.conFoto ? "Hecha con su foto." : "Hecha SIN foto del jugador (no la encontré).";
+        pst.textContent = (j.conFoto ? "Hecha con la foto de " + (j.jugador || "el jugador") + ". " : "Sin foto del jugador. ") + "Pegando escudo y marca…";
+        return componer(j).then(function (b64) { return post({ action: "portada-guardar", id: x.id, b64: b64 }); });
+      }).then(function (j) {
+        pst.textContent = "Portada guardada. Si no te gusta, pulsa otra vez.";
         if (j.item && j.item.thumb) { pim.src = j.item.thumb; pim.style.display = "block"; }
       }).catch(function (e) { pst.style.color = "#b91c1c"; pst.textContent = "Fallo: " + (e && e.message || "sin respuesta"); }).then(function () { pb.disabled = false; });
     });

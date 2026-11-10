@@ -2070,7 +2070,16 @@ async function adminNoticias(env, request, url, data) {
   }
   const it = own.find((x) => x.id === data.id);
   if (!it) return json({ error: "No existe." }, 404);
-  if (data.action === "portada") { await admLog(env, { a: "portada", id: it.id, t: it.title }); return generarPortada(env, request, own, it, now); }
+  if (data.action === "portada-guardar") {
+    const b = String(data.b64 || "");
+    if (!/^[A-Za-z0-9+/=]+$/.test(b) || b.length < 1000 || b.length > 4000000) return json({ error: "Imagen no válida." }, 400);
+    await env.PORRA.put("portada:v1:" + it.id, b);
+    it.thumb = "/api/laquiniela/portada/" + it.id + "?v=" + now.toString(36); it.updatedAt = now;
+    await putOwn(env, own);
+    await admLog(env, { a: "portada", id: it.id, t: it.title });
+    return json({ ok: true, item: it });
+  }
+  if (data.action === "portada") return generarPortada(env, request, own, it, now);
   if (data.action === "guardar") {
     const antes = { title: it.title || "", lead: it.lead || "", body: it.body || "" };
     it.title = clean(data.title, 200); it.lead = clean(data.lead, 400); it.body = clean(data.body, 8000);
@@ -2092,8 +2101,8 @@ async function adminNoticias(env, request, url, data) {
 // Usa la foto Futmondo del jugador del titular y el logo NOTICIAS como referencias.
 const PORTADA_PROMPTS_KEY = "portada:prompts:v1";
 const PORTADA_PROMPTS_DEF = {
-  jugador: "Quiero una miniatura de noticia de fútbol siguiendo EXACTAMENTE el estilo visual de la miniatura de referencia. DISEÑO: formato horizontal, alta resolución. Estética deportiva profesional, estilo miniaturas de noticias de fútbol de YouTube. Colores intensos, predominio de los colores del equipo ({club}). Fondo de estadio con público desenfocado. Escudo oficial del equipo grande en el lado izquierdo, con efectos de iluminación. Un único jugador ({jugador}), centro-derecha, en primer plano o celebrando; NO repetirlo ni poner dos versiones. Camiseta oficial del equipo. Iluminación cinematográfica, contraste alto, pinceladas y diagonales dinámicas. MARCA DE AGUA: copia TAL CUAL la marca de la imagen de referencia (logo NOTICIAS con «edumr.es» debajo, mismos colores y proporciones), sin redibujarla, pero PEQUEÑA y discreta (aprox. 10 % del ancho), en la esquina superior derecha. IMPORTANTE: sin titulares, textos de la noticia, minutos, estadísticas ni frases. Solo el logo, edumr.es, el escudo y el jugador. Misma identidad visual que la referencia. FIDELIDAD (prioridad máxima): respeta al máximo el rostro real del futbolista, sin rostros inventados. Escudo oficial auténtico, sin rediseñarlo. Equipación oficial fiel, con logotipos del fabricante y patrocinadores reales. No inventes detalles.",
-  once: "Quiero una miniatura de noticia de fútbol de un partido ({local} contra {visitante}) siguiendo EXACTAMENTE el estilo visual de la miniatura de referencia. DISEÑO: formato horizontal, alta resolución, estética deportiva profesional de miniaturas de YouTube. Dos jugadores, uno de cada equipo ({jugador1} de {local} a la izquierda y {jugador2} de {visitante} a la derecha), enfrentados, en primer plano, cada uno con la camiseta oficial de su club. De fondo, los dos escudos oficiales grandes con efectos de luz, uno a cada lado, y el estadio del equipo local ({local}) con el césped y el público desenfocado. Colores intensos mezclando los de los dos clubes, iluminación cinematográfica, contraste alto, pinceladas y diagonales dinámicas. MARCA DE AGUA: copia TAL CUAL la marca NOTICIAS con «edumr.es» de la imagen de referencia, PEQUEÑA y discreta, en la esquina superior derecha. IMPORTANTE: sin titulares, textos, minutos ni estadísticas; solo marca, escudos, jugadores y estadio. FIDELIDAD (máxima): rostros reales de los futbolistas sin inventar, escudos oficiales sin rediseñar, equipaciones oficiales fieles con fabricante y patrocinadores reales."
+  jugador: "Miniatura de noticia de fútbol, formato horizontal 3:2, alta resolución, siguiendo el estilo visual de la imagen de referencia de estilo (NO copies su jugador, su escudo ni su logo). DISEÑO: estética deportiva profesional de miniaturas de YouTube. Colores intensos, predominio de los colores del equipo ({club}). Fondo de estadio con público desenfocado, iluminación cinematográfica, contraste alto, pinceladas y diagonales dinámicas. Un único jugador, centro-derecha, en primer plano o celebrando, con la camiseta oficial de {club}. El jugador es {jugador}: copia EXACTAMENTE los rasgos de la foto de referencia (cara, peinado, barba, expresión); no uses el parecido de ningún otro futbolista famoso. IMPORTANTE: deja el lado izquierdo con el fondo despejado (sin escudo) y la esquina superior derecha libre (sin logo): ambos se añaden después. Sin texto, sin escudos, sin logos, sin marcas de agua. Equipación oficial fiel, con fabricante y patrocinadores reales.",
+  once: "Miniatura de noticia de fútbol de un partido ({local} contra {visitante}), formato horizontal 3:2, alta resolución, estilo de la imagen de referencia de estilo (sin copiar sus jugadores ni su escudo). Dos jugadores, uno de cada equipo ({jugador1} de {local} a la izquierda y {jugador2} de {visitante} a la derecha), enfrentados, en primer plano, con la camiseta oficial de su club; copia exactamente sus rasgos de las fotos de referencia. Fondo: el estadio del equipo local ({local}) con césped y público desenfocado, colores intensos mezclando los de los dos clubes, iluminación cinematográfica, contraste alto, pinceladas y diagonales dinámicas. Deja libre la esquina superior derecha. Sin texto, sin escudos ni logos. Equipaciones oficiales fieles."
 };
 async function getPortadaPrompts(env) {
   let g = null;
@@ -2112,9 +2121,9 @@ async function generarPortada(env, request, own, it, now) {
     pl = (m.players || []).find((p) => p.photo && fold(p.name).some((w) => tt.includes(w)) && (!club.length || fold(p.team).some((w) => club.includes(w)))) || null;
   } catch (e) {}
   const fd = new FormData();
-  fd.append("model", String(env.OPENAI_IMAGE_MODEL || "gpt-image-1-mini"));
+  fd.append("model", String(env.OPENAI_IMAGE_MODEL || "gpt-image-1.5"));
   fd.append("size", "1536x1024");
-  fd.append("quality", "medium");
+  fd.append("quality", String(env.OPENAI_IMAGE_QUALITY || "high"));
   fd.append("n", "1");
   const origin = new URL(request.url).origin;
   const bajar = async (u) => { const r = await fetch(u); if (!r.ok) throw new Error("imagen " + r.status); return new Blob([await r.arrayBuffer()], { type: "image/png" }); };
@@ -2130,7 +2139,6 @@ async function generarPortada(env, request, own, it, now) {
   }
   try { if (dos) { for (const q of dos) fd.append("image[]", await bajar(q.photo), "jugador.png"); conFoto = true; } } catch (e) {}
   try { if (pl && !dos) { fd.append("image[]", await bajar(pl.photo), "jugador.png"); conFoto = true; } } catch (e) {}
-  try { fd.append("image[]", await bajar(origin + "/img/noticias-marca.png"), "marca.png"); } catch (e) {}
   let conEstilo = false;
   try { fd.append("image[]", await bajar(origin + "/img/n/2b50b6910d.jpg"), "estilo.jpg"); conEstilo = true; } catch (e) {}
   const club = clean2(it.club || (pl && pl.team) || "", 60);
@@ -2143,17 +2151,22 @@ async function generarPortada(env, request, own, it, now) {
     extra.local = mm ? mm[1] : ""; extra.visitante = mm ? mm[2] : ""; if (dos) { extra.j1 = dos[0].name; extra.j2 = dos[1].name; }
   }
   const nF = dos ? 2 : (conFoto ? 1 : 0);
-  const imgs = (dos ? "Imágenes 1 y 2: fotos de los dos jugadores. " : (conFoto ? "Imagen 1: foto del jugador. " : "")) + "Imagen " + (nF + 1) + ": marca NOTICIAS con «edumr.es» debajo, ya montada. " + (conEstilo ? "Imagen " + (nF + 2) + ": miniatura anterior, ES LA REFERENCIA DE ESTILO a seguir. " : "");
+  const imgs = (dos ? "Imágenes 1 y 2: fotos de los dos jugadores. " : (conFoto ? "Imagen 1: foto del jugador. " : "")) + (conEstilo ? "Imagen " + (nF + 1) + ": referencia de ESTILO (solo el estilo). " : "");
   const prompt = imgs + String(plantilla).replace(/\{(club|jugador|local|visitante|jugador1|jugador2)\}/g, (_, k) => ({ club, jugador: jug, local: extra.local || "", visitante: extra.visitante || "", jugador1: extra.j1 || "", jugador2: extra.j2 || "" })[k] || "");
   fd.append("prompt", prompt);
   const r = await fetch("https://api.openai.com/v1/images/edits", { method: "POST", headers: { Authorization: "Bearer " + env.OPENAI_API_KEY }, body: fd });
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !j.data || !j.data[0] || !j.data[0].b64_json) return json({ error: "OpenAI: " + String((j.error && j.error.message) || r.status).slice(0, 200) }, 502);
-  await env.PORRA.put("portada:v1:" + it.id, j.data[0].b64_json);
-  it.thumb = "/api/laquiniela/portada/" + it.id + "?v=" + now.toString(36);
-  it.updatedAt = now;
-  await putOwn(env, own);
-  return json({ ok: true, item: it, conFoto });
+  let crest = "";
+  try {
+    if (pl && pl.logo && it.tipo !== "once") {
+      const cb = await (await fetch(pl.logo.replace("/teams/64/", "/teams/256/"))).arrayBuffer();
+      let bin = ""; const u8 = new Uint8Array(cb); for (let k = 0; k < u8.length; k += 0x8000) bin += String.fromCharCode.apply(null, u8.subarray(k, k + 0x8000));
+      crest = btoa(bin);
+    }
+  } catch (e) {}
+  // La imagen NO se publica todavía: el panel le pega encima el escudo y la marca reales y la guarda (portada-guardar)
+  return json({ ok: true, b64: j.data[0].b64_json, crest, conFoto, jugador: jug, usage: j.usage || null });
 }
 function clean2(s, n) { return String(s == null ? "" : s).replace(/\s+/g, " ").trim().slice(0, n); }
 
@@ -5626,7 +5639,7 @@ async function handleGet({ request, env: env0, params }) {
     const b64 = await env.PORRA.get("portada:v1:" + path.slice(8));
     if (!b64) return new Response("no hay portada", { status: 404 });
     const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-    return new Response(bin, { headers: { "content-type": "image/png", "cache-control": "public, max-age=31536000, immutable" } });
+    return new Response(bin, { headers: { "content-type": "image/jpeg", "cache-control": "public, max-age=31536000, immutable" } });
   }
   if (path === "admin-noticias") return adminNoticias(env, request, url, null);
   if (path === "noticia") {
