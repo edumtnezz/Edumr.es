@@ -69,3 +69,15 @@ test("chollo: no si es portero y no hay datos de goles del rival", () => {
 test("chollo: sí si el valor sube y el rival marca poco", () => {
   assert.equal(reglas(CH(), J, gol(equipos("barcelona", 2))).some((x) => x.tipo === "chollo"), true);
 });
+const ME = (o) => CH(Object.assign({ id: "c2", name: "Medio", role: "centrocampista", fitness: [7, 8, 7, 8, 7] }, o));
+const eqDef = (rival, gc) => { const g = {}; for (let i = 0; i < 12; i++) g["eq" + i] = { gf: 5, gc: 4 + i, pj: 6 }; g[rival] = { gf: 5, gc, pj: 6 }; return g; };
+test("chollo: un medio no se recomienda si el rival encaja muy poco", () => {
+  assert.equal(reglas(ME(), J, gol(eqDef("barcelona", 2))).some((x) => x.tipo === "chollo"), false);
+  assert.equal(reglas(ME(), J, gol(eqDef("barcelona", 30))).some((x) => x.tipo === "chollo"), true);
+});
+test("chollo: no si juega fuera, está en duda o en bache", () => {
+  const g = gol(eqDef("barcelona", 30));
+  assert.equal(reglas(ME({ casaFf: false }), J, g).some((x) => x.tipo === "chollo"), false);
+  assert.equal(reglas(ME({ status: "doubt" }), J, g).some((x) => x.tipo === "chollo"), false);
+  assert.equal(reglas(ME({ fitness: [8, 9, 8, 2, 2] }), J, g).some((x) => x.tipo === "chollo"), false);
+});

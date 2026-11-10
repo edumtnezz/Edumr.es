@@ -62,6 +62,18 @@ export function ataqueFuerte(rival, jugadas) {
   return me.gf / me.pj >= corte;
 }
 
+// ¿El rival encaja pocos goles? Entre el 30 % de equipos que menos encajan por partido (mín. 4 partidos). null = sin datos.
+export function defensaFuerte(rival, jugadas) {
+  const g = jugadas && jugadas.__goles;
+  if (!g || !rival) return null;
+  const me = g[canon(rival)];
+  if (!me || me.pj < 4) return null;
+  const todos = Object.values(g).filter((x) => x.pj >= 4).map((x) => x.gc / x.pj).sort((a, b) => a - b);
+  if (todos.length < 10) return null;
+  const corte = todos[Math.max(0, Math.ceil(todos.length * 0.3) - 1)];
+  return me.gc / me.pj <= corte;
+}
+
 export function proximo(p, jornada) {
   if (!p || !p.rivalFf) return null;
   const rival = norm(p.rivalFf), equipo = norm(p.team);
@@ -118,12 +130,17 @@ export function reglas(p, jornada, jugadas, pub) {
       cuerpo: base + (sig ? " " + sig : "") + "\n**Nuestra lectura:** por su historial, lo normal es que recupere su nivel" + (prob != null ? " (tiene " + prob + " % de jugar)" : "") + ". Un partido flojo no cambia la tendencia." });
   }
   // 4) Chollo: barato, buena media y muy probable que juegue
-  // Criterio: no es chollo si su valor está bajando, ni si es portero/defensa y el rival marca mucho (o no hay datos para saberlo)
+  // Criterios de Edu (10/11/2026) para recomendar: prioridad puntos por millón; fuera si valor bajando, lesión/duda,
+  // dos partidos flojos, juega fuera, o el rival lo penaliza (ataque fuerte para porteros/defensas, defensa sólida para medios/delanteros).
   const defensivo = /portero|defensa/i.test(String(p.role || ""));
   const valorSube = typeof p.chg7 === "number" && p.chg7 >= 0;
-  const rivalOk = !defensivo || ataqueFuerte(p.rivalFf, jugadas) === false;
-  if (p.value > 0 && p.value <= 15e6 && p.avg >= 6 && prob != null && prob >= 70 && valorSube && rivalOk) {
-    out.push({ tipo: "chollo", prio: 2 + p.avg / 10,
+  const rivalOk = defensivo ? ataqueFuerte(p.rivalFf, jugadas) === false : defensaFuerte(p.rivalFf, jugadas) === false;
+  const sano = p.status !== "doubt" && !/^injured/.test(String(p.status || ""));
+  const enBache = last2.every((x) => x >= 1) && media(last2) <= p.avg * 0.5;
+  const enCasa = p.casaFf !== false;
+  const ppm = p.value > 0 ? p.avg / (p.value / 1e6) : 0;
+  if (p.value > 0 && p.value <= 15e6 && p.avg >= 6 && prob != null && prob >= 70 && valorSube && rivalOk && sano && !enBache && enCasa) {
+    out.push({ tipo: "chollo", prio: 2 + Math.min(ppm, 5) / 5,
       titulo: elige(["Chollo en Futmondo: " + p.name + " rinde " + num(p.avg) + " de media por " + mill(p.value), p.name + " cuesta " + mill(p.value) + " y promedia " + num(p.avg) + " puntos", "Fichaje barato: " + p.name + ", " + num(p.avg) + " de media a " + mill(p.value)], seed),
       entradilla: "El " + (p.role || "jugador") + " del " + nombreClub(p) + " tiene un " + prob + " % de jugar el próximo partido.",
       cuerpo: base + " Su valor actual es de " + mill(p.value) + (typeof p.chg7 === "number" ? " y ha cambiado " + (p.chg7 >= 0 ? "+" : "-") + mill(Math.abs(p.chg7)) + " en la última semana" : "") + "." + (sig ? " " + sig : "") + "\n**Nuestra lectura:** puntos por millón muy buenos; mejor comprarlo antes de que suba." });
