@@ -453,6 +453,23 @@ export async function avisar(env, deps) {
     }
   }
 
+  // Registro de cuándo cambia el valor de mercado de Futmondo (también de noche). Solo se escribe cuando hay un cambio real.
+  try {
+    const mk = await getMk();
+    const ps = (mk.players || []).filter((p) => p && p.name && Number.isFinite(p.value));
+    if (ps.length > 50) {
+      const vsig = hash(ps.map((p) => p.id + ":" + p.value).join("|"));
+      if (st.vsig && vsig !== st.vsig) {
+        const prev = st.vmap || {};
+        const cambios = ps.filter((p) => prev[p.id] != null && prev[p.id] !== p.value);
+        const log = (await env.PORRA.get("mkchg:v1", "json")) || [];
+        log.push({ at: now, n: cambios.length });
+        await env.PORRA.put("mkchg:v1", JSON.stringify(log.slice(-400)));
+      }
+      if (vsig !== st.vsig) { st.vsig = vsig; st.vmap = Object.fromEntries(ps.map((p) => [p.id, p.value])); dirty = true; }
+    }
+  } catch (e) {}
+
   if (dirty) { try { await env.PORRA.put(STATE_KEY, JSON.stringify(st)); } catch (e) {} }
   return { sent: sentCount, pending: queue.length - sentCount, quiet, firstRun };
 }
