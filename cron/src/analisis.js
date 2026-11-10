@@ -29,6 +29,16 @@ export async function jornadasJugadas(f, site, jornada) {
   }));
   const out = {};
   Object.keys(m).forEach((k) => { out[k] = m[k].sort((a, b) => a.k - b.k).map((z) => z.n); });
+  // Goles a favor y en contra de cada equipo en los partidos ya terminados (datos reales de la liga en la web)
+  const goles = {};
+  rs.forEach((r) => r.ms.forEach((x) => {
+    if (!(x.live && x.live.state === "final")) return;
+    const sc = String(x.live.score || "").match(/(\d+)\s*-\s*(\d+)/);
+    if (!sc) return;
+    const gh = Number(sc[1]), ga = Number(sc[2]);
+    [[x.home, gh, ga], [x.away, ga, gh]].forEach(([t, gf, gc]) => { const k = canon(t); const g = (goles[k] = goles[k] || { gf: 0, gc: 0, pj: 0 }); g.gf += gf; g.gc += gc; g.pj += 1; });
+  }));
+  Object.defineProperty(out, "__goles", { value: goles, enumerable: false });
   return out;
 }
 // «J8 6 · J9 10 · …» para los puntos del jugador, o null si no se sabe la jornada de cada uno
@@ -38,6 +48,18 @@ export function serieJornadas(p, f, jugadas, pub) {
   const n = Math.min(l.length, pub);
   if (n < f.length) return null;
   return f.map((v, i) => "J" + l[n - f.length + i] + ": " + Math.round(v)).join(" · ");
+}
+
+// ¿El rival marca mucho? Está entre el 30 % de equipos con más goles por partido (mín. 4 partidos). null = sin datos.
+export function ataqueFuerte(rival, jugadas) {
+  const g = jugadas && jugadas.__goles;
+  if (!g || !rival) return null;
+  const me = g[canon(rival)];
+  if (!me || me.pj < 4) return null;
+  const todos = Object.values(g).filter((x) => x.pj >= 4).map((x) => x.gf / x.pj).sort((a, b) => b - a);
+  if (todos.length < 10) return null;
+  const corte = todos[Math.max(0, Math.ceil(todos.length * 0.3) - 1)];
+  return me.gf / me.pj >= corte;
 }
 
 export function proximo(p, jornada) {
@@ -96,7 +118,11 @@ export function reglas(p, jornada, jugadas, pub) {
       cuerpo: base + (sig ? " " + sig : "") + "\n**Nuestra lectura:** por su historial, lo normal es que recupere su nivel" + (prob != null ? " (tiene " + prob + " % de jugar)" : "") + ". Un partido flojo no cambia la tendencia." });
   }
   // 4) Chollo: barato, buena media y muy probable que juegue
-  if (p.value > 0 && p.value <= 15e6 && p.avg >= 6 && prob != null && prob >= 70) {
+  // Criterio: no es chollo si su valor está bajando, ni si es portero/defensa y el rival marca mucho (o no hay datos para saberlo)
+  const defensivo = /portero|defensa/i.test(String(p.role || ""));
+  const valorSube = typeof p.chg7 === "number" && p.chg7 >= 0;
+  const rivalOk = !defensivo || ataqueFuerte(p.rivalFf, jugadas) === false;
+  if (p.value > 0 && p.value <= 15e6 && p.avg >= 6 && prob != null && prob >= 70 && valorSube && rivalOk) {
     out.push({ tipo: "chollo", prio: 2 + p.avg / 10,
       titulo: elige(["Chollo en Futmondo: " + p.name + " rinde " + num(p.avg) + " de media por " + mill(p.value), p.name + " cuesta " + mill(p.value) + " y promedia " + num(p.avg) + " puntos", "Fichaje barato: " + p.name + ", " + num(p.avg) + " de media a " + mill(p.value)], seed),
       entradilla: "El " + (p.role || "jugador") + " del " + nombreClub(p) + " tiene un " + prob + " % de jugar el próximo partido.",

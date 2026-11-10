@@ -52,3 +52,20 @@ test("puntos por jornada: solo con las jornadas reales del equipo", () => {
   assert.equal(canon("Barça"), canon("Barcelona"));
   assert.equal(canon("Atleti"), canon("Atlético de Madrid"));
 });
+
+// Criterio del chollo (Edu 10/11/2026): valor que no baja y, si es portero/defensa, rival que no marque mucho
+const gol = (o) => { const a = []; Object.defineProperty(a, "__goles", { value: o }); return a; };
+const equipos = (rival, gf) => { const g = {}; for (let i = 0; i < 12; i++) g["eq" + i] = { gf: 4 + i, gc: 5, pj: 6 }; g[rival] = { gf, gc: 5, pj: 6 }; return g; };
+const CH = (o) => P(Object.assign({ id: "c1", name: "Gulacsi", role: "portero", team: "Villarreal", rivalFf: "Barcelona", value: 5e6, avg: 7.6, prob: 90, chg7: 1e5, fitness: [10, 9, 5, 4, 6] }, o));
+test("chollo: no si su valor está bajando", () => {
+  assert.equal(reglas(CH({ chg7: -6e5 }), J, gol(equipos("barcelona", 5))).some((x) => x.tipo === "chollo"), false);
+});
+test("chollo: no si es portero y el rival marca mucho", () => {
+  assert.equal(reglas(CH(), J, gol(equipos("barcelona", 30))).some((x) => x.tipo === "chollo"), false);
+});
+test("chollo: no si es portero y no hay datos de goles del rival", () => {
+  assert.equal(reglas(CH(), J, null).some((x) => x.tipo === "chollo"), false);
+});
+test("chollo: sí si el valor sube y el rival marca poco", () => {
+  assert.equal(reglas(CH(), J, gol(equipos("barcelona", 2))).some((x) => x.tipo === "chollo"), true);
+});
