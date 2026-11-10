@@ -161,12 +161,13 @@ export function reglas(p, jornada, jugadas, pub, mins) {
       entradilla: "El " + (p.role || "jugador") + " del " + nombreClub(p) + " rinde " + num(ppm) + " puntos de media por cada millón de valor.",
       cuerpo: base + " Su valor es de " + mill(p.value) + (typeof p.chg7 === "number" ? " y en la última semana ha cambiado " + (p.chg7 >= 0 ? "+" : "-") + mill(Math.abs(p.chg7)) : "") + "." + (sig ? " " + sig : "") + "\n**Nuestra lectura:** de los jugadores con mejor relación puntos-precio de la liga, con " + prob + " % de jugar el próximo partido." });
   }
-  // 8) Muchos puntos: media de 10 o más, sano y con opciones de jugar
-  if (p.avg >= 10 && p.matches >= 6 && prob != null && prob >= 70 && sano && !/injured|redcard/.test(String(p.status || "")) && !enBache) {
-    out.push({ tipo: "estrella", prio: 2.6 + p.avg / 20,
-      titulo: elige([p.name + " suma " + num(p.avg) + " puntos de media y es de los que más puntúan", "Máximo anotador de puntos: " + p.name + " promedia " + num(p.avg), p.name + " rinde a lo grande: " + num(p.avg) + " de media"], seed),
-      entradilla: "El " + (p.role || "jugador") + " del " + nombreClub(p) + " promedia " + num(p.avg) + " puntos y su valor es de " + mill(p.value) + ".",
-      cuerpo: base + (sig ? " " + sig : "") + "\n**Nuestra lectura:** entre los que más puntos dan; con " + prob + " % de jugar es una apuesta segura para tu once." });
+  // 8) Revelación: jugador barato (no una estrella conocida) que rinde mucho y cuyo valor sube
+  const subida = typeof p.chg14 === "number" ? p.chg14 : (typeof p.chg7 === "number" ? p.chg7 : 0);
+  if (p.value > 0 && p.value <= 20e6 && p.avg >= 7 && p.matches >= 6 && subida > 0 && media(last3) >= p.avg * 0.9 && prob != null && prob >= 70 && sano && !/injured|redcard/.test(String(p.status || "")) && !enBache) {
+    out.push({ tipo: "revelacion", prio: 2.7 + p.avg / 20,
+      titulo: elige(["Revelación: " + p.name + " promedia " + num(p.avg) + " y solo cuesta " + mill(p.value), p.name + " sorprende: " + num(p.avg) + " de media a " + mill(p.value), "Ojo a " + p.name + ", la sorpresa del " + nombreClub(p)], seed),
+      entradilla: "El " + (p.role || "jugador") + " del " + nombreClub(p) + " cuesta " + mill(p.value) + ", suma " + num(p.avg) + " de media y su valor sube.",
+      cuerpo: base + " Su valor es de " + mill(p.value) + " y ha subido " + mill(subida) + " en las últimas semanas." + (sig ? " " + sig : "") + "\n**Nuestra lectura:** barato, en buena dinámica y con " + prob + " % de jugar; de los que conviene fichar antes de que suban más." });
   }
   // 5) Duda: titular habitual marcado como duda
   if (p.status === "doubt" && p.avg >= 6) {
