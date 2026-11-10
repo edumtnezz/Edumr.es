@@ -134,20 +134,54 @@
   /* ----- Propias ----- */
 function cargaImg(src) { return new Promise(function (ok, ko) { var i = new Image(); i.onload = function () { ok(i); }; i.onerror = function () { ko(new Error("imagen")); }; i.src = src; }); }
 // Le pega encima el escudo real (izquierda) y la marca NOTICIAS real, pequeña, arriba a la derecha
+var TIPOS = { rumor: ["POSIBLE FICHAJE", "#2563eb", "swap"], lesion: ["LESIÓN", "#dc2626", "cross"], recuperado: ["RECUPERADO", "#16a34a", "check"], duda: ["DUDA", "#d97706", "q"] };
+// Etiqueta de la noticia pintada por el navegador (no la dibuja la IA): texto siempre bien escrito
+function pintaEtiqueta(g, tipo, x0, y0, h) {
+  var t = TIPOS[tipo]; if (!t) return;
+  g.save(); g.font = "800 " + Math.round(h * 0.5) + "px system-ui, -apple-system, Segoe UI, sans-serif";
+  var tw = g.measureText(t[0]).width, pad = h * 0.4, ic = h * 0.62, w = pad + ic + pad * 0.6 + tw + pad;
+  g.shadowColor = "rgba(0,0,0,.35)"; g.shadowBlur = h * 0.25; g.fillStyle = t[1];
+  g.beginPath(); if (g.roundRect) g.roundRect(x0, y0, w, h, h * 0.22); else g.rect(x0, y0, w, h); g.fill(); g.shadowBlur = 0;
+  var cx = x0 + pad + ic / 2, cy = y0 + h / 2; g.strokeStyle = "#fff"; g.fillStyle = "#fff"; g.lineWidth = h * 0.11; g.lineCap = "round"; g.lineJoin = "round";
+  if (t[2] === "cross") { var r = ic * 0.42; g.beginPath(); g.moveTo(cx - r, cy); g.lineTo(cx + r, cy); g.moveTo(cx, cy - r); g.lineTo(cx, cy + r); g.stroke(); }
+  else if (t[2] === "check") { g.beginPath(); g.moveTo(cx - ic * 0.34, cy + ic * 0.02); g.lineTo(cx - ic * 0.08, cy + ic * 0.28); g.lineTo(cx + ic * 0.38, cy - ic * 0.26); g.stroke(); }
+  else if (t[2] === "swap") { var q = ic * 0.4; g.beginPath(); g.moveTo(cx - q, cy - q * 0.4); g.lineTo(cx + q, cy - q * 0.4); g.moveTo(cx + q * 0.45, cy - q * 0.95); g.lineTo(cx + q, cy - q * 0.4); g.lineTo(cx + q * 0.45, cy + q * 0.15); g.moveTo(cx + q, cy + q * 0.5); g.lineTo(cx - q, cy + q * 0.5); g.moveTo(cx - q * 0.45, cy); g.lineTo(cx - q, cy + q * 0.5); g.lineTo(cx - q * 0.45, cy + q * 1.05); g.stroke(); }
+  else { g.font = "800 " + Math.round(ic * 1.05) + "px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("?", cx, cy + h * 0.02); g.textAlign = "left"; }
+  g.font = "800 " + Math.round(h * 0.5) + "px system-ui, -apple-system, Segoe UI, sans-serif"; g.textBaseline = "middle"; g.fillStyle = "#fff"; g.fillText(t[0], x0 + pad + ic + pad * 0.6, y0 + h / 2 + h * 0.03);
+  g.restore();
+}
+// Color dominante del escudo (para el fondo cuando no hay foto del jugador)
+function colorEscudo(img) {
+  var k = document.createElement("canvas"); k.width = k.height = 40; var g = k.getContext("2d"); g.drawImage(img, 0, 0, 40, 40);
+  var d = g.getImageData(0, 0, 40, 40).data, cuenta = {}, best = null, bs = 0;
+  for (var i = 0; i < d.length; i += 4) { if (d[i + 3] < 200) continue; var r = d[i], gg = d[i + 1], b = d[i + 2], mx = Math.max(r, gg, b), mn = Math.min(r, gg, b), sat = mx ? (mx - mn) / mx : 0; if (mx < 60 || sat < 0.35) continue; var key = (r >> 6) + "," + (gg >> 6) + "," + (b >> 6); var o = cuenta[key] || (cuenta[key] = { n: 0, r: 0, g: 0, b: 0 }); o.n++; o.r += r; o.g += gg; o.b += b; }
+  for (var k in cuenta) { var o2 = cuenta[k]; var amar = o2.r / o2.n > 180 && o2.g / o2.n > 150 && o2.b / o2.n < 90; var sc = o2.n * (amar ? 0.5 : 1); if (sc > bs) { bs = sc; best = [Math.round(o2.r / o2.n), Math.round(o2.g / o2.n), Math.round(o2.b / o2.n)]; } }
+  return best || [24, 90, 60];
+}
 function componer(j, x) {
-  return Promise.all([cargaImg("data:image/png;base64," + j.b64), cargaImg("/img/noticias-marca.png"), j.crest ? cargaImg("data:image/png;base64," + j.crest) : Promise.resolve(null)]).then(function (r) {
-    var W = r[0].naturalWidth, H = r[0].naturalHeight, c = document.createElement("canvas"); c.width = W; c.height = H;
-    var g = c.getContext("2d"); g.drawImage(r[0], 0, 0, W, H);
+  var sin = !!j.sinJugador;
+  return Promise.all([sin ? Promise.resolve(null) : cargaImg("data:image/png;base64," + j.b64), cargaImg("/img/noticias-marca.png"), j.crest ? cargaImg("data:image/png;base64," + j.crest) : Promise.resolve(null)]).then(function (r) {
+    var W = r[0] ? r[0].naturalWidth : 1536, H = r[0] ? r[0].naturalHeight : 1024, c = document.createElement("canvas"); c.width = W; c.height = H;
+    var g = c.getContext("2d");
+    if (r[0]) g.drawImage(r[0], 0, 0, W, H);
+    else {
+      // Sin foto del jugador: fondo con los colores del club (sacados de su escudo) y el escudo grande en el centro
+      var col = r[2] ? colorEscudo(r[2]) : [24, 90, 60], rgb = col.join(",");
+      g.fillStyle = "rgb(" + Math.round(col[0] * 0.55) + "," + Math.round(col[1] * 0.55) + "," + Math.round(col[2] * 0.55) + ")"; g.fillRect(0, 0, W, H);
+      g.fillStyle = "rgba(" + rgb + ",.9)"; g.beginPath(); g.moveTo(0, H * 0.15); g.lineTo(W * 0.55, 0); g.lineTo(W * 0.8, 0); g.lineTo(0, H * 0.5); g.fill();
+      g.fillStyle = "rgba(255,255,255,.08)"; g.beginPath(); g.moveTo(W, H * 0.45); g.lineTo(W, H); g.lineTo(W * 0.35, H); g.fill();
+    }
     if (r[2]) {
-      var ch = H * 0.5, cw = ch * r[2].naturalWidth / r[2].naturalHeight, cx = W * 0.045, cy = (H - ch) / 2;
+      var ch = H * (sin ? 0.62 : 0.5), cw = ch * r[2].naturalWidth / r[2].naturalHeight, cx = sin ? (W - cw) / 2 : W * 0.045, cy = (H - ch) / 2;
       g.save(); g.shadowColor = "rgba(255,255,255,.55)"; g.shadowBlur = H * 0.05; g.drawImage(r[2], cx, cy, cw, ch); g.restore();
     }
+    var bh = H * 0.1; pintaEtiqueta(g, j.tipoNoticia, W * 0.035, H * 0.045, bh);
     var lw = W * 0.09, lh = lw * r[1].naturalHeight / r[1].naturalWidth; g.save(); g.globalAlpha = 0.6; g.drawImage(r[1], W - lw - W * 0.025, H - lh - H * 0.035, lw, lh); g.restore(); // marca de agua transparente, abajo a la derecha
     // Tres tamaños sin perder calidad: completa, mediana (Noticias/Inicio grande) y cuadrada centrada en el jugador (miniaturas)
-    function redim(w, h, sx, sy, sw, sh, q) { var k = document.createElement("canvas"); k.width = w; k.height = h; var gg = k.getContext("2d"); gg.imageSmoothingEnabled = true; gg.imageSmoothingQuality = "high"; gg.drawImage(c, sx, sy, sw, sh, 0, 0, w, h); return k.toDataURL("image/jpeg", q).split(",")[1]; }
-    var mw = Math.min(W, 960), side = Math.round(H * 0.88), fx = x.tipo === "once" ? 0.5 : 0.6;
+    function redim(w, h, sx, sy, sw, sh, q, tag) { var k = document.createElement("canvas"); k.width = w; k.height = h; var gg = k.getContext("2d"); gg.imageSmoothingEnabled = true; gg.imageSmoothingQuality = "high"; gg.drawImage(c, sx, sy, sw, sh, 0, 0, w, h); if (tag) pintaEtiqueta(gg, j.tipoNoticia, w * 0.05, h * 0.05, h * 0.12); return k.toDataURL("image/jpeg", q).split(",")[1]; }
+    var mw = Math.min(W, 960), side = Math.round(H * 0.88), fx = sin ? 0.5 : (x.tipo === "once" ? 0.5 : 0.6);
     var sx0 = Math.max(0, Math.min(W - side, W * fx - side / 2)), sy0 = (H - side) * 0.25;
-    return { b64: c.toDataURL("image/jpeg", 0.9).split(",")[1], b64m: redim(mw, Math.round(mw * H / W), 0, 0, W, H, 0.88), b64s: redim(360, 360, sx0, sy0, side, side, 0.9) };
+    return { b64: c.toDataURL("image/jpeg", 0.9).split(",")[1], b64m: redim(mw, Math.round(mw * H / W), 0, 0, W, H, 0.88), b64s: redim(360, 360, sx0, sy0, side, side, 0.9, true) };
   });
 }
 

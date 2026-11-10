@@ -2127,16 +2127,53 @@ async function getPortadaPrompts(env) {
   return { jugador: (g && g.jugador) || PORTADA_PROMPTS_DEF.jugador, once: (g && g.once) || PORTADA_PROMPTS_DEF.once };
 }
 
+async function crestB64(url) {
+  try {
+    if (!url) return "";
+    const cb = await (await fetch(String(url).replace("/teams/64/", "/teams/256/"))).arrayBuffer();
+    let bin = ""; const u8 = new Uint8Array(cb); for (let k = 0; k < u8.length; k += 0x8000) bin += String.fromCharCode.apply(null, u8.subarray(k, k + 0x8000));
+    return btoa(bin);
+  } catch (e) { return ""; }
+}
 async function generarPortada(env, request, own, it, now) {
   if (!env.OPENAI_API_KEY) return json({ error: "Falta la clave OPENAI_API_KEY en Cloudflare." }, 400);
   const fold = (v) => stripAccents(String(v || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w.length > 3);
-  const tt = fold(it.title);
-  let pl = null;
+  const tt = fold(it.title).concat((Array.isArray(it.players) ? it.players : []).flatMap((q) => fold(typeof q === "string" ? q : (q && q.name) || "")));
+  let pl = null, crestClub = "", tipoNoticia = "";
+  const todos = [];
   try {
     const m = await getMarketPlayers(env);
-    const club = fold(it.club);
-    pl = (m.players || []).find((p) => p.photo && fold(p.name).some((w) => tt.includes(w)) && (!club.length || fold(p.team).some((w) => club.includes(w)))) || null;
+    const clubTok = fold(it.club);
+    // El jugador sale por su nombre en el titular (nunca se exige que sea del club de la noticia: puede ser el rival)
+    const cand = (m.players || []).filter((p) => p.photo).map((p) => ({ p, sc: fold(p.name).filter((w) => tt.includes(w)).length, cl: fold(p.team).some((w) => clubTok.includes(w)) ? 1 : 0 })).filter((c) => c.sc > 0).sort((a, b) => b.sc - a.sc || b.cl - a.cl || (b.p.avg || 0) - (a.p.avg || 0));
+    if (cand.length) {
+      const top = cand[0], empate = cand.filter((c) => c.sc === top.sc && c.cl === top.cl && c.p.id !== top.p.id).length;
+      if (!(top.sc === 1 && empate > 0 && !top.cl)) pl = top.p; // si hay dudas entre dos jugadores, no se arriesga una cara equivocada
+    }
+    todos.push.apply(todos, m.players || []);
   } catch (e) {}
+  // Tipo de noticia y escudo del club protagonista, según el titular
+  const tN = stripAccents(String(it.title || "").toLowerCase());
+  if (/\b(vigila\w*|interesa\w*|fichaje|fichar|ficha por|oferta|traspaso|cesion|sondea\w*|pretende|negocia\w*|rumor|salida)\b/.test(tN)) tipoNoticia = "rumor";
+  else if (/\b(lesion\w*|lesionad[oa]|se pierde|operad[oa]|esguince|rotura|desgarro|fractura|baja)\b/.test(tN)) tipoNoticia = "lesion";
+  else if (/\b(reaparec\w*|recuperad[oa]|recupera\w*|vuelve|vuelta|alta|se ejercita)\b/.test(tN)) tipoNoticia = "recuperado";
+  else if (/\b(duda\w*|pendiente|molestias|sancionad[oa]|apercibid[oa])\b/.test(tN) || it.veredicto === "duda") tipoNoticia = "duda";
+  try {
+    if (tipoNoticia === "rumor") {
+      // El club que "vigila" o "quiere" es el que aparece en el titular y no es el del jugador
+      const cl = new Map(); for (const q of todos) if (q.team && q.logo) cl.set(q.team, q.logo);
+      const tk = new Set(fold(it.title));
+      let mejor = null;
+      for (const [nm, lg] of cl) { const w = fold(nm); if (!w.length || !w.every((x) => tk.has(x))) continue; if (pl && nm === pl.team) continue; if (!mejor || w.length > mejor.n) mejor = { nm, lg, n: w.length }; }
+      if (mejor) crestClub = mejor.lg;
+    }
+  } catch (e) {}
+  if (it.tipo !== "once" && !pl) {
+    // Sin foto de Futmondo no se inventa ninguna cara: se devuelve solo el escudo y el tipo, y el panel dibuja la portada
+    const kt = fold(it.club); let lg = crestClub;
+    if (!lg && kt.length) { const q = todos.find((x) => x.logo && fold(x.team).some((w) => kt.includes(w))); lg = q ? q.logo : ""; }
+    return json({ ok: true, sinJugador: true, b64: "", crest: await crestB64(lg), tipoNoticia, jugador: "", modelo: "sin IA", usd: 0 });
+  }
   const fd = new FormData();
   fd.append("model", String(env.OPENAI_IMAGE_MODEL || "gpt-image-2.6-flare"));
   fd.append("size", "1536x1024");
@@ -2158,7 +2195,7 @@ async function generarPortada(env, request, own, it, now) {
   try { if (pl && !dos) { fd.append("image[]", await bajar(pl.photo), "jugador.png"); conFoto = true; } } catch (e) {}
   let conEstilo = false;
   try { fd.append("image[]", await bajar(origin + "/img/n/2b50b6910d.jpg"), "estilo.jpg"); conEstilo = true; } catch (e) {}
-  const club = clean2(it.club || (pl && pl.team) || "", 60);
+  const club = clean2((pl && pl.team) || it.club || "", 60);
   const jug = pl ? pl.name : (Array.isArray(it.players) && it.players[0] ? (typeof it.players[0] === "string" ? it.players[0] : it.players[0].name) : "");
   const prompts = await getPortadaPrompts(env);
   let plantilla = prompts.jugador, extra = {};
@@ -2187,16 +2224,9 @@ async function generarPortada(env, request, own, it, now) {
     if (!/does not have access|must be verified|not found|does not exist|access to model/i.test(ultimoErr)) break;
   }
   if (!usado) return json({ error: "OpenAI: " + ultimoErr }, 502);
-  let crest = "";
-  try {
-    if (pl && pl.logo && it.tipo !== "once") {
-      const cb = await (await fetch(pl.logo.replace("/teams/64/", "/teams/256/"))).arrayBuffer();
-      let bin = ""; const u8 = new Uint8Array(cb); for (let k = 0; k < u8.length; k += 0x8000) bin += String.fromCharCode.apply(null, u8.subarray(k, k + 0x8000));
-      crest = btoa(bin);
-    }
-  } catch (e) {}
+  const crest = it.tipo !== "once" ? await crestB64(crestClub || (pl && pl.logo) || "") : "";
   // La imagen NO se publica todavía: el panel le pega encima el escudo y la marca reales y la guarda (portada-guardar)
-  return json({ ok: true, b64: j.data[0].b64_json, crest, conFoto, jugador: jug, modelo: usado, usd: costeUsd(j.usage), usage: j.usage || null });
+  return json({ ok: true, b64: j.data[0].b64_json, crest, conFoto, jugador: jug, modelo: usado, usd: costeUsd(j.usage), usage: j.usage || null, tipoNoticia });
 }
 // Coste real de la petición: tokens devueltos por OpenAI × tarifas de la página de modelos (texto 5 $, imagen entrada 8 $, imagen salida 30 $ por millón)
 function costeUsd(u) {
