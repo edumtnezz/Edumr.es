@@ -60,12 +60,49 @@
   }
 
   /* ----- Propias ----- */
+function cargaImg(src) { return new Promise(function (ok, ko) { var i = new Image(); i.onload = function () { ok(i); }; i.onerror = function () { ko(new Error("imagen")); }; i.src = src; }); }
+// Le pega encima el escudo real (izquierda) y la marca NOTICIAS real, pequeña, arriba a la derecha
+function componer(j, x) {
+  return Promise.all([cargaImg("data:image/png;base64," + j.b64), cargaImg("/img/noticias-marca.png"), j.crest ? cargaImg("data:image/png;base64," + j.crest) : Promise.resolve(null)]).then(function (r) {
+    var W = r[0].naturalWidth, H = r[0].naturalHeight, c = document.createElement("canvas"); c.width = W; c.height = H;
+    var g = c.getContext("2d"); g.drawImage(r[0], 0, 0, W, H);
+    if (r[2]) {
+      var ch = H * 0.5, cw = ch * r[2].naturalWidth / r[2].naturalHeight, cx = W * 0.045, cy = (H - ch) / 2;
+      g.save(); g.shadowColor = "rgba(255,255,255,.55)"; g.shadowBlur = H * 0.05; g.drawImage(r[2], cx, cy, cw, ch); g.restore();
+    }
+    var lw = W * 0.09, lh = lw * r[1].naturalHeight / r[1].naturalWidth; g.save(); g.globalAlpha = 0.6; g.drawImage(r[1], W - lw - W * 0.025, H - lh - H * 0.035, lw, lh); g.restore(); // marca de agua transparente, abajo a la derecha
+    // Tres tamaños sin perder calidad: completa, mediana (Noticias/Inicio grande) y cuadrada centrada en el jugador (miniaturas)
+    function redim(w, h, sx, sy, sw, sh, q) { var k = document.createElement("canvas"); k.width = w; k.height = h; var gg = k.getContext("2d"); gg.imageSmoothingEnabled = true; gg.imageSmoothingQuality = "high"; gg.drawImage(c, sx, sy, sw, sh, 0, 0, w, h); return k.toDataURL("image/jpeg", q).split(",")[1]; }
+    var mw = Math.min(W, 960), side = Math.round(H * 0.88), fx = x.tipo === "once" ? 0.5 : 0.6;
+    var sx0 = Math.max(0, Math.min(W - side, W * fx - side / 2)), sy0 = (H - side) * 0.25;
+    return { b64: c.toDataURL("image/jpeg", 0.9).split(",")[1], b64m: redim(mw, Math.round(mw * H / W), 0, 0, W, H, 0.88), b64s: redim(360, 360, sx0, sy0, side, side, 0.9) };
+  });
+}
+
   function vistaPropias(v, pub) {
     var lista = D.own.filter(function (x) { return (x.status === "published") === pub; });
     if (!pub) {
       var nuevo = el("button", "ad-b", "+ Noticia en blanco"); nuevo.type = "button";
       nuevo.addEventListener("click", function () { post({ action: "crear" }).then(function (j) { abierto = j.item.id; return cargar(); }).catch(function (e) { toast(e.message); }); });
       v.appendChild(nuevo);
+    }
+    if (pub) {
+      var sin = lista.filter(function (x) { return !x.thumb; }).sort(function (a, b) { return (b.date || b.updatedAt || 0) - (a.date || a.updatedAt || 0); }).slice(0, 10);
+      var box = el("div", "ad-box"); var info = el("p", "ad-meta", sin.length ? "Hay " + lista.filter(function (x) { return !x.thumb; }).length + " publicadas sin portada. Se hacen una a una, las más nuevas primero (≈ 1 min cada una). No cierres esta pantalla." : "Todas las publicadas tienen portada.");
+      var go = el("button", "ad-b main", "Generar portadas de las próximas " + sin.length + " (ChatGPT)"); go.type = "button"; var parar = false;
+      var stop = el("button", "ad-b", "Parar"); stop.type = "button"; stop.style.display = "none"; stop.addEventListener("click", function () { parar = true; stop.disabled = true; });
+      go.addEventListener("click", function () {
+        if (!sin.length) return; go.disabled = true; stop.style.display = ""; var hechas = 0, coste = 0, fallos = 0;
+        (function sigue(i) {
+          if (parar || i >= sin.length) { info.textContent = hechas + " portadas hechas, ≈ " + coste.toFixed(2) + " $" + (fallos ? ", " + fallos + " con fallo" : "") + "."; return cargar(true); }
+          var x = sin[i]; info.textContent = "Portada " + (i + 1) + " de " + sin.length + ": " + (x.title || "").slice(0, 60) + "…";
+          post({ action: "portada", id: x.id }).then(function (j) { if (j.usd != null) coste += j.usd; return componer(j, x); })
+            .then(function (o) { return post({ action: "portada-guardar", id: x.id, b64: o.b64, b64m: o.b64m, b64s: o.b64s }); })
+            .then(function () { hechas++; }, function () { fallos++; })
+            .then(function () { sigue(i + 1); });
+        })(0);
+      });
+      box.appendChild(info); box.appendChild(go); box.appendChild(stop); v.appendChild(box);
     }
     if (!lista.length) v.appendChild(el("p", "ad-empty", pub ? "Todavía no has publicado ninguna." : "Sin borradores. Crea uno desde la pestaña Redactor."));
     lista.forEach(function (x) { v.appendChild(tarjetaPropia(x)); });
@@ -134,31 +171,13 @@
     var pst = el("p", "ad-meta", x.thumb ? "Portada actual: ver abajo." : "");
     var pim = el("img"); pim.style.cssText = "max-width:100%;border-radius:8px;margin-top:8px;display:" + (x.thumb ? "block" : "none"); if (x.thumb) pim.src = x.thumb;
     var pb = el("button", "ad-b", "Generar portada (ChatGPT)"); pb.type = "button";
-    function cargaImg(src) { return new Promise(function (ok, ko) { var i = new Image(); i.onload = function () { ok(i); }; i.onerror = function () { ko(new Error("imagen")); }; i.src = src; }); }
-    // Le pega encima el escudo real (izquierda) y la marca NOTICIAS real, pequeña, arriba a la derecha
-    function componer(j) {
-      return Promise.all([cargaImg("data:image/png;base64," + j.b64), cargaImg("/img/noticias-marca.png"), j.crest ? cargaImg("data:image/png;base64," + j.crest) : Promise.resolve(null)]).then(function (r) {
-        var W = r[0].naturalWidth, H = r[0].naturalHeight, c = document.createElement("canvas"); c.width = W; c.height = H;
-        var g = c.getContext("2d"); g.drawImage(r[0], 0, 0, W, H);
-        if (r[2]) {
-          var ch = H * 0.5, cw = ch * r[2].naturalWidth / r[2].naturalHeight, cx = W * 0.045, cy = (H - ch) / 2;
-          g.save(); g.shadowColor = "rgba(255,255,255,.55)"; g.shadowBlur = H * 0.05; g.drawImage(r[2], cx, cy, cw, ch); g.restore();
-        }
-        var lw = W * 0.09, lh = lw * r[1].naturalHeight / r[1].naturalWidth; g.save(); g.globalAlpha = 0.6; g.drawImage(r[1], W - lw - W * 0.025, H - lh - H * 0.035, lw, lh); g.restore(); // marca de agua transparente, abajo a la derecha
-        // Tres tamaños sin perder calidad: completa, mediana (Noticias/Inicio grande) y cuadrada centrada en el jugador (miniaturas)
-        function redim(w, h, sx, sy, sw, sh, q) { var k = document.createElement("canvas"); k.width = w; k.height = h; var gg = k.getContext("2d"); gg.imageSmoothingEnabled = true; gg.imageSmoothingQuality = "high"; gg.drawImage(c, sx, sy, sw, sh, 0, 0, w, h); return k.toDataURL("image/jpeg", q).split(",")[1]; }
-        var mw = Math.min(W, 960), side = Math.round(H * 0.88), fx = x.tipo === "once" ? 0.5 : 0.6;
-        var sx0 = Math.max(0, Math.min(W - side, W * fx - side / 2)), sy0 = (H - side) * 0.25;
-        return { b64: c.toDataURL("image/jpeg", 0.9).split(",")[1], b64m: redim(mw, Math.round(mw * H / W), 0, 0, W, H, 0.88), b64s: redim(360, 360, sx0, sy0, side, side, 0.9) };
-      });
-    }
     pb.addEventListener("click", function () {
       pb.disabled = true; pst.style.color = ""; pst.textContent = "Generando con ChatGPT… puede tardar 1 minuto. No cierres esta pantalla.";
       var modeloUsado = "";
       post({ action: "portada", id: x.id }).then(function (j) {
         modeloUsado = (j.modelo || "") + (j.usd != null ? ", ≈ " + j.usd.toFixed(3) + " $" : "");
         pst.textContent = (j.conFoto ? "Hecha con la foto de " + (j.jugador || "el jugador") + ". " : "Sin foto del jugador. ") + "Pegando escudo y marca…";
-        return componer(j).then(function (o) { return post({ action: "portada-guardar", id: x.id, b64: o.b64, b64m: o.b64m, b64s: o.b64s }); });
+        return componer(j, x).then(function (o) { return post({ action: "portada-guardar", id: x.id, b64: o.b64, b64m: o.b64m, b64s: o.b64s }); });
       }).then(function (j) {
         pst.textContent = "Portada guardada (modelo " + (modeloUsado || "?") + "). Si no te gusta, pulsa otra vez.";
         if (j.item && j.item.thumb) { pim.src = j.item.thumb; pim.style.display = "block"; }
