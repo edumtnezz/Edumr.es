@@ -2079,7 +2079,18 @@ async function adminNoticias(env, request, url, data) {
     await admLog(env, { a: "portada", id: it.id, t: it.title });
     return json({ ok: true, item: it });
   }
-  if (data.action === "portada") return generarPortada(env, request, own, it, now);
+  if (data.action === "portada") {
+    // La imagen tarda; se manda un espacio cada 8 s para que la conexión no se corte y al final llega el JSON.
+    const ts = new TransformStream(), w = ts.writable.getWriter(), enc = new TextEncoder();
+    (async () => {
+      const tick = setInterval(() => { w.write(enc.encode(" ")).catch(() => {}); }, 8000);
+      let txt;
+      try { txt = await (await generarPortada(env, request, own, it, now)).text(); } catch (e) { txt = JSON.stringify({ error: String(e && e.message || e).slice(0, 160) }); }
+      clearInterval(tick);
+      try { await w.write(enc.encode(txt)); await w.close(); } catch (e) {}
+    })();
+    return new Response(ts.readable, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
+  }
   if (data.action === "guardar") {
     const antes = { title: it.title || "", lead: it.lead || "", body: it.body || "" };
     it.title = clean(data.title, 200); it.lead = clean(data.lead, 400); it.body = clean(data.body, 8000);

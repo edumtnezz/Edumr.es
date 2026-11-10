@@ -13,7 +13,14 @@
   }
   function toast(t) { var d = el("div", "ad-toast", t); document.body.appendChild(d); setTimeout(function () { d.remove(); }, 2200); }
   function post(body) {
-    return fetch(API + "/admin-noticias", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || "Error"); return j; }); });
+    return fetch(API + "/admin-noticias", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).then(function (r) {
+      return r.text().then(function (tx) {
+        var j = null; try { j = JSON.parse(tx); } catch (e) {}
+        if (!j) throw new Error("El servidor no contestó bien (código " + r.status + "). Vuelve a intentarlo.");
+        if (!r.ok || j.error) throw new Error(j.error || "Error");
+        return j;
+      });
+    });
   }
   function cargar(keep) {
     return fetch(API + "/admin-noticias", { cache: "no-store" }).then(function (r) { if (r.status === 403) throw new Error("403"); return r.json(); }).then(function (d) { D = d; pinta(); }).catch(function (e) {
