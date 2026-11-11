@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { staleChange, tocadosDe, marcarTocados } from "../functions/_lib/change.mjs";
+import { staleChange, actualizadoHoy, tocadosDe, marcarTocados } from "../functions/_lib/change.mjs";
 
 test("cambio viejo: el valor no se movió ni ayer ni anteayer (Guruzeta 11/11/2026)", () => {
   assert.equal(staleChange(-237946, 0, 0), true);
@@ -10,6 +10,13 @@ test("cambio bueno: el valor se movió hoy", () => {
 });
 test("de madrugada (hoy = ayer, pero ayer sí se movió) no se toca", () => {
   assert.equal(staleChange(470368, 0, 470368), false);
+});
+test("bajó ayer y hoy no se ha movido: viejo solo si Futmondo ya actualizó hoy (Uche 11/11/2026)", () => {
+  assert.equal(staleChange(-237422, 0, -237422, true), true);
+  assert.equal(staleChange(-237422, 0, -237422, false), false);
+  assert.equal(actualizadoHoy(Array(60).fill(1000).concat(Array(400).fill(0))), true);
+  assert.equal(actualizadoHoy(Array(10).fill(1000).concat(Array(400).fill(0))), false);
+  assert.equal(actualizadoHoy([undefined, null]), false);
 });
 test("sin histórico no se toca", () => {
   assert.equal(staleChange(-100, undefined, undefined), false);

@@ -4838,7 +4838,8 @@
       });
     })();
     head.appendChild(el("div", "ficha-val", money(d.value || p.value) + " €"));
-    const chg = Number(d.change != null ? d.change : p.change) || 0;
+    // Con el mercado cargado manda su "change" (ya corregido si es un movimiento viejo); si no, el de la ficha.
+    const chg = Number((all && all.length && liveP !== p && liveP.change != null) ? liveP.change : (d.change != null ? d.change : p.change)) || 0;
     (function () {
       const row = el("div", "vchips");
       const mk = (lab, v) => {

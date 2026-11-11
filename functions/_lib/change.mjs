@@ -5,9 +5,16 @@
 //    del 05/11). Si nuestro histórico dice que el valor no se ha movido ni ayer ni anteayer, ese cambio
 //    es viejo y hoy vale 0. Con un solo día igual NO se toca: de madrugada, antes de que Futmondo
 //    actualice, el valor de hoy aún coincide con el de ayer y "change" es el movimiento bueno.
-export function staleChange(change, d1, d2) {
+//    Si se sabe que Futmondo YA ha actualizado hoy (muchos jugadores con el valor distinto al de ayer), basta con
+//    que el de este jugador no se haya movido desde ayer.
+export function staleChange(change, d1, d2, actualizadoHoy) {
   if (!(Number(change) || 0)) return false;
-  return d1 === 0 && d2 === 0;
+  return d1 === 0 && (d2 === 0 || actualizadoHoy === true);
+}
+
+// ¿Ha actualizado Futmondo los valores hoy? Sí, si al menos 50 jugadores tienen hoy un valor distinto al de ayer.
+export function actualizadoHoy(d1s) {
+  return (d1s || []).filter((v) => typeof v === "number" && v !== 0).length >= 50;
 }
 
 const norm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim();

@@ -3,7 +3,7 @@ import { teamPlayedMatches, playedDenominator } from "../../_lib/played.mjs";
 import { sameTeam, pendingMatches, rosterFor, isComplete } from "../../_lib/matchpoints.mjs";
 import { fitLagOf, fitIndex } from "../../_lib/fitness.mjs";
 import { backtest as probBacktest } from "../../_lib/probjugar.mjs";
-import { staleChange, tocadosDe, marcarTocados } from "../../_lib/change.mjs";
+import { staleChange, actualizadoHoy, tocadosDe, marcarTocados } from "../../_lib/change.mjs";
 import { etiquetaDe } from "../../_lib/portada-svg.mjs";
 import { promptFondo, grupoTipo } from "../../_lib/portada-prompt.mjs";
 const COMPETITION = "PD";
@@ -785,12 +785,14 @@ async function conHistorial(env, players) {
     const fm = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" });
     const dias = {};
     for (const n of [1, 2, 7, 14, 30]) dias[n] = vh.days[fm.format(new Date(Date.now() - n * 864e5))] || null;
+    const d1De = (p) => { const b = dias[1] && dias[1][p.id]; return b > 0 && p.value > 0 ? p.value - b : p.chg1; };
+    const yaHoy = actualizadoHoy(players.map(d1De));
     return players.map((p) => {
       const o = {};
       for (const n of [1, 2, 7, 14, 30]) { const b = dias[n] && dias[n][p.id]; if (b > 0 && p.value > 0) o["chg" + n] = p.value - b; }
       // "change" de Futmondo es el último movimiento, no el de hoy: si el valor lleva dos días quieto, hoy es 0 (functions/_lib/change.mjs).
       const c1 = o.chg1 !== undefined ? o.chg1 : p.chg1, c2 = o.chg2 !== undefined ? o.chg2 : p.chg2; // sin día propio, vale el de la tabla de Futmondo de FutbolFantasy
-      if (staleChange(p.change, c1, c2)) o.change = 0;
+      if (staleChange(p.change, c1, c2, yaHoy)) o.change = 0;
       return Object.keys(o).length ? { ...p, ...o } : p;
     });
   } catch (e) { return players; }
