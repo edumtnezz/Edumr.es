@@ -158,9 +158,34 @@ function colorEscudo(img) {
   for (var k in cuenta) { var o2 = cuenta[k]; var amar = o2.r / o2.n > 180 && o2.g / o2.n > 150 && o2.b / o2.n < 90; var sc = o2.n * (amar ? 0.5 : 1); if (sc > bs) { bs = sc; best = [Math.round(o2.r / o2.n), Math.round(o2.g / o2.n), Math.round(o2.b / o2.n)]; } }
   return best || [24, 90, 60];
 }
+// Foto original del jugador en un círculo con aro y brillo (cromo), con su nombre y datos reales de Futmondo
+function pintaCromo(g, foto, cr, crestImg, W, H) {
+  var d = H * 0.5, cx = W * 0.66, cy = H * 0.46, col = crestImg ? colorEscudo(crestImg) : [24, 90, 60];
+  g.save();
+  var gl = g.createRadialGradient(cx, cy, d * 0.3, cx, cy, d * 0.95); gl.addColorStop(0, "rgba(255,255,255,.35)"); gl.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = gl; g.beginPath(); g.arc(cx, cy, d * 0.95, 0, Math.PI * 2); g.fill();
+  g.shadowColor = "rgba(0,0,0,.45)"; g.shadowBlur = H * 0.04; g.shadowOffsetY = H * 0.015;
+  g.fillStyle = "rgb(" + col.join(",") + ")"; g.beginPath(); g.arc(cx, cy, d / 2 + H * 0.014, 0, Math.PI * 2); g.fill(); g.restore();
+  g.save(); g.beginPath(); g.arc(cx, cy, d / 2, 0, Math.PI * 2); g.clip();
+  g.fillStyle = "rgba(255,255,255,.92)"; g.fillRect(cx - d / 2, cy - d / 2, d, d);
+  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high";
+  var fw = d * 1.02, fh = fw * foto.naturalHeight / foto.naturalWidth; g.drawImage(foto, cx - fw / 2, cy + d / 2 - fh + d * 0.02, fw, fh);
+  g.restore();
+  // Placa con el nombre y datos reales (media y valor) bajo el círculo
+  var nombre = String(cr.nombre || "").toUpperCase(), datos = [];
+  if (cr.avg) datos.push(String(Math.round(cr.avg * 10) / 10).replace(".", ",") + " DE MEDIA");
+  if (cr.value) datos.push(String(Math.round(cr.value / 1e5) / 10).replace(".", ",") + " M");
+  var fs = H * 0.062; g.save(); g.font = "800 " + Math.round(fs) + "px system-ui, -apple-system, Segoe UI, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
+  var nw = Math.min(W * 0.46, g.measureText(nombre).width + fs * 1.6), ny = cy + d / 2 + H * 0.075;
+  g.shadowColor = "rgba(0,0,0,.4)"; g.shadowBlur = H * 0.03; g.fillStyle = "rgba(10,14,12,.86)";
+  g.beginPath(); if (g.roundRect) g.roundRect(cx - nw / 2, ny - fs * 0.75, nw, fs * 1.5, fs * 0.3); else g.rect(cx - nw / 2, ny - fs * 0.75, nw, fs * 1.5); g.fill(); g.shadowBlur = 0;
+  g.fillStyle = "#fff"; g.fillText(nombre, cx, ny + fs * 0.04, nw - fs * 0.6);
+  if (datos.length) { g.font = "700 " + Math.round(fs * 0.62) + "px system-ui, sans-serif"; g.fillStyle = "rgb(" + col.map(function (v) { return Math.min(255, v + 70); }).join(",") + ")"; g.fillText(datos.join("  ·  "), cx, ny + fs * 1.15); }
+  g.restore();
+}
 function componer(j, x) {
   var sin = !!j.sinJugador;
-  return Promise.all([j.b64 ? cargaImg("data:image/png;base64," + j.b64) : Promise.resolve(null), cargaImg("/img/noticias-marca.png"), j.crest ? cargaImg("data:image/png;base64," + j.crest) : Promise.resolve(null)]).then(function (r) {
+  return Promise.all([j.b64 ? cargaImg("data:image/png;base64," + j.b64) : Promise.resolve(null), cargaImg("/img/noticias-marca.png"), j.crest ? cargaImg("data:image/png;base64," + j.crest) : Promise.resolve(null), j.cromo && j.cromo.foto ? cargaImg("data:image/png;base64," + j.cromo.foto) : Promise.resolve(null)]).then(function (r) {
     var W = r[0] ? r[0].naturalWidth : 1536, H = r[0] ? r[0].naturalHeight : 1024, c = document.createElement("canvas"); c.width = W; c.height = H;
     var g = c.getContext("2d");
     if (r[0]) g.drawImage(r[0], 0, 0, W, H);
@@ -172,14 +197,15 @@ function componer(j, x) {
       g.fillStyle = "rgba(255,255,255,.08)"; g.beginPath(); g.moveTo(W, H * 0.45); g.lineTo(W, H); g.lineTo(W * 0.35, H); g.fill();
     }
     if (r[2]) {
-      var ch = H * (sin ? 0.62 : 0.5), cw = ch * r[2].naturalWidth / r[2].naturalHeight, cx = sin ? (W - cw) / 2 : W * 0.045, cy = (H - ch) / 2;
+      var cro = !!(r[3] && j.cromo), ch = H * (sin && !cro ? 0.62 : 0.5), cw = ch * r[2].naturalWidth / r[2].naturalHeight, cx = sin && !cro ? (W - cw) / 2 : W * 0.06, cy = (H - ch) / 2 - (cro ? H * 0.04 : 0);
       g.save(); g.shadowColor = "rgba(255,255,255,.55)"; g.shadowBlur = H * 0.05; g.drawImage(r[2], cx, cy, cw, ch); g.restore();
     }
+    if (r[3] && j.cromo) pintaCromo(g, r[3], j.cromo, r[2], W, H);
     var bh = H * 0.1; pintaEtiqueta(g, j.tipoNoticia, W * 0.035, H * 0.045, bh);
     var lw = W * 0.09, lh = lw * r[1].naturalHeight / r[1].naturalWidth; g.save(); g.globalAlpha = 0.6; g.drawImage(r[1], W - lw - W * 0.025, H - lh - H * 0.035, lw, lh); g.restore(); // marca de agua transparente, abajo a la derecha
     // Tres tamaños sin perder calidad: completa, mediana (Noticias/Inicio grande) y cuadrada centrada en el jugador (miniaturas)
     function redim(w, h, sx, sy, sw, sh, q, tag) { var k = document.createElement("canvas"); k.width = w; k.height = h; var gg = k.getContext("2d"); gg.imageSmoothingEnabled = true; gg.imageSmoothingQuality = "high"; gg.drawImage(c, sx, sy, sw, sh, 0, 0, w, h); if (tag) pintaEtiqueta(gg, j.tipoNoticia, w * 0.05, h * 0.05, h * 0.12); return k.toDataURL("image/jpeg", q).split(",")[1]; }
-    var mw = Math.min(W, 960), side = Math.round(H * 0.88), fx = sin ? 0.5 : (x.tipo === "once" ? 0.5 : 0.6);
+    var mw = Math.min(W, 960), side = Math.round(H * 0.88), fx = j.cromo ? 0.64 : (sin ? 0.5 : (x.tipo === "once" ? 0.5 : 0.6));
     var sx0 = Math.max(0, Math.min(W - side, W * fx - side / 2)), sy0 = (H - side) * 0.25;
     return { b64: c.toDataURL("image/jpeg", 0.9).split(",")[1], b64m: redim(mw, Math.round(mw * H / W), 0, 0, W, H, 0.88), b64s: redim(360, 360, sx0, sy0, side, side, 0.9, true) };
   });

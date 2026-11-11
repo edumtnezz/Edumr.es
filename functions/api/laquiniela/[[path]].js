@@ -2168,13 +2168,24 @@ async function generarPortada(env, request, own, it, now) {
       if (mejor) crestClub = mejor.lg;
     }
   } catch (e) {}
-  // Sin foto de Futmondo no se inventa ninguna cara: la IA hace solo el fondo (sin personas) y el panel pega el escudo real
-  const sinJ = it.tipo !== "once" && !pl;
-  let crestSinB64 = "";
+  // Portada "cromo" (Edu 11/11/2026): la IA solo hace el FONDO (sin personas) con los colores del club; la foto original del jugador y el escudo reales los pega el panel.
+  // Los fondos se guardan por club (hasta 4) y luego se reutilizan sin coste.
+  const sinJ = it.tipo !== "once";
+  let crestSinB64 = "", fondoKey = "", fondoIdx = [], cromo = null;
   if (sinJ) {
-    const kt = fold(it.club); let lg = crestClub;
+    const kt = fold(it.club); let lg = crestClub || (pl && pl.logo) || "";
     if (!lg && kt.length) { const q = todos.find((x) => x.logo && fold(x.team).some((w) => kt.includes(w))); lg = q ? q.logo : ""; }
     crestClub = lg || ""; crestSinB64 = await crestB64(crestClub);
+    fondoKey = fold((pl && pl.team) || it.club || "club").join("-").slice(0, 40) || "club";
+    try { fondoIdx = (await env.PORRA.get("bg:idx:" + fondoKey, "json")) || []; } catch (e) {}
+    if (pl) cromo = { nombre: pl.name, avg: pl.avg || 0, value: pl.value || 0, foto: await crestB64(pl.photo) };
+    if (fondoIdx.length >= 4) {
+      try {
+        const id = fondoIdx[Math.floor(Math.random() * fondoIdx.length)];
+        const g = await env.PORRA.get("bg:" + fondoKey + ":" + id);
+        if (g) return json({ ok: true, sinJugador: !pl, b64: g, crest: crestSinB64, jugador: pl ? pl.name : "", modelo: "fondo guardado", usd: 0, tipoNoticia, cromo });
+      } catch (e) {}
+    }
   }
   const fd = new FormData();
   fd.append("model", String(env.OPENAI_IMAGE_MODEL || "gpt-image-2.6-flare"));
@@ -2194,7 +2205,7 @@ async function generarPortada(env, request, own, it, now) {
     } catch (e) {}
   }
   try { if (dos) { for (const q of dos) fd.append("image[]", await bajar(q.photo), "jugador.png"); conFoto = true; } } catch (e) {}
-  try { if (pl && !dos) { fd.append("image[]", await bajar(pl.photo), "jugador.png"); conFoto = true; } } catch (e) {}
+  try { if (pl && !dos && !sinJ) { fd.append("image[]", await bajar(pl.photo), "jugador.png"); conFoto = true; } } catch (e) {}
   try { if (sinJ && crestSinB64) { const bin = atob(crestSinB64), u8 = new Uint8Array(bin.length); for (let k = 0; k < bin.length; k++) u8[k] = bin.charCodeAt(k); fd.append("image[]", new Blob([u8], { type: "image/png" }), "escudo.png"); } } catch (e) {}
   let conEstilo = false;
   try { fd.append("image[]", await bajar(origin + "/img/n/2b50b6910d.jpg"), "estilo.jpg"); conEstilo = true; } catch (e) {}
@@ -2235,7 +2246,8 @@ async function generarPortada(env, request, own, it, now) {
   if (!usado) return json({ error: "OpenAI: " + ultimoErr }, 502);
   const crest = it.tipo !== "once" ? await crestB64(crestClub || (pl && pl.logo) || "") : "";
   // La imagen NO se publica todavía: el panel le pega encima el escudo y la marca reales y la guarda (portada-guardar)
-  return json({ ok: true, sinJugador: sinJ, b64: j.data[0].b64_json, crest, conFoto, jugador: jug, modelo: usado, usd: costeUsd(j.usage), usage: j.usage || null, tipoNoticia });
+  if (sinJ && fondoKey) { try { const id = Date.now().toString(36); await env.PORRA.put("bg:" + fondoKey + ":" + id, j.data[0].b64_json); await env.PORRA.put("bg:idx:" + fondoKey, JSON.stringify(fondoIdx.concat(id).slice(-8))); } catch (e) {} }
+  return json({ ok: true, sinJugador: sinJ && !pl, cromo, b64: j.data[0].b64_json, crest, conFoto, jugador: jug, modelo: usado, usd: costeUsd(j.usage), usage: j.usage || null, tipoNoticia });
 }
 // Coste real de la petición: tokens devueltos por OpenAI × tarifas de la página de modelos (texto 5 $, imagen entrada 8 $, imagen salida 30 $ por millón)
 function costeUsd(u) {
