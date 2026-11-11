@@ -1735,13 +1735,13 @@ async function tratarExterna(env, f, st, now, pista, own) {
   sumaPista(st, "publicadas");
   return { dirty: true, noticias: [item] };
 }
-const REDACTOR_EXTERNO_APAGADO = true; // Edu 11/11/2026: sin notas reescritas de otras webs; false para reanudar
+// Edu 11/11/2026: sin notas reescritas de otras webs. Para reanudar: variable REDACTOR_EXTERNO=1 en el Worker.
 async function tratarUnaPista(env, f, st, now, fuentes, pista, listas) {
   const una = await tratarUnaPistaOficial(env, f, st, now, fuentes, pista, listas);
   const e = st.pistas[pista.id];
   if (e && e.estado !== "publicada") e.ext = 6; // 5 = probado con texto limpio, autocorrección (3 intentos) y copia a 9 palabras
   if (una && una.noticias && una.noticias.length) return una;
-  if (REDACTOR_EXTERNO_APAGADO || !e || e.estado === "publicada" || !MOTIVOS_EXT.has(e.motivo)) return una;
+  if (env.REDACTOR_EXTERNO !== "1" || !e || e.estado === "publicada" || !MOTIVOS_EXT.has(e.motivo)) return una;
   let own = [];
   try { own = (await env.PORRA.get(OWN_KEY, "json")) || []; } catch (er) {}
   try {

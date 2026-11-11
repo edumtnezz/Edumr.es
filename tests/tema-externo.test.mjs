@@ -9,7 +9,7 @@ async function correr(gem) {
   const kv = new Map();
   kv.set("rd:pistas:v1", JSON.stringify({ v: 1, items: [PISTA] }));
   kv.set("rd:reabrir:v3", "1");
-  const env = { GEMINI_API_KEY: "k", PORRA: {
+  const env = { REDACTOR_EXTERNO: "1", GEMINI_API_KEY: "k", PORRA: {
     async get(k, t) { const v = kv.get(k); return v == null ? null : (t === "json" ? JSON.parse(v) : v); },
     async put(k, v) { kv.set(k, v); } } };
   const f = async (url) => {
@@ -76,7 +76,7 @@ test("si el primer intento trae algo que no está en la noticia, se corrige y se
   const kv = new Map();
   kv.set("rd:pistas:v1", JSON.stringify({ v: 1, items: [PISTA] }));
   kv.set("rd:reabrir:v3", "1");
-  const env = { GEMINI_API_KEY: "k", PORRA: { async get(k, t) { const v = kv.get(k); return v == null ? null : (t === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } } };
+  const env = { REDACTOR_EXTERNO: "1", GEMINI_API_KEY: "k", PORRA: { async get(k, t) { const v = kv.get(k); return v == null ? null : (t === "json" ? JSON.parse(v) : v); }, async put(k, v) { kv.set(k, v); } } };
   const respuestas = [
     { tipo: "hecho", titular: "Cuti Romero sigue sin jugar con el Atlético", entradilla: "El central sigue apartado.", cuerpo: "Lleva 25 días sin competir por molestias musculares y Cardoso se ha sumado al grupo." },
     { tipo: "hecho", titular: "Cuti Romero continúa sin jugar en el Atlético", entradilla: "El central sigue apartado del grupo.", cuerpo: "El central lleva sin competir desde el 17 de octubre, con problemas musculares. Cardoso se ha sumado al grupo." },
