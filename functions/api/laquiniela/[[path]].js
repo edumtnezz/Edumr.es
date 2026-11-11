@@ -2178,14 +2178,14 @@ async function generarPortada(env, request, own, it, now) {
     if (!lg && kt.length) { const q = todos.find((x) => x.logo && fold(x.team).some((w) => kt.includes(w))); lg = q ? q.logo : ""; }
     crestClub = lg || ""; crestSinB64 = await crestB64(crestClub);
     fondoKey = fold((pl && pl.team) || it.club || "club").join("-").slice(0, 40) || "club";
-    try { fondoIdx = (await env.PORRA.get("bg:idx:" + fondoKey, "json")) || []; } catch (e) {}
+    try { fondoIdx = (await env.PORRA.get("bg2:idx:" + fondoKey, "json")) || []; } catch (e) {}
     const KICK = { fijo: "FIJO EN EL ONCE", racha: "EN RACHA", rentable: "CALIDAD-PRECIO", revelacion: "LA SORPRESA", chollo: "CHOLLO", bajon: "BAJÓN", regular: "BACHE PUNTUAL", duda: "DUDA PARA JUGAR" };
     const km = String(it.key || "").match(/^an-.+?-([a-z]+)-[^-]+$/);
     if (pl) cromo = { nombre: pl.name, avg: pl.avg || 0, value: pl.value || 0, foto: await crestB64(pl.photo), kicker: km ? (KICK[km[1]] || "") : "", kickTipo: km ? km[1] : "" };
     if (fondoIdx.length >= 4) {
       try {
         const id = fondoIdx[Math.floor(Math.random() * fondoIdx.length)];
-        const g = await env.PORRA.get("bg:" + fondoKey + ":" + id);
+        const g = await env.PORRA.get("bg2:" + fondoKey + ":" + id);
         if (g) return json({ ok: true, sinJugador: !pl, b64: g, crest: crestSinB64, jugador: pl ? pl.name : "", modelo: "fondo guardado", usd: 0, tipoNoticia, cromo });
       } catch (e) {}
     }
@@ -2211,7 +2211,7 @@ async function generarPortada(env, request, own, it, now) {
   try { if (pl && !dos && !sinJ) { fd.append("image[]", await bajar(pl.photo), "jugador.png"); conFoto = true; } } catch (e) {}
   try { if (sinJ && crestSinB64) { const bin = atob(crestSinB64), u8 = new Uint8Array(bin.length); for (let k = 0; k < bin.length; k++) u8[k] = bin.charCodeAt(k); fd.append("image[]", new Blob([u8], { type: "image/png" }), "escudo.png"); } } catch (e) {}
   let conEstilo = false;
-  try { fd.append("image[]", await bajar(origin + "/img/n/2b50b6910d.jpg"), "estilo.jpg"); conEstilo = true; } catch (e) {}
+  try { if (!sinJ) { fd.append("image[]", await bajar(origin + "/img/n/2b50b6910d.jpg"), "estilo.jpg"); conEstilo = true; } } catch (e) {}
   const club = clean2((pl && pl.team) || it.club || "", 60);
   const jug = pl ? pl.name : (Array.isArray(it.players) && it.players[0] ? (typeof it.players[0] === "string" ? it.players[0] : it.players[0].name) : "");
   const prompts = await getPortadaPrompts(env);
@@ -2230,8 +2230,12 @@ async function generarPortada(env, request, own, it, now) {
   const extraTxt = it.tipo === "once" ? "" : " POSE de ESTA imagen (manda sobre cualquier otra indicación de pose): " + pose + ". ENCUADRE: plano medio recortado de la cintura hacia arriba, jugador en el lado derecho. No salen el balón, las piernas, ni otros jugadores. Manos simples y bien formadas, cinco dedos en cada una. No repitas el puño en alto salvo que esa sea la pose. El escudo oficial del club debe verse tal cual en el pecho de la camiseta.";
   const ESCENAS = ["estadio de noche con focos potentes y público desenfocado", "césped de cerca con las luces del estadio desenfocadas al fondo", "túnel de vestuarios con una luz intensa al fondo", "grada con bengalas y humo de color", "balón sobre el césped en primer plano desenfocado y estadio al fondo", "confeti cayendo dentro de un estadio iluminado", "focos y niebla sobre el campo al atardecer", "afición con bufandas y banderas desenfocadas", "línea de cal y césped en perspectiva con luz lateral", "estadio vacío visto desde un córner con luz cinematográfica", "vestuario con camisetas colgadas, sin nombres ni dorsales legibles", "fuegos artificiales sobre el estadio"];
   if (sinJ) {
-    const escena = ESCENAS[Math.floor(Math.random() * ESCENAS.length)];
-    const pp = "Imagen 1: escudo del club (úsalo SOLO para tomar sus colores; no lo dibujes). " + (conEstilo ? "Imagen 2: referencia de ESTILO (solo el estilo). " : "") + "Miniatura de noticia de fútbol, formato horizontal 3:2, alta resolución, mismo estilo visual que la referencia: colores intensos en los colores del escudo, pinceladas y diagonales dinámicas, contraste alto, iluminación cinematográfica. ESCENA de fondo: " + escena + ". SIN personas, SIN jugadores, SIN rostros, SIN manos, SIN texto, SIN números, SIN logos ni escudos dibujados. Deja el centro de la imagen despejado y más tranquilo, porque encima se colocará el escudo del club.";
+    const sem = (parseInt(String(it.id || "0").slice(0, 6), 16) || Math.floor(Math.random() * 1e6)) + Math.floor(Math.random() * 7);
+    const escena = ESCENAS[sem % ESCENAS.length];
+    // Varios estilos MUY distintos entre sí, para que las portadas no se parezcan unas a otras
+    const ESTILOS = ["fotografía cinematográfica realista, lente larga, desenfoque profundo", "ilustración vectorial plana con formas geométricas grandes y sombras largas", "pop art con puntos de semitono y contornos gruesos, estilo cómic", "pinceladas de pintura al óleo gruesas y expresivas", "neón y luces de colores sobre fondo oscuro, estilo cyberpunk deportivo", "collage de papel recortado con texturas y capas", "grafiti urbano con aerosol y salpicaduras", "póster retro años 70 con degradados suaves de grano de impresión", "acuarela con manchas de color que se difuminan", "foto de larga exposición con estelas de luz"];
+    const estilo = ESTILOS[Math.floor(sem / ESCENAS.length) % ESTILOS.length];
+    const pp = "Imagen 1: escudo del club. Tómalo SOLO para sacar sus COLORES REALES (no lo dibujes ni lo copies). La paleta del fondo debe estar hecha con esos colores del escudo (dos colores principales como mucho) y NO uses azul si el escudo no es azul. Miniatura de noticia de fútbol, formato horizontal 3:2, alta resolución. ESTILO VISUAL: " + estilo + ". ESCENA de fondo: " + escena + ". Composición dinámica, contraste alto. SIN personas, SIN jugadores, SIN rostros, SIN manos, SIN texto, SIN números, SIN logos ni escudos dibujados. Deja el centro de la imagen más despejado y tranquilo, porque encima se colocan el escudo y la foto del jugador.";
     fd.append("prompt", pp);
   } else
   fd.append("prompt", prompt + extraTxt);
@@ -2249,7 +2253,7 @@ async function generarPortada(env, request, own, it, now) {
   if (!usado) return json({ error: "OpenAI: " + ultimoErr }, 502);
   const crest = it.tipo !== "once" ? await crestB64(crestClub || (pl && pl.logo) || "") : "";
   // La imagen NO se publica todavía: el panel le pega encima el escudo y la marca reales y la guarda (portada-guardar)
-  if (sinJ && fondoKey) { try { const id = Date.now().toString(36); await env.PORRA.put("bg:" + fondoKey + ":" + id, j.data[0].b64_json); await env.PORRA.put("bg:idx:" + fondoKey, JSON.stringify(fondoIdx.concat(id).slice(-8))); } catch (e) {} }
+  if (sinJ && fondoKey) { try { const id = Date.now().toString(36); await env.PORRA.put("bg2:" + fondoKey + ":" + id, j.data[0].b64_json); await env.PORRA.put("bg2:idx:" + fondoKey, JSON.stringify(fondoIdx.concat(id).slice(-8))); } catch (e) {} }
   return json({ ok: true, sinJugador: sinJ && !pl, cromo, b64: j.data[0].b64_json, crest, conFoto, jugador: jug, modelo: usado, usd: costeUsd(j.usage), usage: j.usage || null, tipoNoticia });
 }
 // Portada automática al publicar (la llama el Worker del redactor con un secreto compartido en KV).
