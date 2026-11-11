@@ -3606,3 +3606,4 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .nw-row-pic > img.pt-img { object-position: 62% 40%; }
 .nw-lead-pic > img.pt-img { object-position: 60% 20%; }
 .nw-lead-pic:has(> img.pt-img), .nw-big .nw-row-pic:has(> img.pt-img) { aspect-ratio: 3 / 2; }
+.rtb-when { font-weight: 500; opacity: .65; font-size: .85em; margin-left: 1px; }

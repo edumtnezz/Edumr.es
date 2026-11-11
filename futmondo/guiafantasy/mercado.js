@@ -7257,10 +7257,16 @@
     if (rb) l1.appendChild(el("span", "rtb-pos", rb + (rb2 ? "/" + rb2 : "")));
     const l2 = el("span", "rtb-l2");
     l2.appendChild(el("b", "rtb-price", money(p.value) + " €"));
-    if (p.chg7 != null && p.chg7 !== "") {
-      const v = Number(p.chg7) || 0;
-      if (v) l2.appendChild(el("span", v > 0 ? "rtb-up" : "rtb-dn", (v > 0 ? "+" : "−") + (Math.abs(v) >= 1e6 ? (Math.abs(v) / 1e6).toFixed(1).replace(".", ",") + "M" : Math.round(Math.abs(v) / 1e3) + "k")));
-    }
+    // Cuándo subió: cambio de hoy (último movimiento de Futmondo) y de la última semana
+    const rtbK = (v) => (v > 0 ? "+" : "−") + (Math.abs(v) >= 1e6 ? (Math.abs(v) / 1e6).toFixed(1).replace(".", ",") + "M" : Math.round(Math.abs(v) / 1e3) + "k");
+    [[p.chg1, "hoy"], [p.chg7, "7 días"]].forEach((c) => {
+      if (c[0] == null || c[0] === "") return;
+      const v = Number(c[0]) || 0;
+      if (!v) return;
+      const sp = el("span", v > 0 ? "rtb-up" : "rtb-dn", rtbK(v));
+      sp.appendChild(el("small", "rtb-when", " " + c[1]));
+      l2.appendChild(sp);
+    });
     body.appendChild(l2);
     const l3 = el("span", "rtb-l3");
     [[Number(p.points) || 0, "pts"], [(Number(p.avg) || 0).toFixed(1).replace(".", ","), "media"], [Number(p.matches) || 0, "part."]].forEach((s) => {
