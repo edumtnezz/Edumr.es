@@ -191,7 +191,7 @@ function pintaCromo(g, foto, cr, crestImg, W, H, tipoNoticia) {
   g.fillStyle = "#fff"; g.fillText(nombre, cx, ny + fs * 0.04, nw - fs * 0.5);
   // Dos datos grandes y claros: MEDIA y VALOR, en pastillas de colores vivos
   var chips = [];
-  if (cr.avg) chips.push(["MEDIA", String(Math.round(cr.avg * 10) / 10).replace(".", ","), "#fde047"]);
+  if (cr.avg && tipoNoticia !== "lesion") chips.push(["MEDIA", String(Math.round(cr.avg * 10) / 10).replace(".", ","), "#fde047"]);
   if (cr.value) chips.push(["VALOR", String(Math.round(cr.value / 1e5) / 10).replace(".", ",") + " M", "#ffffff"]);
   var ch = H * 0.09, gap = W * 0.012, fy = ny + fs * 0.72 + H * 0.035, cws = [];
   chips.forEach(function (c) { g.font = "700 " + Math.round(ch * 0.3) + "px system-ui, sans-serif"; var a1 = g.measureText(c[0]).width; g.font = "900 " + Math.round(ch * 0.56) + "px system-ui, sans-serif"; cws.push(a1 + g.measureText(c[1]).width + ch * 0.9); });

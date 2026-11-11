@@ -3565,6 +3565,7 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 #newsAnuncios .newscard-thumb > .eth { position: absolute; inset: 0; border-radius: 0; }
 .art-banner { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; overflow: hidden; margin: 10px 0; background: rgba(127,127,127,.12); }
 .art-banner > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.art-banner.art-portada { aspect-ratio: 3 / 2; }
 .art-banner > .eth { position: absolute; inset: 0; }
 .nw-lead-pic > .eth, .nw-row-pic > .eth { position: absolute; inset: 0; border-radius: 0; }
 

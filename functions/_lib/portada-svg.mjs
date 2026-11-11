@@ -79,7 +79,7 @@ export function portadaSvg(o, crop) {
     parts.push(`<text x="${cx}" y="${ny + fs * 0.36}" text-anchor="middle" font-family="Inter" font-weight="900" font-size="${fs}" fill="#fff" textLength="${Math.min(nw - fs * 0.6, nombre.length * fs * 0.66)}" lengthAdjust="spacingAndGlyphs">${esc(nombre)}</text>`);
     // MEDIA y VALOR
     const chips = [];
-    if (o.avg) chips.push(["MEDIA", num1(o.avg), "#fde047"]);
+    if (o.avg && o.tipoNoticia !== "lesion" && !(o.etiqueta && o.etiqueta.t === "LESIÓN")) chips.push(["MEDIA", num1(o.avg), "#fde047"]);
     if (o.value) chips.push(["VALOR", num1(o.value / 1e6) + " M", "#ffffff"]);
     const chh = H * 0.09, gap = W * 0.012, fy = ny + fs * 0.72 + H * 0.035;
     const cws = chips.map((c) => c[0].length * chh * 0.3 * 0.62 + c[1].length * chh * 0.56 * 0.62 + chh * 1.2);

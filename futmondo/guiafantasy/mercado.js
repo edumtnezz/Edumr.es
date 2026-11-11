@@ -4556,7 +4556,7 @@
     box.appendChild(el("h2", "ficha-name", title || d.title || ""));
     if (d.src === "EduMR") {
       if (!d.image) d.image = portadaDe(url);
-      const bn = el("div", "art-banner");
+      const bn = el("div", "art-banner" + (/\/portada\//.test(String(d.image || "")) ? " art-portada" : ""));
       if (d.image) { const im = el("img"); im.alt = ""; im.src = portadaSz(d.image, "m"); bn.appendChild(im); }
       else if (window.EduThumb && window.EduThumb.el) bn.appendChild(ethFor({ title: d.title || title, lead: d.lead, club: d.club, players: d.players, src: "EduMR" }));
       box.appendChild(bn);

@@ -2295,7 +2295,7 @@ async function portadaAuto(env, request) {
   const { renderPortada, colorDelEscudo } = await import("../../_lib/portada-render.mjs");
   const color = j.crest ? await colorDelEscudo(j.crest) : null;
   const c = j.cromo || null;
-  const png = await renderPortada({ bg: j.b64, crest: j.crest, face: c && c.foto, nombre: c && c.nombre, avg: c && c.avg, value: c && c.value, color, etiqueta: etiquetaDe(c, j.tipoNoticia), marca: await marcaB64(request) });
+  const png = await renderPortada({ bg: j.b64, crest: j.crest, face: c && c.foto, nombre: c && c.nombre, avg: c && c.avg, value: c && c.value, color, etiqueta: etiquetaDe(c, j.tipoNoticia), tipoNoticia: j.tipoNoticia, marca: await marcaB64(request) });
   let b = ""; for (let i = 0; i < png.length; i += 8192) b += String.fromCharCode.apply(null, png.subarray(i, i + 8192));
   await env.PORRA.put("portada:v1:" + it.id, btoa(b));
   return json({ ok: true, thumb: "/api/laquiniela/portada/" + it.id + "?v=" + now.toString(36), usd: j.usd == null ? null : j.usd, modelo: String(j.modelo || "").slice(0, 60) });
