@@ -192,8 +192,9 @@ function pintaCromo(g, foto, cr, crestImg, W, H, tipoNoticia) {
   g.fillStyle = "#fff"; g.fillText(nombre, cx, ny + fs * 0.04, nw - fs * 0.5);
   // Dos datos grandes y claros: MEDIA y VALOR, en tarjetas oscuras tipo cristal con el número centrado y la etiqueta encima
   var chips = [];
-  if (cr.avg && tipoNoticia !== "lesion") chips.push(["MEDIA", String(Math.round(cr.avg * 10) / 10).replace(".", ","), "#fde047"]);
-  if (cr.value) chips.push(["VALOR", String(Math.round(cr.value / 1e5) / 10).replace(".", ",") + " M", "#4ade80"]);
+  var sinDatos = tipoNoticia === "lesion" || tipoNoticia === "duda";
+  if (cr.avg && !sinDatos) chips.push(["MEDIA", String(Math.round(cr.avg * 10) / 10).replace(".", ","), "#fde047"]);
+  if (cr.value && !sinDatos) chips.push(["VALOR", String(Math.round(cr.value / 1e5) / 10).replace(".", ",") + " M", "#4ade80"]);
   var ch = H * 0.12, gap = W * 0.014, fy = ny + fs * 0.72 + H * 0.025, cwd = 0;
   g.font = "900 " + Math.round(ch * 0.5) + "px system-ui, sans-serif";
   chips.forEach(function (c) { cwd = Math.max(cwd, g.measureText(c[1]).width + ch * 0.7); }); cwd = Math.max(cwd, W * 0.17);

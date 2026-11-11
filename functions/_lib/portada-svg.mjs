@@ -86,8 +86,8 @@ export function portadaSvg(o, crop) {
     parts.push(`<text x="${cx}" y="${ny + fs * 0.36}" text-anchor="middle" font-family="Inter" font-weight="900" font-size="${fs}" fill="#fff" textLength="${Math.min(nw - fs * 0.6, nombre.length * fs * 0.66)}" lengthAdjust="spacingAndGlyphs">${esc(nombre)}</text>`);
     // MEDIA y VALOR: tarjetas oscuras tipo cristal, etiqueta pequeña arriba y número grande centrado
     const chips = [];
-    if (pj.avg && !pj.sinMedia) chips.push(["MEDIA", num1(pj.avg), "#fde047"]);
-    if (pj.value) chips.push(["VALOR", num1(pj.value / 1e6) + " M", "#4ade80"]);
+    if (pj.avg && !pj.sinDatos) chips.push(["MEDIA", num1(pj.avg), "#fde047"]);
+    if (pj.value && !pj.sinDatos) chips.push(["VALOR", num1(pj.value / 1e6) + " M", "#4ade80"]);
     const chh = d * 0.207, gap = d * 0.024, fy = ny + fs * 0.72 + d * 0.043;
     const cwd = Math.max(d * 0.45, Math.max(0, ...chips.map((c) => c[1].length * chh * 0.5 * 0.6)) + chh * 0.7);
     let x0 = cx - (cwd * chips.length + gap * (chips.length - 1)) / 2;
@@ -98,17 +98,18 @@ export function portadaSvg(o, crop) {
       x0 += cwd + gap;
     });
   };
-  const lesionMain = o.tipoNoticia === "lesion" || !!(o.etiqueta && o.etiqueta.t === "LESIÓN");
+  // Lesión o duda: sin MEDIA ni VALOR, solo la etiqueta (Edu 11/11/2026)
+  const lesionMain = /^(lesion|duda)$/.test(o.tipoNoticia || "") || !!(o.etiqueta && /^(LESIÓN|DUDA)/.test(o.etiqueta.t));
   const accent = o.color ? "rgb(" + o.color.join(",") + ")" : ((o.etiqueta && o.etiqueta.c) || "#16a34a");
   const d2 = o.duo && o.duo.face && o.duo.nombre ? o.duo : null;
   if (cro && d2) {
     // Dos protagonistas: dos círculos, cada uno con su nombre y datos; la etiqueta de cada uno solo si hay un dato que la respalde
     const d = H * 0.48, cy = H * 0.4, c1 = W * 0.43, c2 = W * 0.78;
-    jugador({ face: o.face, nombre: o.nombre, avg: o.avg, value: o.value, sinMedia: lesionMain }, 0, c1, cy, d, accent);
-    jugador({ face: d2.face, nombre: d2.nombre, avg: d2.avg, value: d2.value, sinMedia: d2.tipo === "lesion" }, 1, c2, cy, d, accent);
+    jugador({ face: o.face, nombre: o.nombre, avg: o.avg, value: o.value, sinDatos: lesionMain }, 0, c1, cy, d, accent);
+    jugador({ face: d2.face, nombre: d2.nombre, avg: d2.avg, value: d2.value, sinDatos: d2.tipo === "lesion" || d2.tipo === "duda" }, 1, c2, cy, d, accent);
     if (d2.etiqueta) parts.push(etiquetaSvg(d2.etiqueta, c2 - etiquetaAncho(d2.etiqueta, H * 0.075) / 2, H * 0.045, H * 0.075, 0));
   } else if (cro) {
-    jugador({ face: o.face, nombre: o.nombre, avg: o.avg, value: o.value, sinMedia: lesionMain }, 0, W * 0.62, H * 0.4, H * 0.58, accent);
+    jugador({ face: o.face, nombre: o.nombre, avg: o.avg, value: o.value, sinDatos: lesionMain }, 0, W * 0.62, H * 0.4, H * 0.58, accent);
   }
   // Etiqueta: grande arriba a la izquierda (completa) o en la esquina de la miniatura cuadrada
   if (o.etiqueta) etiq = crop ? etiquetaSvg(o.etiqueta, crop.x + crop.side * 0.05, crop.y + crop.side * 0.05, crop.side * 0.12, 0) : etiquetaSvg(o.etiqueta, W * 0.03, H * 0.04, H * 0.105, -2.3);
