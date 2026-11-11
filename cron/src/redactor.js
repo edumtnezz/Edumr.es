@@ -654,6 +654,33 @@ async function leerFuente(env, f, s) {
   throw new Error(motivos.join(" · ") || "sin fuente");
 }
 
+// Portada automática (Edu 11/11/2026): al publicar, antes del aviso, se pide a la web que haga la portada (fondo de la IA o guardado + cromo dibujado en el servidor).
+// Máx. 2 por pasada para no alargar el ciclo; si falla, la noticia sale igual y se queda con su foto de siempre.
+export async function portadasAutomaticas(env, f, noticias, now) {
+  const lista = (noticias || []).filter((n) => n && n.id && n.tipo !== "once" && !n.thumb).slice(0, 2);
+  if (!lista.length) return 0;
+  let sec = "";
+  try {
+    sec = (await env.PORRA.get("rd:auto-secret")) || "";
+    if (sec.length < 32) { sec = [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, "0")).join(""); await env.PORRA.put("rd:auto-secret", sec); }
+  } catch (e) { return 0; }
+  let hechas = 0;
+  for (const n of lista) {
+    try {
+      const r = await f(SITE + "portada-auto", { method: "POST", headers: { "content-type": "application/json", "user-agent": "edumr-cron" }, body: JSON.stringify({ id: n.id, secret: sec }) });
+      const j = await r.json().catch(() => null);
+      if (!j || !j.ok || !j.thumb) continue;
+      const own = (await env.PORRA.get(OWN_KEY, "json")) || [];
+      const o = own.find((x) => x.id === n.id);
+      if (!o) continue;
+      o.thumb = j.thumb; o.updatedAt = now; o.portadaUsd = typeof j.usd === "number" ? j.usd : null; o.portadaModelo = String(j.modelo || ""); o.portadaAt = now;
+      await env.PORRA.put(OWN_KEY, JSON.stringify(own));
+      n.thumb = j.thumb; hechas++;
+    } catch (e) {}
+  }
+  return hechas;
+}
+
 const LISTA_MS = 15 * 60e3;
 async function avisarPublicadas(env, f, st, noticias, now) {
   const hay = ((noticias || []).some((n) => n && n.id)) || ((st.tgPend || []).length > 0);
@@ -1892,6 +1919,7 @@ export async function redactorSombra(env, deps) {
     if (cambio) await env.PORRA.put(OWN_KEY, JSON.stringify(own));
   } catch (e) {}
 
+  try { await portadasAutomaticas(env, f, nuevas, now); } catch (e) {}
   try { if (await avisarPublicadas(env, f, st, nuevas, now)) dirty = true; } catch (e) { st.tgUltimo = { ok: false, err: String(e && e.message || e).slice(0, 120), at: now }; dirty = true; }
   if (dirty) { try { await env.PORRA.put(STATE_KEY, JSON.stringify(st)); } catch (e) {} }
   return { procesado: hecho ? hecho.id : null, pendientes: cola.length, tokens: st.tok.n };

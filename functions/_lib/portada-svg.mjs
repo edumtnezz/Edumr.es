@@ -52,7 +52,11 @@ export function portadaSvg(o, crop) {
   parts.push(`<defs><filter id="sh" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="${H * 0.008}" stdDeviation="${H * 0.012}" flood-color="#000" flood-opacity=".4"/></filter>` +
     `<filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="0" stdDeviation="${H * 0.025}" flood-color="#fff" flood-opacity=".55"/></filter>` +
     `<radialGradient id="rg"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>`);
-  parts.push(o.bg ? `<image href="${uri(o.bg)}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice"/>` : `<rect width="${W}" height="${H}" fill="#14301f"/>`);
+  if (o.bg) parts.push(`<image href="${uri(o.bg)}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice"/>`);
+  else { // sin fondo de la IA: colores del club
+    const c = o.color || [24, 90, 60], f = (k) => c.map((v) => Math.round(v * k)).join(",");
+    parts.push(`<rect width="${W}" height="${H}" fill="rgb(${f(0.55)})"/><polygon points="0,${H * 0.15} ${W * 0.55},0 ${W * 0.8},0 0,${H * 0.5}" fill="rgb(${c.join(",")})" fill-opacity=".9"/><polygon points="${W},${H * 0.45} ${W},${H} ${W * 0.35},${H}" fill="#fff" fill-opacity=".08"/>`);
+  }
   // Escudo real
   const cs = pngSize(o.crest);
   if (o.crest && cs) {
@@ -62,7 +66,7 @@ export function portadaSvg(o, crop) {
   }
   let etiq = "";
   if (cro) {
-    const d = H * 0.5, cx = W * 0.64, cy = H * 0.42, accent = (o.etiqueta && o.etiqueta.c) || "#16a34a";
+    const d = H * 0.5, cx = W * 0.64, cy = H * 0.42, accent = o.color ? "rgb(" + o.color.join(",") + ")" : ((o.etiqueta && o.etiqueta.c) || "#16a34a");
     parts.push(`<circle cx="${cx}" cy="${cy}" r="${d * 0.95}" fill="url(#rg)"/>`);
     parts.push(`<circle cx="${cx}" cy="${cy}" r="${d / 2 + H * 0.018}" fill="#fff" filter="url(#sh)"/><circle cx="${cx}" cy="${cy}" r="${d / 2 + H * 0.008}" fill="${accent}"/>`);
     parts.push(`<clipPath id="cc"><circle cx="${cx}" cy="${cy}" r="${d / 2}"/></clipPath><circle cx="${cx}" cy="${cy}" r="${d / 2}" fill="#fbfbf8"/>`);
@@ -102,4 +106,19 @@ export function portadaSvg(o, crop) {
 export function recorteCuadrado(cro) {
   const side = Math.round(H * 0.88), fx = cro ? 0.64 : 0.5;
   return { x: Math.max(0, Math.min(W - side, W * fx - side / 2)), y: (H - side) * 0.25, side };
+}
+
+// Color dominante del escudo (misma regla que el panel) a partir de píxeles RGBA de 40x40
+export function colorEscudoPx(d) {
+  const cuenta = {};
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] < 200) continue;
+    const r = d[i], g = d[i + 1], b = d[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx ? (mx - mn) / mx : 0;
+    if (mx < 60 || sat < 0.35) continue;
+    const k = (r >> 6) + "," + (g >> 6) + "," + (b >> 6), o = cuenta[k] || (cuenta[k] = { n: 0, r: 0, g: 0, b: 0 });
+    o.n++; o.r += r; o.g += g; o.b += b;
+  }
+  let best = null, bs = 0;
+  for (const k in cuenta) { const o = cuenta[k], amar = o.r / o.n > 180 && o.g / o.n > 150 && o.b / o.n < 90, sc = o.n * (amar ? 0.5 : 1); if (sc > bs) { bs = sc; best = [Math.round(o.r / o.n), Math.round(o.g / o.n), Math.round(o.b / o.n)]; } }
+  return best || [24, 90, 60];
 }

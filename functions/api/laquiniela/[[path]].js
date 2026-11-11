@@ -2,6 +2,7 @@ import { cleanStarters } from "../../_lib/starters.mjs";
 import { teamPlayedMatches, playedDenominator } from "../../_lib/played.mjs";
 import { sameTeam, pendingMatches, rosterFor, isComplete } from "../../_lib/matchpoints.mjs";
 import { fitLagOf, fitIndex } from "../../_lib/fitness.mjs";
+import { etiquetaDe } from "../../_lib/portada-svg.mjs";
 const COMPETITION = "PD";
 const CACHE_TTL_MS = 60 * 1000;
 const FORM_TTL_MS = 10 * 60 * 1000;
@@ -2250,6 +2251,48 @@ async function generarPortada(env, request, own, it, now) {
   // La imagen NO se publica todavía: el panel le pega encima el escudo y la marca reales y la guarda (portada-guardar)
   if (sinJ && fondoKey) { try { const id = Date.now().toString(36); await env.PORRA.put("bg:" + fondoKey + ":" + id, j.data[0].b64_json); await env.PORRA.put("bg:idx:" + fondoKey, JSON.stringify(fondoIdx.concat(id).slice(-8))); } catch (e) {} }
   return json({ ok: true, sinJugador: sinJ && !pl, cromo, b64: j.data[0].b64_json, crest, conFoto, jugador: jug, modelo: usado, usd: costeUsd(j.usage), usage: j.usage || null, tipoNoticia });
+}
+// Portada automática al publicar (la llama el Worker del redactor con un secreto compartido en KV).
+// Hace el fondo con ChatGPT (o reutiliza uno guardado), dibuja el cromo en el servidor y guarda UNA imagen PNG. Tope diario de llamadas a la IA.
+const AUTO_IA_DIA = 20;
+let MARCA_B64 = "";
+async function marcaB64(request) {
+  if (MARCA_B64) return MARCA_B64;
+  try {
+    const r = await fetch(new URL("/img/noticias-marca.png", request.url));
+    if (!r.ok) return "";
+    const u = new Uint8Array(await r.arrayBuffer()); let b = "";
+    for (let i = 0; i < u.length; i += 8192) b += String.fromCharCode.apply(null, u.subarray(i, i + 8192));
+    MARCA_B64 = btoa(b);
+  } catch (e) {}
+  return MARCA_B64;
+}
+async function portadaAuto(env, request) {
+  let data = null;
+  try { data = await request.json(); } catch (e) {}
+  const sec = await env.PORRA.get("rd:auto-secret");
+  if (!data || !sec || sec.length < 32 || data.secret !== sec) return json({ error: "No autorizado." }, 403);
+  const now = Date.now(), dia = "pa:ia:" + new Date(now).toISOString().slice(0, 10);
+  const usadas = Number(await env.PORRA.get(dia)) || 0;
+  const own = await getOwn(env);
+  const it = own.find((x) => x.id === data.id && x.status === "published");
+  if (!it) return json({ error: "No existe." }, 404);
+  if (it.tipo === "once") return json({ ok: false, saltada: "once" });
+  if (/^\/api\/laquiniela\/portada\//.test(String(it.thumb || ""))) return json({ ok: false, saltada: "ya tiene" });
+  // Si ya hay fondo guardado para el club no cuesta nada; si no, se respeta el tope diario
+  if (usadas >= AUTO_IA_DIA) return json({ ok: false, saltada: "tope diario" });
+  let j;
+  try { j = await (await generarPortada(env, request, own, it, now)).json(); } catch (e) { return json({ error: String(e && e.message || e).slice(0, 160) }, 502); }
+  if (!j || !j.b64) return json({ error: (j && j.error) || "sin imagen" }, 502);
+  if (j.modelo !== "fondo guardado") await env.PORRA.put(dia, String(usadas + 1), { expirationTtl: 172800 });
+  // Import perezoso: el WebAssembly solo se carga cuando hace falta (y las pruebas en Node no lo necesitan)
+  const { renderPortada, colorDelEscudo } = await import("../../_lib/portada-render.mjs");
+  const color = j.crest ? await colorDelEscudo(j.crest) : null;
+  const c = j.cromo || null;
+  const png = await renderPortada({ bg: j.b64, crest: j.crest, face: c && c.foto, nombre: c && c.nombre, avg: c && c.avg, value: c && c.value, color, etiqueta: etiquetaDe(c, j.tipoNoticia), marca: await marcaB64(request) });
+  let b = ""; for (let i = 0; i < png.length; i += 8192) b += String.fromCharCode.apply(null, png.subarray(i, i + 8192));
+  await env.PORRA.put("portada:v1:" + it.id, btoa(b));
+  return json({ ok: true, thumb: "/api/laquiniela/portada/" + it.id + "?v=" + now.toString(36), usd: j.usd == null ? null : j.usd, modelo: String(j.modelo || "").slice(0, 60) });
 }
 // Coste real de la petición: tokens devueltos por OpenAI × tarifas de la página de modelos (texto 5 $, imagen entrada 8 $, imagen salida 30 $ por millón)
 function costeUsd(u) {
@@ -5740,7 +5783,7 @@ async function handleGet({ request, env: env0, params }) {
     if (!b64) b64 = await env.PORRA.get("portada:v1:" + id8);
     if (!b64) return new Response("no hay portada", { status: 404 });
     const bin = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-    return new Response(bin, { headers: { "content-type": "image/jpeg", "cache-control": "public, max-age=31536000, immutable" } });
+    return new Response(bin, { headers: { "content-type": b64.startsWith("iVBOR") ? "image/png" : "image/jpeg", "cache-control": "public, max-age=31536000, immutable" } });
   }
   if (path === "admin-noticias") return adminNoticias(env, request, url, null);
   if (path === "noticia") {
@@ -5853,6 +5896,7 @@ export async function onRequestPost({ request, env: env0, params, waitUntil }) {
     try { data = await request.json(); } catch (e) {}
     return adminNoticias(env, request, new URL(request.url), data || {});
   }
+  if (path === "portada-auto") return portadaAuto(env, request);
   if (path === "registro") return handleRegistro(request, env);
   if (path === "login") return handleLogin(request, env);
   if (path === "logout") return handleLogout();
