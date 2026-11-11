@@ -2140,14 +2140,15 @@ async function crestB64(url) {
 async function generarPortada(env, request, own, it, now) {
   if (!env.OPENAI_API_KEY) return json({ error: "Falta la clave OPENAI_API_KEY en Cloudflare." }, 400);
   const fold = (v) => stripAccents(String(v || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w.length > 3);
-  const tt = fold(it.title).concat((Array.isArray(it.players) ? it.players : []).flatMap((q) => fold(typeof q === "string" ? q : (q && q.name) || "")));
+  const tit = fold(it.title);
+  const tt = tit.concat((Array.isArray(it.players) ? it.players : []).flatMap((q) => fold(typeof q === "string" ? q : (q && q.name) || "")));
   let pl = null, crestClub = "", tipoNoticia = "";
   const todos = [];
   try {
     const m = await getMarketPlayers(env);
     const clubTok = fold(it.club);
     // El jugador sale por su nombre en el titular (nunca se exige que sea del club de la noticia: puede ser el rival)
-    const cand = (m.players || []).filter((p) => p.photo).map((p) => ({ p, sc: fold(p.name).filter((w) => tt.includes(w)).length, cl: fold(p.team).some((w) => clubTok.includes(w)) ? 1 : 0 })).filter((c) => c.sc > 0).sort((a, b) => b.sc - a.sc || b.cl - a.cl || (b.p.avg || 0) - (a.p.avg || 0));
+    const cand = (m.players || []).filter((p) => p.photo).map((p) => ({ p, sc: fold(p.name).filter((w) => tt.includes(w)).length + fold(p.name).filter((w) => tit.includes(w)).length, cl: fold(p.team).some((w) => clubTok.includes(w)) ? 1 : 0 })).filter((c) => c.sc > 0).sort((a, b) => b.sc - a.sc || b.cl - a.cl || (b.p.avg || 0) - (a.p.avg || 0));
     if (cand.length) {
       const top = cand[0], empate = cand.filter((c) => c.sc === top.sc && c.cl === top.cl && c.p.id !== top.p.id).length;
       if (!(top.sc === 1 && empate > 0 && !top.cl)) pl = top.p; // si hay dudas entre dos jugadores, no se arriesga una cara equivocada

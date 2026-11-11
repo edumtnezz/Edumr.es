@@ -79,23 +79,22 @@ export function portadaSvg(o, crop) {
     const fw = d * 1.02, fh = fw; // la foto de Futmondo es cuadrada
     parts.push(`<image href="${uri(o.face)}" x="${cx - fw / 2}" y="${cy + d / 2 - fh + d * 0.02}" width="${fw}" height="${fh}" clip-path="url(#cc)"/>`);
     // Nombre
-    const nombre = String(o.nombre).toUpperCase(), fs = H * 0.075, ny = cy + d / 2 + H * 0.085;
+    const nombre = String(o.nombre).toUpperCase(), fs = H * 0.07, ny = cy + d / 2 + H * 0.075;
     const nw = Math.min(W * 0.5, nombre.length * fs * 0.68 + fs * 1.4);
     parts.push(`<rect x="${cx - nw / 2}" y="${ny - fs * 0.72}" width="${nw}" height="${fs * 1.44}" rx="${fs * 0.28}" fill="#0b0f0d" filter="url(#sh)"/>`);
     parts.push(`<text x="${cx}" y="${ny + fs * 0.36}" text-anchor="middle" font-family="Inter" font-weight="900" font-size="${fs}" fill="#fff" textLength="${Math.min(nw - fs * 0.6, nombre.length * fs * 0.66)}" lengthAdjust="spacingAndGlyphs">${esc(nombre)}</text>`);
-    // MEDIA y VALOR
+    // MEDIA y VALOR: tarjetas oscuras tipo cristal, etiqueta pequeña arriba y número grande centrado
     const chips = [];
     if (o.avg && o.tipoNoticia !== "lesion" && !(o.etiqueta && o.etiqueta.t === "LESIÓN")) chips.push(["MEDIA", num1(o.avg), "#fde047"]);
-    if (o.value) chips.push(["VALOR", num1(o.value / 1e6) + " M", "#ffffff"]);
-    const chh = H * 0.09, gap = W * 0.012, fy = ny + fs * 0.72 + H * 0.035;
-    const cws = chips.map((c) => c[0].length * chh * 0.3 * 0.62 + c[1].length * chh * 0.56 * 0.62 + chh * 1.2);
-    let x0 = cx - (cws.reduce((a, b) => a + b, 0) + gap * (chips.length - 1)) / 2;
-    chips.forEach((c, i) => {
-      const w1 = c[0].length * chh * 0.3 * 0.62;
-      parts.push(`<rect x="${x0}" y="${fy}" width="${cws[i]}" height="${chh}" rx="${chh * 0.3}" fill="${c[2]}" filter="url(#sh)"/>` +
-        `<text x="${x0 + chh * 0.3}" y="${fy + chh * 0.62}" font-family="Inter" font-weight="700" font-size="${chh * 0.3}" fill="#111">${c[0]}</text>` +
-        `<text x="${x0 + chh * 0.3 + w1 + chh * 0.2}" y="${fy + chh * 0.7}" font-family="Inter" font-weight="900" font-size="${chh * 0.56}" fill="#111">${esc(c[1])}</text>`);
-      x0 += cws[i] + gap;
+    if (o.value) chips.push(["VALOR", num1(o.value / 1e6) + " M", "#4ade80"]);
+    const chh = H * 0.12, gap = W * 0.014, fy = ny + fs * 0.72 + H * 0.025;
+    const cwd = Math.max(W * 0.17, Math.max(0, ...chips.map((c) => c[1].length * chh * 0.5 * 0.6)) + chh * 0.7);
+    let x0 = cx - (cwd * chips.length + gap * (chips.length - 1)) / 2;
+    chips.forEach((c) => {
+      parts.push(`<rect x="${x0}" y="${fy}" width="${cwd}" height="${chh}" rx="${chh * 0.3}" fill="#0a0e0c" fill-opacity=".88" stroke="${c[2]}" stroke-width="${Math.max(2, chh * 0.035)}" filter="url(#sh)"/>` +
+        `<text x="${x0 + cwd / 2}" y="${fy + chh * 0.31}" text-anchor="middle" font-family="Inter" font-weight="800" font-size="${chh * 0.2}" letter-spacing="${chh * 0.03}" fill="${c[2]}">${c[0]}</text>` +
+        `<text x="${x0 + cwd / 2}" y="${fy + chh * 0.8}" text-anchor="middle" font-family="Inter" font-weight="900" font-size="${chh * 0.5}" fill="#fff">${esc(c[1])}</text>`);
+      x0 += cwd + gap;
     });
   }
   // Etiqueta: grande arriba a la izquierda (completa) o en la esquina de la miniatura cuadrada

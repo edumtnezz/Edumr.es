@@ -184,24 +184,27 @@ function pintaCromo(g, foto, cr, crestImg, W, H, tipoNoticia) {
   var fw = d * 1.02, fh = fw * foto.naturalHeight / foto.naturalWidth; g.drawImage(foto, cx - fw / 2, cy + d / 2 - fh + d * 0.02, fw, fh);
   g.restore();
   // Nombre en una placa grande y blanca sobre fondo oscuro
-  var nombre = String(cr.nombre || "").toUpperCase(), fs = H * 0.075;
+  var nombre = String(cr.nombre || "").toUpperCase(), fs = H * 0.07;
   g.save(); g.font = "900 " + Math.round(fs) + "px system-ui, -apple-system, Segoe UI, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
-  var nw = Math.min(W * 0.5, g.measureText(nombre).width + fs * 1.4), ny = cy + d / 2 + H * 0.085;
+  var nw = Math.min(W * 0.5, g.measureText(nombre).width + fs * 1.4), ny = cy + d / 2 + H * 0.075;
   g.shadowColor = "rgba(0,0,0,.45)"; g.shadowBlur = H * 0.03; g.fillStyle = "#0b0f0d";
   g.beginPath(); if (g.roundRect) g.roundRect(cx - nw / 2, ny - fs * 0.72, nw, fs * 1.44, fs * 0.28); else g.rect(cx - nw / 2, ny - fs * 0.72, nw, fs * 1.44); g.fill(); g.shadowBlur = 0;
   g.fillStyle = "#fff"; g.fillText(nombre, cx, ny + fs * 0.04, nw - fs * 0.5);
-  // Dos datos grandes y claros: MEDIA y VALOR, en pastillas de colores vivos
+  // Dos datos grandes y claros: MEDIA y VALOR, en tarjetas oscuras tipo cristal con el número centrado y la etiqueta encima
   var chips = [];
   if (cr.avg && tipoNoticia !== "lesion") chips.push(["MEDIA", String(Math.round(cr.avg * 10) / 10).replace(".", ","), "#fde047"]);
-  if (cr.value) chips.push(["VALOR", String(Math.round(cr.value / 1e5) / 10).replace(".", ",") + " M", "#ffffff"]);
-  var ch = H * 0.09, gap = W * 0.012, fy = ny + fs * 0.72 + H * 0.035, cws = [];
-  chips.forEach(function (c) { g.font = "700 " + Math.round(ch * 0.3) + "px system-ui, sans-serif"; var a1 = g.measureText(c[0]).width; g.font = "900 " + Math.round(ch * 0.56) + "px system-ui, sans-serif"; cws.push(a1 + g.measureText(c[1]).width + ch * 0.9); });
-  var tot = cws.reduce(function (a, b) { return a + b; }, 0) + gap * (chips.length - 1), x0 = cx - tot / 2;
-  chips.forEach(function (c, i) {
-    g.shadowColor = "rgba(0,0,0,.4)"; g.shadowBlur = H * 0.02; g.fillStyle = c[2]; g.beginPath(); if (g.roundRect) g.roundRect(x0, fy, cws[i], ch, ch * 0.3); else g.rect(x0, fy, cws[i], ch); g.fill(); g.shadowBlur = 0;
-    g.fillStyle = "#111"; g.textAlign = "left"; g.font = "700 " + Math.round(ch * 0.3) + "px system-ui, sans-serif"; g.fillText(c[0], x0 + ch * 0.3, fy + ch * 0.52); var w1 = g.measureText(c[0]).width;
-    g.font = "900 " + Math.round(ch * 0.56) + "px system-ui, sans-serif"; g.fillText(c[1], x0 + ch * 0.3 + w1 + ch * 0.18, fy + ch * 0.54);
-    x0 += cws[i] + gap;
+  if (cr.value) chips.push(["VALOR", String(Math.round(cr.value / 1e5) / 10).replace(".", ",") + " M", "#4ade80"]);
+  var ch = H * 0.12, gap = W * 0.014, fy = ny + fs * 0.72 + H * 0.025, cwd = 0;
+  g.font = "900 " + Math.round(ch * 0.5) + "px system-ui, sans-serif";
+  chips.forEach(function (c) { cwd = Math.max(cwd, g.measureText(c[1]).width + ch * 0.7); }); cwd = Math.max(cwd, W * 0.17);
+  var tot = cwd * chips.length + gap * (chips.length - 1), x0 = cx - tot / 2;
+  chips.forEach(function (c) {
+    g.save(); g.shadowColor = "rgba(0,0,0,.45)"; g.shadowBlur = H * 0.025; g.fillStyle = "rgba(10,14,12,.88)"; g.beginPath(); if (g.roundRect) g.roundRect(x0, fy, cwd, ch, ch * 0.3); else g.rect(x0, fy, cwd, ch); g.fill(); g.restore();
+    g.strokeStyle = c[2]; g.lineWidth = Math.max(2, ch * 0.035); g.beginPath(); if (g.roundRect) g.roundRect(x0, fy, cwd, ch, ch * 0.3); else g.rect(x0, fy, cwd, ch); g.stroke();
+    g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = c[2];
+    g.font = "800 " + Math.round(ch * 0.2) + "px system-ui, sans-serif"; if ("letterSpacing" in g) g.letterSpacing = Math.round(ch * 0.03) + "px"; g.fillText(c[0], x0 + cwd / 2, fy + ch * 0.24); if ("letterSpacing" in g) g.letterSpacing = "0px";
+    g.fillStyle = "#fff"; g.font = "900 " + Math.round(ch * 0.5) + "px system-ui, sans-serif"; g.fillText(c[1], x0 + cwd / 2, fy + ch * 0.64);
+    x0 += cwd + gap;
   });
   g.restore();
   // Frase corta que se entiende desde fuera, grande, abajo a la izquierda, inclinada
