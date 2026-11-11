@@ -34,9 +34,14 @@ test("todo número del texto sale de los datos", () => {
 test("no repite la misma noticia y hay variedad", () => {
   const ps = [P(), P({ id: "p2", name: "B", fitness: [8, 9, 9, 10, 9], avg: 6 }), P({ id: "p3", name: "C", value: 5e6, avg: 7, fitness: [7, 7, 6, 7, 8] })];
   const a = elegirAnalisis(ps, J, [], Date.now(), 3);
-  assert.ok(a.length >= 2);
-  const ya = elegirAnalisis(ps, J, a.map((x) => ({ key: x.key, createdAt: Date.now() })), Date.now(), 3);
+  assert.equal(a.length, 1); // uno por pasada, repartidos en el tiempo
+  const ahora = Date.now();
+  const propias = a.map((x) => ({ key: x.key, createdAt: ahora }));
+  assert.equal(elegirAnalisis(ps, J, propias, ahora + 10 * 60e3, 3).length, 0); // antes de 40 min no sale otro
+  const ya = elegirAnalisis(ps, J, propias, ahora + 41 * 60e3, 3);
+  assert.equal(ya.length, 1);
   assert.equal(ya.some((x) => a.some((y) => y.key === x.key)), false);
+  assert.notEqual(ya[0].p.id, a[0].p.id); // un solo análisis por jugador y jornada
 });
 test("próximo partido", () => {
   assert.equal(proximo(P(), J).hora, "16:15");

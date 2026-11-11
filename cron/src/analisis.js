@@ -183,15 +183,17 @@ export function reglas(p, jornada, jugadas, pub, mins) {
 export function elegirAnalisis(players, jornada, own, now, max, jugadas, mins) {
   const hoy = new Date(now).toISOString().slice(0, 10);
   const claves = new Set((own || []).map((o) => o.key).filter(Boolean));
-  const hechasHoy = (own || []).filter((o) => String(o.key || "").startsWith("an-") && new Date(o.createdAt || 0).toISOString().slice(0, 10) === hoy).length;
-  const cupo = Math.max(0, Math.min(max || 3, 30 - hechasHoy));
+  // Sin tope diario: se reparten en el tiempo. Como mucho 1 cada 40 min (Edu 11/11/2026)
+  const ultima = (own || []).filter((o) => String(o.key || "").startsWith("an-")).reduce((m, o) => Math.max(m, o.createdAt || 0), 0);
+  const cupo = ultima && now - ultima < 40 * 60e3 ? 0 : 1;
+  const yaTienen = new Set((own || []).map((o) => String(o.key || "")).filter((k) => k.startsWith("an-")).map((k) => { const m = k.match(/^an-(.+?)-[^-]+-([^-]+)$/); return m ? m[1] + "|" + m[2] : ""; }));
   const cand = [];
   const pubMax = {};
   for (const p of players || []) { const k = canon(p.team), m = Number(p.matches) || 0; if (m > (pubMax[k] || 0)) pubMax[k] = m; }
   for (const p of players || []) {
     for (const r of reglas(p, jornada, jugadas, pubMax[canon(p.team)], mins)) {
       const key = "an-" + p.id + "-" + r.tipo + "-" + (p.jornadaFf || "x");
-      if (claves.has(key)) continue;
+      if (claves.has(key) || yaTienen.has(p.id + "|" + (p.jornadaFf || "x"))) continue; // un solo análisis por jugador y jornada
       cand.push(Object.assign({ key, p }, r));
     }
   }

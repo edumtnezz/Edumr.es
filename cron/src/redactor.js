@@ -489,7 +489,12 @@ async function publicarNoticias(env, f, res, now, opts) {
 }
 
 export function noticiaTelegram(item) {
-  let t = "📰 <b>" + esc(item.title) + "</b>\n\n" + (item.lead ? esc(item.lead) + "\n\n" : "") + esc(String(item.body || "").split(/\n+/).filter(Boolean).join("\n").slice(0, 500));
+  const negrita = (t) => esc(t).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*\*/g, "");
+  const lineas = String(item.body || "").split(/\n+/).map((l) => l.trim()).filter(Boolean);
+  // Corto: titular, entradilla y una sola frase útil (la «lectura» si existe; si no, el primer párrafo)
+  let resto = lineas.find((l) => /nuestra lectura/i.test(l)) || lineas[0] || "";
+  if (resto.length > 260) { const c = resto.slice(0, 260), i = Math.max(c.lastIndexOf(". "), c.lastIndexOf("; ")); resto = i > 120 ? c.slice(0, i + 1) : c.replace(/\s+\S*$/, "") + "…"; }
+  let t = "📰 <b>" + esc(item.title) + "</b>\n\n" + (item.lead ? esc(item.lead) + "\n\n" : "") + negrita(resto);
   return t + "\n\n🔗 https://edumr.es/futmondo/guiafantasy/noticias/ed-" + item.id;
 }
 async function enviarAviso(env, f, chat, n) {
