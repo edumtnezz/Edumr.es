@@ -68,8 +68,8 @@ export function portadaSvg(o, crop) {
   const cs = pngSize(o.crest);
   if (o.crest && cs) {
     const duoOk = cro && o.duo && o.duo.face && o.duo.nombre;
-    const ch = H * (duoOk ? 0.3 : cro ? 0.5 : 0.62), cw = ch * cs.w / cs.h;
-    const cx0 = duoOk ? W * 0.035 : cro ? W * 0.06 : (W - cw) / 2, cy0 = duoOk ? H * 0.4 - ch / 2 + H * 0.02 : (H - ch) / 2 - (cro ? H * 0.04 : 0);
+    const ch = H * (duoOk ? 0.26 : cro ? 0.5 : 0.62), cw = ch * cs.w / cs.h;
+    const cx0 = duoOk ? W * 0.03 : cro ? W * 0.06 : (W - cw) / 2, cy0 = duoOk ? H * 0.45 - ch / 2 : (H - ch) / 2 - (cro ? H * 0.04 : 0);
     parts.push(`<image href="${uri(o.crest)}" x="${cx0}" y="${cy0}" width="${cw}" height="${ch}" filter="url(#glow)"/>`);
   }
   let etiq = "";
@@ -104,19 +104,20 @@ export function portadaSvg(o, crop) {
   const d2 = o.duo && o.duo.face && o.duo.nombre ? o.duo : null;
   if (cro && d2) {
     // Dos protagonistas: dos círculos, cada uno con su nombre y datos; la etiqueta de cada uno solo si hay un dato que la respalde
-    const d = H * 0.48, cy = H * 0.4, c1 = W * 0.43, c2 = W * 0.78;
-    jugador({ face: o.face, nombre: o.nombre, avg: o.avg, value: o.value, sinDatos: lesionMain }, 0, c1, cy, d, accent);
-    jugador({ face: d2.face, nombre: d2.nombre, avg: d2.avg, value: d2.value, sinDatos: d2.tipo === "lesion" || d2.tipo === "duda" }, 1, c2, cy, d, accent);
-    if (d2.etiqueta) parts.push(etiquetaSvg(d2.etiqueta, c2 - etiquetaAncho(d2.etiqueta, H * 0.075) / 2, H * 0.045, H * 0.075, 0));
+    // Con dos jugadores solo nombre (sin tarjetas de datos): más aire y todo legible
+    const d = H * 0.46, cy = H * 0.45, c1 = W * 0.4, c2 = W * 0.75;
+    jugador({ face: o.face, nombre: o.nombre, sinDatos: true }, 0, c1, cy, d, accent);
+    jugador({ face: d2.face, nombre: d2.nombre, sinDatos: true }, 1, c2, cy, d, accent);
+    if (d2.etiqueta) parts.push(etiquetaSvg(d2.etiqueta, c2 - etiquetaAncho(d2.etiqueta, H * 0.075) / 2, H * 0.065, H * 0.075, 0));
   } else if (cro) {
     jugador({ face: o.face, nombre: o.nombre, avg: o.avg, value: o.value, sinDatos: lesionMain }, 0, W * 0.62, H * 0.4, H * 0.58, accent);
   }
   // Etiqueta: grande arriba a la izquierda (completa) o en la esquina de la miniatura cuadrada
   if (o.etiqueta) etiq = crop ? etiquetaSvg(o.etiqueta, crop.x + crop.side * 0.05, crop.y + crop.side * 0.05, crop.side * 0.12, 0) : etiquetaSvg(o.etiqueta, W * 0.03, H * 0.04, H * 0.105, -2.3);
   parts.push(etiq);
-  // Marca de agua NOTICIAS, abajo a la derecha, transparente
+  // Marca de agua NOTICIAS: arriba a la derecha, transparente (abajo tapaba los datos)
   const ms = pngSize(o.marca);
-  if (o.marca && ms) { const lw = W * 0.09, lh = lw * ms.h / ms.w; parts.push(`<image href="${uri(o.marca)}" x="${W - lw - W * 0.025}" y="${H - lh - H * 0.035}" width="${lw}" height="${lh}" opacity=".6"/>`); }
+  if (o.marca && ms) { const lw = W * 0.075, lh = lw * ms.h / ms.w; parts.push(`<image href="${uri(o.marca)}" x="${W - lw - W * 0.02}" y="${H * 0.03}" width="${lw}" height="${lh}" opacity=".6"/>`); }
   const vb = crop ? `${crop.x} ${crop.y} ${crop.side} ${crop.side}` : `0 0 ${W} ${H}`;
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="${vb}" width="${crop ? crop.side : W}" height="${crop ? crop.side : H}">${parts.join("")}</svg>`;
 }
