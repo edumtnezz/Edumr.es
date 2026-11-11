@@ -497,7 +497,24 @@ export function noticiaTelegram(item) {
   let t = "📰 <b>" + esc(item.title) + "</b>\n\n" + (item.lead ? esc(item.lead) + "\n\n" : "") + negrita(resto);
   return t + "\n\n🔗 https://edumr.es/futmondo/guiafantasy/noticias/ed-" + item.id;
 }
+// Aviso en forma de tarjeta (como los canales de noticias): el enlace con vista previa grande (título, resumen e imagen de la propia noticia)
+// y, encima, una sola frase útil si la hay («Nuestra lectura»).
+export function noticiaTarjeta(item) {
+  const link = "https://edumr.es/futmondo/guiafantasy/noticias/ed-" + item.id;
+  const lectura = String(item.body || "").split(/\n+/).map((l) => l.trim()).find((l) => /nuestra lectura/i.test(l)) || "";
+  const t = lectura ? esc(lectura).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*\*/g, "").slice(0, 300) : "";
+  return { text: (t ? t + "\n\n" : "") + link, link };
+}
 async function enviarAviso(env, f, chat, n) {
+  const tj = noticiaTarjeta(n);
+  try {
+    const r = await f("https://api.telegram.org/bot" + env.TELEGRAM_BOT_TOKEN + "/sendMessage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chat, text: tj.text, parse_mode: "HTML", link_preview_options: { url: tj.link, prefer_large_media: true, show_above_text: true } }) });
+    const j = await r.json();
+    if (j && j.ok) return { ok: true, via: "tarjeta" };
+  } catch (e) {}
+  return enviarAvisoClasico(env, f, chat, n);
+}
+async function enviarAvisoClasico(env, f, chat, n) {
   const caption = noticiaTelegram(n);
   const foto = n.thumb && /^https:\/\//.test(n.thumb) ? n.thumb : "";
   if (foto) {

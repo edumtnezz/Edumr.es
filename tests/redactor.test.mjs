@@ -155,7 +155,8 @@ test("flujo completo: publica la noticia verificada y avisa una sola vez", async
   assert.equal(guardado.items[0].nombre, "Marc Casadó");
   assert.equal(tgMsgs.length, 1);
   assert.equal(tgMsgs[0].chat_id, "42");
-  assert.match(tgMsgs[0].caption || tgMsgs[0].text, /📰/);
+  assert.match(tgMsgs[0].text, /guiafantasy\/noticias\/ed-/);
+  assert.equal(tgMsgs[0].link_preview_options.prefer_large_media, true); // tarjeta con título, resumen e imagen
   assert.match(tgMsgs[0].caption || tgMsgs[0].text, /guiafantasy\/noticias\/ed-/);
   assert.match(own0thumb(kv), /i\.ytimg\.com\/vi\/AAA111\//);
   const own = JSON.parse(kv.get("own:news:v1"));
@@ -264,7 +265,8 @@ test("noticia escrita por la IA cuando pasa la validación", async () => {
   assert.equal(own[0].via, "ia");
   assert.equal(own[0].title, "Casadó se ejercita con normalidad en el Dépor");
   assert.equal(own[0].status, "published");
-  assert.match(tg[0].caption || tg[0].text, /Casadó se ejercita/);
+  assert.match(tg[0].text, /guiafantasy\/noticias\/ed-/);
+  assert.equal(tg[0].link_preview_options.prefer_large_media, true);
   assert.equal(own[0].players[0], "Marc Casadó");
 });
 

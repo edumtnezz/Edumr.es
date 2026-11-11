@@ -54,6 +54,8 @@ export async function onRequest(context) {
     // Fotos propias: el parte médico lleva su banner y las noticias sin foto, el banner de noticias
     if (/parte\s+m[eé]dico/i.test(og.t || "")) og = { ...og, i: url.origin + "/img/parte-medico.jpg?v=2" };
     else if (!og.i) og = { ...og, i: url.origin + "/img/noticia-ultima-hora.jpg?v=2" };
+    // Telegram y WhatsApp necesitan la dirección completa de la imagen; la portada va en tamaño mediano
+    if (og.i && og.i.charAt(0) === "/") og = { ...og, i: url.origin + og.i + (/\/portada\//.test(og.i) && !/[?&]t=/.test(og.i) ? (og.i.indexOf("?") >= 0 ? "&" : "?") + "t=m" : "") };
     const tags = '<meta property="og:site_name" content="Guía Fantasy · Futmondo EduMR"><meta property="og:type" content="article">' +
       '<meta property="og:url" content="' + esc(url.origin + url.pathname) + '">' +
       (og.t ? '<meta property="og:title" content="' + esc(og.t) + '"><meta name="twitter:title" content="' + esc(og.t) + '">' : "") +
