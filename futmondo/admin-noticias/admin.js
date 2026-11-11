@@ -160,7 +160,7 @@ function colorEscudo(img) {
 }
 function componer(j, x) {
   var sin = !!j.sinJugador;
-  return Promise.all([sin ? Promise.resolve(null) : cargaImg("data:image/png;base64," + j.b64), cargaImg("/img/noticias-marca.png"), j.crest ? cargaImg("data:image/png;base64," + j.crest) : Promise.resolve(null)]).then(function (r) {
+  return Promise.all([j.b64 ? cargaImg("data:image/png;base64," + j.b64) : Promise.resolve(null), cargaImg("/img/noticias-marca.png"), j.crest ? cargaImg("data:image/png;base64," + j.crest) : Promise.resolve(null)]).then(function (r) {
     var W = r[0] ? r[0].naturalWidth : 1536, H = r[0] ? r[0].naturalHeight : 1024, c = document.createElement("canvas"); c.width = W; c.height = H;
     var g = c.getContext("2d");
     if (r[0]) g.drawImage(r[0], 0, 0, W, H);

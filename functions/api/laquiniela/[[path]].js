@@ -2168,11 +2168,13 @@ async function generarPortada(env, request, own, it, now) {
       if (mejor) crestClub = mejor.lg;
     }
   } catch (e) {}
-  if (it.tipo !== "once" && !pl) {
-    // Sin foto de Futmondo no se inventa ninguna cara: se devuelve solo el escudo y el tipo, y el panel dibuja la portada
+  // Sin foto de Futmondo no se inventa ninguna cara: la IA hace solo el fondo (sin personas) y el panel pega el escudo real
+  const sinJ = it.tipo !== "once" && !pl;
+  let crestSinB64 = "";
+  if (sinJ) {
     const kt = fold(it.club); let lg = crestClub;
     if (!lg && kt.length) { const q = todos.find((x) => x.logo && fold(x.team).some((w) => kt.includes(w))); lg = q ? q.logo : ""; }
-    return json({ ok: true, sinJugador: true, b64: "", crest: await crestB64(lg), tipoNoticia, jugador: "", modelo: "sin IA", usd: 0 });
+    crestClub = lg || ""; crestSinB64 = await crestB64(crestClub);
   }
   const fd = new FormData();
   fd.append("model", String(env.OPENAI_IMAGE_MODEL || "gpt-image-2.6-flare"));
@@ -2193,6 +2195,7 @@ async function generarPortada(env, request, own, it, now) {
   }
   try { if (dos) { for (const q of dos) fd.append("image[]", await bajar(q.photo), "jugador.png"); conFoto = true; } } catch (e) {}
   try { if (pl && !dos) { fd.append("image[]", await bajar(pl.photo), "jugador.png"); conFoto = true; } } catch (e) {}
+  try { if (sinJ && crestSinB64) { const bin = atob(crestSinB64), u8 = new Uint8Array(bin.length); for (let k = 0; k < bin.length; k++) u8[k] = bin.charCodeAt(k); fd.append("image[]", new Blob([u8], { type: "image/png" }), "escudo.png"); } } catch (e) {}
   let conEstilo = false;
   try { fd.append("image[]", await bajar(origin + "/img/n/2b50b6910d.jpg"), "estilo.jpg"); conEstilo = true; } catch (e) {}
   const club = clean2((pl && pl.team) || it.club || "", 60);
@@ -2211,6 +2214,12 @@ async function generarPortada(env, request, own, it, now) {
   const POSES = ["grita celebrando un gol con la boca abierta y los dos brazos abiertos", "celebra con un puño apretado a la altura del pecho y gesto de rabia", "celebra con los dos puños apretados a la altura de la cara", "señala al cielo con el dedo índice de una mano y mira hacia arriba", "se lleva una mano al escudo del pecho y mira a cámara", "sonríe relajado mirando a cámara con los brazos caídos", "brazos cruzados sobre el pecho y gesto serio y seguro", "manos en la cintura, hombros anchos y mirada desafiante", "se pone un dedo en los labios pidiendo silencio", "se coloca una mano detrás de la oreja pidiendo que le aplaudan", "levanta un brazo para saludar a la afición con una mano abierta", "aplaude con las manos a la altura del pecho mirando a la grada", "mira al frente concentrado, serio, con la mandíbula apretada", "se ajusta el brazalete de capitán del brazo izquierdo mirando a cámara", "se arregla el cuello de la camiseta con una mano y mira al frente", "mira de lado sobre el hombro con gesto de sorpresa", "abre los brazos con las palmas hacia arriba protestando", "se tapa la boca con una mano, incrédulo", "levanta el pulgar de una mano en señal de aprobación y sonríe", "sonríe de oreja a oreja con la cabeza algo ladeada", "se besa el escudo de la camiseta con una mano agarrando la tela del pecho", "golpea con el puño su propio escudo del pecho", "corre hacia cámara celebrando con la boca abierta, solo se ve de cintura para arriba", "gira el cuerpo de tres cuartos con los brazos relajados y mira a cámara", "mira al cielo con los ojos cerrados y las manos abiertas dando las gracias", "se seca el sudor de la frente con el antebrazo y mira al frente", "hace el gesto de «calma» con las dos palmas hacia abajo", "se muerde el labio concentrado, mirada fija al frente", "señala con una mano hacia delante, indicando una dirección", "da una palmada con las manos juntas y mira al frente decidido"];
   const pose = POSES[Math.floor(Math.random() * POSES.length)];
   const extraTxt = it.tipo === "once" ? "" : " POSE de ESTA imagen (manda sobre cualquier otra indicación de pose): " + pose + ". ENCUADRE: plano medio recortado de la cintura hacia arriba, jugador en el lado derecho. No salen el balón, las piernas, ni otros jugadores. Manos simples y bien formadas, cinco dedos en cada una. No repitas el puño en alto salvo que esa sea la pose. El escudo oficial del club debe verse tal cual en el pecho de la camiseta.";
+  const ESCENAS = ["estadio de noche con focos potentes y público desenfocado", "césped de cerca con las luces del estadio desenfocadas al fondo", "túnel de vestuarios con una luz intensa al fondo", "grada con bengalas y humo de color", "balón sobre el césped en primer plano desenfocado y estadio al fondo", "confeti cayendo dentro de un estadio iluminado", "focos y niebla sobre el campo al atardecer", "afición con bufandas y banderas desenfocadas", "línea de cal y césped en perspectiva con luz lateral", "estadio vacío visto desde un córner con luz cinematográfica", "vestuario con camisetas colgadas, sin nombres ni dorsales legibles", "fuegos artificiales sobre el estadio"];
+  if (sinJ) {
+    const escena = ESCENAS[Math.floor(Math.random() * ESCENAS.length)];
+    const pp = "Imagen 1: escudo del club (úsalo SOLO para tomar sus colores; no lo dibujes). " + (conEstilo ? "Imagen 2: referencia de ESTILO (solo el estilo). " : "") + "Miniatura de noticia de fútbol, formato horizontal 3:2, alta resolución, mismo estilo visual que la referencia: colores intensos en los colores del escudo, pinceladas y diagonales dinámicas, contraste alto, iluminación cinematográfica. ESCENA de fondo: " + escena + ". SIN personas, SIN jugadores, SIN rostros, SIN manos, SIN texto, SIN números, SIN logos ni escudos dibujados. Deja el centro de la imagen despejado y más tranquilo, porque encima se colocará el escudo del club.";
+    fd.append("prompt", pp);
+  } else
   fd.append("prompt", prompt + extraTxt);
   // Si el proyecto no tiene acceso a un modelo, se prueba el siguiente (de mejor a más básico)
   const modelos = env.OPENAI_IMAGE_MODEL ? [String(env.OPENAI_IMAGE_MODEL)] : ["gpt-image-2.6-flare", "gpt-image-2.5-flare", "gpt-image-2.5-sunburst", "gpt-image-1-mini"];
@@ -2226,7 +2235,7 @@ async function generarPortada(env, request, own, it, now) {
   if (!usado) return json({ error: "OpenAI: " + ultimoErr }, 502);
   const crest = it.tipo !== "once" ? await crestB64(crestClub || (pl && pl.logo) || "") : "";
   // La imagen NO se publica todavía: el panel le pega encima el escudo y la marca reales y la guarda (portada-guardar)
-  return json({ ok: true, b64: j.data[0].b64_json, crest, conFoto, jugador: jug, modelo: usado, usd: costeUsd(j.usage), usage: j.usage || null, tipoNoticia });
+  return json({ ok: true, sinJugador: sinJ, b64: j.data[0].b64_json, crest, conFoto, jugador: jug, modelo: usado, usd: costeUsd(j.usage), usage: j.usage || null, tipoNoticia });
 }
 // Coste real de la petición: tokens devueltos por OpenAI × tarifas de la página de modelos (texto 5 $, imagen entrada 8 $, imagen salida 30 $ por millón)
 function costeUsd(u) {
