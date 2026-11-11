@@ -5798,7 +5798,7 @@ async function handleGet({ request, env: env0, params }) {
     let log = [];
     try { log = (await env.PORRA.get("mkchg:v2", "json")) || []; } catch (e) {}
     const fm = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
-    return json({ n: log.length, cambios: log.slice(-120).reverse().map((x) => ({ hora: fm.format(new Date(x.at)), jugadoresCambiados: x.n })) });
+    return json({ n: log.length, cambios: log.slice(-120).reverse().map((x) => ({ hora: fm.format(new Date(x.at)), jugadoresCambiados: x.n, movimientosDe500kOMas: (x.g || []).map((g) => g.name + " " + (g.d > 0 ? "+" : "") + g.d) })) });
   }
   // Diagnóstico de solo lectura: qué pasó con cada tema detectado (sin secretos)
   if (path === "redactor-estado") {

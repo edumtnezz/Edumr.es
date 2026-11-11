@@ -462,9 +462,10 @@ export async function avisar(env, deps) {
       if (st.vsig && vsig !== st.vsig) {
         const prev = st.vmap || {};
         const cambios = ps.filter((p) => prev[p.id] != null && prev[p.id] !== p.value);
-        if (cambios.length >= 5) { // solo cambios reales de valor (el resto es ruido de la lista, no una actualización)
+        if (cambios.length >= 1) { // solo cambios reales de valor de algún jugador (el resto es ruido de la lista)
           const log = ((await env.PORRA.get("mkchg:v2", "json")) || []);
-          log.push({ at: now, n: cambios.length });
+          const grandes = cambios.map((p) => ({ name: p.name, d: p.value - prev[p.id] })).filter((x) => Math.abs(x.d) >= 500000).sort((x, y) => Math.abs(y.d) - Math.abs(x.d)).slice(0, 8);
+          log.push({ at: now, n: cambios.length, g: grandes }); // g = jugadores que se movieron 500.000 o más en ese momento
           await env.PORRA.put("mkchg:v2", JSON.stringify(log.slice(-200)));
         }
       }
