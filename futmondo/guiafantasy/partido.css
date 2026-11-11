@@ -381,3 +381,6 @@ html, body { overflow-anchor: auto; }
 
 /* Sin el título verde "Partido finalizado" sobre el campo (Edu 02/11) */
 .mpage-xi-done > .mpage-xi-h:empty { display: none; }
+
+/* Repaso de diseño (11/11/2026): botón plano, sin degradado ni brillo */
+.mpa-data { background: #16a34a; box-shadow: none; }

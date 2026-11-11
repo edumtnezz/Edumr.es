@@ -3619,3 +3619,30 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .rtb-chg .rtb-when { font-weight: 600; color: var(--muted); }
 html[data-theme="light"] .rtb-chg .rtb-up { color: #15803d; }
 html[data-theme="light"] .rtb-chg .rtb-dn { color: #b91c1c; }
+
+/* ===== Repaso de diseño (11/11/2026): menos barra fija, textos legibles, menos rellenos ===== */
+/* Mercado: al bajar, la tira de escudos se esconde bajo el menú y solo quedan fijos posición y orden */
+@media (max-width: 640px) { .plt-head { top: calc(var(--plt-top, 109px) - 68px); } }
+/* Etiquetas de jornada y rótulos: nada por debajo de ~9,5 px */
+.racha-chip i { font-size: .6rem; }
+.plt-prob { font-size: .6rem; }
+.plt-pts small, .plt-avg small { font-size: .6rem; }
+.claus-stat small, .claus-grid .claus-stat.media small { font-size: .6rem; }
+.ffx-d, .ffx-d span { font-size: .62rem; }
+.dash-min { font-size: .6rem; }
+/* "Tocado" (novedad de hoy o ayer) */
+.toc-tag { flex: 0 0 auto; display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 5px; font-size: .62rem; font-weight: 800; letter-spacing: .02em; line-height: 1.5; color: #1f1300; background: #f59e0b; vertical-align: middle; }
+/* Rentables · Con dueño: cláusula como precio */
+.rtb-clk { font-size: .68rem; font-weight: 700; color: var(--muted); }
+.rtb-lock { font-size: .66rem; font-weight: 700; color: #b45309; overflow: hidden; text-overflow: ellipsis; }
+html:not([data-theme="light"]) .rtb-lock { color: #fbbf24; }
+.rtb-vsm { font-weight: 600; color: var(--muted); }
+/* Clausulazos: la cláusula sin degradado, mismo color plano */
+.claus-grid .claus-stat.clause { background: #f59e0b; }
+/* Ficha: el estado "Disponible" no ocupa una franja; puntos, media y partidos arriba y más compactos */
+.pp-status.ok { display: none; }
+.ficha-stats-top { margin: 10px 0 12px; }
+.playerpage .ficha-stats-top .ficha-stat { padding: 10px 8px 8px; border-radius: 14px; }
+@media (max-width: 640px) { .playerpage .ficha-head-center .mcard-photo { width: 88px; height: 88px; margin-bottom: 6px; } }
+.plt-row .plt-phw .plt-prob { font-size: .6rem; }
+.claus-grid .claus-stat small, .claus-grid .claus-stat.clause small { font-size: .6rem; }

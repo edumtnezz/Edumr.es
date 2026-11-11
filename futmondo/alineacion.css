@@ -94,3 +94,10 @@ a.pl { text-decoration: none; color: inherit; }
 .al-bench { max-width: 450px; margin: 12px auto 0; border-radius: 22px; border-top: 0; box-shadow: 0 18px 40px rgba(16,21,28,.22); box-sizing: border-box; overflow: hidden; }
 .al-bench-row .pl { max-width: 25%; }
 .al .al-bench { max-width: none; margin: 0; border-radius: 0; box-shadow: none; border-top: 2px solid rgba(255,255,255,.25); }
+
+/* Repaso de diseño (11/11/2026): los % del campo y del banquillo no bajan de 9 px */
+@media (max-width: 640px) {
+  .pl-prob { font-size: .6rem; }
+  .pl-prob.pl-out { font-size: .56rem; }
+  .al-bench-row .pl-prob:not(.pl-out) { font-size: .56rem; }
+}

@@ -222,6 +222,13 @@
     if (s === "doubt") return { cls: "st-doubt", label: "?" };
     return null;
   }
+  // "Tocado" hoy o ayer según las novedades (lo pone el servidor en el mercado, campo `toc`).
+  function tocTag(p) {
+    if (!p || !p.toc || statusInfo(p.status)) return null;
+    const t = el("span", "toc-tag", "Tocado");
+    t.title = "Tocado · " + (p.toc.d || "") + (p.toc.t ? " " + p.toc.t : "");
+    return t;
+  }
   function statusLabel(s) {
     if (!s) return "Disponible";
     if (s === "redcard") return "Sancionado";
@@ -396,7 +403,7 @@
         
         const scores = el("div", "racha-scores claus-fit-scores");
         const n = Math.min(5, fit.length);
-        for (let k = 0; k < n; k++) {
+        for (let k = n - 1; k >= 0; k--) {
           const v = Math.round(fit[fit.length - 1 - k]);
           const j = jLab(p.team, fit.length, k, j0);
           const cls = v >= 6 ? " hi" : v >= 4 ? " mid" : v > 0 ? " lo" : v < 0 ? " neg" : (fitPlayed(p, fit.length - 1 - k) ? " z0" : " zero");
@@ -436,7 +443,8 @@
       const sl = statusLabel(stt);
       const sc = stt === "redcard" ? "red" : String(stt || "").indexOf("injured") === 0 ? "inj" : stt === "doubt" ? "doubt" : "ok";
       const stEl = el("span", "claus-status " + sc); stEl.appendChild(el("i", "claus-st-dot")); stEl.appendChild(document.createTextNode(sl + (sc !== "ok" && prb != null ? " · " + prb + "% de jugar" : "")));
-      vrow.appendChild(stEl);
+      if (sc !== "ok") vrow.appendChild(stEl);
+      else if (live.toc) { const tg = tocTag(live); if (tg) vrow.appendChild(tg); }
       const blocked = p.unlock && new Date(p.unlock).getTime() > Date.now();
       if (blocked) body.appendChild(el("div", "claus-lock", "🔒 se libera el " + fmtDiaLargo(p.unlock)));
       card.appendChild(body);
@@ -562,7 +570,7 @@
     "recuperado": ["Recuperado", "#16a34a", '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>'],
     "convocatoria": ["Convocatoria", "#6366f1", '<path d="M8 6h11M8 12h11M8 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/>'],
     "mercado": ["Mercado Futmondo", "#22c55e", '<path d="M4 17l5-5 4 4 7-8"/><path d="M15 8h5v5"/>'],
-    "otro": ["Otros", "#94a3b8", '<circle cx="12" cy="12" r="8"/>']
+    "otro": ["Novedad", "#94a3b8", '<circle cx="12" cy="12" r="8"/>']
   };
   const UP_FILTERS = [["todo", "Todo"], ["once", "Onces"], ["lesion", "Lesiones y dudas"], ["sancion", "Sanciones"], ["mercado", "Mercado"]];
   const UP_GROUP = { "once-ok": "once", "once": "once", "convocatoria": "once", "tocado": "lesion", "lesion": "lesion", "duda": "lesion", "recuperado": "lesion", "sancion": "sancion", "mercado": "mercado", "otro": "otro" };
@@ -4707,6 +4715,9 @@
     one.appendChild(ocell("Partidos", par.played + "/" + jDen, "jugados", jDen ? (par.played / jDen) * 100 : 0, "blue"));
     one.appendChild(ocell("Minutos", String(par.totalMin), "de " + par.maxMin + " (" + par.pctMin + "%)", par.maxMin ? (par.totalMin / par.maxMin) * 100 : 0, "purple"));
     box.appendChild(one);
+    // Fichaje tardío: Futmondo no da el detalle de los primeros partidos y estas cifras no los incluyen (Pablo García, 11/11/2026).
+    { const faltan = (Number(jDen) || 0) - ((par.byJornada || []).length || 0);
+      if (par.byJornada && faltan > 0) box.appendChild(el("div", "dash-note", "Futmondo no da el detalle de " + faltan + (faltan === 1 ? " partido" : " partidos") + ": estas cifras no " + (faltan === 1 ? "lo" : "los") + " incluyen.")); }
 
     box.appendChild(el("div", "dash-sect", "Disponibilidad & disciplina"));
     const av = el("div", "dash-avail");
@@ -4728,11 +4739,13 @@
     const stat = String(d.status || p.status || "");
     const bad = stat === "redcard" || stat.indexOf("injured") === 0;
     const warn = stat === "doubt";
-    const sb = el("div", "pp-status" + (bad ? " bad" : warn ? " warn" : ""));
-    sb.appendChild(el("span", "pp-status-ico", bad ? "✕" : warn ? "?" : "✓"));
+    const liveP = (all || []).find((x) => String(x.id) === String(d.id || p.id)) || p;
+    const toc = !bad && !warn && liveP.toc ? liveP.toc : null;
+    const sb = el("div", "pp-status" + (bad ? " bad" : (warn || toc) ? " warn" : " ok"));
+    sb.appendChild(el("span", "pp-status-ico", bad ? "✕" : (warn || toc) ? "?" : "✓"));
     const stx = el("div", "pp-status-tx");
     stx.appendChild(el("div", "pp-status-k", "ESTADO DEL JUGADOR"));
-    stx.appendChild(el("div", "pp-status-v", statusLabel(stat)));
+    stx.appendChild(el("div", "pp-status-v", toc ? "Tocado · " + toc.d + (toc.t ? " " + toc.t : "") : statusLabel(stat)));
     sb.appendChild(stx);
     colA.appendChild(sb);
     const head = el("div", "ficha-head-center");
@@ -4755,6 +4768,13 @@
       if (teamName) tt.appendChild(clubLink(el("span", null, teamName), teamName));
       head.appendChild(tt);
     }
+    // Puntos, media y partidos: lo primero que se mira, justo debajo del nombre (antes quedaban a más de una pantalla).
+    const stats = el("div", "ficha-stats ficha-stats-top");
+    const st = (label, val, cls) => { const c = el("div", "ficha-stat " + (cls || "")); c.appendChild(el("div", "fs-val", String(val))); c.appendChild(el("div", "fs-lab", label)); stats.appendChild(c); };
+    st("Puntos", d.points || 0, "fs-p");
+    st("Media", String(Math.round((Number(d.average) || 0) * 10) / 10).replace(".", ","), "fs-a");
+    st("Partidos", d.matches5 || 0, "fs-m");
+    head.appendChild(stats);
     if (p.id || d.id) {
       const cb = el("button", "ficha-cmp", "⚖ Comparar");
       cb.type = "button";
@@ -4841,12 +4861,6 @@
     if (d.fichaje && d.fichaje.date) head.appendChild(el("div", "ficha-fichaje", "🖊️ Fichado: " + d.fichaje.date + (d.fichaje.club ? " · " + d.fichaje.club : "")));
     colA.appendChild(head);
 
-    const stats = el("div", "ficha-stats");
-    const st = (label, val, cls) => { const c = el("div", "ficha-stat " + (cls || "")); c.appendChild(el("div", "fs-val", String(val))); c.appendChild(el("div", "fs-lab", label)); stats.appendChild(c); };
-    st("Puntos", d.points || 0, "fs-p");
-    st("Media", String(Math.round((Number(d.average) || 0) * 10) / 10).replace(".", ","), "fs-a");
-    st("Partidos", d.matches5 || 0, "fs-m");
-    colA.appendChild(stats);
     if (d.participacion) colA.appendChild(renderParticipacion(d.participacion, d.status || p.status));
 
 
@@ -7137,6 +7151,7 @@
       if (o.tag) mid.appendChild(el("div", "plt-tag " + o.tag[0], o.tag[1]));
       const nm = el("div", "plt-nm");
       nm.appendChild(el("span", "plt-name", p.name));
+      { const tg = tocTag(p); if (tg) nm.appendChild(tg); }
       mid.appendChild(nm);
       mid.appendChild(el("div", "plt-val", money(p.value) + " €"));
       const chg = o.chg;
@@ -7252,7 +7267,8 @@
     pr.appendChild(top); pr.appendChild(rg); pr.appendChild(tk);
   }
   // Fila de jugador rentable: la usan la pestaña "Jugadores rentables" y la sección de Inicio.
-  function rtbRow(p, i, top) {
+  function rtbRow(p, i, top, o) {
+    o = o || {};
     const row = el("button", "rtb-row" + (i < 3 ? " top" : "")); row.type = "button";
     row.addEventListener("click", () => openFicha(p));
     row.addEventListener("pointerdown", () => { try { fetch(API + "/jugador?id=" + encodeURIComponent(p.id) + "&fast=1").catch(() => {}); } catch (e) {} }, { passive: true });
@@ -7270,12 +7286,20 @@
     body.appendChild(l1);
     const rb = roleBadge(p.role), rb2 = roleBadge(p.role2);
     if (rb) l1.appendChild(el("span", "rtb-pos", rb + (rb2 ? "/" + rb2 : "")));
+    { const tg = tocTag(p); if (tg) l1.appendChild(tg); }
     const l2 = el("span", "rtb-l2");
-    l2.appendChild(el("b", "rtb-price", money(p.value) + " €"));
+    if (o.cl) {
+      // Con dueño: lo que se paga es la cláusula (dato de Futmondo); el valor queda al lado, en pequeño.
+      l2.appendChild(el("b", "rtb-price", rtbM(o.cl.price) + " M"));
+      l2.appendChild(el("small", "rtb-clk", "cláusula"));
+      const lock = o.cl.unlock && new Date(o.cl.unlock).getTime() > Date.now();
+      if (lock) l2.appendChild(el("small", "rtb-lock", "bloqueada hasta " + fmtDiaCorto(o.cl.unlock)));
+    } else l2.appendChild(el("b", "rtb-price", money(p.value) + " €"));
     // Cuándo subió: cambio de hoy (último movimiento de Futmondo) y de la última semana
     const rtbK = (v) => (v > 0 ? "+" : "−") + (Math.abs(v) >= 1e6 ? (Math.abs(v) / 1e6).toFixed(1).replace(".", ",") + "M" : Math.round(Math.abs(v) / 1e3) + "k");
     // En su propia línea: al lado del precio no cabían a 390 px y la cifra salía cortada ("+211" en vez de "+211k").
     const lc = el("span", "rtb-chg");
+    if (o.cl) lc.appendChild(el("span", "rtb-vsm", "valor " + rtbM(p.value) + " M"));
     [[p.chg1, "hoy"], [p.chg7, "7 días"]].forEach((c) => {
       if (c[0] == null || c[0] === "") return;
       const v = Number(c[0]) || 0;
@@ -7291,14 +7315,59 @@
       const c = el("span", "rtb-st"); c.appendChild(el("b", null, String(s[0]))); c.appendChild(el("small", null, s[1])); l3.appendChild(c);
     });
     body.appendChild(l3);
-    const bar = el("span", "rtb-bar"); const fill = el("i"); fill.style.width = Math.max(6, Math.round(p._r / top * 100)) + "%"; bar.appendChild(fill);
+    const rv = o.dueno ? (o.cl ? p._rc : null) : p._r;
+    const bar = el("span", "rtb-bar"); const fill = el("i"); fill.style.width = (rv != null ? Math.max(6, Math.round(rv / top * 100)) : 0) + "%"; bar.appendChild(fill);
     body.appendChild(bar);
     row.appendChild(body);
     const r = el("span", "rtb-r");
-    r.appendChild(el("b", null, p._r.toFixed(2).replace(".", ",")));
+    r.appendChild(el("b", null, rv != null ? rv.toFixed(2).replace(".", ",") : (o.wait ? "…" : "—")));
     r.appendChild(el("small", null, "pts/M"));
     row.appendChild(r);
     return row;
+  }
+  // Cláusulas de los jugadores con dueño (Futmondo, `clausula-info`, de 16 en 16) y mi plantilla (`mios`), una vez por visita.
+  const rtbM = (v) => (Number(v) / 1e6).toFixed(1).replace(".", ",");
+  let rtbCl = {}, rtbClBusy = false, rtbMine = null;
+  async function rtbLoadClausulas(ids) {
+    const need = ids.filter((id) => !(id in rtbCl));
+    if (rtbClBusy || (!need.length && rtbMine)) return;
+    rtbClBusy = true;
+    try {
+      if (!rtbMine) {
+        try { const m = await (await fetch(API + "/mios")).json(); const mm = {}; ((m && m.mios) || []).forEach((x) => { mm[String(x.id)] = 1; }); rtbMine = mm; } catch (e) { rtbMine = {}; }
+      }
+      for (let i = 0; i < need.length; i += 16) {
+        const part = need.slice(i, i + 16);
+        try {
+          const r = await (await fetch(API + "/clausula-info?ids=" + part.map(encodeURIComponent).join(","))).json();
+          ((r && r.info) || []).forEach((x) => { const id = String(x.key || "").replace(/^id:/, ""); if (Number(x.price) > 0) rtbCl[id] = { price: Number(x.price), unlock: x.unlock || "" }; });
+        } catch (e) {}
+        part.forEach((id) => { if (!(id in rtbCl)) rtbCl[id] = null; }); // sin dato: no se inventa, sale "—"
+      }
+    } finally { rtbClBusy = false; }
+    if (rtbInit && rtbOwn === "dueno") renderRentables();
+  }
+  function renderRentablesDueno(box, sub, base) {
+    const ids = base.map((p) => String(p.id));
+    const wait = !rtbMine || ids.some((id) => !(id in rtbCl));
+    if (wait) rtbLoadClausulas(ids);
+    let list = base.filter((p) => !(rtbMine && rtbMine[String(p.id)])).map((p) => {
+      const cl = rtbCl[String(p.id)] || null;
+      return Object.assign({}, p, { _cl: cl, _rc: cl ? (Number(p.avg) || 0) / (cl.price / 1e6) : null });
+    });
+    if (!wait) list.sort((a, b) => (b._rc == null ? -1 : b._rc) - (a._rc == null ? -1 : a._rc));
+    const cost = (p) => (p._cl ? p._cl.price : Number(p.value));
+    list = list.filter((p) => (!rtbPos || String(p.role || "").toLowerCase() === rtbPos) && (rtbMax === Infinity || cost(p) <= rtbMax));
+    if (sub) sub.textContent = "Media por millón de cláusula" + (lastMarketAt ? " · " + horaTxt(lastMarketAt) : "") + " · " + list.length + (list.length === 1 ? " jugador" : " jugadores");
+    box.innerHTML = "";
+    if (!list.length) { box.appendChild(el("p", "rtb-empty", "Sin jugadores con estos filtros ahora mismo.")); return; }
+    const top = list.reduce((m, p) => Math.max(m, p._rc || 0), 0) || 1;
+    list.slice(0, rtbShown).forEach((p, i) => box.appendChild(rtbRow(p, i, top, { dueno: true, cl: p._cl, wait: wait })));
+    if (list.length > rtbShown) {
+      const more = el("button", "rtb-more", "Ver más (" + (list.length - rtbShown) + ")"); more.type = "button";
+      more.addEventListener("click", () => { rtbShown += 40; renderRentables(); });
+      box.appendChild(more);
+    }
   }
   function renderRentables() {
     const box = $("rtbList");
@@ -7308,11 +7377,11 @@
     const fr = rtbByOwner(bestValue(Infinity), rtbOwn);
     const full = fr.list;
     const ownBox = $("rtbOwn"); if (ownBox) ownBox.hidden = !fr.ok;
+    if (fr.ok && rtbOwn === "dueno") { renderRentablesDueno(box, sub, full); return; }
     const top = full.length ? full[0]._r : 1;
     const list = full.filter((p) => (!rtbPos || String(p.role || "").toLowerCase() === rtbPos) && Number(p.value) >= rtbMin && (rtbMax === Infinity || Number(p.value) <= rtbMax));
     if (sub) sub.textContent += " · " + list.length + (list.length === 1 ? " jugador" : " jugadores");
     box.innerHTML = "";
-    if (fr.ok && rtbOwn === "dueno") box.appendChild(el("p", "rtb-note", "Tienen dueño: se fichan pagando su cláusula, no este precio."));
     if (!list.length) { box.appendChild(el("p", "rtb-empty", "Sin jugadores con estos filtros ahora mismo.")); return; }
     list.slice(0, rtbShown).forEach((p, i) => box.appendChild(rtbRow(p, i, top)));
     if (list.length > rtbShown) {

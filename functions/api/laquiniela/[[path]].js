@@ -3,6 +3,7 @@ import { teamPlayedMatches, playedDenominator } from "../../_lib/played.mjs";
 import { sameTeam, pendingMatches, rosterFor, isComplete } from "../../_lib/matchpoints.mjs";
 import { fitLagOf, fitIndex } from "../../_lib/fitness.mjs";
 import { backtest as probBacktest } from "../../_lib/probjugar.mjs";
+import { staleChange, tocadosDe, marcarTocados } from "../../_lib/change.mjs";
 import { etiquetaDe } from "../../_lib/portada-svg.mjs";
 import { promptFondo, grupoTipo } from "../../_lib/portada-prompt.mjs";
 const COMPETITION = "PD";
@@ -783,10 +784,12 @@ async function conHistorial(env, players) {
     if (!vh || !vh.days) return players;
     const fm = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" });
     const dias = {};
-    for (const n of [1, 7, 14, 30]) dias[n] = vh.days[fm.format(new Date(Date.now() - n * 864e5))] || null;
+    for (const n of [1, 2, 7, 14, 30]) dias[n] = vh.days[fm.format(new Date(Date.now() - n * 864e5))] || null;
     return players.map((p) => {
       const o = {};
-      for (const n of [1, 7, 14, 30]) { const b = dias[n] && dias[n][p.id]; if (b > 0 && p.value > 0) o["chg" + n] = p.value - b; }
+      for (const n of [1, 2, 7, 14, 30]) { const b = dias[n] && dias[n][p.id]; if (b > 0 && p.value > 0) o["chg" + n] = p.value - b; }
+      // "change" de Futmondo es el último movimiento, no el de hoy: si el valor lleva dos días quieto, hoy es 0 (functions/_lib/change.mjs).
+      if (staleChange(p.change, o.chg1, o.chg2)) o.change = 0;
       return Object.keys(o).length ? { ...p, ...o } : p;
     });
   } catch (e) { return players; }
@@ -1186,6 +1189,15 @@ async function searchMercado(env, q) {
     players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, jornadaFf: e.jornada, tend: e.tend, chg1: e.d1, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
   } catch (e) {}
   players = await conHistorial(env, players);
+  // Jugadores "tocados" hoy o ayer según las novedades (misma lista que "Últimos cambios"); si no llega en 2,5 s, sin marca.
+  try {
+    const cb = await Promise.race([getCambios(env), new Promise((r) => setTimeout(() => r(null), 2500))]);
+    if (cb && cb.days && cb.days.length) {
+      const fmD = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" });
+      const dom = (ms) => Number(fmD.format(new Date(ms)).slice(8));
+      players = marcarTocados(players, tocadosDe(cb.days, dom(Date.now()), dom(Date.now() - 864e5)));
+    }
+  } catch (e) {}
   let season = {};
   try { season = await getSeasonMap(env, false); } catch (e) {}
   const seasonOn = Object.keys(season).length > 30;
@@ -1959,7 +1971,7 @@ async function playerFicha(env, id, fast, raw) {
     role: pl.role || "",
     role2: pl.role2 || "",
     value: todayVal,
-    change: Number(pl.change) || 0,
+    change: (() => { const dv = (n) => { const x = valores.find((o) => o.days === n); return x && x.v != null ? x.diff : undefined; }; return staleChange(pl.change, dv(1), dv(2)) ? 0 : (Number(pl.change) || 0); })(),
     status: pl.status || "",
     points: (mp && mp.points) || (pl.average && Number(pl.average.total)) || ptsSum,
     average: (mp && mp.avg) || (pl.average && Number(pl.average.average)) || (played ? ptsSum / played : 0),

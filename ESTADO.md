@@ -126,10 +126,15 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 - Además: "hoy / 7 días" van en su propia línea (`.rtb-chg`); antes se cortaban a 390 px ("+211" en vez de "+211k") en 6 de 6 filas de Inicio y 27 de 38 de la pestaña.
 - Comprobado en claro y oscuro a 390 px: 0 textos cortados, sin desbordes.
 
-### Fallos vistos el 11/11 y NO arreglados (pendientes)
-- Ficha, "HOY": usa el campo `change` de Futmondo, que en jugadores parados guarda la última bajada aunque sea de hace días. Guruzeta: "HOY −237.946 €" cuando esa bajada fue el 05/11 y desde el 06/11 es +0. Afecta hoy a 18 jugadores y también a los filtros Subiendo/Bajando del Mercado. Arreglo: usar `chg1` (histórico propio) cuando exista.
-- Ficha de un fichaje tardío (Pablo García, Racing): arriba "70 puntos · 11 partidos" y abajo "8/12 jugados" y J1–J3 sin puntos (la lista solo suma 51).
-- Novedades de "Tocado" (Mbappé, Ryan, Iván Romero, Vivian, Yuri el 11/11) que no llegan al Mercado: allí siguen sin aviso y con 70–95 %.
-- `/api/laquiniela/mios` y `/clausulas` responden sin sesión y enseñan el nombre real de Edu y su plantilla.
-- Clausulazos pinta las jornadas al revés que el Mercado (J12→J8 frente a J8→J12).
-- Siguiente idea: en "Con dueño", calcular los puntos por millón sobre la cláusula (`clausula-info`), que es lo que cuesta de verdad.
+## 11/11/2026 (2.ª parte) — Arreglos del repaso
+- **"HOY" con bajadas viejas**: `change` de Futmondo es el último movimiento, no el de hoy. Si el valor lleva dos días quieto en nuestro histórico, hoy es 0 (`staleChange` en `functions/_lib/change.mjs`, en `conHistorial` y en `/jugador`; tests en `tests/change.test.mjs`). De madrugada, antes de que Futmondo actualice, no se toca.
+- **"Tocado"**: el mercado trae `toc` ({t, d: hoy|ayer}) para los jugadores que las novedades dan como tocados hoy o ayer y que no se han recuperado después (`tocadosDe` / `marcarTocados`: solo si el nombre es de un único jugador). Se ve como etiqueta en Mercado, Rentables, Clausulazos y en el estado de la ficha.
+- **Rentables · Con dueño**: ordena por puntos de media por millón de CLÁUSULA (`clausula-info`, de 16 en 16), enseña la cláusula y si está bloqueada, y quita mis jugadores (`mios`). Sin dato de cláusula: "—".
+- **Ficha**: puntos, media y partidos justo debajo del nombre; foto más pequeña en móvil; la franja "Disponible" ya no se pinta (sí lesión, duda, sanción o tocado). Aviso cuando Futmondo no da el detalle de algún partido (fichaje tardío).
+- **Mercado**: al bajar solo quedan fijos posición y orden (la tira de escudos se esconde): de 152 a 84 px.
+- **Clausulazos**: jornadas en el mismo orden que el Mercado (J8→J12), sin "Disponible" y cláusula en color plano.
+- **Textos**: etiquetas de jornada, % y rótulos ya no bajan de 9 px en móvil. Botón "Datos del partido" sin degradado. "Otros" pasa a "Novedad".
+
+### Pendiente (decisión de Edu)
+- `/api/laquiniela/mios` y `/clausulas` responden sin sesión y enseñan su nombre y su plantilla. No se ha tocado: los usan los avisos de Telegram y la pantalla pública de Clausulazos.
+- Noticias reescritas de otras webs: el 11/11 seguían saliendo (redactor sin tocar en este repaso).
