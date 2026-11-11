@@ -540,3 +540,20 @@
   }, { passive: true });
   document.addEventListener("visibilitychange", function () { if (document.hidden) lastUser = 0; });
 })();
+
+/* Fotos y escudos que se quedaban en blanco: la carga perezosa del navegador a veces no arranca
+   (carruseles, listas que se redibujan). Se pasan a carga normal nada más aparecer. */
+(function () {
+  function fix(i) { try { if (i.loading === "lazy") i.loading = "eager"; } catch (e) {} }
+  function scan(n) {
+    if (!n || n.nodeType !== 1) return;
+    if (n.tagName === "IMG") fix(n);
+    else if (n.querySelectorAll) { var l = n.querySelectorAll("img[loading=lazy]"); for (var k = 0; k < l.length; k++) fix(l[k]); }
+  }
+  try {
+    scan(document.documentElement);
+    new MutationObserver(function (ms) {
+      for (var a = 0; a < ms.length; a++) for (var b = 0; b < ms[a].addedNodes.length; b++) scan(ms[a].addedNodes[b]);
+    }).observe(document.documentElement, { childList: true, subtree: true });
+  } catch (e) {}
+})();
