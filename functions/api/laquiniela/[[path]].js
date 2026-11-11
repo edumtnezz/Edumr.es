@@ -2,6 +2,7 @@ import { cleanStarters } from "../../_lib/starters.mjs";
 import { teamPlayedMatches, playedDenominator } from "../../_lib/played.mjs";
 import { sameTeam, pendingMatches, rosterFor, isComplete } from "../../_lib/matchpoints.mjs";
 import { fitLagOf, fitIndex } from "../../_lib/fitness.mjs";
+import { backtest as probBacktest } from "../../_lib/probjugar.mjs";
 import { etiquetaDe } from "../../_lib/portada-svg.mjs";
 import { promptFondo, grupoTipo } from "../../_lib/portada-prompt.mjs";
 const COMPETITION = "PD";
@@ -5812,6 +5813,12 @@ async function handleGet({ request, env: env0, params }) {
     if (!isAdmin(env, await getSessionUser(env, request))) return json({ noticias: [] });
     const list = await getNoticiasMulti(await getFfNoticias(null));
     return json({ noticias: list, at: Date.now() });
+  }
+  // Prueba de nuestra probabilidad de ser titular contra lo que pasó de verdad (solo resumen, sin datos personales).
+  if (path === "prob-prueba") {
+    let st = null;
+    try { st = await env.PORRA.get(MINS_KEY, "json"); } catch (e) {}
+    return json(probBacktest((st && st.map) || {}));
   }
   // Estado del historial propio de valores (solo recuento por día; "copiado" = rellenado de FutbolFantasy al empezar).
   if (path === "mercado-historial") {
