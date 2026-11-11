@@ -2093,7 +2093,13 @@ async function adminNoticias(env, request, url, data) {
     (async () => {
       const tick = setInterval(() => { w.write(enc.encode(" ")).catch(() => {}); }, 8000);
       let txt;
-      try { txt = await (await generarPortada(env, request, own, it, now)).text(); } catch (e) { txt = JSON.stringify({ error: String(e && e.message || e).slice(0, 160) }); }
+      try {
+        txt = await (await generarPortada(env, request, own, it, now)).text();
+        try {
+          const j = JSON.parse(txt);
+          if (j && j.ok && j.b64) { await componerGuardar(env, request, it, j, now); await putOwn(env, own); await admLog(env, { a: "portada", id: it.id, t: it.title }); txt = JSON.stringify({ ok: true, saved: true, item: it, usd: j.usd, modelo: j.modelo, conFoto: j.conFoto, jugador: j.jugador }); }
+        } catch (e2) { /* si el dibujo en el servidor falla, el panel la compone como antes */ }
+      } catch (e) { txt = JSON.stringify({ error: String(e && e.message || e).slice(0, 160) }); }
       clearInterval(tick);
       try { await w.write(enc.encode(txt)); await w.close(); } catch (e) {}
     })();
@@ -2142,7 +2148,7 @@ async function generarPortada(env, request, own, it, now) {
   const fold = (v) => stripAccents(String(v || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w.length > 3);
   const tit = fold(it.title);
   const tt = tit.concat((Array.isArray(it.players) ? it.players : []).flatMap((q) => fold(typeof q === "string" ? q : (q && q.name) || "")));
-  let pl = null, crestClub = "", tipoNoticia = "";
+  let pl = null, pl2 = null, crestClub = "", tipoNoticia = "";
   const todos = [];
   try {
     const m = await getMarketPlayers(env);
@@ -2158,6 +2164,8 @@ async function generarPortada(env, request, own, it, now) {
     if (cand.length) {
       const top = cand[0], empate = cand.filter((c) => c.sc === top.sc && c.cl === top.cl && c.p.id !== top.p.id).length;
       if (!(top.sc === 1 && empate > 0 && !top.cl)) pl = top.p; // si hay dudas entre dos jugadores, no se arriesga una cara equivocada
+      // Segundo protagonista (por apellido, en el titular o en la lista de la noticia): la portada lleva a los dos
+      if (pl) { const c2 = cand.find((c) => c.p.id !== pl.id && c.p.photo && c.sc >= 1); if (c2) pl2 = c2.p; }
     }
     todos.push.apply(todos, m.players || []);
   } catch (e) {}
@@ -2191,7 +2199,10 @@ async function generarPortada(env, request, own, it, now) {
     fondoKey = fold((pl && pl.team) || it.club || "club").join("-").slice(0, 40) || "club";
     const KICK = { fijo: "FIJO EN EL ONCE", racha: "EN RACHA", rentable: "CALIDAD-PRECIO", revelacion: "LA SORPRESA", chollo: "CHOLLO", bajon: "BAJÓN", regular: "BACHE PUNTUAL", duda: "DUDA PARA JUGAR" };
     const km = String(it.key || "").match(/^an-.+?-([a-z]+)-[^-]+$/);
-    if (pl) cromo = { nombre: pl.name, avg: pl.avg || 0, value: pl.value || 0, foto: await crestB64(pl.photo), kicker: km ? (KICK[km[1]] || "") : "", kickTipo: km ? km[1] : "" };
+    // Etiqueta del segundo: solo si Futmondo lo marca lesionado o en duda (nunca por suposición)
+    const estado2 = pl2 ? (/^injured/.test(String(pl2.status || "")) ? "lesion" : pl2.status === "doubt" ? "duda" : "") : "";
+    const duo = pl2 && tipoNoticia !== "rumor" && !/^an-/.test(String(it.key || "")) ? { nombre: pl2.name, avg: pl2.avg || 0, value: pl2.value || 0, foto: await crestB64(pl2.photo), tipo: estado2 } : null;
+    if (pl) cromo = { duo, nombre: pl.name, avg: pl.avg || 0, value: pl.value || 0, foto: await crestB64(pl.photo), kicker: km ? (KICK[km[1]] || "") : "", kickTipo: km ? km[1] : "" };
     // Los fondos guardados se separan por ambiente (alegre / serio / neutro) para no poner fiesta en una lesión
     { fondoKey += "-" + grupoTipo((cromo && cromo.kickTipo) || tipoNoticia || ""); }
     try { fondoIdx = (await env.PORRA.get("bg2:idx:" + fondoKey, "json")) || []; } catch (e) {}
@@ -2283,6 +2294,20 @@ async function marcaB64(request) {
   } catch (e) {}
   return MARCA_B64;
 }
+// Dibuja la portada en el servidor y guarda UNA imagen. Devuelve false si no se pudo (entonces el panel la compone en el navegador).
+async function componerGuardar(env, request, it, j, now) {
+  const { renderPortada, colorDelEscudo } = await import("../../_lib/portada-render.mjs");
+  const color = j.crest ? await colorDelEscudo(j.crest) : null;
+  const c = j.cromo || null, d = c && c.duo ? c.duo : null;
+  const ETQ = { lesion: etiquetaDe(null, "lesion"), duda: etiquetaDe(null, "duda") };
+  const png = await renderPortada({ bg: j.b64, crest: j.crest, face: c && c.foto, nombre: c && c.nombre, avg: c && c.avg, value: c && c.value, color, etiqueta: !c && j.conFoto ? null : etiquetaDe(c, j.tipoNoticia), tipoNoticia: j.tipoNoticia,
+    duo: d ? { face: d.foto, nombre: d.nombre, avg: d.avg, value: d.value, tipo: d.tipo, etiqueta: ETQ[d.tipo] || null } : null, marca: await marcaB64(request) });
+  let b = ""; for (let i = 0; i < png.length; i += 8192) b += String.fromCharCode.apply(null, png.subarray(i, i + 8192));
+  await env.PORRA.put("portada:v1:" + it.id, btoa(b));
+  for (const suf of [":m", ":s"]) await env.PORRA.delete("portada:v1:" + it.id + suf).catch(() => {});
+  it.thumb = "/api/laquiniela/portada/" + it.id + "?v=" + now.toString(36); it.updatedAt = now;
+  it.portadaUsd = j.usd == null ? null : Math.round(Number(j.usd) * 1e4) / 1e4; it.portadaModelo = String(j.modelo || "").slice(0, 60); it.portadaAt = now;
+}
 async function portadaAuto(env, request) {
   let data = null;
   try { data = await request.json(); } catch (e) {}
@@ -2301,14 +2326,8 @@ async function portadaAuto(env, request) {
   try { j = await (await generarPortada(env, request, own, it, now)).json(); } catch (e) { return json({ error: String(e && e.message || e).slice(0, 160) }, 502); }
   if (!j || !j.b64) return json({ error: (j && j.error) || "sin imagen" }, 502);
   if (j.modelo !== "fondo guardado") await env.PORRA.put(dia, String(usadas + 1), { expirationTtl: 172800 });
-  // Import perezoso: el WebAssembly solo se carga cuando hace falta (y las pruebas en Node no lo necesitan)
-  const { renderPortada, colorDelEscudo } = await import("../../_lib/portada-render.mjs");
-  const color = j.crest ? await colorDelEscudo(j.crest) : null;
-  const c = j.cromo || null;
-  const png = await renderPortada({ bg: j.b64, crest: j.crest, face: c && c.foto, nombre: c && c.nombre, avg: c && c.avg, value: c && c.value, color, etiqueta: etiquetaDe(c, j.tipoNoticia), tipoNoticia: j.tipoNoticia, marca: await marcaB64(request) });
-  let b = ""; for (let i = 0; i < png.length; i += 8192) b += String.fromCharCode.apply(null, png.subarray(i, i + 8192));
-  await env.PORRA.put("portada:v1:" + it.id, btoa(b));
-  return json({ ok: true, thumb: "/api/laquiniela/portada/" + it.id + "?v=" + now.toString(36), usd: j.usd == null ? null : j.usd, modelo: String(j.modelo || "").slice(0, 60) });
+  await componerGuardar(env, request, it, j, now);
+  return json({ ok: true, thumb: it.thumb, usd: j.usd == null ? null : j.usd, modelo: String(j.modelo || "").slice(0, 60) });
 }
 // Coste real de la petición: tokens devueltos por OpenAI × tarifas de la página de modelos (texto 5 $, imagen entrada 8 $, imagen salida 30 $ por millón)
 function costeUsd(u) {

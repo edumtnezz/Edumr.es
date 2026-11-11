@@ -35,6 +35,7 @@ export function etiquetaDe(cromo, tipoNoticia) {
   return ETIQUETAS[tipoNoticia] || ETIQUETAS.noticia;
 }
 
+export function etiquetaAncho(et, h) { const fs = h * 0.5, pad = h * 0.4, ic = h * 0.62; return pad + ic + pad * 0.6 + et.t.length * fs * 0.62 + pad; }
 // Etiqueta con icono: devuelve el SVG y su ancho
 function etiquetaSvg(et, x, y, h, rot) {
   if (!et) return "";
@@ -66,29 +67,29 @@ export function portadaSvg(o, crop) {
   // Escudo real
   const cs = pngSize(o.crest);
   if (o.crest && cs) {
-    const ch = H * (cro ? 0.5 : 0.62), cw = ch * cs.w / cs.h;
-    const cx0 = cro ? W * 0.06 : (W - cw) / 2, cy0 = (H - ch) / 2 - (cro ? H * 0.04 : 0);
+    const duoOk = cro && o.duo && o.duo.face && o.duo.nombre;
+    const ch = H * (duoOk ? 0.3 : cro ? 0.5 : 0.62), cw = ch * cs.w / cs.h;
+    const cx0 = duoOk ? W * 0.035 : cro ? W * 0.06 : (W - cw) / 2, cy0 = duoOk ? H * 0.4 - ch / 2 + H * 0.02 : (H - ch) / 2 - (cro ? H * 0.04 : 0);
     parts.push(`<image href="${uri(o.crest)}" x="${cx0}" y="${cy0}" width="${cw}" height="${ch}" filter="url(#glow)"/>`);
   }
   let etiq = "";
-  if (cro) {
-    const d = H * 0.58, cx = W * 0.62, cy = H * 0.4, accent = o.color ? "rgb(" + o.color.join(",") + ")" : ((o.etiqueta && o.etiqueta.c) || "#16a34a");
+  // Un jugador: círculo con su foto, nombre y tarjetas MEDIA/VALOR. Todo escala con el diámetro d.
+  const jugador = (pj, k, cx, cy, d, accent) => {
     parts.push(`<circle cx="${cx}" cy="${cy}" r="${d * 0.95}" fill="url(#rg)"/>`);
-    parts.push(`<circle cx="${cx}" cy="${cy}" r="${d / 2 + H * 0.018}" fill="#fff" filter="url(#sh)"/><circle cx="${cx}" cy="${cy}" r="${d / 2 + H * 0.008}" fill="${accent}"/>`);
-    parts.push(`<clipPath id="cc"><circle cx="${cx}" cy="${cy}" r="${d / 2}"/></clipPath><circle cx="${cx}" cy="${cy}" r="${d / 2}" fill="#fbfbf8"/>`);
-    const fw = d * 1.02, fh = fw; // la foto de Futmondo es cuadrada
-    parts.push(`<image href="${uri(o.face)}" x="${cx - fw / 2}" y="${cy + d / 2 - fh + d * 0.02}" width="${fw}" height="${fh}" clip-path="url(#cc)"/>`);
-    // Nombre
-    const nombre = String(o.nombre).toUpperCase(), fs = H * 0.07, ny = cy + d / 2 + H * 0.075;
-    const nw = Math.min(W * 0.5, nombre.length * fs * 0.68 + fs * 1.4);
+    parts.push(`<circle cx="${cx}" cy="${cy}" r="${d / 2 + d * 0.03}" fill="#fff" filter="url(#sh)"/><circle cx="${cx}" cy="${cy}" r="${d / 2 + d * 0.014}" fill="${accent}"/>`);
+    parts.push(`<clipPath id="cc${k}"><circle cx="${cx}" cy="${cy}" r="${d / 2}"/></clipPath><circle cx="${cx}" cy="${cy}" r="${d / 2}" fill="#fbfbf8"/>`);
+    const fw = d * 1.02;
+    parts.push(`<image href="${uri(pj.face)}" x="${cx - fw / 2}" y="${cy + d / 2 - fw + d * 0.02}" width="${fw}" height="${fw}" clip-path="url(#cc${k})"/>`);
+    const nombre = String(pj.nombre).toUpperCase(), fs = d * 0.12, ny = cy + d / 2 + d * 0.13;
+    const maxW = Math.max(d * 1.1, W * 0.3), nw = Math.min(maxW, nombre.length * fs * 0.68 + fs * 1.4);
     parts.push(`<rect x="${cx - nw / 2}" y="${ny - fs * 0.72}" width="${nw}" height="${fs * 1.44}" rx="${fs * 0.28}" fill="#0b0f0d" filter="url(#sh)"/>`);
     parts.push(`<text x="${cx}" y="${ny + fs * 0.36}" text-anchor="middle" font-family="Inter" font-weight="900" font-size="${fs}" fill="#fff" textLength="${Math.min(nw - fs * 0.6, nombre.length * fs * 0.66)}" lengthAdjust="spacingAndGlyphs">${esc(nombre)}</text>`);
     // MEDIA y VALOR: tarjetas oscuras tipo cristal, etiqueta pequeña arriba y número grande centrado
     const chips = [];
-    if (o.avg && o.tipoNoticia !== "lesion" && !(o.etiqueta && o.etiqueta.t === "LESIÓN")) chips.push(["MEDIA", num1(o.avg), "#fde047"]);
-    if (o.value) chips.push(["VALOR", num1(o.value / 1e6) + " M", "#4ade80"]);
-    const chh = H * 0.12, gap = W * 0.014, fy = ny + fs * 0.72 + H * 0.025;
-    const cwd = Math.max(W * 0.17, Math.max(0, ...chips.map((c) => c[1].length * chh * 0.5 * 0.6)) + chh * 0.7);
+    if (pj.avg && !pj.sinMedia) chips.push(["MEDIA", num1(pj.avg), "#fde047"]);
+    if (pj.value) chips.push(["VALOR", num1(pj.value / 1e6) + " M", "#4ade80"]);
+    const chh = d * 0.207, gap = d * 0.024, fy = ny + fs * 0.72 + d * 0.043;
+    const cwd = Math.max(d * 0.45, Math.max(0, ...chips.map((c) => c[1].length * chh * 0.5 * 0.6)) + chh * 0.7);
     let x0 = cx - (cwd * chips.length + gap * (chips.length - 1)) / 2;
     chips.forEach((c) => {
       parts.push(`<rect x="${x0}" y="${fy}" width="${cwd}" height="${chh}" rx="${chh * 0.3}" fill="#0a0e0c" fill-opacity=".88" stroke="${c[2]}" stroke-width="${Math.max(2, chh * 0.035)}" filter="url(#sh)"/>` +
@@ -96,6 +97,18 @@ export function portadaSvg(o, crop) {
         `<text x="${x0 + cwd / 2}" y="${fy + chh * 0.8}" text-anchor="middle" font-family="Inter" font-weight="900" font-size="${chh * 0.5}" fill="#fff">${esc(c[1])}</text>`);
       x0 += cwd + gap;
     });
+  };
+  const lesionMain = o.tipoNoticia === "lesion" || !!(o.etiqueta && o.etiqueta.t === "LESIÓN");
+  const accent = o.color ? "rgb(" + o.color.join(",") + ")" : ((o.etiqueta && o.etiqueta.c) || "#16a34a");
+  const d2 = o.duo && o.duo.face && o.duo.nombre ? o.duo : null;
+  if (cro && d2) {
+    // Dos protagonistas: dos círculos, cada uno con su nombre y datos; la etiqueta de cada uno solo si hay un dato que la respalde
+    const d = H * 0.48, cy = H * 0.4, c1 = W * 0.43, c2 = W * 0.78;
+    jugador({ face: o.face, nombre: o.nombre, avg: o.avg, value: o.value, sinMedia: lesionMain }, 0, c1, cy, d, accent);
+    jugador({ face: d2.face, nombre: d2.nombre, avg: d2.avg, value: d2.value, sinMedia: d2.tipo === "lesion" }, 1, c2, cy, d, accent);
+    if (d2.etiqueta) parts.push(etiquetaSvg(d2.etiqueta, c2 - etiquetaAncho(d2.etiqueta, H * 0.075) / 2, H * 0.045, H * 0.075, 0));
+  } else if (cro) {
+    jugador({ face: o.face, nombre: o.nombre, avg: o.avg, value: o.value, sinMedia: lesionMain }, 0, W * 0.62, H * 0.4, H * 0.58, accent);
   }
   // Etiqueta: grande arriba a la izquierda (completa) o en la esquina de la miniatura cuadrada
   if (o.etiqueta) etiq = crop ? etiquetaSvg(o.etiqueta, crop.x + crop.side * 0.05, crop.y + crop.side * 0.05, crop.side * 0.12, 0) : etiquetaSvg(o.etiqueta, W * 0.03, H * 0.04, H * 0.105, -2.3);

@@ -36,3 +36,11 @@ test("en una lesión no se dibuja la MEDIA", () => {
   assert.ok(!portadaSvg(o).includes(">MEDIA<"));
   assert.ok(portadaSvg({ ...o, tipoNoticia: "duda", etiqueta: etiquetaDe(null, "duda") }).includes(">MEDIA<"));
 });
+test("portada de dos jugadores: ambos nombres, y la etiqueta del segundo solo si se le pasa", () => {
+  const f = "iVBORw0KGgo=", base = { face: f, nombre: "Espí", avg: 5.9, value: 1e6, tipoNoticia: "duda", etiqueta: etiquetaDe(null, "duda") };
+  const con = portadaSvg({ ...base, duo: { face: f, nombre: "Mbappé", avg: 13.2, value: 133.4e6, tipo: "lesion", etiqueta: etiquetaDe(null, "lesion") } });
+  assert.ok(con.includes("ESPÍ") && con.includes("MBAPPÉ") && con.includes("LESIÓN") && con.includes("133,4 M"));
+  const sin = portadaSvg({ ...base, duo: { face: f, nombre: "Mbappé", avg: 13.2, value: 133.4e6, tipo: "", etiqueta: null } });
+  assert.ok(sin.includes("MBAPPÉ") && !sin.includes("LESIÓN"));
+  assert.ok(!portadaSvg(base).includes("MBAPPÉ"));
+});

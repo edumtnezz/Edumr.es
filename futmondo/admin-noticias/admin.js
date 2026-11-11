@@ -252,8 +252,7 @@ function componer(j, x) {
         (function sigue(i) {
           if (parar || i >= sin.length) { info.textContent = hechas + " portadas hechas, ≈ " + coste.toFixed(2) + " $" + (fallos ? ", " + fallos + " con fallo" : "") + "."; return cargar(true); }
           var x = sin[i]; info.textContent = "Portada " + (i + 1) + " de " + sin.length + ": " + (x.title || "").slice(0, 60) + "…";
-          var usd1 = null, mod1 = ""; post({ action: "portada", id: x.id }).then(function (j) { usd1 = j.usd; mod1 = j.modelo || ""; if (j.usd != null) coste += j.usd; return componer(j, x); })
-            .then(function (o) { return post({ action: "portada-guardar", id: x.id, b64: o.b64, usd: usd1, modelo: mod1 }); })
+          var usd1 = null, mod1 = ""; post({ action: "portada", id: x.id }).then(function (j) { usd1 = j.usd; mod1 = j.modelo || ""; if (j.usd != null) coste += j.usd; return j.saved ? j : componer(j, x).then(function (o) { return post({ action: "portada-guardar", id: x.id, b64: o.b64, usd: usd1, modelo: mod1 }); }); })
             .then(function () { hechas++; }, function () { fallos++; })
             .then(function () { sigue(i + 1); });
         })(0);
@@ -348,6 +347,7 @@ function componer(j, x) {
       post({ action: "portada", id: x.id }).then(function (j) {
         modeloUsado = (j.modelo || "") + (j.usd != null ? ", ≈ " + j.usd.toFixed(3) + " $" : "");
         pst.textContent = (j.conFoto ? "Hecha con la foto de " + (j.jugador || "el jugador") + ". " : "Sin foto del jugador. ") + "Pegando escudo y marca…";
+        if (j.saved) return j;
         return componer(j, x).then(function (o) { return post({ action: "portada-guardar", id: x.id, b64: o.b64, usd: j.usd, modelo: j.modelo }); });
       }).then(function (j) {
         pst.textContent = "Portada guardada · " + (modeloUsado || "?") + ". Si no te gusta, pulsa otra vez.";
