@@ -309,14 +309,21 @@
       .sort((a, b) => b._r - a._r)
       .slice(0, max || 6);
   }
-  // Inicio: los 6 más rentables, con el mismo diseño de filas que la pestaña "Jugadores rentables".
+  // Libres / con dueño: dato de Futmondo (`computer`: true = sin dueño en la liga). Un jugador con dueño no se ficha
+  // por su valor sino pagando su cláusula, así que no se mezcla con los libres. Si Futmondo no manda el dato, no se filtra.
+  function rtbByOwner(list, own) {
+    if (!list.some((p) => typeof p.computer === "boolean")) return { list: list, ok: false };
+    return { list: list.filter((p) => (own === "dueno" ? p.computer === false : p.computer === true)), ok: true };
+  }
+  // Inicio: los 6 libres más rentables, con el mismo diseño de filas que la pestaña "Jugadores rentables".
   function renderRachas() {
     const box = $("rachasOut");
     if (!box) return;
     box.innerHTML = "";
     box.appendChild(el("h2", "rtb-title", "Jugadores rentables"));
-    box.appendChild(el("div", "rtb-sub", "Puntos de media por cada millón" + (lastMarketAt ? " · " + horaTxt(lastMarketAt) : "")));
-    const full = bestValue(Infinity);
+    const fr = rtbByOwner(bestValue(Infinity), "libres");
+    const full = fr.list;
+    box.appendChild(el("div", "rtb-sub", (fr.ok ? "Libres · puntos" : "Puntos") + " de media por cada millón" + (lastMarketAt ? " · " + horaTxt(lastMarketAt) : "")));
     if (!full.length) { box.appendChild(el("div", "cx-sk")); return; }
     const top = full[0]._r;
     const list = el("div", "rtb-list");
@@ -5585,7 +5592,7 @@
   // Enlace «Administrador» en el menú Más: solo lo ve el administrador (comprobado en el servidor)
   try { fetch(API + "/me", { cache: "no-store", credentials: "same-origin" }).then((r) => r.json()).then((d) => { const a = $("cxAdminLink"); if (a && d && d.admin) a.classList.remove("hidden"); }).catch(() => {}); } catch (e) {}
   let pltInit = false, pltRetry = 0, pltClub = "", pltPos = "", pltSort = "points", pltPeriod = "chg7", pltDir = -1, pltShown = 40, pltPlayers = [], pltMin = "";
-  let rtbInit = false, rtbPos = "", rtbMin = 0, rtbMax = Infinity, rtbShown = 40;
+  let rtbInit = false, rtbPos = "", rtbMin = 0, rtbMax = Infinity, rtbShown = 40, rtbOwn = "libres";
   // En la ficha de jugador esto (14 peticiones de jornadas) se pide DESPUÉS de pintar, para no frenar la carga.
   if (!/\/jugador(?:es)?\/[a-z0-9]{6,40}/i.test(location.pathname)) ensurePlayedJ();
   (function restoreTab() {
@@ -7216,6 +7223,14 @@
   function renderRentControls() {
     const pos = $("rtbPos"), pr = $("rtbPrice");
     if (!pos || !pr) return;
+    let own = $("rtbOwn");
+    if (!own) { own = el("div", "rtb-own"); own.id = "rtbOwn"; pos.parentNode.insertBefore(own, pos); }
+    own.innerHTML = "";
+    [["libres", "Libres"], ["dueno", "Con dueño"]].forEach((x) => {
+      const b = rtbChip(x[1], rtbOwn === x[0], () => { rtbOwn = x[0]; rtbRerender(); }, "rtb-seg");
+      b.setAttribute("aria-pressed", rtbOwn === x[0] ? "true" : "false");
+      own.appendChild(b);
+    });
     pos.innerHTML = "";
     [["", "Todos"], ["portero", "Porteros"], ["defensa", "Defensas"], ["centrocampista", "Medios"], ["delantero", "Delanteros"]].forEach((x) => {
       pos.appendChild(rtbChip(x[1], rtbPos === x[0], () => { rtbPos = x[0]; rtbRerender(); }, "rtb-tab"));
@@ -7259,15 +7274,18 @@
     l2.appendChild(el("b", "rtb-price", money(p.value) + " €"));
     // Cuándo subió: cambio de hoy (último movimiento de Futmondo) y de la última semana
     const rtbK = (v) => (v > 0 ? "+" : "−") + (Math.abs(v) >= 1e6 ? (Math.abs(v) / 1e6).toFixed(1).replace(".", ",") + "M" : Math.round(Math.abs(v) / 1e3) + "k");
+    // En su propia línea: al lado del precio no cabían a 390 px y la cifra salía cortada ("+211" en vez de "+211k").
+    const lc = el("span", "rtb-chg");
     [[p.chg1, "hoy"], [p.chg7, "7 días"]].forEach((c) => {
       if (c[0] == null || c[0] === "") return;
       const v = Number(c[0]) || 0;
       if (!v) return;
       const sp = el("span", v > 0 ? "rtb-up" : "rtb-dn", rtbK(v));
       sp.appendChild(el("small", "rtb-when", " " + c[1]));
-      l2.appendChild(sp);
+      lc.appendChild(sp);
     });
     body.appendChild(l2);
+    if (lc.firstChild) body.appendChild(lc);
     const l3 = el("span", "rtb-l3");
     [[Number(p.points) || 0, "pts"], [(Number(p.avg) || 0).toFixed(1).replace(".", ","), "media"], [Number(p.matches) || 0, "part."]].forEach((s) => {
       const c = el("span", "rtb-st"); c.appendChild(el("b", null, String(s[0]))); c.appendChild(el("small", null, s[1])); l3.appendChild(c);
@@ -7287,11 +7305,14 @@
     if (!box) return;
     const sub = $("rtbSub");
     if (sub) sub.textContent = "Puntos de media por cada millón" + (lastMarketAt ? " · " + horaTxt(lastMarketAt) : "");
-    const full = bestValue(Infinity);
+    const fr = rtbByOwner(bestValue(Infinity), rtbOwn);
+    const full = fr.list;
+    const ownBox = $("rtbOwn"); if (ownBox) ownBox.hidden = !fr.ok;
     const top = full.length ? full[0]._r : 1;
     const list = full.filter((p) => (!rtbPos || String(p.role || "").toLowerCase() === rtbPos) && Number(p.value) >= rtbMin && (rtbMax === Infinity || Number(p.value) <= rtbMax));
     if (sub) sub.textContent += " · " + list.length + (list.length === 1 ? " jugador" : " jugadores");
     box.innerHTML = "";
+    if (fr.ok && rtbOwn === "dueno") box.appendChild(el("p", "rtb-note", "Tienen dueño: se fichan pagando su cláusula, no este precio."));
     if (!list.length) { box.appendChild(el("p", "rtb-empty", "Sin jugadores con estos filtros ahora mismo.")); return; }
     list.slice(0, rtbShown).forEach((p, i) => box.appendChild(rtbRow(p, i, top)));
     if (list.length > rtbShown) {

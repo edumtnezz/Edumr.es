@@ -1,6 +1,6 @@
 # ESTADO.md — edumr.es (Guía Fantasy / Futmondo)
 
-Última actualización: 09/11/2026. Para continuar el redactor: lee `docs/redactor.md` y después este archivo. Reglas generales: AGENTS.md y CLAUDE.md.
+Última actualización: 11/11/2026. Para continuar el redactor: lee `docs/redactor.md` y después este archivo. Reglas generales: AGENTS.md y CLAUDE.md.
 Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas y sencillas.
 
 ## Hecho (sacado de AGENTS.md, CLAUDE.md y el historial de git)
@@ -119,3 +119,17 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 | LaLiga | /noticias | no | la página no trae piezas; el sitemap de noticias está en assets.laliga.com y su robots.txt no se puede leer |
 | Oviedo | /noticias en realoviedo.es + YouTube UCvpFN8tLnBsjPR2BCJ-FJQA | sí | robots.txt tapa /api, /preview y /_next; el listado trae las piezas |
 - 09/11 (4.ª parte): aviso automático de Telegram cuando Futmondo publica los puntos de un partido ("✅ PUNTOS DE FUTMONDO · Atlético de Madrid – Barcelona (J12)"). `recordMatchPoints` devuelve `savedInfo` con los nombres; el cron (`colaPuntos` / `avisarPuntos` en `cron/src/avisos.js`) los mete en la cola KV `tg:puntos-cola:v1` y los manda; de 00:00 a 08:00 se retienen hasta las 08:00 (misma regla de silencio que el resto). Tests: `tests/avisos-puntos.test.mjs`. Sin probar con el bot real (el token solo está en Cloudflare): comprobar el primer aviso con el siguiente partido.
+
+## 11/11/2026 — Jugadores rentables: solo los que se pueden fichar
+- Problema: la lista ordenaba por valor de mercado, pero 4 de los 6 primeros de Inicio tenían dueño en la liga (Adrián Niño, Bartra, Unai López, David Soria). Un jugador con dueño no se ficha por su valor sino por su cláusula (Niño: valor 11,1 M, cláusula 46,3 M, dato de Futmondo).
+- Ahora: Inicio enseña solo libres (`computer === true` del mercado de Futmondo) y la pestaña tiene dos botones, "Libres" (por defecto) y "Con dueño". Si Futmondo no manda el dato, no se filtra. Función `rtbByOwner` en `mercado.js`.
+- Además: "hoy / 7 días" van en su propia línea (`.rtb-chg`); antes se cortaban a 390 px ("+211" en vez de "+211k") en 6 de 6 filas de Inicio y 27 de 38 de la pestaña.
+- Comprobado en claro y oscuro a 390 px: 0 textos cortados, sin desbordes.
+
+### Fallos vistos el 11/11 y NO arreglados (pendientes)
+- Ficha, "HOY": usa el campo `change` de Futmondo, que en jugadores parados guarda la última bajada aunque sea de hace días. Guruzeta: "HOY −237.946 €" cuando esa bajada fue el 05/11 y desde el 06/11 es +0. Afecta hoy a 18 jugadores y también a los filtros Subiendo/Bajando del Mercado. Arreglo: usar `chg1` (histórico propio) cuando exista.
+- Ficha de un fichaje tardío (Pablo García, Racing): arriba "70 puntos · 11 partidos" y abajo "8/12 jugados" y J1–J3 sin puntos (la lista solo suma 51).
+- Novedades de "Tocado" (Mbappé, Ryan, Iván Romero, Vivian, Yuri el 11/11) que no llegan al Mercado: allí siguen sin aviso y con 70–95 %.
+- `/api/laquiniela/mios` y `/clausulas` responden sin sesión y enseñan el nombre real de Edu y su plantilla.
+- Clausulazos pinta las jornadas al revés que el Mercado (J12→J8 frente a J8→J12).
+- Siguiente idea: en "Con dueño", calcular los puntos por millón sobre la cláusula (`clausula-info`), que es lo que cuesta de verdad.

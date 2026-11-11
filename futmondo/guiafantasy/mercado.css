@@ -3607,3 +3607,15 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .nw-lead-pic > img.pt-img { object-position: 60% 20%; }
 .nw-lead-pic:has(> img.pt-img), .nw-big .nw-row-pic:has(> img.pt-img) { aspect-ratio: 3 / 2; }
 .rtb-when { font-weight: 500; opacity: .65; font-size: .85em; margin-left: 1px; }
+
+/* ===== Jugadores rentables: libres / con dueño y subidas en su propia línea (11/11/2026) ===== */
+.rtb-own { display: flex; gap: 6px; margin: 0 4px 6px; }
+.rtb-own[hidden] { display: none; }
+.rtb-own .rtb-seg { flex: 1 1 0; height: 40px; font-size: .86rem; }
+.rtb-note { margin: 10px 4px 2px; font-size: .78rem; font-weight: 600; color: var(--muted); }
+.rtb-chg { display: flex; gap: 12px; font-size: .74rem; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rtb-chg .rtb-up { color: #22c55e; }
+.rtb-chg .rtb-dn { color: #f87171; }
+.rtb-chg .rtb-when { font-weight: 600; color: var(--muted); }
+html[data-theme="light"] .rtb-chg .rtb-up { color: #15803d; }
+html[data-theme="light"] .rtb-chg .rtb-dn { color: #b91c1c; }
