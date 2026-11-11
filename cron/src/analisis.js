@@ -157,7 +157,7 @@ export function reglas(p, jornada, jugadas, pub, mins) {
   // 7) Rentable: mismo criterio que "Jugadores rentables" de la web (media >= 8, valor que no baja, sin lesión) + prob >= 70
   if (p.value > 0 && ppm >= 0.3 && p.avg >= 8 && p.matches >= 6 && (Number(p.change) || 0) >= 0 && valorSube && !/injured|redcard/.test(String(p.status || "")) && sano && prob != null && prob >= 70 && enCasa) {
     out.push({ tipo: "rentable", prio: 2.4 + Math.min(ppm, 1.2) / 1.2 * 0.8,
-      titulo: elige(["Rentable: " + p.name + " da " + num(p.avg) + " de media y cuesta " + mill(p.value), p.name + ", de los más rentables: " + num(p.avg) + " puntos por " + mill(p.value), "Calidad-precio: " + p.name + " promedia " + num(p.avg) + " a " + mill(p.value)], seed),
+      titulo: elige(["Rentable: " + p.name + " puntúa " + num(p.avg) + " de media y cuesta " + mill(p.value), p.name + ", de los más rentables: " + num(p.avg) + " puntos por " + mill(p.value), "Calidad-precio: " + p.name + " promedia " + num(p.avg) + " a " + mill(p.value)], seed),
       entradilla: "El " + (p.role || "jugador") + " del " + nombreClub(p) + " rinde " + num(ppm) + " puntos de media por cada millón de valor.",
       cuerpo: base + " Su valor es de " + mill(p.value) + (typeof p.chg7 === "number" ? " y en la última semana ha cambiado " + (p.chg7 >= 0 ? "+" : "-") + mill(Math.abs(p.chg7)) : "") + "." + (sig ? " " + sig : "") + "\n**Nuestra lectura:** de los jugadores con mejor relación puntos-precio de la liga, con " + prob + " % de jugar el próximo partido." });
   }
@@ -180,6 +180,17 @@ export function reglas(p, jornada, jugadas, pub, mins) {
 }
 
 // Elige lo mejor que aún no está publicado. own = noticias propias ya guardadas.
+const snapDe = (p) => ({ v: p.value || 0, pr: typeof p.prob === "number" ? p.prob : null, st: p.status || "", rv: p.rivalFf || "", j: String(p.jornadaFf || "x") });
+const snapTxt = (p) => [Math.round((p.value || 0) / 1e6), p.status || "", typeof p.prob === "number" ? Math.round(p.prob / 20) : "", p.rivalFf || ""].join("|");
+// Cambio que merece otra nota en la misma jornada: precio (≥ 1 M), situación (estado o ≥ 20 puntos de probabilidad) o rival
+export function cambioReal(prev, p) {
+  if (!prev) return false;
+  if (Math.abs((p.value || 0) - (prev.v || 0)) >= 1e6) return true;
+  if ((p.status || "") !== (prev.st || "")) return true;
+  if (typeof p.prob === "number" && typeof prev.pr === "number" && Math.abs(p.prob - prev.pr) >= 20) return true;
+  if ((p.rivalFf || "") !== (prev.rv || "")) return true;
+  return false;
+}
 export function elegirAnalisis(players, jornada, own, now, max, jugadas, mins) {
   const hoy = new Date(now).toISOString().slice(0, 10);
   const claves = new Set((own || []).map((o) => o.key).filter(Boolean));
@@ -190,10 +201,17 @@ export function elegirAnalisis(players, jornada, own, now, max, jugadas, mins) {
   const cand = [];
   const pubMax = {};
   for (const p of players || []) { const k = canon(p.team), m = Number(p.matches) || 0; if (m > (pubMax[k] || 0)) pubMax[k] = m; }
+  // Último análisis de cada jugador con su foto del momento: solo se vuelve a hablar de él si algo ha cambiado de verdad
+  const ultimo = {};
+  for (const o of own || []) if (o.snap && o.playerId && (!ultimo[o.playerId] || (o.createdAt || 0) > (ultimo[o.playerId].at || 0))) ultimo[o.playerId] = Object.assign({ at: o.createdAt || 0 }, o.snap);
   for (const p of players || []) {
+    const jx = String(p.jornadaFf || "x"), prev = ultimo[p.id];
+    const cambio = !!prev && String(prev.j) === jx && cambioReal(prev, p);
     for (const r of reglas(p, jornada, jugadas, pubMax[canon(p.team)], mins)) {
-      const key = "an-" + p.id + "-" + r.tipo + "-" + (p.jornadaFf || "x");
-      if (claves.has(key) || yaTienen.has(p.id + "|" + (p.jornadaFf || "x"))) continue; // un solo análisis por jugador y jornada
+      const key = "an-" + p.id + "-" + r.tipo + "-" + jx + (cambio ? "c" + hash(snapTxt(p)) : "");
+      if (claves.has(key)) continue;
+      if (!cambio && yaTienen.has(p.id + "|" + jx)) continue; // un solo análisis por jugador y jornada, salvo que cambie algo
+      if (prev && String(prev.j) === jx && !cambio) continue;
       cand.push(Object.assign({ key, p }, r));
     }
   }
@@ -228,6 +246,6 @@ export async function analisisDatos(env, f, site, own, now, max) {
   if (prev.length) { try { jugadas = await jornadasJugadas(f, site, jornada); } catch (e) {} }
   return (jugadas ? elegirAnalisis(players, jornada, own, now, max, jugadas, mins) : prev).map((c) => {
     const hex = Array.from({ length: 10 }, () => "0123456789abcdef"[Math.floor(Math.random() * 16)]).join("");
-    return { id: hex, status: "published", createdAt: now, updatedAt: now, publishedAt: now, thumb: "", tipo: "analisis", club: c.p.team, players: [c.p.name], playerId: c.p.id, key: c.key, source: { name: "Datos de Futmondo", url: "", videoId: "" }, title: c.titulo, lead: c.entradilla.slice(0, 200), body: c.cuerpo, via: "datos" };
+    return { id: hex, status: "published", createdAt: now, updatedAt: now, publishedAt: now, thumb: "", tipo: "analisis", club: c.p.team, players: [c.p.name], playerId: c.p.id, snap: snapDe(c.p), key: c.key, source: { name: "Datos de Futmondo", url: "", videoId: "" }, title: c.titulo, lead: c.entradilla.slice(0, 200), body: c.cuerpo, via: "datos" };
   });
 }

@@ -110,3 +110,13 @@ test("revelación: barato, buena media, valor sube; no una estrella cara", () =>
   assert.equal(t({ ...p, chg7: -1e5, chg14: -1e5 }).includes("revelacion"), false);
   assert.equal(t({ ...p, prob: 50 }).includes("revelacion"), false);
 });
+
+import { cambioReal } from "../cron/src/analisis.js";
+test("solo se vuelve a hablar de un jugador en la misma jornada si cambia algo real", () => {
+  const prev = { v: 10e6, pr: 90, st: "", rv: "Betis", j: "12" };
+  assert.equal(cambioReal(prev, { value: 10.4e6, prob: 85, status: "", rivalFf: "Betis" }), false);
+  assert.equal(cambioReal(prev, { value: 11.2e6, prob: 90, status: "", rivalFf: "Betis" }), true); // precio
+  assert.equal(cambioReal(prev, { value: 10e6, prob: 60, status: "", rivalFf: "Betis" }), true); // probabilidad
+  assert.equal(cambioReal(prev, { value: 10e6, prob: 90, status: "doubt", rivalFf: "Betis" }), true); // estado
+  assert.equal(cambioReal(prev, { value: 10e6, prob: 90, status: "", rivalFf: "Getafe" }), true); // rival
+});
