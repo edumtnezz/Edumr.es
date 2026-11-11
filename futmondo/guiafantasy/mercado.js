@@ -4469,7 +4469,8 @@
   const portadaSz = (u, sz) => u;
   const thumbBox = (x, cls, sz) => {
     const b = el("div", cls);
-    if (usaEth(x)) b.appendChild(ethFor(x, sz === "s"));
+    if (sz === "s" && x && x.src === "EduMR" && window.EduThumb && window.EduThumb.el) b.appendChild(ethFor(x, true));
+    else if (usaEth(x)) b.appendChild(ethFor(x, false));
     else { const im = el("img"); im.alt = ""; im.loading = "lazy"; if (esPortada(x.thumb)) im.className = "pt-img"; im.src = portadaSz(newsImgOf(x), sz); im.addEventListener("error", () => { im.src = newsFallbackImg(x.title); }, { once: true }); b.appendChild(im); }
     return b;
   };
