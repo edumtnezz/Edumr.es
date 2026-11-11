@@ -3568,6 +3568,11 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .art-banner.art-portada { aspect-ratio: 3 / 2; }
 .art-banner > .eth { position: absolute; inset: 0; }
 .nw-lead-pic > .eth, .nw-row-pic > .eth { position: absolute; inset: 0; border-radius: 0; }
+.eth-mini { position: absolute; inset: 0; background: #eef2f0; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
+.eth-mini > img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 8%; display: block; }
+.eth-mini-c { align-items: center; background: #fff; }
+.eth-mini-c > img { width: 74%; height: 74%; object-fit: contain; object-position: center; }
+.nw-row-pic > .eth-mini { border-radius: 0; }
 
 /* ===== Noticias: noticias propias + última hora en un solo flujo ===== */
 #tab-noticias .estado-title { margin: 0 0 4px; }

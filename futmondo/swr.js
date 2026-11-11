@@ -4,7 +4,7 @@
 (function () {
   "use strict";
   var EPS = /^\/api\/laquiniela\/(mercado|jugador|jornada|rachas|equipos|portada|noticias|detallepartido|once|alineaciones-confirmadas|cambios|puntos|puntos-jornada|ultimahora|minutos)(\?|$)/;
-  var MAXAGE = 15 * 60 * 1000, MAXBODY = 1500000, PFX = "swr2:";
+  var MAXAGE = 15 * 60 * 1000, LONG = 24 * 3600 * 1000, LONGEP = /^\/api\/laquiniela\/(mercado|noticias)(\?|$)/, MAXBODY = 1500000, PFX = "swr2:";
   var native = window.fetch.bind(window), inflight = {}, lastEv = {};
   function lsGet(k) { try { return JSON.parse(localStorage.getItem(PFX + k)); } catch (e) { return null; } }
   function lsPut(k, body) {
@@ -34,7 +34,7 @@
     var path = url.replace(location.origin, "");
     if (method !== "GET" || !EPS.test(path) || (init && init.cache === "no-store")) return native(input, init);
     var c = lsGet(path);
-    if (c && c.b && Date.now() - c.t < MAXAGE) {
+    if (c && c.b && Date.now() - c.t < (LONGEP.test(path) ? LONG : MAXAGE)) {
       // pinta ya con lo guardado y actualiza detrás
       net(path, path).then(function (x) {
         if (!x || !x.ok) return;

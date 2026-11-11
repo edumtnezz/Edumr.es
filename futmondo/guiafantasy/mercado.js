@@ -4435,7 +4435,7 @@
     return "";
   };
   // Miniatura propia (DOM, animada): foto del jugador + escudo del club (mercado de Futmondo)
-  const ethFor = (x) => {
+  const ethFor = (x, mini) => {
     let photo = "", crest = "";
     try {
       // Solo el jugador del que habla el titular (nunca otro citado al final del texto)
@@ -4450,12 +4450,18 @@
       if (pl) { photo = pl.photo; crest = pl.logo || ""; }
       if (!crest && x.club) crest = clubLogo(x.club, "") || "";
     } catch (e) {}
-    const n = window.EduThumb.el(x, { photo, crest, club: x.club || "" });
-    if (!photo && !crest && !(all && all.length)) ethPend.push([n, x]); // aún sin mercado: se rellena al llegar, sin mover nada
+    let n;
+    if (mini) {
+      // Icono pequeño limpio: solo la cara del jugador (o el escudo), sin texto ni logos dentro
+      n = el("div", "eth-mini" + (photo ? "" : " eth-mini-c"));
+      const src = photo || crest;
+      if (src) { const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = src; im.addEventListener("error", () => im.remove(), { once: true }); n.appendChild(im); }
+    } else n = window.EduThumb.el(x, { photo, crest, club: x.club || "" });
+    if (!photo && !crest && !(all && all.length)) ethPend.push([n, x, mini]); // aún sin mercado: se rellena al llegar, sin mover nada
     return n;
   };
   const ethPend = [];
-  const ethFill = () => { while (ethPend.length) { const [n, x] = ethPend.shift(); if (n.isConnected) { const m = ethFor(x); n.replaceWith(m); } } };
+  const ethFill = () => { while (ethPend.length) { const [n, x, mini] = ethPend.shift(); if (n.isConnected) { const m = ethFor(x, mini); n.replaceWith(m); } } };
   const usaEth = (x) => !!(x && x.src === "EduMR" && !x.thumb && window.EduThumb && window.EduThumb.el);
   // Caja de miniatura: la foto del vídeo si la hay; si no, la nuestra
   // Portada de ChatGPT: tamaño justo para cada sitio (s = cuadrada centrada en el jugador, m = mediana), sin perder calidad
@@ -4463,7 +4469,7 @@
   const portadaSz = (u, sz) => u;
   const thumbBox = (x, cls, sz) => {
     const b = el("div", cls);
-    if (usaEth(x)) b.appendChild(ethFor(x));
+    if (usaEth(x)) b.appendChild(ethFor(x, sz === "s"));
     else { const im = el("img"); im.alt = ""; im.loading = "lazy"; if (esPortada(x.thumb)) im.className = "pt-img"; im.src = portadaSz(newsImgOf(x), sz); im.addEventListener("error", () => { im.src = newsFallbackImg(x.title); }, { once: true }); b.appendChild(im); }
     return b;
   };
