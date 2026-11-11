@@ -5796,7 +5796,7 @@ async function handleGet({ request, env: env0, params }) {
   // Horas (Madrid) en que se detectó un cambio de valor de mercado en Futmondo. Solo lectura, sin datos personales.
   if (path === "mercado-horas") {
     let log = [];
-    try { log = (await env.PORRA.get("mkchg:v1", "json")) || []; } catch (e) {}
+    try { log = (await env.PORRA.get("mkchg:v2", "json")) || []; } catch (e) {}
     const fm = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
     return json({ n: log.length, cambios: log.slice(-120).reverse().map((x) => ({ hora: fm.format(new Date(x.at)), jugadoresCambiados: x.n })) });
   }

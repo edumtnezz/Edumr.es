@@ -462,9 +462,11 @@ export async function avisar(env, deps) {
       if (st.vsig && vsig !== st.vsig) {
         const prev = st.vmap || {};
         const cambios = ps.filter((p) => prev[p.id] != null && prev[p.id] !== p.value);
-        const log = (await env.PORRA.get("mkchg:v1", "json")) || [];
-        log.push({ at: now, n: cambios.length });
-        await env.PORRA.put("mkchg:v1", JSON.stringify(log.slice(-400)));
+        if (cambios.length >= 5) { // solo cambios reales de valor (el resto es ruido de la lista, no una actualización)
+          const log = ((await env.PORRA.get("mkchg:v2", "json")) || []);
+          log.push({ at: now, n: cambios.length });
+          await env.PORRA.put("mkchg:v2", JSON.stringify(log.slice(-200)));
+        }
       }
       if (vsig !== st.vsig) { st.vsig = vsig; st.vmap = Object.fromEntries(ps.map((p) => [p.id, p.value])); dirty = true; }
     }
