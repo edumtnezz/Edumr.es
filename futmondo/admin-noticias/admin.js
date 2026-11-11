@@ -170,7 +170,7 @@ function colorEscudo(img) {
 var KICK_COL = { fijo: "#16a34a", racha: "#ea580c", rentable: "#2563eb", revelacion: "#9333ea", chollo: "#16a34a", bajon: "#dc2626", regular: "#d97706", duda: "#d97706" };
 function etiquetaCromo(cr, tipoNoticia) { return cr && cr.kicker ? [cr.kicker, KICK_COL[cr.kickTipo] || "#16a34a", "star"] : (TIPOS[tipoNoticia] || null); }
 function pintaCromo(g, foto, cr, crestImg, W, H, tipoNoticia) {
-  var d = H * 0.5, cx = W * 0.64, cy = H * 0.42, col = crestImg ? colorEscudo(crestImg) : [24, 90, 60];
+  var d = H * 0.58, cx = W * 0.62, cy = H * 0.4, col = crestImg ? colorEscudo(crestImg) : [24, 90, 60];
   g.save();
   var gl = g.createRadialGradient(cx, cy, d * 0.3, cx, cy, d * 0.95); gl.addColorStop(0, "rgba(255,255,255,.35)"); gl.addColorStop(1, "rgba(255,255,255,0)");
   g.fillStyle = gl; g.beginPath(); g.arc(cx, cy, d * 0.95, 0, Math.PI * 2); g.fill();
@@ -205,7 +205,7 @@ function pintaCromo(g, foto, cr, crestImg, W, H, tipoNoticia) {
   g.restore();
   // Frase corta que se entiende desde fuera, grande, abajo a la izquierda, inclinada
   var et = etiquetaCromo(cr, tipoNoticia);
-  if (et) { g.save(); g.translate(W * 0.035, H * 0.075); g.rotate(-0.04); pintaEtiqueta(g, et, 0, 0, H * 0.135); g.restore(); }
+  if (et) { g.save(); g.translate(W * 0.03, H * 0.04); g.rotate(-0.04); pintaEtiqueta(g, et, 0, 0, H * 0.105); g.restore(); }
 }
 function componer(j, x) {
   var sin = !!j.sinJugador;

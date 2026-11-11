@@ -252,3 +252,27 @@ export async function analisisDatos(env, f, site, own, now, max) {
     return { id: hex, status: "published", createdAt: now, updatedAt: now, publishedAt: now, thumb: "", tipo: "analisis", club: c.p.team, players: [c.p.name], playerId: c.p.id, snap: snapDe(c.p), key: c.key, source: { name: "Datos de Futmondo", url: "", videoId: "" }, title: c.titulo, lead: c.entradilla.slice(0, 200), body: c.cuerpo, via: "datos" };
   });
 }
+
+// Notas «fijo» ya publicadas que hoy NO pasarían los criterios de recomendación (valor que baja, bache, juega fuera, rival fuerte o sin datos).
+// Devuelve los ids a retirar, o null si faltan datos (entonces no se toca nada y se reintenta).
+export async function fijosARetirar(f, site, own) {
+  const fijos = (own || []).filter((o) => o.status === "published" && o.playerId && /^an-.+-fijo-/.test(String(o.key || "")));
+  if (!fijos.length) return [];
+  let players = [], jornada = null, mins = null;
+  try { const r = await f(site + "mercado", { headers: { "user-agent": "edumr-cron" } }); const d = await r.json(); players = Array.isArray(d.players) ? d.players : []; } catch (e) {}
+  try { const r = await f(site + "jornada", { headers: { "user-agent": "edumr-cron" } }); jornada = await r.json(); } catch (e) {}
+  try { const r = await f(site + "minutos", { headers: { "user-agent": "edumr-cron" } }); const d = await r.json(); const mp = {}; Object.keys((d && d.map) || {}).forEach((id) => { const v = d.map[id]; if (v && typeof v.n === "number") mp[id] = v; }); mins = Object.keys(mp).length ? mp : null; } catch (e) {}
+  if (!players.length || !mins) return null;
+  let jugadas = null;
+  try { jugadas = await jornadasJugadas(f, site, jornada); } catch (e) {}
+  if (!jugadas) return null;
+  const pubMax = {};
+  for (const p of players) { const k = canon(p.team), m = Number(p.matches) || 0; if (m > (pubMax[k] || 0)) pubMax[k] = m; }
+  const ids = [];
+  for (const o of fijos) {
+    const p = players.find((x) => String(x.id) === String(o.playerId));
+    if (!p) continue;
+    if (!reglas(p, jornada, jugadas, pubMax[canon(p.team)], mins).some((r) => r.tipo === "fijo")) ids.push(o.id);
+  }
+  return ids;
+}

@@ -66,7 +66,7 @@ export function portadaSvg(o, crop) {
   }
   let etiq = "";
   if (cro) {
-    const d = H * 0.5, cx = W * 0.64, cy = H * 0.42, accent = o.color ? "rgb(" + o.color.join(",") + ")" : ((o.etiqueta && o.etiqueta.c) || "#16a34a");
+    const d = H * 0.58, cx = W * 0.62, cy = H * 0.4, accent = o.color ? "rgb(" + o.color.join(",") + ")" : ((o.etiqueta && o.etiqueta.c) || "#16a34a");
     parts.push(`<circle cx="${cx}" cy="${cy}" r="${d * 0.95}" fill="url(#rg)"/>`);
     parts.push(`<circle cx="${cx}" cy="${cy}" r="${d / 2 + H * 0.018}" fill="#fff" filter="url(#sh)"/><circle cx="${cx}" cy="${cy}" r="${d / 2 + H * 0.008}" fill="${accent}"/>`);
     parts.push(`<clipPath id="cc"><circle cx="${cx}" cy="${cy}" r="${d / 2}"/></clipPath><circle cx="${cx}" cy="${cy}" r="${d / 2}" fill="#fbfbf8"/>`);
@@ -93,7 +93,7 @@ export function portadaSvg(o, crop) {
     });
   }
   // Etiqueta: grande arriba a la izquierda (completa) o en la esquina de la miniatura cuadrada
-  if (o.etiqueta) etiq = crop ? etiquetaSvg(o.etiqueta, crop.x + crop.side * 0.05, crop.y + crop.side * 0.05, crop.side * 0.12, 0) : etiquetaSvg(o.etiqueta, W * 0.035, H * 0.075, H * 0.135, -2.3);
+  if (o.etiqueta) etiq = crop ? etiquetaSvg(o.etiqueta, crop.x + crop.side * 0.05, crop.y + crop.side * 0.05, crop.side * 0.12, 0) : etiquetaSvg(o.etiqueta, W * 0.03, H * 0.04, H * 0.105, -2.3);
   parts.push(etiq);
   // Marca de agua NOTICIAS, abajo a la derecha, transparente
   const ms = pngSize(o.marca);
@@ -104,7 +104,7 @@ export function portadaSvg(o, crop) {
 
 // Cuadrado centrado en el jugador (o en el escudo si no hay foto)
 export function recorteCuadrado(cro) {
-  const side = Math.round(H * 0.88), fx = cro ? 0.64 : 0.5;
+  const side = Math.round(H * 0.88), fx = cro ? 0.62 : 0.5;
   return { x: Math.max(0, Math.min(W - side, W * fx - side / 2)), y: (H - side) * 0.25, side };
 }
 

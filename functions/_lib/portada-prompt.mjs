@@ -99,7 +99,7 @@ export function promptFondo({ club, cols, tipo, sem }) {
     "=== COMPOSICIÓN ===",
     "- Un solo punto focal: un foco de luz fuerte y limpio detrás del círculo central.",
     "- Zona izquierda (aprox. 0–30 % del ancho): tono uniforme y tranquilo, algo más oscuro, sin detalles, para el escudo.",
-    "- Centro-derecha (círculo centrado en aprox. el 64 % del ancho y el 42 % del alto, diámetro aprox. 50 % del alto): zona limpia de baja textura con halo de luz suave o contraluz, para que destaque la foto. Nada de objetos ni líneas cruzando esa zona.",
+    "- Centro-derecha (círculo centrado en aprox. el 62 % del ancho y el 40 % del alto, diámetro aprox. 58 % del alto): zona limpia de baja textura con halo de luz suave o contraluz, para que destaque la foto. Nada de objetos ni líneas cruzando esa zona.",
     "- Franja inferior (aprox. 25 % del alto): más oscura y lisa, para el nombre, las pastillas y la etiqueta. Esquina inferior derecha tranquila para la marca de agua.",
     "- Toda la energía visual (luz, diagonales, partículas) en los márgenes y detrás del círculo, nunca encima de las zonas reservadas.",
     "- Contraste alto entre la zona luminosa central y los bordes más oscuros; pocas formas grandes, que se entiendan aunque la imagen se vea muy pequeña.",

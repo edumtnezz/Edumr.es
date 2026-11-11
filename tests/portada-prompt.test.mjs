@@ -7,7 +7,7 @@ test("el prompt lleva los colores reales del escudo y las zonas reservadas", () 
   const p = promptFondo({ club: "Atlético de Madrid", cols: [[206, 30, 40], [20, 40, 120]], tipo: "fijo", sem: 5 });
   assert.match(p, /#ce1e28 \(rojo\)/);
   assert.match(p, /#142878/);
-  assert.match(p, /64 % del ancho/);
+  assert.match(p, /62 % del ancho/);
   assert.match(p, /NO uses azul si el escudo no es azul/);
 });
 test("ninguna escena es de fiesta, dinero ni lesión gráfica", () => {

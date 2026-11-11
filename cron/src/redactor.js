@@ -1,4 +1,4 @@
-import { analisisDatos } from "./analisis.js";
+import { analisisDatos, fijosARetirar } from "./analisis.js";
 // Redactor automático. Publica en la web y avisa por Telegram al chat ya guardado.
 // No crea borradores ni manda un resumen "sombra".
 //
@@ -1920,6 +1920,18 @@ export async function redactorSombra(env, deps) {
       const o = own.find((x) => x.id === "d28d67db04" && x.status === "published");
       if (o) { o.status = "draft"; o.retirada = true; o.updatedAt = now; cambio = true; }
       await env.PORRA.put("rd:retirar:v1", String(now));
+    }
+    // Una sola vez (Edu 11/11/2026): se retiran las notas «fijo» que hoy no pasarían los criterios (valor que baja, bache, fuera de casa, rival fuerte)
+    if (!(await env.PORRA.get("rd:fijos-revisar:v1"))) {
+      try {
+        const ids = await fijosARetirar(f, SITE, own);
+        if (!ids) throw new Error("sin datos");
+        const quitadas = [];
+        for (const o of own) if (ids.includes(o.id) && o.status === "published") { o.status = "draft"; o.retirada = true; o.updatedAt = now; cambio = true; quitadas.push(o.title); }
+        st.fijosRetirados = quitadas.slice(0, 40);
+        dirty = true;
+        await env.PORRA.put("rd:fijos-revisar:v1", String(now));
+      } catch (e) {}
     }
     // Un once/alineación solo vale antes del partido: pasadas 2 h se retira (Edu 10/11/2026)
     for (const o of own) if (o.status === "published" && (o.tipo === "once" || /\bonces?\b|alineacion(es)?\b/i.test(o.title || "")) && now - (o.publishedAt || o.createdAt || now) > 2 * 3600e3) { o.status = "draft"; o.caducada = true; o.updatedAt = now; cambio = true; }
