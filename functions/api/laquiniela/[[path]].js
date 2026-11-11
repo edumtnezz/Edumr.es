@@ -789,7 +789,8 @@ async function conHistorial(env, players) {
       const o = {};
       for (const n of [1, 2, 7, 14, 30]) { const b = dias[n] && dias[n][p.id]; if (b > 0 && p.value > 0) o["chg" + n] = p.value - b; }
       // "change" de Futmondo es el último movimiento, no el de hoy: si el valor lleva dos días quieto, hoy es 0 (functions/_lib/change.mjs).
-      if (staleChange(p.change, o.chg1, o.chg2)) o.change = 0;
+      const c1 = o.chg1 !== undefined ? o.chg1 : p.chg1, c2 = o.chg2 !== undefined ? o.chg2 : p.chg2; // sin día propio, vale el de la tabla de Futmondo de FutbolFantasy
+      if (staleChange(p.change, c1, c2)) o.change = 0;
       return Object.keys(o).length ? { ...p, ...o } : p;
     });
   } catch (e) { return players; }
@@ -861,7 +862,7 @@ async function getRachas(env) {
   let players = cache.players || [];
   try {
     const map = await ffMap(env);
-    players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, chg1: e.d1, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
+    players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, chg1: e.d1, chg2: e.d2, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
   } catch (e) {}
   players = await conHistorial(env, players);
   const rachas = [];
@@ -1085,7 +1086,7 @@ async function getClausulas(env) {
   let players = cache.players || [];
   try {
     const map = await ffMap(env);
-    players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, chg1: e.d1, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
+    players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, chg1: e.d1, chg2: e.d2, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
   } catch (e) {}
   players = await conHistorial(env, players);
   let myTeam = "Eduardo Martínez";
@@ -1186,7 +1187,7 @@ async function searchMercado(env, q) {
   try { await snapshotMarket(env, players); } catch (e) {}
   try {
     const map = await ffMap(env);
-    players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, jornadaFf: e.jornada, tend: e.tend, chg1: e.d1, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
+    players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, jornadaFf: e.jornada, tend: e.tend, chg1: e.d1, chg2: e.d2, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
   } catch (e) {}
   players = await conHistorial(env, players);
   // Jugadores "tocados" hoy o ayer según las novedades (misma lista que "Últimos cambios"); si no llega en 2,5 s, sin marca.
