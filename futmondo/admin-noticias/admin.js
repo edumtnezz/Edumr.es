@@ -2,7 +2,12 @@
 (function () {
   var API = "/api/laquiniela";
   var $ = function (id) { return document.getElementById(id); };
-  var D = null, tab = "actividad", abierto = null, filtroSrc = "";
+  var D = null, tab = "actividad", abierto = null, filtroSrc = "", scrollPend = null;
+  var TABS_OK = ["actividad", "publicadas", "borradores", "redactor", "comparar", "historial", "estado"];
+  // La pestaña, la noticia abierta y el punto de la lista se recuerdan al recargar (solo en este dispositivo)
+  try { var g0 = JSON.parse(localStorage.getItem("adm:vista") || "null"); if (g0 && TABS_OK.indexOf(g0.tab) >= 0) { tab = g0.tab; abierto = g0.abierto || null; scrollPend = g0.y || 0; } } catch (e) {}
+  function guardaVista() { try { localStorage.setItem("adm:vista", JSON.stringify({ tab: tab, abierto: abierto, y: Math.round(window.scrollY || 0) })); } catch (e) {} }
+  var tG = null; window.addEventListener("scroll", function () { clearTimeout(tG); tG = setTimeout(guardaVista, 250); }, { passive: true });
   var ETIQ = { disponible: "disponible", opcion_titular: "opción de titular", duda: "duda", recuperacion_con_grupo: "entrena con el grupo", recuperacion_parcial: "entrena parcialmente", baja: "baja", titular_confirmado: "titular confirmado", rotacion: "rotación" };
 
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
@@ -51,6 +56,7 @@
     var tabs = [["actividad", "Actividad"], ["publicadas", "Publicadas " + (D.own.length - nb)], ["borradores", "Borradores" + (nb ? " " + nb : "")], ["redactor", "Redactor " + (D.sombra || []).length], ["comparar", "Comparar"], ["historial", "Historial"], ["estado", "Estado"]];
     var t = $("adTabs"); t.innerHTML = "";
     tabs.forEach(function (x) { var b = el("button", "ad-chip" + (tab === x[0] ? " on" : ""), x[1]); b.type = "button"; b.addEventListener("click", function () { tab = x[0]; abierto = null; pinta(); }); t.appendChild(b); });
+    guardaVista();
     var v = $("adView"); v.innerHTML = "";
     if (tab === "actividad") vistaActividad(v);
     else if (tab === "borradores" || tab === "publicadas") vistaPropias(v, tab === "publicadas");
@@ -58,6 +64,7 @@
     else if (tab === "comparar") vistaComparar(v);
     else if (tab === "historial") vistaHistorial(v);
     else vistaEstado(v);
+    if (scrollPend != null) { var y0 = scrollPend; scrollPend = null; requestAnimationFrame(function () { window.scrollTo(0, y0); }); }
   }
 
 
