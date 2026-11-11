@@ -3194,8 +3194,8 @@
     try { if (window.scrollY !== sy) window.scrollTo(0, sy); } catch (e) {}
   }
 
-  function cmpMatchCell(m, right, fmd) {
-    const c = el("span", "cmp2-cell cmpx-mcell" + (right ? " right" : ""));
+  function cmpMatchCell(m, right, fmd, win) {
+    const c = el("span", "cmp2-cell cmpx-mcell" + (right ? " right" : "") + (win ? " win" : ""));
     if (!m) { c.appendChild(el("span", "cmpx-mna", CMP_DASH)); return c; }
     const rl = el("span", "cmpx-mrival");
     const rlogo = (all || []).find((x) => x.logo && x.team && teamCanon(x.team) === teamCanon(m.rv));
@@ -3203,7 +3203,7 @@
     rl.appendChild(clubLink(el("span", null, (m.rv || CMP_DASH) + " · " + (m.h ? "Casa" : "Fuera")), m.rv));
     c.appendChild(rl);
     const ln = el("span", "cmpx-mline");
-    const pc = el("span", "ficha-chip " + (m.pt != null ? "pt-" + ptClass(m.pt) : "cmpx-na") + (m.calc ? " cmpx-calc" : ""), m.pt != null ? String(m.pt) : "–");
+    const pc = el("span", "cmpx-pts " + (m.pt != null ? "pt-" + ptClass(m.pt) : "cmpx-na") + (m.calc ? " cmpx-calc" : ""), m.pt != null ? String(m.pt) : "–");
     if (m.calc) pc.title = "Calculado con las reglas de tu liga (Futmondo solo publica los 5 últimos partidos)";
     ln.appendChild(pc);
     const fm = fmd;
@@ -3214,6 +3214,14 @@
     else { tg = "▼ Sale · " + (fm && fm.out ? cmpMin(fm.out) : m.mn + "'"); cls = " out"; }
     ln.appendChild(el("span", "cmpx-mtag" + cls, tg));
     c.appendChild(ln);
+    // Barra de minutos jugados (dato real de Futmondo: minutos sobre 90)
+    if (m.mn > 0) {
+      const mb = el("span", "cmpx-mbar" + (m.sb ? " sb" : ""));
+      mb.title = m.mn + " min";
+      const bi = el("i"); bi.style.setProperty("--w", Math.max(4, Math.min(100, Math.round((m.mn / 90) * 100))) + "%");
+      mb.appendChild(bi);
+      c.appendChild(mb);
+    }
     const evs = el("span", "cmpx-evs");
     // Icono + palabra + minutos (si FotMob los tiene); sin minutos, "2 goles".
     const chip = (cls2, ico, n, list, one, many) => evs.appendChild(el("span", "cmpx-evc " + cls2, ico + " " + (list && list.length === n ? (n > 1 ? many : one) + " " + list.map(cmpMin).join(" ") : n > 1 ? n + " " + (many === "Asist." ? "asist." : many.toLowerCase()) : one)));
@@ -3224,8 +3232,14 @@
     if (evs.firstChild) c.appendChild(evs);
     return c;
   }
+  let cmpAnimKey = "";
   function cmpMatchRows(box, a, b, ra, rb) {
     box.innerHTML = "";
+    // La animación de entrada solo se ve al abrir una comparación o cambiar el rango; los repintados del mercado no la repiten.
+    const animKey = a.id + "|" + b.id + "|" + cmpRange;
+    const anim = animKey !== cmpAnimKey;
+    cmpAnimKey = animKey;
+    let rowN = 0;
     const la = ra && ra.c && Array.isArray(ra.c.ms) ? ra.c.ms : [];
     const lb = rb && rb.c && Array.isArray(rb.c.ms) ? rb.c.ms : [];
     const fa = cmpTeamFixtures(a.team), fb = cmpTeamFixtures(b.team);
@@ -3237,12 +3251,15 @@
     const n = cmpRange;
     const shown = n > 0 ? rs.slice(0, n) : rs;
     const row = (r, up) => {
-      const rw = el("div", "cmp2-row cmpx-mrow" + (up ? " cmpx-next" : ""));
+      const rw = el("div", "cmp2-row cmpx-mrow" + (up ? " cmpx-next" : "") + (anim ? " anim" : ""));
+      rw.style.setProperty("--i", String(Math.min(rowN++, 10)));
       const ma = la.find((m) => m.r === r), mb = lb.find((m) => m.r === r);
-      rw.appendChild(ma ? cmpMatchCell(ma, false, ra && ra.c ? cmpFmPlayer(ma, ra.c.nm) : null) : cmpFixtureCell(fa.find((f) => f.r === r), false));
+      const pa = ma ? ma.pt : null, pb = mb ? mb.pt : null;
+      const winA = pa != null && pb != null && pa > pb, winB = pa != null && pb != null && pb > pa;
+      rw.appendChild(ma ? cmpMatchCell(ma, false, ra && ra.c ? cmpFmPlayer(ma, ra.c.nm) : null, winA) : cmpFixtureCell(fa.find((f) => f.r === r), false));
       const lab = el("span", "cmp2-lab cmpx-mj"); lab.appendChild(el("span", null, "J" + r)); if (up) lab.appendChild(el("small", null, "Próximo"));
       rw.appendChild(lab);
-      rw.appendChild(mb ? cmpMatchCell(mb, true, rb && rb.c ? cmpFmPlayer(mb, rb.c.nm) : null) : cmpFixtureCell(fb.find((f) => f.r === r), true));
+      rw.appendChild(mb ? cmpMatchCell(mb, true, rb && rb.c ? cmpFmPlayer(mb, rb.c.nm) : null, winB) : cmpFixtureCell(fb.find((f) => f.r === r), true));
       box.appendChild(rw);
     };
     upR.forEach((r) => row(r, true));
