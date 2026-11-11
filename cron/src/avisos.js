@@ -473,6 +473,36 @@ export async function avisar(env, deps) {
     }
   } catch (e) {}
 
+  // Historial propio de valores de Futmondo (KV vh:v1): una foto al día (la primera pasada de cada día, hora de Madrid).
+  // Al empezar se rellena una sola vez con los valores de hace 1, 7, 14 y 30 días que daba FutbolFantasy (valor ahora − cambio);
+  // esos días "copiados" se sustituyen por la foto real cuando llega. Con esto los cambios 1/7/14/30 salen de Futmondo.
+  try {
+    const mk = await getMk();
+    const ps = (mk.players || []).filter((p) => p && p.id && Number.isFinite(p.value) && p.value > 0);
+    if (ps.length > 300) {
+      const dia = (ms) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date(ms));
+      const hoy = dia(now);
+      const vh = (await env.PORRA.get("vh:v1", "json")) || { days: {}, copied: {} };
+      let cambio = false;
+      if (!vh.days[hoy] || vh.copied[hoy]) {
+        vh.days[hoy] = Object.fromEntries(ps.map((p) => [p.id, p.value])); delete vh.copied[hoy]; cambio = true;
+      }
+      if (!vh.base) { // una sola vez: copiar lo que ya daba FutbolFantasy
+        for (const n of [1, 7, 14, 30]) {
+          const d = dia(now - n * 864e5);
+          if (vh.days[d]) continue;
+          const m = {};
+          for (const p of ps) { const c = p["chg" + n]; if (Number.isFinite(c) && p.value - c > 0) m[p.id] = p.value - c; }
+          if (Object.keys(m).length > 200) { vh.days[d] = m; vh.copied[d] = 1; }
+        }
+        vh.base = hoy; cambio = true;
+      }
+      const viejos = Object.keys(vh.days).sort().slice(0, -45);
+      viejos.forEach((d) => { delete vh.days[d]; delete vh.copied[d]; });
+      if (cambio || viejos.length) await env.PORRA.put("vh:v1", JSON.stringify(vh));
+    }
+  } catch (e) {}
+
   if (dirty) { try { await env.PORRA.put(STATE_KEY, JSON.stringify(st)); } catch (e) {} }
   return { sent: sentCount, pending: queue.length - sentCount, quiet, firstRun };
 }

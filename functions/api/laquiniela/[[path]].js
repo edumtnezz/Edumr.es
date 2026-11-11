@@ -5793,6 +5793,13 @@ async function handleGet({ request, env: env0, params }) {
     const list = await getNoticiasMulti(await getFfNoticias(null));
     return json({ noticias: list, at: Date.now() });
   }
+  // Estado del historial propio de valores (solo recuento por día; "copiado" = rellenado de FutbolFantasy al empezar).
+  if (path === "mercado-historial") {
+    let vh = null;
+    try { vh = await env.PORRA.get("vh:v1", "json"); } catch (e) {}
+    const days = vh ? Object.keys(vh.days || {}).sort() : [];
+    return json({ dias: days.map((d) => ({ dia: d, jugadores: Object.keys(vh.days[d]).length, origen: (vh.copied || {})[d] ? "copiado de FutbolFantasy" : "foto de Futmondo" })) });
+  }
   // Horas (Madrid) en que se detectó un cambio de valor de mercado en Futmondo. Solo lectura, sin datos personales.
   if (path === "mercado-horas") {
     let log = [];
