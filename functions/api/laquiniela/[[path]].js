@@ -774,6 +774,23 @@ async function futbolHeader(env) {
   return { token: m.token, userid: m.userid };
 }
 
+// Cambios de valor a 1, 7, 14 y 30 días calculados con nuestro historial de Futmondo (KV vh:v1, lo escribe el Worker).
+// Si falta el día o el jugador, se deja lo que ya hubiera (FutbolFantasy) o nada: nunca un valor inventado.
+async function conHistorial(env, players) {
+  try {
+    const vh = await env.PORRA.get("vh:v1", "json");
+    if (!vh || !vh.days) return players;
+    const fm = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" });
+    const dias = {};
+    for (const n of [1, 7, 14, 30]) dias[n] = vh.days[fm.format(new Date(Date.now() - n * 864e5))] || null;
+    return players.map((p) => {
+      const o = {};
+      for (const n of [1, 7, 14, 30]) { const b = dias[n] && dias[n][p.id]; if (b > 0 && p.value > 0) o["chg" + n] = p.value - b; }
+      return Object.keys(o).length ? { ...p, ...o } : p;
+    });
+  } catch (e) { return players; }
+}
+
 async function getMarketPlayers(env, force) {
   const cached = await env.PORRA.get(MARKET_KEY, "json");
   if (!force && cached && Date.now() - (cached.at || 0) < MARKET_TTL_MS) return cached;
@@ -842,6 +859,7 @@ async function getRachas(env) {
     const map = await ffMap(env);
     players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, chg1: e.d1, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
   } catch (e) {}
+  players = await conHistorial(env, players);
   const rachas = [];
   for (const p of players) {
     const f = (p.fitness || []).map((x) => Number(x) || 0);
@@ -1065,6 +1083,7 @@ async function getClausulas(env) {
     const map = await ffMap(env);
     players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, chg1: e.d1, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
   } catch (e) {}
+  players = await conHistorial(env, players);
   let myTeam = "Eduardo Martínez";
   try { const mt = await env.PORRA.get("fm:myteam"); if (mt) myTeam = mt; } catch (e) {}
   const own = players.filter((p) => p.computer === false);
@@ -1165,6 +1184,7 @@ async function searchMercado(env, q) {
     const map = await ffMap(env);
     players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, jornadaFf: e.jornada, tend: e.tend, chg1: e.d1, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
   } catch (e) {}
+  players = await conHistorial(env, players);
   let season = {};
   try { season = await getSeasonMap(env, false); } catch (e) {}
   const seasonOn = Object.keys(season).length > 30;
