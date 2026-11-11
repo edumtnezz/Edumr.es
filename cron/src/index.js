@@ -18,6 +18,12 @@ export default {
         // Partidos cuyos puntos acaba de guardar el servidor: aviso por Telegram (de noche se retiene hasta las 08:00)
         if (j && j.result && Array.isArray(j.result.savedInfo)) await colaPuntos(env, j.result.savedInfo);
       } catch (e) {}
+      // Mantiene al día la copia global (KV) de lo más visto, para que nadie espere en la primera visita.
+      // Casi siempre es una respuesta ya guardada (barata); el servidor escribe en KV como mucho cada 2 min por ruta.
+      try {
+        await Promise.all(["mercado", "jornada", "rachas", "portada", "noticias", "ultimos-cambios", "equipos"].map((p) =>
+          fetch("https://edumr.es/api/laquiniela/" + p, { headers: { "user-agent": "edumr-cron" } }).then((r) => r.text()).catch(() => {})));
+      } catch (e) {}
       try { await avisarPuntos(env); } catch (e) {}
       try { await avisar(env); } catch (e) {}
       // Redactor: publica noticias verificadas y avisa por Telegram. Sin GEMINI_API_KEY no hace nada.

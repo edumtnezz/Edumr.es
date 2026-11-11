@@ -6,6 +6,10 @@
   var EPS = /^\/api\/laquiniela\/(mercado|jugador|jornada|rachas|equipos|portada|noticias|detallepartido|once|alineaciones-confirmadas|cambios|puntos|puntos-jornada|ultimahora|minutos)(\?|$)/;
   var MAXAGE = 15 * 60 * 1000, LONG = 24 * 3600 * 1000, LONGEP = /^\/api\/laquiniela\/(mercado|noticias)(\?|$)/, MAXBODY = 1500000, PFX = "swr2:";
   var native = window.fetch.bind(window), inflight = {}, lastEv = {};
+  var FINJ = /^\/api\/laquiniela\/jornada\?jornada=\d+$/;
+  function allFinal(b) {
+    try { var m = JSON.parse(b).matches || []; return m.length > 0 && m.every(function (x) { return x.live && x.live.state === "final"; }); } catch (e) { return false; }
+  }
   function lsGet(k) { try { return JSON.parse(localStorage.getItem(PFX + k)); } catch (e) { return null; } }
   function lsPut(k, body) {
     try { localStorage.setItem(PFX + k, JSON.stringify({ t: Date.now(), b: body })); }
@@ -34,6 +38,9 @@
     var path = url.replace(location.origin, "");
     if (method !== "GET" || !EPS.test(path) || (init && init.cache === "no-store")) return native(input, init);
     var c = lsGet(path);
+    // Una jornada pasada con todos sus partidos terminados ya no cambia: se sirve la guardada (hasta 24 h) sin volver a pedirla.
+    // Inicio y las fichas piden las jornadas 1..N una a una; así se ahorran esas llamadas en cada visita.
+    if (c && c.b && FINJ.test(path) && Date.now() - c.t < LONG && allFinal(c.b)) return Promise.resolve(mk(c.b));
     if (c && c.b && Date.now() - c.t < (LONGEP.test(path) ? LONG : MAXAGE)) {
       // pinta ya con lo guardado y actualiza detrás
       net(path, path).then(function (x) {

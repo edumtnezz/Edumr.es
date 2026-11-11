@@ -854,3 +854,56 @@ html { overflow-x: hidden; overscroll-behavior-x: none; }
 body { overflow-x: clip; overscroll-behavior-x: none; max-width: 100%; }
 .cx-tools .user-menu-alerts .uma-h { font-size: .7rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: var(--cx-muted, #8a96a3); }
 .cx-tools .user-menu-alerts .uma-l { font-weight: 600; }
+
+
+/* ===== 11/11/2026 · Diseño tipo app en móvil (Guía Fantasy) =====
+   - La barra Inicio / Noticias / Mercado / Más baja al pie (al alcance del pulgar) y la cabecera se queda en una sola fila.
+   - El botón Volver se queda siempre a la vista al bajar.
+   - Cambio de página suave (sin parpadeo) en los navegadores que lo permiten. */
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .14s; }
+@media (prefers-reduced-motion: reduce) { ::view-transition-old(root), ::view-transition-new(root) { animation: none; } }
+
+@media (max-width: 720px) {
+  .gf-page { padding-bottom: calc(66px + env(safe-area-inset-bottom, 0px)); }
+  .gf-page .cx-header .cx-sub {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 70;
+    border-bottom: none; border-top: 1px solid var(--cx-border);
+    background: var(--cx-surface);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.10);
+  }
+  .gf-page .cx-header .cx-sub.hidden { display: block !important; }
+  .gf-page .cx-header .cx-sub-inner { padding: 0 4px; min-height: 58px; gap: 0; align-items: stretch; }
+  .gf-page .cx-header .cx-sub .tabs { flex: 3 1 0; display: flex; flex-wrap: nowrap; gap: 0; overflow: visible; }
+  .gf-page .cx-header .cx-sub .tabs > .tab,
+  .gf-page .cx-header .cx-more-btn {
+    flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    padding: 8px 2px 7px !important; font-size: 0.7rem !important; font-weight: 700; line-height: 1.1;
+    border: none !important; border-bottom: none !important; background: transparent !important; border-radius: 0 !important;
+    color: var(--cx-muted) !important; min-height: 58px; -webkit-tap-highlight-color: transparent;
+  }
+  .gf-page .cx-header .cx-sub .tabs > .tab .tab-ico { width: 23px; height: 23px; margin: 0 !important; }
+  .gf-page .cx-header .cx-sub .tabs > .tab.active { color: var(--cx-green) !important; border-bottom: none !important; }
+  .gf-page .cx-header .cx-sub .tabs > .tab:active, .gf-page .cx-header .cx-more-btn:active { transform: scale(.94); }
+  .gf-page .cx-header .cx-more-wrap { flex: 1 1 0; display: flex; position: static; }
+  .gf-page .cx-header .cx-more-btn { width: 100%; cursor: pointer; }
+  .gf-page .cx-header .cx-more-btn .cx-more-ico { font-size: 1.25rem; line-height: 23px; height: 23px; }
+  .gf-page .cx-header .cx-more-btn::after { content: "Más"; display: block; }
+  .gf-page .cx-header .cx-more-btn[aria-expanded="true"] { color: var(--cx-green) !important; }
+  /* El menú "Más" se abre hacia arriba, a todo el ancho */
+  .gf-page .cx-header .cx-sub .cx-more-menu {
+    position: fixed; left: 8px; right: 8px; top: auto; bottom: calc(66px + env(safe-area-inset-bottom, 0px));
+    width: auto; max-width: none; max-height: 70vh; overflow: auto; border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.28);
+  }
+  .gf-page .cx-header .cx-sub .cx-more-menu .cx-more-item { padding: 14px 16px !important; font-size: 0.95rem !important; min-height: 48px; }
+  /* Botón de subir arriba: por encima de la barra */
+  .gf-page .cx-totop { bottom: calc(78px + env(safe-area-inset-bottom, 0px)) !important; }
+  /* Volver siempre visible */
+  .gf-page .bk:not(.news-share):not(.bk-link) {
+    position: fixed; left: 12px; bottom: calc(78px + env(safe-area-inset-bottom, 0px)); z-index: 65; margin: 0;
+    height: 44px; padding: 0 18px 0 14px; font-weight: 700;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  }
+}

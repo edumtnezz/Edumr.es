@@ -5237,6 +5237,35 @@ const EDGE_TTL = { "ultimos-cambios": 180, aplazados: 300, calendario: 600, esta
 // Pantallas donde un dato de hace unos minutos no hace daño: cuando caduca la copia fresca se responde AL MOMENTO con la última buena (hasta 15 min) y se refresca por detrás.
 // Fuera de aquí a propósito: directo, detallepartido, alineaciones-confirmadas, notas-fotmob, fm-partido (en juego deben ser frescos).
 const SWR_OK = new Set(["mercado", "jugador", "ultimos-cambios", "equipos", "calendario", "rachas", "minutos", "temporada", "noticias", "clausulas", "fichajes", "portada", "aplazados", "estadios", "historial-puntos", "once", "alineaciones-estado"]);
+// Copia GLOBAL en KV de lo más visto. La Cache API es por centro de datos y se vacía sola con poco tráfico: la primera
+// visita "en frío" esperaba varios segundos (medido 11/11/2026: mercado 6,2 s, jornada 6,5 s, noticias 3 s). Con esta copia
+// se responde al momento con el último dato bueno y se refresca por detrás. Solo rutas sin parámetros (y jornada?jornada=N).
+// Edad máxima de la copia: SNAP_MAX (jornada 10 min y nunca con un partido en juego o a punto de empezar).
+const SNAP_MAX = { mercado: 900, jornada: 600, rachas: 1800, equipos: 21600, portada: 1800, noticias: 1800, "ultimos-cambios": 1800, calendario: 21600, temporada: 21600, clausulas: 1800 };
+const SNAP_EVERY = 120; // como mucho una escritura a KV cada 2 min por ruta y centro de datos
+function snapKey(path, url) {
+  if (!SNAP_MAX[path]) return "";
+  const ks = Array.from(url.searchParams.keys());
+  if (!ks.length) return "snap:v1:" + path;
+  if (path === "jornada" && ks.length === 1 && ks[0] === "jornada" && /^\d{1,2}$/.test(url.searchParams.get("jornada") || "")) return "snap:v1:jornada:" + url.searchParams.get("jornada");
+  return "";
+}
+async function snapGet(env, k) {
+  try {
+    const r = await env.PORRA.getWithMetadata(k, "text");
+    if (!r || !r.value) return null;
+    return { txt: r.value, t: Number(r.metadata && r.metadata.t) || 0 };
+  } catch (e) { return null; }
+}
+async function snapPut(env, k, txt) {
+  try {
+    if (!k || !env || !env.PORRA || txt.length > 1500000) return;
+    const lock = new Request("https://edgecache.edumr.internal/v1-snaplock/" + encodeURIComponent(k));
+    if (await caches.default.match(lock)) return;
+    await caches.default.put(lock, new Response("1", { headers: { "cache-control": "public, max-age=" + SNAP_EVERY } }));
+    await env.PORRA.put(k, txt, { metadata: { t: Date.now() } });
+  } catch (e) {}
+}
 export async function onRequestGet(ctx) {
   const path = (ctx.params.path || []).join("/");
   const ttl = EDGE_TTL[path];
@@ -5265,7 +5294,16 @@ export async function onRequestGet(ctx) {
     const ttlNow = path === "jornada" && txt.indexOf('"state":"live"') < 0 ? 90 : ttl;
     const put = caches.default.put(key, new Response(txt, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=" + ttlNow } }));
     const put2 = caches.default.put(staleKey, new Response(txt, { headers: { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=172800", "x-saved": String(Date.now()) } }));
-    return [put.catch(() => {}), put2.catch(() => {})];
+    return [put.catch(() => {}), put2.catch(() => {}), snapPut(ctx.env, sKey, txt)];
+  };
+  const sKey = snapKey(path, url);
+  // ¿Se puede servir una jornada guardada? Nunca con un partido en juego ni con uno que empieza en menos de 20 min.
+  const jornadaCalm = (txt0) => {
+    if (txt0.indexOf('"state":"live"') >= 0) return false;
+    try {
+      const ms = (JSON.parse(txt0).matches) || [];
+      return !ms.some((m) => { const t = ffWhenAt(m.date, m.time); return t && !(m.live && m.live.state === "final") && t - Date.now() < 20 * 60 * 1000 && t - Date.now() > -4 * 3600 * 1000; });
+    } catch (e) { return false; }
   };
   // "jornada": cuando la copia fresca caduca, se responde AL MOMENTO con la última buena (hasta 10 min) y se refresca por detrás,
   // para que nadie espere ~1 s a football-data. Nunca se hace con un partido en juego ni con uno que empieza en menos de 20 min
@@ -5298,6 +5336,22 @@ export async function onRequestGet(ctx) {
         }
       }
     } catch (e) {}
+  }
+  // Centro de datos en frío (sin copia fresca ni de reserva): copia global de KV al momento + refresco por detrás.
+  if (sKey && ctx.waitUntil && ctx.env && ctx.env.PORRA) {
+    const sn = await snapGet(ctx.env, sKey);
+    // Una jornada con todos sus partidos terminados ya no cambia: su copia vale una semana.
+    let maxAge = SNAP_MAX[path] * 1000;
+    if (sn && path === "jornada") { try { const ms = JSON.parse(sn.txt).matches || []; if (ms.length && ms.every((m) => m.live && m.live.state === "final")) maxAge = 7 * 86400 * 1000; } catch (e) {} }
+    if (sn && sn.t && Date.now() - sn.t < maxAge && isGood(sn.txt) && (path !== "jornada" || jornadaCalm(sn.txt))) {
+      ctx.waitUntil((async () => {
+        try {
+          const r = await handleGet(ctx);
+          if (r.status === 200) { const t = await r.text(); if (isGood(t)) await Promise.all(savePair(t)); }
+        } catch (e) {}
+      })());
+      return new Response(sn.txt, { status: 200, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-edge": "kv" } });
+    }
   }
   let res;
   try { res = await handleGet(ctx); } catch (e) { return (await serveStale()) || new Response(JSON.stringify({ error: "temporal" }), { status: 503, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } }); }

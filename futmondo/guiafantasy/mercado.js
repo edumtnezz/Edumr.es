@@ -448,7 +448,7 @@
       const blocked = p.unlock && new Date(p.unlock).getTime() > Date.now();
       if (blocked) body.appendChild(el("div", "claus-lock", "🔒 se libera el " + fmtDiaLargo(p.unlock)));
       card.appendChild(body);
-      card.addEventListener("click", () => openFicha(p));
+      card.addEventListener("click", () => openFicha(p)); try { card.dataset.pid = p.id || ""; } catch (e) {}
       grid.appendChild(card);
     });
     box.appendChild(grid);
@@ -695,7 +695,7 @@
           ph.src = x.photo; ph.alt = ""; ph.loading = "lazy"; ph.addEventListener("error", () => ph.remove()); left.appendChild(ph);
           // La foto grande es la del jugador cuando la noticia habla de uno solo
           const p0 = x.players && x.players.length === 1 && x.players[0].photo === x.photo ? playerByFullName(x.players[0].name) : null;
-          if (p0) { ph.classList.add("club-link"); ph.addEventListener("click", () => openFicha(p0)); }
+          if (p0) { ph.classList.add("club-link"); ph.addEventListener("click", () => openFicha(p0)); try { ph.dataset.pid = p0.id || ""; } catch (e) {} }
         }
         const ib = el("span", "up-ico");
         ib.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + c[2] + "</svg>";
@@ -714,7 +714,7 @@
           x.players.forEach((p) => {
             const r = el("div", "up-pl");
             const pf = playerByFullName(p.name);
-            if (pf) { r.classList.add("club-link"); r.setAttribute("role", "link"); r.addEventListener("click", () => openFicha(pf)); }
+            if (pf) { r.classList.add("club-link"); r.setAttribute("role", "link"); r.addEventListener("click", () => openFicha(pf)); try { r.dataset.pid = pf.id || ""; } catch (e) {} }
             if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); r.appendChild(im); }
             r.appendChild(el("strong", "", p.name));
             const tr = el("span", "up-tr");
@@ -1491,7 +1491,7 @@
           const sm = el("small"); if (mi.logo) { const lg = el("img"); lg.src = mi.logo; lg.alt = ""; sm.appendChild(lg); } sm.appendChild(document.createTextNode(mi.team || "")); tx.appendChild(sm);
           it.appendChild(tx);
           it.appendChild(el("span", "mvp-pts", String(x.p)));
-          if (mi.id) it.addEventListener("click", () => openFicha(mi));
+          if (mi.id) it.addEventListener("click", () => openFicha(mi)); try { it.dataset.pid = mi.id || ""; } catch (e) {}
           wrap.appendChild(it);
         });
         card.appendChild(wrap);
@@ -2570,19 +2570,29 @@
       box.appendChild(renderFicha(d, p));
       if (!first) window.scrollTo(0, y);
     };
-    let lastD = null;
+    let lastD = null, previewOn = false;
+    // Vista previa al momento: nombre, foto, club, valor, puntos y media salen del mercado ya guardado en el móvil.
+    // Los puntos por partido NO se ponen aquí (necesitan saber si Futmondo ya los publicó): llegan con la ficha completa.
+    const preview = () => {
+      if (lastD || !document.body.contains(box)) return;
+      const p = (all || []).find((x) => String(x.id) === String(id));
+      if (!p || !p.name) return;
+      previewOn = true;
+      draw({ id: p.id, name: p.name, role: p.role, role2: p.role2, value: p.value, change: p.change, status: p.status, points: p.points, average: p.avg, matches5: p.matches, team: p.team, logo: p.logo, photo: p.photo }, true);
+    };
     const paint = async (first) => {
       // La ficha se pinta en cuanto llega /jugador; el mercado completo (más pesado) se carga aparte y repinta después.
       const needAll = !all || !all.length;
       const pl = needAll ? load().catch(() => {}) : Promise.resolve();
+      if (first) { if (needAll) pl.then(preview); else preview(); }
       const full = fetch(API + "/jugador?id=" + encodeURIComponent(id)).then((r) => r.json());
       // Primero la ficha rápida (sin futbolfantasy/transfermarkt); en cuanto llega la completa se repinta.
       let d = null;
       if (first) {
         try { d = await fetch(API + "/jugador?id=" + encodeURIComponent(id) + "&fast=1").then((r) => r.json()); } catch (e) {}
-        if (d && d.name) { lastD = d; draw(d, true); }
+        if (d && d.name) { lastD = d; draw(d, !previewOn); }
         full.then((fd) => { if (fd && fd.name && document.body.contains(box)) { lastD = fd; draw(fd, false); } }).catch(() => {});
-        if (!(d && d.name)) { d = await full; lastD = d; draw(d, true); }
+        if (!(d && d.name)) { d = await full; lastD = d; draw(d, !previewOn); }
       } else { d = await full; lastD = d; draw(d, false); }
       if (needAll) pl.then(() => { if (document.body.contains(box) && lastD) draw(lastD, false); });
       if (first && !playedJ) ensurePlayedJ().then(() => { if (playedJ && document.body.contains(box) && lastD) draw(lastD, false); }).catch(() => {});
@@ -2787,7 +2797,7 @@
       if (p.rivalFf) rv.appendChild(el("span", "mkt-rv", shortRival(p.rivalFf)));
       if (p.prob != null) { const mp = el("span", "mkt-prob", p.prob + "%"); mp.title = probTitle(p.prob); rv.appendChild(mp); }
       row.appendChild(rv);
-      row.addEventListener("click", () => openFicha(p));
+      row.addEventListener("click", () => openFicha(p)); try { row.dataset.pid = p.id || ""; } catch (e) {}
       tbl.appendChild(row);
     });
     wrap.appendChild(tbl);
@@ -3878,7 +3888,7 @@
         c.appendChild(lc);
       }
       if (p.rivalFf) c.appendChild(el("div", "mbc-rival", (p.casaFf === true ? "🏠 " : p.casaFf === false ? "✈️ " : "") + p.rivalFf));
-      c.addEventListener("click", () => openFicha(p));
+      c.addEventListener("click", () => openFicha(p)); try { c.dataset.pid = p.id || ""; } catch (e) {}
       row.appendChild(c);
     });
     box.appendChild(row);
@@ -4548,7 +4558,7 @@
       const ph = el("span", "np-ph"); ph.appendChild(photoImg(p.photo, "np-img")); c.appendChild(ph);
       const tx = el("span", "np-tx"); tx.appendChild(el("b", null, p.name)); tx.appendChild(el("small", null, p.team || "")); c.appendChild(tx);
       c.appendChild(el("span", "np-go", "›"));
-      c.addEventListener("click", () => openFicha(p));
+      c.addEventListener("click", () => openFicha(p)); try { c.dataset.pid = p.id || ""; } catch (e) {}
       row.appendChild(c);
     });
     sec.appendChild(row);
@@ -4632,6 +4642,22 @@
     try { document.title = baseTitle; } catch (e) {}
   }
 
+  // Al poner el dedo sobre un jugador se pide ya su ficha: cuando la página cambia, el dato suele estar guardado.
+  const fichaWarm = {};
+  function warmFicha(id) {
+    id = String(id || "");
+    if (!id || fichaWarm[id]) return;
+    fichaWarm[id] = 1;
+    try { fetch(API + "/jugador?id=" + encodeURIComponent(id) + "&fast=1").catch(() => {}); } catch (e) {}
+  }
+  document.addEventListener("pointerdown", (ev) => {
+    try {
+      const t = ev.target && ev.target.closest ? ev.target.closest("[data-pid], a[href^='/jugador/']") : null;
+      if (!t) return;
+      const m = (t.getAttribute("href") || "").match(/^\/jugador\/([^/]+)/);
+      warmFicha(t.getAttribute("data-pid") || (m && decodeURIComponent(m[1])));
+    } catch (e) {}
+  }, { passive: true, capture: true });
   function openFicha(p) {
     if (p && p.id) { try { sessionStorage.setItem("scrollBack:" + location.pathname, String(window.scrollY || 0)); } catch (e) {} location.href = "/jugador/" + encodeURIComponent(p.id) + "/" + nameSlug(p.name); return; }
     const w = el("div");
@@ -6956,7 +6982,7 @@
         if (l3.childNodes.length) tx.appendChild(l3);
         r.appendChild(tx);
         r.addEventListener("mousedown", (e) => e.preventDefault());
-        r.addEventListener("click", () => openFicha(p));
+        r.addEventListener("click", () => openFicha(p)); try { r.dataset.pid = p.id || ""; } catch (e) {}
         sug.appendChild(r);
       });
       sug.hidden = false;
@@ -7155,7 +7181,7 @@
     }));
   })();
   function pltBuildRow(p, o) {
-      const row = el("div", "plt-row"); row.addEventListener("click", () => openFicha(p));
+      const row = el("div", "plt-row"); row.addEventListener("click", () => openFicha(p)); try { row.dataset.pid = p.id || ""; } catch (e) {}
       row.addEventListener("pointerdown", () => { try { fetch(API + "/jugador?id=" + encodeURIComponent(p.id) + "&fast=1").catch(() => {}); } catch (e) {} }, { passive: true }); // calienta la ficha mientras se pulsa
       const ph = el("div", "plt-ph");
       const inn = el("div", "plt-in");
@@ -7300,7 +7326,7 @@
   function rtbRow(p, i, top, o) {
     o = o || {};
     const row = el("button", "rtb-row" + (i < 3 ? " top" : "")); row.type = "button";
-    row.addEventListener("click", () => openFicha(p));
+    row.addEventListener("click", () => openFicha(p)); try { row.dataset.pid = p.id || ""; } catch (e) {}
     row.addEventListener("pointerdown", () => { try { fetch(API + "/jugador?id=" + encodeURIComponent(p.id) + "&fast=1").catch(() => {}); } catch (e) {} }, { passive: true });
     row.appendChild(el("span", "rtb-n", String(i + 1)));
     const ph = el("span", "rtb-ph");
