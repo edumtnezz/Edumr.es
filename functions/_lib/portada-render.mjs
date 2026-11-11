@@ -2,7 +2,7 @@
 import { initWasm, Resvg } from "./resvg.mjs";
 import wasmModule from "./resvg.wasm";
 import { INTER_B64 } from "./inter-font.mjs";
-import { portadaSvg, colorEscudoPx, W } from "./portada-svg.mjs";
+import { portadaSvg, colorEscudoPx, coloresEscudoPx, W } from "./portada-svg.mjs";
 
 let listo = null, fuente = null;
 async function iniciar() {
@@ -18,6 +18,14 @@ export async function colorDelEscudo(crestB64) {
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="40" height="40" viewBox="0 0 40 40"><image href="data:image/png;base64,${crestB64}" width="40" height="40" preserveAspectRatio="none"/></svg>`;
     return colorEscudoPx(new Resvg(svg, OPC()).render().pixels);
   } catch (e) { return null; }
+}
+
+export async function coloresDelEscudo(crestB64) {
+  try {
+    await iniciar();
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="40" height="40" viewBox="0 0 40 40"><image href="data:image/png;base64,${crestB64}" width="40" height="40" preserveAspectRatio="none"/></svg>`;
+    return coloresEscudoPx(new Resvg(svg, OPC()).render().pixels);
+  } catch (e) { return [null, null]; }
 }
 
 // o: { bg, crest, face, nombre, avg, value, etiqueta, marca, color } -> Uint8Array PNG de 1000 px de ancho

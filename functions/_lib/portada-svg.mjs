@@ -122,3 +122,19 @@ export function colorEscudoPx(d) {
   for (const k in cuenta) { const o = cuenta[k], amar = o.r / o.n > 180 && o.g / o.n > 150 && o.b / o.n < 90, sc = o.n * (amar ? 0.5 : 1); if (sc > bs) { bs = sc; best = [Math.round(o.r / o.n), Math.round(o.g / o.n), Math.round(o.b / o.n)]; } }
   return best || [24, 90, 60];
 }
+
+// Los dos colores más presentes del escudo (el segundo, solo si es claramente distinto del primero)
+export function coloresEscudoPx(d) {
+  const cuenta = {};
+  for (let i = 0; i < d.length; i += 4) {
+    if (d[i + 3] < 200) continue;
+    const r = d[i], g = d[i + 1], b = d[i + 2], mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx ? (mx - mn) / mx : 0;
+    if (mx < 60 || sat < 0.35) continue;
+    const k = (r >> 6) + "," + (g >> 6) + "," + (b >> 6), o = cuenta[k] || (cuenta[k] = { n: 0, r: 0, g: 0, b: 0 });
+    o.n++; o.r += r; o.g += g; o.b += b;
+  }
+  const lista = Object.values(cuenta).map((o) => ({ n: o.n, c: [Math.round(o.r / o.n), Math.round(o.g / o.n), Math.round(o.b / o.n)] })).sort((a, b) => b.n - a.n);
+  const lejos = (a, b) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2]) > 180;
+  const c1 = lista[0] ? lista[0].c : null, o2 = lista.find((x) => c1 && lejos(x.c, c1) && x.n > 8);
+  return [c1, o2 ? o2.c : null];
+}
