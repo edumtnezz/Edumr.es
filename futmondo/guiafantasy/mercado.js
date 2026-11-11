@@ -5659,7 +5659,19 @@
   const pickByValue = (x, y) => (Number(y.value) || 0) - (Number(x.value) || 0) || String(x.name).localeCompare(String(y.name), "es");
   function pickGroups(q) {
     q = stripAccents(String(q || "").trim());
-    if (q) { const ql = q.toLowerCase(); return [[null, all.filter((p) => stripAccents(p.name).toLowerCase().includes(ql) || stripAccents(p.team || "").toLowerCase().includes(ql)).sort(pickByValue)]]; }
+    if (q) {
+      // Cada palabra escrita debe aparecer en el nombre o el club, en cualquier orden ("yamal lamine" también vale).
+      // Primero los que coinciden por nombre, después los que solo coinciden por club.
+      const toks = q.toLowerCase().split(/\s+/).filter(Boolean);
+      const nm = (p) => stripAccents(p.name || "").toLowerCase(), tm = (p) => stripAccents(p.team || "").toLowerCase();
+      const byName = [], byTeam = [];
+      all.forEach((p) => {
+        const n = nm(p), t = tm(p);
+        if (toks.every((w) => n.includes(w))) byName.push(p);
+        else if (toks.every((w) => n.includes(w) || t.includes(w))) byTeam.push(p);
+      });
+      return [[null, byName.sort(pickByValue).concat(byTeam.sort(pickByValue))]];
+    }
     let rec = [];
     try { rec = JSON.parse(localStorage.getItem(PICK_RECENT_KEY) || "[]"); } catch (e) {}
     const recP = rec.map((id) => all.find((p) => String(p.id) === String(id))).filter(Boolean);
