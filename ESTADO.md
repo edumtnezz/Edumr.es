@@ -1,6 +1,6 @@
 # ESTADO.md — edumr.es (Guía Fantasy / Futmondo)
 
-Última actualización: 11/11/2026. Para continuar el redactor: lee `docs/redactor.md` y después este archivo. Reglas generales: AGENTS.md y CLAUDE.md.
+Última actualización: 11/11/2026 (noche). Para continuar el redactor: lee `docs/redactor.md` y después este archivo. Reglas generales: AGENTS.md y CLAUDE.md.
 Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas y sencillas.
 
 ## Hecho (sacado de AGENTS.md, CLAUDE.md y el historial de git)
@@ -25,6 +25,16 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 - 01/11: **portada reordenada**: Futmondo va primero (es lo que más se usa) y se quita la tarjeta "Web Oficial & VPS" (eso es la casa, no un proyecto). El contador dice 4 proyectos.
 - 01/11: **prueba de humo tras publicar** (`scripts/smoke.mjs`, último paso del GitHub Action): 8 páginas + 4 APIs. Si algo se queda en blanco o sin datos, el despliegue sale en rojo.
 - 01/11: **contador de visitas propio** (sin cookies, sin datos personales): `futmondo/vista.js` avisa una vez por página y sesión; el backend lo suma en KV (`st:v1:<día>`) y `/futmondo/stats/` enseña los últimos 14 días. Se puede ver en https://edumr.es/futmondo/stats/ (noindex, sin enlaces).
+
+## 11/11/2026 (noche) — Velocidad y diseño tipo app (hecho y publicado)
+- Medido antes: en frío la API tardaba 0,3–6,5 s (mercado 6,2 s, jornada 6,5 s, noticias 3 s) porque la Cache API es por centro de datos y se vacía con poco tráfico. Después: 0,2–0,8 s (mercado sale de KV, cabecera `x-edge: kv`).
+- **Copia global en KV** (`snap:v1:<ruta>`, `SNAP_MAX` en el backend): mercado, jornada (y `jornada?jornada=N`), rachas, portada, noticias, ultimos-cambios, equipos, calendario, temporada, clausulas. Si el centro de datos está en frío se sirve la copia y se refresca por detrás. Escribe como mucho cada 2 min por ruta (`SNAP_EVERY`). Jornada: nunca con partido en juego o a menos de 20 min; una jornada terminada vale 7 días. El cron de cada minuto las mantiene al día.
+- **Ficha de jugador sin bloques grises**: se pinta al momento con lo que trae el mercado guardado (nombre, foto, club, valor, puntos, media) y luego llega el detalle. Los puntos por partido NO van en la vista previa (regla `fitLag`). Al tocar una tarjeta (`data-pid`) se pide ya la ficha.
+- **Inicio**: `swr.js` no vuelve a pedir una jornada pasada con todos sus partidos terminados (24 h). De 29 a 14 llamadas en la segunda visita.
+- **Móvil (≤720 px)**: la barra Inicio/Noticias/Mercado/Más va al pie; el botón Volver queda fijo abajo a la izquierda; cambio de página suave (`@view-transition`). Todo en el bloque final de `futmondo/edumr.css`.
+- Probado en local a 390 px (Inicio, Mercado, ficha, partido, club, noticia) y en producción.
+- Queda del repaso: abrir jugador/partido sin recargar la página entera, Mercado por tramos (239 imágenes de golpe), quitar llamadas repetidas de Inicio (`me`, `ultimos-cambios`, `jornada` dos veces), limpiar CSS que no se usa (530 KB), club lento en frío.
+- Noticias: Edu quiere el método de asesoriasfantasy.com (cada cambio de dato dispara una noticia con plantilla fija). Dice que el estado de Futmondo llega tarde y que los clubes tampoco publican rápido. Pendiente de que elija el disparador del estado.
 
 ## Pendiente
 - Jugadores con ≥ 90 % de probabilidad de jugar (idea de Edu, AGENTS.md; no consta en el historial como hecha).
