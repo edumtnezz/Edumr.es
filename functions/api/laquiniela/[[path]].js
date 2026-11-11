@@ -2178,7 +2178,9 @@ async function generarPortada(env, request, own, it, now) {
     crestClub = lg || ""; crestSinB64 = await crestB64(crestClub);
     fondoKey = fold((pl && pl.team) || it.club || "club").join("-").slice(0, 40) || "club";
     try { fondoIdx = (await env.PORRA.get("bg:idx:" + fondoKey, "json")) || []; } catch (e) {}
-    if (pl) cromo = { nombre: pl.name, avg: pl.avg || 0, value: pl.value || 0, foto: await crestB64(pl.photo) };
+    const KICK = { fijo: "FIJO EN EL ONCE", racha: "EN RACHA", rentable: "CALIDAD-PRECIO", revelacion: "LA SORPRESA", chollo: "CHOLLO", bajon: "BAJÓN", regular: "BACHE PUNTUAL", duda: "DUDA PARA JUGAR" };
+    const km = String(it.key || "").match(/^an-.+?-([a-z]+)-[^-]+$/);
+    if (pl) cromo = { nombre: pl.name, avg: pl.avg || 0, value: pl.value || 0, foto: await crestB64(pl.photo), kicker: km ? (KICK[km[1]] || "") : "", kickTipo: km ? km[1] : "" };
     if (fondoIdx.length >= 4) {
       try {
         const id = fondoIdx[Math.floor(Math.random() * fondoIdx.length)];
