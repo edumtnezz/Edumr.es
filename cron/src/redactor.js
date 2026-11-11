@@ -657,7 +657,9 @@ async function leerFuente(env, f, s) {
 
 // Portada automática (Edu 11/11/2026): al publicar, antes del aviso, se pide a la web que haga la portada (fondo de la IA o guardado + cromo dibujado en el servidor).
 // Máx. 2 por pasada para no alargar el ciclo; si falla, la noticia sale igual y se queda con su foto de siempre.
+const PORTADAS_IA_PAUSADAS = true; // Edu 11/11/2026: pausadas por coste; false para reanudar
 export async function portadasAutomaticas(env, f, noticias, now) {
+  if (PORTADAS_IA_PAUSADAS) return 0;
   const lista = (noticias || []).filter((n) => n && n.id && n.tipo !== "once" && !n.thumb).slice(0, 2);
   if (!lista.length) return 0;
   let sec = "";
@@ -1733,12 +1735,13 @@ async function tratarExterna(env, f, st, now, pista, own) {
   sumaPista(st, "publicadas");
   return { dirty: true, noticias: [item] };
 }
+const REDACTOR_EXTERNO_APAGADO = true; // Edu 11/11/2026: sin notas reescritas de otras webs; false para reanudar
 async function tratarUnaPista(env, f, st, now, fuentes, pista, listas) {
   const una = await tratarUnaPistaOficial(env, f, st, now, fuentes, pista, listas);
   const e = st.pistas[pista.id];
   if (e && e.estado !== "publicada") e.ext = 6; // 5 = probado con texto limpio, autocorrección (3 intentos) y copia a 9 palabras
   if (una && una.noticias && una.noticias.length) return una;
-  if (!e || e.estado === "publicada" || !MOTIVOS_EXT.has(e.motivo)) return una;
+  if (REDACTOR_EXTERNO_APAGADO || !e || e.estado === "publicada" || !MOTIVOS_EXT.has(e.motivo)) return una;
   let own = [];
   try { own = (await env.PORRA.get(OWN_KEY, "json")) || []; } catch (er) {}
   try {

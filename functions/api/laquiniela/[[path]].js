@@ -2143,7 +2143,10 @@ async function crestB64(url) {
     return btoa(bin);
   } catch (e) { return ""; }
 }
+// INTERRUPTOR: portadas con IA en pausa (Edu 11/11/2026, coste). Poner a false para reanudar.
+const PORTADAS_IA_PAUSADAS = true;
 async function generarPortada(env, request, own, it, now) {
+  if (PORTADAS_IA_PAUSADAS) return json({ error: "Portadas con IA en pausa." }, 400);
   if (!env.OPENAI_API_KEY) return json({ error: "Falta la clave OPENAI_API_KEY en Cloudflare." }, 400);
   const fold = (v) => stripAccents(String(v || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w.length > 3);
   const tit = fold(it.title);
