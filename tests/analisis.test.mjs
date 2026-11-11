@@ -88,12 +88,22 @@ test("chollo: no si juega fuera, está en duda o en bache", () => {
 });
 
 test("fijo: juega casi todo, casi nunca lo cambian y puntúa", () => {
-  const p = P({ id: "f1", name: "Fijo", fitness: [7, 6, 7, 8, 6], avg: 6.8, matches: 11, status: "" });
+  const p = P({ id: "f1", name: "Fijo", fitness: [7, 6, 7, 8, 6], avg: 6.8, matches: 11, status: "", chg7: 1e5 });
   const mins = { f1: { n: 12, j: 12, t: 1020, c: 10, s: 2, x: 70, b: 0, bm: 0, z: 0, rd: 0 } };
-  const r = reglas(p, J, null, 11, mins).find((x) => x.tipo === "fijo");
+  const r = reglas(p, J, gol(eqDef("valencia", 30)), 11, mins).find((x) => x.tipo === "fijo");
   assert.ok(r);
   assert.match(r.cuerpo, /12\*\* de \*\*12\*\* partidos/);
   assert.match(r.cuerpo, /completado \*\*10\*\* de 12/);
+});
+test("fijo: no se recomienda si el valor baja o falta el dato de valor", () => {
+  const mins = { f1: { n: 12, j: 12, t: 1020, c: 10, s: 2 } };
+  const base = { id: "f1", name: "Fijo", fitness: [7, 6, 7, 8, 6], avg: 6.8, matches: 11, status: "" };
+  assert.equal(reglas(P({ ...base, chg7: 1e5 }), J, gol(eqDef("valencia", 30)), 11, mins).some((x) => x.tipo === "fijo"), true);
+  assert.equal(reglas(P({ ...base, chg7: -1e5 }), J, gol(eqDef("valencia", 30)), 11, mins).some((x) => x.tipo === "fijo"), false);
+  assert.equal(reglas(P(base), J, gol(eqDef("valencia", 30)), 11, mins).some((x) => x.tipo === "fijo"), false);
+  assert.equal(reglas(P({ ...base, chg7: 1e5, casaFf: false }), J, gol(eqDef("valencia", 30)), 11, mins).some((x) => x.tipo === "fijo"), false);
+  assert.equal(reglas(P({ ...base, chg7: 1e5 }), J, gol(eqDef("valencia", 1)), 11, mins).some((x) => x.tipo === "fijo"), false); // rival que encaja muy poco
+  assert.equal(reglas(P({ ...base, chg7: 1e5, role: "portero" }), J, gol(equipos("valencia", 30)), 11, mins).some((x) => x.tipo === "fijo"), false); // portero con rival que marca mucho
 });
 test("fijo: no sale sin minutos, ni si lo cambian mucho, ni si no puntúa", () => {
   const p = P({ id: "f1", fitness: [7, 6, 7, 8, 6], avg: 6.8, matches: 11 });

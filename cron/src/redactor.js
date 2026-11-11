@@ -503,7 +503,8 @@ export function noticiaTarjeta(item) {
   const link = "https://edumr.es/futmondo/guiafantasy/noticias/ed-" + item.id;
   const lectura = String(item.body || "").split(/\n+/).map((l) => l.trim()).find((l) => /nuestra lectura/i.test(l)) || "";
   const t = lectura ? esc(lectura).replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\*\*/g, "").slice(0, 300) : "";
-  return { text: (t ? t + "\n\n" : "") + link, link };
+  // El titular va primero y en negrita: es lo que se ve en la notificación y en la lista de chats (y lleva el nombre del jugador)
+  return { text: "<b>" + esc(item.title) + "</b>\n\n" + (t ? t + "\n\n" : "") + link, link };
 }
 async function enviarAviso(env, f, chat, n) {
   const tj = noticiaTarjeta(n);
@@ -1913,6 +1914,12 @@ export async function redactorSombra(env, deps) {
         dirty = true;
       }
       await env.PORRA.put("rd:reabrir:v3", String(now));
+    }
+    // Una sola vez (Edu 11/11/2026): David Soria salió como «fijo en el once» con valor bajando y rival fuerte; se retira (queda como borrador)
+    if (!(await env.PORRA.get("rd:retirar:v1"))) {
+      const o = own.find((x) => x.id === "d28d67db04" && x.status === "published");
+      if (o) { o.status = "draft"; o.retirada = true; o.updatedAt = now; cambio = true; }
+      await env.PORRA.put("rd:retirar:v1", String(now));
     }
     // Un once/alineación solo vale antes del partido: pasadas 2 h se retira (Edu 10/11/2026)
     for (const o of own) if (o.status === "published" && (o.tipo === "once" || /\bonces?\b|alineacion(es)?\b/i.test(o.title || "")) && now - (o.publishedAt || o.createdAt || now) > 2 * 3600e3) { o.status = "draft"; o.caducada = true; o.updatedAt = now; cambio = true; }

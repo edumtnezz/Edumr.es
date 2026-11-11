@@ -148,7 +148,9 @@ export function reglas(p, jornada, jugadas, pub, mins) {
   }
   // 6) Fijo: juega casi todo, casi nunca lo cambian y puntúa (minutos reales de Futmondo; sin ese dato no sale)
   const mn = mins && mins[p.id];
-  if (mn && mn.n >= 8 && mn.j >= 0.9 * mn.n && (mn.c + mn.s) >= 0.85 * mn.j && mn.c >= 0.6 * (mn.c + mn.s) && mn.t / mn.j >= 80 && p.avg >= 6 && prob != null && prob >= 70 && p.status !== "doubt" && !/^injured/.test(String(p.status || ""))) {
+  if (mn && mn.n >= 8 && mn.j >= 0.9 * mn.n && (mn.c + mn.s) >= 0.85 * mn.j && mn.c >= 0.6 * (mn.c + mn.s) && mn.t / mn.j >= 80 && p.avg >= 6 && prob != null && prob >= 70 && p.status !== "doubt" && !/^injured/.test(String(p.status || "")) &&
+    // Mismos criterios de Edu que el chollo (11/11/2026): si el valor baja, hay dos partidos flojos, juega fuera o el rival lo penaliza, NO se recomienda como «fijo»
+    valorSube && rivalOk && !enBache && enCasa) {
     const tit = mn.c + mn.s;
     out.push({ tipo: "fijo", prio: 2.2 + p.avg / 10,
       titulo: elige([p.name + " no se baja del once: " + mn.j + " partidos de " + mn.n, "Fijo en el " + nombreClub(p) + ": " + p.name + " juega casi todo y promedia " + ent(p.avg), p.name + " juega " + mn.j + " de " + mn.n + " partidos y casi nunca sale del campo"], seed),
