@@ -2178,10 +2178,12 @@ async function generarPortada(env, request, own, it, now) {
     if (!lg && kt.length) { const q = todos.find((x) => x.logo && fold(x.team).some((w) => kt.includes(w))); lg = q ? q.logo : ""; }
     crestClub = lg || ""; crestSinB64 = await crestB64(crestClub);
     fondoKey = fold((pl && pl.team) || it.club || "club").join("-").slice(0, 40) || "club";
-    try { fondoIdx = (await env.PORRA.get("bg2:idx:" + fondoKey, "json")) || []; } catch (e) {}
     const KICK = { fijo: "FIJO EN EL ONCE", racha: "EN RACHA", rentable: "CALIDAD-PRECIO", revelacion: "LA SORPRESA", chollo: "CHOLLO", bajon: "BAJÓN", regular: "BACHE PUNTUAL", duda: "DUDA PARA JUGAR" };
     const km = String(it.key || "").match(/^an-.+?-([a-z]+)-[^-]+$/);
     if (pl) cromo = { nombre: pl.name, avg: pl.avg || 0, value: pl.value || 0, foto: await crestB64(pl.photo), kicker: km ? (KICK[km[1]] || "") : "", kickTipo: km ? km[1] : "" };
+    // Los fondos guardados se separan por ambiente (alegre / serio / neutro) para no poner fiesta en una lesión
+    { const tk = (cromo && cromo.kickTipo) || tipoNoticia || "", gr = /^(racha|chollo|revelacion|rentable)$/.test(tk) ? "alegre" : /^(lesion|bajon|regular|duda)$/.test(tk) ? "serio" : "neutro"; fondoKey += "-" + gr; }
+    try { fondoIdx = (await env.PORRA.get("bg2:idx:" + fondoKey, "json")) || []; } catch (e) {}
     if (fondoIdx.length >= 4) {
       try {
         const id = fondoIdx[Math.floor(Math.random() * fondoIdx.length)];
@@ -2228,13 +2230,29 @@ async function generarPortada(env, request, own, it, now) {
   const POSES = ["grita celebrando un gol con la boca abierta y los dos brazos abiertos", "celebra con un puño apretado a la altura del pecho y gesto de rabia", "celebra con los dos puños apretados a la altura de la cara", "señala al cielo con el dedo índice de una mano y mira hacia arriba", "se lleva una mano al escudo del pecho y mira a cámara", "sonríe relajado mirando a cámara con los brazos caídos", "brazos cruzados sobre el pecho y gesto serio y seguro", "manos en la cintura, hombros anchos y mirada desafiante", "se pone un dedo en los labios pidiendo silencio", "se coloca una mano detrás de la oreja pidiendo que le aplaudan", "levanta un brazo para saludar a la afición con una mano abierta", "aplaude con las manos a la altura del pecho mirando a la grada", "mira al frente concentrado, serio, con la mandíbula apretada", "se ajusta el brazalete de capitán del brazo izquierdo mirando a cámara", "se arregla el cuello de la camiseta con una mano y mira al frente", "mira de lado sobre el hombro con gesto de sorpresa", "abre los brazos con las palmas hacia arriba protestando", "se tapa la boca con una mano, incrédulo", "levanta el pulgar de una mano en señal de aprobación y sonríe", "sonríe de oreja a oreja con la cabeza algo ladeada", "se besa el escudo de la camiseta con una mano agarrando la tela del pecho", "golpea con el puño su propio escudo del pecho", "corre hacia cámara celebrando con la boca abierta, solo se ve de cintura para arriba", "gira el cuerpo de tres cuartos con los brazos relajados y mira a cámara", "mira al cielo con los ojos cerrados y las manos abiertas dando las gracias", "se seca el sudor de la frente con el antebrazo y mira al frente", "hace el gesto de «calma» con las dos palmas hacia abajo", "se muerde el labio concentrado, mirada fija al frente", "señala con una mano hacia delante, indicando una dirección", "da una palmada con las manos juntas y mira al frente decidido"];
   const pose = POSES[Math.floor(Math.random() * POSES.length)];
   const extraTxt = it.tipo === "once" ? "" : " POSE de ESTA imagen (manda sobre cualquier otra indicación de pose): " + pose + ". ENCUADRE: plano medio recortado de la cintura hacia arriba, jugador en el lado derecho. No salen el balón, las piernas, ni otros jugadores. Manos simples y bien formadas, cinco dedos en cada una. No repitas el puño en alto salvo que esa sea la pose. El escudo oficial del club debe verse tal cual en el pecho de la camiseta.";
-  const ESCENAS = ["estadio de noche con focos potentes y público desenfocado", "césped de cerca con las luces del estadio desenfocadas al fondo", "túnel de vestuarios con una luz intensa al fondo", "grada con bengalas y humo de color", "balón sobre el césped en primer plano desenfocado y estadio al fondo", "confeti cayendo dentro de un estadio iluminado", "focos y niebla sobre el campo al atardecer", "afición con bufandas y banderas desenfocadas", "línea de cal y césped en perspectiva con luz lateral", "estadio vacío visto desde un córner con luz cinematográfica", "vestuario con camisetas colgadas, sin nombres ni dorsales legibles", "fuegos artificiales sobre el estadio"];
+  // Escenas según de qué va la noticia: nada de fiesta si es una lesión o una duda
+  const NEUTRAS = ["estadio de noche con focos potentes y público desenfocado", "césped de cerca con las luces del estadio desenfocadas al fondo", "balón sobre el césped en primer plano desenfocado y estadio al fondo", "línea de cal y césped en perspectiva con luz lateral", "estadio vacío visto desde un córner con luz cinematográfica", "túnel de vestuarios con una luz intensa al fondo"];
+  const ESCENAS_POR = {
+    fijo: NEUTRAS.concat(["vestuario con camisetas colgadas, sin nombres ni dorsales legibles", "banquillo y césped del estadio al amanecer"]),
+    racha: ["estela de luz y velocidad sobre el césped de un estadio", "grada con bengalas y humo de color", "estadio de noche con focos potentes, energía y movimiento"],
+    chollo: ["confeti dorado cayendo dentro de un estadio iluminado", "monedas doradas brillando sobre el césped", "focos dorados sobre el campo"],
+    revelacion: ["foco de luz sobre el césped en un estadio oscuro", "estadio de noche con un único haz de luz desde arriba"],
+    rentable: ["césped de cerca con luz dorada y estadio desenfocado", "estadio de noche con focos y destellos"],
+    lesion: ["césped vacío con niebla y luz fría, ambiente serio", "estadio vacío por la noche con luz tenue", "pasillo de vestuarios silencioso con luz fría"],
+    bajon: ["estadio vacío bajo lluvia con luz apagada", "césped mojado de cerca con luz tenue"],
+    regular: ["césped de cerca con luz de tarde nublada", "estadio con niebla suave y luz tenue"],
+    duda: ["balón detenido sobre la línea de cal con niebla suave", "estadio al atardecer con luz dudosa y niebla", "túnel de vestuarios con luz tenue al fondo"],
+    rumor: ["puertas de un estadio iluminadas de noche", "túnel de acceso al campo con luz brillante al fondo", "estadio visto desde fuera al atardecer con luces encendidas"],
+    recuperado: ["amanecer sobre el césped del estadio con luz cálida", "estadio iluminado con luz limpia y cálida"],
+  };
+  const tipoEsc = (cromo && cromo.kickTipo) || tipoNoticia || "";
+  const ESCENAS = ESCENAS_POR[tipoEsc] || NEUTRAS;
   if (sinJ) {
     const sem = (parseInt(String(it.id || "0").slice(0, 6), 16) || Math.floor(Math.random() * 1e6)) + Math.floor(Math.random() * 7);
     const escena = ESCENAS[sem % ESCENAS.length];
     // Varios estilos MUY distintos entre sí, para que las portadas no se parezcan unas a otras
     const ESTILOS = ["fotografía cinematográfica realista, lente larga, desenfoque profundo", "ilustración vectorial plana con formas geométricas grandes y sombras largas", "pop art con puntos de semitono y contornos gruesos, estilo cómic", "pinceladas de pintura al óleo gruesas y expresivas", "neón y luces de colores sobre fondo oscuro, estilo cyberpunk deportivo", "collage de papel recortado con texturas y capas", "grafiti urbano con aerosol y salpicaduras", "póster retro años 70 con degradados suaves de grano de impresión", "acuarela con manchas de color que se difuminan", "foto de larga exposición con estelas de luz"];
-    const estilo = ESTILOS[Math.floor(sem / ESCENAS.length) % ESTILOS.length];
+    const estilo = ESTILOS[Math.floor(sem / 7) % ESTILOS.length];
     const pp = "Imagen 1: escudo del club. Tómalo SOLO para sacar sus COLORES REALES (no lo dibujes ni lo copies). La paleta del fondo debe estar hecha con esos colores del escudo (dos colores principales como mucho) y NO uses azul si el escudo no es azul. Miniatura de noticia de fútbol, formato horizontal 3:2, alta resolución. ESTILO VISUAL: " + estilo + ". ESCENA de fondo: " + escena + ". Composición dinámica, contraste alto. SIN personas, SIN jugadores, SIN rostros, SIN manos, SIN texto, SIN números, SIN logos ni escudos dibujados. Deja el centro de la imagen más despejado y tranquilo, porque encima se colocan el escudo y la foto del jugador.";
     fd.append("prompt", pp);
   } else
