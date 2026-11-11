@@ -6,4 +6,5 @@ Lo respaldado: foco único + contraste alto + paleta corta (UBC, arXiv 1611.0068
 Lo NO respaldado: las cifras de CTR (+30 %, +47 %…) vienen de blogs de herramientas. No hay estudios de miniaturas de fantasy/fichajes/lesiones; lo de cada tipo es criterio editorial.
 gpt-image: escribir "sin texto" no basta; no pedir objetos que traen letras (marcadores, vallas, banderas, camisetas); pasar el escudo solo como referencia de color (hex + nombre); no pasar portadas anteriores como referencia (copia su color).
 
+Corrección 11/11 (Edu: "no se ve fútbol ni animado"): toda escena es de fútbol (césped, estadio, focos, portería, balón liso) y los estilos son solo tratamientos; colores vivos y luces.
 Reglas aplicadas: prompt por bloques (uso, reglas, paleta, composición, estilo, ambiente, escena, prohibido); escena y ambiente según el tipo de noticia; 10 estilos, los sobrios para duda/lesión/bajón y los enérgicos para racha/chollo/revelación; fondos guardados por club y ambiente; nada de fuegos, confeti, dinero ni trofeos. Honestidad: la portada nunca promete más que la noticia (un rumor no parece un "here we go").

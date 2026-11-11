@@ -21,20 +21,21 @@ export function nombreColor(c) {
 }
 export const hex = (c) => "#" + c.map((v) => Math.max(0, Math.min(255, v)).toString(16).padStart(2, "0")).join("");
 
+// Todas las escenas son INCONFUNDIBLEMENTE de fútbol (césped, estadio, focos, portería, red, balón liso). Sin personas ni texto.
 export const ESCENAS_POR = {
-  fijo: ["césped recién cortado con líneas de cal bajo focos", "estadio vacío desenfocado y simétrico", "banco de suplentes vacío en penumbra, sin nombres", "formas geométricas firmes tipo bloques"],
-  racha: ["estelas de luz y partículas en diagonal", "césped en macro con rocío iluminado a contraluz", "formas en movimiento con desenfoque de velocidad"],
-  chollo: ["foco puntual sobre fondo oscuro con brillo cálido ámbar", "textura de cromo metalizado holográfico", "destellos de luz cálida sobre superficie mate"],
-  rentable: ["foco puntual sobre fondo oscuro con brillo cálido ámbar", "destellos de luz cálida sobre superficie mate", "césped de cerca con luz dorada y estadio desenfocado"],
-  revelacion: ["amanecer tras la grada de un estadio desenfocado", "rayos de luz atravesando humo", "brote de luz desde el centro rompiendo la penumbra"],
-  bajon: ["estadio vacío bajo cielo nublado", "lluvia fina sobre césped en penumbra", "formas geométricas inclinadas hacia abajo en tonos apagados"],
-  regular: ["nubes con un claro de sol", "césped húmedo con reflejo de luz", "degradado que pasa de apagado a algo más vivo"],
-  duda: ["túnel de vestuarios con neblina y luz al fondo", "contraluz difuso sobre el césped", "formas semitransparentes superpuestas"],
-  lesion: ["superficies limpias azul-gris con luz suave", "vestuario vacío sobrio y desenfocado, sin taquillas con nombres", "niebla fría sobre el campo de noche"],
-  recuperado: ["túnel con luz cálida al final", "amanecer sobre el campo", "degradado de frío a cálido con haces de luz"],
-  rumor: ["túnel en penumbra con un haz de luz", "luces de un estadio lejano en la noche, desenfocadas", "humo con contraluz y sombras en movimiento"],
+  fijo: ["césped recién cortado con líneas de cal y un balón liso en primer plano, estadio iluminado desenfocado detrás", "portería con la red en primer plano y estadio vacío iluminado al fondo", "banco de suplentes vacío junto al césped bajo los focos, sin nombres", "círculo central del campo visto desde arriba en diagonal, con focos y bokeh"],
+  racha: ["balón liso saliendo disparado sobre el césped con estelas de luz y partículas, estadio iluminado detrás", "red de la portería agitada con destellos y chispas de luz, estadio de noche", "césped en macro con rocío iluminado a contraluz y focos del estadio con bokeh", "estadio lleno de focos potentes con rayos de luz cruzando el cielo y césped brillante"],
+  chollo: ["balón liso sobre el punto de penalti bajo un foco cálido ámbar, estadio oscuro desenfocado", "césped con luz dorada de atardecer, porterías al fondo y destellos cálidos", "focos del estadio con halos dorados sobre el césped recién cortado"],
+  rentable: ["balón liso sobre el punto de penalti bajo un foco cálido ámbar, estadio oscuro desenfocado", "césped con luz dorada de atardecer, porterías al fondo y destellos cálidos", "focos del estadio con halos dorados sobre el césped recién cortado"],
+  revelacion: ["amanecer tras la grada de un estadio, rayos de luz sobre el césped", "foco de estadio que se enciende en la oscuridad iluminando el césped", "túnel de salida al campo con una luz potente al fondo y césped brillante"],
+  bajon: ["estadio vacío bajo cielo nublado con el césped húmedo y las porterías al fondo", "lluvia fina sobre el césped bajo los focos, balón liso detenido en primer plano", "banquillo vacío y césped mojado con luz fría"],
+  regular: ["césped húmedo con reflejo de los focos y un claro de luz al fondo del estadio", "estadio con nubes y un rayo de sol sobre el césped", "balón liso sobre el césped con luz de tarde que asoma entre nubes"],
+  duda: ["túnel de vestuarios con neblina y luz al fondo que da al césped", "balón liso parado sobre la línea de cal con neblina y contraluz del estadio", "estadio con niebla suave y focos difusos sobre el césped"],
+  lesion: ["estadio vacío de noche con niebla fría sobre el césped y focos tenues", "banco de suplentes vacío con luz azul-gris suave y césped al fondo", "línea de cal y césped con luz fría difusa, estadio desenfocado"],
+  recuperado: ["túnel con luz cálida al final que da al césped iluminado", "amanecer sobre el campo con focos aún encendidos y césped brillante", "balón liso sobre el césped con haces de luz cálida de estadio"],
+  rumor: ["túnel de acceso al campo en penumbra con un haz de luz potente al fondo", "estadio lejano iluminado en la noche visto desde fuera con luces desenfocadas", "césped de noche con humo y contraluz de focos, porterías al fondo"],
 };
-export const NEUTRAS = ["estadio de noche con focos y bokeh, vacío", "césped de cerca con luces desenfocadas al fondo", "línea de cal en perspectiva con luz lateral", "estadio vacío visto desde un córner con luz de cine"];
+export const NEUTRAS = ["estadio de noche con focos y bokeh sobre un césped perfecto, vacío", "césped de cerca con balón liso y luces del estadio desenfocadas al fondo", "línea de cal en perspectiva con luz lateral y estadio iluminado", "estadio vacío visto desde un córner con luz de cine"];
 
 export const AMBIENTE = {
   fijo: "estabilidad y confianza; luz cenital limpia y simétrica, colores del club plenos; serena y sólida, sin celebración",
@@ -50,20 +51,21 @@ export const AMBIENTE = {
   rumor: "expectación sin confirmar; penumbra con un haz de luz, sensación de que algo se mueve; intrigante pero contenido, nada de celebración",
 };
 
+// Tratamientos visuales: se aplican SIEMPRE sobre la escena de fútbol (el estilo cambia el aspecto, no el tema)
 export const ESTILOS = [
-  "estadio nocturno fotográfico: focos con bokeh, gradas desenfocadas y vacías, humedad en el aire",
-  "duotono de prensa con trama de puntos tipo halftone en los dos colores del club, grano de papel y contraste alto",
-  "diagonales tipo camiseta: franjas y bloques geométricos limpios en vector plano con sombras suaves",
-  "macro de césped: primerísimo plano de hierba con líneas de cal, poca profundidad de campo y luz rasante",
-  "cromo holográfico: textura de foil metalizado e iridiscente con reflejos prismáticos",
-  "túnel volumétrico: pasillo abstracto con humo, haces de luz y paredes lisas de hormigón",
-  "gradiente aurora con capas de vidrio esmerilado translúcido, moderno y muy limpio",
-  "pincelada gruesa y grunge de póster: trazos de pintura, salpicaduras y textura de muro",
-  "3D low-poly isométrico: campo y grada de aspecto miniatura con iluminación suave de estudio",
-  "pizarra táctica abstracta: fondo mate con trazos de luz neón, curvas y flechas de movimiento, sin números ni letras ni fichas",
+  "fotografía nocturna cinematográfica con bokeh en los focos y humedad en el aire",
+  "duotono de prensa con trama de puntos halftone y grano de papel sobre la escena, contraste alto, colores del club vivos",
+  "ilustración vectorial plana de la escena con bloques de color grandes y diagonales tipo camiseta",
+  "macro de poca profundidad de campo con luz rasante y reflejos",
+  "acabado holográfico: reflejos prismáticos e iridiscentes sobre la escena, como un cromo de edición especial",
+  "efecto volumétrico: humo, haces de luz y rayos atravesando la escena, mucha profundidad",
+  "gradientes aurora muy suaves con capas translúcidas de luz sobre la escena, moderno y limpio",
+  "pintura gruesa expresiva con pinceladas visibles y salpicaduras sobre la escena, energía de póster callejero",
+  "3D isométrico de aspecto miniatura (tilt-shift) de la escena con luz de estudio",
+  "luz neón y trazos luminosos que dibujan líneas de movimiento sobre la escena nocturna",
 ];
 // Estilos sobrios para lo serio y enérgicos para lo alegre (índices de ESTILOS)
-const POR_GRUPO = { serio: [0, 3, 5, 6], alegre: [2, 4, 7, 9, 1], neutro: [0, 1, 2, 3, 4, 5, 6, 7, 8] };
+const POR_GRUPO = { serio: [0, 3, 5, 6], alegre: [2, 4, 7, 9, 1, 8], neutro: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] };
 
 export function elegirEscenaEstilo(tipo, sem) {
   const esc = ESCENAS_POR[tipo] || NEUTRAS, pool = POR_GRUPO[grupoTipo(tipo)];
@@ -86,7 +88,9 @@ export function promptFondo({ club, cols, tipo, sem }) {
     "=== REGLAS GENERALES ===",
     "- Sin personas, siluetas humanas, manos, caras, jugadores, público reconocible ni mascotas.",
     "- Absolutamente sin letras, números, palabras, glifos, símbolos, dorsales, marcadores, carteles, pancartas, banderas, vallas publicitarias, pantallas ni etiquetas en ningún lugar.",
-    "- Sin escudos, emblemas, logotipos, marcas comerciales, balones con marca ni camisetas.",
+    "- Sin escudos, emblemas, logotipos ni marcas comerciales. El balón, si sale, es liso y blanco, sin marca.",
+    "- OBLIGATORIO: tiene que verse inconfundiblemente FÚTBOL (césped, líneas de cal, estadio con focos, portería con red o balón liso). Prohibido un fondo abstracto de formas o degradados sin escenario de fútbol.",
+    "- Debe sentirse ANIMADA y llamativa: colores vivos y saturados, luces potentes, destellos, partículas y sensación de movimiento (salvo que el ambiente pida seriedad).",
     "- Sin marcos, bordes ni marcas de agua. Acabado profesional de medio deportivo digital; nítido, con profundidad y poco recargado.",
     "",
     "=== PALETA (obligatoria) ===",
@@ -117,6 +121,6 @@ export function promptFondo({ club, cols, tipo, sem }) {
     "- Dinero: billetes, monedas, lingotes, fichas de casino o símbolos de moneda.",
     "- Lesión: sangre, camillas, ambulancias, quirófanos, jeringuillas, cruces rojas, radiografías.",
     "- Clima catastrofista: tormentas eléctricas, fuego, explosiones, cristales rotos.",
-    "- Colores ajenos al club como dominantes. Objetos o formas que crucen la zona del círculo o la franja inferior.",
+    "- Colores ajenos al club como dominantes. Objetos o formas que crucen la zona del círculo o la franja inferior. Fondos abstractos sin nada de fútbol.",
   ].join("\n");
 }

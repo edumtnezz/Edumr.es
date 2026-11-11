@@ -11,8 +11,8 @@ test("el prompt lleva los colores reales del escudo y las zonas reservadas", () 
   assert.match(p, /NO uses azul si el escudo no es azul/);
 });
 test("ninguna escena es de fiesta, dinero ni lesión gráfica", () => {
-  const malo = /fuegos|confeti|moneda|billete|trofeo|camilla|bengala/i;
-  for (const [t, l] of Object.entries(ESCENAS_POR)) for (const e of l) assert.ok(!malo.test(e), t + ": " + e);
+  const malo = /fuegos|confeti|moneda|billete|trofeo|camilla|bengala/i, futbol = /césped|estadio|portería|balón|campo|túnel|banco|línea de cal|focos/i;
+  for (const [t, l] of Object.entries(ESCENAS_POR)) for (const e of l) { assert.ok(!malo.test(e), t + ": " + e); assert.ok(futbol.test(e), "sin fútbol: " + e); }
 });
 test("cada tipo tiene ambiente, escena y estilo; lo serio usa estilos sobrios", () => {
   for (const t of Object.keys(ESCENAS_POR)) { assert.ok(AMBIENTE[t], t); for (let s = 0; s < 12; s++) assert.ok(promptFondo({ club: "X", cols: [null, null], tipo: t, sem: s }).includes("=== ESCENA ===")); }
