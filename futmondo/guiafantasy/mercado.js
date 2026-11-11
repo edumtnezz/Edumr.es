@@ -4305,9 +4305,10 @@
     // Títulos tipo «Rueda está ahora tocado…»: solo el apellido. Se usa solo si UN único jugador del mercado lo lleva.
     if (!mk && !/alineaci/.test(title)) {
       try {
-        const sujeto = fold(String(x.title || "").split(/\s+(?:est[aá]|queda|pasa|es|vuelve|se|ya|sigue|entra|sale)(?=\s|$)/i)[0]).split(" ").filter(Boolean);
+        const sujeto = fold(String(x.title || "").split(/\s+(?:est[aá]|queda|pasa|es|vuelve|regresa|se|ya|sigue|entra|sale)(?=\s|$)/i)[0]).split(" ").filter(Boolean);
         if (sujeto.length && sujeto.length <= 3) {
-          const hit = (all || []).filter((p) => p.id && p.photo && sujeto.every((w) => fold(p.name).split(" ").indexOf(w) >= 0));
+          // Una inicial suelta («L. Sucic») vale como principio de una palabra del nombre («Luka»)
+          const hit = (all || []).filter((p) => p.id && p.photo && sujeto.every((w) => { const ws = fold(p.name).split(" "); return w.length === 1 ? ws.some((x) => x.charAt(0) === w) : ws.indexOf(w) >= 0; }));
           if (hit.length === 1) mk = hit[0];
         }
       } catch (e) {}
