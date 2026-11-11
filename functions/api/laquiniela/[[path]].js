@@ -2160,6 +2160,9 @@ async function generarPortada(env, request, own, it, now) {
   else if (/\b(lesion\w*|lesionad[oa]|se pierde|operad[oa]|esguince|rotura|desgarro|fractura|baja)\b/.test(tN)) tipoNoticia = "lesion";
   else if (/\b(reaparec\w*|recuperad[oa]|recupera\w*|vuelve|vuelta|alta|se ejercita)\b/.test(tN)) tipoNoticia = "recuperado";
   else if (/\b(duda\w*|pendiente|molestias|sancionad[oa]|apercibid[oa])\b/.test(tN) || it.veredicto === "duda") tipoNoticia = "duda";
+  else if (/\b(apunta\w* (al|a la|a los|a titular|a ser titular|de titular)|candidat[oa]\w* a|posible titular|titular probable|entra en el once|vuelve al once|entrara en el once|sera titular)\b/.test(tN) || it.veredicto === "alinear") tipoNoticia = "titular";
+  else if (it.veredicto === "fichar") tipoNoticia = "fichar";
+  else if (it.veredicto === "vender") tipoNoticia = "vender";
   try {
     if (tipoNoticia === "rumor") {
       // El club que "vigila" o "quiere" es el que aparece en el titular y no es el del jugador

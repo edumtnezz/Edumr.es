@@ -141,7 +141,7 @@
   /* ----- Propias ----- */
 function cargaImg(src) { return new Promise(function (ok, ko) { var i = new Image(); i.onload = function () { ok(i); }; i.onerror = function () { ko(new Error("imagen")); }; i.src = src; }); }
 // Le pega encima el escudo real (izquierda) y la marca NOTICIAS real, pequeña, arriba a la derecha
-var TIPOS = { rumor: ["POSIBLE FICHAJE", "#2563eb", "swap"], lesion: ["LESIÓN", "#dc2626", "cross"], recuperado: ["RECUPERADO", "#16a34a", "check"], duda: ["DUDA", "#d97706", "q"] };
+var TIPOS = { rumor: ["POSIBLE FICHAJE", "#2563eb", "swap"], lesion: ["LESIÓN", "#dc2626", "cross"], recuperado: ["RECUPERADO", "#16a34a", "check"], duda: ["DUDA", "#d97706", "q"], titular: ["POSIBLE TITULAR", "#16a34a", "check"], alinear: ["ALINEAR", "#16a34a", "check"], fichar: ["A FICHAR", "#2563eb", "swap"], vender: ["VENDER", "#dc2626", "down"], noticia: ["NOTICIA", "#475569", "i"] };
 // Etiqueta de la noticia pintada por el navegador (no la dibuja la IA): texto siempre bien escrito
 function pintaEtiqueta(g, tipo, x0, y0, h) {
   var t = Array.isArray(tipo) ? tipo : TIPOS[tipo]; if (!t) return;
@@ -153,8 +153,9 @@ function pintaEtiqueta(g, tipo, x0, y0, h) {
   if (t[2] === "cross") { var r = ic * 0.42; g.beginPath(); g.moveTo(cx - r, cy); g.lineTo(cx + r, cy); g.moveTo(cx, cy - r); g.lineTo(cx, cy + r); g.stroke(); }
   else if (t[2] === "check") { g.beginPath(); g.moveTo(cx - ic * 0.34, cy + ic * 0.02); g.lineTo(cx - ic * 0.08, cy + ic * 0.28); g.lineTo(cx + ic * 0.38, cy - ic * 0.26); g.stroke(); }
   else if (t[2] === "star") { g.beginPath(); for (var q2 = 0; q2 < 10; q2++) { var ang = -Math.PI / 2 + q2 * Math.PI / 5, rr = (q2 % 2 ? 0.2 : 0.46) * ic; g.lineTo(cx + Math.cos(ang) * rr, cy + Math.sin(ang) * rr); } g.closePath(); g.fill(); }
+  else if (t[2] === "down") { var q3 = ic * 0.36; g.beginPath(); g.moveTo(cx, cy - q3); g.lineTo(cx, cy + q3); g.moveTo(cx - q3 * 0.8, cy + q3 * 0.2); g.lineTo(cx, cy + q3); g.lineTo(cx + q3 * 0.8, cy + q3 * 0.2); g.stroke(); }
   else if (t[2] === "swap") { var q = ic * 0.4; g.beginPath(); g.moveTo(cx - q, cy - q * 0.4); g.lineTo(cx + q, cy - q * 0.4); g.moveTo(cx + q * 0.45, cy - q * 0.95); g.lineTo(cx + q, cy - q * 0.4); g.lineTo(cx + q * 0.45, cy + q * 0.15); g.moveTo(cx + q, cy + q * 0.5); g.lineTo(cx - q, cy + q * 0.5); g.moveTo(cx - q * 0.45, cy); g.lineTo(cx - q, cy + q * 0.5); g.lineTo(cx - q * 0.45, cy + q * 1.05); g.stroke(); }
-  else { g.font = "800 " + Math.round(ic * 1.05) + "px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText("?", cx, cy + h * 0.02); g.textAlign = "left"; }
+  else { g.font = "800 " + Math.round(ic * 1.05) + "px system-ui, sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(t[2] === "i" ? "i" : "?", cx, cy + h * 0.02); g.textAlign = "left"; }
   g.font = "800 " + Math.round(h * 0.5) + "px system-ui, -apple-system, Segoe UI, sans-serif"; g.textBaseline = "middle"; g.fillStyle = "#fff"; g.fillText(t[0], x0 + pad + ic + pad * 0.6, y0 + h / 2 + h * 0.03);
   g.restore();
 }
@@ -168,7 +169,7 @@ function colorEscudo(img) {
 }
 // Foto original del jugador en un círculo con aro y brillo (cromo), con su nombre, datos reales de Futmondo y una frase corta que se lee desde fuera
 var KICK_COL = { fijo: "#16a34a", racha: "#ea580c", rentable: "#2563eb", revelacion: "#9333ea", chollo: "#16a34a", bajon: "#dc2626", regular: "#d97706", duda: "#d97706" };
-function etiquetaCromo(cr, tipoNoticia) { return cr && cr.kicker ? [cr.kicker, KICK_COL[cr.kickTipo] || "#16a34a", "star"] : (TIPOS[tipoNoticia] || null); }
+function etiquetaCromo(cr, tipoNoticia) { return cr && cr.kicker ? [cr.kicker, KICK_COL[cr.kickTipo] || "#16a34a", "star"] : (TIPOS[tipoNoticia] || TIPOS.noticia); }
 function pintaCromo(g, foto, cr, crestImg, W, H, tipoNoticia) {
   var d = H * 0.58, cx = W * 0.62, cy = H * 0.4, col = crestImg ? colorEscudo(crestImg) : [24, 90, 60];
   g.save();

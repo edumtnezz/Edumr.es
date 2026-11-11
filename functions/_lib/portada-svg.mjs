@@ -23,11 +23,16 @@ export const ETIQUETAS = {
   lesion: { t: "LESIÓN", c: "#dc2626", i: "cross" },
   recuperado: { t: "RECUPERADO", c: "#16a34a", i: "check" },
   duda: { t: "DUDA", c: "#d97706", i: "q" },
+  titular: { t: "POSIBLE TITULAR", c: "#16a34a", i: "check" },
+  alinear: { t: "ALINEAR", c: "#16a34a", i: "check" },
+  fichar: { t: "A FICHAR", c: "#2563eb", i: "swap" },
+  vender: { t: "VENDER", c: "#dc2626", i: "down" },
+  noticia: { t: "NOTICIA", c: "#475569", i: "i" },
 };
 const KICK_COL = { fijo: "#16a34a", racha: "#ea580c", rentable: "#2563eb", revelacion: "#9333ea", chollo: "#16a34a", bajon: "#dc2626", regular: "#d97706", duda: "#d97706" };
 export function etiquetaDe(cromo, tipoNoticia) {
   if (cromo && cromo.kicker) return { t: cromo.kicker, c: KICK_COL[cromo.kickTipo] || "#16a34a", i: "star" };
-  return ETIQUETAS[tipoNoticia] || null;
+  return ETIQUETAS[tipoNoticia] || ETIQUETAS.noticia;
 }
 
 // Etiqueta con icono: devuelve el SVG y su ancho
@@ -39,8 +44,9 @@ function etiquetaSvg(et, x, y, h, rot) {
   if (et.i === "cross") { const r = ic * 0.42; icon = `<path d="M${cx - r} ${cy}H${cx + r}M${cx} ${cy - r}V${cy + r}" stroke="#fff" stroke-width="${sw}" stroke-linecap="round" fill="none"/>`; }
   else if (et.i === "check") icon = `<path d="M${cx - ic * 0.34} ${cy + ic * 0.02}L${cx - ic * 0.08} ${cy + ic * 0.28}L${cx + ic * 0.38} ${cy - ic * 0.26}" stroke="#fff" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
   else if (et.i === "star") { const pts = []; for (let q = 0; q < 10; q++) { const a = -Math.PI / 2 + q * Math.PI / 5, rr = (q % 2 ? 0.2 : 0.46) * ic; pts.push((cx + Math.cos(a) * rr).toFixed(1) + "," + (cy + Math.sin(a) * rr).toFixed(1)); } icon = `<polygon points="${pts.join(" ")}" fill="#fff"/>`; }
+  else if (et.i === "down") { const q = ic * 0.36; icon = `<path d="M${cx} ${cy - q}V${cy + q}M${cx - q * 0.8} ${cy + q * 0.2}L${cx} ${cy + q}L${cx + q * 0.8} ${cy + q * 0.2}" stroke="#fff" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`; }
   else if (et.i === "swap") { const q = ic * 0.4; icon = `<path d="M${cx - q} ${cy - q * 0.4}H${cx + q}M${cx + q * 0.45} ${cy - q * 0.95}L${cx + q} ${cy - q * 0.4}L${cx + q * 0.45} ${cy + q * 0.15}M${cx + q} ${cy + q * 0.5}H${cx - q}M${cx - q * 0.45} ${cy}L${cx - q} ${cy + q * 0.5}L${cx - q * 0.45} ${cy + q * 1.05}" stroke="#fff" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`; }
-  else icon = `<text x="${cx}" y="${cy + ic * 0.36}" text-anchor="middle" font-family="Inter" font-weight="800" font-size="${ic * 1.05}" fill="#fff">?</text>`;
+  else icon = `<text x="${cx}" y="${cy + ic * 0.36}" text-anchor="middle" font-family="Inter" font-weight="800" font-size="${ic * 1.05}" fill="#fff">${et.i === "i" ? "i" : "?"}</text>`;
   return `<g transform="translate(${x} ${y}) rotate(${rot || 0})"><rect width="${w}" height="${h}" rx="${h * 0.22}" fill="${et.c}" filter="url(#sh)"/>${icon}` +
     `<text x="${pad + ic + pad * 0.6}" y="${h / 2 + fs * 0.36}" font-family="Inter" font-weight="800" font-size="${fs}" fill="#fff">${esc(et.t)}</text></g>`;
 }

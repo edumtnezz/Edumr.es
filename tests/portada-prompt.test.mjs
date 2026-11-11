@@ -24,3 +24,15 @@ test("colores del escudo: dos colores distintos y nombres", () => {
   const px = []; for (let i = 0; i < 100; i++) px.push(210, 30, 40, 255); for (let i = 0; i < 60; i++) px.push(20, 40, 150, 255);
   const [a, b] = coloresEscudoPx(px); assert.equal(nombreColor(a), "rojo"); assert.ok(b && nombreColor(b).startsWith("azul"));
 });
+import { etiquetaDe, portadaSvg } from "../functions/_lib/portada-svg.mjs";
+test("toda portada lleva etiqueta (por tipo, o «NOTICIA» si no hay más datos)", () => {
+  assert.equal(etiquetaDe(null, "titular").t, "POSIBLE TITULAR");
+  assert.equal(etiquetaDe(null, "vender").t, "VENDER");
+  assert.equal(etiquetaDe(null, "").t, "NOTICIA");
+  assert.equal(etiquetaDe(null, undefined).i, "i");
+});
+test("en una lesión no se dibuja la MEDIA", () => {
+  const o = { nombre: "X", face: "iVBORw0KGgo=", avg: 5, value: 2e6, tipoNoticia: "lesion", etiqueta: etiquetaDe(null, "lesion") };
+  assert.ok(!portadaSvg(o).includes(">MEDIA<"));
+  assert.ok(portadaSvg({ ...o, tipoNoticia: "duda", etiqueta: etiquetaDe(null, "duda") }).includes(">MEDIA<"));
+});
