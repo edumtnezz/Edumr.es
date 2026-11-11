@@ -7300,6 +7300,8 @@
     };
     setInterval(mira, 20000);
     document.addEventListener("visibilitychange", () => { if (!document.hidden) mira(); });
+    // Al abrir la web se pinta primero lo guardado (swr.js) y, si detrás llega algo nuevo, se repinta al momento
+    document.addEventListener("cx:swr", (ev) => { if (/\/noticias(\?|$)/.test((ev.detail && ev.detail.url) || "")) mira(); });
   })();
   loadNoticias();
   load();
