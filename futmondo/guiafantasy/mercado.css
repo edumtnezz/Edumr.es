@@ -3646,3 +3646,9 @@ html:not([data-theme="light"]) .rtb-lock { color: #fbbf24; }
 @media (max-width: 640px) { .playerpage .ficha-head-center .mcard-photo { width: 88px; height: 88px; margin-bottom: 6px; } }
 .plt-row .plt-phw .plt-prob { font-size: .6rem; }
 .claus-grid .claus-stat small, .claus-grid .claus-stat.clause small { font-size: .6rem; }
+/* Mercado en modo oscuro: la lista ya no es una losa blanca */
+html:not([data-theme="light"]) .plt-list { background: var(--card-solid, #111827); }
+html:not([data-theme="light"]) .plt-row { background: var(--card-solid, #111827); color: var(--text); border-bottom-color: var(--border); }
+html:not([data-theme="light"]) .plt-name { color: var(--text); }
+html:not([data-theme="light"]) .plt-val { color: #22c55e; }
+html:not([data-theme="light"]) .plt-pts { background: #263241; }

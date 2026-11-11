@@ -133,6 +133,8 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 - **Ficha**: puntos, media y partidos justo debajo del nombre; foto más pequeña en móvil; la franja "Disponible" ya no se pinta (sí lesión, duda, sanción o tocado). Aviso cuando Futmondo no da el detalle de algún partido (fichaje tardío).
 - **Mercado**: al bajar solo quedan fijos posición y orden (la tira de escudos se esconde): de 152 a 84 px.
 - **Clausulazos**: jornadas en el mismo orden que el Mercado (J8→J12), sin "Disponible" y cláusula en color plano.
+- **Mercado en oscuro**: la lista ya no es blanca (filas con el color de tarjeta del tema).
+- **"HOY", segunda regla**: si Futmondo ya actualizó hoy (50 jugadores o más con valor distinto al de ayer) y el de este jugador no se ha movido, el cambio es de ayer y hoy es 0. Comprobado en producción: 0 de 507 jugadores con "hoy" distinto del histórico.
 - **Textos**: etiquetas de jornada, % y rótulos ya no bajan de 9 px en móvil. Botón "Datos del partido" sin degradado. "Otros" pasa a "Novedad".
 
 ### Pendiente (decisión de Edu)
