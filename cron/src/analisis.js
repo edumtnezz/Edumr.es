@@ -2,6 +2,7 @@
 // Los números van tal cual; la «lectura» es una regla sobre esos números, dicha como opinión, nunca como dato.
 const norm = (x) => String(x || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
 const num = (n) => String(Math.round(n * 10) / 10).replace(".", ",");
+const ent = (n) => String(Math.round(n));
 const mill = (v) => num(v / 1e6) + " M";
 const media = (a) => a.reduce((s, x) => s + x, 0) / (a.length || 1);
 const desv = (a) => { const m = media(a); return Math.sqrt(media(a.map((x) => (x - m) ** 2))); };
@@ -110,7 +111,7 @@ export function reglas(p, jornada, jugadas, pub, mins) {
   // Un 0 suele ser que no jugó (lesión, banquillo): eso no es un bajón de rendimiento
   if (p.avg >= 6.5 && last2.every((x) => x >= 1) && media(last2) <= p.avg * 0.5 && p.status !== "injured") {
     out.push({ tipo: "bajon", prio: 3 + p.avg / 10,
-      titulo: elige([p.name + " baja el rendimiento tras dos partidos flojos", p.name + " se enfría: dos partidos por debajo de su nivel", "Dos partidos discretos de " + p.name + " con una media de " + num(p.avg)], seed),
+      titulo: elige([p.name + " baja el rendimiento tras dos partidos flojos", p.name + " se enfría: dos partidos por debajo de su nivel", "Dos partidos discretos de " + p.name + " con una media de " + ent(p.avg)], seed),
       entradilla: "El " + (p.role || "jugador") + " del " + nombreClub(p) + " promedia " + num(p.avg) + " puntos, pero sus dos últimos partidos han sido " + last2.join(" y ") + ".",
       cuerpo: base + (sig ? " " + sig : "") + "\n**Nuestra lectura:** " + (prob != null && prob >= 70 ? "sigue siendo fijo (" + prob + " % de jugar), así que es un bache y no hay motivo para salir corriendo, aunque conviene vigilar el próximo partido." : "con " + (prob != null ? prob + " % de opciones de jugar" : "su situación poco clara") + ", es una venta a valorar si necesitas liquidez.") });
   }
@@ -141,7 +142,7 @@ export function reglas(p, jornada, jugadas, pub, mins) {
   const ppm = p.value > 0 ? p.avg / (p.value / 1e6) : 0;
   if (p.value > 0 && p.value <= 15e6 && p.avg >= 6 && prob != null && prob >= 70 && valorSube && rivalOk && sano && !enBache && enCasa) {
     out.push({ tipo: "chollo", prio: 2 + Math.min(ppm, 5) / 5,
-      titulo: elige(["Chollo en Futmondo: " + p.name + " rinde " + num(p.avg) + " de media por " + mill(p.value), p.name + " cuesta " + mill(p.value) + " y promedia " + num(p.avg) + " puntos", "Fichaje barato: " + p.name + ", " + num(p.avg) + " de media a " + mill(p.value)], seed),
+      titulo: elige(["Chollo en Futmondo: " + p.name + " rinde " + ent(p.avg) + " de media por " + mill(p.value), p.name + " cuesta " + mill(p.value) + " y promedia " + ent(p.avg) + " puntos", "Fichaje barato: " + p.name + ", " + ent(p.avg) + " de media a " + mill(p.value)], seed),
       entradilla: "El " + (p.role || "jugador") + " del " + nombreClub(p) + " tiene un " + prob + " % de jugar el próximo partido.",
       cuerpo: base + " Su valor actual es de " + mill(p.value) + (typeof p.chg7 === "number" ? " y ha cambiado " + (p.chg7 >= 0 ? "+" : "-") + mill(Math.abs(p.chg7)) + " en la última semana" : "") + "." + (sig ? " " + sig : "") + "\n**Nuestra lectura:** puntos por millón muy buenos; mejor comprarlo antes de que suba." });
   }
@@ -150,14 +151,14 @@ export function reglas(p, jornada, jugadas, pub, mins) {
   if (mn && mn.n >= 8 && mn.j >= 0.9 * mn.n && (mn.c + mn.s) >= 0.85 * mn.j && mn.c >= 0.6 * (mn.c + mn.s) && mn.t / mn.j >= 80 && p.avg >= 6 && prob != null && prob >= 70 && p.status !== "doubt" && !/^injured/.test(String(p.status || ""))) {
     const tit = mn.c + mn.s;
     out.push({ tipo: "fijo", prio: 2.2 + p.avg / 10,
-      titulo: elige([p.name + " no se baja del once: " + mn.j + " partidos de " + mn.n, "Fijo en el " + nombreClub(p) + ": " + p.name + " juega casi todo y promedia " + num(p.avg), p.name + " juega " + mn.j + " de " + mn.n + " partidos y casi nunca sale del campo"], seed),
+      titulo: elige([p.name + " no se baja del once: " + mn.j + " partidos de " + mn.n, "Fijo en el " + nombreClub(p) + ": " + p.name + " juega casi todo y promedia " + ent(p.avg), p.name + " juega " + mn.j + " de " + mn.n + " partidos y casi nunca sale del campo"], seed),
       entradilla: "El " + (p.role || "jugador") + " del " + nombreClub(p) + " ha jugado " + mn.j + " de los " + mn.n + " partidos de su equipo y promedia " + num(p.avg) + " puntos.",
       cuerpo: "Ha jugado **" + mn.j + "** de **" + mn.n + "** partidos del " + nombreClub(p) + ": **" + mn.t + "** minutos, unos " + Math.round(mn.t / mn.j) + " por partido. Como titular, ha completado **" + mn.c + "** de " + tit + " y lo han cambiado " + mn.s + (mn.s === 1 ? " vez" : " veces") + ". Media de **" + num(p.avg) + "** puntos en " + p.matches + " partidos." + (sig ? " " + sig : "") + "\n**Nuestra lectura:** jugar casi todo y puntuar da seguridad a tu once" + (prob != null ? " (" + prob + " % de jugar el próximo partido)" : "") + "." });
   }
   // 7) Rentable: mismo criterio que "Jugadores rentables" de la web (media >= 8, valor que no baja, sin lesión) + prob >= 70
   if (p.value > 0 && ppm >= 0.3 && p.avg >= 8 && p.matches >= 6 && (Number(p.change) || 0) >= 0 && valorSube && !/injured|redcard/.test(String(p.status || "")) && sano && prob != null && prob >= 70 && enCasa) {
     out.push({ tipo: "rentable", prio: 2.4 + Math.min(ppm, 1.2) / 1.2 * 0.8,
-      titulo: elige(["Rentable: " + p.name + " puntúa " + num(p.avg) + " de media y cuesta " + mill(p.value), p.name + ", de los más rentables: " + num(p.avg) + " puntos por " + mill(p.value), "Calidad-precio: " + p.name + " promedia " + num(p.avg) + " a " + mill(p.value)], seed),
+      titulo: elige(["Rentable: " + p.name + " puntúa " + ent(p.avg) + " de media y cuesta " + mill(p.value), p.name + ", de los más rentables: " + ent(p.avg) + " puntos por " + mill(p.value), "Calidad-precio: " + p.name + " promedia " + ent(p.avg) + " a " + mill(p.value)], seed),
       entradilla: "El " + (p.role || "jugador") + " del " + nombreClub(p) + " rinde " + num(ppm) + " puntos de media por cada millón de valor.",
       cuerpo: base + " Su valor es de " + mill(p.value) + (typeof p.chg7 === "number" ? " y en la última semana ha cambiado " + (p.chg7 >= 0 ? "+" : "-") + mill(Math.abs(p.chg7)) : "") + "." + (sig ? " " + sig : "") + "\n**Nuestra lectura:** de los jugadores con mejor relación puntos-precio de la liga, con " + prob + " % de jugar el próximo partido." });
   }
@@ -165,7 +166,7 @@ export function reglas(p, jornada, jugadas, pub, mins) {
   const subida = typeof p.chg14 === "number" ? p.chg14 : (typeof p.chg7 === "number" ? p.chg7 : 0);
   if (p.value > 0 && p.value <= 20e6 && p.avg >= 7 && p.matches >= 6 && subida > 0 && media(last3) >= p.avg * 0.9 && prob != null && prob >= 70 && sano && !/injured|redcard/.test(String(p.status || "")) && !enBache) {
     out.push({ tipo: "revelacion", prio: 2.7 + p.avg / 20,
-      titulo: elige(["Revelación: " + p.name + " promedia " + num(p.avg) + " y solo cuesta " + mill(p.value), p.name + " sorprende: " + num(p.avg) + " de media a " + mill(p.value), "Ojo a " + p.name + ", la sorpresa del " + nombreClub(p)], seed),
+      titulo: elige(["Revelación: " + p.name + " promedia " + ent(p.avg) + " y solo cuesta " + mill(p.value), p.name + " sorprende: " + ent(p.avg) + " de media a " + mill(p.value), "Ojo a " + p.name + ", la sorpresa del " + nombreClub(p)], seed),
       entradilla: "El " + (p.role || "jugador") + " del " + nombreClub(p) + " cuesta " + mill(p.value) + ", suma " + num(p.avg) + " de media y su valor sube.",
       cuerpo: base + " Su valor es de " + mill(p.value) + " y ha subido " + mill(subida) + " en las últimas semanas." + (sig ? " " + sig : "") + "\n**Nuestra lectura:** barato, en buena dinámica y con " + prob + " % de jugar; de los que conviene fichar antes de que suban más." });
   }
