@@ -4291,12 +4291,16 @@
     const fold = (v) => stripAccents(String(v || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
     const title = " " + fold(x.title) + " ";
     let crest = "";
-    const seen = new Set();
-    for (const p of (all || [])) {
-      if (!p.team || !p.logo || seen.has(p.team)) continue;
-      seen.add(p.team);
-      const words = window.EduTeams ? window.EduTeams.alias(p.team) : [fold(p.team)];
-      if (words.some((w) => { w = fold(w); return w && title.indexOf(" " + w + " ") >= 0; })) { crest = p.logo; break; }
+    // Primero palabra completa; si no, por inicio de palabra («Deportivo» lleva el alias «depor»)
+    for (const modo of [0, 1]) {
+      const seen = new Set();
+      for (const p of (all || [])) {
+        if (!p.team || !p.logo || seen.has(p.team)) continue;
+        seen.add(p.team);
+        const words = window.EduTeams ? window.EduTeams.alias(p.team) : [fold(p.team)];
+        if (words.some((w) => { w = fold(w); return w && (modo === 0 ? title.indexOf(" " + w + " ") >= 0 : w.length >= 5 && title.indexOf(" " + w) >= 0); })) { crest = p.logo; break; }
+      }
+      if (crest) break;
     }
     const pl0 = (x.players && x.players[0]) || {};
     let mk = null;
