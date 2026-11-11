@@ -4456,7 +4456,7 @@
   // Caja de miniatura: la foto del vídeo si la hay; si no, la nuestra
   // Portada de ChatGPT: tamaño justo para cada sitio (s = cuadrada centrada en el jugador, m = mediana), sin perder calidad
   const esPortada = (u) => /\/api\/laquiniela\/portada\//.test(String(u || ""));
-  const portadaSz = (u, sz) => esPortada(u) && sz ? u + (u.indexOf("?") >= 0 ? "&" : "?") + "t=" + sz : u;
+  const portadaSz = (u, sz) => u;
   const thumbBox = (x, cls, sz) => {
     const b = el("div", cls);
     if (usaEth(x)) b.appendChild(ethFor(x));

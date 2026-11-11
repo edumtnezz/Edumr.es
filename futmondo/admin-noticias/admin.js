@@ -227,11 +227,9 @@ function componer(j, x) {
     if (r[3] && j.cromo) pintaCromo(g, r[3], j.cromo, r[2], W, H, j.tipoNoticia);
     var bh = H * 0.1; if (!(r[3] && j.cromo && etiquetaCromo(j.cromo, j.tipoNoticia))) pintaEtiqueta(g, j.tipoNoticia, W * 0.035, H * 0.045, bh);
     var lw = W * 0.09, lh = lw * r[1].naturalHeight / r[1].naturalWidth; g.save(); g.globalAlpha = 0.6; g.drawImage(r[1], W - lw - W * 0.025, H - lh - H * 0.035, lw, lh); g.restore(); // marca de agua transparente, abajo a la derecha
-    // Tres tamaños sin perder calidad: completa, mediana (Noticias/Inicio grande) y cuadrada centrada en el jugador (miniaturas)
-    function redim(w, h, sx, sy, sw, sh, q, tag) { var k = document.createElement("canvas"); k.width = w; k.height = h; var gg = k.getContext("2d"); gg.imageSmoothingEnabled = true; gg.imageSmoothingQuality = "high"; gg.drawImage(c, sx, sy, sw, sh, 0, 0, w, h); if (tag) pintaEtiqueta(gg, (j.cromo && etiquetaCromo(j.cromo, j.tipoNoticia)) || j.tipoNoticia, w * 0.05, h * 0.05, h * 0.12); return k.toDataURL("image/jpeg", q).split(",")[1]; }
-    var mw = Math.min(W, 960), side = Math.round(H * 0.88), fx = j.cromo ? 0.64 : (sin ? 0.5 : (x.tipo === "once" ? 0.5 : 0.6));
-    var sx0 = Math.max(0, Math.min(W - side, W * fx - side / 2)), sy0 = (H - side) * 0.25;
-    return { b64: c.toDataURL("image/jpeg", 0.9).split(",")[1], b64m: redim(mw, Math.round(mw * H / W), 0, 0, W, H, 0.88), b64s: redim(360, 360, sx0, sy0, side, side, 0.9, true) };
+    // Una sola imagen por noticia (1200 px): la web la recorta con CSS en las miniaturas y Telegram usa la misma
+    var ow = Math.min(W, 1200), oh = Math.round(ow * H / W), k = document.createElement("canvas"); k.width = ow; k.height = oh; var gk = k.getContext("2d"); gk.imageSmoothingEnabled = true; gk.imageSmoothingQuality = "high"; gk.drawImage(c, 0, 0, ow, oh);
+    return { b64: k.toDataURL("image/jpeg", 0.85).split(",")[1] };
   });
 }
 
@@ -251,7 +249,7 @@ function componer(j, x) {
           if (parar || i >= sin.length) { info.textContent = hechas + " portadas hechas, ≈ " + coste.toFixed(2) + " $" + (fallos ? ", " + fallos + " con fallo" : "") + "."; return cargar(true); }
           var x = sin[i]; info.textContent = "Portada " + (i + 1) + " de " + sin.length + ": " + (x.title || "").slice(0, 60) + "…";
           var usd1 = null, mod1 = ""; post({ action: "portada", id: x.id }).then(function (j) { usd1 = j.usd; mod1 = j.modelo || ""; if (j.usd != null) coste += j.usd; return componer(j, x); })
-            .then(function (o) { return post({ action: "portada-guardar", id: x.id, b64: o.b64, b64m: o.b64m, b64s: o.b64s, usd: usd1, modelo: mod1 }); })
+            .then(function (o) { return post({ action: "portada-guardar", id: x.id, b64: o.b64, usd: usd1, modelo: mod1 }); })
             .then(function () { hechas++; }, function () { fallos++; })
             .then(function () { sigue(i + 1); });
         })(0);
@@ -346,7 +344,7 @@ function componer(j, x) {
       post({ action: "portada", id: x.id }).then(function (j) {
         modeloUsado = (j.modelo || "") + (j.usd != null ? ", ≈ " + j.usd.toFixed(3) + " $" : "");
         pst.textContent = (j.conFoto ? "Hecha con la foto de " + (j.jugador || "el jugador") + ". " : "Sin foto del jugador. ") + "Pegando escudo y marca…";
-        return componer(j, x).then(function (o) { return post({ action: "portada-guardar", id: x.id, b64: o.b64, b64m: o.b64m, b64s: o.b64s, usd: j.usd, modelo: j.modelo }); });
+        return componer(j, x).then(function (o) { return post({ action: "portada-guardar", id: x.id, b64: o.b64, usd: j.usd, modelo: j.modelo }); });
       }).then(function (j) {
         pst.textContent = "Portada guardada · " + (modeloUsado || "?") + ". Si no te gusta, pulsa otra vez.";
         if (j.item && j.item.thumb) { pim.src = j.item.thumb; pim.style.display = "block"; }

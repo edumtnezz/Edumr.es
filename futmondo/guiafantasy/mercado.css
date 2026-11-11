@@ -3597,6 +3597,6 @@ a.newscard { display: block; text-decoration: none; color: inherit; }
 .nw-home .nw-big .nw-row-t { font-size: 1.1rem; font-weight: 800; -webkit-line-clamp: 3; }
 /* Portadas de ChatGPT: encuadre en el jugador (cara arriba, centro-derecha) */
 .pt-img { object-position: 60% 22%; }
-.nw-row-pic > img.pt-img { object-position: 50% 50%; }
+.nw-row-pic > img.pt-img { object-position: 64% 40%; }
 .nw-lead-pic > img.pt-img { object-position: 60% 20%; }
 .nw-lead-pic:has(> img.pt-img), .nw-big .nw-row-pic:has(> img.pt-img) { aspect-ratio: 3 / 2; }
