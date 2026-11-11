@@ -2148,7 +2148,13 @@ async function generarPortada(env, request, own, it, now) {
     const m = await getMarketPlayers(env);
     const clubTok = fold(it.club);
     // El jugador sale por su nombre en el titular (nunca se exige que sea del club de la noticia: puede ser el rival)
-    const cand = (m.players || []).filter((p) => p.photo).map((p) => ({ p, sc: fold(p.name).filter((w) => tt.includes(w)).length + fold(p.name).filter((w) => tit.includes(w)).length, cl: fold(p.team).some((w) => clubTok.includes(w)) ? 1 : 0 })).filter((c) => c.sc > 0).sort((a, b) => b.sc - a.sc || b.cl - a.cl || (b.p.avg || 0) - (a.p.avg || 0));
+    // Solo cuenta un nombre si coincide el APELLIDO (última palabra) o una palabra que no se repite en ningún otro jugador:
+    // «Jonathan Tah» no puede llevarse la cara de «Jonathan David» (Tah ni está en LaLiga).
+    const nz = (v) => stripAccents(String(v || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter(Boolean);
+    const frec = {}; for (const q of m.players || []) for (const w of new Set(nz(q.name))) frec[w] = (frec[w] || 0) + 1;
+    const tokOk = (p) => { const ws = nz(p.name), ap = ws[ws.length - 1]; return (w) => w === ap || (w.length > 3 && frec[w] === 1); };
+    const tituloNz = new Set(nz(it.title)), todoNz = new Set(nz(it.title).concat((Array.isArray(it.players) ? it.players : []).flatMap((q) => nz(typeof q === "string" ? q : (q && q.name) || ""))));
+    const cand = (m.players || []).filter((p) => p.photo).map((p) => { const ok = tokOk(p), ws = nz(p.name).filter(ok); return { p, sc: ws.filter((w) => todoNz.has(w)).length + ws.filter((w) => tituloNz.has(w)).length, cl: fold(p.team).some((w) => clubTok.includes(w)) ? 1 : 0 }; }).filter((c) => c.sc > 0).sort((a, b) => b.sc - a.sc || b.cl - a.cl || (b.p.avg || 0) - (a.p.avg || 0));
     if (cand.length) {
       const top = cand[0], empate = cand.filter((c) => c.sc === top.sc && c.cl === top.cl && c.p.id !== top.p.id).length;
       if (!(top.sc === 1 && empate > 0 && !top.cl)) pl = top.p; // si hay dudas entre dos jugadores, no se arriesga una cara equivocada

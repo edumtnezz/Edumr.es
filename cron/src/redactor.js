@@ -1721,9 +1721,11 @@ async function tratarExterna(env, f, st, now, pista, own) {
   const item = { id: hex, status: "published", expira: true, createdAt: now, updatedAt: now, publishedAt: now, thumb: "", tipo: pista.tipo || "", club: pista.equipo, players: personas, key, source: { name: nombre, url: pista.ref, videoId: "" }, title: val.title, lead: val.lead, body: val.body, via: "ia", ...decisionDe(jFinal || {}, texto), porque: { prompt: promptUsado.slice(0, 4500), datos: texto.slice(0, 1500), tema: pista.tipo || "", fuente: nombre } };
   // Una noticia nueva del mismo jugador deja atrás la anterior (que queda retirada)
   const apl = (n) => norm2(n).split(/\s+/).filter((w) => w.length > 3).pop();
-  const mios = personas.map(apl).filter(Boolean);
+  // Solo se supera la nota anterior si habla del MISMO protagonista (el primero de la lista); los nombres que salen de pasada no cuentan
+  // (una nota sobre Espí que citaba a Mbappé retiraba la de la lesión de Mbappé, 11/11/2026)
+  const mios = personas.slice(0, 1).map(apl).filter(Boolean);
   for (const o of own) {
-    if (o.status === "published" && String(o.key || "").startsWith("ext-") && o.club === pista.equipo && (o.players || []).map(apl).some((x) => mios.includes(x))) { o.status = "draft"; o.superada = true; o.updatedAt = now; }
+    if (o.status === "published" && String(o.key || "").startsWith("ext-") && o.club === pista.equipo && (o.players || []).slice(0, 1).map(apl).some((x) => mios.includes(x))) { o.status = "draft"; o.superada = true; o.updatedAt = now; }
   }
   own.unshift(item);
   try { await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300))); } catch (e) {}
@@ -1914,6 +1916,12 @@ export async function redactorSombra(env, deps) {
         dirty = true;
       }
       await env.PORRA.put("rd:reabrir:v3", String(now));
+    }
+    // Una sola vez (Edu 11/11/2026): vuelve a publicarse la nota de la lesión de Mbappé si la retiró por error una nota que solo lo citaba
+    if (!(await env.PORRA.get("rd:restaurar:v1"))) {
+      const o = own.find((x) => x.key === "ext-cm-38976-real-madrid" && x.status !== "published" && x.superada);
+      if (o) { o.status = "published"; o.superada = false; o.updatedAt = now; cambio = true; }
+      await env.PORRA.put("rd:restaurar:v1", String(now));
     }
     // Una sola vez (Edu 11/11/2026): David Soria salió como «fijo en el once» con valor bajando y rival fuerte; se retira (queda como borrador)
     if (!(await env.PORRA.get("rd:retirar:v1"))) {
