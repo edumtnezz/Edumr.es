@@ -5903,6 +5903,12 @@ async function handleGet({ request, env: env0, params }) {
     const fm = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
     return json({ n: log.length, cambios: log.slice(-120).reverse().map((x) => ({ hora: fm.format(new Date(x.at)), jugadoresCambiados: x.n, movimientosDe500kOMas: (x.g || []).map((g) => g.name + " " + (g.d > 0 ? "+" : "") + g.d) })) });
   }
+  // Diagnóstico de solo lectura: resultado de la prueba de API-Football que hace el cron (sin secretos)
+  if (path === "apifootball-prueba") {
+    let d = null;
+    try { d = await env.PORRA.get("apif:prueba:v1", "json"); } catch (e) {}
+    return json(d || { sinDatos: true });
+  }
   // Diagnóstico de solo lectura: qué pasó con cada tema detectado (sin secretos)
   if (path === "redactor-estado") {
     let st = null, doc = null;
