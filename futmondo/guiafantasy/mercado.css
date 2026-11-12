@@ -3717,3 +3717,6 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 .news-share svg { width: 20px; height: 20px; flex: none; }
 .news-share:active { background: rgba(127, 127, 127, .22); }
 .news-share.ok { width: auto; padding: 0 14px; border-radius: 999px; background: rgba(34, 197, 94, .16); color: #16a34a; }
+#noticiaView { position: relative; }
+#noticiaView .news-share { position: absolute; top: 0; right: 0; z-index: 2; }
+#noticiaView .news-bar { min-height: 40px; padding-right: 48px; }

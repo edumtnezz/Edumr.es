@@ -4152,7 +4152,8 @@
   // Inicio: noticias y últimos cambios en UN solo bloque, en orden de hora (Edu 09/11/2026)
   let inicioFiltro = "todo";
   const OWN_TAG = { cronica: ["Crónica", "#16a34a"], once: ["Once", "#2563eb"], rueda: ["Rueda de prensa", "#7c3aed"], lesion: ["Parte", "#dc2626"], analisis: ["Análisis", "#0891b2"], nota: ["Noticia", "#16a34a"] };
-  const ownTag = (x) => OWN_TAG[(window.EduThumb && window.EduThumb.tipo(x)) || "nota"] || OWN_TAG.nota;
+  const EST_TAG = { baja: ["Baja", "#ef4444"], duda: ["Duda", "#eab308"], alta: ["Alta", "#22c55e"] };
+  const ownTag = (x) => (x && x.auto === "estado" && EST_TAG[x.veredicto]) || OWN_TAG[(window.EduThumb && window.EduThumb.tipo(x)) || "nota"] || OWN_TAG.nota;
   // Últimos cambios de los últimos días (mercado, partes, onces) con su fecha y hora reales
   function cambiosLista(dias) {
     const out = [];
@@ -4204,7 +4205,7 @@
     const b = el("div", "nw-row-b");
     const tl = el("div", "nw-tag");
     if (e.kind === "n") {
-      const t2 = newsTag(x.title) || ownTag(x);
+      const t2 = (x.auto === "estado" && ownTag(x)) || newsTag(x.title) || ownTag(x);
       tl.style.setProperty("--tc", t2[1]); tl.appendChild(el("i")); tl.appendChild(el("span", null, t2[0]));
     } else {
       const cc = UP_CATS[x.cat] || UP_CATS.otro;
@@ -4230,7 +4231,7 @@
     lead.addEventListener("keydown", (ev) => { if (ev.key === "Enter") open(x); });
     lead.appendChild(thumbBox(x, "nw-lead-pic", "m"));
     const lb = el("div", "nw-lead-b");
-    const tg = newsTag(x.title) || ownTag(x);
+    const tg = (x.auto === "estado" && ownTag(x)) || newsTag(x.title) || ownTag(x);
     const line = el("div", "nw-tag");
     line.style.setProperty("--tc", tg[1]); line.appendChild(el("i")); line.appendChild(el("span", null, tg[0]));
     lb.appendChild(line);
@@ -4252,7 +4253,8 @@
     let list = lastNews.noticias || [];
     if (newsMineOnly && myTeam.length) list = list.filter(newsMatchMyTeam);
     const noticias = list.map((x) => ({ kind: "n", x, ts: Number(x.ts) || 0 }));
-    const cambios = cambiosLista(3);
+    // En Noticias los cambios de estado no se repiten: ya tienen su noticia. Aquí solo entran los de mercado.
+    const cambios = cambiosLista(3).filter((e) => !(e.x && e.x.pid && e.x.cat !== "mercado"));
     const hero = noticias[0] || null;
     if (hero) wrap.appendChild(leadCard(hero.x, open, true));
     let rows = noticias.concat(cambios);
@@ -4510,7 +4512,7 @@
       // Icono pequeño limpio: solo la cara del jugador (o el escudo), sin texto ni logos dentro
       n = el("div", "eth-mini" + (photo ? "" : " eth-mini-c"));
       const src = photo || crest;
-      if (src) { const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = src; im.addEventListener("error", () => im.remove(), { once: true }); n.appendChild(im); }
+      if (src) { const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = src; im.addEventListener("error", () => { if (crest && im.src !== crest) { im.src = crest; n.classList.add("eth-mini-c"); } else im.remove(); }); n.appendChild(im); }
     } else n = window.EduThumb.el(x, { photo, crest, club: x.club || "" });
     if (!photo && !crest && !(all && all.length)) ethPend.push([n, x, mini]); // aún sin mercado: se rellena al llegar, sin mover nada
     return n;
