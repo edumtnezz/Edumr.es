@@ -150,3 +150,19 @@ Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas 
 ### Pendiente (decisión de Edu)
 - `/api/laquiniela/mios` y `/clausulas` responden sin sesión y enseñan su nombre y su plantilla. No se ha tocado: los usan los avisos de Telegram y la pantalla pública de Clausulazos.
 - Noticias reescritas de otras webs: el 11/11 seguían saliendo (redactor sin tocar en este repaso).
+
+
+## 12/11/2026 — Noticias nuevas, estado propio y Equipos
+
+- **Estado físico propio** (`cron/src/estados.js`, cada 3 min): estado de Biwenger emparejado con Futmondo (510 de 526 jugadores) + el de Futmondo, con la hora de cada cambio. Sirve para medir quién avisa antes. `/api/laquiniela/estados`.
+- **Noticias nuevas** (`cron/src/partes.js`, KV `own:news:v2`): una por cambio de estado, con resumen, claves y consejo. Las antiguas quedan ocultas en `own:news:v1`. Redactor antiguo y portadas generadas apagados.
+- **Últimos cambios propio**: estados + subidas/bajadas de 500.000 € o más de Futmondo. Fotos de Futmondo.
+- **Mercado y once**: el estado propio manda sobre el de Futmondo; lesionado o sancionado = 0 % y, en el once, entra el recambio (suplente del puesto con más minutos) si el que cae era titular habitual.
+- **Diseño**: cabecera de Mercado redondeada con escudos grandes, botón Volver redondo, Equipos en lista con bajas/dudas, calendario del club tipo app de resultados, plantilla por líneas (DL, MC, DEF, POR) con puntos, media y valor.
+- **Probado y descartado**: API-Football (el plan gratis no da la temporada actual). LaLiga Fantasy, Mister y Comunio no tienen datos abiertos.
+
+Pendiente:
+- Alineaciones probables y % de jugar siguen saliendo de FutbolFantasy; nuestro estado solo los corrige. Un % 100 % propio necesita antes demostrar precisión (regla de CLAUDE.md).
+- Con unos días de registro: comparar horas Biwenger vs Futmondo y decidir si merece la pena otra fuente.
+- Los avisos de Telegram de noticias de FutbolFantasy siguen activos (`avisos.js`); decidir si se quitan.
+- Calendario de dificultad por equipos (idea de asesoriasfantasy).
