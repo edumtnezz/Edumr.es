@@ -3721,6 +3721,7 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 #noticiaView .news-share { position: absolute; top: 0; right: 0; z-index: 2; }
 #noticiaView .news-bar { min-height: 40px; padding-right: 48px; }
 @media (max-width: 720px) {
-  #noticiaView .news-share { top: -50px; }
+  #noticiaView .news-share { top: -42px; }
   #noticiaView .news-bar { min-height: 0; padding-right: 0; margin-bottom: 0; }
+  #noticiaView .ficha-name { margin-top: 12px; }
 }
