@@ -3652,3 +3652,28 @@ html:not([data-theme="light"]) .plt-row { background: var(--card-solid, #111827)
 html:not([data-theme="light"]) .plt-name { color: var(--text); }
 html:not([data-theme="light"]) .plt-val { color: #22c55e; }
 html:not([data-theme="light"]) .plt-pts { background: #263241; }
+
+/* ===== 12/11/2026 · Cabecera de Mercado más limpia, escudos más grandes y botones Todos / Volver nuevos ===== */
+/* Caja de filtros: una sola pieza con las cuatro esquinas redondeadas, sin el filo doble de arriba */
+:is(#tab-mercado, #tab-plantillas) .plt-head { outline: none; margin: 0 0 8px; border-radius: 18px; overflow: hidden; box-shadow: 0 8px 20px -10px rgba(0, 0, 0, .5); }
+:is(#tab-mercado, #tab-plantillas) .plt-head .plt-clubwrap,
+:is(#tab-mercado, #tab-plantillas) .plt-head .plt-row-btns { background: transparent; }
+:is(#tab-mercado, #tab-plantillas) .plt-head .plt-clubwrap { padding: 10px 8px 6px; }
+:is(#tab-mercado, #tab-plantillas) .plt-head .plt-clubs { gap: 6px; align-items: center; scrollbar-width: none; }
+:is(#tab-mercado, #tab-plantillas) .plt-head .plt-clubs::-webkit-scrollbar { display: none; }
+:is(#tab-mercado, #tab-plantillas) .plt-head .plt-btn.plt-club { width: 54px; height: 54px; flex: none; border-radius: 14px; }
+:is(#tab-mercado, #tab-plantillas) .plt-head .plt-btn.plt-club img { width: 44px; height: 44px; }
+:is(#tab-mercado, #tab-plantillas) .plt-head .plt-btn.plt-club.on { background: rgba(255, 255, 255, .16); box-shadow: inset 0 0 0 2px #22c55e; }
+:is(#tab-mercado, #tab-plantillas) .plt-head .plt-arrow.l { left: 4px; }
+:is(#tab-mercado, #tab-plantillas) .plt-head .plt-arrow.r { right: 4px; }
+/* «Todos»: del mismo alto que los escudos, sin píldora verde */
+:is(#tab-mercado, #tab-plantillas) .plt-head .plt-clubs .plt-btn.plt-all:not(.plt-club):not(.plt-arrow) { flex: none; height: 54px; min-width: 62px; padding: 0 12px; margin: 0 2px 0 0; border-radius: 14px; font-size: .8rem; font-weight: 800; letter-spacing: .01em; color: #cfdad6; background: rgba(255, 255, 255, .08); }
+:is(#tab-mercado, #tab-plantillas) .plt-head .plt-clubs .plt-btn.plt-all:not(.plt-club):not(.plt-arrow).on { color: #fff; background: rgba(255, 255, 255, .16); box-shadow: inset 0 0 0 2px #22c55e; }
+:is(#tab-mercado, #tab-plantillas) .plt-head .plt-row-btns { padding: 0 8px; }
+:is(#tab-mercado, #tab-plantillas) .plt-head #pltPos { padding-bottom: 4px; }
+:is(#tab-mercado, #tab-plantillas) .plt-head #pltPos .plt-btn { border-radius: 10px; }
+
+/* Volver: botón redondo con flecha, como en una app */
+.bk:not(.news-share):not(.bk-link) { height: 40px; padding: 0 16px 0 10px; gap: 4px; border: none; background: var(--card-solid); box-shadow: 0 1px 2px rgba(0, 0, 0, .10), 0 0 0 1px var(--border); font-weight: 700; letter-spacing: -.01em; }
+.bk:not(.news-share):not(.bk-link) .gi { width: 20px; height: 20px; }
+.bk-link { border: none; background: none; height: auto; padding: 6px 2px; color: var(--muted); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }

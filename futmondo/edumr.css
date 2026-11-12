@@ -872,7 +872,11 @@ body { overflow-x: clip; overscroll-behavior-x: none; max-width: 100%; }
     background: var(--cx-surface);
     padding-bottom: env(safe-area-inset-bottom, 0px);
     box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.10);
+    isolation: isolate;
   }
+  /* La barra tapa también lo que queda por debajo cuando el navegador recoge su propia barra al deslizar:
+     así nunca se ve una franja de la página por detrás. */
+  .gf-page .cx-header .cx-sub::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 200px; background: var(--cx-surface); }
   .gf-page .cx-header .cx-sub.hidden { display: block !important; }
   .gf-page .cx-header .cx-sub-inner { padding: 0 4px; min-height: 58px; gap: 0; align-items: stretch; }
   .gf-page .cx-header .cx-sub .tabs { flex: 3 1 0; display: flex; flex-wrap: nowrap; gap: 0; overflow: visible; }
@@ -901,9 +905,11 @@ body { overflow-x: clip; overscroll-behavior-x: none; max-width: 100%; }
   /* Botón de subir arriba: por encima de la barra */
   .gf-page .cx-totop { bottom: calc(78px + env(safe-area-inset-bottom, 0px)) !important; }
   /* Volver siempre visible */
+  .gf-page .bk:not(.news-share):not(.bk-link) .bk-t { display: none; }
+  .gf-page .bk:not(.news-share):not(.bk-link) .gi { width: 24px; height: 24px; margin-right: 2px; }
   .gf-page .bk:not(.news-share):not(.bk-link) {
     position: fixed; left: 12px; bottom: calc(78px + env(safe-area-inset-bottom, 0px)); z-index: 65; margin: 0;
-    height: 44px; padding: 0 18px 0 14px; font-weight: 700;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+    width: 48px; height: 48px; padding: 0; justify-content: center; border-radius: 50%; gap: 0;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22), 0 0 0 1px var(--cx-border);
   }
 }

@@ -5903,11 +5903,13 @@ async function handleGet({ request, env: env0, params }) {
     const fm = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
     return json({ n: log.length, cambios: log.slice(-120).reverse().map((x) => ({ hora: fm.format(new Date(x.at)), jugadoresCambiados: x.n, movimientosDe500kOMas: (x.g || []).map((g) => g.name + " " + (g.d > 0 ? "+" : "") + g.d) })) });
   }
-  // Diagnóstico de solo lectura: resultado de la prueba de API-Football que hace el cron (sin secretos)
-  if (path === "apifootball-prueba") {
-    let d = null;
-    try { d = await env.PORRA.get("apif:prueba:v1", "json"); } catch (e) {}
-    return json(d || { sinDatos: true });
+  // Estado físico de los jugadores y registro de cambios con su hora (lo apunta el cron cada 3 min)
+  if (path === "estados") {
+    let foto = null, ev = [];
+    try { foto = await env.PORRA.get("est:foto:v1", "json"); ev = (await env.PORRA.get("est:eventos:v1", "json")) || []; } catch (e) {}
+    const bw = (foto && foto.bw) || {}, estados = {};
+    for (const id of Object.keys(bw)) if (bw[id].e !== "ok") estados[id] = bw[id];
+    return json({ updatedAt: (foto && foto.at) || 0, estados, cambios: ev.slice(-200).reverse() });
   }
   // Diagnóstico de solo lectura: qué pasó con cada tema detectado (sin secretos)
   if (path === "redactor-estado") {

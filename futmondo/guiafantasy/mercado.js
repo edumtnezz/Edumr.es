@@ -166,7 +166,8 @@
     if (same && history.length > 1) history.back(); else location.href = fallback || "/futmondo/guiafantasy/inicio";
   }
   function backBtn(fallback, extra) {
-    const b = el("button", "bk" + (extra ? " " + extra : ""), "← Volver");
+    const b = el("button", "bk" + (extra ? " " + extra : ""));
+    b.innerHTML = "<svg class=\"gi\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M15 5l-7 7 7 7\"/></svg><span class=\"bk-t\">Volver</span>";
     b.type = "button"; b.setAttribute("aria-label", "Volver");
     b.addEventListener("click", () => goBack(fallback));
     return b;
@@ -4585,7 +4586,8 @@
     const box = $("noticiaView");
     if (!box) return;
     box.innerHTML = "";
-    const back = el("button", "bk", "← Volver a noticias");
+    const back = el("button", "bk");
+    back.innerHTML = "<svg class=\"gi\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M15 5l-7 7 7 7\"/></svg><span class=\"bk-t\">Noticias</span>"; back.setAttribute("aria-label", "Volver a noticias");
     back.type = "button";
     back.addEventListener("click", () => {
       if (newsPushed && history.state && history.state.news) { newsPushed = false; history.back(); return; }

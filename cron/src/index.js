@@ -3,7 +3,7 @@
 // el resultado cacheado en KV, para que la web lo sirva al instante.
 import { avisar, colaPuntos, avisarPuntos } from "./avisos.js";
 import { redactorSombra } from "./redactor.js";
-import { probarApiFootball } from "./apifootball.js";
+import { vigilarEstados } from "./estados.js";
 
 export default {
   async scheduled(event, env, ctx) {
@@ -25,8 +25,8 @@ export default {
         await Promise.all(["mercado", "jornada", "rachas", "portada", "noticias", "ultimos-cambios", "equipos"].map((p) =>
           fetch("https://edumr.es/api/laquiniela/" + p, { headers: { "user-agent": "edumr-cron" } }).then((r) => r.text()).catch(() => {})));
       } catch (e) {}
-      // Prueba de API-Football: sin el secreto API_FOOTBALL_KEY solo deja anotado que falta.
-      try { await probarApiFootball(env); } catch (e) {}
+      // Estado físico de los jugadores: apunta cada cambio con su hora (cada 3 min).
+      try { await vigilarEstados(env); } catch (e) { console.error("estados", String(e && e.message || e).slice(0, 180)); }
       try { await avisarPuntos(env); } catch (e) {}
       try { await avisar(env); } catch (e) {}
       // Redactor: publica noticias verificadas y avisa por Telegram. Sin GEMINI_API_KEY no hace nada.
