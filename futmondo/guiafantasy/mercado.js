@@ -4188,7 +4188,9 @@
     } else {
       const srcs = cambioImgs(x);
       pic = srcs.length ? fichImg(srcs, "nw-row-pic nw-row-pic-c") : el("div", "nw-row-pic nw-row-pic-c");
-      row.addEventListener("click", () => { pendingUpdKey = updKey(x); switchTab("actualizaciones"); let n = 0; const t2 = setInterval(() => { if (focusUpd() || ++n > 12) clearInterval(t2); }, 250); });
+      const pfic = x.pid ? (all || []).find((p) => String(p.id) === String(x.pid)) : null;
+      if (pfic) { try { row.dataset.pid = pfic.id; } catch (e2) {} row.addEventListener("click", () => openFicha(pfic)); }
+      else row.addEventListener("click", () => { pendingUpdKey = updKey(x); switchTab("actualizaciones"); let n = 0; const t2 = setInterval(() => { if (focusUpd() || ++n > 12) clearInterval(t2); }, 250); });
     }
     row.addEventListener("keydown", (ev) => { if (ev.key === "Enter") row.click(); });
     row.appendChild(pic);
@@ -4205,7 +4207,9 @@
     b.appendChild(tl);
     b.appendChild(el("div", "nw-row-t", x.title));
     if (e.kind === "c") {
-      const pl = (x.players || []).slice(0, 1).map((p) => p.name + (p.from && p.to ? ": " + p.from + " → " + p.to : "")).join(" · ");
+      // Registro propio: debajo va el motivo («Molestias en la rodilla · vuelta: …»), no el nombre repetido
+      const pl = x.pid ? (x.players || []).slice(0, 1).map((p) => String(p.to || "").split(" · ").slice(1).join(" · ")).join("")
+        : (x.players || []).slice(0, 1).map((p) => p.name + (p.from && p.to ? ": " + p.from + " → " + p.to : "")).join(" · ");
       if (pl) b.appendChild(el("div", "nw-sum", pl));
     }
     row.appendChild(b);
@@ -5255,9 +5259,8 @@
     const box = eqOpen(); if (!box) return;
     const hero = el("div", "eqi-hero");
     hero.appendChild(el("h2", "eq-h1", "Equipos"));
-    hero.appendChild(el("p", "eqi-sub", "Toca un club para ver su partido y su plantilla."));
-    box.appendChild(hero);
-    const grid = el("div", "eq-grid");
+        box.appendChild(hero);
+    const grid = el("div", "eq-grid eq-list");
     box.appendChild(grid);
     let teams = [];
     try { teams = await eqTeams(); } catch (e) {}
@@ -5274,6 +5277,12 @@
       const f = eqFacts(teamCanon(t.name));
       if (f.n) tx.appendChild(el("small", null, f.n + " jugadores · " + eqMoney(f.val)));
       a.appendChild(tx);
+      if (f.bajas || f.dudas) {
+        const ch = el("span", "eq-tile-st");
+        if (f.bajas) ch.appendChild(el("i", "b", f.bajas + (f.bajas === 1 ? " baja" : " bajas")));
+        if (f.dudas) ch.appendChild(el("i", "d", f.dudas + (f.dudas === 1 ? " duda" : " dudas")));
+        a.appendChild(ch);
+      }
       a.appendChild(el("span", "eq-tile-go", "›"));
       grid.appendChild(a);
     });
@@ -5509,23 +5518,26 @@
       const fLive = full.filter((m) => stOf(m) === "live");
       const fPost = full.filter((m) => stOf(m) === "suspended").sort((a, b) => a.jn - b.jn);
       const fNext = full.filter((m) => !isPast(m) && !stOf(m)).sort((a, b) => a.jn - b.jn);
+      // Fila de partido al estilo de las apps de resultados: local · escudo · hora o resultado · escudo · visitante
       const mkRow = (m) => {
         const home = teamCanon(m.home) === tc;
         const st = stOf(m);
         let outc = "";
         if (st === "final") { const mm = String((m.live && m.live.score) || "").match(/(\d+)\D+(\d+)/); if (mm) { const gh = +mm[1], ga = +mm[2], mine2 = home ? gh - ga : ga - gh; outc = mine2 > 0 ? " win" : mine2 < 0 ? " loss" : " draw"; } }
-        const a = el("a", "eq-calrow" + (st === "final" ? " fin" + outc : st === "live" ? " live" : ""));
+        const a = el("a", "eq-fx" + (st === "final" ? " fin" + outc : st === "live" ? " live" : ""));
         a.href = "/futmondo/guiafantasy/partido/" + matchSlug(m.home, m.away) + "?j=" + m.jn;
-        a.appendChild(el("span", "eq-calj", "J" + m.jn));
-        a.appendChild(haIcon(home));
-        const c = el("img"); c.src = (home ? m.awayCrest : m.homeCrest) || ""; c.alt = ""; c.loading = "lazy";
-        a.appendChild(c);
-        a.appendChild(el("span", "eq-calrival", home ? m.away : m.home));
-        const when = m.tbc ? "Fecha por confirmar" : [m.day, m.date, m.time].filter(Boolean).join(" ");
         const sc = (m.live && m.live.score) || "";
-        const res = st === "suspended" ? "Aplazado" : (st === "final" || st === "live") && sc ? sc : when;
-        if (st === "live") { const tg = el("span", "eq-livetag"); tg.appendChild(el("i")); tg.appendChild(document.createTextNode("En juego")); a.appendChild(tg); }
-        a.appendChild(el("span", "eq-calres" + (st === "final" && sc ? " eq-calscore" : ""), res));
+        const jugado = (st === "final" || st === "live") && sc;
+        const fecha = m.tbc ? "" : [m.day, m.date].filter(Boolean).join(" ");
+        a.appendChild(el("span", "eq-fx-top", "J" + m.jn + (fecha ? " · " + fecha : "")));
+        const crest = (u) => { const c = el("img"); c.src = u || ""; c.alt = ""; c.loading = "lazy"; c.width = 26; c.height = 26; return c; };
+        a.appendChild(el("span", "eq-fx-t h" + (home ? " me" : ""), m.home));
+        a.appendChild(crest(m.homeCrest));
+        const mid = el("span", "eq-fx-mid" + (jugado ? " sc" : ""), st === "suspended" ? "Aplazado" : jugado ? String(sc).replace(/\s*-\s*/, " - ") : m.tbc ? "Por confirmar" : (m.time || "—"));
+        if (st === "live") mid.title = "En juego";
+        a.appendChild(mid);
+        a.appendChild(crest(m.awayCrest));
+        a.appendChild(el("span", "eq-fx-t a" + (!home ? " me" : ""), m.away));
         return a;
       };
       if (fPlayed.length) {
@@ -5591,22 +5603,37 @@
       if (stx0) sqS.appendChild(stx0);
       const GR = [["portero", "POR", "Portero"], ["defensa", "DEF", "Defensa"], ["centrocampista", "MC", "Centrocampista"], ["delantero", "DL", "Delantero"]].filter((g) => squad.some((p) => String(p.role || "").toLowerCase() === g[0]));
       if (GR.length && !GR.some((g) => g[0] === eqSq.pos)) eqSq.pos = GR[0][0];
-      const bar = el("div", "sq4-bar"); bar.setAttribute("role", "tablist");
-      const lst = el("div", "sq4-list");
-      const paintSq = () => {
-        bar.replaceChildren();
-        GR.forEach((g) => {
-          const on = eqSq.pos === g[0];
-          const b = el("button", "sq4-seg sq4-" + g[1] + (on ? " on" : "")); b.type = "button"; b.setAttribute("role", "tab"); b.setAttribute("aria-selected", on ? "true" : "false");
-          b.appendChild(el("span", "sq4-code", g[1]));
-          if (on) b.appendChild(el("b", null, g[2]));
-          b.addEventListener("click", () => { eqSq.pos = g[0]; paintSq(); });
-          bar.appendChild(b);
-        });
-        lst.replaceChildren();
-        squad.filter((p) => String(p.role || "").toLowerCase() === eqSq.pos).sort((x, y) => (Number(y.points) || 0) - (Number(x.points) || 0)).forEach((p) => lst.appendChild(plRow(p)));
+      // Las cuatro líneas a la vista, de delanteros a porteros, con puntos, media y valor en columnas
+      const sqRow = (p) => {
+        const r = el("div", "sqt-row club-link"); r.setAttribute("role", "link"); try { r.dataset.pid = p.id || ""; } catch (e) {}
+        r.addEventListener("click", () => openFicha(p));
+        const ph = el("span", "sqt-ph"); ph.appendChild(photoImg(p.photo, "sqt-img"));
+        const sti = statusInfo(p.status); if (sti) ph.appendChild(el("i", "sqt-st " + sti.cls, sti.label));
+        ph.style.position = "relative"; ph.style.gridRow = "1 / span 2"; ph.style.width = "40px"; ph.style.height = "40px";
+        const nm = el("span", "sqt-nm"); nm.appendChild(ph); nm.appendChild(el("b", null, p.name));
+        const sub = sti ? (statusLabel(p.status) + (p.estInfo ? " · " + p.estInfo.replace(/\s*Retorno estimado:.*$/i, "") : "")) : (p.toc ? "Tocado" : "");
+        if (sub) nm.appendChild(el("small", sti && sti.cls === "st-doubt" || (!sti && p.toc) ? "w" : "b", sub));
+        r.appendChild(nm);
+        r.appendChild(el("span", "sqt-n pts", String(Math.round(Number(p.points) || 0))));
+        r.appendChild(el("span", "sqt-n", p.matches ? String(Number(p.avg || 0).toFixed(1)).replace(".", ",") : "—"));
+        r.appendChild(el("span", "sqt-n val", eqMoney(p.value)));
+        return r;
       };
-      sqS.appendChild(bar); sqS.appendChild(lst);
+      const ORD = ["delantero", "centrocampista", "defensa", "portero"], PLUR = { delantero: "Delanteros", centrocampista: "Centrocampistas", defensa: "Defensas", portero: "Porteros" };
+      const lst = el("div", "sqt");
+      const paintSq = () => {
+        lst.replaceChildren();
+        ORD.forEach((ro) => {
+          const g = GR.find((x) => x[0] === ro); if (!g) return;
+          const ps = squad.filter((p) => String(p.role || "").toLowerCase() === ro).sort((x, y) => (Number(y.points) || 0) - (Number(x.points) || 0));
+          const h = el("div", "sqt-h");
+          const tt = el("span", "sqt-tt"); tt.appendChild(el("i", "sq4-" + g[1], g[1])); tt.appendChild(el("b", null, PLUR[ro])); tt.appendChild(el("small", null, String(ps.length)));
+          h.appendChild(tt); h.appendChild(el("span", "sqt-c", "Pts")); h.appendChild(el("span", "sqt-c", "Media")); h.appendChild(el("span", "sqt-c val", "Valor"));
+          lst.appendChild(h);
+          ps.forEach((p) => lst.appendChild(sqRow(p)));
+        });
+      };
+      sqS.appendChild(lst);
       if (!squad.length) sqS.appendChild(el("p", "muted small", "Plantilla no disponible ahora mismo."));
       else paintSq();
       frag.appendChild(sqS);
