@@ -3688,3 +3688,5 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 .art-body .nw-consejo p { margin: 0 0 8px; font-weight: 600; }
 .art-body .nw-fuente { margin-top: 18px; font-size: .78rem; color: var(--muted); }
 .pp-status-i { margin-top: 3px; font-size: .8rem; font-weight: 600; line-height: 1.3; opacity: .9; }
+.up-det { margin-top: 4px; font-size: .86rem; font-weight: 600; line-height: 1.35; color: var(--muted); }
+.up-photo.up-photo-crest { object-fit: contain; padding: 6px; }

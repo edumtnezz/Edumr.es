@@ -693,9 +693,11 @@
         const left = el("div", "up-left");
         const ph = x.photo ? el("img", "up-photo") : null;
         if (ph) {
-          ph.src = x.photo; ph.alt = ""; ph.loading = "lazy"; ph.addEventListener("error", () => ph.remove()); left.appendChild(ph);
+          ph.src = x.photo; ph.alt = ""; ph.loading = "lazy";
+          // Sin foto en Futmondo: el escudo de su club, nunca un hueco vacío
+          ph.addEventListener("error", () => { if (x.logo && ph.src !== x.logo) { ph.src = x.logo; ph.classList.add("up-photo-crest"); } else ph.remove(); }); left.appendChild(ph);
           // La foto grande es la del jugador cuando la noticia habla de uno solo
-          const p0 = x.players && x.players.length === 1 && x.players[0].photo === x.photo ? playerByFullName(x.players[0].name) : null;
+          const p0 = x.pid ? (all || []).find((q) => String(q.id) === String(x.pid)) : x.players && x.players.length === 1 && x.players[0].photo === x.photo ? playerByFullName(x.players[0].name) : null;
           if (p0) { ph.classList.add("club-link"); ph.addEventListener("click", () => openFicha(p0)); try { ph.dataset.pid = p0.id || ""; } catch (e) {} }
         }
         const ib = el("span", "up-ico");
@@ -710,7 +712,12 @@
         body.appendChild(el("div", "up-title", x.title));
         const links = updLinks(x, jm);
         if (links) body.appendChild(links);
-        if (x.players && x.players.length) {
+        // Registro propio: una sola línea con el motivo (sin repetir foto y nombre)
+        if (x.pid) {
+          const p1 = (x.players || [])[0];
+          const d1 = p1 ? [p1.from ? "Antes: " + p1.from : "", String(p1.to || "").split(" · ").slice(1).join(" · ")].filter(Boolean).join(" · ") : "";
+          if (d1) body.appendChild(el("div", "up-det", d1));
+        } else if (x.players && x.players.length) {
           const det = el("div", "up-chg");
           x.players.forEach((p) => {
             const r = el("div", "up-pl");

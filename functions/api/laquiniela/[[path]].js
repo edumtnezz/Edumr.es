@@ -2642,7 +2642,7 @@ async function getCambiosPropios(env) {
   const add = (p, de, a, info, at) => {
     const { parte, retorno } = partirInfo(info);
     const det = [NOMBRE_ESTADO[a] || a, parte, retorno ? "vuelta: " + retorno : ""].filter(Boolean).join(" · ");
-    items.push({ at, cat: catCambio(a), title: tituloCambio(p.name, de, a), href: "", photo: p.photo || "", pid: p.id, players: [{ name: p.name, photo: p.photo || "", from: de && de !== "ok" && de !== a ? NOMBRE_ESTADO[de] : "", to: det }] });
+    items.push({ at, cat: catCambio(a), title: tituloCambio(p.name, de, a), href: "", photo: p.photo || p.logo || "", logo: p.logo || "", pid: p.id, players: [{ name: p.name, photo: p.photo || "", from: de && de !== "ok" && de !== a ? NOMBRE_ESTADO[de] : "", to: det }] });
   };
   for (const e of (ev || [])) {
     if (e.src !== "bw" || now - e.at > 8 * 86400000) continue;
@@ -2663,7 +2663,7 @@ async function getCambiosPropios(env) {
   if (mAt && now - mAt < 26 * 3600000) {
     for (const p of all.filter((x) => Math.abs(x.change || 0) >= 500000).sort((a, b) => Math.abs(b.change) - Math.abs(a.change)).slice(0, 8)) {
       const n = String(Math.abs(Math.round(p.change))).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-      items.push({ at: mAt, cat: "mercado", title: p.name + (p.change > 0 ? " sube " : " baja ") + n + " €", href: "", photo: p.photo || "", pid: p.id, players: [] });
+      items.push({ at: mAt, cat: "mercado", title: p.name + (p.change > 0 ? " sube " : " baja ") + n + " €", href: "", photo: p.photo || p.logo || "", logo: p.logo || "", pid: p.id, players: [] });
     }
   }
   items.sort((a, b) => b.at - a.at);
@@ -2676,7 +2676,7 @@ async function getCambiosPropios(env) {
     const day = wd.charAt(0).toUpperCase() + wd.slice(1) + " " + dd;
     let d = days[days.length - 1];
     if (!d || d.day !== day) { d = { day, items: [] }; days.push(d); }
-    d.items.push({ time: fT.format(new Date(it.at)), cat: it.cat, title: it.title, href: it.href, photo: it.photo, pid: it.pid, players: it.players });
+    d.items.push({ time: fT.format(new Date(it.at)), cat: it.cat, title: it.title, href: it.href, photo: it.photo, logo: it.logo, pid: it.pid, players: it.players });
   }
   return { updatedAt: (foto && foto.at) || now, days, propio: true };
 }
