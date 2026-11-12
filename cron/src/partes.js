@@ -40,11 +40,10 @@ export const idNoticia = (c) => ("e" + String(c.id).slice(-10) + c.a.charAt(0)).
 
 async function resumenIA(env, f, h, n) {
   if (!env.GEMINI_API_KEY) return null;
-  const prompt = "Eres redactor de una web de fútbol fantasy. Escribe en español de España DOS párrafos cortos (máximo 45 palabras cada uno), claros y sin adornos, sobre esta novedad.\n" +
-    "REGLAS: usa SOLO los hechos de abajo. No añadas nombres, cifras, plazos, causas, declaraciones ni opiniones que no estén. No menciones al entrenador. No des consejos. " +
-    "Primer párrafo: qué le pasa y para qué partido. Segundo: sus números de la temporada.\n" +
-    "HECHOS:\n" + n.p1 + "\n" + n.p2 + "\n" +
-    'Devuelve JSON: {"p1":"...","p2":"..."}';
+  const prompt = "Eres redactor de una web de fútbol fantasy. Escribe en español de España UN párrafo corto (máximo 45 palabras), claro y sin adornos, sobre esta novedad.\n" +
+    "REGLAS: usa SOLO los hechos de abajo. No añadas nombres, cifras, plazos, causas, declaraciones ni opiniones que no estén. No menciones al entrenador. No des consejos ni estadísticas.\n" +
+    "HECHOS:\n" + n.p1 + "\n" +
+    'Devuelve JSON: {"p1":"..."}';
   try {
     const r = await f("https://generativelanguage.googleapis.com/v1beta/models/" + MODEL + ":generateContent", {
       method: "POST", headers: { "content-type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
@@ -54,9 +53,9 @@ async function resumenIA(env, f, h, n) {
     const j = await r.json();
     const t = (((j.candidates || [])[0] || {}).content || {}).parts || [];
     const o = JSON.parse(t.map((x) => x.text || "").join(""));
-    const p1 = String(o.p1 || "").trim(), p2 = String(o.p2 || "").trim();
-    if (!p1 || !p2 || !resumenValido(p1 + " " + p2, h)) return null;
-    return [p1, p2];
+    const p1 = String(o.p1 || "").trim();
+    if (!p1 || !resumenValido(p1, h)) return null;
+    return p1;
   } catch (e) { return null; }
 }
 

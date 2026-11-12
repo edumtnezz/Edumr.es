@@ -172,14 +172,14 @@ export function noticiaPlantilla(h) {
 }
 
 export function cuerpoNoticia(n, resumen) {
-  const parr = resumen && resumen.length ? resumen : [n.p1, n.p2];
-  return parr.concat(["## Claves fantasy"], n.claves.map((c) => "- " + c), ["## Consejo fantasy", n.consejo, "Estado del jugador según Biwenger. Puntos, minutos y valor de Futmondo."]).join("\n");
+  // Un solo párrafo de texto: los números de la temporada se enseñan en casillas, con el dato de Futmondo del momento
+  return [resumen || n.p1, "## Claves fantasy"].concat(n.claves.map((c) => "- " + c), ["## Consejo fantasy", n.consejo]).join("\n");
 }
 
 // Un resumen escrito por la IA solo vale si no trae ningún número ni nombre propio que no esté en los hechos.
 export function resumenValido(texto, h) {
   const t = String(texto || "").trim();
-  if (t.length < 80 || t.length > 900) return false;
+  if (t.length < 60 || t.length > 500) return false;
   const base = norm([h.nombre, h.equipo, h.rival, h.recambio, h.parte, h.retorno, h.puesto, "Futmondo Biwenger"].join(" "));
   const nums = new Set([h.jornada, h.puntos, h.partidos, h.titular, h.deEquipo].filter((x) => x != null).map(String));
   String(h.media).split(/[.,]/).forEach((x) => nums.add(x)); String(Math.round(h.valor)).match(/\d{1,3}(?=(\d{3})*$)/g).forEach((x) => nums.add(String(Number(x)))); nums.add(String(Math.round(h.valor)));

@@ -4496,7 +4496,8 @@
       const fold = (v) => String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w.length > 3);
       const tt = fold(x.title);
       const enTit = (nom) => fold(nom).some((w) => tt.indexOf(w) >= 0);
-      let pl = (x.players || []).map((n) => typeof n === "string" ? n : (n && n.name)).filter(enTit).map((n) => playerByFullName(n)).find((p) => p && p.photo);
+      let pl = x.pid ? (all || []).find((p) => String(p.id) === String(x.pid)) || null : null;
+      if (!pl) pl = (x.players || []).map((n) => typeof n === "string" ? n : (n && n.name)).filter(enTit).map((n) => playerByFullName(n)).find((p) => p && p.photo);
       if (!pl && (x.players || []).some((n) => enTit(typeof n === "string" ? n : (n && n.name))) && all && all.length && x.club) {
         const cc = teamCanon(x.club);
         pl = all.find((p) => p.photo && teamCanon(p.team) === cc && fold(p.name).some((w) => tt.indexOf(w) >= 0)) || null;
@@ -4624,21 +4625,38 @@
       if (!d.image) d.image = portadaDe(url);
       const bn = el("div", "art-banner" + (/\/portada\//.test(String(d.image || "")) ? " art-portada" : ""));
       if (d.image) { const im = el("img"); im.alt = ""; im.src = portadaSz(d.image, "m"); bn.appendChild(im); }
-      else if (window.EduThumb && window.EduThumb.el) bn.appendChild(ethFor({ title: d.title || title, lead: d.lead, club: d.club, players: d.players, src: "EduMR" }));
+      else if (window.EduThumb && window.EduThumb.el) bn.appendChild(ethFor({ title: d.title || title, lead: d.lead, club: d.club, players: d.players, src: "EduMR", auto: d.auto, veredicto: d.veredicto, plazo: d.plazo, pid: d.pid }));
+      if (d.auto === "estado") bn.classList.add("art-banner-st");
       box.appendChild(bn);
     }
     try { if (title || d.title) document.title = (title || d.title) + " · EduMR"; } catch (e) {}
     const shareUrl = location.origin + newsHref(url);
-    const sh = el("button", "bk news-share", "🔗 Copiar enlace"); sh.type = "button";
+    // Compartir: botón redondo con icono, a la derecha de la barra
+    const sh = el("button", "news-share"); sh.type = "button"; sh.setAttribute("aria-label", "Compartir noticia");
+    const SH_I = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M8 8l4-4 4 4M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5"/></svg>';
+    const SH_OK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+    sh.innerHTML = SH_I;
     sh.addEventListener("click", async () => {
       try { if (navigator.share) { await navigator.share({ title: title || d.title || "", url: shareUrl }); return; } } catch (e) { return; }
-      try { await navigator.clipboard.writeText(shareUrl); sh.textContent = "✅ Enlace copiado"; setTimeout(() => { sh.textContent = "🔗 Copiar enlace"; }, 2000); } catch (e) { sh.textContent = shareUrl; }
+      try { await navigator.clipboard.writeText(shareUrl); sh.innerHTML = SH_OK + "<span>Enlace copiado</span>"; sh.classList.add("ok"); setTimeout(() => { sh.innerHTML = SH_I; sh.classList.remove("ok"); }, 2000); } catch (e) {}
     });
     bar.appendChild(sh);
-    if (d.lead) box.appendChild(el("p", "art-lead", d.lead));
+    // Noticia de estado: el cartel ya dice el motivo, así que la entradilla no se repite
+    if (d.lead && d.auto !== "estado") box.appendChild(el("p", "art-lead", d.lead));
     if (d.html) {
       const art = el("div", "art-body");
       art.innerHTML = d.html; wireCvBtns(art); try { wireStatsLinks(art); } catch (e) {}
+      // Números de la temporada en casillas (datos de Futmondo del momento)
+      if (d.ficha) {
+        const f = d.ficha, g = el("div", "nw-stats");
+        const cas = (v, k) => { const c = el("div", "nw-stat"); c.appendChild(el("b", null, v)); c.appendChild(el("span", null, k)); g.appendChild(c); };
+        cas(String(f.puntos), "Puntos");
+        cas(f.partidos ? String(Number(f.media).toFixed(1)).replace(".", ",") : "—", "Media");
+        cas(f.titular != null && f.deEquipo ? f.titular + "/" + f.deEquipo : "—", "Titular");
+        cas(eqMoney(f.valor), "Valor");
+        const p1 = art.querySelector("p");
+        if (p1 && p1.parentNode === art) p1.after(g); else art.prepend(g);
+      }
       box.appendChild(art);
       try { newsPlayersBlock(box, (d.title || title || "") + " . " + (d.lead || "") + " . " + (art.textContent || "")); } catch (e) {}
     } else {

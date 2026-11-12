@@ -66,8 +66,34 @@
   function nodo(tag, cls, txt) { var n = document.createElement(tag); n.className = cls; if (txt != null) n.textContent = txt; return n; }
   // Cartel propio en DOM (se adapta a cualquier tamaño): fondo por tipo, dato grande, foto del jugador,
   // y el club con su escudo. o = { photo, crest, club }.
+  // Cartel de las noticias de estado (baja, duda, alta): fondo liso oscuro, foto redonda del jugador con su escudo,
+  // etiqueta de color, nombre y club. La foto de Futmondo es pequeña (64 px), por eso no se amplía a cartel entero.
+  var VERED = { baja: "BAJA", duda: "DUDA", alta: "ALTA" };
+  function elEstado(item, o) {
+    var v = VERED[item.veredicto] ? item.veredicto : "duda";
+    var d = nodo("div", "eth eth-st eth-v-" + v);
+    if (o.crest) { var wm = nodo("img", "eth-wm"); wm.alt = ""; wm.loading = "lazy"; wm.src = o.crest; wm.addEventListener("error", function () { wm.remove(); }, { once: true }); d.appendChild(wm); }
+    var pw = nodo("span", "eth-pw");
+    var src = o.photo || o.crest;
+    if (src) {
+      var im = nodo("img", "eth-pf" + (o.photo ? "" : " eth-pf-c")); im.alt = ""; im.loading = "lazy"; im.src = src;
+      im.addEventListener("error", function () { if (o.crest && im.src !== o.crest) { im.src = o.crest; im.classList.add("eth-pf-c"); } else im.remove(); });
+      pw.appendChild(im);
+    }
+    if (o.photo && o.crest) { var cb = nodo("img", "eth-pc"); cb.alt = ""; cb.loading = "lazy"; cb.src = o.crest; cb.addEventListener("error", function () { cb.remove(); }, { once: true }); pw.appendChild(cb); }
+    d.appendChild(pw);
+    var tx = nodo("div", "eth-tx");
+    tx.appendChild(nodo("span", "eth-pill", VERED[v]));
+    var nm = (item.players && item.players[0]) || ""; if (nm && typeof nm !== "string") nm = nm.name || "";
+    tx.appendChild(nodo("b", "eth-nm", nm || String(item.title || "").split(",")[0]));
+    var sub = [o.club || item.club || "", item.plazo ? "Vuelta: " + String(item.plazo).charAt(0).toLowerCase() + String(item.plazo).slice(1) : ""].filter(Boolean).join(" · ");
+    if (sub) tx.appendChild(nodo("span", "eth-sb", sub));
+    d.appendChild(tx);
+    return d;
+  }
   function el(item, o) {
     o = o || {};
+    if (item && item.auto === "estado") return elEstado(item, o);
     var k = tipo(item);
     var d = nodo("div", "eth eth-" + k);
     d.appendChild(nodo("i", "eth-bg"));

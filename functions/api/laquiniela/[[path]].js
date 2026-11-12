@@ -2042,7 +2042,7 @@ function ownPublic(items) {
   return items.filter((x) => x.status === "published").sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0)).map((x) => {
     const d = madridDT(x.publishedAt || x.createdAt);
     const lead = String(x.lead || "").replace(/\s+/g, " ").trim().slice(0, 160);
-    return { title: x.title, lead, link: "https://edumr.es/n/" + x.id, date: d.date, time: d.time, thumb: x.thumb || "", src: "EduMR", ts: x.publishedAt || x.createdAt, club: x.club || "", players: (x.players || []).slice(0, 3), tipo: x.tipo || "", veredicto: x.veredicto && x.veredicto !== "ninguno" ? x.veredicto : "", plazo: x.plazo || "" };
+    return { title: x.title, lead, link: "https://edumr.es/n/" + x.id, date: d.date, time: d.time, thumb: x.thumb || "", src: "EduMR", ts: x.publishedAt || x.createdAt, club: x.club || "", players: (x.players || []).slice(0, 3), tipo: x.tipo || "", veredicto: x.veredicto && x.veredicto !== "ninguno" ? x.veredicto : "", plazo: x.plazo || "", pid: x.pid || "", auto: x.auto || "" };
   });
 }
 const escH = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -2050,7 +2050,13 @@ function ownArticle(x) {
   // Párrafos, «## Título» de apartado y listas con «- »
   const fmt = (l) => escH(l).replace(/\*\*([^*]{1,160})\*\*/g, "<b>$1</b>");
   let html = "", lista = false, consejo = false;
-  for (const l of String(x.body || "").split(/\n+/).map((t) => t.trim()).filter(Boolean)) {
+  let lineas = String(x.body || "").split(/\n+/).map((t) => t.trim()).filter(Boolean);
+  // Noticias de estado: los números de la temporada van en casillas (campo `ficha`), no en un párrafo; y sin línea de fuentes
+  if (x.auto === "estado") {
+    const k = lineas.findIndex((l) => /^## /.test(l));
+    lineas = lineas.filter((l, i) => !/^Estado del jugador según/.test(l) && !(k > 1 && i >= 1 && i < k));
+  }
+  for (const l of lineas) {
     const li = /^- /.test(l);
     if (li && !lista) { html += '<ul class="nw-claves">'; lista = true; }
     if (!li && lista) { html += "</ul>"; lista = false; }
@@ -2062,7 +2068,7 @@ function ownArticle(x) {
   }
   if (lista) html += "</ul>";
   if (consejo) html += "</div>";
-  return { title: x.title, lead: x.lead || "", html, src: "EduMR", image: x.thumb || "", club: x.club || "", players: x.players || [], date: x.publishedAt || x.createdAt || 0 };
+  return { title: x.title, lead: x.lead || "", html, src: "EduMR", image: x.thumb || "", club: x.club || "", players: x.players || [], date: x.publishedAt || x.createdAt || 0, veredicto: x.veredicto || "", plazo: x.plazo || "", auto: x.auto || "", pid: x.pid || "" };
 }
 function ownDraftFromVideo(v, sel) {
   const items = (v.items || []).filter((_, i) => (sel ? sel.includes(i) : _.publicable));
@@ -6041,7 +6047,18 @@ async function handleGet({ request, env: env0, params }) {
     const m = String(u || "").match(OWN_LINK);
     if (m) {
       const x = (await getOwn(env)).find((o) => o.id === m[1] && o.status === "published");
-      return json(x ? ownArticle(x) : { removed: true });
+      if (!x) return json({ removed: true });
+      const art = ownArticle(x);
+      // Números del jugador, siempre los de ahora mismo en Futmondo (no los del día en que se escribió la noticia)
+      if (x.pid) {
+        try {
+          const [mk, mn] = await Promise.all([getMarketPlayers(env), getMinutos(env)]);
+          const pl = ((mk && mk.players) || []).find((q) => q.id === x.pid);
+          const mp = ((mn && mn.map) || {})[x.pid];
+          if (pl) art.ficha = { name: pl.name, team: pl.team, photo: pl.photo || "", logo: pl.logo || "", puntos: Math.round(Number(pl.points) || 0), partidos: pl.matches || 0, media: pl.avg || 0, valor: pl.value || 0, cambio: pl.change || 0, titular: mp ? mp.c + mp.s + (mp.rd || 0) : null, deEquipo: mp ? mp.n : null };
+        } catch (e) {}
+      }
+      return json(art);
     }
     const user = await getSessionUser(env, request);
     if (!isAdmin(env, user)) return json({ removed: true });

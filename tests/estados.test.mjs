@@ -48,7 +48,7 @@ test("partirInfo separa parte y retorno", () => {
 test("la plantilla solo coloca los hechos", () => {
   const n = noticiaPlantilla(H()), body = cuerpoNoticia(n);
   assert.match(n.title, /^Aitor Fernández, baja/);
-  assert.match(body, /jornada 13 ante el Málaga/); assert.match(body, /titular en 11 de 12/); assert.match(body, /1\.300\.000 €/);
+  assert.match(body, /jornada 13 ante el Málaga/); assert.doesNotMatch(body, /Biwenger/); assert.doesNotMatch(body, /Esta temporada suma/);
   assert.match(body, /## Claves fantasy\n- /); assert.match(body, /## Consejo fantasy\nNo lo alinees\./); assert.match(body, /Sergio Herrera/);
 });
 
