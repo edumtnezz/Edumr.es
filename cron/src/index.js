@@ -2,8 +2,8 @@
 // Cada 15 min llama al endpoint que aplica nuestras reglas de limpieza y deja
 // el resultado cacheado en KV, para que la web lo sirva al instante.
 import { avisar, colaPuntos, avisarPuntos } from "./avisos.js";
-import { redactorSombra } from "./redactor.js";
 import { vigilarEstados } from "./estados.js";
+import { publicarPartes } from "./partes.js";
 
 export default {
   async scheduled(event, env, ctx) {
@@ -29,9 +29,9 @@ export default {
       try { await vigilarEstados(env); } catch (e) { console.error("estados", String(e && e.message || e).slice(0, 180)); }
       try { await avisarPuntos(env); } catch (e) {}
       try { await avisar(env); } catch (e) {}
-      // Redactor: publica noticias verificadas y avisa por Telegram. Sin GEMINI_API_KEY no hace nada.
-      // Un fallo aquí no corta los avisos; el motivo queda en el log del Worker.
-      try { await redactorSombra(env); } catch (e) { console.error("redactor", String(e && e.message || e).slice(0, 180)); }
+      // Noticias nuevas (12/11/2026): una noticia corta por cada cambio de estado. El redactor antiguo (ruedas de prensa,
+      // notas de otras webs y portadas generadas) queda apagado; su código sigue en redactor.js sin usarse.
+      try { await publicarPartes(env); } catch (e) { console.error("partes", String(e && e.message || e).slice(0, 180)); }
       return;
     }
     // "0 8 * * *" = vigilante diario: comprueba que las 20 páginas de

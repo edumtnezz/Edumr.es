@@ -4781,16 +4781,18 @@
     const colA = el("div", "ficha-side ficha-side-a"), colB = el("div", "ficha-side ficha-side-b");
 
     // Caja de estado (como Comuniate): "ESTADO DEL JUGADOR / En forma".
-    const stat = String(d.status || p.status || "");
+    const liveP = (all || []).find((x) => String(x.id) === String(d.id || p.id)) || p;
+    // Si nuestro registro de estados va por delante de Futmondo, manda el del mercado (ya combinado)
+    const stat = String((liveP.est && liveP.status) || d.status || p.status || "");
     const bad = stat === "redcard" || stat.indexOf("injured") === 0;
     const warn = stat === "doubt";
-    const liveP = (all || []).find((x) => String(x.id) === String(d.id || p.id)) || p;
     const toc = !bad && !warn && liveP.toc ? liveP.toc : null;
     const sb = el("div", "pp-status" + (bad ? " bad" : (warn || toc) ? " warn" : " ok"));
     sb.appendChild(el("span", "pp-status-ico", bad ? "✕" : (warn || toc) ? "?" : "✓"));
     const stx = el("div", "pp-status-tx");
     stx.appendChild(el("div", "pp-status-k", "ESTADO DEL JUGADOR"));
     stx.appendChild(el("div", "pp-status-v", toc ? "Tocado · " + toc.d + (toc.t ? " " + toc.t : "") : statusLabel(stat)));
+    if (liveP.estInfo && (bad || warn)) stx.appendChild(el("div", "pp-status-i", liveP.estInfo));
     sb.appendChild(stx);
     colA.appendChild(sb);
     const head = el("div", "ficha-head-center");

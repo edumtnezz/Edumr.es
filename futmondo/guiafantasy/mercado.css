@@ -3677,3 +3677,14 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 .bk:not(.news-share):not(.bk-link) { height: 40px; padding: 0 16px 0 10px; gap: 4px; border: none; background: var(--card-solid); box-shadow: 0 1px 2px rgba(0, 0, 0, .10), 0 0 0 1px var(--border); font-weight: 700; letter-spacing: -.01em; }
 .bk:not(.news-share):not(.bk-link) .gi { width: 20px; height: 20px; }
 .bk-link { border: none; background: none; height: auto; padding: 6px 2px; color: var(--muted); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+
+/* ===== 12/11/2026 · Noticias nuevas: claves y consejo fantasy ===== */
+.art-body .nw-h { margin: 22px 0 8px; font-size: .74rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.art-body .nw-claves { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.art-body .nw-claves li { position: relative; padding: 10px 12px 10px 30px; border-radius: 12px; background: rgba(127, 127, 127, .09); font-weight: 600; line-height: 1.35; }
+.art-body .nw-claves li::before { content: ""; position: absolute; left: 12px; top: 17px; width: 8px; height: 8px; border-radius: 50%; background: #22c55e; }
+.art-body .nw-consejo { margin: 22px 0 6px; padding: 2px 14px 6px; border-radius: 14px; background: rgba(34, 197, 94, .10); box-shadow: inset 3px 0 0 #22c55e; }
+.art-body .nw-consejo .nw-h { margin-top: 12px; color: #16a34a; }
+.art-body .nw-consejo p { margin: 0 0 8px; font-weight: 600; }
+.art-body .nw-fuente { margin-top: 18px; font-size: .78rem; color: var(--muted); }
+.pp-status-i { margin-top: 3px; font-size: .8rem; font-weight: 600; line-height: 1.3; opacity: .9; }

@@ -6,6 +6,7 @@ import { backtest as probBacktest } from "../../_lib/probjugar.mjs";
 import { staleChange, actualizadoHoy, tocadosDe, marcarTocados } from "../../_lib/change.mjs";
 import { etiquetaDe } from "../../_lib/portada-svg.mjs";
 import { promptFondo, grupoTipo } from "../../_lib/portada-prompt.mjs";
+import { partirInfo, tituloCambio, catCambio, NOMBRE_ESTADO, ajustarOnce } from "../../_lib/estados.mjs";
 const COMPETITION = "PD";
 const CACHE_TTL_MS = 60 * 1000;
 const FORM_TTL_MS = 10 * 60 * 1000;
@@ -798,7 +799,35 @@ async function conHistorial(env, players) {
   } catch (e) { return players; }
 }
 
+// Estado físico propio encima del de Futmondo (que va con retraso): solo sube la gravedad, nunca la baja.
+// El estado original de Futmondo se conserva en `statusFm`. Precios, puntos y todo lo demás no se tocan.
+let _estFoto = null, _estFotoAt = 0;
+async function estFoto(env) {
+  if (_estFoto && Date.now() - _estFotoAt < 60000) return _estFoto;
+  try { _estFoto = ((await env.PORRA.get("est:foto:v1", "json")) || {}).bw || {}; _estFotoAt = Date.now(); } catch (e) { _estFoto = _estFoto || {}; }
+  return _estFoto;
+}
 async function getMarketPlayers(env, force) {
+  const out = await getMarketPlayersRaw(env, force);
+  const foto = await estFoto(env);
+  if (!out || !Array.isArray(out.players) || !Object.keys(foto).length) return out;
+  return { ...out, players: out.players.map((p) => {
+    const e = foto[p.id]; if (!e || e.e === "ok") return p;
+    const s = String(p.status || "");
+    let status = s;
+    if (e.e === "lesionado" && s.indexOf("injured") !== 0) status = "injured";
+    else if (e.e === "sancionado" && s !== "redcard") status = "redcard";
+    else if (e.e === "duda" && (!s || s === "ok" || s === "yellowcard")) status = "doubt";
+    return { ...p, status, statusFm: s, est: e.e, estInfo: e.info || "", estAt: e.at || 0 };
+  }) };
+}
+// La probabilidad de jugar que viene de fuera se pone a 0 si nuestro estado dice lesionado o sancionado
+function ffPickEst(p, map) {
+  const e = ffPickEst(p, map);
+  if (p && (p.est === "lesionado" || p.est === "sancionado")) return { ...(e || {}), prob: 0 };
+  return e;
+}
+async function getMarketPlayersRaw(env, force) {
   const cached = await env.PORRA.get(MARKET_KEY, "json");
   if (!force && cached && Date.now() - (cached.at || 0) < MARKET_TTL_MS) return cached;
   const header = await futbolHeader(env);
@@ -864,7 +893,7 @@ async function getRachas(env) {
   let players = cache.players || [];
   try {
     const map = await ffMap(env);
-    players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, chg1: e.d1, chg2: e.d2, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
+    players = players.map((p) => { const e = ffPickEst(p, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, chg1: e.d1, chg2: e.d2, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
   } catch (e) {}
   players = await conHistorial(env, players);
   const rachas = [];
@@ -993,7 +1022,7 @@ async function getMios(env) {
   let mine = own.filter((p) => map[p.id] && stripAccents(map[p.id].toLowerCase()) === me);
   try {
     const ff = await ffMap(env);
-    mine = mine.map((p) => { const e = ffPick(p.name, ff); return e ? { ...p, prob: e.prob } : p; });
+    mine = mine.map((p) => { const e = ffPickEst(p, ff); return e ? { ...p, prob: e.prob } : p; });
   } catch (e) {}
   return {
     updatedAt: Date.now(), me: myTeam,
@@ -1088,7 +1117,7 @@ async function getClausulas(env) {
   let players = cache.players || [];
   try {
     const map = await ffMap(env);
-    players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, chg1: e.d1, chg2: e.d2, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
+    players = players.map((p) => { const e = ffPickEst(p, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, chg1: e.d1, chg2: e.d2, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
   } catch (e) {}
   players = await conHistorial(env, players);
   let myTeam = "Eduardo Martínez";
@@ -1189,7 +1218,7 @@ async function searchMercado(env, q) {
   try { await snapshotMarket(env, players); } catch (e) {}
   try {
     const map = await ffMap(env);
-    players = players.map((p) => { const e = ffPick(p.name, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, jornadaFf: e.jornada, tend: e.tend, chg1: e.d1, chg2: e.d2, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
+    players = players.map((p) => { const e = ffPickEst(p, map); return e ? { ...p, prob: e.prob, rivalFf: e.rival, casaFf: e.casa, jornadaFf: e.jornada, tend: e.tend, chg1: e.d1, chg2: e.d2, chg7: e.d7, chg14: e.d14, chg30: e.d30 } : p; });
   } catch (e) {}
   players = await conHistorial(env, players);
   // Jugadores "tocados" hoy o ayer según las novedades (misma lista que "Últimos cambios"); si no llega en 2,5 s, sin marca.
@@ -1996,7 +2025,8 @@ async function playerFicha(env, id, fast, raw) {
 }
 
 /* ---------- Noticias PROPIAS (redactor) y panel de administrador ---------- */
-const OWN_KEY = "own:news:v1";
+// v2 (12/11/2026): noticias nuevas por cambio de estado. Las antiguas se quedan guardadas en own:news:v1, sin mostrarse.
+const OWN_KEY = "own:news:v2";
 const OWN_LINK = /^https:\/\/edumr\.es\/n\/([a-z0-9]{6,16})$/;
 const OWN_ETIQ = { disponible: "disponible", opcion_titular: "opción de titular", duda: "duda", recuperacion_con_grupo: "entrena con el grupo", recuperacion_parcial: "entrena parcialmente", baja: "baja", titular_confirmado: "titular confirmado", rotacion: "rotación" };
 async function getOwn(env) { try { return (await env.PORRA.get(OWN_KEY, "json")) || []; } catch (e) { return []; } }
@@ -2017,7 +2047,21 @@ function ownPublic(items) {
 }
 const escH = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 function ownArticle(x) {
-  const html = String(x.body || "").split(/\n+/).map((l) => l.trim()).filter(Boolean).map((l) => "<p>" + escH(l).replace(/\*\*([^*]{1,160})\*\*/g, "<b>$1</b>") + "</p>").join("");
+  // Párrafos, «## Título» de apartado y listas con «- »
+  const fmt = (l) => escH(l).replace(/\*\*([^*]{1,160})\*\*/g, "<b>$1</b>");
+  let html = "", lista = false, consejo = false;
+  for (const l of String(x.body || "").split(/\n+/).map((t) => t.trim()).filter(Boolean)) {
+    const li = /^- /.test(l);
+    if (li && !lista) { html += '<ul class="nw-claves">'; lista = true; }
+    if (!li && lista) { html += "</ul>"; lista = false; }
+    if (li) html += "<li>" + fmt(l.slice(2)) + "</li>";
+    else if (/^## Consejo/.test(l)) { html += '<div class="nw-consejo"><h3 class="nw-h">' + fmt(l.slice(3)) + "</h3>"; consejo = true; }
+    else if (/^## /.test(l)) html += '<h3 class="nw-h">' + fmt(l.slice(3)) + "</h3>";
+    else if (/^Estado del jugador según/.test(l)) { if (consejo) { html += "</div>"; consejo = false; } html += '<p class="nw-fuente">' + fmt(l) + "</p>"; }
+    else html += "<p>" + fmt(l) + "</p>";
+  }
+  if (lista) html += "</ul>";
+  if (consejo) html += "</div>";
   return { title: x.title, lead: x.lead || "", html, src: "EduMR", image: x.thumb || "", club: x.club || "", players: x.players || [], date: x.publishedAt || x.createdAt || 0 };
 }
 function ownDraftFromVideo(v, sel) {
@@ -2587,6 +2631,54 @@ function parseCambios(html) {
     cur.items.push({ time, cat: cambioCat(icon), title, href, photo, players });
   }
   return days.filter((d) => d.items.length);
+}
+// «Últimos cambios» PROPIO (12/11/2026): sale de nuestro registro de estados y del mercado de Futmondo, con la foto de Futmondo.
+// Ya no se lee la página de otra web.
+async function getCambiosPropios(env) {
+  const [foto, ev, cache] = await Promise.all([env.PORRA.get("est:foto:v1", "json"), env.PORRA.get("est:eventos:v1", "json"), getMarketPlayers(env)]);
+  const all = (cache && cache.players) || [];
+  const porId = new Map(all.map((p) => [p.id, p]));
+  const now = Date.now(), items = [], conEvento = new Set();
+  const add = (p, de, a, info, at) => {
+    const { parte, retorno } = partirInfo(info);
+    const det = [NOMBRE_ESTADO[a] || a, parte, retorno ? "vuelta: " + retorno : ""].filter(Boolean).join(" · ");
+    items.push({ at, cat: catCambio(a), title: tituloCambio(p.name, de, a), href: "", photo: p.photo || "", pid: p.id, players: [{ name: p.name, photo: p.photo || "", from: de && de !== "ok" && de !== a ? NOMBRE_ESTADO[de] : "", to: det }] });
+  };
+  for (const e of (ev || [])) {
+    if (e.src !== "bw" || now - e.at > 8 * 86400000) continue;
+    const p = porId.get(e.id); if (!p) continue;
+    conEvento.add(e.id);
+    add(p, e.de, e.a, e.info, e.fuenteAt && e.fuenteAt <= e.at && e.at - e.fuenteAt < 6 * 3600000 ? e.fuenteAt : e.at);
+  }
+  // Lo que ya estaba cuando empezó el registro: con la hora real en que cambió el estado
+  for (const id of Object.keys((foto && foto.bw) || {})) {
+    const st = foto.bw[id], p = porId.get(id);
+    if (!p || conEvento.has(id) || st.e === "ok" || !st.at || now - st.at > 8 * 86400000) continue;
+    add(p, "", st.e, st.info, st.at);
+  }
+  // Mercado de Futmondo: las subidas y bajadas más fuertes de hoy
+  let log = [];
+  try { log = (await env.PORRA.get("mkchg:v2", "json")) || []; } catch (e) {}
+  const mAt = log.length ? log[log.length - 1].at : 0;
+  if (mAt && now - mAt < 26 * 3600000) {
+    for (const p of all.filter((x) => Math.abs(x.change || 0) >= 500000).sort((a, b) => Math.abs(b.change) - Math.abs(a.change)).slice(0, 8)) {
+      const n = String(Math.abs(Math.round(p.change))).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+      items.push({ at: mAt, cat: "mercado", title: p.name + (p.change > 0 ? " sube " : " baja ") + n + " €", href: "", photo: p.photo || "", pid: p.id, players: [] });
+    }
+  }
+  items.sort((a, b) => b.at - a.at);
+  const fD = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "long", day: "2-digit" });
+  const fT = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hour12: false });
+  const days = [];
+  for (const it of items) {
+    const parts = fD.formatToParts(new Date(it.at));
+    const wd = (parts.find((x) => x.type === "weekday") || {}).value || "", dd = (parts.find((x) => x.type === "day") || {}).value || "";
+    const day = wd.charAt(0).toUpperCase() + wd.slice(1) + " " + dd;
+    let d = days[days.length - 1];
+    if (!d || d.day !== day) { d = { day, items: [] }; days.push(d); }
+    d.items.push({ time: fT.format(new Date(it.at)), cat: it.cat, title: it.title, href: it.href, photo: it.photo, pid: it.pid, players: it.players });
+  }
+  return { updatedAt: (foto && foto.at) || now, days, propio: true };
 }
 async function getCambios(env) {
   const KEY = "cambios:v2";
@@ -5448,6 +5540,15 @@ async function handleGet({ request, env: env0, params }) {
       const o = await getOnce(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "", url.searchParams.get("jornada") || "");
       // Última barrera: aunque una copia guardada venga mal, nunca sale un once con más de 11 ni repetidos
       ["home", "away"].forEach((k) => { if (o && o[k] && Array.isArray(o[k].starters)) o[k].starters = cleanStarters(o[k].starters); });
+      // Nuestro registro de estados manda: el lesionado o sancionado sale del once y entra su recambio (datos de minutos de Futmondo)
+      try {
+        const [foto, mk, mn] = await Promise.all([estFoto(env), getMarketPlayers(env), getMinutos(env)]);
+        if (Object.keys(foto).length && mk && mk.players) {
+          const o2 = { ...o, ajustes: [] };
+          ["home", "away"].forEach((k) => { if (o2[k] && Array.isArray(o2[k].starters)) { o2[k] = { ...o2[k] }; o2.ajustes = o2.ajustes.concat(ajustarOnce(o2[k], mk.players, (mn && mn.map) || {}, foto).map((x) => ({ ...x, equipo: o2[k].name }))); } });
+          return json(o2);
+        }
+      } catch (e) {}
       return json(o);
     } catch (e) { return json({ error: String(e) }); }
   }
@@ -5780,7 +5881,7 @@ async function handleGet({ request, env: env0, params }) {
     try { return json(await getJornadaStrip(env, url.searchParams.get("jornada"))); } catch (e) { return json({ matchday: 0, matches: [] }); }
   }
   if (path === "ultimos-cambios") {
-    try { return json(await getCambios(env)); } catch (e) { return json({ days: [] }); }
+    try { return json(await getCambiosPropios(env)); } catch (e) { return json({ days: [] }); }
   }
   if (path === "estadios") {
     try { return json(await getEstadios(env)); } catch (e) { return json({}); }

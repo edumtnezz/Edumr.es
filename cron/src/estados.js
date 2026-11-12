@@ -18,7 +18,7 @@ export async function vigilarEstados(env, f = fetch, now = Date.now()) {
   if (F.length < 300 || !bw || !bw.data || Object.keys(bw.data.players || {}).length < 300) return { error: "datos incompletos" };
   const bwFoto = fotoEstados(bw, F);
   const fmFoto = {};
-  for (const p of F) fmFoto[p.id] = { e: FM[p.status] || "ok", info: "", at: 0 };
+  for (const p of F) fmFoto[p.id] = { e: FM[p.statusFm != null ? p.statusFm : p.status] || "ok", info: "", at: 0 };
   const prev = await env.PORRA.get(K_FOTO, "json");
   const porId = new Map(F.map((p) => [p.id, p]));
   const nuevo = [];
