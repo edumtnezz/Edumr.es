@@ -2735,16 +2735,7 @@ async function getCambiosPropios(env) {
     if (!p || conEvento.has(id) || st.e === "ok" || !st.at || now - st.at > 8 * 86400000) continue;
     add(p, "", st.e, st.info, st.at);
   }
-  // Mercado de Futmondo: las subidas y bajadas más fuertes de hoy
-  let log = [];
-  try { log = (await env.PORRA.get("mkchg:v2", "json")) || []; } catch (e) {}
-  const mAt = log.length ? log[log.length - 1].at : 0;
-  if (mAt && now - mAt < 26 * 3600000) {
-    for (const p of all.filter((x) => Math.abs(x.change || 0) >= 500000).sort((a, b) => Math.abs(b.change) - Math.abs(a.change)).slice(0, 8)) {
-      const n = String(Math.abs(Math.round(p.change))).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-      items.push({ at: mAt, cat: "mercado", title: p.name + (p.change > 0 ? " sube " : " baja ") + n + " €", href: "", photo: p.photo || p.logo || "", logo: p.logo || "", pid: p.id, players: [] });
-    }
-  }
+  // Las subidas y bajadas de valor NO van aquí: no son noticia (decisión de Edu, 14/11/2026). Están en Mercado y en el aviso diario de Telegram.
   items.sort((a, b) => b.at - a.at);
   const fD = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "long", day: "2-digit" });
   const fT = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hour12: false });
