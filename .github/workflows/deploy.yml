@@ -48,6 +48,8 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: cron
+          # El cron dibuja los carteles de las noticias en imagen: necesita su librería instalada antes de publicar
+          preCommands: npm ci
           command: deploy
 
       # Al final, se comprueba de verdad la web publicada. Si algo se ha quedado

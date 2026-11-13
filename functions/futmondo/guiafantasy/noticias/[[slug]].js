@@ -9,7 +9,7 @@ export function ogDePropia(slug, own) {
   if (!m) return null;
   const x = (own || []).find((o) => o && o.id === m[1] && o.status === "published");
   if (!x) return { missing: true };
-  return { t: x.title || "", d: x.lead || "", i: x.thumb || (x.auto === "estado" && x.veredicto !== "alta" ? "/img/parte-medico.jpg?v=2" : "") };
+  return { t: x.title || "", d: x.lead || "", i: x.thumb || (x.cartel ? "/api/laquiniela/cartel?id=" + x.id + "&v=" + x.cartel : x.auto === "estado" && x.veredicto !== "alta" ? "/img/parte-medico.jpg?v=2" : "") };
 }
 const srcUrl = (slug) => {
   let m = slug.match(/^cm-(\d+)-([a-z0-9-]+)$/); if (m) return "https://www.comuniate.com/noticias/" + m[1] + "/" + m[2];

@@ -2044,7 +2044,7 @@ function ownPublic(items) {
   return items.filter((x) => x.status === "published").sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0)).map((x) => {
     const d = madridDT(x.publishedAt || x.createdAt);
     const lead = String(x.lead || "").replace(/\s+/g, " ").trim().slice(0, 160);
-    return { title: x.title, lead, link: "https://edumr.es/n/" + x.id, date: d.date, time: d.time, thumb: x.thumb || "", src: "EduMR", ts: x.publishedAt || x.createdAt, club: x.club || "", players: (x.players || []).slice(0, 3), tipo: x.tipo || "", veredicto: x.veredicto && x.veredicto !== "ninguno" ? x.veredicto : "", plazo: x.plazo || "", pid: x.pid || "", auto: x.auto || "" };
+    return { title: x.title, lead, link: "https://edumr.es/n/" + x.id, date: d.date, time: d.time, thumb: x.thumb || "", src: "EduMR", ts: x.publishedAt || x.createdAt, club: x.club || "", players: (x.players || []).slice(0, 3), tipo: x.tipo || "", veredicto: x.veredicto && x.veredicto !== "ninguno" ? x.veredicto : "", plazo: x.plazo || "", pid: x.pid || "", auto: x.auto || "", cartel: x.cartel || 0 };
   });
 }
 function ownArticle(x) {
@@ -6081,6 +6081,14 @@ async function handleGet({ request, env: env0, params }) {
     try { log = (await env.PORRA.get("mkchg:v2", "json")) || []; } catch (e) {}
     const fm = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
     return json({ n: log.length, cambios: log.slice(-120).reverse().map((x) => ({ hora: fm.format(new Date(x.at)), jugadoresCambiados: x.n, movimientosDe500kOMas: (x.g || []).map((g) => g.name + " " + (g.d > 0 ? "+" : "") + g.d) })) });
+  }
+  // Cartel de una noticia en imagen PNG (lo dibuja el cron al publicar y lo guarda en KV)
+  if (path === "cartel") {
+    const id = String(url.searchParams.get("id") || "");
+    if (!/^[a-z0-9]{6,16}$/.test(id)) return new Response("", { status: 404 });
+    const png = await env.PORRA.get("cartel:" + id, "arrayBuffer");
+    if (!png) return new Response("", { status: 404 });
+    return new Response(png, { headers: { "content-type": "image/png", "cache-control": "public, max-age=86400" } });
   }
   if (path === "analitica") {
     if (url.searchParams.has("run")) { try { return json({ ok: true, result: await analiticaRun(env, url.searchParams.has("calc") ? "calc" : url.searchParams.has("reset")) }); } catch (e) { return json({ ok: false, error: String(e && e.message || e).slice(0, 200) }); } }

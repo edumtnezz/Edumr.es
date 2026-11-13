@@ -36,7 +36,7 @@ export function candidatos(foto, eventos, now) {
 }
 
 // «f3»: versión del formato. Al cambiarla se vuelven a escribir las noticias vivas con el formato nuevo.
-const clave = (c) => "f4:" + c.id + ":" + c.a + ":" + norm(c.info).slice(0, 80);
+const clave = (c) => "f5:" + c.id + ":" + c.a + ":" + norm(c.info).slice(0, 80);
 export const idNoticia = (c) => ("e" + String(c.id).slice(-10) + c.a.charAt(0)).toLowerCase().replace(/[^a-z0-9]/g, "");
 
 async function resumenIA(env, f, h, n) {
@@ -79,9 +79,9 @@ export async function publicarPartes(env, f = fetch, now = Date.now()) {
   let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
   const nOwn = own.length;
   // Las de un formato anterior se retiran: si el estado sigue vivo, se vuelven a escribir en esta misma tanda o en la siguiente
-  own = own.filter((x) => x.auto !== "estado" || x.f === 4);
+  own = own.filter((x) => x.auto !== "estado" || x.f === 5);
   const nuevas = [];
-  for (const c of pend.slice(0, 8)) {
+  for (const c of pend.slice(0, 4)) {
     st.done[clave(c)] = now;
     const p = porId.get(c.id);
     // Solo jugadores que cuentan en el fantasy: han jugado o valen 1 M o más
@@ -92,8 +92,16 @@ export async function publicarPartes(env, f = fetch, now = Date.now()) {
     const ia = null;
     const item = {
       id: idNoticia(c), pid: p.id, title: n.title, lead: n.lead, body: cuerpoNoticia(n), status: "published",
-      createdAt: now, publishedAt: Math.min(now, c.at || now), thumb: "", club: p.team, players: [p.name], tipo: n.tipo, veredicto: n.veredicto, plazo: n.plazo, ia: !!ia, auto: "estado", f: 4, img: foto.bw[c.id] && foto.bw[c.id].b ? "https://cdn.biwenger.com/i/p/" + foto.bw[c.id].b + ".png" : "",
+      createdAt: now, publishedAt: Math.min(now, c.at || now), thumb: "", club: p.team, players: [p.name], tipo: n.tipo, veredicto: n.veredicto, plazo: n.plazo, ia: !!ia, auto: "estado", f: 5, img: foto.bw[c.id] && foto.bw[c.id].b ? "https://cdn.biwenger.com/i/p/" + foto.bw[c.id].b + ".png" : "",
     };
+    // Cartel en imagen (para Telegram, WhatsApp y la vista previa del enlace). Si falla, la noticia sale igual, sin imagen.
+    try {
+      // Se carga solo aquí (lleva la librería de dibujo): las pruebas y el resto del cron no la necesitan
+      const { cartelPng, colorClub } = await import("./cartel.js");
+      const b = foto.bw[c.id] && foto.bw[c.id].b;
+      const png = await cartelPng({ nombre: p.name, club: p.team, veredicto: n.veredicto, plazo: n.plazo, color: colorClub(p.team), foto: b ? "https://cdn.biwenger.com/i/p/" + b + ".png" : "", escudo: p.logo ? String(p.logo).replace(/\/teams\/64\//, "/teams/256/") : "" }, f);
+      if (png && png.byteLength > 2000) { await env.PORRA.put("cartel:" + item.id, png, { expirationTtl: 60 * 86400 }); item.cartel = now; }
+    } catch (e) { console.error("cartel", String(e && e.message || e).slice(0, 160)); }
     // Una sola noticia viva por jugador: la nueva sustituye a la anterior
     own = own.filter((x) => x.pid !== p.id);
     own.unshift(item);
@@ -111,8 +119,15 @@ export async function publicarPartes(env, f = fetch, now = Date.now()) {
     for (const it of nuevas) {
       if (!chat || now - it.publishedAt > 2 * 3600000) continue;
       const text = "<b>" + escT(it.title) + "</b>\n" + escT(it.lead) + "\n\nhttps://edumr.es/futmondo/guiafantasy/noticias/ed-" + it.id;
-      try { await f("https://api.telegram.org/bot" + env.TELEGRAM_BOT_TOKEN + "/sendMessage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chat, text, parse_mode: "HTML" }) }); } catch (e) {}
+      const api = "https://api.telegram.org/bot" + env.TELEGRAM_BOT_TOKEN + "/";
+      const post = (m, body) => f(api + m, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      try {
+        // Con cartel: foto + texto. Si Telegram no acepta la foto, se manda solo el texto.
+        let ok = false;
+        if (it.cartel) { const r = await post("sendPhoto", { chat_id: chat, photo: "https://edumr.es/api/laquiniela/cartel?id=" + it.id + "&v=" + it.cartel, caption: text, parse_mode: "HTML" }); ok = !!(r && r.ok); }
+        if (!ok) await post("sendMessage", { chat_id: chat, text, parse_mode: "HTML" });
+      } catch (e) {}
     }
   }
-  return { nuevas: nuevas.length, pendientes: Math.max(0, pend.length - 8) };
+  return { nuevas: nuevas.length, pendientes: Math.max(0, pend.length - 4) };
 }
