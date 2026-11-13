@@ -4,7 +4,7 @@
 export const BW_URL = "https://cf.biwenger.com/api/v2/competitions/la-liga/data?lang=es&score=1";
 
 export function norm(s) {
-  return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+  return String(s || "").replace(/[øØ]/g, "o").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
 }
 // Clave de club que iguala los nombres de Futmondo, Biwenger y el calendario («Barça», «Atleti», «Sevilla FC», «Real Betis»…)
 export function clubKey(name) {
@@ -15,8 +15,8 @@ export function clubKey(name) {
   return n.replace(/ /g, "").slice(0, 5);
 }
 const teamKey = clubKey;
-// Nombres que no se parecen entre Biwenger y Futmondo (comprobados a mano, 12/11/2026)
-const ALIAS = { "ez abde": "abde ezzalzouli", "odysseas": "vlachodimos", "el hilali": "omar", "johnny": "j cardoso" };
+// Nombres que no se parecen entre Biwenger y Futmondo (comprobados a mano, 12 y 14/11/2026)
+const ALIAS = { "ez abde": "abde ezzalzouli", "odysseas": "vlachodimos", "el hilali": "omar", "johnny": "j cardoso", "johaneko": "louis jean", "sadick": "mujaid", "sainz maza": "inigo sainz" };
 const ROLES = { 1: "portero", 2: "defensa", 3: "centrocampista", 4: "delantero" };
 // Estado de Biwenger → el nuestro
 export const ESTADO = { ok: "ok", doubt: "duda", injured: "lesionado", sanctioned: "sancionado", warned: "apercibido" };

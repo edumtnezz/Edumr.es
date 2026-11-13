@@ -4752,7 +4752,7 @@
         const pu = d.puesto;
         dato("Puntos", String(f.puntos), pu ? "puesto " + pu.pos + " de " + pu.de + " " + LIN : "", pu ? 100 * (1 - (pu.pos - 1) / Math.max(1, pu.de - 1)) : null);
         dato("Media por partido", f.partidos ? String(Number(f.media).toFixed(1)).replace(".", ",") : "—", f.partidos ? "en " + f.partidos + (f.partidos === 1 ? " partido" : " partidos") : "sin jugar");
-        dato("Valor", eqMoney(f.valor), f.cambio ? (f.cambio > 0 ? "+" : "−") + String(Math.abs(Math.round(f.cambio))).replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " € hoy" : "sin cambio hoy");
+        dato("Valor", eqMoney(f.valor), ""); // sin la subida o bajada del día: eso no es parte de la noticia
         card.appendChild(g);
         art.prepend(card);
       }
@@ -4906,7 +4906,7 @@
     box.appendChild(one);
     // Fichaje tardío: Futmondo no da el detalle de los primeros partidos y estas cifras no los incluyen (Pablo García, 11/11/2026).
     { const faltan = (Number(jDen) || 0) - ((par.byJornada || []).length || 0);
-      if (par.byJornada && faltan > 0) box.appendChild(el("div", "dash-note", "Futmondo no da el detalle de " + faltan + (faltan === 1 ? " partido" : " partidos") + ": estas cifras no " + (faltan === 1 ? "lo" : "los") + " incluyen.")); }
+      if (par.byJornada && faltan > 0) box.appendChild(el("div", "dash-note", (faltan === 1 ? "Falta 1 partido" : "Faltan " + faltan + " partidos") + " en esta cuenta: Futmondo no publica sus minutos.")); }
 
     box.appendChild(el("div", "dash-sect", "Disponibilidad & disciplina"));
     const av = el("div", "dash-avail");
@@ -5049,7 +5049,12 @@
       if (d.temporada && d.temporada.n >= 2) mk("Temporada", d.temporada.diff);
       if (row.children.length) head.appendChild(row);
     })();
-    if (d.pronostico) { const pr = el("div", "ficha-pron", "Pronóstico: " + d.pronostico); if (p.prob != null) pr.appendChild(el("span", "ficha-pron-pct", p.prob + "%")); head.appendChild(pr); }
+    // Opciones de ser titular (el % de FutbolFantasy). El estado del jugador va solo en la caja de arriba, nunca aquí.
+    if (!bad) {
+      const pb = liveP.prob != null ? liveP.prob : p.prob;
+      if (pb != null) { const pr = el("div", "ficha-pron", "Opciones de ser titular"); pr.appendChild(el("span", "ficha-pron-pct", pb + "%")); head.appendChild(pr); }
+      else if (d.pronostico) head.appendChild(el("div", "ficha-pron", "Titularidad: " + String(d.pronostico).replace(/[^\wáéíóúñ ]/gi, "").trim()));
+    }
     if (d.fichaje && d.fichaje.date) head.appendChild(el("div", "ficha-fichaje", "🖊️ Fichado: " + d.fichaje.date + (d.fichaje.club ? " · " + d.fichaje.club : "")));
     colA.appendChild(head);
 
@@ -5106,7 +5111,7 @@
             else if (mn >= 85) { tg = "90'"; }
             else { tg = "▼ salió · " + mn + "'"; tgCls = "fm-out"; }
             chips.appendChild(el("span", "fm-min " + tgCls, tg));
-          } else chips.appendChild(el("span", "fm-min fm-out", "0'"));
+          } else chips.appendChild(el("span", "fm-min fm-out", m.finished ? "No jugó · 0'" : "0'"));
           body.appendChild(chips);
           // Qué pasó en el partido (datos reales del partido): goles, asistencias, portería a cero, tarjetas, penaltis, nota.
           const E = m.ev || {};
@@ -5337,6 +5342,16 @@
         const hit0 = list.filter((x) => x.pid ? String(x.pid) === String(d.id || p.id) : newsMentions(x.title, nm, d.team || p.team || ""));
         let hit = hit0;
         hit = hit.slice(0, 3);
+        // La caja de estado enlaza con la noticia que lo explica (la última de cambio de estado de este jugador)
+        try {
+          const ne = hit0.find((x) => x.auto === "estado");
+          const caja = root.querySelector(".pp-status");
+          if (ne && caja && !caja.querySelector(".pp-status-go")) {
+            const go = el("a", "pp-status-go", "Ver noticia ›"); go.href = newsHref(ne.link);
+            go.addEventListener("click", (ev) => { if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button === 1) return; ev.preventDefault(); closeModal(); switchTab("noticias"); openNoticiaInline(ne.link, ne.title); });
+            caja.appendChild(go);
+          }
+        } catch (e) {}
         if (!hit.length) { sec.remove(); return; }
         sec.appendChild(el("h3", "ficha-news-h", "Últimas noticias sobre " + nm));
         const g = el("div", "ficha-news-grid");
@@ -7540,7 +7555,8 @@
     });
     // Previsión de mañana: en Futmondo el valor sigue la inercia de hoy (comprobado con 30 días de todos los jugadores:
     // mismo sentido 9 de cada 10 veces con cambios de 50.000 € o más). Por debajo de eso no se da previsión.
-    { const h = Number(p.chg1) || 0; if (Math.abs(h) >= 50000) { const pv = el("span", "rtb-pred " + (h > 0 ? "up" : "dn"), "≈ " + rtbK(h)); pv.appendChild(el("small", "rtb-when", " mañana")); pv.title = "Previsión: mañana se mueve en el mismo sentido que hoy 9 de cada 10 veces"; lc.appendChild(pv); } }
+    // Solo se dice el sentido (sube/baja): la cantidad no está comprobada y no se enseña.
+    { const h = Number(p.chg1) || 0; if (Math.abs(h) >= 50000) { const pv = el("span", "rtb-pred " + (h > 0 ? "up" : "dn")); pv.appendChild(el("small", "rtb-pk", "Previsión mañana")); pv.appendChild(document.createTextNode(h > 0 ? "▲ sube" : "▼ baja")); pv.title = "Previsión: mañana se mueve en el mismo sentido que hoy 9 de cada 10 veces"; lc.appendChild(pv); } }
     body.appendChild(l2);
     if (lc.firstChild) body.appendChild(lc);
     const l3 = el("span", "rtb-l3");

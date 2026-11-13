@@ -109,6 +109,31 @@ function newsAt(date, time, now) {
 }
 
 // ---------- plantilla ----------
+// Estado en una sola clave: "" y "ok" son lo mismo (disponible); así no se avisa de cambios que no lo son.
+function estadoClave(s) {
+  s = String(s || "");
+  if (!s || s === "ok") return "";
+  if (/^injured/.test(s)) return "injured";
+  return s;
+}
+// Qué le pasa al jugador, en claro y en español. Un valor desconocido de Futmondo se enseña tal cual, sin traducirlo a ojo.
+function fraseEstado(clave, info) {
+  const det = String(info || "").trim().replace(/\.$/, "");
+  if (!clave) return "vuelve a estar disponible";
+  if (clave === "injured") return "lesionado" + (det ? " (" + det + ")" : "");
+  if (clave === "doubt") return "pasa a ser duda" + (det ? " (" + det + ")" : "");
+  if (clave === "redcard") return "sancionado, no puede jugar" + (det ? " (" + det + ")" : "");
+  if (clave === "yellowcard") return "apercibido: con una amarilla más, sancionado";
+  return "estado: " + clave;
+}
+// Día de Madrid "2026-11-14"
+function diaMadrid(now) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(now));
+}
+// ¿Toca mandar el mercado? Los valores cambiaron, llevan 6 min quietos, no se ha mandado este cambio y hoy aún no se mandó ninguno.
+function mercadoListo(st, now, hoy) {
+  return !!(st.pxVAt && now - st.pxVAt >= 6 * 60e3 && st.pxSent !== st.pxV && st.pxDay !== hoy);
+}
 function statusLabel(s) {
   s = String(s || "");
   if (!s) return "sin aviso";
@@ -185,7 +210,7 @@ async function send(env, f, chat, text, opts) {
   opts = opts || {};
   // Los onces van siempre en UN solo mensaje de texto, sin fotos ni vista previa del enlace (opts.noPreview).
   const lp = opts.noPreview ? { is_disabled: true } : opts.small ? { is_disabled: false, prefer_small_media: true } : { is_disabled: false, prefer_large_media: true };
-  const j = await tg(env, f, "sendMessage", { chat_id: chat, text, parse_mode: "HTML", link_preview_options: lp });
+  const j = await tg(env, f, "sendMessage", { chat_id: chat, text, parse_mode: "HTML", link_preview_options: lp, ...(opts.silent ? { disable_notification: true } : {}) });
   return !!(j && j.ok);
 }
 // "dom 1 nov · 16:15" (hora de Madrid)
@@ -399,37 +424,41 @@ export async function avisar(env, deps) {
     } catch (e) {}
   }
 
-  // 2c) Precios actualizados: top 5 subidas y top 5 bajadas del día (valores de Futmondo).
-  // Se detecta por cambio real de los precios; de noche no se mira, así que el aviso sale a las 08:00.
-  if (!quiet && (all || mnt % 10 === 0)) {
-    try {
-      const mk = await getMk();
-      const ps = (mk.players || []).filter((p) => p && p.name && Number.isFinite(p.change));
-      if (ps.length > 50) {
+  // 2c) Mercado actualizado: UN solo aviso al día, en el momento en que Futmondo cambia los valores (sobre las 04:30),
+  // también de noche (sin sonido). Los valores van entrando durante unos minutos: se espera a que lleven 6 min quietos.
+  // No hay segundo aviso por la tarde (decisión de Edu, 14/11/2026).
+  try {
+    const mk = await getMk();
+    const ps = (mk.players || []).filter((p) => p && p.name && Number.isFinite(p.change) && Number.isFinite(p.value));
+    if (ps.length > 50) {
+      const vs = hash(ps.map((p) => p.id + ":" + p.value).join("|"));
+      if (vs !== st.pxV) { st.pxVAt = st.pxV ? now : 0; st.pxV = vs; dirty = true; }
+      const hoy = diaMadrid(now);
+      if (mercadoListo(st, now, hoy)) {
+        const own = new Set(squad.map((p) => String(p.id)));
         const sig = hash(ps.map((p) => p.id + ":" + p.change).join("|"));
-        if (sig !== st.px && (!st.pxAt || now - st.pxAt > 6 * 3600e3)) { // mínimo 6 h entre avisos, por si los precios se mueven a lo largo del día
-          const own = new Set(squad.map((p) => String(p.id)));
-          const mt = mercadoTexto(ps, own, sig);
-          const commit = () => { st.px = sig; st.pxAt = now; dirty = true; };
-          if (firstRun || !mt) commit();
-          else queue.push({ text: mt, commit });
-        }
+        const mt = mercadoTexto(ps, own, sig);
+        const commit = () => { st.pxSent = st.pxV; st.pxDay = hoy; st.px = sig; st.pxAt = now; dirty = true; };
+        if (firstRun || !mt) commit();
+        else queue.push({ text: mt, commit, night: true });
       }
-    } catch (e) {}
-  }
+    }
+  } catch (e) {}
 
-  // 3) Cambios en tus jugadores (% de jugar de FutbolFantasy y estado de Futmondo)
+  // 3) Cambios en tus jugadores: qué ha pasado, en claro (estado nuestro, ya combinado, y % de jugar de FutbolFantasy)
   if (mios && mios.length) {
     const cambios = [];
     const nuevo = {};
+    let info = {};
+    try { const mk = await getMk(); (mk.players || []).forEach((q) => { if (q && q.estInfo) info[String(q.id)] = q.estInfo; }); } catch (e) {}
     for (const p of mios) {
       const prevO = (st.sq || {})[p.id];
-      const cur = { n: p.name, t: p.team, p: typeof p.prob === "number" ? p.prob : null, s: String(p.status || "") };
+      const cur = { n: p.name, t: p.team, p: typeof p.prob === "number" ? p.prob : null, s: estadoClave(p.status) };
       nuevo[p.id] = cur;
       if (!prevO || firstRun) continue;
       const partes = [];
-      if (cur.p !== null && prevO.p !== null && prevO.p !== cur.p) partes.push(prevO.p + " % → " + cur.p + " %");
-      if (prevO.s !== cur.s) partes.push("estado: " + statusLabel(prevO.s) + " → " + statusLabel(cur.s));
+      if (estadoClave(prevO.s) !== cur.s) partes.push(fraseEstado(cur.s, p.estInfo || info[String(p.id)] || ""));
+      if (cur.p !== null && prevO.p !== null && prevO.p !== cur.p) partes.push("opciones de ser titular: " + prevO.p + " % → " + cur.p + " %");
       if (partes.length) cambios.push("• <b>" + esc(p.name) + "</b>: " + esc(partes.join(" · ")));
     }
     const commit = () => { st.sq = nuevo; dirty = true; };
@@ -444,7 +473,11 @@ export async function avisar(env, deps) {
     st.init = true; dirty = true;
     await send(env, f, st.chat, "✅ <b>Avisos activados</b>" + (mios && mios.length ? "\nVigilo " + mios.length + " jugadores tuyos" + (cover && cover.known < cover.total ? " (sigo localizando el resto de tu plantilla)" : "") + "." : "") + "\nTe aviso de todas las noticias nuevas (⭐ las de tus jugadores), del once probable (quién entra y sale), de alineaciones confirmadas y de cambios en tus jugadores.\nSilencio de 00:00 a 08:00.");
   } else if (quiet) {
-    queue.forEach((q) => q.commit()); // de noche no suena nada: se guarda como visto
+    // De noche no suena nada: se guarda como visto. Única excepción: el mercado del día, que se manda en silencio.
+    for (const q of queue) {
+      if (!q.night) { q.commit(); continue; }
+      if (await send(env, f, st.chat, q.text, { ...q, silent: true })) { q.commit(); sentCount++; }
+    }
   } else {
     for (const q of queue) {
       if (sentCount >= MAX_MSGS) break;
@@ -576,4 +609,4 @@ async function publicarOnceWeb(env, m, md, key) {
   await env.PORRA.put(OWN, JSON.stringify(own.slice(0, 300)));
 }
 
-export const _t = { norm, ownMatch, sameTeam, newsAt, KW, inLineup, statusLabel, mercadoTexto };
+export const _t = { norm, ownMatch, sameTeam, newsAt, KW, inLineup, statusLabel, mercadoTexto, estadoClave, fraseEstado, mercadoListo, diaMadrid };

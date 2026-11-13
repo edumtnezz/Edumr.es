@@ -557,3 +557,16 @@
     }).observe(document.documentElement, { childList: true, subtree: true });
   } catch (e) {}
 })();
+
+// Fotos de jugador recortadas en vertical (cabeza muy justa): dentro de un círculo se enseñan enteras,
+// apoyadas abajo, en vez de ampliadas y con el pelo cortado. Vale para toda la Guía, sin tocar cada pantalla.
+(function () {
+  function mira(im) {
+    try {
+      if (!im || im.tagName !== "IMG" || !/cdn\.biwenger\.com\/i\/p\//.test(im.currentSrc || im.src || "")) { if (im && im.classList) im.classList.remove("ph-alto"); return; }
+      var w = im.naturalWidth, h = im.naturalHeight;
+      im.classList.toggle("ph-alto", !!(w && h && w / h < 0.9));
+    } catch (e) {}
+  }
+  document.addEventListener("load", function (ev) { mira(ev.target); }, true);
+})();

@@ -29,3 +29,20 @@ test("mercado: 'Sube más / Baja más' y sin 'se dispara' ni 'tienes en el top' 
   assert.match(t, /Baja más: <b>Comesaña −395k€/);
   assert.doesNotMatch(t, /se dispara|se hunde|Tienes en el top/);
 });
+
+test("estado de mis jugadores: ok y vacío son lo mismo, y el aviso va en español claro", () => {
+  assert.equal(_t.estadoClave("ok"), _t.estadoClave(""));
+  assert.equal(_t.estadoClave("injured2"), "injured");
+  assert.equal(_t.fraseEstado("", ""), "vuelve a estar disponible");
+  assert.match(_t.fraseEstado("yellowcard", ""), /^apercibido/);
+  assert.equal(_t.fraseEstado("injured", "Rotura fibrilar."), "lesionado (Rotura fibrilar)");
+  assert.doesNotMatch(_t.fraseEstado("yellowcard", "") + _t.fraseEstado("redcard", "") + _t.fraseEstado("doubt", ""), /yellowcard|redcard|doubt|sin aviso/);
+});
+
+test("mercado: un solo aviso al día, cuando los valores llevan 6 min quietos", () => {
+  const t = Date.UTC(2026, 10, 14, 3, 30);
+  assert.equal(_t.mercadoListo({ pxV: "a", pxVAt: t }, t + 2 * 60e3, "2026-11-14"), false); // aún entrando
+  assert.equal(_t.mercadoListo({ pxV: "a", pxVAt: t }, t + 7 * 60e3, "2026-11-14"), true);
+  assert.equal(_t.mercadoListo({ pxV: "b", pxVAt: t + 9 * 3600e3, pxSent: "a", pxDay: "2026-11-14" }, t + 10 * 3600e3, "2026-11-14"), false); // por la tarde no se repite
+  assert.equal(_t.mercadoListo({ pxV: "a", pxVAt: 0 }, t, "2026-11-14"), false); // primera vez: solo se guarda
+});

@@ -2013,7 +2013,8 @@ async function playerFicha(env, id, fast, raw) {
     fitness: fitArr,
     fitLag,
     jornada: lJornada,
-    pronostico: pronosticoFor({ status: pl.status, fitness: fitArr }),
+    // Solo la tendencia de titular (por sus puntos recientes). El estado (lesión, duda, sanción) va aparte, en la caja de estado.
+    pronostico: pronosticoFor({ status: "", fitness: fitArr }),
     team: (a.team && a.team.name) || pl.team || "",
     logo: pl.logo ? LOGO_BASE + pl.logo : "",
     photo: pl.photo ? FACE_BASE + pl.photo : "",

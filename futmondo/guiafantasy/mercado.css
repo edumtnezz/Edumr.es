@@ -301,6 +301,7 @@ html.no-scroll, body.no-scroll { overflow: hidden !important; }
 .pp-status { display: flex; align-items: center; gap: 10px; border: 1px solid rgba(34, 197, 94, 0.4); background: rgba(34, 197, 94, 0.1); border-radius: 14px; padding: 10px 14px; margin-bottom: 14px; }
 .pp-status-ico { width: 30px; height: 30px; border-radius: 50%; background: #16a34a; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.95rem; flex: 0 0 auto; }
 .pp-status.bad { border-color: rgba(220, 38, 38, 0.4); background: rgba(220, 38, 38, 0.1); }
+.pp-status-go { margin-left: auto; flex: 0 0 auto; font-weight: 700; font-size: .85rem; color: inherit; text-decoration: none; white-space: nowrap; padding: 6px 0 6px 8px; }
 .pp-status.bad .pp-status-ico { background: #dc2626; }
 .pp-status.warn { border-color: rgba(234, 179, 8, 0.45); background: rgba(234, 179, 8, 0.12); }
 .pp-status.warn .pp-status-ico { background: #ca8a04; }
@@ -3764,6 +3765,7 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 .dif-note { margin: 12px 0 0; font-size: .78rem; line-height: 1.4; color: var(--muted); }
 .rtb-pred { font-weight: 700; padding: 1px 7px; border-radius: 999px; }
 .rtb-pred.up { color: #15803d; background: rgba(34, 197, 94, .14); } .rtb-pred.dn { color: #dc2626; background: rgba(220, 38, 38, .12); }
+.rtb-pred { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; } .rtb-pred .rtb-pk { font-weight: 600; font-size: .82em; opacity: .8; }
 @media (max-width: 520px) {
   .dif-tb { grid-template-columns: minmax(78px, 1.3fr) repeat(var(--dif-cols, 5), minmax(38px, 1fr)) 34px; }
   .dif-row { column-gap: 3px; }
@@ -3857,6 +3859,7 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 /* Cartel de estado dentro de la ficha del jugador («Últimas noticias sobre…») */
 .ficha-news-it.ficha-news-st { min-height: 0; background: none; color: inherit; }
 .ficha-news-st .ficha-news-pic { aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden; }
+.ficha-news-st .ficha-news-pic > .eth { width: 100%; height: 100%; }
 .ficha-news-st .ficha-news-t { position: static; padding: 8px 2px 0; background: none; color: var(--text); }
 .ficha-news-st .ficha-news-t small { color: var(--muted); }
 

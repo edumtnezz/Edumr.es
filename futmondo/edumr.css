@@ -912,3 +912,6 @@ body { overflow-x: clip; overscroll-behavior-x: none; max-width: 100%; }
   .gf-page .bk:not(.news-share):not(.bk-link):active { background: rgba(127, 127, 127, .12); }
   .gf-page .bk:not(.news-share):not(.bk-link) .gi { width: 20px; height: 20px; }
 }
+
+/* Foto de jugador recortada en vertical: entera dentro del círculo (ver chrome.js) */
+img.ph-alto { object-fit: contain !important; object-position: 50% 100% !important; }

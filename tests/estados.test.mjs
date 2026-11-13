@@ -85,3 +85,12 @@ test("candidatos: estados recientes y altas; sin duplicar jugador", () => {
   assert.deepEqual(c.map((x) => x.id + ":" + x.a).sort(), ["a:lesionado", "d:ok"]);
   assert.match(idNoticia(c[0]), /^[a-z0-9]{2,16}$/);
 });
+
+test("emparejar: nombres distintos entre Biwenger y Futmondo (Sørloth, Johaneko/Louis-Jean, Sadick/Mujaid)", async () => {
+  const { emparejar } = await import("../functions/_lib/estados.mjs");
+  const teams = { 1: { name: "Atlético" }, 2: { name: "Athletic" }, 3: { name: "Rayo Vallecano" }, 4: { name: "Racing" } };
+  const bw = [{ id: 1, name: "Sørloth", teamID: 1, position: 4 }, { id: 2, name: "Johaneko", teamID: 2, position: 2 }, { id: 3, name: "Sadick", teamID: 3, position: 2 }, { id: 4, name: "Sainz-Maza", teamID: 4, position: 3 }];
+  const fm = [{ id: "a", name: "Sorloth", team: "Atlético de Madrid", role: "delantero" }, { id: "b", name: "Louis-Jean", team: "Athletic de Bilbao", role: "defensa" }, { id: "c", name: "Mujaid", team: "Rayo Vallecano", role: "defensa" }, { id: "d", name: "Iñigo Sainz", team: "Racing", role: "centrocampista" }];
+  const m = emparejar(bw, teams, fm);
+  assert.deepEqual([1, 2, 3, 4].map((i) => (m.get(i) || {}).id), ["a", "b", "c", "d"]);
+});
