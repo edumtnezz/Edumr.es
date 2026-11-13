@@ -4717,12 +4717,42 @@
         tx.appendChild(l2); top.appendChild(tx);
         if (pf) top.appendChild(el("span", "nw-ficha-go", "›"));
         card.appendChild(top);
-        const g = el("div", "nw-stats");
-        const cas = (v, k) => { const c = el("div", "nw-stat"); c.appendChild(el("b", null, v)); c.appendChild(el("span", null, k)); g.appendChild(c); };
-        cas(String(f.puntos), "Puntos");
-        cas(f.partidos ? String(Number(f.media).toFixed(1)).replace(".", ",") : "—", "Media");
-        cas(f.titular != null && f.deEquipo ? f.titular + "/" + f.deEquipo : "—", "Titular");
-        cas(eqMoney(f.valor), "Valor");
+        // Qué pinta en su equipo, de un vistazo: su papel, sus últimos partidos uno a uno y su puesto entre los de su línea
+        const pa = Array.isArray(d.partidos) ? d.partidos : [];
+        if (pa.length >= 3) {
+          const tit = pa.filter((x) => x.cat === "c" || x.cat === "s").length, sup = pa.filter((x) => x.cat === "b").length, tot = pa.length;
+          const rol = tit / tot >= 0.75 ? ["Titular fijo", "g"] : tit / tot >= 0.5 ? ["Titular habitual", "g"] : tit / tot >= 0.25 ? ["Entra en la rotación", "a"] : (tit + sup) / tot >= 0.4 ? ["Suplente habitual", "a"] : ["Apenas juega", "r"];
+          const rl = el("div", "nw-rol nw-rol-" + rol[1]);
+          rl.appendChild(el("b", null, rol[0]));
+          rl.appendChild(el("span", null, "Últimos " + tot + " partidos: " + tit + " de titular, " + sup + " desde el banquillo y " + (tot - tit - sup) + " sin jugar."));
+          card.appendChild(rl);
+          const tl = el("div", "nw-tl");
+          pa.forEach((x) => {
+            const k = x.cat === "c" || x.cat === "s" ? "t" : x.cat === "b" ? "s" : "n";
+            const c = el("div", "nw-tl-c nw-tl-" + k);
+            c.appendChild(el("small", null, "J" + x.j));
+            c.appendChild(el("b", null, k === "n" ? "–" : x.pts == null ? "·" : String(x.pts)));
+            c.title = "Jornada " + x.j + ": " + (k === "t" ? "titular" : k === "s" ? "suplente" : "no jugó") + (k !== "n" && x.min ? ", " + x.min + " min" : "") + (k !== "n" && x.pts != null ? ", " + x.pts + " puntos" : "");
+            tl.appendChild(c);
+          });
+          card.appendChild(tl);
+          const lg = el("div", "nw-tl-ley");
+          [["t", "Titular"], ["s", "Suplente"], ["n", "No jugó"]].forEach((q) => { const i = el("span"); i.appendChild(el("i", "nw-tl-" + q[0])); i.appendChild(document.createTextNode(q[1])); lg.appendChild(i); });
+          lg.appendChild(el("span", "nw-tl-ley-n", "El número son sus puntos"));
+          card.appendChild(lg);
+        }
+        const LIN = { portero: "porteros", defensa: "defensas", centrocampista: "centrocampistas", delantero: "delanteros" }[f.role] || "jugadores";
+        const g = el("div", "nw-datos");
+        const dato = (k, v, sub, pct) => {
+          const r = el("div", "nw-dato"); r.appendChild(el("span", "nw-dato-k", k));
+          const vv = el("span", "nw-dato-v"); vv.appendChild(el("b", null, v)); if (sub) vv.appendChild(el("small", null, sub)); r.appendChild(vv);
+          if (pct != null) { const bar = el("span", "nw-dato-bar"); const fi = el("i"); fi.style.width = Math.max(4, Math.min(100, pct)) + "%"; bar.appendChild(fi); r.appendChild(bar); }
+          g.appendChild(r);
+        };
+        const pu = d.puesto;
+        dato("Puntos", String(f.puntos), pu ? "puesto " + pu.pos + " de " + pu.de + " " + LIN : "", pu ? 100 * (1 - (pu.pos - 1) / Math.max(1, pu.de - 1)) : null);
+        dato("Media por partido", f.partidos ? String(Number(f.media).toFixed(1)).replace(".", ",") : "—", f.partidos ? "en " + f.partidos + (f.partidos === 1 ? " partido" : " partidos") : "sin jugar");
+        dato("Valor", eqMoney(f.valor), f.cambio ? (f.cambio > 0 ? "+" : "−") + String(Math.abs(Math.round(f.cambio))).replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " € hoy" : "sin cambio hoy");
         card.appendChild(g);
         art.prepend(card);
       }
@@ -4897,7 +4927,7 @@
     // Caja de estado (como Comuniate): "ESTADO DEL JUGADOR / En forma".
     const liveP = (all || []).find((x) => String(x.id) === String(d.id || p.id)) || p;
     // Si nuestro registro de estados va por delante de Futmondo, manda el del mercado (ya combinado)
-    const stat = String((liveP.est && liveP.status) || d.status || p.status || "");
+    const stat = String(liveP.estReg ? (liveP.status || "") : d.estReg ? (d.status || "") : (d.status || p.status || ""));
     const bad = stat === "redcard" || stat.indexOf("injured") === 0;
     const warn = stat === "doubt";
     const toc = !bad && !warn && liveP.toc ? liveP.toc : null;
@@ -4906,7 +4936,7 @@
     const stx = el("div", "pp-status-tx");
     stx.appendChild(el("div", "pp-status-k", "ESTADO DEL JUGADOR"));
     stx.appendChild(el("div", "pp-status-v", toc ? "Tocado · " + toc.d + (toc.t ? " " + toc.t : "") : statusLabel(stat)));
-    if (liveP.estInfo && (bad || warn)) stx.appendChild(el("div", "pp-status-i", liveP.estInfo));
+    if ((liveP.estInfo || d.estInfo) && (bad || warn)) stx.appendChild(el("div", "pp-status-i", liveP.estInfo || d.estInfo));
     sb.appendChild(stx);
     colA.appendChild(sb);
     const head = el("div", "ficha-head-center");
@@ -5304,7 +5334,7 @@
       (async () => {
         let list = (lastNews && lastNews.noticias) || null;
         if (!list) { try { list = ((await (await fetch(API + "/noticias")).json()) || {}).noticias || []; } catch (e) { list = []; } }
-        const hit0 = list.filter((x) => newsMentions(x.title, nm, d.team || p.team || ""));
+        const hit0 = list.filter((x) => x.pid ? String(x.pid) === String(d.id || p.id) : newsMentions(x.title, nm, d.team || p.team || ""));
         let hit = hit0;
         hit = hit.slice(0, 3);
         if (!hit.length) { sec.remove(); return; }
@@ -5313,9 +5343,12 @@
         hit.forEach((x) => {
           const a1 = el("a", "ficha-news-it"); a1.href = newsHref(x.link);
           a1.addEventListener("click", (ev) => { if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button === 1) return; ev.preventDefault(); closeModal(); switchTab("noticias"); openNoticiaInline(x.link, x.title); });
-          const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = newsImgOf(x);
-          im.addEventListener("error", () => { im.src = newsFallbackImg(x.title); }, { once: true });
-          a1.appendChild(im);
+          if (x.auto === "estado" && window.EduThumb && window.EduThumb.el) { a1.classList.add("ficha-news-st"); const bx = el("div", "ficha-news-pic"); bx.appendChild(ethFor(x)); a1.appendChild(bx); }
+          else {
+            const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = newsImgOf(x);
+            im.addEventListener("error", () => { im.src = newsFallbackImg(x.title); }, { once: true });
+            a1.appendChild(im);
+          }
           const t = el("div", "ficha-news-t"); t.appendChild(el("span", null, x.title || "")); t.appendChild(el("small", null, (x.date || "") + (x.time ? " · " + x.time : ""))); a1.appendChild(t);
           g.appendChild(a1);
         });

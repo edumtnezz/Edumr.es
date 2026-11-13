@@ -815,15 +815,12 @@ async function getMarketPlayers(env, force) {
   if (!out || !Array.isArray(out.players) || !Object.keys(foto).length) return out;
   return { ...out, players: out.players.map((p) => {
     const e = foto[p.id]; if (!e) return p;
-    // Foto grande del jugador (160 px, recortada): la de Futmondo solo mide 64 px
-    if (e.b) p = { ...p, fotoG: "https://cdn.biwenger.com/i/p/" + e.b + ".png" };
-    if (e.e === "ok") return p;
+    // UNA sola foto por jugador en toda la web: el recorte de 160 px (la de Futmondo, de 64 px, queda en photoFm de reserva)
+    if (e.b) p = { ...p, photo: "https://cdn.biwenger.com/i/p/" + e.b + ".png", photoFm: p.photo || "", fotoG: "https://cdn.biwenger.com/i/p/" + e.b + ".png" };
+    // El estado de nuestro registro manda en los dos sentidos: si la noticia dice «disponible», la ficha también.
     const s = String(p.status || "");
-    let status = s;
-    if (e.e === "lesionado" && s.indexOf("injured") !== 0) status = "injured";
-    else if (e.e === "sancionado" && s !== "redcard") status = "redcard";
-    else if (e.e === "duda" && (!s || s === "ok" || s === "yellowcard")) status = "doubt";
-    return { ...p, status, statusFm: s, est: e.e, estInfo: e.info || "", estAt: e.at || 0 };
+    const status = e.e === "lesionado" ? (s.indexOf("injured") === 0 ? s : "injured") : e.e === "sancionado" ? "redcard" : e.e === "duda" ? "doubt" : e.e === "apercibido" ? "yellowcard" : "";
+    return { ...p, status, statusFm: s, estReg: true, est: e.e === "ok" ? "" : e.e, estInfo: e.e === "ok" ? "" : (e.info || ""), estAt: e.at || 0 };
   }) };
 }
 // La probabilidad de jugar que viene de fuera se pone a 0 si nuestro estado dice lesionado o sancionado
@@ -6148,6 +6145,17 @@ async function handleGet({ request, env: env0, params }) {
           // Otras bajas y dudas de su equipo, para el bloque «Más bajas»
           if (pl) art.bajasEquipo = ((mk && mk.players) || []).filter((q) => q.team === pl.team && q.id !== pl.id && q.est && q.est !== "apercibido" && ((q.matches || 0) > 0 || (q.value || 0) >= 1000000))
             .sort((a, b) => (b.points || 0) - (a.points || 0)).slice(0, 6).map((q) => ({ id: q.id, name: q.name, est: q.est, info: String(q.estInfo || "").replace(/\s*Retorno estimado:.*$/i, "").replace(/\.$/, ""), photo: q.fotoG || q.photo || "" }));
+          if (pl) {
+            // Últimos partidos de su equipo (titular, suplente o sin jugar, con sus puntos) y puesto entre los de su línea
+            try {
+              const ds = (await env.PORRA.get(AN_DS, "json")) || {};
+              const me = ds[pl.id];
+              if (me && me.m && me.m.length) art.partidos = me.m.slice().sort((a, b) => a[0] - b[0]).slice(-10).map((x) => ({ j: x[0], cat: x[4], pts: x[3], min: x[5] }));
+            } catch (e) {}
+            const linea = ((mk && mk.players) || []).filter((q) => q.role === pl.role && (q.matches || 0) > 0).sort((a, b) => (b.points || 0) - (a.points || 0));
+            const pos = linea.findIndex((q) => q.id === pl.id);
+            if (pos >= 0) art.puesto = { pos: pos + 1, de: linea.length };
+          }
           if (pl) art.ficha = { id: pl.id, role: pl.role, fotoG: pl.fotoG || "", name: pl.name, team: pl.team, photo: pl.photo || "", logo: pl.logo || "", puntos: Math.round(Number(pl.points) || 0), partidos: pl.matches || 0, media: pl.avg || 0, valor: pl.value || 0, cambio: pl.change || 0, titular: mp ? mp.c + mp.s + (mp.rd || 0) : null, deEquipo: mp ? mp.n : null };
         } catch (e) {}
       }
@@ -6158,7 +6166,16 @@ async function handleGet({ request, env: env0, params }) {
     return json(await getNoticia(u));
   }
   if (path === "jugador") {
-    return json(await playerFicha(env, url.searchParams.get("id"), url.searchParams.get("fast") === "1", url.searchParams.get("raw") === "1"));
+    const fj = await playerFicha(env, url.searchParams.get("id"), url.searchParams.get("fast") === "1", url.searchParams.get("raw") === "1");
+    // Misma foto y mismo estado que en el resto de la web (los del mercado, ya combinados con nuestro registro)
+    try {
+      if (fj && fj.id && url.searchParams.get("raw") !== "1") {
+        const mk = await getMarketPlayers(env);
+        const q = ((mk && mk.players) || []).find((x) => x.id === fj.id);
+        if (q && q.estReg) return json({ ...fj, status: q.status, statusFm: q.statusFm, estReg: true, est: q.est, estInfo: q.estInfo, photo: q.photo || fj.photo, photoFm: q.photoFm || "" });
+      }
+    } catch (e) {}
+    return json(fj);
   }
   // Puntos de MI liga Futmondo (modo stats) para los jugadores de un partido
   // y una jornada. La página de partido manda los ids resueltos y recibe

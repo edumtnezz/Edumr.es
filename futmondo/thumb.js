@@ -76,6 +76,9 @@
     var d = nodo("div", "eth eth-st2 eth-v-" + v);
     if (o.color) d.style.setProperty("--club", o.color);
     var crestHi = o.crest ? String(o.crest).replace(/\/teams\/64\//, "/teams/256/") : "";
+    // Fondo: palabra gigante del estado en contorno y el escudo en marca de agua (256 px, nítido)
+    d.appendChild(nodo("span", "eth-ghost", VERED[v]));
+    if (crestHi) { var wm = nodo("img", "eth-wm2"); wm.alt = ""; wm.loading = "lazy"; wm.src = crestHi; wm.addEventListener("error", function () { wm.remove(); }, { once: true }); d.appendChild(wm); }
     var src = o.photoG || o.photo || "";
     if (src) {
       var im = nodo("img", "eth-big" + (o.photoG ? "" : " eth-big-s")); im.alt = ""; im.loading = "lazy"; im.src = src;

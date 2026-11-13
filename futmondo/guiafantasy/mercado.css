@@ -3827,3 +3827,56 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 .nw-mas-tx small { font-size: .74rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nw-mas-tag { flex: none; font-style: normal; font-size: .64rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; }
 .nw-mas-tag.b { background: rgba(220, 38, 38, .12); color: #dc2626; } .nw-mas-tag.d { background: rgba(245, 158, 11, .16); color: #b45309; }
+
+/* ===== 13/11/2026 (4) · Ficha de la noticia: papel en el equipo, partidos uno a uno y puesto en su línea ===== */
+.nw-rol { margin: 0 14px 10px; padding: 10px 12px; border-radius: 12px; display: flex; flex-direction: column; gap: 3px; background: var(--card-solid, #fff); box-shadow: inset 3px 0 0 var(--rc, #94a3b8); }
+.nw-rol-g { --rc: #16a34a; } .nw-rol-a { --rc: #d97706; } .nw-rol-r { --rc: #dc2626; }
+.nw-rol b { font-size: 1.02rem; font-weight: 800; color: var(--rc); }
+.nw-rol span { font-size: .82rem; line-height: 1.35; color: var(--muted); }
+.nw-tl { display: flex; gap: 4px; margin: 0 14px; }
+.nw-tl-c { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.nw-tl-c small { font-size: .58rem; font-weight: 700; color: var(--muted); }
+.nw-tl-c b { width: 100%; aspect-ratio: 1; max-width: 40px; display: flex; align-items: center; justify-content: center; border-radius: 9px; font-size: .86rem; font-weight: 800; font-variant-numeric: tabular-nums; color: #fff; background: var(--tc); }
+.nw-tl-t { --tc: #16a34a; } .nw-tl-s { --tc: #d97706; } .nw-tl-n { --tc: rgba(127, 127, 127, .22); }
+.nw-tl-n b { color: var(--muted); }
+.nw-tl-ley { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 8px 14px 12px; font-size: .68rem; font-weight: 600; color: var(--muted); }
+.nw-tl-ley span { display: inline-flex; align-items: center; gap: 5px; }
+.nw-tl-ley i { width: 10px; height: 10px; border-radius: 3px; background: var(--tc); }
+.nw-tl-ley-n { margin-left: auto; }
+.nw-datos { margin: 0 14px 12px; border-radius: 12px; background: var(--card-solid, #fff); }
+.nw-dato { display: grid; grid-template-columns: 1fr auto; align-items: baseline; column-gap: 10px; padding: 10px 12px; box-shadow: inset 0 -1px 0 var(--border); }
+.nw-dato:last-child { box-shadow: none; }
+.nw-dato-k { font-size: .82rem; font-weight: 600; color: var(--muted); }
+.nw-dato-v { display: flex; align-items: baseline; gap: 8px; }
+.nw-dato-v b { font: 800 1.08rem/1 'Bricolage Grotesque', 'Figtree', system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+.nw-dato-v small { font-size: .74rem; color: var(--muted); }
+.nw-dato-bar { grid-column: 1 / -1; height: 5px; margin-top: 7px; border-radius: 99px; background: rgba(127, 127, 127, .16); overflow: hidden; }
+.nw-dato-bar i { display: block; height: 100%; border-radius: 99px; background: #16a34a; }
+@media (max-width: 380px) { .nw-dato { grid-template-columns: 1fr; } .nw-dato-v { margin-top: 2px; } }
+
+/* Cartel de estado dentro de la ficha del jugador («Últimas noticias sobre…») */
+.ficha-news-it.ficha-news-st { min-height: 0; background: none; color: inherit; }
+.ficha-news-st .ficha-news-pic { aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden; }
+.ficha-news-st .ficha-news-t { position: static; padding: 8px 2px 0; background: none; color: var(--text); }
+.ficha-news-st .ficha-news-t small { color: var(--muted); }
+
+/* ===== Cartel de estado más vivo: banda inclinada con el color del estado, palabra gigante de fondo y entrada animada ===== */
+.eth.eth-st2 { overflow: hidden; }
+.eth-st2::before { background: rgba(8, 12, 22, .5); }
+.eth-st2::after { right: auto; left: 46cqw; top: -30cqh; width: 80cqw; height: 160cqh; transform: skewX(-14deg); border-radius: 0; border: none; box-shadow: none; background: rgba(255, 255, 255, .07); border-left: .9cqw solid var(--ac); }
+.eth-st2 .eth-ghost { position: absolute; z-index: -1; right: -3cqw; top: -6cqh; font: 800 54cqh/1 'Bricolage Grotesque', 'Figtree', system-ui, sans-serif; letter-spacing: -.05em; color: transparent; -webkit-text-stroke: 1.5px rgba(255, 255, 255, .13); white-space: nowrap; pointer-events: none; user-select: none; }
+.eth-st2 .eth-wm2 { position: absolute; z-index: -1; left: -10cqh; bottom: -22cqh; width: 78cqh; height: 78cqh; object-fit: contain; opacity: .1; filter: grayscale(1) brightness(3); pointer-events: none; }
+.eth-st2 .eth-nm { position: relative; padding-bottom: .16em; }
+.eth-st2 .eth-nm::after { content: ""; position: absolute; left: 0; bottom: 0; width: 1.6em; height: .09em; border-radius: 99px; background: var(--ac); }
+.eth-st2 .eth-big { height: min(96cqh, 240px); right: 1cqw; }
+@media (prefers-reduced-motion: no-preference) {
+  .eth-st2 .eth-big { animation: ethIn .7s cubic-bezier(.2, .8, .2, 1) both; }
+  .eth-st2 .eth-tx > * { animation: ethUp .55s cubic-bezier(.2, .8, .2, 1) both; }
+  .eth-st2 .eth-tx > :nth-child(2) { animation-delay: .07s; } .eth-st2 .eth-tx > :nth-child(3) { animation-delay: .14s; } .eth-st2 .eth-tx > :nth-child(4) { animation-delay: .2s; }
+  .eth-st2::after { animation: ethBand .8s cubic-bezier(.2, .8, .2, 1) both; }
+  .eth-st2 .eth-ghost { animation: ethGhost 14s linear infinite alternate; }
+}
+@keyframes ethIn { from { opacity: 0; transform: translate(8%, 6%) scale(.96); } to { opacity: 1; transform: none; } }
+@keyframes ethUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes ethBand { from { transform: skewX(-14deg) translateX(40%); opacity: 0; } to { transform: skewX(-14deg); opacity: 1; } }
+@keyframes ethGhost { from { transform: translateX(0); } to { transform: translateX(-10%); } }
