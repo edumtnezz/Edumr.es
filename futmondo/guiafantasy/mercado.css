@@ -3760,3 +3760,15 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 .dif-note { margin: 12px 0 0; font-size: .78rem; line-height: 1.4; color: var(--muted); }
 .rtb-pred { font-weight: 700; padding: 1px 7px; border-radius: 999px; }
 .rtb-pred.up { color: #15803d; background: rgba(34, 197, 94, .14); } .rtb-pred.dn { color: #dc2626; background: rgba(220, 38, 38, .12); }
+@media (max-width: 520px) {
+  .dif-tb { grid-template-columns: minmax(78px, 1.3fr) repeat(var(--dif-cols, 5), minmax(38px, 1fr)) 34px; }
+  .dif-row { column-gap: 3px; }
+  .dif-team { gap: 6px; padding-right: 2px; }
+  .dif-team img { width: 22px; height: 22px; }
+  .dif-team b { font-size: .76rem; }
+  .dif-c { min-height: 44px; border-radius: 9px; }
+  .dif-c img { width: 20px; height: 20px; }
+  .dif-c small { font-size: .52rem; letter-spacing: 0; }
+  .dif-m { font-size: .82rem; }
+  .dif-panel { padding-left: 10px; padding-right: 10px; }
+}
