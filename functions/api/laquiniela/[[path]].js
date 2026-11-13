@@ -8,6 +8,7 @@ import { etiquetaDe } from "../../_lib/portada-svg.mjs";
 import { promptFondo, grupoTipo } from "../../_lib/portada-prompt.mjs";
 import { partirInfo, tituloCambio, catCambio, NOMBRE_ESTADO, ajustarOnce, clubKey } from "../../_lib/estados.mjs";
 import { compacto, dificultad, calendarioDificultad, oncePropio, aciertoOnces, compararOnce } from "../../_lib/analitica.mjs";
+import { cuerpoAHtml } from "../../_lib/noticia-cuerpo.mjs";
 const COMPETITION = "PD";
 const CACHE_TTL_MS = 60 * 1000;
 const FORM_TTL_MS = 10 * 60 * 1000;
@@ -2046,30 +2047,15 @@ function ownPublic(items) {
     return { title: x.title, lead, link: "https://edumr.es/n/" + x.id, date: d.date, time: d.time, thumb: x.thumb || "", src: "EduMR", ts: x.publishedAt || x.createdAt, club: x.club || "", players: (x.players || []).slice(0, 3), tipo: x.tipo || "", veredicto: x.veredicto && x.veredicto !== "ninguno" ? x.veredicto : "", plazo: x.plazo || "", pid: x.pid || "", auto: x.auto || "" };
   });
 }
-const escH = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 function ownArticle(x) {
-  // Párrafos, «## Título» de apartado y listas con «- »
-  const fmt = (l) => escH(l).replace(/\*\*([^*]{1,160})\*\*/g, "<b>$1</b>");
-  let html = "", lista = false, consejo = false;
+  // Párrafos, «## Título» de apartado, listas con «- » y bloques de rueda (rótulo + cita).
   let lineas = String(x.body || "").split(/\n+/).map((t) => t.trim()).filter(Boolean);
   // Noticias de estado: los números de la temporada van en casillas (campo `ficha`), no en un párrafo; y sin línea de fuentes
   if (x.auto === "estado") {
     const k = lineas.findIndex((l) => /^## /.test(l));
     lineas = lineas.filter((l, i) => !/^Estado del jugador según/.test(l) && !(k > 1 && i >= 1 && i < k));
   }
-  for (const l of lineas) {
-    const li = /^- /.test(l);
-    if (li && !lista) { html += '<ul class="nw-claves">'; lista = true; }
-    if (!li && lista) { html += "</ul>"; lista = false; }
-    if (li) html += "<li>" + fmt(l.slice(2)) + "</li>";
-    else if (/^## Consejo/.test(l)) { html += '<div class="nw-consejo"><h3 class="nw-h">' + fmt(l.slice(3)) + "</h3>"; consejo = true; }
-    else if (/^## /.test(l)) html += '<h3 class="nw-h">' + fmt(l.slice(3)) + "</h3>";
-    else if (/^Estado del jugador según/.test(l)) { if (consejo) { html += "</div>"; consejo = false; } html += '<p class="nw-fuente">' + fmt(l) + "</p>"; }
-    else html += "<p>" + fmt(l) + "</p>";
-  }
-  if (lista) html += "</ul>";
-  if (consejo) html += "</div>";
-  return { title: x.title, lead: x.lead || "", html, src: "EduMR", image: x.thumb || "", club: x.club || "", players: x.players || [], date: x.publishedAt || x.createdAt || 0, veredicto: x.veredicto || "", plazo: x.plazo || "", auto: x.auto || "", pid: x.pid || "" };
+  return { title: x.title, lead: x.lead || "", html: cuerpoAHtml(lineas.join("\n")), src: "EduMR", image: x.thumb || "", club: x.club || "", players: x.players || [], date: x.publishedAt || x.createdAt || 0, veredicto: x.veredicto || "", plazo: x.plazo || "", auto: x.auto || "", pid: x.pid || "" };
 }
 function ownDraftFromVideo(v, sel) {
   const items = (v.items || []).filter((_, i) => (sel ? sel.includes(i) : _.publicable));
@@ -2127,7 +2113,7 @@ async function adminNoticias(env, request, url, data) {
   const now = Date.now();
   const clean = (s, n) => String(s == null ? "" : s).slice(0, n);
   if (data.action === "pista") {
-    const tipos = ["lesion", "rueda", "cronica", "once", "convocatoria", "mercado", "otro"];
+    const tipos = ["lesion", "rueda", "cronica", "lupa", "once", "convocatoria", "sancion", "alta", "entreno", "selecciones", "mercado", "otro"];
     const tipo = clean(data.tipo, 20);
     const equipo = clean(data.equipo, 60).trim();
     const entrenador = clean(data.entrenador, 80).trim();

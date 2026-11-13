@@ -1,6 +1,10 @@
 # ESTADO.md — edumr.es (Guía Fantasy / Futmondo)
 
-Última actualización: 11/11/2026 (noche). Para continuar el redactor: lee `docs/redactor.md` y después este archivo. Reglas generales: AGENTS.md y CLAUDE.md.
+Última actualización: 13/11/2026. Para continuar el redactor: lee `docs/redactor.md` y después este archivo. Reglas generales: AGENTS.md y CLAUDE.md.
+
+## 13/11/2026 — Estilo de las noticias automáticas
+
+La lupa (un jugador) y la crónica (el partido del equipo) quedan separadas. La rueda lleva título de 12 a 18 palabras, un párrafo de contexto y de 2 a 4 citas con rótulo, sin párrafo de fantasy. Lesión, convocatoria, sanción (solo LaLiga o RFEF), alta, entreno y selecciones tienen mínimo y máximo de palabras. Si no hay plazo, el texto dice «sin plazo comunicado». Al modelo se le pasan el próximo partido del calendario y el valor y los puntos de Futmondo, y si no llegan se dice «sin datos». Guía en `docs/estilo-noticias.md`.
 Edu no sabe programar y escribe desde el móvil, en español. Respuestas cortas y sencillas.
 
 ## Hecho (sacado de AGENTS.md, CLAUDE.md y el historial de git)
