@@ -2648,7 +2648,13 @@ async function analiticaRun(env, reset) {
   let cur = (await env.PORRA.get(AN_CUR, "json")) || { pend: null, done: 0 };
   // ?reset=1 fuerza una vuelta nueva (como mucho una cada 10 min)
   if (reset && !cur.pend && cur.done && now - cur.done > 600000) cur = { pend: null, done: 0 };
-  if (!cur.pend && cur.done && now - cur.done < 6 * 3600000) return { alDia: true, hecho: cur.done };
+  if (!cur.pend && cur.done && now - cur.done < 6 * 3600000) {
+    if (reset === "calc" || now - (cur.calc || cur.done) > 30 * 60000) {
+      const ds0 = (await env.PORRA.get(AN_DS, "json")) || {};
+      if (Object.keys(ds0).length > 300) { const o = await analiticaCalc(env, ds0, Object.keys(ds0).length, now); cur.calc = now; await env.PORRA.put(AN_CUR, JSON.stringify(cur)); return { recalculado: true, comparacion: o.comparacion }; }
+    }
+    return { alDia: true, hecho: cur.done };
+  }
   const mk = await getMarketPlayers(env);
   const all = (mk && mk.players) || [];
   if (all.length < 300) return { error: "sin mercado" };
@@ -2670,6 +2676,14 @@ async function analiticaRun(env, reset) {
   await env.PORRA.put(AN_DS, JSON.stringify(ds));
   if (!fin) { await env.PORRA.put(AN_CUR, JSON.stringify(cur)); return { faltan: cur.pend.length, de: cur.total, leidos: Object.keys(ds).length }; }
   // Fin de la vuelta: resultados
+  await analiticaCalc(env, ds, all.length, now);
+  await env.PORRA.put(AN_CUR, JSON.stringify({ pend: null, done: now, calc: now }));
+  return { fin: true, jugadores: Object.keys(ds).length };
+}
+// Resultados a partir de los datos guardados. Se repite cada 30 min sin volver a leer Futmondo, para que el once propio
+// siga los cambios de estado y quede apuntado cuándo cambia el once de fuera.
+async function analiticaCalc(env, ds, deMercado, now) {
+  const all = { length: deMercado };
   const lista = Object.values(ds);
   const out = { at: now, jugadores: lista.length, deMercado: all.length, dificultad: dificultad(lista), acierto: aciertoOnces(lista, 5), onces: {} };
   const foto = await estFoto(env);
@@ -2678,14 +2692,14 @@ async function analiticaRun(env, reset) {
   for (const [k, jug] of porEquipo) { const o = oncePropio(jug, null, foto); if (o) out.onces[k] = { team: jug[0].t, ...o }; }
   // Comparación con el once probable que ya usamos (FutbolFantasy), partido a partido de la próxima jornada
   try {
-    const jor = await getJornada(env);
+    const jor = await getJornadaStrip(env, null);
     const log = (await env.PORRA.get(AN_LOG, "json")) || { firmas: {}, eventos: [] };
     const dbg = out.comparacion = { partidos: 0, sinOnce: 0, sinEquipo: [] };
     for (const m of (jor && jor.matches) || []) {
       if (m.live && m.live.state === "final") continue;
       let o = null;
       dbg.partidos++;
-      try { o = await getOnce(env, m.home, m.away, ""); } catch (e) { dbg.error = String(e && e.message || e).slice(0, 100); }
+      try { o = await getOnce(env, m.home, m.away, String((jor && jor.matchday) || "")); } catch (e) { dbg.error = String(e && e.message || e).slice(0, 100); }
       for (const lado of ["home", "away"]) {
         const side = o && o[lado]; if (!side || !Array.isArray(side.starters) || side.starters.length < 11) { dbg.sinOnce++; continue; }
         const k = clubKey(side.name || m[lado]), mio = out.onces[k]; if (!mio) { dbg.sinEquipo.push(String(side.name || m[lado])); continue; }
@@ -2707,8 +2721,7 @@ async function analiticaRun(env, reset) {
     out.jornada = jor && jor.matchday;
   } catch (e) { out.errorComparacion = String(e && e.message || e).slice(0, 120); }
   await env.PORRA.put(AN_OUT, JSON.stringify(out));
-  await env.PORRA.put(AN_CUR, JSON.stringify({ pend: null, done: now }));
-  return { fin: true, jugadores: lista.length };
+  return out;
 }
 
 // «Últimos cambios» PROPIO (12/11/2026): sale de nuestro registro de estados y del mercado de Futmondo, con la foto de Futmondo.
@@ -6084,7 +6097,7 @@ async function handleGet({ request, env: env0, params }) {
     return json({ n: log.length, cambios: log.slice(-120).reverse().map((x) => ({ hora: fm.format(new Date(x.at)), jugadoresCambiados: x.n, movimientosDe500kOMas: (x.g || []).map((g) => g.name + " " + (g.d > 0 ? "+" : "") + g.d) })) });
   }
   if (path === "analitica") {
-    if (url.searchParams.has("run")) { try { return json({ ok: true, result: await analiticaRun(env, url.searchParams.has("reset")) }); } catch (e) { return json({ ok: false, error: String(e && e.message || e).slice(0, 200) }); } }
+    if (url.searchParams.has("run")) { try { return json({ ok: true, result: await analiticaRun(env, url.searchParams.has("calc") ? "calc" : url.searchParams.has("reset")) }); } catch (e) { return json({ ok: false, error: String(e && e.message || e).slice(0, 200) }); } }
     let out = null, log = null;
     try { [out, log] = await Promise.all([env.PORRA.get(AN_OUT, "json"), env.PORRA.get(AN_LOG, "json")]); } catch (e) {}
     return json(out ? { ...out, cambiosFuera: ((log && log.eventos) || []).slice(-60).reverse() } : { sinDatos: true });
@@ -6092,7 +6105,7 @@ async function handleGet({ request, env: env0, params }) {
   // Calendario de dificultad: próximas 5 jornadas de cada equipo con el nivel de su rival (1 muy fácil … 5 muy difícil)
   if (path === "dificultad") {
     try {
-      const [out, cal, jor] = await Promise.all([env.PORRA.get(AN_OUT, "json"), getCalendario(env), getJornada(env)]);
+      const [out, cal, jor] = await Promise.all([env.PORRA.get(AN_OUT, "json"), getCalendario(env), getJornadaStrip(env, null)]);
       if (!out || !out.dificultad || !out.dificultad.length) return json({ sinDatos: true });
       const desde = Number((jor && jor.matchday) || 0) || 1;
       return json({ updatedAt: out.at, ...calendarioDificultad(out.dificultad, cal, desde, 5), niveles: out.dificultad });
