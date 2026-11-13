@@ -5,6 +5,36 @@ import { _r, redactorSombra } from "../cron/src/redactor.js";
 const ROBOTS_YT = "User-agent: *\nDisallow: /feeds/videos.xml\n";
 const ROBOTS_IMG = "User-agent: *\nDisallow: /sb/\n";
 const YT = "UCdeportivo0000001";
+const RUEDA_TITULO = "Entrenador Inventado habla del grupo, el trabajo y la valoración del equipo";
+const RUEDA_LEAD = "El técnico del Barcelona resumió la rueda oficial del grupo.";
+const RUEDA_CUERPO = [
+  "El técnico del Barcelona compareció en la rueda oficial y repasó el trabajo del grupo.",
+  "Entrenador Inventado dejó por escrito las frases sobre el equipo de prueba.",
+  "La nota oficial no trae un marcador y este texto no añade ninguno.",
+  "El relato se queda en lo que dijo sobre el grupo y el trabajo.",
+  "Y cada respuesta sale tal cual, sin recortar las palabras de la cita.",
+  "Barcelona publica la rueda y aquí solo se usa esa nota.",
+  "El grupo de prueba es el tema de las frases que siguen.",
+  "Sobre el equipo habló Entrenador Inventado en la misma comparecencia.",
+  "No hay otra cifra ni otro nombre en esta pieza de la rueda.",
+  "La frase final vuelve sobre el trabajo de este grupo de prueba.",
+].join(" ") + "\n\n**La valoración del grupo**\n«Creo mucho en este equipo de prueba»\n\n**El trabajo del equipo**\n«Ha sido muy bien el trabajo de este grupo de prueba»";
+const CRONICA_TEXTO = [
+  "En el partido entre Equipo A y Equipo B, el tanto llegó en el minuto 12.",
+  "Delantero Fijo firmó ese gol para Equipo A.",
+  "Equipo B no contestó en el marcador y el 1-0 se mantuvo.",
+  "El dato del encuentro es ese gol de Delantero Fijo.",
+  "Equipo A ya tenía el 1-0 antes del final.",
+  "El partido no dejó otro tanto en los hechos.",
+  "Con el 1-0 Equipo A cerró el encuentro frente a Equipo B.",
+  "Sobre ese gol del minuto 12 no hay otra cifra en los hechos.",
+  "Tras el 1-0 queda Delantero Fijo y también Equipo B.",
+  "Al cierre Equipo A sumó el tanto y Equipo B se quedó sin otro gol.",
+  "El minuto 12 es el único minuto escrito para Delantero Fijo.",
+  "Equipo B encajó ese gol y el marcador siguió 1-0.",
+  "Delantero Fijo es el nombre del tanto en el minuto 12.",
+  "El 1-0 entre Equipo A y Equipo B queda con ese gol.",
+].join(" ");
 
 const XML = `<feed><entry><yt:videoId>AAA111</yt:videoId><title>Rueda de prensa de Luis García en la previa del #SevillaAlavés 📡 EN DIRECTO</title><published>2026-11-05T14:42:00+00:00</published></entry>
 <entry><yt:videoId>BBB222</yt:videoId><title>De la élite a la base: el primer equipo femenino visita los entrenamientos</title><published>2026-11-04T16:00:00+00:00</published></entry></feed>`;
@@ -375,12 +405,12 @@ test("la web oficial publica la cita literal y no el párrafo de alrededor", asy
     if (url.includes("youtube.com/robots.txt")) return new Response(ROBOTS_YT);
     if (url.includes("club.test/robots.txt")) return new Response("User-agent: *\nAllow: /\n");
     if (url.endsWith("/sitemap.xml")) return new Response(`<url><loc>https://club.test/es/futbol/primer-equipo/noticias/9/flick</loc><news:title>Entrenador Inventado: "Creo mucho en este equipo de prueba"</news:title><news:publication_date>2026-11-08T23:02:26Z</news:publication_date></url>`);
-    if (url.includes("/noticias/9/")) return new Response('<p>Entrenador Inventado ha dicho: "Creo mucho en este equipo de prueba". El resto no va entre comillas y no se copia.</p>');
+    if (url.includes("/noticias/9/")) return new Response('<p>Entrenador Inventado ha dicho: "Creo mucho en este equipo de prueba". Luego añadió: "Ha sido muy bien el trabajo de este grupo de prueba". El resto no va entre comillas y no se copia.</p>');
     if (url.endsWith("/mercado")) return new Response(JSON.stringify({ players: [{ id: "1", name: "Marc Casadó", team: "Barcelona" }] }));
     if (url.includes("generativelanguage")) {
       gemini++;
-      const cuerpo = "Tras el encuentro, Entrenador Inventado habló del grupo del Barcelona y dejó por escrito una cita que sale tal cual en la nota oficial del club. «Creo mucho en este equipo de prueba». Esa frase es el único dato comprobado de la rueda. Para el fantasy no aparece en los hechos un cambio de rol ni un estado, y por eso este texto no añade nada sobre lo que pueda ocurrir después.";
-      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify([{ jugador: "Entrenador Inventado", titular: "Entrenador Inventado habla del equipo", entradilla: "Habló del grupo en la rueda oficial.", cuerpo }]) }] } }], usageMetadata: { totalTokenCount: 20 } }));
+      const cuerpo = RUEDA_CUERPO;
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify([{ jugador: "Entrenador Inventado", titular: RUEDA_TITULO, entradilla: RUEDA_LEAD, cuerpo }]) }] } }], usageMetadata: { totalTokenCount: 20 } }));
     }
     if (url.includes("api.telegram.org")) { tg.push(JSON.parse(o.body)); return new Response(JSON.stringify({ ok: true })); }
     return new Response("", { status: 404 });
@@ -408,7 +438,7 @@ test("crónica: publica los goles del partido de prueba y no un relato", async (
     if (url.includes("/noticias/8/")) return new Response("<p>Este relato largo no debe copiarse.</p>");
     if (url.includes("fm-partido")) return new Response(JSON.stringify({ ev: { g: [{ m: 12, x: 0, p: "9", h: 1, og: 0 }], home: { st: [["9", "Delantero Fijo"]], sb: [] }, away: { st: [], sb: [] } } }));
     if (url.includes("generativelanguage")) {
-      const texto = "En el partido entre Equipo A y Equipo B, Delantero Fijo firmó el tanto en el minuto 12. El marcador quedó 1-0 para el Equipo A. El dato que queda para el fantasy es ese gol, saliendo con el equipo, y no hay otra cifra en estos hechos del encuentro.";
+      const texto = CRONICA_TEXTO;
       return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: texto }] } }], usageMetadata: { totalTokenCount: 12 } }));
     }
     if (url.endsWith("/mercado")) return new Response(JSON.stringify({ players: [{ id: "9", name: "Delantero Fijo", photo: "https://fotos.test/delantero.jpg" }] }));
@@ -416,9 +446,14 @@ test("crónica: publica los goles del partido de prueba y no un relato", async (
   };
   await redactorSombra(env, { fetch: f, now: Date.parse("2026-11-09T01:03:00Z"), fuentes: [{ club: "Barcelona", noticias: "https://club.test/sitemap.xml" }] });
   const own = JSON.parse(kv.get("own:news:v1"));
-  assert.equal(own.length, 2);
-  const historia = own.find((o) => o.key.indexOf("cronica-") === 0);
+  assert.equal(own.length, 3);
+  const historia = own.find((o) => o.key.indexOf("lupa-") === 0);
+  const equipo = own.find((o) => o.key.indexOf("cronica-") === 0);
   const ficha = own.find((o) => o.key.indexOf("marcador-") === 0);
+  assert.equal(historia.tipo, "lupa");
+  assert.equal(equipo.tipo, "cronica");
+  assert.match(equipo.title, /El encuentro de liga/);
+  assert.doesNotMatch(equipo.title, /\d+\s*[-–]\s*\d+/);
   assert.equal(historia.title, "El gol de Delantero Fijo ante el Equipo B");
   assert.equal(_r.entradillaRepiteTitulo(historia.title, historia.lead), false);
   assert.doesNotMatch(historia.lead, /9 de noviembre|marcó un gol/);
@@ -440,7 +475,20 @@ test("un cuerpo no puede repetir el sujeto ni quedarse por debajo del mínimo", 
   assert.equal(_r.depurarCuerpo("cronica", corto, hechos), null);
   const repetido = "Fermín López marcó en el 45 tras una jugada del Barcelona. Fermín López marcó en el 66 con un pase de Lamine Yamal. El partido acabó 1-2 y Giuliano Simeone había marcado en el 10 para el Atlético de Madrid.";
   assert.equal(_r.depurarCuerpo("cronica", repetido, hechos), null);
-  const bueno = "En el partido, el Barcelona dio la vuelta al Atlético de Madrid. Fermín López firmó el empate en el 45 y el segundo tanto en el 66, con un pase de Lamine Yamal. Antes Giuliano Simeone había adelantado a los locales en el 10. El encuentro acabó 1-2, así que el fantasy anota dos goles de quien salió en ese ataque.";
+  const bueno = [
+    "En el partido, el Barcelona dio la vuelta al Atlético de Madrid.",
+    "Fermín López firmó el empate en el 45 y el segundo tanto en el 66, con un pase de Lamine Yamal.",
+    "Giuliano Simeone adelantó a los locales en el 10.",
+    "El encuentro acabó 1-2.",
+    "Barcelona sostuvo el 1-2 frente al Atlético de Madrid.",
+    "Lamine Yamal participó en la jugada del 66.",
+    "El 1 lo firmó Giuliano Simeone para el Atlético de Madrid.",
+    "En el 66 llegó el segundo de Fermín López.",
+    "El 45 dejó el empate entre Barcelona y Atlético de Madrid.",
+    "Con el 1-2 terminó el partido de Fermín López, Lamine Yamal y Giuliano Simeone.",
+    "Atlético de Madrid empezó por delante y Barcelona dio la vuelta.",
+    "El tanto del 10 fue de Giuliano Simeone y los del 45 y del 66 fueron de Fermín López.",
+  ].join(" ");
   assert.equal(_r.sujetosSeguidos(bueno), false);
   assert.ok(_r.depurarCuerpo("cronica", bueno, hechos));
   const conDatoInventado = bueno + " Fue titular y jugó muchos minutos.";
@@ -515,11 +563,11 @@ test("el aviso usa la página larga y no queda como enviado si Telegram no acept
     if (url.includes("youtube.com/robots.txt")) return new Response(ROBOTS_YT);
     if (url.includes("club.test/robots.txt")) return new Response("User-agent: *\nAllow: /\n");
     if (url.endsWith("/sitemap.xml")) return new Response(`<url><loc>https://club.test/es/futbol/primer-equipo/noticias/9/flick</loc><news:title>Entrenador Inventado: "Creo mucho en este equipo de prueba"</news:title><news:publication_date>2026-11-08T23:02:26Z</news:publication_date></url>`);
-    if (url.includes("/noticias/9/")) return new Response('<p>"Creo mucho en este equipo de prueba"</p>');
+    if (url.includes("/noticias/9/")) return new Response('<p>"Creo mucho en este equipo de prueba" "Ha sido muy bien el trabajo de este grupo de prueba"</p>');
     if (url.endsWith("/mercado")) return new Response(JSON.stringify({ players: [] }));
     if (url.includes("generativelanguage")) {
-      const cuerpo = "Tras el encuentro, Entrenador Inventado habló del grupo del Barcelona y dejó por escrito una cita que sale tal cual en la nota oficial del club. «Creo mucho en este equipo de prueba». Esa frase es el único dato comprobado de la rueda. Para el fantasy no aparece en los hechos un cambio de rol ni un estado, y por eso este texto no añade nada sobre lo que pueda ocurrir después.";
-      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify([{ jugador: "Entrenador Inventado", titular: "Entrenador Inventado habla del equipo", entradilla: "Habló del grupo en la rueda oficial.", cuerpo }]) }] } }], usageMetadata: { totalTokenCount: 20 } }));
+      const cuerpo = RUEDA_CUERPO;
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify([{ jugador: "Entrenador Inventado", titular: RUEDA_TITULO, entradilla: RUEDA_LEAD, cuerpo }]) }] } }], usageMetadata: { totalTokenCount: 20 } }));
     }
     if (url.includes("api.telegram.org")) {
       const body = JSON.parse(o.body);
@@ -587,11 +635,11 @@ test("una pista verificada en la web oficial se publica una vez y la repetida no
     url = String(url);
     if (url.includes("robots.txt")) return new Response("User-agent: *\nAllow: /\n");
     if (url.endsWith("/sitemap.xml")) return new Response(`<url><loc>https://club.test/noticias/inventado-habla</loc><news:title>Entrenador Inventado: "Creo mucho en este equipo de prueba"</news:title><news:publication_date>2026-11-08T20:00:00Z</news:publication_date></url>`);
-    if (url.includes("/noticias/inventado-habla")) return new Response('<p>Entrenador Inventado ha dicho: "Creo mucho en este equipo de prueba". El resto no se copia.</p>');
+    if (url.includes("/noticias/inventado-habla")) return new Response('<p>Entrenador Inventado ha dicho: "Creo mucho en este equipo de prueba". Luego añadió: "Ha sido muy bien el trabajo de este grupo de prueba". El resto no se copia.</p>');
     if (url.endsWith("/mercado")) return new Response(JSON.stringify({ players: [] }));
     if (url.includes("generativelanguage")) {
-      const cuerpo = "Tras el encuentro, Entrenador Inventado habló del grupo del Barcelona y dejó por escrito una cita que sale tal cual en la nota oficial del club. «Creo mucho en este equipo de prueba». Esa frase es el único dato comprobado de la rueda. Para el fantasy no aparece en los hechos un cambio de rol ni un estado, y por eso este texto no añade nada sobre lo que pueda ocurrir después.";
-      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify([{ jugador: "Entrenador Inventado", titular: "Entrenador Inventado habla del equipo", entradilla: "Habló del grupo en la rueda oficial.", cuerpo }]) }] } }], usageMetadata: { totalTokenCount: 20 } }));
+      const cuerpo = RUEDA_CUERPO;
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: JSON.stringify([{ jugador: "Entrenador Inventado", titular: RUEDA_TITULO, entradilla: RUEDA_LEAD, cuerpo }]) }] } }], usageMetadata: { totalTokenCount: 20 } }));
     }
     if (url.includes("api.telegram.org")) { tg.push(JSON.parse(o.body)); return new Response(JSON.stringify({ ok: true })); }
     return new Response("", { status: 404 });

@@ -1,6 +1,6 @@
 # Redactor de noticias — guía para continuar
 
-Última revisión: 9 de noviembre de 2026. Léelo antes de tocar `cron/src/redactor.js`. Edu no programa y escribe en español desde el móvil. Respuestas cortas. No fusiones a `main` si no te lo pide.
+Última revisión: 13 de noviembre de 2026. Léelo antes de tocar `cron/src/redactor.js`. Edu no programa y escribe en español desde el móvil. Respuestas cortas. No fusiones a `main` si no te lo pide.
 
 ## Objetivo
 
@@ -47,9 +47,10 @@ Tabla completa en ESTADO.md (9 de noviembre de 2026). Resumen: hay listado de no
 2. Web del club: sitemap, RSS o HTML del listado (`enlacesDeFuente`). Citas literales o, en una crónica, goles cuyo marcador cuadra.
 3. Minuto: si el club escribe el minuto, manda sobre FotMob. Si dos fuentes que no son oficiales no coinciden, el minuto es «sin datos».
 4. Fecha: solo si la fuente la escribe como día de calendario. No se convierte un instante UTC a Madrid ni se usa la fecha de hoy. Una frase con otra fecha se tira.
-5. Cuerpo: lo redacta Gemini solo con esos hechos. Si repite el sujeto, se queda corto o mete un dato que no está, no se publica. La entradilla no repite el título.
-6. Tope: 450.000 tokens al día. Al llegar, no hay más llamadas a Gemini ese día.
-7. Pistas: el Worker lee cada 30 minutos los sitemaps de titulares de FutbolFantasy y Comuniate (después de su robots.txt) y escribe `rd:pistas:v1`. En cada ciclo mira hasta 5 pistas, dentro del tope de tokens. Elige la nota oficial del club cuyo título encaja con el tema, aunque no lleve una cita ni un marcador. Una noticia vieja del mismo apellido y de otro tema no cuenta como duplicada: hace falta el mismo tipo y menos de 48 horas, o la misma URL oficial. Si el dato no está en esa nota, no se publica.
+5. Cuerpo: lo redacta Gemini solo con esos hechos. La guía está en `docs/estilo-noticias.md`. La lupa (un jugador) y la crónica (el partido del equipo) son dos piezas. La rueda es un párrafo de contexto y de 2 a 4 bloques (rótulo en negrita y cita literal), sin párrafo de fantasy. Lesión, convocatoria, sanción, alta, entreno y selecciones son piezas cortas. Si repite el sujeto, se sale del mínimo o del máximo, mete un dato que no está, una fórmula de plantilla o una imagen de más, no se publica. La entradilla no repite el título y abre con el técnico o con la posición de Futmondo y el club.
+6. Hechos extra, solo si la fuente responde: el próximo partido (rival, día y hora) del calendario que ya usa la web, y de Futmondo la posición, el valor, la variación y los puntos. Si falta, «sin datos» o no se pone. La sanción solo se publica si la URL es de LaLiga o de la RFEF.
+7. Tope de tokens al día. Al llegar, no hay más llamadas a Gemini ese día.
+8. Pistas: el Worker lee cada 30 minutos los sitemaps de titulares de FutbolFantasy y Comuniate (después de su robots.txt) y escribe `rd:pistas:v1`. En cada ciclo mira hasta 5 pistas, dentro del tope de tokens. Elige la nota oficial del club cuyo título encaja con el tema, aunque no lleve una cita ni un marcador. Una noticia vieja del mismo apellido y de otro tema no cuenta como duplicada: hace falta el mismo tipo y menos de 48 horas, o la misma URL oficial. Si el dato no está en esa nota, no se publica.
 
 ### Claves KV (binding `PORRA`)
 
@@ -84,7 +85,7 @@ Tabla completa en ESTADO.md (9 de noviembre de 2026). Resumen: hay listado de no
 }
 ```
 
-`tipo` es uno de: `lesion`, `rueda`, `cronica`, `once`, `convocatoria`, `mercado`, `otro`. Sin URL. Sin texto copiado de X. Athletic y Alavés se rechazan.
+`tipo` es uno de: `lesion`, `rueda`, `cronica`, `lupa`, `once`, `convocatoria`, `sancion`, `alta`, `entreno`, `selecciones`, `mercado`, `otro`. Sin URL. Sin texto copiado de X. Athletic y Alavés se rechazan. `sancion` solo sigue adelante si la nota es de LaLiga o de la RFEF.
 
 ### Corregir una noticia ya publicada
 
@@ -113,6 +114,7 @@ Añadir una pista a mano:
 6. El minuto oficial manda. La fecha sale de la fuente. La entradilla no repite el título.
 7. Las pistas solo indican el tema. Sin fuente permitida no se publica.
 8. Listados oficiales del resto de LaLiga, sin Athletic ni Alavés.
+9. Estilo de móvil: lupa y crónica separadas, rueda con rótulo y cita, tipos cortos (convocatoria, sanción, alta, entreno, selecciones) y hechos de calendario y de Futmondo.
 
 ## Pendientes conocidos
 

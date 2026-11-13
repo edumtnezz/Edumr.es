@@ -1,67 +1,80 @@
-# Cómo está hecho el cuerpo de cada noticia
+# Cómo se escribe cada noticia
 
-Medido el 9 de noviembre de 2026 (hora de Madrid) en FutbolFantasy. Su robots.txt deja leer. No se copia ni una frase suya: aquí solo va la forma.
+Revisión: 13 de noviembre de 2026. La forma sale de piezas de referencia de una redacción de fantasy, contadas en voz propia. No se copia ninguna frase, no se cita esa web y no se enlaza.
 
-Piezas abiertas, como mínimo cinco por tipo. Las tres que pidió Edu entran en la cuenta: 154454 (Fermín), 154455 (Flick) y 154456 (Simeone). El último párrafo de unas 20 palabras, idéntico en todas, es el pie de la web (lleva el año 2011). No es parte del texto y no lo imitamos.
+Una pista de tema no es una fuente. El cuerpo lo redacta el modelo solo con hechos verificados. Después se tira cualquier frase que meta un número, un nombre o una palabra de estado que no esté en esos hechos. Si dos frases seguidas empiezan por el mismo sujeto, no se publica. Si se sale del mínimo o del máximo de palabras del tipo, tampoco. Sin datos, no se rellena.
 
-Una pista de tema (también las que salen de una cuenta de X) no es una fuente: no se cita, no se enlaza y no se copia. El cuerpo lo redacta el modelo con los hechos verificados de una web oficial como única entrada. Después se tira cualquier frase que meta un número, un nombre o una palabra de estado (titular, minutos, baja, lesión, suplente, banquillo, asistencia, penalti, expulsión) que no esté en esos hechos. Si dos frases seguidas empiezan por el mismo sujeto, no se publica. Si se queda por debajo del mínimo de palabras del tipo, tampoco. Sin datos, no se rellena.
+La entradilla no repite el titular. Empieza por una descripción que se pueda comprobar: «El técnico del [club]» o «El [posición de Futmondo] del [club]». La posición y el club salen de Futmondo. La nacionalidad y la edad no se escriben si no están en los hechos.
 
-## Crónica de un jugador
+## Lupa de un jugador
 
-Abiertas: 154454 Fermín, 154463 Julián, 154461 Canales, 154460 Sivera, 154405 Arda Güler y 154389 Casadó.
+Lo que antes se llamaba crónica de un jugador. Va de una persona después del partido: qué hizo, con el minuto si está escrito.
 
-- Título de 6 a 8 palabras. Nombra a la persona. El marcador no va en el título.
-- Entradilla de unas 20 a 31 palabras, sin comillas. Sitúa el partido.
-- Cuerpo: 4 párrafos, sin citas, de unas 60 a 95 palabras cada uno (lo habitual ronda las 80).
-- El primero sitúa el partido y el rival. A veces el marcador va escrito dentro, nunca como titular.
-- El segundo y el tercero cuentan la jugada, con los minutos.
-- El cuarto es el que suele dejar la consecuencia para el fantasy: si fue titular, cuántos minutos estuvo o si había una duda física. No hay un párrafo aparte etiquetado como fantasy.
-- Hay foto. El enlace a la ficha de puntos va fuera del relato.
+- Título de unas 6 a 9 palabras. Nombra a la persona y el hecho (un gol, un doblete). Sin marcador.
+- Entradilla que sitúa el partido. La fecha solo si la fuente la escribe como día.
+- Cuerpo de 120 a 180 palabras. Sin pronóstico propio.
+- Como mucho una imagen (una comparación), en el título o en la última frase, no en las dos y no en el medio. Solo si sale de un hecho escrito. Si no sale, ninguna.
+- Si hay valor o puntos de Futmondo en los hechos, una línea al final con esas cifras. Si no están, no se inventan.
+- Con menos de 3 hechos, no se publica.
 
-En edumr.es: el título nombra a la persona y lo que hizo (un gol, un doblete), en unas 6 a 9 palabras, sin el marcador. La entradilla no repite ese título: sitúa el partido y, solo si el dato está verificado, la fecha, la jornada o el efecto en la clasificación. El modelo escribe 2 o 3 párrafos con el orden de arriba. Mínimo para publicar: 40 palabras. El minuto de un gol, si el club o LaLiga lo escriben, manda sobre FotMob. Si dos fuentes que no son oficiales no coinciden, el minuto no se publica y sale «sin datos».
+## Crónica de partido
+
+Es otra pieza: va del equipo, no de un solo goleador.
+
+- Título sin marcador. Puede llevar una imagen si sale de un hecho escrito. Si no, el título es literal.
+- Entradilla que abre el partido («El partido entre…»).
+- Cuerpo de 120 a 200 palabras, con los minutos que estén en los hechos.
+- La misma regla de la imagen: como mucho una, en el título o en la última frase.
+- El marcador con los goles y su minuto va en otra ficha, no en este título.
 
 ## Marcador y goles
 
-Fichas abiertas: partidos 22533 Atlético 1-2 Barcelona, 22534 Celta 0-0 Levante, 22535 Elche 0-2 Betis, 22538 Osasuna 1-1 Athletic y 22540 Sevilla 0-0 Alavés.
-
-- No es la crónica. El título sí lleva el resultado: «Equipo 1-2 Equipo», y detrás «onces, estadísticas y puntos fantasy».
-- El cuerpo de esa ficha es la lista de datos (goles, once, puntos), no un relato.
-- En edumr.es se publica aparte, con los goles nombrados y su minuto. Si falta un nombre, hay una propia o el marcador no cuadra, no se publica.
+No es la crónica. El título sí lleva el resultado: «Equipo 1-2 Equipo». El cuerpo es la lista de goles. Si falta un nombre, hay una propia o el marcador no cuadra, no se publica.
 
 ## Rueda de prensa
 
-Abiertas: 154455 Flick, 154456 Simeone, 154450 Castro, 154451 Íñigo, 154452 Giráldez y 154395 Terzic.
-
-- Título de 13 a 18 palabras. Lo abre quien habla y siguen los temas. El marcador no va en el título.
-- Entradilla de 17 a 30 palabras, sin comillas. Dice el contexto: cuándo y de qué partido habla.
-- Primer párrafo del cuerpo, unas 100 palabras, sin cita. Ahí está el marcador y el momento.
-- Después, un párrafo por tema. Empieza con un rótulo en negrita (unas 6 a 11 palabras) y sigue la cita entre comillas, metida en el párrafo, no suelta. En Flick y Simeone cada bloque ronda las 75 a 125 palabras. En otras ruedas la cita es más larga y el párrafo pasa de 200.
-- La consecuencia para el fantasy (minutos, cambio, baja, titularidad) va dentro de ese bloque, porque el entrenador la ha dicho. No hay un cierre aparte.
-- En edumr.es: entradilla con la fecha solo si la fuente la escribe como día de calendario (la del partido o la de publicación, sin convertir un instante UTC a la hora de Madrid y sin usar la fecha de hoy). Si no hay esa fecha, no se pone. Luego la cita literal verificada. Si hay un dato de titularidad, minutos, cambio o estado, un párrafo de qué implica para el fantasy. Si no hay dato, ese párrafo no se escribe. Cada frase se tira si su fecha no está en los hechos. Mínimo: 45 palabras.
+- Título de 12 a 18 palabras. Lo abre quien habla, sigue un verbo (habla de, analiza, explica), los temas y los nombres de los jugadores que salen en las citas. Sin comillas y sin marcador.
+- Entradilla de una frase, sin comillas, con el epíteto de arriba.
+- Un párrafo de contexto, sin cita: quién compareció, el partido y el resultado solo si están escritos, y los temas.
+- Después, de 2 a 4 bloques. Cada bloque es un rótulo corto (4 a 8 palabras, en negrita) y, debajo, la cita literal. Se eligen las citas de titularidad, minutos, lesión o rol. El rótulo lo dice si eso está en la cita.
+- No hay un párrafo aparte de fantasy ni un apartado llamado «claves fantasy».
+- En total, 120 a 250 palabras. La longitud varía; no se clava siempre la misma cifra.
+- En el móvil el bloque se lee como una caja: rótulo arriba, cita debajo.
 
 ## Lesión o disponibilidad
 
-Abiertas: 154457 Jesús Vázquez, 154428 Ali Houary, 154433 Barrenetxea, 154439 Vertrouwd, 154444 Gudelj y 154423 Oyarzabal.
+- Título con el jugador y la consecuencia, sin comillas.
+- Tres párrafos cortos, 60 a 120 palabras: qué pasó y el minuto solo si es oficial, qué se sabe y qué no, y el próximo partido si está en los hechos.
+- Si el club no ha dado un plazo, se escribe «sin plazo comunicado». No es un dato inventado: es decir que no hay plazo.
+- «plazo» y «semanas» solo se publican si están en la fuente. La frase fija «sin plazo comunicado» es la excepción.
 
-- Título de 9 a 13 palabras: el jugador y la consecuencia (se pierde un partido, sale, ve una tarjeta).
-- Entradilla de unas 21 a 30 palabras, sin comillas.
-- Tres párrafos, sin cita, de unas 45 a 70 palabras. El primero dice qué pasó y en qué minuto. El segundo, la consecuencia (se pierde el siguiente, salió al descanso). El tercero, el contexto que la fuente da (quién entra, cómo queda). No se inventa un plazo.
-- En edumr.es solo si la frase está comprobada. Si no hay semanas ni fecha de vuelta en la frase, no se escriben.
+## Tipos cortos
 
-## Alineación probable y listas
+Cada uno es una pieza aparte. 60 a 120 palabras. Solo con la fuente que se indica. Si falta el próximo partido, «sin datos» o no se pone.
 
-Abiertas: 154336 (posible once, cita diarios), 154397 (pronóstico que cita un diario), 154335 (lista de Terzic), 154369 (convocatoria) y 154416 (lista del Rayo).
+- Convocatoria. Lista oficial del club: quién se cae y por qué.
+- Sanción. Solo acta de LaLiga o comunicado de la RFEF (Comité de Competición). Una web de club o un diario no bastan.
+- Alta. Comunicado del club. Si no hay plazo, «sin plazo comunicado».
+- Entreno. Solo lo que diga la nota oficial: quién falta y, si está escrito, cuándo vuelve. No se monta una lista de presentes que el club no haya publicado.
+- Selecciones. Lista del club o de la RFEF en un parón.
 
-- El posible once no lista los once nombres en el título. El título avisa de que hay un once o de quién es. El cuerpo, en las dos piezas de pronóstico, se apoya en diarios. Eso no lo repetimos.
-- La lista o la convocatoria es otra pieza: título de unas 11 palabras con quien se cae, entradilla de unas 20 palabras y uno o dos párrafos de unas 50 a 100, sin cita.
-- En edumr.es el once probable con porcentaje sigue en la página del partido. No se fabrica un once ni se cita un diario prohibido.
+## Lo que se añade a los hechos
 
-## Once que jugó
+Antes de redactar, si la fuente responde:
 
-En las páginas 1 a 7 del listado de noticias no hay un tipo «once confirmado». El once va en la ficha del partido (las cinco de arriba lo llevan en el título) y, cuando el club lo escribe, dentro de su crónica.
+- Próximo partido: rival, día y hora, del calendario que ya usa la web (football-data). Si la hora viene vacía o la llamada falla: «sin datos». No se inventa el rival.
+- Del jugador, solo Futmondo: posición, valor, variación y puntos. Si un campo no viene, se omite. La edad no se manda al modelo.
 
-En edumr.es, si el club da la lista, se puede publicar como lista corta con etiqueta OFICIAL y enlace a su web. Si no está la lista, no se rellena.
+## Lo que no se hace
 
-## Miniatura
+- Comillas en el titular. El marcador, solo en la ficha del resultado.
+- Emojis, exclamaciones, primera persona y preguntas al lector.
+- Párrafo etiquetado «claves fantasy» o «nuestra lectura».
+- Fórmulas de plantilla: «en resumen», «cabe destacar», «en definitiva», «sin duda», «es importante destacar».
+- Una imagen en el medio del texto, o dos imágenes en la misma pieza.
+- Un enlace final que no sea de edumr.es. Telegram y la ficha abren la noticia en la web.
+- Nacionalidad o edad que no estén escritas en los hechos.
 
-Ellos usan una foto del protagonista. Nosotros no usamos fotos de otras webs. El dibujo es nuestro: en la ficha del marcador se ve el resultado; en una crónica o una rueda se ve el nombre, no un marcador enorme.
+## Minuto, fecha y tope
+
+El minuto del club o de LaLiga manda. Si dos fuentes que no son oficiales no coinciden, el minuto es «sin datos». La fecha solo entra si la fuente la escribe como día. Cada frase se tira si su fecha no está en los hechos. El tope de tokens de Gemini se mantiene: al llegar, no hay más llamadas ese día.
