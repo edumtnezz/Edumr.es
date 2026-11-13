@@ -4538,7 +4538,7 @@
   };
   // Miniatura propia (DOM, animada): foto del jugador + escudo del club (mercado de Futmondo)
   const ethFor = (x, mini) => {
-    let photo = "", crest = "";
+    let photo = "", crest = "", photoG = "";
     try {
       // Solo el jugador del que habla el titular (nunca otro citado al final del texto)
       const fold = (v) => String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w.length > 3);
@@ -4550,16 +4550,16 @@
         const cc = teamCanon(x.club);
         pl = all.find((p) => p.photo && teamCanon(p.team) === cc && fold(p.name).some((w) => tt.indexOf(w) >= 0)) || null;
       }
-      if (pl) { photo = pl.photo; crest = pl.logo || ""; }
+      if (pl) { photo = pl.photo; crest = pl.logo || ""; photoG = pl.fotoG || ""; }
       if (!crest && x.club) crest = clubLogo(x.club, "") || "";
     } catch (e) {}
     let n;
     if (mini) {
       // Icono pequeño limpio: solo la cara del jugador (o el escudo), sin texto ni logos dentro
       n = el("div", "eth-mini" + (photo ? "" : " eth-mini-c"));
-      const src = photo || crest;
-      if (src) { const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = src; im.addEventListener("error", () => { if (crest && im.src !== crest) { im.src = crest; n.classList.add("eth-mini-c"); } else im.remove(); }); n.appendChild(im); }
-    } else n = window.EduThumb.el(x, { photo, crest, club: x.club || "" });
+      const src = photoG || photo || crest;
+      if (src) { const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = src; im.addEventListener("error", () => { if (photo && im.src === photoG) { im.src = photo; return; } if (crest && im.src !== crest) { im.src = crest; n.classList.add("eth-mini-c"); } else im.remove(); }); n.appendChild(im); }
+    } else n = window.EduThumb.el(x, { photo, photoG, crest, club: x.club || "", color: x.club ? clubColor(x.club) : "" });
     if (!photo && !crest && !(all && all.length)) ethPend.push([n, x, mini]); // aún sin mercado: se rellena al llegar, sin mover nada
     return n;
   };
@@ -4689,21 +4689,58 @@
       try { await navigator.clipboard.writeText(shareUrl); sh.innerHTML = SH_OK + "<span>Enlace copiado</span>"; sh.classList.add("ok"); setTimeout(() => { sh.innerHTML = SH_I; sh.classList.remove("ok"); }, 2000); } catch (e) {}
     });
     bar.appendChild(sh);
-    // Noticia de estado: el cartel ya dice el motivo, así que la entradilla no se repite
-    if (d.lead && d.auto !== "estado") box.appendChild(el("p", "art-lead", d.lead));
+    if (d.lead) box.appendChild(el("p", "art-lead", d.lead));
+    if (d.auto === "estado" && d.date) {
+      const by = el("div", "nw-by");
+      by.appendChild(el("b", null, "Guía Fantasy"));
+      try { by.appendChild(el("span", null, new Date(d.date).toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }))); } catch (e) {}
+      box.appendChild(by);
+    }
     if (d.html) {
       const art = el("div", "art-body");
       art.innerHTML = d.html; wireCvBtns(art); try { wireStatsLinks(art); } catch (e) {}
-      // Números de la temporada en casillas (datos de Futmondo del momento)
+      // Ficha del jugador: foto, estado, club y sus números de Futmondo del momento. Toca para abrir su página.
       if (d.ficha) {
-        const f = d.ficha, g = el("div", "nw-stats");
+        const f = d.ficha, EST = { baja: "Baja", duda: "Duda", alta: "Disponible" };
+        const card = el("div", "nw-ficha nw-v-" + (EST[d.veredicto] ? d.veredicto : "duda"));
+        const top = el("div", "nw-ficha-top club-link"); top.setAttribute("role", "link");
+        const pf = (all || []).find((q) => String(q.id) === String(f.id));
+        if (pf) { try { top.dataset.pid = pf.id; } catch (e) {} top.addEventListener("click", () => openFicha(pf)); }
+        const ph = el("span", "nw-ficha-ph");
+        const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = f.fotoG || f.photo || f.logo || "";
+        im.addEventListener("error", () => { if (f.photo && im.src !== f.photo) im.src = f.photo; else if (f.logo && im.src !== f.logo) { im.src = f.logo; im.classList.add("c"); } else im.remove(); });
+        ph.appendChild(im); top.appendChild(ph);
+        const tx = el("span", "nw-ficha-tx");
+        const l1 = el("span", "nw-ficha-l1"); l1.appendChild(el("b", null, f.name)); l1.appendChild(el("i", "nw-ficha-tag", EST[d.veredicto] || "")); tx.appendChild(l1);
+        const l2 = el("span", "nw-ficha-l2"); if (f.logo) { const cr = el("img"); cr.alt = ""; cr.src = f.logo; cr.loading = "lazy"; l2.appendChild(cr); }
+        l2.appendChild(document.createTextNode([f.team, { portero: "Portero", defensa: "Defensa", centrocampista: "Centrocampista", delantero: "Delantero" }[f.role] || ""].filter(Boolean).join(" · ")));
+        tx.appendChild(l2); top.appendChild(tx);
+        if (pf) top.appendChild(el("span", "nw-ficha-go", "›"));
+        card.appendChild(top);
+        const g = el("div", "nw-stats");
         const cas = (v, k) => { const c = el("div", "nw-stat"); c.appendChild(el("b", null, v)); c.appendChild(el("span", null, k)); g.appendChild(c); };
         cas(String(f.puntos), "Puntos");
         cas(f.partidos ? String(Number(f.media).toFixed(1)).replace(".", ",") : "—", "Media");
         cas(f.titular != null && f.deEquipo ? f.titular + "/" + f.deEquipo : "—", "Titular");
         cas(eqMoney(f.valor), "Valor");
-        const p1 = art.querySelector("p");
-        if (p1 && p1.parentNode === art) p1.after(g); else art.prepend(g);
+        card.appendChild(g);
+        art.prepend(card);
+      }
+      // Más bajas y dudas de su equipo
+      if (d.bajasEquipo && d.bajasEquipo.length && d.ficha) {
+        const sec = el("div", "nw-mas");
+        sec.appendChild(el("h3", "nw-h", "Más bajas y dudas del " + d.ficha.team));
+        const NOM = { lesionado: "Baja", sancionado: "Sanción", duda: "Duda" };
+        d.bajasEquipo.forEach((q) => {
+          const r = el("div", "nw-mas-row club-link"); r.setAttribute("role", "link");
+          const pq = (all || []).find((z) => String(z.id) === String(q.id));
+          if (pq) { try { r.dataset.pid = pq.id; } catch (e) {} r.addEventListener("click", () => openFicha(pq)); }
+          const im = el("img"); im.alt = ""; im.loading = "lazy"; im.src = q.photo || ""; im.addEventListener("error", () => im.remove(), { once: true }); r.appendChild(im);
+          const t = el("span", "nw-mas-tx"); t.appendChild(el("b", null, q.name)); if (q.info) t.appendChild(el("small", null, q.info)); r.appendChild(t);
+          r.appendChild(el("i", "nw-mas-tag " + (q.est === "duda" ? "d" : "b"), NOM[q.est] || ""));
+          sec.appendChild(r);
+        });
+        art.appendChild(sec);
       }
       box.appendChild(art);
       try { newsPlayersBlock(box, (d.title || title || "") + " . " + (d.lead || "") + " . " + (art.textContent || "")); } catch (e) {}

@@ -48,10 +48,9 @@ test("partirInfo separa parte y retorno", () => {
 test("la plantilla solo coloca los hechos y no repite el motivo", () => {
   const n = noticiaPlantilla(H()), body = cuerpoNoticia(n);
   assert.match(n.title, /^Aitor Fernández, baja: lesión muscular en el gemelo$/);
-  assert.equal(n.lead, "Jornada 13 · en casa ante el Málaga");
-  assert.match(body, /se pierde la jornada 13 ante el Málaga\. Su vuelta se estima para mediados de Diciembre\./);
-  assert.doesNotMatch(body, /gemelo/); assert.doesNotMatch(body, /Biwenger/); assert.doesNotMatch(body, /Esta temporada suma/);
-  assert.match(body, /## Claves fantasy\n- Es titular habitual: 11 de 12/); assert.match(body, /Recambio más probable: Sergio Herrera/); assert.match(body, /## Consejo fantasy\nNo lo alinees\./);
+  assert.equal(n.lead, "El portero del Osasuna estará fuera hasta mediados de Diciembre y se pierde la jornada 13 ante el Málaga.");
+  assert.doesNotMatch(body, /gemelo/); assert.doesNotMatch(body, /Biwenger/); assert.doesNotMatch(body, /jornada 13/);
+  assert.match(body, /## Cómo afecta\n- Es titular habitual: 11 de 12/); assert.match(body, /Recambio más probable: Sergio Herrera/); assert.match(body, /## Consejo fantasy\nNo lo alinees\./);
 });
 
 test("el resumen de la IA se rechaza si trae un número o un nombre que no está en los hechos", () => {

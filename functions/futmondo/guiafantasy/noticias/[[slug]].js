@@ -9,7 +9,7 @@ export function ogDePropia(slug, own) {
   if (!m) return null;
   const x = (own || []).find((o) => o && o.id === m[1] && o.status === "published");
   if (!x) return { missing: true };
-  return { t: x.title || "", d: x.lead || "", i: x.thumb || "" };
+  return { t: x.title || "", d: x.lead || "", i: x.thumb || (x.auto === "estado" && x.veredicto !== "alta" ? "/img/parte-medico.jpg?v=2" : "") };
 }
 const srcUrl = (slug) => {
   let m = slug.match(/^cm-(\d+)-([a-z0-9-]+)$/); if (m) return "https://www.comuniate.com/noticias/" + m[1] + "/" + m[2];
@@ -38,7 +38,7 @@ export async function onRequest(context) {
     if (hit) og = await hit.json();
     if (!og && /^ed-/.test(slug)) {
       let own = [];
-      try { own = (await env.PORRA.get("own:news:v1", "json")) || []; } catch (e) {}
+      try { own = (await env.PORRA.get("own:news:v2", "json")) || []; } catch (e) {}
       const propia = ogDePropia(slug, own);
       if (propia && !propia.missing) og = propia;
       else return base;

@@ -814,7 +814,10 @@ async function getMarketPlayers(env, force) {
   const foto = await estFoto(env);
   if (!out || !Array.isArray(out.players) || !Object.keys(foto).length) return out;
   return { ...out, players: out.players.map((p) => {
-    const e = foto[p.id]; if (!e || e.e === "ok") return p;
+    const e = foto[p.id]; if (!e) return p;
+    // Foto grande del jugador (160 px, recortada): la de Futmondo solo mide 64 px
+    if (e.b) p = { ...p, fotoG: "https://cdn.biwenger.com/i/p/" + e.b + ".png" };
+    if (e.e === "ok") return p;
     const s = String(p.status || "");
     let status = s;
     if (e.e === "lesionado" && s.indexOf("injured") !== 0) status = "injured";
@@ -6142,7 +6145,10 @@ async function handleGet({ request, env: env0, params }) {
           const [mk, mn] = await Promise.all([getMarketPlayers(env), getMinutos(env)]);
           const pl = ((mk && mk.players) || []).find((q) => q.id === x.pid);
           const mp = ((mn && mn.map) || {})[x.pid];
-          if (pl) art.ficha = { name: pl.name, team: pl.team, photo: pl.photo || "", logo: pl.logo || "", puntos: Math.round(Number(pl.points) || 0), partidos: pl.matches || 0, media: pl.avg || 0, valor: pl.value || 0, cambio: pl.change || 0, titular: mp ? mp.c + mp.s + (mp.rd || 0) : null, deEquipo: mp ? mp.n : null };
+          // Otras bajas y dudas de su equipo, para el bloque «Más bajas»
+          if (pl) art.bajasEquipo = ((mk && mk.players) || []).filter((q) => q.team === pl.team && q.id !== pl.id && q.est && q.est !== "apercibido" && ((q.matches || 0) > 0 || (q.value || 0) >= 1000000))
+            .sort((a, b) => (b.points || 0) - (a.points || 0)).slice(0, 6).map((q) => ({ id: q.id, name: q.name, est: q.est, info: String(q.estInfo || "").replace(/\s*Retorno estimado:.*$/i, "").replace(/\.$/, ""), photo: q.fotoG || q.photo || "" }));
+          if (pl) art.ficha = { id: pl.id, role: pl.role, fotoG: pl.fotoG || "", name: pl.name, team: pl.team, photo: pl.photo || "", logo: pl.logo || "", puntos: Math.round(Number(pl.points) || 0), partidos: pl.matches || 0, media: pl.avg || 0, valor: pl.value || 0, cambio: pl.change || 0, titular: mp ? mp.c + mp.s + (mp.rd || 0) : null, deEquipo: mp ? mp.n : null };
         } catch (e) {}
       }
       return json(art);

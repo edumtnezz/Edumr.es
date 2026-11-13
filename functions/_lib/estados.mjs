@@ -57,7 +57,7 @@ export function fotoEstados(bw, fmPlayers) {
   for (const p of Object.values(d.players || {})) {
     const f = m.get(p.id); if (!f) continue;
     const e = ESTADO[p.status] || "ok";
-    foto[f.id] = { e, info: String(p.statusInfo || "").trim().slice(0, 240), at: p.statusChange ? p.statusChange * 1000 : 0 };
+    foto[f.id] = { e, info: String(p.statusInfo || "").trim().slice(0, 240), at: p.statusChange ? p.statusChange * 1000 : 0, b: p.id };
   }
   return foto;
 }
@@ -140,35 +140,37 @@ export function noticiaPlantilla(h) {
   // Cada dato se dice UNA vez: el motivo va en el titular, el partido en el párrafo, y las claves solo añaden lo que falta
   const J = h.jornada ? "la jornada " + h.jornada : "la próxima jornada";
   const ante = h.rival ? (h.casa ? " ante el " : " en el campo del ") + h.rival : "";
-  const partido = (h.jornada ? "Jornada " + h.jornada : "Próxima jornada") + (h.rival ? (h.casa ? " · en casa ante el " : " · en el campo del ") + h.rival : "");
-  let title, p1, consejo, tipo = "lesion", veredicto = "";
+  const quien = "El " + (h.puesto || "jugador") + " " + delEl(h.equipo);
+  // Entradilla (una frase): cuánto estará fuera y qué partido se pierde. El motivo ya va en el titular.
+  let title, lead, consejo, tipo = "lesion", veredicto = "";
   if (h.a === "lesionado") {
     title = titular(h, "baja", h.nombre + ", baja " + enEl(h.equipo)); veredicto = "baja";
-    p1 = "El " + (h.puesto || "jugador") + " " + delEl(h.equipo) + " se pierde " + J + ante + "." + (h.retorno ? " Su vuelta se estima para " + min1(h.retorno) + "." : " No hay fecha de vuelta.");
+    lead = quien + (h.retorno ? " estará fuera hasta " + min1(h.retorno) : " no tiene fecha de vuelta") + " y se pierde " + J + ante + ".";
     consejo = "No lo alinees." + (h.recambio ? " Si buscas sustituto en su equipo, mira a " + h.recambio + "." : "");
   } else if (h.a === "duda") {
     title = titular(h, "duda", h.nombre + ", duda para " + J); veredicto = "duda";
-    p1 = "El " + (h.puesto || "jugador") + " " + delEl(h.equipo) + " no tiene asegurada su presencia en " + J + ante + ".";
+    lead = quien + " no tiene asegurada su presencia en " + J + ante + ".";
     consejo = "No lo alinees de momento: espera a la convocatoria." + (h.recambio ? " Si no llega, mira a " + h.recambio + "." : "");
   } else if (h.a === "sancionado") {
     title = h.nombre + ", sancionado para " + J; veredicto = "baja";
-    p1 = "El " + (h.puesto || "jugador") + " " + delEl(h.equipo) + " no puede jugar " + J + ante + "." + (h.parte ? " Motivo: " + min1(h.parte) + "." : "");
+    lead = quien + " no puede jugar " + J + ante + (h.parte ? ": " + min1(h.parte) : "") + ".";
     consejo = "No lo alinees en " + J + "." + (h.recambio ? " Si buscas sustituto en su equipo, mira a " + h.recambio + "." : "");
   } else {
     title = h.nombre + " vuelve a estar disponible"; veredicto = "alta"; tipo = "nota";
-    p1 = "El " + (h.puesto || "jugador") + " " + delEl(h.equipo) + " " + (h.de === "sancionado" ? "ya ha cumplido su sanción" : "deja de aparecer como " + (h.de === "lesionado" ? "lesionado" : "duda")) + " y puede jugar " + J + ante + ".";
+    lead = quien + " " + (h.de === "sancionado" ? "ya ha cumplido su sanción" : "deja de aparecer como " + (h.de === "lesionado" ? "lesionado" : "duda")) + " y puede jugar " + J + ante + ".";
     consejo = "Vuelve a ser opción. Comprueba si entra en el once antes de alinearlo.";
   }
   const claves = [];
   if (h.a !== "ok" && h.titular != null && h.deEquipo >= 3) claves.push(h.titular / h.deEquipo >= 0.6 ? "Es titular habitual: " + h.titular + " de " + h.deEquipo + " partidos de inicio." : "No es titular fijo: " + h.titular + " de " + h.deEquipo + " partidos de inicio.");
   if (h.recambio && h.a !== "ok") claves.push("Recambio más probable: " + h.recambio + ".");
   if (h.a === "lesionado" && !h.retorno) claves.push("Sin fecha de vuelta.");
-  return { title, lead: partido, p1, claves, consejo, tipo, veredicto, plazo: h.retorno || "" };
+  return { title, lead, claves, consejo, tipo, veredicto, plazo: h.retorno || "" };
 }
 
-export function cuerpoNoticia(n, resumen) {
-  const out = [resumen || n.p1];
-  if (n.claves.length) out.push("## Claves fantasy", ...n.claves.map((c) => "- " + c));
+export function cuerpoNoticia(n) {
+  // El cuerpo solo lleva lo que no está ya en el titular ni en la entradilla: cómo afecta y el consejo
+  const out = [];
+  if (n.claves.length) out.push("## Cómo afecta", ...n.claves.map((c) => "- " + c));
   out.push("## Consejo fantasy", n.consejo);
   return out.join("\n");
 }

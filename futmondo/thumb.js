@@ -70,25 +70,27 @@
   // etiqueta de color, nombre y club. La foto de Futmondo es pequeña (64 px), por eso no se amplía a cartel entero.
   var VERED = { baja: "BAJA", duda: "DUDA", alta: "ALTA" };
   function elEstado(item, o) {
+    // Cartel 16:9 con el color del club: la cara recortada del jugador en grande a la derecha, y a la izquierda
+    // la etiqueta (BAJA, DUDA, ALTA), el nombre y el club con su escudo.
     var v = VERED[item.veredicto] ? item.veredicto : "duda";
-    var d = nodo("div", "eth eth-st eth-v-" + v);
-    // Escudo en grande (256 px) para que no se pixele; si no existe, el de siempre
+    var d = nodo("div", "eth eth-st2 eth-v-" + v);
+    if (o.color) d.style.setProperty("--club", o.color);
     var crestHi = o.crest ? String(o.crest).replace(/\/teams\/64\//, "/teams/256/") : "";
-    var pw = nodo("span", "eth-pw");
-    var src = o.photo || crestHi;
+    var src = o.photoG || o.photo || "";
     if (src) {
-      var im = nodo("img", "eth-pf" + (o.photo ? "" : " eth-pf-c")); im.alt = ""; im.loading = "lazy"; im.src = src;
-      im.addEventListener("error", function () { if (o.crest && im.src !== o.crest) { im.src = o.crest; im.classList.add("eth-pf-c"); } else im.remove(); });
-      pw.appendChild(im);
-    }
-    if (o.photo && o.crest) { var cb = nodo("img", "eth-pc"); cb.alt = ""; cb.loading = "lazy"; cb.src = crestHi; cb.addEventListener("error", function () { if (cb.src !== o.crest) cb.src = o.crest; else cb.remove(); }); pw.appendChild(cb); }
-    d.appendChild(pw);
+      var im = nodo("img", "eth-big" + (o.photoG ? "" : " eth-big-s")); im.alt = ""; im.loading = "lazy"; im.src = src;
+      im.addEventListener("error", function () { if (o.photo && im.src !== o.photo) { im.src = o.photo; im.classList.add("eth-big-s"); } else im.remove(); });
+      d.appendChild(im);
+    } else if (crestHi) { var cw = nodo("img", "eth-big eth-big-c"); cw.alt = ""; cw.loading = "lazy"; cw.src = crestHi; cw.addEventListener("error", function () { cw.remove(); }, { once: true }); d.appendChild(cw); }
     var tx = nodo("div", "eth-tx");
     tx.appendChild(nodo("span", "eth-pill", VERED[v]));
     var nm = (item.players && item.players[0]) || ""; if (nm && typeof nm !== "string") nm = nm.name || "";
     tx.appendChild(nodo("b", "eth-nm", nm || String(item.title || "").split(",")[0]));
-    var sub = [o.club || item.club || "", item.plazo ? "Vuelta: " + String(item.plazo).charAt(0).toLowerCase() + String(item.plazo).slice(1) : ""].filter(Boolean).join(" · ");
-    if (sub) tx.appendChild(nodo("span", "eth-sb", sub));
+    var cl = nodo("span", "eth-cl");
+    if (crestHi) { var cb = nodo("img"); cb.alt = ""; cb.loading = "lazy"; cb.src = crestHi; cb.addEventListener("error", function () { if (cb.src !== o.crest) cb.src = o.crest; else cb.remove(); }); cl.appendChild(cb); }
+    cl.appendChild(document.createTextNode(o.club || item.club || ""));
+    tx.appendChild(cl);
+    if (item.plazo) tx.appendChild(nodo("span", "eth-sb", "Vuelta: " + String(item.plazo).charAt(0).toLowerCase() + String(item.plazo).slice(1)));
     d.appendChild(tx);
     return d;
   }

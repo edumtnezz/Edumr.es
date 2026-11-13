@@ -3777,3 +3777,53 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
   .dif-panel { padding-left: 10px; padding-right: 10px; }
 }
 .dif-hd .dif-m { font-size: .56rem; letter-spacing: 0; }
+
+/* ===== 13/11/2026 (3) · Cartel 16:9 con el color del club y la cara en grande; ficha del jugador y «Más bajas» ===== */
+.eth.eth-st2 { --club: #1b2740; --ac: #f59e0b; background: var(--club); display: block; }
+.eth-st2.eth-v-baja { --ac: #ef4444; } .eth-st2.eth-v-duda { --ac: #f59e0b; } .eth-st2.eth-v-alta { --ac: #22c55e; }
+/* Capa oscura lisa sobre el color del club, para que el texto blanco se lea siempre igual */
+.eth-st2::before { content: ""; position: absolute; inset: 0; z-index: -1; background: rgba(8, 12, 22, .58); }
+/* Líneas de campo dibujadas */
+.eth-st2::after { content: ""; position: absolute; z-index: -1; right: -14cqh; top: 50%; width: 110cqh; height: 110cqh; transform: translateY(-50%); border-radius: 50%; border: 2px solid rgba(255, 255, 255, .09); box-shadow: 0 0 0 26cqh rgba(255, 255, 255, .035); }
+.eth-st2 .eth-big { position: absolute; right: 2cqw; bottom: 0; height: min(88cqh, 220px); width: auto; aspect-ratio: 1; object-fit: contain; object-position: bottom; filter: drop-shadow(0 6px 14px rgba(0, 0, 0, .35)); }
+.eth-st2 .eth-big.eth-big-s { height: min(60cqh, 96px); bottom: 12cqh; right: 8cqw; border-radius: 50%; background: rgba(255, 255, 255, .1); }
+.eth-st2 .eth-big.eth-big-c { height: 70cqh; bottom: 15cqh; right: 6cqw; opacity: .9; }
+.eth-st2 .eth-tx { position: absolute; left: 6cqw; top: 0; bottom: 0; width: 56cqw; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: clamp(5px, 3cqh, 12px); }
+.eth-st2 .eth-pill { padding: .32em .8em; border-radius: 99px; background: var(--ac); color: #0b1220; font: 800 clamp(10px, 6cqh, 15px)/1 'Figtree', system-ui, sans-serif; letter-spacing: .1em; }
+.eth-st2 .eth-nm { font: 800 clamp(18px, 15cqh, 44px)/1 'Bricolage Grotesque', 'Figtree', system-ui, sans-serif; letter-spacing: -.035em; color: #fff; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-wrap: balance; }
+.eth-st2 .eth-cl { display: inline-flex; align-items: center; gap: .5em; font: 700 clamp(11px, 6.4cqh, 17px)/1.1 'Figtree', system-ui, sans-serif; color: #fff; }
+.eth-st2 .eth-cl img { width: 1.6em; height: 1.6em; object-fit: contain; }
+.eth-st2 .eth-sb { font: 600 clamp(10px, 5.6cqh, 15px)/1.2 'Figtree', system-ui, sans-serif; color: rgba(255, 255, 255, .78); }
+/* El cartel nuevo vuelve al 16:9 de siempre */
+:not(.eth-mini-w):has(> .eth.eth-st2) { aspect-ratio: 16 / 9 !important; }
+.art-banner.art-banner-st { aspect-ratio: 16 / 9; }
+
+.art-lead { text-wrap: pretty; }
+.nw-by { display: flex; align-items: center; gap: 8px; margin: 2px 0 12px; font-size: .8rem; color: var(--muted); }
+.nw-by b { color: var(--text); font-weight: 800; }
+.nw-by span::before { content: "·"; margin-right: 8px; }
+.nw-ficha { --ac: #f59e0b; margin: 4px 0 6px; border-radius: 18px; background: rgba(127, 127, 127, .08); overflow: hidden; }
+.nw-ficha.nw-v-baja { --ac: #ef4444; } .nw-ficha.nw-v-alta { --ac: #22c55e; }
+.nw-ficha-top { display: flex; align-items: center; gap: 12px; padding: 12px 14px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.nw-ficha-top:active { background: rgba(127, 127, 127, .10); }
+.nw-ficha-ph { flex: none; width: 60px; height: 60px; border-radius: 50%; overflow: hidden; background: rgba(127, 127, 127, .14); box-shadow: 0 0 0 2.5px var(--ac); }
+.nw-ficha-ph img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+.nw-ficha-ph img.c { object-fit: contain; padding: 18%; box-sizing: border-box; }
+.nw-ficha-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.nw-ficha-l1 { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.nw-ficha-l1 b { font-size: 1.05rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nw-ficha-tag { flex: none; font-style: normal; font-size: .66rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; background: var(--ac); color: #0b1220; }
+.nw-ficha-l2 { display: flex; align-items: center; gap: 6px; font-size: .82rem; font-weight: 600; color: var(--muted); }
+.nw-ficha-l2 img { width: 18px; height: 18px; object-fit: contain; }
+.nw-ficha-go { font-size: 1.5rem; color: var(--muted); opacity: .6; }
+.nw-ficha .nw-stats { margin: 0; padding: 0 10px 10px; gap: 6px; }
+.nw-ficha .nw-stat { background: var(--card-solid, #fff); }
+.nw-mas { margin-top: 22px; }
+.nw-mas-row { display: flex; align-items: center; gap: 10px; padding: 8px 2px; box-shadow: inset 0 -1px 0 var(--border); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.nw-mas-row:active { background: rgba(127, 127, 127, .10); }
+.nw-mas-row img { flex: none; width: 36px; height: 36px; border-radius: 50%; object-fit: cover; object-position: top; background: rgba(127, 127, 127, .12); }
+.nw-mas-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.nw-mas-tx b { font-size: .9rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nw-mas-tx small { font-size: .74rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nw-mas-tag { flex: none; font-style: normal; font-size: .64rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; }
+.nw-mas-tag.b { background: rgba(220, 38, 38, .12); color: #dc2626; } .nw-mas-tag.d { background: rgba(245, 158, 11, .16); color: #b45309; }

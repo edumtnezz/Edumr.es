@@ -36,7 +36,7 @@ export function candidatos(foto, eventos, now) {
 }
 
 // «f3»: versión del formato. Al cambiarla se vuelven a escribir las noticias vivas con el formato nuevo.
-const clave = (c) => "f3:" + c.id + ":" + c.a + ":" + norm(c.info).slice(0, 80);
+const clave = (c) => "f4:" + c.id + ":" + c.a + ":" + norm(c.info).slice(0, 80);
 export const idNoticia = (c) => ("e" + String(c.id).slice(-10) + c.a.charAt(0)).toLowerCase().replace(/[^a-z0-9]/g, "");
 
 async function resumenIA(env, f, h, n) {
@@ -79,7 +79,7 @@ export async function publicarPartes(env, f = fetch, now = Date.now()) {
   let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
   const nOwn = own.length;
   // Las de un formato anterior se retiran: si el estado sigue vivo, se vuelven a escribir en esta misma tanda o en la siguiente
-  own = own.filter((x) => x.auto !== "estado" || x.f === 3);
+  own = own.filter((x) => x.auto !== "estado" || x.f === 4);
   const nuevas = [];
   for (const c of pend.slice(0, 8)) {
     st.done[clave(c)] = now;
@@ -91,8 +91,8 @@ export async function publicarPartes(env, f = fetch, now = Date.now()) {
     // El texto es una sola frase de hechos: la IA no añade nada y podría repetir el motivo, así que no se usa (resumenIA queda disponible)
     const ia = null;
     const item = {
-      id: idNoticia(c), pid: p.id, title: n.title, lead: n.lead, body: cuerpoNoticia(n, ia), status: "published",
-      createdAt: now, publishedAt: Math.min(now, c.at || now), thumb: "", club: p.team, players: [p.name], tipo: n.tipo, veredicto: n.veredicto, plazo: n.plazo, ia: !!ia, auto: "estado", f: 3,
+      id: idNoticia(c), pid: p.id, title: n.title, lead: n.lead, body: cuerpoNoticia(n), status: "published",
+      createdAt: now, publishedAt: Math.min(now, c.at || now), thumb: "", club: p.team, players: [p.name], tipo: n.tipo, veredicto: n.veredicto, plazo: n.plazo, ia: !!ia, auto: "estado", f: 4, img: foto.bw[c.id] && foto.bw[c.id].b ? "https://cdn.biwenger.com/i/p/" + foto.bw[c.id].b + ".png" : "",
     };
     // Una sola noticia viva por jugador: la nueva sustituye a la anterior
     own = own.filter((x) => x.pid !== p.id);
