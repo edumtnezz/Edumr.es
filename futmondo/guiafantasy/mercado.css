@@ -3772,3 +3772,4 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
   .dif-m { font-size: .82rem; }
   .dif-panel { padding-left: 10px; padding-right: 10px; }
 }
+.dif-hd .dif-m { font-size: .56rem; letter-spacing: 0; }
