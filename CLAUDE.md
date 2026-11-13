@@ -21,6 +21,9 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 - Fuentes: Futmondo (todos los números), Biwenger (solo estado físico), FutbolFantasy (alineaciones probables y % de jugar), Comuniate, FotMob, football-data.org.
 - Liga "Con Permisoo": Futmondo Social, AS 50 %, Marca 50 %, SofaScore 50 %, capitán sí, multiposición sí. La jornada acaba el lunes; a las 00:00 de ese lunes pasa a la siguiente.
 
+## Análisis propios (13/11/2026)
+- `functions/_lib/analitica.mjs` + ruta `analitica`: calendario de dificultad (pestaña Calendario), once probable propio (aún sin enseñar; se compara con FutbolFantasy y se mide su acierto) y previsión de valor (mañana ≈ cambio de hoy, solo con 50.000 € o más). Detalle y cifras de acierto en ESTADO.md. Cualquier cifra de acierto que se enseñe debe salir de una comprobación real contra jornadas o días pasados.
+
 ## Ideas pendientes
 - Avisos Telegram (noticias y alineación probable)
 - Jugadores rentables (SofaScore, calidad-precio)

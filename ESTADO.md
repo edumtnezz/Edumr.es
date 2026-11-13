@@ -166,3 +166,15 @@ Pendiente:
 - Con unos días de registro: comparar horas Biwenger vs Futmondo y decidir si merece la pena otra fuente.
 - Los avisos de Telegram de noticias de FutbolFantasy siguen activos (`avisos.js`); decidir si se quitan.
 - Calendario de dificultad por equipos (idea de asesoriasfantasy).
+
+
+## 13/11/2026 — Análisis propios y noticias sin repeticiones
+
+- **Noticias**: cada dato una sola vez (motivo en el titular, partido en la frase, claves solo con lo que falta). Cartel con fondo de campo dibujado; números en casillas leídos de Futmondo al abrir; botón de compartir redondo; Volver como texto con flecha arriba (ya no flota). La IA ya no redacta: la frase es de plantilla.
+- **Análisis propios** (`functions/_lib/analitica.mjs`, ruta `/api/laquiniela/analitica`): el cron llama a `analitica?run=1` cada minuto; lee la ficha de 40 jugadores por llamada y al acabar la vuelta (unos 14 min) calcula y descansa 6 h. KV: `an:ds:v1` (datos), `an:out:v1` (resultados), `an:onces-log:v1` (cambios del once de fuera).
+  - **Calendario de dificultad** (pestaña Calendario, `/api/laquiniela/dificultad`): nivel 1–5 de cada rival según los puntos de nuestra liga que concede de media; próximas 5 jornadas.
+  - **Once propio**: titulares de los últimos 5 partidos con más peso a los recientes, dibujo del último partido, fuera lesionados y sancionados. Acierto medido contra las jornadas 5–12: 7,8 de 11 (71 %). Todavía NO se enseña en la web; se compara con FutbolFantasy en cada vuelta y se apunta cuándo cambian su once y quién entra y sale.
+  - **Previsión de valor** (Jugadores rentables): mañana ≈ cambio de hoy. Comprobado con 30 días de todos los jugadores: mismo sentido el 90 % de las veces con cambios de 50.000 € o más (95 % con 200.000 € o más). Por debajo de 50.000 € no se da.
+- **Balón parado**: Futmondo solo da penaltis provocados, cometidos, fallados y parados, no quién los lanza. Los penaltis lanzados se pueden contar con los eventos de partido de FotMob (pendiente). Faltas y córners: sin fuente de datos gratuita.
+
+Pendiente: noticias fijas por jornada (once de la jornada, capitanes, chollos, tapados, porterías a cero, resumen), lanzadores de penaltis con FotMob, enseñar el once propio cuando el acierto lo justifique.
