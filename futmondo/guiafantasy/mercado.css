@@ -3881,3 +3881,12 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 @keyframes ethBand { from { transform: skewX(-14deg) translateX(40%); opacity: 0; } to { transform: skewX(-14deg); opacity: 1; } }
 @keyframes ethGhost { from { transform: translateX(0); } to { transform: translateX(-10%); } }
 .nw-tl { gap: 3px; } .nw-tl-c b { font-size: .8rem; border-radius: 8px; }
+
+/* ===== 13/11/2026 (5) · Fotos redondas de la noticia: centradas, con la cabeza arriba y los hombros dentro del círculo =====
+   La regla general de imágenes del artículo (.art-body img) les ponía margen y las bajaba: aquí se anula. */
+.art-body .nw-ficha-ph img, .art-body .nw-mas-row img, .art-body .nw-ficha-l2 img { margin: 0; max-width: none; border-radius: 0; }
+.art-body .nw-ficha-ph { width: 68px; height: 68px; }
+.art-body .nw-ficha-ph img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; transform: scale(1.08); transform-origin: 50% 0; }
+.art-body .nw-ficha-ph img.c { object-fit: contain; transform: none; padding: 18%; }
+.art-body .nw-mas-row img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; object-position: 50% 0; }
+.art-body .nw-ficha-l2 img { width: 18px; height: 18px; }
