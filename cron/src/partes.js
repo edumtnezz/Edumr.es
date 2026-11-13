@@ -35,7 +35,8 @@ export function candidatos(foto, eventos, now) {
   return [...out.values()].sort((a, b) => b.at - a.at);
 }
 
-const clave = (c) => c.id + ":" + c.a + ":" + norm(c.info).slice(0, 80);
+// «f3»: versión del formato. Al cambiarla se vuelven a escribir las noticias vivas con el formato nuevo.
+const clave = (c) => "f3:" + c.id + ":" + c.a + ":" + norm(c.info).slice(0, 80);
 export const idNoticia = (c) => ("e" + String(c.id).slice(-10) + c.a.charAt(0)).toLowerCase().replace(/[^a-z0-9]/g, "");
 
 async function resumenIA(env, f, h, n) {
@@ -76,18 +77,22 @@ export async function publicarPartes(env, f = fetch, now = Date.now()) {
   const porId = new Map(all.map((p) => [p.id, p]));
   const minMap = (mn && mn.map) || {};
   let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
+  const nOwn = own.length;
+  // Las de un formato anterior se retiran: si el estado sigue vivo, se vuelven a escribir en esta misma tanda o en la siguiente
+  own = own.filter((x) => x.auto !== "estado" || x.f === 3);
   const nuevas = [];
-  for (const c of pend.slice(0, 5)) {
+  for (const c of pend.slice(0, 8)) {
     st.done[clave(c)] = now;
     const p = porId.get(c.id);
     // Solo jugadores que cuentan en el fantasy: han jugado o valen 1 M o más
     if (!p || !((p.matches || 0) > 0 || (p.value || 0) >= 1000000)) continue;
     const h = hechosNoticia({ p, de: c.de, a: c.a, info: c.info, mp: minMap[c.id], rec: c.a === "ok" ? null : recambio(p, all, minMap, foto.bw), prox: proximo(jor, p.team) });
     const n = noticiaPlantilla(h);
-    const ia = await resumenIA(env, f, h, n);
+    // El texto es una sola frase de hechos: la IA no añade nada y podría repetir el motivo, así que no se usa (resumenIA queda disponible)
+    const ia = null;
     const item = {
       id: idNoticia(c), pid: p.id, title: n.title, lead: n.lead, body: cuerpoNoticia(n, ia), status: "published",
-      createdAt: now, publishedAt: Math.min(now, c.at || now), thumb: "", club: p.team, players: [p.name], tipo: n.tipo, veredicto: n.veredicto, plazo: n.plazo, ia: !!ia, auto: "estado",
+      createdAt: now, publishedAt: Math.min(now, c.at || now), thumb: "", club: p.team, players: [p.name], tipo: n.tipo, veredicto: n.veredicto, plazo: n.plazo, ia: !!ia, auto: "estado", f: 3,
     };
     // Una sola noticia viva por jugador: la nueva sustituye a la anterior
     own = own.filter((x) => x.pid !== p.id);
@@ -97,7 +102,7 @@ export async function publicarPartes(env, f = fetch, now = Date.now()) {
   own.sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0));
   const keys = Object.keys(st.done);
   if (keys.length > 1500) for (const k of keys.sort((a, b) => st.done[a] - st.done[b]).slice(0, keys.length - 1200)) delete st.done[k];
-  if (nuevas.length) await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
+  if (nuevas.length || own.length !== nOwn) await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
   await env.PORRA.put(K_ST, JSON.stringify(st));
   // Aviso de Telegram solo de lo reciente (menos de 2 h): al arrancar no se manda una tanda de avisos viejos
   if (env.TELEGRAM_BOT_TOKEN) {
@@ -109,5 +114,5 @@ export async function publicarPartes(env, f = fetch, now = Date.now()) {
       try { await f("https://api.telegram.org/bot" + env.TELEGRAM_BOT_TOKEN + "/sendMessage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chat, text, parse_mode: "HTML" }) }); } catch (e) {}
     }
   }
-  return { nuevas: nuevas.length, pendientes: Math.max(0, pend.length - 5) };
+  return { nuevas: nuevas.length, pendientes: Math.max(0, pend.length - 8) };
 }

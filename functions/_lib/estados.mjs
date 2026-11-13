@@ -128,6 +128,7 @@ export function hechosNoticia({ p, de, a, info, mp, rec, prox }) {
 
 // Noticia con plantilla fija: no puede inventar nada porque solo coloca los hechos.
 const enEl = (t) => (/^real sociedad/i.test(t) ? "en la " : "en el ") + t;
+const delEl = (t) => (/^real sociedad/i.test(t) ? "de la " : "del ") + t;
 const conEl = (t) => (/^real sociedad/i.test(t) ? "con la " : "con el ") + t;
 const min1 = (t) => t.charAt(0).toLowerCase() + t.slice(1);
 // Titular con el motivo si cabe: «Mbappé, duda por molestias en los isquiotibiales»
@@ -136,44 +137,40 @@ function titular(h, base, generico) {
   return h.nombre + ", " + base + (/^molestias/i.test(h.parte) ? " por " : ": ") + min1(h.parte);
 }
 export function noticiaPlantilla(h) {
+  // Cada dato se dice UNA vez: el motivo va en el titular, el partido en el párrafo, y las claves solo añaden lo que falta
   const J = h.jornada ? "la jornada " + h.jornada : "la próxima jornada";
   const ante = h.rival ? (h.casa ? " ante el " : " en el campo del ") + h.rival : "";
-  let title, lead, p1, consejo, tipo = "lesion", veredicto = "";
+  const partido = (h.jornada ? "Jornada " + h.jornada : "Próxima jornada") + (h.rival ? (h.casa ? " · en casa ante el " : " · en el campo del ") + h.rival : "");
+  let title, p1, consejo, tipo = "lesion", veredicto = "";
   if (h.a === "lesionado") {
     title = titular(h, "baja", h.nombre + ", baja " + enEl(h.equipo)); veredicto = "baja";
-    lead = h.parte ? h.parte + "." : "Aparece como lesionado.";
-    p1 = h.nombre + " es baja " + enEl(h.equipo) + " para " + J + ante + "." + (h.parte ? " Parte: " + min1(h.parte) + "." : "") + (h.retorno ? " Retorno estimado: " + h.retorno + "." : "");
-    consejo = "No lo alinees." + (h.retorno ? " Vuelta estimada: " + h.retorno + "." : "") + (h.recambio ? " Su recambio más probable es " + h.recambio + "." : "");
+    p1 = "El " + (h.puesto || "jugador") + " " + delEl(h.equipo) + " se pierde " + J + ante + "." + (h.retorno ? " Su vuelta se estima para " + min1(h.retorno) + "." : " No hay fecha de vuelta.");
+    consejo = "No lo alinees." + (h.recambio ? " Si buscas sustituto en su equipo, mira a " + h.recambio + "." : "");
   } else if (h.a === "duda") {
     title = titular(h, "duda", h.nombre + ", duda para " + J); veredicto = "duda";
-    lead = h.parte ? h.parte + "." : "Aparece como duda.";
-    p1 = h.nombre + " es duda " + enEl(h.equipo) + " para " + J + ante + "." + (h.parte ? " Motivo: " + h.parte.charAt(0).toLowerCase() + h.parte.slice(1) + "." : "");
-    consejo = "No lo alinees de momento: espera a la convocatoria." + (h.recambio ? " Si no llega, su recambio más probable es " + h.recambio + "." : "");
+    p1 = "El " + (h.puesto || "jugador") + " " + delEl(h.equipo) + " no tiene asegurada su presencia en " + J + ante + ".";
+    consejo = "No lo alinees de momento: espera a la convocatoria." + (h.recambio ? " Si no llega, mira a " + h.recambio + "." : "");
   } else if (h.a === "sancionado") {
     title = h.nombre + ", sancionado para " + J; veredicto = "baja";
-    lead = h.parte ? h.parte + "." : "No puede jugar por sanción.";
-    p1 = h.nombre + " no puede jugar " + conEl(h.equipo) + " en " + J + ante + " por sanción." + (h.parte ? " Motivo: " + h.parte.charAt(0).toLowerCase() + h.parte.slice(1) + "." : "");
-    consejo = "No lo alinees en " + J + "." + (h.recambio ? " Su recambio más probable es " + h.recambio + "." : "");
+    p1 = "El " + (h.puesto || "jugador") + " " + delEl(h.equipo) + " no puede jugar " + J + ante + "." + (h.parte ? " Motivo: " + min1(h.parte) + "." : "");
+    consejo = "No lo alinees en " + J + "." + (h.recambio ? " Si buscas sustituto en su equipo, mira a " + h.recambio + "." : "");
   } else {
     title = h.nombre + " vuelve a estar disponible"; veredicto = "alta"; tipo = "nota";
-    lead = h.de === "sancionado" ? "Ya ha cumplido su sanción." : "Deja de aparecer como " + (h.de === "lesionado" ? "lesionado" : "duda") + ".";
-    p1 = h.nombre + " vuelve a estar disponible " + enEl(h.equipo) + " para " + J + ante + ". " + lead;
+    p1 = "El " + (h.puesto || "jugador") + " " + delEl(h.equipo) + " " + (h.de === "sancionado" ? "ya ha cumplido su sanción" : "deja de aparecer como " + (h.de === "lesionado" ? "lesionado" : "duda")) + " y puede jugar " + J + ante + ".";
     consejo = "Vuelve a ser opción. Comprueba si entra en el once antes de alinearlo.";
   }
-  const p2 = h.partidos
-    ? "Esta temporada suma " + h.puntos + " puntos en " + h.partidos + " partidos" + (h.media ? " (media " + String(h.media).replace(".", ",") + ")" : "") + (h.titular != null && h.deEquipo ? " y ha sido titular en " + h.titular + " de " + h.deEquipo : "") + ". Su valor en Futmondo es de " + eur(h.valor) + "."
-    : "Todavía no ha jugado esta temporada. Su valor en Futmondo es de " + eur(h.valor) + ".";
   const claves = [];
-  if (h.a === "ok") claves.push(h.nombre + " vuelve a estar disponible."); else claves.push(h.nombre + " es " + (h.a === "lesionado" ? "baja" : h.a === "duda" ? "duda" : "baja por sanción") + " para " + J + ".");
-  if (h.parte && h.a !== "ok") claves.push(h.parte + ".");
-  if (h.retorno) claves.push("Retorno estimado: " + h.retorno + ".");
+  if (h.a !== "ok" && h.titular != null && h.deEquipo >= 3) claves.push(h.titular / h.deEquipo >= 0.6 ? "Es titular habitual: " + h.titular + " de " + h.deEquipo + " partidos de inicio." : "No es titular fijo: " + h.titular + " de " + h.deEquipo + " partidos de inicio.");
   if (h.recambio && h.a !== "ok") claves.push("Recambio más probable: " + h.recambio + ".");
-  return { title, lead, p1, p2, claves, consejo, tipo, veredicto, plazo: h.retorno || "" };
+  if (h.a === "lesionado" && !h.retorno) claves.push("Sin fecha de vuelta.");
+  return { title, lead: partido, p1, claves, consejo, tipo, veredicto, plazo: h.retorno || "" };
 }
 
 export function cuerpoNoticia(n, resumen) {
-  // Un solo párrafo de texto: los números de la temporada se enseñan en casillas, con el dato de Futmondo del momento
-  return [resumen || n.p1, "## Claves fantasy"].concat(n.claves.map((c) => "- " + c), ["## Consejo fantasy", n.consejo]).join("\n");
+  const out = [resumen || n.p1];
+  if (n.claves.length) out.push("## Claves fantasy", ...n.claves.map((c) => "- " + c));
+  out.push("## Consejo fantasy", n.consejo);
+  return out.join("\n");
 }
 
 // Un resumen escrito por la IA solo vale si no trae ningún número ni nombre propio que no esté en los hechos.

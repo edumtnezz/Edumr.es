@@ -72,15 +72,16 @@
   function elEstado(item, o) {
     var v = VERED[item.veredicto] ? item.veredicto : "duda";
     var d = nodo("div", "eth eth-st eth-v-" + v);
-    if (o.crest) { var wm = nodo("img", "eth-wm"); wm.alt = ""; wm.loading = "lazy"; wm.src = o.crest; wm.addEventListener("error", function () { wm.remove(); }, { once: true }); d.appendChild(wm); }
+    // Escudo en grande (256 px) para que no se pixele; si no existe, el de siempre
+    var crestHi = o.crest ? String(o.crest).replace(/\/teams\/64\//, "/teams/256/") : "";
     var pw = nodo("span", "eth-pw");
-    var src = o.photo || o.crest;
+    var src = o.photo || crestHi;
     if (src) {
       var im = nodo("img", "eth-pf" + (o.photo ? "" : " eth-pf-c")); im.alt = ""; im.loading = "lazy"; im.src = src;
       im.addEventListener("error", function () { if (o.crest && im.src !== o.crest) { im.src = o.crest; im.classList.add("eth-pf-c"); } else im.remove(); });
       pw.appendChild(im);
     }
-    if (o.photo && o.crest) { var cb = nodo("img", "eth-pc"); cb.alt = ""; cb.loading = "lazy"; cb.src = o.crest; cb.addEventListener("error", function () { cb.remove(); }, { once: true }); pw.appendChild(cb); }
+    if (o.photo && o.crest) { var cb = nodo("img", "eth-pc"); cb.alt = ""; cb.loading = "lazy"; cb.src = crestHi; cb.addEventListener("error", function () { if (cb.src !== o.crest) cb.src = o.crest; else cb.remove(); }); pw.appendChild(cb); }
     d.appendChild(pw);
     var tx = nodo("div", "eth-tx");
     tx.appendChild(nodo("span", "eth-pill", VERED[v]));

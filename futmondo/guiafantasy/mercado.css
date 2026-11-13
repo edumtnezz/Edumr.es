@@ -3674,7 +3674,8 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 :is(#tab-mercado, #tab-plantillas) .plt-head #pltPos .plt-btn { border-radius: 10px; }
 
 /* Volver: botón redondo con flecha, como en una app */
-.bk:not(.news-share):not(.bk-link) { height: 40px; padding: 0 16px 0 10px; gap: 4px; border: none; background: var(--card-solid); box-shadow: 0 1px 2px rgba(0, 0, 0, .10), 0 0 0 1px var(--border); font-weight: 700; letter-spacing: -.01em; }
+.bk:not(.news-share):not(.bk-link) { height: 36px; padding: 0 10px 0 2px; gap: 2px; border: none; border-radius: 10px; background: none; box-shadow: none; color: var(--muted); font-size: .9rem; font-weight: 700; }
+.bk:not(.news-share):not(.bk-link):hover { background: rgba(127, 127, 127, .12); color: var(--text); }
 .bk:not(.news-share):not(.bk-link) .gi { width: 20px; height: 20px; }
 .bk-link { border: none; background: none; height: auto; padding: 6px 2px; color: var(--muted); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 
@@ -3719,9 +3720,20 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 .news-share.ok { width: auto; padding: 0 14px; border-radius: 999px; background: rgba(34, 197, 94, .16); color: #16a34a; }
 #noticiaView { position: relative; }
 #noticiaView .news-share { position: absolute; top: 0; right: 0; z-index: 2; }
-#noticiaView .news-bar { min-height: 40px; padding-right: 48px; }
-@media (max-width: 720px) {
-  #noticiaView .news-share { top: -42px; }
-  #noticiaView .news-bar { min-height: 0; padding-right: 0; margin-bottom: 0; }
-  #noticiaView .ficha-name { margin-top: 12px; }
-}
+#noticiaView .news-bar { min-height: 40px; padding-right: 48px; margin-bottom: 6px; }
+
+/* ===== 13/11/2026 (2) · Cartel de estado: fondo de campo dibujado, sin marca de agua, foto y escudo nítidos ===== */
+.eth.eth-st { background: #0e1626; box-shadow: none; padding: 0 5cqw; gap: 4.5cqw; }
+.eth-st .eth-wm { display: none; }
+/* Líneas de campo (círculo central y medio campo) dibujadas, no una imagen: nunca se pixelan */
+.eth-st::before { content: ""; position: absolute; z-index: -1; right: -22cqh; top: 50%; width: 92cqh; height: 92cqh; transform: translateY(-50%); border-radius: 50%; border: 2px solid rgba(255, 255, 255, .07); }
+.eth-st::after { content: ""; position: absolute; z-index: -1; right: calc(24cqh - 1px); top: 0; bottom: 0; width: 2px; background: rgba(255, 255, 255, .07); }
+/* La foto de Futmondo mide 64 px: se enseña como mucho a 96 px para que no se vea borrosa */
+.eth-st .eth-pw { width: min(60cqh, 96px); height: min(60cqh, 96px); max-width: none; max-height: none; margin-left: 0; background: #1b2740; box-shadow: 0 0 0 3px var(--ac); }
+.eth-st .eth-pc { width: 40%; height: 40%; right: -8%; bottom: -8%; padding: 5%; box-shadow: 0 2px 6px rgba(0, 0, 0, .35); }
+.eth-st .eth-tx { gap: 6px; }
+.eth-st .eth-pill { padding: 4px 10px; font-size: clamp(10px, 5cqh, 12px); }
+.eth-st .eth-nm { font-size: clamp(17px, 13cqh, 30px); }
+.eth-st .eth-sb { font-size: clamp(11px, 6cqh, 14px); color: #9fb0c8; }
+/* Banda baja en todas partes (lista, inicio y noticia) */
+:not(.eth-mini-w):has(> .eth.eth-st) { aspect-ratio: 5 / 2 !important; height: auto !important; }

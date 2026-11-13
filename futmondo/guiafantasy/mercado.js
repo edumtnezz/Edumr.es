@@ -4307,7 +4307,9 @@
     } else wrap.appendChild(el("p", "nw-empty", "Sin noticias por ahora."));
     // 2) Últimos cambios, justo debajo: avatar pequeño y resumen
     wrap.appendChild(sec("Últimos cambios", "actualizaciones"));
-    const cambios = cambiosLista(2).sort((a, b) => b.ts - a.ts).slice(0, 5);
+    // Lo que ya es noticia no se repite aquí: quedan el mercado y los cambios menores (apercibidos, suplentes)
+    const conNoticia = new Set(list.map((x) => String(x.pid || "")).filter(Boolean));
+    const cambios = cambiosLista(2).filter((e) => !(e.x && e.x.pid && e.x.cat !== "mercado" && conNoticia.has(String(e.x.pid)))).sort((a, b) => b.ts - a.ts).slice(0, 5);
     if (cambios.length) {
       const ul = el("div", "nw-list");
       cambios.forEach((e) => ul.appendChild(inicioRow(e, open)));

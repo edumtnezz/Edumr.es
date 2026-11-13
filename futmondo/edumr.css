@@ -904,12 +904,11 @@ body { overflow-x: clip; overscroll-behavior-x: none; max-width: 100%; }
   .gf-page .cx-header .cx-sub .cx-more-menu .cx-more-item { padding: 14px 16px !important; font-size: 0.95rem !important; min-height: 48px; }
   /* Botón de subir arriba: por encima de la barra */
   .gf-page .cx-totop { bottom: calc(78px + env(safe-area-inset-bottom, 0px)) !important; }
-  /* Volver siempre visible */
-  .gf-page .bk:not(.news-share):not(.bk-link) .bk-t { display: none; }
-  .gf-page .bk:not(.news-share):not(.bk-link) .gi { width: 24px; height: 24px; margin-right: 2px; }
+  /* Volver: sin botón flotante. Va arriba, como texto con flecha (igual que en una app) */
   .gf-page .bk:not(.news-share):not(.bk-link) {
-    position: fixed; left: 12px; bottom: calc(78px + env(safe-area-inset-bottom, 0px)); z-index: 65; margin: 0;
-    width: 48px; height: 48px; padding: 0; justify-content: center; border-radius: 50%; gap: 0;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22), 0 0 0 1px var(--cx-border);
+    position: static; width: auto; height: 36px; margin: 0 0 6px -6px; padding: 0 10px 0 2px; gap: 2px;
+    border: none; border-radius: 10px; background: none; box-shadow: none; color: var(--cx-muted, #64748b); font-size: .9rem; font-weight: 700;
   }
+  .gf-page .bk:not(.news-share):not(.bk-link):active { background: rgba(127, 127, 127, .12); }
+  .gf-page .bk:not(.news-share):not(.bk-link) .gi { width: 20px; height: 20px; }
 }
