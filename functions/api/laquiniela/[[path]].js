@@ -6158,7 +6158,7 @@ async function handleGet({ request, env: env0, params }) {
             try {
               const ds = (await env.PORRA.get(AN_DS, "json")) || {};
               const me = ds[pl.id];
-              if (me && me.m && me.m.length) art.partidos = me.m.slice().sort((a, b) => a[0] - b[0]).slice(-10).map((x) => ({ j: x[0], cat: x[4], pts: x[3], min: x[5] }));
+              if (me && me.m && me.m.length) art.partidos = me.m.slice().sort((a, b) => a[0] - b[0]).slice(-12).map((x) => ({ j: x[0], cat: x[4], pts: x[3], min: x[5] }));
             } catch (e) {}
             const linea = ((mk && mk.players) || []).filter((q) => q.role === pl.role && (q.matches || 0) > 0).sort((a, b) => (b.points || 0) - (a.points || 0));
             const pos = linea.findIndex((q) => q.id === pl.id);
