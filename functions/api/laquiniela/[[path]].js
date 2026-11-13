@@ -6,7 +6,8 @@ import { backtest as probBacktest } from "../../_lib/probjugar.mjs";
 import { staleChange, actualizadoHoy, tocadosDe, marcarTocados } from "../../_lib/change.mjs";
 import { etiquetaDe } from "../../_lib/portada-svg.mjs";
 import { promptFondo, grupoTipo } from "../../_lib/portada-prompt.mjs";
-import { partirInfo, tituloCambio, catCambio, NOMBRE_ESTADO, ajustarOnce } from "../../_lib/estados.mjs";
+import { partirInfo, tituloCambio, catCambio, NOMBRE_ESTADO, ajustarOnce, clubKey } from "../../_lib/estados.mjs";
+import { compacto, dificultad, calendarioDificultad, oncePropio, aciertoOnces, compararOnce } from "../../_lib/analitica.mjs";
 const COMPETITION = "PD";
 const CACHE_TTL_MS = 60 * 1000;
 const FORM_TTL_MS = 10 * 60 * 1000;
@@ -2638,6 +2639,68 @@ function parseCambios(html) {
   }
   return days.filter((d) => d.items.length);
 }
+// ---------- Análisis propios (13/11/2026): dificultad de calendario y once probable propio ----------
+// El cron llama a /analitica?run=1 cada minuto. Cada llamada lee la ficha de 40 jugadores en Futmondo; al terminar la vuelta
+// (unos 14 min) calcula los resultados y descansa 6 h. Todo queda en KV; las páginas solo leen el resultado.
+const AN_DS = "an:ds:v1", AN_CUR = "an:cur:v1", AN_OUT = "an:out:v1", AN_LOG = "an:onces-log:v1";
+async function analiticaRun(env) {
+  const now = Date.now();
+  const cur = (await env.PORRA.get(AN_CUR, "json")) || { i: 0, start: 0, done: 0 };
+  if (cur.i === 0 && cur.done && now - cur.done < 6 * 3600000) return { alDia: true, hecho: cur.done };
+  const mk = await getMarketPlayers(env);
+  const all = (mk && mk.players) || [];
+  if (all.length < 300) return { error: "sin mercado" };
+  const ds = cur.i === 0 ? {} : ((await env.PORRA.get(AN_DS, "json")) || {});
+  if (cur.i === 0) cur.start = now;
+  const lote = all.slice(cur.i, cur.i + 40);
+  for (let k = 0; k < lote.length; k += 8) {
+    const fs = await Promise.all(lote.slice(k, k + 8).map((p) => playerFicha(env, p.id, false, false).catch(() => null)));
+    fs.forEach((f) => { const c = compacto(f); if (c) ds[c.id] = c; });
+  }
+  cur.i += lote.length;
+  const fin = cur.i >= all.length;
+  await env.PORRA.put(AN_DS, JSON.stringify(ds));
+  if (!fin) { await env.PORRA.put(AN_CUR, JSON.stringify(cur)); return { leidos: cur.i, de: all.length }; }
+  // Fin de la vuelta: resultados
+  const lista = Object.values(ds);
+  const out = { at: now, jugadores: lista.length, dificultad: dificultad(lista), acierto: aciertoOnces(lista, 5), onces: {} };
+  const foto = await estFoto(env);
+  const porEquipo = new Map();
+  for (const p of lista) { const k = clubKey(p.t); if (!porEquipo.has(k)) porEquipo.set(k, []); porEquipo.get(k).push(p); }
+  for (const [k, jug] of porEquipo) { const o = oncePropio(jug, null, foto); if (o) out.onces[k] = { team: jug[0].t, ...o }; }
+  // Comparación con el once probable que ya usamos (FutbolFantasy), partido a partido de la próxima jornada
+  try {
+    const jor = await getJornada(env);
+    const log = (await env.PORRA.get(AN_LOG, "json")) || { firmas: {}, eventos: [] };
+    for (const m of (jor && jor.matches) || []) {
+      if (m.live && m.live.state === "final") continue;
+      let o = null;
+      try { o = await getOnce(env, m.home, m.away, ""); } catch (e) {}
+      for (const lado of ["home", "away"]) {
+        const side = o && o[lado]; if (!side || !Array.isArray(side.starters) || side.starters.length < 11) continue;
+        const k = clubKey(side.name), mio = out.onces[k]; if (!mio) continue;
+        const cmp = compararOnce(mio, mio.team, side.starters, porEquipo.get(k) || []);
+        if (!cmp) continue;
+        mio.ff = { coinciden: cmp.coinciden, emparejados: cmp.emparejados, soloPropio: cmp.soloPropio, soloFuera: cmp.soloFuera };
+        // Registro de cuándo cambia el once de fuera y quién entra y sale, para aprender de sus cambios
+        const antes = log.firmas[k];
+        if (antes && antes.f !== cmp.firma) {
+          const a = new Set(antes.f.split(",")), b = new Set(cmp.firma.split(","));
+          const nombre = (id) => ((ds[id] || {}).n) || id;
+          log.eventos.push({ at: now, team: mio.team, jornada: jor.matchday, entra: [...b].filter((x) => !a.has(x)).map(nombre), sale: [...a].filter((x) => !b.has(x)).map(nombre), estados: [...a].filter((x) => !b.has(x)).map((x) => (foto[x] || {}).e || "") });
+        }
+        log.firmas[k] = { f: cmp.firma, at: now, j: jor.matchday };
+      }
+    }
+    log.eventos = log.eventos.slice(-300);
+    await env.PORRA.put(AN_LOG, JSON.stringify(log));
+    out.jornada = jor && jor.matchday;
+  } catch (e) { out.errorComparacion = String(e && e.message || e).slice(0, 120); }
+  await env.PORRA.put(AN_OUT, JSON.stringify(out));
+  await env.PORRA.put(AN_CUR, JSON.stringify({ i: 0, start: 0, done: now }));
+  return { fin: true, jugadores: lista.length };
+}
+
 // «Últimos cambios» PROPIO (12/11/2026): sale de nuestro registro de estados y del mercado de Futmondo, con la foto de Futmondo.
 // Ya no se lee la página de otra web.
 async function getCambiosPropios(env) {
@@ -5339,7 +5402,7 @@ const SWR_OK = new Set(["mercado", "jugador", "ultimos-cambios", "equipos", "cal
 // visita "en frío" esperaba varios segundos (medido 11/11/2026: mercado 6,2 s, jornada 6,5 s, noticias 3 s). Con esta copia
 // se responde al momento con el último dato bueno y se refresca por detrás. Solo rutas sin parámetros (y jornada?jornada=N).
 // Edad máxima de la copia: SNAP_MAX (jornada 10 min y nunca con un partido en juego o a punto de empezar).
-const SNAP_MAX = { mercado: 900, jornada: 600, rachas: 1800, equipos: 21600, portada: 1800, noticias: 1800, "ultimos-cambios": 1800, calendario: 21600, temporada: 21600, clausulas: 1800 };
+const SNAP_MAX = { dificultad: 3600, mercado: 900, jornada: 600, rachas: 1800, equipos: 21600, portada: 1800, noticias: 1800, "ultimos-cambios": 1800, calendario: 21600, temporada: 21600, clausulas: 1800 };
 const SNAP_EVERY = 120; // como mucho una escritura a KV cada 2 min por ruta y centro de datos
 function snapKey(path, url) {
   if (!SNAP_MAX[path]) return "";
@@ -6009,6 +6072,21 @@ async function handleGet({ request, env: env0, params }) {
     try { log = (await env.PORRA.get("mkchg:v2", "json")) || []; } catch (e) {}
     const fm = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
     return json({ n: log.length, cambios: log.slice(-120).reverse().map((x) => ({ hora: fm.format(new Date(x.at)), jugadoresCambiados: x.n, movimientosDe500kOMas: (x.g || []).map((g) => g.name + " " + (g.d > 0 ? "+" : "") + g.d) })) });
+  }
+  if (path === "analitica") {
+    if (url.searchParams.has("run")) { try { return json({ ok: true, result: await analiticaRun(env) }); } catch (e) { return json({ ok: false, error: String(e && e.message || e).slice(0, 200) }); } }
+    let out = null, log = null;
+    try { [out, log] = await Promise.all([env.PORRA.get(AN_OUT, "json"), env.PORRA.get(AN_LOG, "json")]); } catch (e) {}
+    return json(out ? { ...out, cambiosFuera: ((log && log.eventos) || []).slice(-60).reverse() } : { sinDatos: true });
+  }
+  // Calendario de dificultad: próximas 5 jornadas de cada equipo con el nivel de su rival (1 muy fácil … 5 muy difícil)
+  if (path === "dificultad") {
+    try {
+      const [out, cal, jor] = await Promise.all([env.PORRA.get(AN_OUT, "json"), getCalendario(env), getJornada(env)]);
+      if (!out || !out.dificultad || !out.dificultad.length) return json({ sinDatos: true });
+      const desde = Number((jor && jor.matchday) || 0) || 1;
+      return json({ updatedAt: out.at, ...calendarioDificultad(out.dificultad, cal, desde, 5), niveles: out.dificultad });
+    } catch (e) { return json({ sinDatos: true, error: String(e && e.message || e).slice(0, 160) }); }
   }
   // Estado físico de los jugadores y registro de cambios con su hora (lo apunta el cron cada 3 min)
   if (path === "estados") {

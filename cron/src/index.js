@@ -25,6 +25,8 @@ export default {
         await Promise.all(["mercado", "jornada", "rachas", "portada", "noticias", "ultimos-cambios", "equipos"].map((p) =>
           fetch("https://edumr.es/api/laquiniela/" + p, { headers: { "user-agent": "edumr-cron" } }).then((r) => r.text()).catch(() => {})));
       } catch (e) {}
+      // Análisis propios (dificultad de calendario, once propio): una tanda de jugadores por minuto hasta completar la vuelta; luego descansa 6 h.
+      try { await fetch("https://edumr.es/api/laquiniela/analitica?run=1", { headers: { "user-agent": "edumr-cron" } }); } catch (e) {}
       // Estado físico de los jugadores: apunta cada cambio con su hora (cada 3 min).
       try { await vigilarEstados(env); } catch (e) { console.error("estados", String(e && e.message || e).slice(0, 180)); }
       try { await avisarPuntos(env); } catch (e) {}

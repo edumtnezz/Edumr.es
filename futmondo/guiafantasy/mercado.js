@@ -3600,6 +3600,49 @@
     cmpFmLoad(a, b, x, y, cmpRange);
   }
 
+  /* ---------- Calendario de dificultad: próximas 5 jornadas de cada equipo ----------
+     Nivel del rival = cuántos puntos de nuestra liga suman de media los jugadores que se enfrentan a él
+     (1 = concede muchos puntos, muy fácil · 5 = concede pocos, muy difícil). Datos de Futmondo. */
+  let difData = null;
+  async function initCalendarioDif() {
+    const box = $("difBox"); if (!box) return;
+    if (!difData) box.replaceChildren(el("p", "muted small", "Cargando calendario…"));
+    try {
+      const r = await fetch(API + "/dificultad"); const d = await r.json();
+      if (d && d.equipos && d.equipos.length) difData = d;
+    } catch (e) {}
+    if (!difData) { box.replaceChildren(el("p", "muted small", "Todavía no hay datos del calendario. Se calculan solos varias veces al día.")); return; }
+    const d = difData, NOM = ["", "Muy fácil", "Fácil", "Normal", "Difícil", "Muy difícil"];
+    const frag = document.createDocumentFragment();
+    const ley = el("div", "dif-ley");
+    for (let n = 1; n <= 5; n++) { const i = el("span", "dif-k"); i.appendChild(el("i", "dif-n dif-" + n, String(n))); i.appendChild(document.createTextNode(NOM[n])); ley.appendChild(i); }
+    frag.appendChild(ley);
+    const sc = el("div", "dif-scroll"), tb = el("div", "dif-tb");
+    tb.style.setProperty("--dif-cols", String(d.jornadas.length));
+    const hd = el("div", "dif-row dif-hd");
+    hd.appendChild(el("span", "dif-team", "Equipo"));
+    d.jornadas.forEach((j) => hd.appendChild(el("span", "dif-c", "J" + j)));
+    hd.appendChild(el("span", "dif-m", "Media"));
+    tb.appendChild(hd);
+    d.equipos.forEach((e) => {
+      const row = el("a", "dif-row"); row.href = "/equipos/" + teamSlug(e.team);
+      const tm = el("span", "dif-team");
+      const lg = clubLogo(e.team, e.crest); if (lg) { const im = el("img"); im.src = lg; im.alt = ""; im.loading = "lazy"; tm.appendChild(im); }
+      tm.appendChild(el("b", null, e.team));
+      row.appendChild(tm);
+      e.celdas.forEach((c) => {
+        const cel = el("span", "dif-c" + (c && c.nivel ? " dif-" + c.nivel : " dif-0"));
+        if (c) { if (c.crest) { const im = el("img"); im.src = clubLogo(c.rival, c.crest); im.alt = c.rival; im.title = c.rival; im.loading = "lazy"; cel.appendChild(im); } cel.appendChild(el("small", null, c.casa ? "Casa" : "Fuera")); cel.title = c.rival + (c.casa ? " (casa)" : " (fuera)") + (c.nivel ? " · " + NOM[c.nivel] : ""); }
+        else cel.appendChild(el("small", null, "—"));
+        row.appendChild(cel);
+      });
+      row.appendChild(el("span", "dif-m", e.media != null ? String(e.media).replace(".", ",") : "—"));
+      tb.appendChild(row);
+    });
+    sc.appendChild(tb); frag.appendChild(sc);
+    frag.appendChild(el("p", "dif-note", "El color es la dificultad del rival: cuántos puntos de nuestra liga suman de media los jugadores que se enfrentan a él. Ordenado del calendario más fácil al más difícil."));
+    box.replaceChildren(frag);
+  }
   async function initComparador() {
     if (!(all && all.length)) {
       try { const d = await (await fetch(API + "/mercado")).json(); if (Array.isArray(d.players)) all = d.players; if (d.updatedAt) lastMarketAt = d.updatedAt; } catch (e) {}
@@ -3734,7 +3777,7 @@
   // Clausulazo jugoso, Analiza tu equipo) viven aquí dentro en vez de obligar
   // a deslizar o poner flechas. Si la pestaña activa es una de las del menú,
   // el botón se pone verde para saber dónde estás sin abrir el desplegable.
-  const MORE_TABS = { actualizaciones: "Últimas actualizaciones", clausulazos: "Clausulazo jugoso", rentables: "Jugadores rentables", comparador: "Comparador", analiza: "Analiza tu equipo", plantillas: "Plantillas (prueba)" };
+  const MORE_TABS = { actualizaciones: "Últimas actualizaciones", clausulazos: "Clausulazo jugoso", rentables: "Jugadores rentables", calendario: "Calendario", comparador: "Comparador", analiza: "Analiza tu equipo", plantillas: "Plantillas (prueba)" };
   function closeMoreMenu() {
     const menu = $("cxMoreMenu"), btn = $("cxMoreBtn");
     if (menu) menu.classList.add("hidden");
@@ -3793,6 +3836,7 @@
     if (name === "plantillas") initPlantillas();
     if (name === "rentables") initRentables();
     if (name === "comparador") initComparador();
+    if (name === "calendario") initCalendarioDif();
     if (name === "analiza") { fetch(API + "/me", { cache: "no-store" }).then((r) => r.json()).then((d) => { const m = $("anMsg"); if (!(d && d.user) && m && !m.querySelector(".an-login")) anMsgSet(m, "Inicia sesión para analizar tu equipo."); }).catch(() => {}); }
     try { sessionStorage.setItem("merc_tab", name); } catch (e) {}
     try {
@@ -5731,7 +5775,7 @@
     } catch (e) {}
     let name = "";
     try {
-      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|actualizaciones|noticias|analiza|clausulazos|rentables|comparador|plantillas)/);
+      const m = location.pathname.match(/\/guiafantasy\/(inicio|mercado|actualizaciones|noticias|analiza|clausulazos|rentables|calendario|comparador|plantillas)/);
       if (m) name = m[1];
     } catch (e) {}
     if (!name) { try { name = sessionStorage.getItem("merc_tab") || ""; } catch (e) {} }
@@ -7424,6 +7468,9 @@
       sp.appendChild(el("small", "rtb-when", " " + c[1]));
       lc.appendChild(sp);
     });
+    // Previsión de mañana: en Futmondo el valor sigue la inercia de hoy (comprobado con 30 días de todos los jugadores:
+    // mismo sentido 9 de cada 10 veces con cambios de 50.000 € o más). Por debajo de eso no se da previsión.
+    { const h = Number(p.chg1) || 0; if (Math.abs(h) >= 50000) { const pv = el("span", "rtb-pred " + (h > 0 ? "up" : "dn"), "≈ " + rtbK(h)); pv.appendChild(el("small", "rtb-when", " mañana")); pv.title = "Previsión: mañana se mueve en el mismo sentido que hoy 9 de cada 10 veces"; lc.appendChild(pv); } }
     body.appendChild(l2);
     if (lc.firstChild) body.appendChild(lc);
     const l3 = el("span", "rtb-l3");
