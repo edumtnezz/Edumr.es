@@ -3894,3 +3894,18 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 .art-body .nw-ficha-ph img.c { object-fit: contain; transform: none; padding: 18%; }
 .art-body .nw-mas-row img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; object-position: 50% 0; }
 .art-body .nw-ficha-l2 img { width: 18px; height: 18px; }
+
+/* Calendario: orden a elegir, puesto en vez de media y nombres enteros (en dos líneas si hace falta) */
+.dif-tb { grid-template-columns: minmax(128px, 1.7fr) repeat(var(--dif-cols, 5), minmax(46px, 1fr)); }
+.dif-ord { display: inline-flex; gap: 4px; padding: 3px; margin: 0 0 12px; border-radius: 12px; background: var(--border); }
+.dif-ob { border: 0; background: none; color: var(--muted); font: 700 .8rem/1 'Figtree', system-ui, sans-serif; padding: 8px 12px; border-radius: 9px; cursor: pointer; transition: background .18s ease, color .18s ease; -webkit-tap-highlight-color: transparent; }
+.dif-ob.on { background: var(--card-solid, #fff); color: var(--text); box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+.dif-ob:active { transform: scale(.97); }
+.dif-pos { flex: none; width: 16px; text-align: right; font-style: normal; font-size: .72rem; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
+.dif-team b { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.12; overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  .dif-tb { grid-template-columns: minmax(112px, 1.5fr) repeat(var(--dif-cols, 5), minmax(36px, 1fr)); }
+  .dif-team { gap: 5px; }
+  .dif-team b { font-size: .74rem; }
+  .dif-pos { width: 14px; font-size: .68rem; }
+}

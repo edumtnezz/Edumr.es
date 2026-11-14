@@ -3746,7 +3746,30 @@ async function getEstadios(env) {
 
 // Calendario completo de la temporada (todas las jornadas, todos los equipos) en formato compacto.
 // Sale de football-data (1 sola petición); la caché del edge (EDGE_TTL) y su copia de reserva de 2 días la sirven. Nada inventado.
+// Calendario con memoria: football-data.org corta con un 429 si se le pide muy seguido. Se guarda 5 min y,
+// si la fuente falla, se sirve el último bueno (nunca pantalla vacía).
+let calMem = null;
 async function getCalendario(env) {
+  const now = Date.now();
+  if (calMem && now - calMem.at < 5 * 60e3) return calMem.d;
+  let kv = null;
+  try { kv = await env.PORRA.get("cal:v1", "json"); } catch (e) {}
+  if (kv && kv.d && now - kv.at < 5 * 60e3) { calMem = kv; return kv.d; }
+  try {
+    const d = await fetchCalendario(env);
+    if (d && d.matches && d.matches.length) {
+      calMem = { at: now, d };
+      try { await env.PORRA.put("cal:v1", JSON.stringify(calMem)); } catch (e) {}
+      return d;
+    }
+    throw new Error("calendario vacío");
+  } catch (e) {
+    if (kv && kv.d) return kv.d;
+    if (calMem) return calMem.d;
+    throw e;
+  }
+}
+async function fetchCalendario(env) {
   const token = env.FOOTBALL_API_KEY;
   if (!token) throw new Error("sin token");
   const res = await fetch(`https://api.football-data.org/v4/competitions/${COMPETITION}/matches`, { headers: { "X-Auth-Token": token } });

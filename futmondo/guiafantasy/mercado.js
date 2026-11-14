@@ -165,10 +165,11 @@
     try { same = !!document.referrer && new URL(document.referrer).origin === location.origin; } catch (e) {}
     if (same && history.length > 1) history.back(); else location.href = fallback || "/futmondo/guiafantasy/inicio";
   }
-  function backBtn(fallback, extra) {
+  function backBtn(fallback, extra, label) {
     const b = el("button", "bk" + (extra ? " " + extra : ""));
-    b.innerHTML = "<svg class=\"gi\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M15 5l-7 7 7 7\"/></svg><span class=\"bk-t\">Volver</span>";
-    b.type = "button"; b.setAttribute("aria-label", "Volver");
+    b.innerHTML = "<svg class=\"gi\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M15 5l-7 7 7 7\"/></svg><span class=\"bk-t\"></span>";
+    b.querySelector(".bk-t").textContent = label || "Inicio";
+    b.type = "button"; b.setAttribute("aria-label", "Volver a " + (label || "Inicio"));
     b.addEventListener("click", () => goBack(fallback));
     return b;
   }
@@ -750,7 +751,7 @@
       if (d && d.days && d.days.length) { updData = d; updTry = 0; }
       else if (updTry < 3) { updTry++; setTimeout(() => { if (currentTab === "actualizaciones") renderActualizaciones(); }, 3000 * updTry); }
       const upd = $("updUpdated");
-      if (upd && d && d.updatedAt) upd.textContent = "· " + haceTxt(d.updatedAt);
+      if (upd) upd.textContent = "";
     } catch (e) {}
     if (updData) {
       paintActualizaciones();
@@ -769,7 +770,7 @@
       const d = await (await fetch(API + "/fichajes")).json();
       const groups = (d && d.groups) || [];
       const upd = $("fichUpdated");
-      if (upd) upd.textContent = d && d.updatedAt ? "· actualizado " + haceTxt(d.updatedAt) : "";
+      if (upd) upd.textContent = "";
       box.innerHTML = "";
       if (!groups.length) { box.innerHTML = '<p class="muted small">Sin movimientos ahora mismo.</p>'; return; }
       groups.forEach((g) => {
@@ -1621,7 +1622,7 @@
   }
   function renderMatchDetail(box, m, d, jn, xi, xiKind, finished, ffData) {
     box.innerHTML = "";
-    box.appendChild(backBtn("/futmondo/guiafantasy/inicio", "mpage-back"));
+    box.appendChild(backBtn("/futmondo/guiafantasy/inicio", "mpage-back", "Partidos"));
     const head = el("div", "mpage-top"); head.appendChild(refreshBtn());
     head.classList.add("has-stadium");
     const tl = el("div", "mpage-topline");
@@ -1921,7 +1922,7 @@
       const jn = Number(jr && jr.matchday) || Number(qj) || 0;
       const live = m.live || {};
       box.innerHTML = "";
-      box.appendChild(backBtn(matchUrl, "mpage-back"));
+      box.appendChild(backBtn(matchUrl, "mpage-back", "Partido"));
       const head = el("div", "lv-head"); head.appendChild(refreshBtn());
       const side = (name, crest) => { const t = el("div", "lv-team"); const im = el("img"); im.src = crest || ""; im.alt = ""; t.appendChild(im); t.appendChild(el("span", null, name)); return clubLink(t, name); };
       head.appendChild(side(m.home, m.homeCrest));
@@ -2574,7 +2575,7 @@
       const p = (all || []).find((x) => String(x.id) === String(id)) || {};
       const y = window.scrollY;
       box.innerHTML = "";
-      box.appendChild(backBtn("/futmondo/guiafantasy/mercado"));
+      box.appendChild(backBtn("/futmondo/guiafantasy/mercado", "", "Mercado"));
       box.appendChild(renderFicha(d, p));
       if (!first) window.scrollTo(0, y);
     };
@@ -2860,7 +2861,9 @@
      Las comparaciones guardadas viven en este dispositivo (localStorage), sin gastar escrituras de KV. */
   const CMP_SEL_KEY = "gf:cmp:sel:v1", CMP_SAVED_KEY = "gf:cmp:saved:v1", CMP_DATA_KEY = "gf:cmp:data:v1";
   function cmpGet(k, fb) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? fb : v; } catch (e) { return fb; } }
-  function cmpSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  // La última búsqueda del comparador se recuerda solo 30 minutos; las comparaciones guardadas a mano no caducan.
+  const CMP_SEL_MAX = 30 * 60e3;
+  function cmpSet(k, v) { try { localStorage.setItem(k, JSON.stringify(k === CMP_SEL_KEY && v && typeof v === "object" ? { a: v.a || null, b: v.b || null, at: Date.now() } : v)); } catch (e) {} }
   function cmpFind(id) {
     if (!id || !all || !all.length) return null;
     return all.find((p) => String(p.id) === String(id)) || null;
@@ -3604,29 +3607,45 @@
      Nivel del rival = cuántos puntos de nuestra liga suman de media los jugadores que se enfrentan a él
      (1 = concede muchos puntos, muy fácil · 5 = concede pocos, muy difícil). Datos de Futmondo. */
   let difData = null;
+  let difOrden = "facil";
   async function initCalendarioDif() {
     const box = $("difBox"); if (!box) return;
-    if (!difData) box.replaceChildren(el("p", "muted small", "Cargando calendario…"));
+    // Último calendario bueno guardado en el móvil: si la fuente falla al volver a entrar, se enseña ese (nunca "sin datos")
+    if (!difData) { try { const g = JSON.parse(localStorage.getItem("gf_dif_v1") || "null"); if (g && g.equipos && g.equipos.length) difData = g; } catch (e) {} }
+    if (difData) initCalendarioDifPinta(); else box.replaceChildren(el("p", "muted small", "Cargando calendario…"));
     try {
       const r = await fetch(API + "/dificultad"); const d = await r.json();
-      if (d && d.equipos && d.equipos.length) difData = d;
+      if (d && d.equipos && d.equipos.length) { difData = d; try { localStorage.setItem("gf_dif_v1", JSON.stringify({ updatedAt: d.updatedAt, jornadas: d.jornadas, equipos: d.equipos })); } catch (e) {} }
     } catch (e) {}
+    initCalendarioDifPinta();
+  }
+  function initCalendarioDifPinta() {
+    const box = $("difBox"); if (!box) return;
     if (!difData) { box.replaceChildren(el("p", "muted small", "Todavía no hay datos del calendario. Se calculan solos varias veces al día.")); return; }
     const d = difData, NOM = ["", "Muy fácil", "Fácil", "Normal", "Difícil", "Muy difícil"];
     const frag = document.createDocumentFragment();
     const ley = el("div", "dif-ley");
     for (let n = 1; n <= 5; n++) { const i = el("span", "dif-k"); i.appendChild(el("i", "dif-n dif-" + n, String(n))); i.appendChild(document.createTextNode(NOM[n])); ley.appendChild(i); }
     frag.appendChild(ley);
+    // Orden a elegir: calendario más fácil primero (por defecto) o más difícil primero. Sin cifras de media: solo el puesto.
+    const ord = el("div", "dif-ord");
+    [["facil", "Más fácil primero"], ["dificil", "Más difícil primero"]].forEach((o) => {
+      const b = el("button", "dif-ob" + (difOrden === o[0] ? " on" : ""), o[1]); b.type = "button";
+      b.addEventListener("click", () => { if (difOrden === o[0]) return; difOrden = o[0]; initCalendarioDifPinta(); });
+      ord.appendChild(b);
+    });
+    frag.appendChild(ord);
     const sc = el("div", "dif-scroll"), tb = el("div", "dif-tb");
     tb.style.setProperty("--dif-cols", String(d.jornadas.length));
     const hd = el("div", "dif-row dif-hd");
     hd.appendChild(el("span", "dif-team", "Equipo"));
     d.jornadas.forEach((j) => hd.appendChild(el("span", "dif-c", "J" + j)));
-    hd.appendChild(el("span", "dif-m", "Media"));
     tb.appendChild(hd);
-    d.equipos.forEach((e) => {
+    const lista = d.equipos.slice(); if (difOrden === "dificil") lista.reverse();
+    lista.forEach((e, k) => {
       const row = el("a", "dif-row"); row.href = "/equipos/" + teamSlug(e.team);
       const tm = el("span", "dif-team");
+      tm.appendChild(el("i", "dif-pos", String(k + 1)));
       const lg = clubLogo(e.team, e.crest); if (lg) { const im = el("img"); im.src = lg; im.alt = ""; im.loading = "lazy"; tm.appendChild(im); }
       tm.appendChild(el("b", null, e.team));
       row.appendChild(tm);
@@ -3636,11 +3655,10 @@
         else cel.appendChild(el("small", null, "—"));
         row.appendChild(cel);
       });
-      row.appendChild(el("span", "dif-m", e.media != null ? String(e.media).replace(".", ",") : "—"));
       tb.appendChild(row);
     });
     sc.appendChild(tb); frag.appendChild(sc);
-    frag.appendChild(el("p", "dif-note", "El color es la dificultad del rival: cuántos puntos de nuestra liga suman de media los jugadores que se enfrentan a él. Ordenado del calendario más fácil al más difícil."));
+    frag.appendChild(el("p", "dif-note", "El color es la dificultad del rival: cuántos puntos de nuestra liga suman de media los jugadores que se enfrentan a él."));
     box.replaceChildren(frag);
   }
   async function initComparador() {
@@ -3662,7 +3680,8 @@
     if (!cmpInit) {
       cmpInit = true;
       const s = cmpGet(CMP_SEL_KEY, null);
-      if (s && typeof s === "object") { cmpSel.a = s.a || null; cmpSel.b = s.b || null; }
+      if (s && typeof s === "object" && s.at && Date.now() - s.at < CMP_SEL_MAX) { cmpSel.a = s.a || null; cmpSel.b = s.b || null; }
+      else if (s) { try { localStorage.removeItem(CMP_SEL_KEY); } catch (e) {} }
     }
     cmpPaint();
     cmpLoadDetail(false);
@@ -4109,7 +4128,7 @@
     (d.noticias || []).forEach((x) => { if (x && x.src === "EduMR" && !x.thumb) { const pt = portadaDe(x.link); if (pt) x.thumb = pt; } });
     lastNews = d;
     const upd = $("newsUpdated");
-    if (upd) upd.textContent = d.updatedAt ? "· actualizado " + haceTxt(d.updatedAt) : "";
+    if (upd) upd.textContent = ""; // sin «actualizado hace…» (decisión de Edu, 14/11/2026)
     renderNoticiasFeed();
     const l = $("newsLocker");
     if (l) {
@@ -4970,7 +4989,7 @@
       const cb = el("button", "ficha-cmp", "⚖ Comparar");
       cb.type = "button";
       cb.addEventListener("click", () => {
-        try { localStorage.setItem("gf:cmp:sel:v1", JSON.stringify({ a: String(p.id || d.id), b: null })); } catch (e) {}
+        try { localStorage.setItem("gf:cmp:sel:v1", JSON.stringify({ a: String(p.id || d.id), b: null, at: Date.now() })); } catch (e) {}
         location.href = "/futmondo/guiafantasy/comparador";
       });
       head.appendChild(cb);
@@ -5390,8 +5409,9 @@
   }
   function eqBack(box) {
     const bar = el("div", "eq-backbar");
-    bar.appendChild(backBtn("/equipos"));
-    const a = el("a", "bk bk-link", "Todos los equipos");
+    // Un solo botón: «Todos los equipos» (sin «Volver» al lado)
+    const a = el("a", "bk");
+    a.innerHTML = "<svg class=\"gi\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M15 5l-7 7 7 7\"/></svg><span class=\"bk-t\">Todos los equipos</span>";
     a.href = "/equipos";
     bar.appendChild(a);
     box.appendChild(bar);
@@ -5942,7 +5962,7 @@
     const again = () => pickFill(list, q, cb, st);
     const hasQ = !!String(q || "").trim();
     if (!hasQ && st.mode === "clubs") {
-      const back0 = el("button", "pk-back", "‹ Volver a jugadores"); back0.type = "button";
+      const back0 = el("button", "pk-back", "‹ Jugadores"); back0.type = "button";
       back0.addEventListener("click", () => { st.mode = null; again(); });
       list.appendChild(back0);
       list.appendChild(el("div", "pk-head", "Elige un club"));
@@ -5961,7 +5981,7 @@
       return;
     }
     if (!hasQ && st.mode === "club" && st.club) {
-      const back = el("button", "pk-back", "‹ Volver a clubes"); back.type = "button";
+      const back = el("button", "pk-back", "‹ Clubes"); back.type = "button";
       back.addEventListener("click", () => { st.mode = "clubs"; again(); });
       list.appendChild(back);
       list.appendChild(el("div", "pk-head", st.club));
