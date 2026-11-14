@@ -5349,7 +5349,7 @@
           if (ne && caja && !caja.querySelector(".pp-status-go")) {
             const go = el("a", "pp-status-go", "Ver noticia ›"); go.href = newsHref(ne.link);
             go.addEventListener("click", (ev) => { if (ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.button === 1) return; ev.preventDefault(); closeModal(); switchTab("noticias"); openNoticiaInline(ne.link, ne.title); });
-            caja.appendChild(go);
+            caja.appendChild(go); caja.classList.add("pp-status-show"); // con noticia reciente se enseña también cuando está disponible
           }
         } catch (e) {}
         if (!hit.length) { sec.remove(); return; }

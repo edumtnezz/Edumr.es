@@ -3646,6 +3646,7 @@ html:not([data-theme="light"]) .rtb-lock { color: #fbbf24; }
 .claus-grid .claus-stat.clause { background: #f59e0b; }
 /* Ficha: el estado "Disponible" no ocupa una franja; puntos, media y partidos arriba y más compactos */
 .pp-status.ok { display: none; }
+.pp-status.ok.pp-status-show { display: flex; }
 .ficha-stats-top { margin: 10px 0 12px; }
 .playerpage .ficha-stats-top .ficha-stat { padding: 10px 8px 8px; border-radius: 14px; }
 @media (max-width: 640px) { .playerpage .ficha-head-center .mcard-photo { width: 88px; height: 88px; margin-bottom: 6px; } }
