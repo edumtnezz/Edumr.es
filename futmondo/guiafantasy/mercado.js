@@ -25,6 +25,23 @@
     if (c2) elm.style.setProperty("--c2", c2); else elm.classList.add("single");
     return elm;
   }
+  // Dos porcentajes de ser titular, uno al lado del otro: E = el nuestro (EduMR), F = el de FutbolFantasy. Letra pequeña encima de cada uno.
+  function probPar(p, cls) {
+    const w = el("span", "pp2 " + cls);
+    const uno = (letra, v, tit) => {
+      const c = el("span", "pp2-c pp2-" + letra.toLowerCase());
+      c.appendChild(el("i", null, letra));
+      c.appendChild(el("b", null, v != null ? v + "%" : "—"));
+      if (v != null) c.style.setProperty("--pc", pctColor(v));
+      c.title = tit + (v != null ? ": " + v + "%" : ": sin dato");
+      return c;
+    };
+    w.appendChild(uno("E", p.probE, "Nuestra probabilidad de ser titular"));
+    w.appendChild(uno("F", p.prob, "Probabilidad de FutbolFantasy"));
+    // Diferencia grande entre los dos (25 puntos o más): se marca para verla de un vistazo
+    if (p.prob != null && Math.abs(p.probE - p.prob) >= 25) w.classList.add("pp2-dif");
+    return w;
+  }
   function statRow(p) {
     const row = el("div", "mcard-stats");
     const mk = (v, label, cls) => {
@@ -849,7 +866,8 @@
       const ph = el("div", "alin-bimg");
       if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; ph.appendChild(im); }
       c.appendChild(ph);
-      if (p.prob != null) { const bp = el("span", "alin-bprob", p.prob + "%"); bp.title = probTitle(p.prob); c.appendChild(bp); }
+      if (p.probE != null) c.appendChild(probPar(p, "alin-bprob2"));
+      else if (p.prob != null) { const bp = el("span", "alin-bprob", p.prob + "%"); bp.title = probTitle(p.prob); c.appendChild(bp); }
       c.appendChild(el("span", "alin-bname", p.last || p.name));
       c.addEventListener("click", () => openPlayerByName(p.full || p.name));
       grid.appendChild(c);
@@ -950,7 +968,8 @@
         pl.style.top = band[1] + "%";
         const ph = el("div", "alin-pimg");
         if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; ph.appendChild(im); }
-        if (p.prob != null && p.prob < 100) {
+        if (p.probE != null) ph.appendChild(probPar(p, "alin-pct2"));
+        else if (p.prob != null && p.prob < 100) {
           const pct = el("span", "alin-pct", p.prob + "%");
           pct.style.borderColor = pctColor(p.prob);
           pct.title = probTitle(p.prob);
@@ -1299,7 +1318,8 @@
         const ph = el("div", "alin-pimg mpage-xiimg");
         if (p.photo) { const im = el("img"); im.src = p.photo; im.alt = ""; im.loading = "lazy"; im.addEventListener("error", () => im.remove()); ph.appendChild(im); }
         else ph.classList.add("empty");
-        if (p.prob != null && p.prob < 100) {
+        if (p.probE != null) ph.appendChild(probPar(p, "alin-pct2"));
+        else if (p.prob != null && p.prob < 100) {
           const pct = el("span", "alin-pct", p.prob + "%");
           pct.style.borderColor = pctColor(p.prob);
           pct.title = probTitle(p.prob);

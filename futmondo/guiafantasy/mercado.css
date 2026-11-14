@@ -3922,3 +3922,19 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 @keyframes tit-pulso { from { transform: scale(1); opacity: .55; } to { transform: scale(2.6); opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .ficha-tit, .ficha-tit-dot::after { animation: none; } }
 .fm-src { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 999px; font-size: .64rem; font-weight: 700; color: var(--muted); border: 1px dashed var(--border); }
+
+/* Once probable: dos porcentajes por jugador (E = nuestro, F = FutbolFantasy), con la letra pequeña encima */
+.pp2 { display: inline-flex; gap: 2px; z-index: 3; }
+.pp2-c { --pc: #64748b; display: inline-flex; flex-direction: column; align-items: center; min-width: 26px; padding: 1px 3px 2px; border-radius: 7px; background: #0a0e13; border: 1.5px solid var(--pc); line-height: 1; }
+.pp2-c i { font-style: normal; font-size: .44rem; font-weight: 800; letter-spacing: .06em; color: rgba(255, 255, 255, .7); }
+.pp2-c b { font-size: .58rem; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums; }
+.pp2-e i { color: #4ade80; } .pp2-f i { color: #7dd3fc; }
+.pp2-dif { filter: drop-shadow(0 0 0 #facc15) drop-shadow(0 0 3px #facc15); }
+.alin-pct2 { position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); }
+.alin-bprob2 { margin-top: -8px; }
+.mpage-xi .alin-bench .alin-bprob2 { margin: 0; }
+@media (max-width: 560px) {
+  .pp2-c { min-width: 23px; padding: 1px 2px 2px; }
+  .pp2-c b { font-size: .52rem; } .pp2-c i { font-size: .4rem; }
+}
+.alin-pimg:has(.alin-pct2) + .alin-pname, .alin-pimg:has(.alin-pct2) ~ .alin-pname { margin-top: 13px; }

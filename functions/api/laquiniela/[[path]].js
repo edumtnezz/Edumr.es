@@ -6,7 +6,7 @@ import { backtest as probBacktest } from "../../_lib/probjugar.mjs";
 import { staleChange, actualizadoHoy, tocadosDe, marcarTocados } from "../../_lib/change.mjs";
 import { etiquetaDe } from "../../_lib/portada-svg.mjs";
 import { promptFondo, grupoTipo } from "../../_lib/portada-prompt.mjs";
-import { partirInfo, tituloCambio, catCambio, NOMBRE_ESTADO, ajustarOnce, clubKey } from "../../_lib/estados.mjs";
+import { partirInfo, tituloCambio, catCambio, NOMBRE_ESTADO, ajustarOnce, clubKey, emparejar } from "../../_lib/estados.mjs";
 import { compacto, dificultad, calendarioDificultad, oncePropio, aciertoOnces, compararOnce, probInterna, puntuarDuelo } from "../../_lib/analitica.mjs";
 import { cuerpoAHtml } from "../../_lib/noticia-cuerpo.mjs";
 import { minutosEnAlineacion, partidoDelDia } from "../../_lib/fotmob-min.mjs";
@@ -5739,16 +5739,35 @@ async function handleGet({ request, env: env0, params }) {
   }
   if (path === "once") {
     try {
-      const o = await getOnce(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "", url.searchParams.get("jornada") || "");
+      let o = await getOnce(env, url.searchParams.get("home") || "", url.searchParams.get("away") || "", url.searchParams.get("jornada") || "");
       // Última barrera: aunque una copia guardada venga mal, nunca sale un once con más de 11 ni repetidos
       ["home", "away"].forEach((k) => { if (o && o[k] && Array.isArray(o[k].starters)) o[k].starters = cleanStarters(o[k].starters); });
       // Nuestro registro de estados manda: el lesionado o sancionado sale del once y entra su recambio (datos de minutos de Futmondo)
+      let mkP = null;
       try {
         const [foto, mk, mn] = await Promise.all([estFoto(env), getMarketPlayers(env), getMinutos(env)]);
+        mkP = (mk && mk.players) || null;
         if (Object.keys(foto).length && mk && mk.players) {
           const o2 = { ...o, ajustes: [] };
           ["home", "away"].forEach((k) => { if (o2[k] && Array.isArray(o2[k].starters)) { o2[k] = { ...o2[k] }; o2.ajustes = o2.ajustes.concat(ajustarOnce(o2[k], mk.players, (mn && mn.map) || {}, foto).map((x) => ({ ...x, equipo: o2[k].name }))); } });
-          return json(o2);
+          o = o2;
+        }
+      } catch (e) {}
+      // Nuestra probabilidad interna de titular (probE) al lado de la de FutbolFantasy (prob), para comparar jugador a jugador.
+      // Sale de las titularidades reales de Futmondo (ver probInterna). Si no se empareja el nombre o no hay dato, no se pone.
+      try {
+        const an = await env.PORRA.get(AN_OUT, "json");
+        if (an && an.onces && mkP) {
+          o = { ...o };
+          ["home", "away"].forEach((k) => {
+            const side = o[k]; if (!side || !Array.isArray(side.starters)) return;
+            const mio = an.onces[clubKey(side.name)]; if (!mio || !Array.isArray(mio.prob)) return;
+            const pr = new Map(mio.prob.map((x) => [x.id, x.p]));
+            const todos = side.starters.concat(side.bench || []);
+            const m = emparejar(todos.map((x, i) => ({ id: i, name: x.full || x.name, teamID: 1 })), { 1: { name: mio.team } }, mkP.filter((q) => clubKey(q.team) === clubKey(mio.team)));
+            const con = (x, i) => { const f = m.get(i); const v = f ? pr.get(f.id) : null; return v == null ? x : { ...x, probE: v }; };
+            o[k] = { ...side, starters: side.starters.map((x, i) => con(x, i)), bench: (side.bench || []).map((x, i) => con(x, side.starters.length + i)) };
+          });
         }
       } catch (e) {}
       return json(o);
