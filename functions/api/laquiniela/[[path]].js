@@ -2757,7 +2757,7 @@ async function analiticaCalc(env, ds, deMercado, now) {
   for (const [k, jug] of porEquipo) {
     const o = oncePropio(jug, null, foto); if (!o) continue;
     // Probabilidad interna de cada jugador de la plantilla (frecuencia real de su tramo de peso). Solo los que tienen alguna opción.
-    const prob = o.cand.map((c) => ({ id: c.id, name: c.name, role: c.role, p: probInterna(c.peso, c.est, cal), est: c.est })).filter((c) => c.p != null && (c.p > 0 || c.est === "lesionado" || c.est === "sancionado")).sort((x, y) => y.p - x.p);
+    const prob = o.cand.map((c) => ({ id: c.id, name: c.name, role: c.role, p: probInterna(c.peso, c.est, cal, c.sit, out.acierto.calSit), est: c.est, sit: c.sit || undefined })).filter((c) => c.p != null && (c.p > 0 || c.est === "lesionado" || c.est === "sancionado")).sort((x, y) => y.p - x.p);
     out.onces[k] = { team: jug[0].t, forma: o.forma, jornadas: o.jornadas, xi: o.xi, prob };
   }
   // Comparación con el once probable que ya usamos (FutbolFantasy), partido a partido de la próxima jornada

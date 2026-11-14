@@ -73,8 +73,28 @@ export function calendarioDificultad(niveles, cal, desde, cuantas) {
 // ONCE PROPIO: titulares de los últimos 5 partidos del equipo, con más peso a los recientes (5,4,3,2,1).
 // El dibujo (cuántos por línea) es el del último partido. Lesionados y sancionados quedan fuera; la duda resta.
 const W = [5, 4, 3, 2, 1];
+// SITUACIÓN del jugador antes de un partido, mirando los últimos partidos de su equipo (del más reciente al más antiguo).
+// Son casos en los que el «peso» solo se queda corto; cada uno tiene su frecuencia real medida (tabla calSit de aciertoOnces):
+//  por-fijo: portero titular los 5 últimos · vuelve1 / vuelve2: habitual que no jugó nada el último / los dos últimos
+//  fijo90 / fijo70 / fijo-: titular los 5 últimos y en el último jugó 90', 70-89' o menos · rotado: habitual que el último salió del banquillo
+export function situacion(p, prev) {
+  const por = new Map(p.m.map((x) => [x[0], x]));
+  const c = prev.slice(0, 6).map((q) => por.get(q) || null);
+  const st = c.map((x) => (x && TIT[catN(x[4])] ? 1 : 0)), mn = c.map((x) => (x ? x[5] || 0 : 0));
+  if (st.length < 5) return null;
+  let racha = 0; while (racha < st.length && st[racha]) racha++;
+  const suma = (a, b) => st.slice(a, b).reduce((t, v) => t + v, 0);
+  const hab = suma(1, 5) >= 3, hab2 = st.length >= 6 && suma(2, 6) >= 3;
+  if (p.ro === "portero" && racha >= 5) return "por-fijo";
+  if (hab2 && !mn[0] && !mn[1]) return "vuelve2";
+  if (hab && !mn[0]) return "vuelve1";
+  if (racha >= 5) return mn[0] >= 90 ? "fijo90" : mn[0] >= 70 ? "fijo70" : "fijo-";
+  if (hab && mn[0] && !st[0]) return "rotado";
+  return null;
+}
 export function oncePropio(jug, hasta, estados) {
-  const jornadas = [...new Set(jug.flatMap((p) => p.m.filter((x) => TIT[catN(x[4])] && (hasta == null || x[0] < hasta)).map((x) => x[0])))].sort((a, b) => b - a).slice(0, 5);
+  const todas = [...new Set(jug.flatMap((p) => p.m.filter((x) => TIT[catN(x[4])] && (hasta == null || x[0] < hasta)).map((x) => x[0])))].sort((a, b) => b - a);
+  const jornadas = todas.slice(0, 5);
   if (jornadas.length < 3) return null;
   const forma = {};
   const cand = jug.map((p) => {
@@ -86,14 +106,14 @@ export function oncePropio(jug, hasta, estados) {
     const e = estados ? (estados[p.id] || {}).e : "";
     let sc = s / tot;
     if (e === "lesionado" || e === "sancionado") sc = -1; else if (e === "duda") sc *= 0.6;
-    return { id: p.id, name: p.n, role: p.ro, sc, mins, est: e || "" };
+    return { id: p.id, name: p.n, role: p.ro, sc, mins, est: e || "", sit: situacion(p, todas) };
   });
   const xi = [];
   for (const ro of ["portero", "defensa", "centrocampista", "delantero"]) {
     xi.push(...cand.filter((c) => c.role === ro && c.sc >= 0).sort((a, b) => b.sc - a.sc || b.mins - a.mins).slice(0, forma[ro] || 0));
   }
   return { forma: [forma.defensa || 0, forma.centrocampista || 0, forma.delantero || 0].join("-"), jornadas, xi: xi.map((c) => ({ id: c.id, name: c.name, role: c.role, peso: Math.round(c.sc * 100), est: c.est })),
-    cand: cand.map((c) => ({ id: c.id, name: c.name, role: c.role, peso: Math.max(0, Math.round(c.sc * 100)), est: c.est })) };
+    cand: cand.map((c) => ({ id: c.id, name: c.name, role: c.role, peso: Math.max(0, Math.round(c.sc * 100)), est: c.est, sit: c.sit })) };
 }
 function catN(c) { return c === "c" ? "completo" : c === "s" ? "sustituido" : c === "b" ? "banquillo" : "none"; }
 
@@ -101,7 +121,7 @@ function catN(c) { return c === "c" ? "completo" : c === "s" ? "sustituido" : c 
 export function aciertoOnces(ds, desde) {
   const porEquipo = new Map();
   for (const p of ds || []) { const k = clubKey(p.t); if (!porEquipo.has(k)) porEquipo.set(k, []); porEquipo.get(k).push(p); }
-  let ok = 0, tot = 0, n = 0; const cal = {};
+  let ok = 0, tot = 0, n = 0; const cal = {}, calSit = {};
   for (const jug of porEquipo.values()) {
     const js = [...new Set(jug.flatMap((p) => p.m.map((x) => x[0])))].filter((j) => j >= (desde || 5));
     for (const j of js) {
@@ -110,17 +130,23 @@ export function aciertoOnces(ds, desde) {
       const o = oncePropio(jug, j, null); if (!o) continue;
       ok += o.xi.filter((x) => real.has(x.id)).length; tot += o.xi.length; n++;
       // Calibración: de los jugadores con cada «peso» (0-9 = 0-9 %, 10-19 %…), cuántos fueron titulares de verdad
-      for (const c of o.cand) { const b = tramo(c.peso); cal[b] = cal[b] || [0, 0]; if (real.has(c.id)) cal[b][0]++; cal[b][1]++; }
+      for (const c of o.cand) {
+        const b = tramo(c.peso); cal[b] = cal[b] || [0, 0]; if (real.has(c.id)) cal[b][0]++; cal[b][1]++;
+        if (c.sit) { calSit[c.sit] = calSit[c.sit] || [0, 0]; if (real.has(c.id)) calSit[c.sit][0]++; calSit[c.sit][1]++; }
+      }
     }
   }
-  return { onces: n, aciertos: ok, de: tot, pct: tot ? Math.round((1000 * ok) / tot) / 10 : null, porOnce: n ? Math.round((110 * ok) / tot) / 10 : null, cal };
+  return { onces: n, aciertos: ok, de: tot, pct: tot ? Math.round((1000 * ok) / tot) / 10 : null, porOnce: n ? Math.round((110 * ok) / tot) / 10 : null, cal, calSit };
 }
 const tramo = (peso) => Math.max(0, Math.min(9, Math.floor((Number(peso) || 0) / 10)));
 // PROBABILIDAD INTERNA de ser titular: la frecuencia real con la que fueron titulares los jugadores de ese mismo «peso»
 // en las jornadas pasadas (tabla `cal` de aciertoOnces). Con menos de 30 casos en el tramo no se da (null).
 // Lesionado o sancionado: 0. No se enseña en la web hasta que su acierto esté medido contra jornadas reales.
-export function probInterna(peso, est, cal) {
+// Si el jugador está en una «situación» medida (ver situacion) con 30 casos o más, manda esa frecuencia; si no, la de su tramo de peso.
+export function probInterna(peso, est, cal, sit, calSit) {
   if (est === "lesionado" || est === "sancionado") return 0;
+  const vs = sit ? (calSit || {})[sit] : null;
+  if (vs && vs[1] >= 30) return Math.round((100 * vs[0]) / vs[1]);
   const v = (cal || {})[tramo(peso)];
   if (!v || v[1] < 30) return null;
   return Math.round((100 * v[0]) / v[1]);

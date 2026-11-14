@@ -60,3 +60,20 @@ test("probabilidad interna: frecuencia real del tramo; lesionado 0; sin casos su
   assert.equal(puntuarDuelo({ propio: ["a"], ff: [] }, new Set(["a"])), null); // aún sin los once titulares reales
   assert.equal(puntuarDuelo({ propio: ["a"], ff: ["a", "b"] }, reales).ff, null); // once de fuera sin emparejar: no se compara
 });
+
+test("situación del jugador: portero fijo, vuelta tras ausencia, fijo y rotado", async () => {
+  const { situacion, probInterna } = await import("../functions/_lib/analitica.mjs");
+  const prev = [10, 9, 8, 7, 6, 5];
+  const m = (cats, mins) => prev.map((j, i) => [j, 1, "x", 5, cats[i], mins[i]]);
+  assert.equal(situacion({ ro: "portero", m: m("cccccc", [90, 90, 90, 90, 90, 90]) }, prev), "por-fijo");
+  assert.equal(situacion({ ro: "defensa", m: m("cccccc", [90, 90, 90, 90, 90, 90]) }, prev), "fijo90");
+  assert.equal(situacion({ ro: "defensa", m: m("sccccc", [60, 90, 90, 90, 90, 90]) }, prev), "fijo-");
+  assert.equal(situacion({ ro: "defensa", m: m("nccccc", [0, 90, 90, 90, 90, 90]) }, prev), "vuelve1");
+  assert.equal(situacion({ ro: "defensa", m: m("nncccc", [0, 0, 90, 90, 90, 90]) }, prev), "vuelve2");
+  assert.equal(situacion({ ro: "defensa", m: m("bccccn", [25, 90, 90, 90, 90, 0]) }, prev), "rotado");
+  assert.equal(situacion({ ro: "defensa", m: m("bnbnbn", [20, 0, 10, 0, 5, 0]) }, prev), null);
+  // la situación manda sobre el tramo solo con 30 casos o más
+  assert.equal(probInterna(95, "ok", { 9: [80, 100] }, "por-fijo", { "por-fijo": [105, 110] }), 95);
+  assert.equal(probInterna(95, "ok", { 9: [80, 100] }, "por-fijo", { "por-fijo": [10, 10] }), 80);
+  assert.equal(probInterna(95, "sancionado", { 9: [80, 100] }, "por-fijo", { "por-fijo": [105, 110] }), 0);
+});
