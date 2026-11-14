@@ -112,3 +112,6 @@ a.pl { text-decoration: none; color: inherit; }
 .al-bench-row .pl-pp { font-size: .46rem; padding: 1px 3px; border-width: 1px; }
 .al-bench-row .pl-pp i { font-size: .4rem; top: -8px; }
 @media (max-width: 560px) { .pl-pp { font-size: .5rem; padding: 1px 4px; } .pl-pp i { font-size: .42rem; top: -8px; } }
+.pl-pp i { background: #0b1220; padding: 1px 4px; border-radius: 5px 5px 0 0; text-shadow: none; line-height: 1; top: -10px; }
+.al-bench-row .pl-pp i { padding: 1px 3px; top: -9px; }
+@media (max-width: 560px) { .pl-pp i { top: -9px; } }
