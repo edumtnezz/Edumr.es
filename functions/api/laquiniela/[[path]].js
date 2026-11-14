@@ -7,7 +7,7 @@ import { staleChange, actualizadoHoy, tocadosDe, marcarTocados } from "../../_li
 import { etiquetaDe } from "../../_lib/portada-svg.mjs";
 import { promptFondo, grupoTipo } from "../../_lib/portada-prompt.mjs";
 import { partirInfo, tituloCambio, catCambio, NOMBRE_ESTADO, ajustarOnce, clubKey } from "../../_lib/estados.mjs";
-import { compacto, dificultad, calendarioDificultad, oncePropio, aciertoOnces, compararOnce } from "../../_lib/analitica.mjs";
+import { compacto, dificultad, calendarioDificultad, oncePropio, aciertoOnces, compararOnce, probInterna, puntuarDuelo } from "../../_lib/analitica.mjs";
 import { cuerpoAHtml } from "../../_lib/noticia-cuerpo.mjs";
 import { minutosEnAlineacion, partidoDelDia } from "../../_lib/fotmob-min.mjs";
 const COMPETITION = "PD";
@@ -2695,7 +2695,7 @@ function parseCambios(html) {
 // ---------- Análisis propios (13/11/2026): dificultad de calendario y once probable propio ----------
 // El cron llama a /analitica?run=1 cada minuto. Cada llamada lee la ficha de 40 jugadores en Futmondo; al terminar la vuelta
 // (unos 14 min) calcula los resultados y descansa 6 h. Todo queda en KV; las páginas solo leen el resultado.
-const AN_DS = "an:ds:v1", AN_CUR = "an:cur:v1", AN_OUT = "an:out:v1", AN_LOG = "an:onces-log:v1";
+const AN_DS = "an:ds:v1", AN_CUR = "an:cur:v1", AN_OUT = "an:out:v1", AN_LOG = "an:onces-log:v1", AN_DUELO = "an:duelo:v1";
 async function analiticaRun(env, reset) {
   const now = Date.now();
   let cur = (await env.PORRA.get(AN_CUR, "json")) || { pend: null, done: 0 };
@@ -2742,11 +2742,19 @@ async function analiticaCalc(env, ds, deMercado, now) {
   const foto = await estFoto(env);
   const porEquipo = new Map();
   for (const p of lista) { const k = clubKey(p.t); if (!porEquipo.has(k)) porEquipo.set(k, []); porEquipo.get(k).push(p); }
-  for (const [k, jug] of porEquipo) { const o = oncePropio(jug, null, foto); if (o) out.onces[k] = { team: jug[0].t, ...o }; }
+  const cal = out.acierto.cal || {};
+  for (const [k, jug] of porEquipo) {
+    const o = oncePropio(jug, null, foto); if (!o) continue;
+    // Probabilidad interna de cada jugador de la plantilla (frecuencia real de su tramo de peso). Solo los que tienen alguna opción.
+    const prob = o.cand.map((c) => ({ id: c.id, name: c.name, role: c.role, p: probInterna(c.peso, c.est, cal), est: c.est })).filter((c) => c.p != null && (c.p > 0 || c.est === "lesionado" || c.est === "sancionado")).sort((x, y) => y.p - x.p);
+    out.onces[k] = { team: jug[0].t, forma: o.forma, jornadas: o.jornadas, xi: o.xi, prob };
+  }
   // Comparación con el once probable que ya usamos (FutbolFantasy), partido a partido de la próxima jornada
   try {
     const jor = await getJornadaStrip(env, null);
     const log = (await env.PORRA.get(AN_LOG, "json")) || { firmas: {}, eventos: [] };
+    const duelo = (await env.PORRA.get(AN_DUELO, "json")) || {};
+    duelo.previos = duelo.previos || {}; duelo.hechos = duelo.hechos || {}; duelo.resultados = duelo.resultados || [];
     const dbg = out.comparacion = { partidos: 0, sinOnce: 0, sinEquipo: [] };
     for (const m of (jor && jor.matches) || []) {
       if (m.live && m.live.state === "final") continue;
@@ -2767,7 +2775,31 @@ async function analiticaCalc(env, ds, deMercado, now) {
           log.eventos.push({ at: now, team: mio.team, jornada: jor.matchday, entra: [...b].filter((x) => !a.has(x)).map(nombre), sale: [...a].filter((x) => !b.has(x)).map(nombre), estados: [...a].filter((x) => !b.has(x)).map((x) => (foto[x] || {}).e || "") });
         }
         log.firmas[k] = { f: cmp.firma, at: now, j: jor.matchday };
+        // Duelo: última previsión de cada uno ANTES de que empiece el partido (una vez en juego ya no se toca)
+        // Se cierra 90 min antes del partido: después salen las alineaciones oficiales y el once de fuera pasa a ser el confirmado,
+        // y eso ya no es una previsión. Sin hora de partido conocida no se guarda nada.
+        const enJuego = !!(m.live && m.live.state && m.live.state !== "pre");
+        const ko = ffWhenAt(m.date, m.time);
+        const abierto = !enJuego && ko && now < ko - 90 * 60e3;
+        const dk = jor.matchday + ":" + k;
+        if (abierto && !(duelo.hechos || {})[dk]) duelo.previos[dk] = { j: Number(jor.matchday), k, team: mio.team, at: now, propio: mio.xi.map((x) => x.id), ff: cmp.firma ? cmp.firma.split(",") : [] };
       }
+    }
+    // Duelo: cuando Futmondo ya da los titulares reales de esa jornada, se puntúa a los dos y se guarda el resultado
+    for (const dk of Object.keys(duelo.previos)) {
+      const pv = duelo.previos[dk];
+      const reales = new Set((porEquipo.get(pv.k) || []).filter((p) => p.m.some((x) => x[0] === pv.j && (x[4] === "c" || x[4] === "s"))).map((p) => p.id));
+      const r = puntuarDuelo(pv, reales);
+      if (r) { duelo.resultados.push({ j: pv.j, team: pv.team, at: pv.at, ...r }); duelo.hechos[dk] = 1; delete duelo.previos[dk]; }
+      else if (pv.j < Number(jor.matchday) - 2) delete duelo.previos[dk]; // jornada vieja sin datos: se descarta
+    }
+    duelo.resultados = duelo.resultados.slice(-400);
+    await env.PORRA.put(AN_DUELO, JSON.stringify(duelo));
+    {
+      const conFf = duelo.resultados.filter((x) => x.ff != null);
+      out.duelo = { onces: duelo.resultados.length, pendientes: Object.keys(duelo.previos).length, comparables: conFf.length,
+        propio: conFf.reduce((t, x) => t + x.propio, 0), ff: conFf.reduce((t, x) => t + x.ff, 0), de: conFf.length * 11,
+        ultimos: duelo.resultados.slice(-20).reverse() };
     }
     log.eventos = log.eventos.slice(-300);
     await env.PORRA.put(AN_LOG, JSON.stringify(log));

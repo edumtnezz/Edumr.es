@@ -24,6 +24,14 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 ## Análisis propios (13/11/2026)
 - `functions/_lib/analitica.mjs` + ruta `analitica`: calendario de dificultad (pestaña Calendario), once probable propio (aún sin enseñar; se compara con FutbolFantasy y se mide su acierto) y previsión de valor (mañana ≈ cambio de hoy, solo con 50.000 € o más). Detalle y cifras de acierto en ESTADO.md. Cualquier cifra de acierto que se enseñe debe salir de una comprobación real contra jornadas o días pasados.
 
+## Decisiones del 14/11/2026
+- **Subidas y bajadas de valor no son noticia**: fuera de «Últimos cambios» y de la ficha de la noticia. Telegram manda el mercado UNA vez al día, cuando Futmondo cambia los valores (sobre las 04:30, en silencio), sin repetir por la tarde.
+- **Estado y titularidad van separados** en el perfil: el estado sale de nuestro registro (el mismo de la noticia, con enlace a ella) y la titularidad aparte. Nunca «Pronóstico: Lesionado».
+- **Previsión de valor** (`previsionValor`): solo si hoy se mueve 100.000 € o más y ayer fue en el mismo sentido; se enseña «Previsión 3 días: más de X» con X = cambio de hoy. Comprobado con 507 jugadores (20/08–13/11): se cumple el 84 % en subidas y el 89 % en bajadas. No cambiar la regla sin volver a comprobarla.
+- **Minutos de FotMob** (`functions/_lib/fotmob-min.mjs`): solo para partidos sin detalle en Futmondo y solo si el nombre del jugador se encuentra en FotMob en un partido que Futmondo sí tiene. Nunca puntos.
+- **Onces propios**: el historial solo da ~71 % (7,8 de 11) con cualquier variante probada. Se guarda una probabilidad interna por jugador (`probInterna`) y un duelo con FutbolFantasy (`an:duelo:v1`): la previsión de cada uno 90 min antes del partido contra los titulares reales. Resultado en `/api/laquiniela/analitica` → `duelo`. No se enseña el once propio hasta que el duelo diga que iguala al de fuera.
+- Botones de vuelta: uno solo y con el nombre del sitio («Noticias», «Todos los equipos», «Mercado»), nunca «Volver». Sin «actualizado hace…».
+
 ## Ideas pendientes
 - Avisos Telegram (noticias y alineación probable)
 - Jugadores rentables (SofaScore, calidad-precio)

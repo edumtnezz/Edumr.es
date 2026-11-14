@@ -92,7 +92,8 @@ export function oncePropio(jug, hasta, estados) {
   for (const ro of ["portero", "defensa", "centrocampista", "delantero"]) {
     xi.push(...cand.filter((c) => c.role === ro && c.sc >= 0).sort((a, b) => b.sc - a.sc || b.mins - a.mins).slice(0, forma[ro] || 0));
   }
-  return { forma: [forma.defensa || 0, forma.centrocampista || 0, forma.delantero || 0].join("-"), jornadas, xi: xi.map((c) => ({ id: c.id, name: c.name, role: c.role, peso: Math.round(c.sc * 100), est: c.est })) };
+  return { forma: [forma.defensa || 0, forma.centrocampista || 0, forma.delantero || 0].join("-"), jornadas, xi: xi.map((c) => ({ id: c.id, name: c.name, role: c.role, peso: Math.round(c.sc * 100), est: c.est })),
+    cand: cand.map((c) => ({ id: c.id, name: c.name, role: c.role, peso: Math.max(0, Math.round(c.sc * 100)), est: c.est })) };
 }
 function catN(c) { return c === "c" ? "completo" : c === "s" ? "sustituido" : c === "b" ? "banquillo" : "none"; }
 
@@ -100,7 +101,7 @@ function catN(c) { return c === "c" ? "completo" : c === "s" ? "sustituido" : c 
 export function aciertoOnces(ds, desde) {
   const porEquipo = new Map();
   for (const p of ds || []) { const k = clubKey(p.t); if (!porEquipo.has(k)) porEquipo.set(k, []); porEquipo.get(k).push(p); }
-  let ok = 0, tot = 0, n = 0;
+  let ok = 0, tot = 0, n = 0; const cal = {};
   for (const jug of porEquipo.values()) {
     const js = [...new Set(jug.flatMap((p) => p.m.map((x) => x[0])))].filter((j) => j >= (desde || 5));
     for (const j of js) {
@@ -108,9 +109,28 @@ export function aciertoOnces(ds, desde) {
       if (real.size < 9) continue;
       const o = oncePropio(jug, j, null); if (!o) continue;
       ok += o.xi.filter((x) => real.has(x.id)).length; tot += o.xi.length; n++;
+      // Calibración: de los jugadores con cada «peso» (0-9 = 0-9 %, 10-19 %…), cuántos fueron titulares de verdad
+      for (const c of o.cand) { const b = tramo(c.peso); cal[b] = cal[b] || [0, 0]; if (real.has(c.id)) cal[b][0]++; cal[b][1]++; }
     }
   }
-  return { onces: n, aciertos: ok, de: tot, pct: tot ? Math.round((1000 * ok) / tot) / 10 : null, porOnce: n ? Math.round((110 * ok) / tot) / 10 : null };
+  return { onces: n, aciertos: ok, de: tot, pct: tot ? Math.round((1000 * ok) / tot) / 10 : null, porOnce: n ? Math.round((110 * ok) / tot) / 10 : null, cal };
+}
+const tramo = (peso) => Math.max(0, Math.min(9, Math.floor((Number(peso) || 0) / 10)));
+// PROBABILIDAD INTERNA de ser titular: la frecuencia real con la que fueron titulares los jugadores de ese mismo «peso»
+// en las jornadas pasadas (tabla `cal` de aciertoOnces). Con menos de 30 casos en el tramo no se da (null).
+// Lesionado o sancionado: 0. No se enseña en la web hasta que su acierto esté medido contra jornadas reales.
+export function probInterna(peso, est, cal) {
+  if (est === "lesionado" || est === "sancionado") return 0;
+  const v = (cal || {})[tramo(peso)];
+  if (!v || v[1] < 30) return null;
+  return Math.round((100 * v[0]) / v[1]);
+}
+// DUELO con el once de fuera (FutbolFantasy): se guarda la última previsión de cada uno antes del partido y, cuando llegan
+// los titulares reales, se cuenta cuántos acertó cada uno. Así se sabe con datos cuándo podemos dejar de depender de él.
+export function puntuarDuelo(previo, reales) {
+  if (!previo || !reales || reales.size < 11) return null;
+  const cuenta = (ids) => (ids || []).filter((id) => reales.has(id)).length;
+  return { propio: cuenta(previo.propio), ff: previo.ff && previo.ff.length >= 10 ? cuenta(previo.ff) : null, ffN: (previo.ff || []).length };
 }
 
 // Compara nuestro once con el de otra fuente (lista de titulares con nombre) para el mismo equipo

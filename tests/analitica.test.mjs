@@ -46,3 +46,17 @@ test("previsión de valor: solo con cambios de 50.000 € o más", () => {
   assert.deepEqual(previsionValor(-300000, -200000, 1120000), { dias: 3, min: -120000 }); // no baja del millón
   assert.equal(previsionValor(-300000, -200000, 1000000), null);
 });
+
+test("probabilidad interna: frecuencia real del tramo; lesionado 0; sin casos suficientes no se da", async () => {
+  const { probInterna, puntuarDuelo } = await import("../functions/_lib/analitica.mjs");
+  const cal = { 9: [80, 100], 5: [10, 20] };
+  assert.equal(probInterna(95, "ok", cal), 80);
+  assert.equal(probInterna(100, "", cal), 80);
+  assert.equal(probInterna(95, "lesionado", cal), 0);
+  assert.equal(probInterna(55, "ok", cal), null);
+  assert.equal(probInterna(20, "ok", cal), null);
+  const reales = new Set(["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"]);
+  assert.deepEqual(puntuarDuelo({ propio: ["a", "b", "x"], ff: ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "z"] }, reales), { propio: 2, ff: 10, ffN: 11 });
+  assert.equal(puntuarDuelo({ propio: ["a"], ff: [] }, new Set(["a"])), null); // aún sin los once titulares reales
+  assert.equal(puntuarDuelo({ propio: ["a"], ff: ["a", "b"] }, reales).ff, null); // once de fuera sin emparejar: no se compara
+});
