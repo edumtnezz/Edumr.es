@@ -1824,12 +1824,23 @@ function leagueMatchPoints(po, d, role) {
 // si no se encuentra, no se rellena nada (no se da por «fuera de la convocatoria» a quien solo se llama distinto).
 // Un partido terminado no cambia: se guarda para siempre en KV (fmmin:v1:<id>). Con soloCache no se sale a FotMob.
 const FM_UA = { "user-agent": "Mozilla/5.0 (compatible; edumr)" };
+// Memoria corta de lo pedido a FotMob (lista del día y alineación de cada partido): varios jugadores del mismo partido
+// comparten la misma petición en vez de repetirla. Un partido terminado no cambia.
+const fmMemo = new Map();
+function fmJson(u) {
+  if (fmMemo.has(u)) return fmMemo.get(u);
+  if (fmMemo.size > 400) fmMemo.clear();
+  const p = fetch(u, { headers: FM_UA }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  fmMemo.set(u, p);
+  p.then((v) => { if (!v) fmMemo.delete(u); });
+  return p;
+}
 async function fotmobEquipo(ymd, home, away, casa) {
-  const lista = await (await fetch("https://www.fotmob.com/api/data/matches?date=" + ymd + "&timezone=Europe%2FMadrid&ccode3=ESP", { headers: FM_UA })).json();
+  const lista = await fmJson("https://www.fotmob.com/api/data/matches?date=" + ymd + "&timezone=Europe%2FMadrid&ccode3=ESP");
   const hit = partidoDelDia(lista, home, away);
   if (!hit) return null;
-  const j = await (await fetch("https://www.fotmob.com/api/data/matchDetails?matchId=" + hit.id, { headers: FM_UA })).json();
-  const lu = ((j.content || {}).lineup) || {};
+  const j = await fmJson("https://www.fotmob.com/api/data/matchDetails?matchId=" + hit.id);
+  const lu = ((j && j.content) || {}).lineup || {};
   return (casa ? lu.homeTeam : lu.awayTeam) || null;
 }
 const ymdMadrid = (v) => { const d = new Date(v); return isNaN(d) ? "" : new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).format(d).replace(/-/g, ""); };
