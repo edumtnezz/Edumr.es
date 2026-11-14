@@ -6173,6 +6173,8 @@ async function handleGet({ request, env: env0, params }) {
   }
   if (path === "analitica") {
     if (url.searchParams.has("run")) { try { return json({ ok: true, result: await analiticaRun(env, url.searchParams.has("calc") ? "calc" : url.searchParams.has("reset")) }); } catch (e) { return json({ ok: false, error: String(e && e.message || e).slice(0, 200) }); } }
+    // Datos de partida (titularidades y minutos por jugador y jornada, de Futmondo): para comprobar reglas nuevas contra jornadas pasadas
+    if (url.searchParams.has("ds")) { let ds = null; try { ds = await env.PORRA.get(AN_DS, "json"); } catch (e) {} return json(ds || {}); }
     let out = null, log = null;
     try { [out, log] = await Promise.all([env.PORRA.get(AN_OUT, "json"), env.PORRA.get(AN_LOG, "json")]); } catch (e) {}
     return json(out ? { ...out, cambiosFuera: ((log && log.eventos) || []).slice(-60).reverse() } : { sinDatos: true });

@@ -5139,7 +5139,7 @@
             else if (mn >= 85) { tg = "90'"; }
             else { tg = "▼ salió · " + mn + "'"; tgCls = "fm-out"; }
             chips.appendChild(el("span", "fm-min " + tgCls, tg));
-          } else chips.appendChild(el("span", "fm-min fm-out", m.fot === "x" ? "Fuera de la convocatoria" : m.fot === "b" ? "No jugó · banquillo" : m.finished ? "No jugó · 0'" : "0'"));
+          } else chips.appendChild(el("span", "fm-min fm-out", m.fot === "x" ? "No convocado" : m.fot === "b" ? "No jugó · banquillo" : m.finished ? "No jugó · 0'" : "0'"));
           if (m.fot) { const fo = el("span", "fm-src", "Minutos de FotMob"); fo.title = "Futmondo no da el detalle de este partido: los minutos son de la alineación de FotMob"; chips.appendChild(fo); }
           body.appendChild(chips);
           // Qué pasó en el partido (datos reales del partido): goles, asistencias, portería a cero, tarjetas, penaltis, nota.
