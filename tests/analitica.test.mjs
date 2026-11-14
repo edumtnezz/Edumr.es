@@ -38,7 +38,11 @@ test("once propio: 11 con el dibujo del último partido; el lesionado fuera", ()
 });
 
 test("previsión de valor: solo con cambios de 50.000 € o más", () => {
-  assert.equal(previsionValor(30000), null); assert.equal(previsionValor(-49999), null);
-  assert.deepEqual(previsionValor(402000), { manana: 402000, fiable: "alta" });
-  assert.deepEqual(previsionValor(-80000), { manana: -80000, fiable: "media" });
+  assert.equal(previsionValor(90000, 120000), null); // menos de 100.000 €
+  assert.equal(previsionValor(402000, -50000), null); // sin racha: ayer bajó
+  assert.equal(previsionValor(402000, 0), null);
+  assert.deepEqual(previsionValor(402345, 380000, 9e6), { dias: 3, min: 400000 });
+  assert.deepEqual(previsionValor(-287740, -243942, 15480630), { dias: 3, min: -280000 });
+  assert.deepEqual(previsionValor(-300000, -200000, 1120000), { dias: 3, min: -120000 }); // no baja del millón
+  assert.equal(previsionValor(-300000, -200000, 1000000), null);
 });

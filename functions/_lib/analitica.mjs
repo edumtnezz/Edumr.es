@@ -128,11 +128,23 @@ export function compararOnce(propio, equipo, titularesFuera, jugEquipo) {
   };
 }
 
-// PREVISIÓN DE VALOR: en Futmondo el valor lleva mucha inercia. Comprobado con 30 días y todos los jugadores (13/11/2026):
-// mañana se mueve en el mismo sentido que hoy 9 de cada 10 veces (cambios de 50.000 € o más) y la mejor estimación es el cambio de hoy.
-// Por debajo de 50.000 € no se da previsión: ahí el sentido ya no es fiable.
-export function previsionValor(cambioHoy) {
-  const c = Number(cambioHoy) || 0;
-  if (Math.abs(c) < 50000) return null;
-  return { manana: Math.round(c), fiable: Math.abs(c) >= 200000 ? "alta" : "media" };
+// PREVISIÓN DE VALOR (regla comprobada el 14/11/2026 con los valores diarios de Futmondo Social de 507 jugadores,
+// del 20/08 al 13/11: más de 6.000 casos de subida y 8.700 de bajada).
+// Condición: hoy se mueve 100.000 € o más Y ayer se movió en el mismo sentido (va en racha).
+//  · En los 3 días siguientes se mueve, en total, AL MENOS lo mismo que hoy: 84 % de las subidas (81 % en los últimos 30 días)
+//    y 89 % de las bajadas. Lo habitual es bastante más: la mitad de las veces, 2,6 veces el cambio de hoy.
+//  · Mañana, al menos la mitad del cambio de hoy: 85 %.
+// Sin racha o con menos de 100.000 € no se da previsión (ahí la regla no llega a 8 de cada 10).
+// Devuelve el mínimo previsto a 3 días, redondeado hacia abajo a 10.000 €, sin pasar del suelo de 1.000.000 € en las bajadas.
+export function previsionValor(cambioHoy, cambioAyer, valor) {
+  const c = Number(cambioHoy) || 0, a = Number(cambioAyer) || 0;
+  if (Math.abs(c) < 100000 || c * a <= 0) return null;
+  let min = Math.floor(Math.abs(c) / 10000) * 10000;
+  if (c < 0) {
+    const margen = (Number(valor) || 0) - 1000000;
+    if (!(margen > 0)) return null;
+    min = Math.min(min, Math.floor(margen / 10000) * 10000);
+    if (min < 50000) return null;
+  }
+  return { dias: 3, min: c > 0 ? min : -min };
 }

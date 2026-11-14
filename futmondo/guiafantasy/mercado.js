@@ -7583,10 +7583,20 @@
       sp.appendChild(el("small", "rtb-when", " " + c[1]));
       lc.appendChild(sp);
     });
-    // Previsión de mañana: en Futmondo el valor sigue la inercia de hoy (comprobado con 30 días de todos los jugadores:
-    // mismo sentido 9 de cada 10 veces con cambios de 50.000 € o más). Por debajo de eso no se da previsión.
-    // Solo se dice el sentido (sube/baja): la cantidad no está comprobada y no se enseña.
-    { const h = Number(p.chg1) || 0; if (Math.abs(h) >= 50000) { const pv = el("span", "rtb-pred " + (h > 0 ? "up" : "dn")); pv.appendChild(el("small", "rtb-pk", "Previsión mañana")); pv.appendChild(document.createTextNode(h > 0 ? "▲ sube" : "▼ baja")); pv.title = "Previsión: mañana se mueve en el mismo sentido que hoy 9 de cada 10 veces"; lc.appendChild(pv); } }
+    // Previsión a 3 días (misma regla que previsionValor en functions/_lib/analitica.mjs, comprobada con los valores reales):
+    // si hoy se mueve 100.000 € o más y ayer fue en el mismo sentido, en 3 días se mueve al menos lo mismo que hoy (8 de cada 10 veces).
+    { const h = Number(p.chg1) || 0, ay = p.chg2 != null && p.chg2 !== "" ? (Number(p.chg2) || 0) - h : 0;
+      if (Math.abs(h) >= 100000 && h * ay > 0) {
+        let mn = Math.floor(Math.abs(h) / 10000) * 10000;
+        if (h < 0) mn = Math.min(mn, Math.floor(((Number(p.value) || 0) - 1000000) / 10000) * 10000);
+        if (mn >= 50000) {
+          const pv = el("span", "rtb-pred " + (h > 0 ? "up" : "dn"));
+          pv.appendChild(el("small", "rtb-pk", "Previsión 3 días"));
+          pv.appendChild(document.createTextNode((h > 0 ? "▲ más de +" : "▼ más de −") + rtbK(mn).replace(/^[+−]/, "")));
+          pv.title = "Previsión: se cumple 8 de cada 10 veces. Lleva racha y en 3 días suele moverse al menos lo mismo que hoy.";
+          lc.appendChild(pv);
+        }
+      } }
     body.appendChild(l2);
     if (lc.firstChild) body.appendChild(lc);
     const l3 = el("span", "rtb-l3");
