@@ -9,6 +9,7 @@ import { promptFondo, grupoTipo } from "../../_lib/portada-prompt.mjs";
 import { partirInfo, tituloCambio, catCambio, NOMBRE_ESTADO, ajustarOnce, clubKey } from "../../_lib/estados.mjs";
 import { compacto, dificultad, calendarioDificultad, oncePropio, aciertoOnces, compararOnce } from "../../_lib/analitica.mjs";
 import { cuerpoAHtml } from "../../_lib/noticia-cuerpo.mjs";
+import { minutosEnAlineacion, partidoDelDia } from "../../_lib/fotmob-min.mjs";
 const COMPETITION = "PD";
 const CACHE_TTL_MS = 60 * 1000;
 const FORM_TTL_MS = 10 * 60 * 1000;
@@ -1818,6 +1819,64 @@ function leagueMatchPoints(po, d, role) {
   return Math.round((as + mc + ss) / 2 + b);
 }
 
+// Partidos de su equipo de los que Futmondo no da detalle: los minutos se toman de la alineación de FotMob.
+// Antes se comprueba, con un partido que Futmondo SÍ tiene, que el nombre del jugador se encuentra en FotMob;
+// si no se encuentra, no se rellena nada (no se da por «fuera de la convocatoria» a quien solo se llama distinto).
+// Un partido terminado no cambia: se guarda para siempre en KV (fmmin:v1:<id>). Con soloCache no se sale a FotMob.
+const FM_UA = { "user-agent": "Mozilla/5.0 (compatible; edumr)" };
+async function fotmobEquipo(ymd, home, away, casa) {
+  const lista = await (await fetch("https://www.fotmob.com/api/data/matches?date=" + ymd + "&timezone=Europe%2FMadrid&ccode3=ESP", { headers: FM_UA })).json();
+  const hit = partidoDelDia(lista, home, away);
+  if (!hit) return null;
+  const j = await (await fetch("https://www.fotmob.com/api/data/matchDetails?matchId=" + hit.id, { headers: FM_UA })).json();
+  const lu = ((j.content || {}).lineup) || {};
+  return (casa ? lu.homeTeam : lu.awayTeam) || null;
+}
+const ymdMadrid = (v) => { const d = new Date(v); return isNaN(d) ? "" : new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).format(d).replace(/-/g, ""); };
+async function minutosQueFaltan(env, id, nombre, equipo, matches, soloCache) {
+  const key = "fmmin:v1:" + id;
+  let st = null;
+  try { st = await env.PORRA.get(key, "json"); } catch (e) {}
+  st = st && typeof st === "object" ? st : { ok: null, j: {} };
+  const cal = await getCalendario(env);
+  const tk = clubKey(equipo);
+  const tid = Object.keys(cal.teams || {}).find((k) => clubKey(cal.teams[k].n) === tk);
+  if (!tid) return [];
+  const tengo = new Set(matches.map((m) => Number(m.r)));
+  const faltan = (cal.matches || []).filter((m) => (String(m[1]) === tid || String(m[2]) === tid) && m[4] === "FINISHED" && !tengo.has(Number(m[0])));
+  if (!faltan.length) return [];
+  let cambio = false;
+  if (!soloCache && faltan.some((m) => !st.j[m[0]])) {
+    // 1) ¿Se encuentra su nombre en FotMob? Se prueba con su último partido jugado según Futmondo.
+    if (st.ok == null) {
+      const ref = matches.filter((m) => m.finished && m.mins > 0 && m.date).sort((x, y) => y.r - x.r)[0];
+      if (ref) {
+        try {
+          const eq = await fotmobEquipo(ymdMadrid(ref.date), ref.home, ref.away, clubKey(ref.home) === tk);
+          const r = eq ? minutosEnAlineacion(eq, nombre) : null;
+          if (eq) { st.ok = !!(r && (r.c === "t" || r.c === "s")); cambio = true; }
+        } catch (e) {}
+      }
+    }
+    // 2) Los que faltan, a la vez (como mucho 8 por visita)
+    if (st.ok === true) {
+      await Promise.all(faltan.filter((m) => !st.j[m[0]]).slice(0, 8).map(async (m) => {
+        try {
+          const home = cal.teams[m[1]].n, away = cal.teams[m[2]].n, casa = String(m[1]) === tid;
+          const eq = await fotmobEquipo(ymdMadrid(m[3]), home, away, casa);
+          const r = eq ? minutosEnAlineacion(eq, nombre) : null;
+          if (r) { st.j[m[0]] = { ...r, home, away, date: m[3], hs: m[5], as: m[6] }; cambio = true; }
+        } catch (e) {}
+      }));
+    }
+    if (cambio) { try { await env.PORRA.put(key, JSON.stringify(st)); } catch (e) {} }
+  }
+  return faltan.filter((m) => st.j[m[0]]).map((m) => {
+    const x = st.j[m[0]];
+    return { r: Number(m[0]), home: x.home, hs: x.hs, away: x.away, as: x.as, score: x.hs != null && x.as != null ? x.hs + "-" + x.as : "", date: x.date, finished: true, mins: x.mins, sub: x.c === "s", yellow: 0, red: 0, stats: 0, picas: 0, ff: 0, ss: 0, marca: 0, hsc: x.hs, asc: x.as, ev: {}, lg: null, fot: x.c };
+  });
+}
+
 async function playerFicha(env, id, fast, raw) {
   if (!id) return { error: "falta id" };
   // Si Futmondo falla (límite, caída, token), se reintenta una vez y, si sigue fallando, la ficha sale con los datos del mercado en vez de error.
@@ -1950,7 +2009,14 @@ async function playerFicha(env, id, fast, raw) {
     } catch (e) {}
   }
   const fitArr = (mp && mp.fitness && mp.fitness.length) ? mp.fitness : ((pl.average && pl.average.fitness) || []);
-  const cats = matches.map((m) => {
+  // Partidos sin detalle en Futmondo: minutos de FotMob (los puntos y medias de arriba NO los cuentan: siguen siendo solo de Futmondo)
+  let extra = [];
+  try {
+    const eqN = (a.team && a.team.name) || pl.team || (mp && mp.team) || "";
+    extra = await Promise.race([minutosQueFaltan(env, id, pl.name, eqN, matches, !!fast), new Promise((res) => setTimeout(() => res([]), 9000))]);
+  } catch (e) { extra = []; }
+  const matchesTodos = matches.concat(extra);
+  const cats = matchesTodos.map((m) => {
     const mn = m.mins || 0;
     const cat = mn <= 0 ? "none" : m.sub ? "banquillo" : (mn >= 85 ? "completo" : "sustituido");
     return { r: m.r, mins: mn, cat, red: m.red ? 1 : 0 };
@@ -1958,11 +2024,11 @@ async function playerFicha(env, id, fast, raw) {
   const parPlayed = cats.filter((c) => c.mins > 0).length;
   const starts = cats.filter((c) => c.cat === "completo" || c.cat === "sustituido").length;
   const bench = cats.filter((c) => c.cat === "banquillo").length;
-  const totalMin = matches.reduce((s, m) => s + (m.mins || 0), 0);
+  const totalMin = matchesTodos.reduce((s, m) => s + (m.mins || 0), 0);
   // Jornadas que su equipo ya ha jugado = los partidos reales de su equipo (si una jornada está
   // aplazada, p. ej. el Rayo–Athletic del J8, NO cuenta: antes se dividía entre una jornada de más,
   // "9 de 10" y "810 de 900" para quien los había jugado todos).
-  const lastR = matches.reduce((mx, m) => Math.max(mx, Number(m.r) || 0), 0);
+  const lastR = matchesTodos.reduce((mx, m) => Math.max(mx, Number(m.r) || 0), 0);
   const jPlayed = playedDenominator(teamPlayed, lastR, Number(lJornada) || 0, parPlayed);
   const maxMin = jPlayed * 90;
   const participacion = {
@@ -2018,7 +2084,7 @@ async function playerFicha(env, id, fast, raw) {
     team: (a.team && a.team.name) || pl.team || "",
     logo: pl.logo ? LOGO_BASE + pl.logo : "",
     photo: pl.photo ? FACE_BASE + pl.photo : "",
-    matches,
+    matches: matchesTodos,
     valores,
     temporada,
     temporadas,

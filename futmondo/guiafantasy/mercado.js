@@ -4925,7 +4925,7 @@
     box.appendChild(one);
     // Fichaje tardío: Futmondo no da el detalle de los primeros partidos y estas cifras no los incluyen (Pablo García, 11/11/2026).
     { const faltan = (Number(jDen) || 0) - ((par.byJornada || []).length || 0);
-      if (par.byJornada && faltan > 0) box.appendChild(el("div", "dash-note", (faltan === 1 ? "Falta 1 partido" : "Faltan " + faltan + " partidos") + " en esta cuenta: Futmondo no publica sus minutos.")); }
+      if (par.byJornada && faltan > 0) box.appendChild(el("div", "dash-note", (faltan === 1 ? "Falta 1 partido" : "Faltan " + faltan + " partidos") + " en esta cuenta: ni Futmondo ni FotMob dan sus minutos con seguridad.")); }
 
     box.appendChild(el("div", "dash-sect", "Disponibilidad & disciplina"));
     const av = el("div", "dash-avail");
@@ -5071,8 +5071,17 @@
     // Opciones de ser titular (el % de FutbolFantasy). El estado del jugador va solo en la caja de arriba, nunca aquí.
     if (!bad) {
       const pb = liveP.prob != null ? liveP.prob : p.prob;
-      if (pb != null) { const pr = el("div", "ficha-pron", "Opciones de ser titular"); pr.appendChild(el("span", "ficha-pron-pct", pb + "%")); head.appendChild(pr); }
-      else if (d.pronostico) head.appendChild(el("div", "ficha-pron", "Titularidad: " + String(d.pronostico).replace(/[^\wáéíóúñ ]/gi, "").trim()));
+      const txt = pb != null ? (pb >= 70 ? "Titular probable" : pb >= 40 ? "En duda para el once" : "Suplente probable") : String(d.pronostico || "").replace(/[^\wáéíóúñ ]/gi, "").trim();
+      if (txt) {
+        // Color según lo cerca que está del once: verde (titular), ámbar (dudoso o rotación), gris (suplente)
+        const tono = pb != null ? (pb >= 70 ? "g" : pb >= 40 ? "a" : "s") : /^Titular/.test(txt) ? "g" : /^Probable/.test(txt) ? "a" : "s";
+        const pr = el("div", "ficha-pron ficha-tit ficha-tit-" + tono);
+        pr.appendChild(el("i", "ficha-tit-dot"));
+        pr.appendChild(el("span", "ficha-tit-k", "Titularidad"));
+        pr.appendChild(el("b", "ficha-tit-v", txt === "Probable" ? "Entra en la rotación" : txt === "Suplente" ? "Suplente probable" : txt));
+        if (pb != null) pr.appendChild(el("span", "ficha-tit-pct", pb + "%"));
+        head.appendChild(pr);
+      }
     }
     if (d.fichaje && d.fichaje.date) head.appendChild(el("div", "ficha-fichaje", "🖊️ Fichado: " + d.fichaje.date + (d.fichaje.club ? " · " + d.fichaje.club : "")));
     colA.appendChild(head);
@@ -5130,7 +5139,8 @@
             else if (mn >= 85) { tg = "90'"; }
             else { tg = "▼ salió · " + mn + "'"; tgCls = "fm-out"; }
             chips.appendChild(el("span", "fm-min " + tgCls, tg));
-          } else chips.appendChild(el("span", "fm-min fm-out", m.finished ? "No jugó · 0'" : "0'"));
+          } else chips.appendChild(el("span", "fm-min fm-out", m.fot === "x" ? "Fuera de la convocatoria" : m.fot === "b" ? "No jugó · banquillo" : m.finished ? "No jugó · 0'" : "0'"));
+          if (m.fot) { const fo = el("span", "fm-src", "Minutos de FotMob"); fo.title = "Futmondo no da el detalle de este partido: los minutos son de la alineación de FotMob"; chips.appendChild(fo); }
           body.appendChild(chips);
           // Qué pasó en el partido (datos reales del partido): goles, asistencias, portería a cero, tarjetas, penaltis, nota.
           const E = m.ev || {};
