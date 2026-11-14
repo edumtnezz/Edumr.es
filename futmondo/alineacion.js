@@ -76,6 +76,8 @@
         if (fm && fm.photo && s.photo && !/\/faces\/\d+\/\d+\.png/.test(fm.photo) && !GOOD_FACE.test(fm.photo)) photo = s.photo;
         var inner = '<div class="pl-ph"><img src="' + esc(photo) + '" alt="" data-ff="' + esc(ffPh) + '">';
         if (probable && s.bench && (s.san || s.inj) && (s.prob == null || s.prob < 10)) inner += '<span class="pl-prob pl-out">' + (s.san ? "Sancionado" : "Lesionado") + '</span>';
+        // Dos porcentajes: E = el nuestro (titularidades reales de Futmondo), F = el de FutbolFantasy. Letra pequeña encima.
+        else if (probable && s.probE != null) inner += '<span class="pl-prob2' + (s.prob != null && Math.abs(s.probE - s.prob) >= 25 ? " dif" : "") + '"><span class="pl-pp ' + probCls(s.probE) + '" title="Nuestra probabilidad de ser titular"><i>E</i>' + s.probE + '%</span><span class="pl-pp ' + (s.prob != null ? probCls(s.prob) : "p0") + '" title="Probabilidad de FutbolFantasy"><i>F</i>' + (s.prob != null ? s.prob + "%" : "—") + '</span></span>';
         else if (probable && s.prob != null) inner += '<span class="pl-prob ' + probCls(s.prob) + '">' + s.prob + '%</span>';
         if (mode === "played") inner += '<span class="pl-pts pl-pts-wait" data-full="' + esc(s.full || s.name) + '">–</span>';
         else if (!probable) { /* confirmada: sin dudas */ }

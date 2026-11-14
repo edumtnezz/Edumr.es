@@ -101,3 +101,14 @@ a.pl { text-decoration: none; color: inherit; }
   .pl-prob.pl-out { font-size: .56rem; }
   .al-bench-row .pl-prob:not(.pl-out) { font-size: .56rem; }
 }
+
+/* Dos porcentajes por jugador: E (nuestro) y F (FutbolFantasy), con la letra pequeña encima de cada uno */
+.pl-prob2 { position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%); display: inline-flex; gap: 2px; z-index: 2; }
+.pl-pp { --pc: #41ab58; position: relative; font: 800 .58rem 'Bricolage Grotesque', sans-serif; color: #fff; background: var(--pc); padding: 2px 5px; border-radius: 999px; border: 1.2px solid #fff; box-shadow: 0 2px 5px rgba(0, 0, 0, .35); white-space: nowrap; line-height: 1.1; }
+.pl-pp i { position: absolute; left: 50%; top: -9px; transform: translateX(-50%); font: 800 .46rem 'Figtree', system-ui, sans-serif; font-style: normal; color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, .9); letter-spacing: .04em; }
+.pl-pp.p90 { --pc: #4184ab; } .pl-pp.p80 { --pc: #41ab58; } .pl-pp.p60 { --pc: #ebcc34; color: #10151c; } .pl-pp.p40 { --pc: #cf8236; } .pl-pp.p0 { --pc: #cf4a36; }
+.pl-prob2.dif .pl-pp { box-shadow: 0 0 0 2px #facc15, 0 2px 5px rgba(0, 0, 0, .35); }
+.pl-ph:has(.pl-prob2) + .pl-nm { margin-top: 9px; }
+.al-bench-row .pl-pp { font-size: .46rem; padding: 1px 3px; border-width: 1px; }
+.al-bench-row .pl-pp i { font-size: .4rem; top: -8px; }
+@media (max-width: 560px) { .pl-pp { font-size: .5rem; padding: 1px 4px; } .pl-pp i { font-size: .42rem; top: -8px; } }
