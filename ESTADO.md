@@ -1,6 +1,12 @@
 # ESTADO.md — edumr.es (Guía Fantasy / Futmondo)
 
-Última actualización: 13/11/2026. Para continuar el redactor: lee `docs/redactor.md` y después este archivo. Reglas generales: AGENTS.md y CLAUDE.md.
+Última actualización: 15/11/2026. Para continuar el redactor: lee `docs/redactor.md` y después este archivo. Reglas generales: AGENTS.md y CLAUDE.md.
+
+## 15/11/2026 — Mercado, botón de vuelta, Quiniela/Porra y cara a cara (hecho y publicado)
+- Mercado: vuelven los cambios a 7/14/30 días, el % de jugar, el rival y la tendencia (`ffPickEst` se llamaba a sí misma desde el 13/11). Historial propio `vh:v1`: la foto del día es el valor ya actualizado.
+- Botón de vuelta nuevo (flecha en círculo, separado del borde) en todas las páginas de Guía Fantasy.
+- Quiniela: «Últimos enfrentamientos» al abrir un partido (ruta `h2h`, FotMob). Quiniela y Porra: escudo/nombre abren la ficha del club y al volver se recupera el punto exacto (`futmondo/clubgo.js`).
+- Club: enlace «Cara a cara» bajo el próximo partido. Página del partido: el botón «Datos del partido» pasa a «Cara a cara». Alineación sin datos antes del partido: aviso en vez de campo vacío.
 
 ## 13/11/2026 — Estilo de las noticias automáticas
 

@@ -101,10 +101,15 @@ function shortName(n) {
   return String(n || "").replace(/^(FC|RC|CA|UD|SD|CD|RCD)\s+/, "").replace(/\s+(CF|FC|SD|UD)$/, "");
 }
 
+// Escudo o nombre de un club: abre su ficha en Guía Fantasy (clubgo.js). Sin ese archivo no hace nada.
+function clubGo(node, name) {
+  try { if (window.EduClubGo) window.EduClubGo.link(node, name); } catch (e) {}
+  return node;
+}
 function teamCol(name, crest, side) {
   const c = el("div", "pc3-team pc3-" + side);
-  c.appendChild(crestEl(crest, name));
-  c.appendChild(el("span", "pc3-name", shortName(name)));
+  clubGo(c.appendChild(crestEl(crest, name)), name);
+  clubGo(c.appendChild(el("span", "pc3-name", shortName(name))), name);
   return c;
 }
 
@@ -277,9 +282,9 @@ function renderHistory() {
     if (day) card.appendChild(el("div", "hx-date", day));
     const sc = el("div", "hx-score");
     const tl = el("div", "hx-team"); if (h.homeCrest) { const im = el("img", "hx-crest"); im.src = h.homeCrest; im.alt = ""; im.addEventListener("error", () => im.remove()); tl.appendChild(im); }
-    tl.appendChild(el("span", null, shortName(h.home)));
+    tl.appendChild(el("span", null, shortName(h.home))); clubGo(tl, h.home);
     const tr = el("div", "hx-team"); if (h.awayCrest) { const im = el("img", "hx-crest"); im.src = h.awayCrest; im.alt = ""; im.addEventListener("error", () => im.remove()); tr.appendChild(im); }
-    tr.appendChild(el("span", null, shortName(h.away)));
+    tr.appendChild(el("span", null, shortName(h.away))); clubGo(tr, h.away);
     sc.appendChild(tl);
     sc.appendChild(el("div", "hx-res", h.result ? h.result.home + " - " + h.result.away : "vs"));
     sc.appendChild(tr);
@@ -346,6 +351,7 @@ function renderParts() {
       const line = el("div", "pp-line");
       const l = el("div", "pp-t"); l.appendChild(crestEl(m.homeCrest, m.home)); l.appendChild(el("span", null, shortName(m.home)));
       const rr = el("div", "pp-t"); rr.appendChild(crestEl(m.awayCrest, m.away)); rr.appendChild(el("span", null, shortName(m.away)));
+      clubGo(l, m.home); clubGo(rr, m.away);
       line.appendChild(l);
       line.appendChild(el("div", "pp-score", e ? e.home + " - " + e.away : "—"));
       line.appendChild(rr);
@@ -401,6 +407,7 @@ async function guardar(m) {
 }
 
 let lastSig = "";
+let backDone = false;
 async function load(auto) {
   try {
     const res = await fetch(API + "/porra" + (viewJornada ? "?jornada=" + viewJornada : ""));
@@ -414,6 +421,8 @@ async function load(auto) {
     lastSig = sig;
     state = fresh;
     render();
+    // Vuelves de la ficha de un club: misma pestaña y misma altura que dejaste
+    if (!backDone) { backDone = true; try { if (window.EduClubGo) window.EduClubGo.restore(switchTab); } catch (e) {} }
   } catch (e) {}
   document.documentElement.classList.remove("auth-loading");
 }

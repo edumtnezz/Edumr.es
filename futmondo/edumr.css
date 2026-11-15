@@ -905,12 +905,14 @@ body { overflow-x: clip; overscroll-behavior-x: none; max-width: 100%; }
   /* Botón de subir arriba: por encima de la barra */
   .gf-page .cx-totop { bottom: calc(78px + env(safe-area-inset-bottom, 0px)) !important; }
   /* Volver: sin botón flotante. Va arriba, como texto con flecha (igual que en una app) */
+  /* 15/11/2026: la flecha va dentro de un círculo y separada del borde (antes quedaba pegada a la izquierda) */
   .gf-page .bk:not(.news-share):not(.bk-link) {
-    position: static; width: auto; height: 36px; margin: 0 0 6px -6px; padding: 0 10px 0 2px; gap: 2px;
-    border: none; border-radius: 10px; background: none; box-shadow: none; color: var(--cx-muted, #64748b); font-size: .9rem; font-weight: 700;
+    position: static; width: auto; height: 40px; margin: 0 0 8px; padding: 0 12px 0 0; gap: 10px;
+    border: none; border-radius: 999px; background: none; box-shadow: none; color: var(--cx-text, inherit); font-size: .92rem; font-weight: 700;
   }
-  .gf-page .bk:not(.news-share):not(.bk-link):active { background: rgba(127, 127, 127, .12); }
-  .gf-page .bk:not(.news-share):not(.bk-link) .gi { width: 20px; height: 20px; }
+  .gf-page .bk:not(.news-share):not(.bk-link) .gi { width: 34px; height: 34px; padding: 8px; box-sizing: border-box; border-radius: 50%; background: rgba(127, 127, 127, .16); }
+  .gf-page .bk:not(.news-share):not(.bk-link):active .gi { background: rgba(127, 127, 127, .3); }
+  .gf-page .eq-backbar { padding: 10px 14px 0; }
 }
 
 /* Foto de jugador recortada en vertical: entera dentro del círculo (ver chrome.js) */

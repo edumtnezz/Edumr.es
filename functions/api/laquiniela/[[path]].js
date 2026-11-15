@@ -5530,7 +5530,7 @@ async function recordPointsHistory(env) {
 
 // Caché de respuestas públicas (Cache API: sin coste ni límite). Evita recalcular en cada visita
 // y mantiene la CPU por petición por debajo del límite del plan gratis de Cloudflare.
-const EDGE_TTL = { "ultimos-cambios": 180, aplazados: 300, calendario: 600, estadios: 3600, "historial-puntos": 120, "puntos-jornada": 30, mercado: 45, rachas: 60, minutos: 300, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 300, "alineaciones-confirmadas": 180, "alineaciones-estado": 300, noticias: 60, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10, "notas-fotmob": 3600, "fm-partido": 21600 };
+const EDGE_TTL = { h2h: 21600, "ultimos-cambios": 180, aplazados: 300, calendario: 600, estadios: 3600, "historial-puntos": 120, "puntos-jornada": 30, mercado: 45, rachas: 60, minutos: 300, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 300, "alineaciones-confirmadas": 180, "alineaciones-estado": 300, noticias: 60, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10, "notas-fotmob": 3600, "fm-partido": 21600 };
 // Pantallas donde un dato de hace unos minutos no hace daño: cuando caduca la copia fresca se responde AL MOMENTO con la última buena (hasta 15 min) y se refresca por detrás.
 // Fuera de aquí a propósito: directo, detallepartido, alineaciones-confirmadas, notas-fotmob, fm-partido (en juego deben ser frescos).
 const SWR_OK = new Set(["mercado", "jugador", "ultimos-cambios", "equipos", "calendario", "rachas", "minutos", "temporada", "noticias", "clausulas", "fichajes", "portada", "aplazados", "estadios", "historial-puntos", "once", "alineaciones-estado"]);
@@ -5854,6 +5854,38 @@ async function handleGet({ request, env: env0, params }) {
       });
       return json({ ev: { id: hit.id, home: side(lu.homeTeam), away: side(lu.awayTeam), g, c, s } });
     } catch (e) { return json({ ev: null }); }
+  }
+  if (path === "h2h") {
+    // Últimos enfrentamientos entre dos equipos (FotMob, ficha del partido). Solo partidos terminados, con su resultado real.
+    // Si la fuente falla devuelve "error" para que el borde no guarde una respuesta vacía (y sirva la última buena).
+    const hh = url.searchParams.get("home") || "", aa = url.searchParams.get("away") || "";
+    const dd = /^\d{8}$/.test(url.searchParams.get("date") || "") ? url.searchParams.get("date") : "";
+    if (!hh || !aa || !dd) return json({ error: "Faltan datos." }, 400);
+    try {
+      const UA = { "user-agent": "Mozilla/5.0 (compatible; edumr)" };
+      const STOP = new Set(["de", "la", "el", "club", "fc", "cf", "ud", "cd", "rcd", "sd", "rc", "real"]);
+      const ALIAS = { atleti: "atletico madrid", barca: "barcelona", athletic: "athletic club" };
+      const toks = (n) => { let k = String(n || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim(); if (ALIAS[k]) k = ALIAS[k]; return k.split(" ").filter((w) => w && !STOP.has(w)); };
+      const same = (ours, theirs) => { const a = toks(ours), b = toks(theirs); if (!a.length || !b.length) return false; return a.some((w) => b.indexOf(w) >= 0); };
+      const lj = await (await fetch("https://www.fotmob.com/api/data/matches?date=" + dd + "&timezone=Europe%2FMadrid&ccode3=ESP", { headers: UA })).json();
+      let hit = null;
+      for (const lg of (lj.leagues || [])) {
+        for (const m of (lg.matches || [])) {
+          if (same(hh, m.home && (m.home.longName || m.home.name)) && same(aa, m.away && (m.away.longName || m.away.name))) { hit = m; break; }
+        }
+        if (hit) break;
+      }
+      if (!hit) return json({ error: "Partido no encontrado en la fuente." });
+      const j = await (await fetch("https://www.fotmob.com/api/data/matchDetails?matchId=" + hit.id, { headers: UA })).json();
+      const h2o = (j.content || {}).h2h || null;
+      if (!h2o || !Array.isArray(h2o.matches)) return json({ error: "Sin datos de enfrentamientos." });
+      const m = h2o.matches
+        .filter((x) => x && x.status && x.status.finished && /^\d+\s*-\s*\d+$/.test(String(x.status.scoreStr || "").trim()) && (x.time || {}).utcTime)
+        .sort((x, y) => Date.parse(y.time.utcTime) - Date.parse(x.time.utcTime))
+        .slice(0, 5)
+        .map((x) => ({ d: x.time.utcTime, lg: (x.league || {}).name || "", hn: (x.home || {}).name || "", an: (x.away || {}).name || "", sc: String(x.status.scoreStr).replace(/\s+/g, "") }));
+      return json({ m, src: "FotMob" });
+    } catch (e) { return json({ error: "No se pudo consultar la fuente." }); }
   }
   if (path === "directo") {
     // Directo de un partido: crónica de Comuniate + eventos y estadísticas de FotMob. Sin KV: caché de borde de 30 s.

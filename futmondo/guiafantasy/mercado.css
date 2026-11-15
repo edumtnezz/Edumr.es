@@ -3680,9 +3680,10 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 :is(#tab-mercado, #tab-plantillas) .plt-head #pltPos .plt-btn { border-radius: 10px; }
 
 /* Volver: botón redondo con flecha, como en una app */
-.bk:not(.news-share):not(.bk-link) { height: 36px; padding: 0 10px 0 2px; gap: 2px; border: none; border-radius: 10px; background: none; box-shadow: none; color: var(--muted); font-size: .9rem; font-weight: 700; }
-.bk:not(.news-share):not(.bk-link):hover { background: rgba(127, 127, 127, .12); color: var(--text); }
-.bk:not(.news-share):not(.bk-link) .gi { width: 20px; height: 20px; }
+.bk:not(.news-share):not(.bk-link) { height: 40px; padding: 0 12px 0 0; gap: 10px; border: none; border-radius: 999px; background: none; box-shadow: none; color: var(--text); font-size: .92rem; font-weight: 700; }
+.bk:not(.news-share):not(.bk-link) .gi { width: 34px; height: 34px; padding: 8px; box-sizing: border-box; border-radius: 50%; background: rgba(127, 127, 127, .16); }
+.bk:not(.news-share):not(.bk-link):hover .gi { background: rgba(127, 127, 127, .28); }
+.eq-backbar { padding: 10px 14px 0; }
 .bk-link { border: none; background: none; height: auto; padding: 6px 2px; color: var(--muted); font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 
 /* ===== 12/11/2026 · Noticias nuevas: claves y consejo fantasy ===== */
@@ -3938,3 +3939,11 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
   .pp2-c b { font-size: .52rem; } .pp2-c i { font-size: .4rem; }
 }
 .alin-pimg:has(.alin-pct2) + .alin-pname, .alin-pimg:has(.alin-pct2) ~ .alin-pname { margin-top: 13px; }
+
+/* 15/11/2026 · Club: acceso al cara a cara del próximo partido (debajo de la tarjeta del partido) */
+.eq-h2h-go { position: relative; z-index: 1; flex: 1 0 calc(100% - 16px); margin: 10px 8px 0; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 14px; border-radius: 14px; background: var(--card-solid, #fff); border: 1px solid var(--border, rgba(127,127,127,.25)); color: var(--text, inherit); text-decoration: none; -webkit-tap-highlight-color: transparent; }
+.eq-h2h-go:active { background: rgba(127, 127, 127, .12); }
+.eq-h2h-tx { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.eq-h2h-tx b { font-size: .9rem; font-weight: 800; }
+.eq-h2h-tx small { font-size: .76rem; color: var(--muted, #64748b); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eq-h2h-go .ic { width: 18px; height: 18px; flex: none; }

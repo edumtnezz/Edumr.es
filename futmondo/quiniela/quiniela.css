@@ -1806,3 +1806,20 @@ a.btn-primary, a.btn-ghost { display: inline-block; text-decoration: none; text-
    Las tiras con su propio scroll (escudos, filtros) siguen deslizándose dentro de su caja. */
 html { overflow-x: hidden; overscroll-behavior-x: none; }
 body { overflow-x: clip; overscroll-behavior-x: none; max-width: 100%; }
+
+/* 15/11/2026 · Clubes tocables (abren su ficha en Guía Fantasy) y últimos enfrentamientos dentro del partido */
+.club-go { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.club-go:focus-visible { outline: 2px solid #22c55e; outline-offset: 2px; border-radius: 6px; }
+@media (hover: hover) and (pointer: fine) { span.club-go:hover, .club-go:hover > span { text-decoration: underline; text-underline-offset: 3px; } }
+.bq-h2h { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--bq-line); }
+.bq-h2h-t { margin-bottom: 6px; font-size: .7rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--bq-mute); text-align: center; }
+.bq-h2h-n { margin: 0; text-align: center; font-size: .78rem; color: var(--bq-mute); }
+.bq-h2h-r { display: grid; grid-template-columns: 58px minmax(0, 1fr) 46px minmax(0, 1fr); align-items: center; gap: 6px; padding: 5px 0; font-size: .8rem; color: var(--bq-ink); }
+.bq-h2h-r + .bq-h2h-r { border-top: 1px solid var(--bq-line); }
+.bq-h2h-d { font-size: .68rem; line-height: 1.15; color: var(--bq-mute); font-variant-numeric: tabular-nums; }
+.bq-h2h-d i { display: block; font-style: normal; font-weight: 700; }
+.bq-h2h-h, .bq-h2h-a { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bq-h2h-h { text-align: right; }
+.bq-h2h-s { text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bq-h2h-r .win { font-weight: 800; }
+.bq-h2h-r .lost { color: var(--bq-mute); }

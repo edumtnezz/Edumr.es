@@ -206,6 +206,53 @@ function teamEl(side, match, team) {
   return span;
 }
 
+// Escudo o nombre de un club: abre su ficha en Guía Fantasy (clubgo.js). Sin ese archivo no hace nada.
+function clubGo(node, name) {
+  try { if (window.EduClubGo) window.EduClubGo.link(node, name); } catch (e) {}
+  return node;
+}
+
+// Últimos enfrentamientos entre los dos equipos (FotMob, solo partidos terminados). Se piden al abrir el partido.
+const h2hCache = {}, h2hBusy = {}, openRows = {};
+function drawH2h(box, d) {
+  box.innerHTML = "";
+  const mk = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+  box.appendChild(mk("div", "bq-h2h-t", "Últimos enfrentamientos"));
+  if (d === "wait") { box.appendChild(mk("p", "bq-h2h-n", "Cargando…")); return; }
+  if (!d || d.error || !Array.isArray(d.m)) { box.appendChild(mk("p", "bq-h2h-n", "Sin datos ahora mismo.")); return; }
+  if (!d.m.length) { box.appendChild(mk("p", "bq-h2h-n", "No hay enfrentamientos anteriores.")); return; }
+  const LG = { "Club Friendlies": "Amistoso", "Copa del Rey": "Copa", "LaLiga2": "2.ª", "Super Cup": "Supercopa" };
+  d.m.forEach((x) => {
+    const g = String(x.sc || "").split("-").map(Number);
+    const w = g[0] > g[1] ? "h" : g[0] < g[1] ? "a" : "";
+    const r = mk("div", "bq-h2h-r");
+    let f = "";
+    try { f = new Date(x.d).toLocaleDateString("es-ES", { timeZone: "Europe/Madrid", day: "numeric", month: "short", year: "2-digit" }).replace(/\./g, ""); } catch (e) {}
+    const when = mk("span", "bq-h2h-d", f);
+    if (x.lg && x.lg !== "LaLiga") when.appendChild(mk("i", null, LG[x.lg] || x.lg));
+    r.appendChild(when);
+    r.appendChild(mk("span", "bq-h2h-h" + (w === "h" ? " win" : w ? " lost" : ""), x.hn));
+    r.appendChild(mk("b", "bq-h2h-s", g[0] + " - " + g[1]));
+    r.appendChild(mk("span", "bq-h2h-a" + (w === "a" ? " win" : w ? " lost" : ""), x.an));
+    box.appendChild(r);
+  });
+}
+async function loadH2h(m, box) {
+  if (h2hCache[m.id]) { drawH2h(box, h2hCache[m.id]); return; }
+  drawH2h(box, "wait");
+  if (h2hBusy[m.id]) return;
+  h2hBusy[m.id] = 1;
+  let d = null;
+  try {
+    const dd = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date(m.utcDate)).replace(/-/g, "");
+    d = await (await fetch(API + "/h2h?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&date=" + dd)).json();
+  } catch (e) {}
+  delete h2hBusy[m.id];
+  if (d && Array.isArray(d.m)) h2hCache[m.id] = d;
+  const cur = document.querySelector('.match-row.bq[data-match="' + m.id + '"] .bq-h2h') || box;
+  drawH2h(cur, d);
+}
+
 function vsEl() {
   const v = document.createElement("span");
   v.className = "vs";
@@ -331,8 +378,9 @@ function renderMatches() {
     const teams = mk("div", "bq-teams");
     const side = (name, crest, tla, cls) => {
       const t = mk("div", "bq-team " + cls);
-      t.appendChild(crestEl(crest, tla || name));
-      t.appendChild(mk("span", "bq-name", name));
+      const cr = t.appendChild(crestEl(crest, tla || name));
+      const nm = t.appendChild(mk("span", "bq-name", name));
+      clubGo(cr, name); clubGo(nm, name);
       return t;
     };
     teams.appendChild(side(m.home, m.homeCrest, m.homeTla, "h"));
@@ -368,6 +416,9 @@ function renderMatches() {
     });
     more.appendChild(fr);
     more.appendChild(mk("p", "bq-form-note", "Últimos 5 partidos, el más reciente a la derecha."));
+    const h2box = mk("div", "bq-h2h");
+    more.appendChild(h2box);
+    if (h2hCache[m.id]) drawH2h(h2box, h2hCache[m.id]);
     const others = (state.participants || []).filter((p) => p.picks && p.picks[m.id]);
     if (others.length) {
       const ow = mk("div", "bq-others");
@@ -384,7 +435,10 @@ function renderMatches() {
     head.addEventListener("click", () => {
       const on = row.classList.toggle("open");
       head.setAttribute("aria-expanded", on ? "true" : "false");
+      if (on) { openRows[m.id] = 1; loadH2h(m, h2box); } else delete openRows[m.id];
     });
+    // Si la lista se repinta sola (resultados en directo), el partido que tenías abierto sigue abierto
+    if (openRows[m.id]) { row.classList.add("open"); head.setAttribute("aria-expanded", "true"); loadH2h(m, h2box); }
     row.appendChild(main);
     list.appendChild(row);
   });
@@ -791,6 +845,7 @@ function renderPartido(data) {
   const hn = document.createElement("span");
   hn.textContent = data.home;
   home.appendChild(hn);
+  clubGo(home, data.home);
   const vs = document.createElement("span");
   vs.className = "vs";
   vs.textContent = "VS";
@@ -800,6 +855,7 @@ function renderPartido(data) {
   const an = document.createElement("span");
   an.textContent = data.away;
   away.appendChild(an);
+  clubGo(away, data.away);
   row.appendChild(home);
   row.appendChild(vs);
   row.appendChild(away);
@@ -963,7 +1019,7 @@ async function loadState() {
   return res.json();
 }
 
-let lastSig = "";
+let lastSig = "", backDone = false;
 async function refresh(auto) {
   try {
     const fresh = await loadState();
@@ -981,6 +1037,8 @@ async function refresh(auto) {
     if (state.openCount > 0) editing = true;
     renderAll();
     updateCountdown();
+    // Vuelves de la ficha de un club: misma pestaña y misma altura que dejaste
+    if (!backDone) { backDone = true; try { if (window.EduClubGo) window.EduClubGo.restore(switchTab); } catch (e) {} }
   } catch (e) {
     $("cdInfo").textContent = "Error de conexión. Reintentando…";
   }

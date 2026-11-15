@@ -1724,8 +1724,8 @@
         };
         const liveNow = isLive || mpLive;
         const dot = liveNow ? el("span", "mpa-live", "En juego") : null;
-        const a1 = act("a", "mpa-data", svgS('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'), liveNow ? "En directo" : "Datos del partido", "FotMob · alineaciones y más", dot);
-        a1.href = "/futmondo/guiafantasy/directo/" + matchSlug(m.home, m.away) + "?t=" + encodeURIComponent("Alineación") + (jn ? "&j=" + encodeURIComponent(jn) : "");
+        const a1 = act("a", "mpa-data", svgS('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'), liveNow ? "En directo" : "Cara a cara", liveNow ? "Alineación, datos y cara a cara" : "Enfrentamientos y clasificación", dot);
+        a1.href = "/futmondo/guiafantasy/directo/" + matchSlug(m.home, m.away) + "?t=" + encodeURIComponent(liveNow ? "Alineación" : "Cara") + (jn ? "&j=" + encodeURIComponent(jn) : "");
         const a2 = act("button", "mpa-pts", svgS('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'), "Puntos Futmondo", "Once con puntos");
         a2.type = "button";
         a2.addEventListener("click", () => { const t = box.querySelector(".mpage-xi"); if (t) { const y = t.getBoundingClientRect().top + window.scrollY - 70; window.scrollTo({ top: y, behavior: "smooth" }); } });
@@ -2022,8 +2022,13 @@
       const srcTag = () => {};
       const ln = fm && fm.lineup;
       let ourHrefG = null;
-      // 1) Campo en directo
-      if (ln && ln.h && ln.a) {
+      // 1) Campo en directo. Antes del partido FotMob manda la alineación vacía: en vez de un campo sin jugadores, se dice cuándo saldrá.
+      const lnOk = !!(ln && ln.h && ln.a && [ln.h, ln.a].some((t) => (t.st || []).some((q) => q && q.x != null && q.y != null)));
+      if (ln && ln.h && ln.a && !lnOk) {
+        const [c0] = sec("Alineación");
+        c0.appendChild(el("p", "muted small lv-note", "Aquí solo se muestran datos cuando el partido está en directo."));
+      }
+      if (lnOk) {
         if (!all || !all.length) { try { await load(); } catch (e) {} }
         const fnorm = (x) => stripAccents(String(x || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
         // Jugador de FotMob -> su ficha en nuestra web (mismo equipo; nombre completo o, si es único, el apellido)
@@ -5448,6 +5453,16 @@
     const a = el("a", "bk");
     a.innerHTML = "<svg class=\"gi\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M15 5l-7 7 7 7\"/></svg><span class=\"bk-t\">Todos los equipos</span>";
     a.href = "/equipos";
+    // Si vienes de la Quiniela o la Porra (tocando un escudo), el botón te devuelve allí, al mismo punto
+    try {
+      const rf = document.referrer ? new URL(document.referrer) : null;
+      const mm = rf && rf.origin === location.origin ? rf.pathname.match(/^\/futmondo\/(quiniela|porra)\//) : null;
+      if (mm) {
+        a.querySelector(".bk-t").textContent = mm[1] === "quiniela" ? "La Quiniela" : "La Porra";
+        a.href = rf.pathname;
+        a.addEventListener("click", (e) => { if (history.length > 1) { e.preventDefault(); history.back(); } });
+      }
+    } catch (e) {}
     bar.appendChild(a);
     box.appendChild(bar);
   }
@@ -5616,6 +5631,12 @@
         const go = el("span", "eq-tk-go"); go.appendChild(document.createTextNode(liveNow ? "Ver en directo" : "Ver alineación probable")); go.appendChild(ico("arrow")); ft.appendChild(go);
         nx.appendChild(ft);
         ht.appendChild(nx);
+        // Acceso directo al cara a cara del próximo partido (últimos enfrentamientos, de FotMob)
+        const h2a = el("a", "eq-h2h-go");
+        h2a.href = "/futmondo/guiafantasy/directo/" + matchSlug(next.home, next.away) + "?t=Cara&j=" + encodeURIComponent(next.jn);
+        const h2t = el("span", "eq-h2h-tx"); h2t.appendChild(el("b", null, "Cara a cara")); h2t.appendChild(el("small", null, "Últimos " + shortRival(team.name) + " – " + shortRival(rival)));
+        h2a.appendChild(h2t); h2a.appendChild(ico("arrow"));
+        ht.appendChild(h2a);
       }
       hd.appendChild(ht);
       frag.appendChild(hd);

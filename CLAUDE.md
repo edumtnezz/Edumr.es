@@ -32,6 +32,13 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 - **Onces propios**: el historial solo da ~71 % (7,8 de 11) con cualquier variante probada. Se guarda una probabilidad interna por jugador (`probInterna`) y un duelo con FutbolFantasy (`an:duelo:v1`): la previsión de cada uno 90 min antes del partido contra los titulares reales. Resultado en `/api/laquiniela/analitica` → `duelo`. No se enseña el once propio hasta que el duelo diga que iguala al de fuera. En el once probable se ven los dos % por jugador: E (nuestro, `probE`) y F (FutbolFantasy). La E sale de la frecuencia real de su «situación» (`situacion`: portero fijo 95 %, fijo de campo ~82 %, habitual que vuelve tras no jugar 47 % / 18 %, rotado 60 %) o, si no encaja en ninguna, de su tramo de peso. Medido el 14/11/2026: afina los % (Brier 0,1688 → 0,1669) pero NO sube el acierto del once (sigue en 7,8 de 11).
 - Botones de vuelta: uno solo y con el nombre del sitio («Noticias», «Todos los equipos», «Mercado»), nunca «Volver». Sin «actualizado hace…».
 
+## Decisiones del 15/11/2026
+- **Botón de vuelta**: flecha dentro de un círculo + el nombre del sitio, separado del borde (`.bk`, en `mercado.css` y `edumr.css`). Edu lo veía «muy pegado» a la izquierda. No volver al texto con flecha suelta ni a la pastilla con borde.
+- **Quiniela y Porra → club**: tocar escudo o nombre abre `/equipos/<club>` (`futmondo/clubgo.js` + `teams.js`). El botón de vuelta del club dice «La Quiniela»/«La Porra» y devuelve al mismo punto (pestaña y altura).
+- **Últimos enfrentamientos** en la Quiniela (dentro del desplegable de cada partido): ruta `h2h` (FotMob, solo partidos terminados, 5 últimos, caché 6 h). Sin dato: «Sin datos ahora mismo», nunca inventado.
+- **Cara a cara**: enlace bajo el próximo partido en la ficha del club y botón «Cara a cara» en la página del partido (antes «Datos del partido»). Antes del partido la pestaña Alineación no pinta un campo vacío: «Aquí solo se muestran datos cuando el partido está en directo».
+- **Mercado 7/14/30 días**: `ffPickEst` debe llamar a `ffPick` (se llamaba a sí misma y el mercado se quedó sin esos datos; `tests/ffpick-guard.test.mjs`). La foto diaria de `vh:v1` guarda el valor YA actualizado del día.
+
 ## Ideas pendientes
 - Avisos Telegram (noticias y alineación probable)
 - Jugadores rentables (SofaScore, calidad-precio)
