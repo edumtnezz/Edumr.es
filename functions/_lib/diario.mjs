@@ -62,8 +62,8 @@ export function itemsMercado(log, now = Date.now(), dias = 8) {
   return out;
 }
 
-// Líderes de LaLiga a partir de las listas de FotMob (goles con penaltis marcados, amarillas, faltas por partido).
-// lista = TopLists[0].StatList de cada archivo. Nada calculado: solo se ordena y se recorta.
+// Líderes de LaLiga a partir de las listas de FotMob (goles con penaltis marcados, amarillas, faltas).
+// lista = TopLists[0].StatList de cada archivo. Solo se ordena y se recorta, salvo el total de faltas (ver abajo).
 export function lideres(goles, amarillas, faltas) {
   const fila = (x, extra) => Object.assign({ id: x.ParticiantId, n: x.ParticipantName, team: x.TeamName, tid: x.TeamId, v: Number(x.StatValue) }, extra || {});
   const ok = (l) => (Array.isArray(l) ? l.filter((x) => x && x.ParticipantName && Number.isFinite(Number(x.StatValue))) : []);
@@ -73,6 +73,9 @@ export function lideres(goles, amarillas, faltas) {
   out.penaltis = G.filter((x) => Number(x.SubStatValue) > 0).sort((x, y) => Number(y.SubStatValue) - Number(x.SubStatValue)).slice(0, 3).map((x) => fila(x, { v: Number(x.SubStatValue) }));
   const maxA = A.length ? Number(A[0].StatValue) : 0;
   out.amarillas = A.filter((x) => Number(x.StatValue) === maxA).slice(0, 8).map((x) => fila(x));
-  out.faltas = F.slice(0, 3).map((x) => fila(x));
+  // Faltas: FotMob solo da «por cada 90 minutos» y los minutos jugados. El total se calcula (por 90 × minutos / 90, redondeado),
+  // así que puede bailar una falta arriba o abajo: en la web se dice que es calculado (lo pidió Edu, 15/11/2026).
+  out.faltas = F.filter((x) => Number(x.MinutesPlayed) > 0).map((x) => fila(x, { v: Math.round(Number(x.StatValue) * Number(x.MinutesPlayed) / 90), p90: Number(x.StatValue), min: Number(x.MinutesPlayed) }))
+    .sort((x, y) => y.v - x.v || y.p90 - x.p90).slice(0, 3);
   return out;
 }

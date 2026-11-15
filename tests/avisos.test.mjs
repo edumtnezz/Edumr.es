@@ -45,4 +45,6 @@ test("mercado: un solo aviso al día, cuando los valores llevan 6 min quietos", 
   assert.equal(_t.mercadoListo({ pxV: "a", pxVAt: t }, t + 7 * 60e3, "2026-11-14"), true);
   assert.equal(_t.mercadoListo({ pxV: "b", pxVAt: t + 9 * 3600e3, pxSent: "a", pxDay: "2026-11-14" }, t + 10 * 3600e3, "2026-11-14"), false); // por la tarde no se repite
   assert.equal(_t.mercadoListo({ pxV: "a", pxVAt: 0 }, t, "2026-11-14"), false); // primera vez: solo se guarda
+  assert.equal(_t.mercadoListo({ pxV: "b", pxVAt: t + 9 * 3600e3, pxSent: "a", pxDay: "2026-11-14" }, t + 10 * 3600e3, "2026-11-14", 3), false); // retoque suelto: no avisa
+  assert.equal(_t.mercadoListo({ pxV: "b", pxVAt: t + 9 * 3600e3, pxSent: "a", pxDay: "2026-11-14" }, t + 10 * 3600e3, "2026-11-14", 300), true); // segunda actualización real el mismo día
 });

@@ -4456,7 +4456,7 @@
     card("Penaltis marcados", (ldData.penaltis || []).slice(0, 3));
     const am = ldData.amarillas || [];
     card("Amarillas", am.slice(0, 3), am.length > 3 ? "y " + (am.length - 3) + " más con " + am[0].v : "");
-    card("Faltas", (ldData.faltas || []).slice(0, 3), "por cada 90 minutos");
+    { const fa = (ldData.faltas || []).slice(0, 3); card("Faltas", fa, fa.length && fa[0].p90 != null ? "total calculado con sus minutos" : "por cada 90 minutos"); }
     if (!grid.children.length) return null;
     box.appendChild(grid);
     return box;

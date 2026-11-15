@@ -130,9 +130,11 @@ function fraseEstado(clave, info) {
 function diaMadrid(now) {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(now));
 }
-// ¿Toca mandar el mercado? Los valores cambiaron, llevan 6 min quietos, no se ha mandado este cambio y hoy aún no se mandó ninguno.
-function mercadoListo(st, now, hoy) {
-  return !!(st.pxVAt && now - st.pxVAt >= 6 * 60e3 && st.pxSent !== st.pxV && st.pxDay !== hoy);
+// ¿Toca mandar el mercado? Los valores cambiaron, llevan 6 min quietos y no se ha mandado este cambio. Uno por cada actualización
+// REAL de Futmondo: el primero del día siempre; otro el mismo día solo si 50 jugadores o más tienen un valor distinto al del último
+// aviso (nCamb). Un retoque suelto por la tarde no avisa (Edu, 14 y 15/11/2026).
+function mercadoListo(st, now, hoy, nCamb) {
+  return !!(st.pxVAt && now - st.pxVAt >= 6 * 60e3 && st.pxSent !== st.pxV && (st.pxDay !== hoy || nCamb >= 50));
 }
 function statusLabel(s) {
   s = String(s || "");
@@ -424,9 +426,9 @@ export async function avisar(env, deps) {
     } catch (e) {}
   }
 
-  // 2c) Mercado actualizado: UN solo aviso al día, en el momento en que Futmondo cambia los valores (sobre las 04:30),
+  // 2c) Mercado actualizado: un aviso por cada actualización real de Futmondo, en el momento en que cambia los valores (sobre las 04:30),
   // también de noche (sin sonido). Los valores van entrando durante unos minutos: se espera a que lleven 6 min quietos.
-  // No hay segundo aviso por la tarde (decisión de Edu, 14/11/2026).
+  // Si un día hay dos actualizaciones reales, dos avisos; un retoque suelto por la tarde no avisa (Edu, 14 y 15/11/2026).
   try {
     const mk = await getMk();
     const ps = (mk.players || []).filter((p) => p && p.name && Number.isFinite(p.change) && Number.isFinite(p.value));
@@ -434,11 +436,12 @@ export async function avisar(env, deps) {
       const vs = hash(ps.map((p) => p.id + ":" + p.value).join("|"));
       if (vs !== st.pxV) { st.pxVAt = st.pxV ? now : 0; st.pxV = vs; dirty = true; }
       const hoy = diaMadrid(now);
-      if (mercadoListo(st, now, hoy)) {
+      const nCamb = st.pxMap ? ps.filter((p) => st.pxMap[p.id] != null && st.pxMap[p.id] !== p.value).length : 0;
+      if (mercadoListo(st, now, hoy, nCamb)) {
         const own = new Set(squad.map((p) => String(p.id)));
         const sig = hash(ps.map((p) => p.id + ":" + p.change).join("|"));
         const mt = mercadoTexto(ps, own, sig);
-        const commit = () => { st.pxSent = st.pxV; st.pxDay = hoy; st.px = sig; st.pxAt = now; dirty = true; };
+        const commit = () => { st.pxSent = st.pxV; st.pxDay = hoy; st.px = sig; st.pxAt = now; st.pxMap = Object.fromEntries(ps.map((p) => [p.id, p.value])); dirty = true; };
         if (firstRun || !mt) commit();
         else queue.push({ text: mt, commit, night: true });
       }

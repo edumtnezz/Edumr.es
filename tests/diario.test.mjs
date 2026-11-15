@@ -39,9 +39,9 @@ test("mercado: una fila por día con la primera pasada grande", () => {
 
 test("líderes: goles, penaltis marcados, empate de amarillas y faltas", () => {
   const r = (n, v, s) => ({ ParticiantId: n, ParticipantName: n, TeamName: "T", TeamId: 1, StatValue: v, SubStatValue: s });
-  const L = lideres([r("A", 15, 3), r("B", 13, 3), r("C", 10, 1), r("D", 9, 0), r("E", 8, 4), r("F", 7, 0)], [r("X", 5, 0), r("Y", 5, 0), r("Z", 4, 1)], [r("P", 3.6, 4), r("Q", 3.5, 0)]);
+  const L = lideres([r("A", 15, 3), r("B", 13, 3), r("C", 10, 1), r("D", 9, 0), r("E", 8, 4), r("F", 7, 0)], [r("X", 5, 0), r("Y", 5, 0), r("Z", 4, 1)], [{ ...r("P", 3.6, 4), MinutesPlayed: 775 }, { ...r("Q", 2.7, 0), MinutesPlayed: 1200 }]);
   assert.deepEqual(L.goles.map((x) => x.n), ["A", "B", "C", "D", "E"]);
   assert.deepEqual(L.penaltis.map((x) => x.n + x.v), ["E4", "A3", "B3"]);
   assert.deepEqual(L.amarillas.map((x) => x.n), ["X", "Y"]);
-  assert.equal(L.faltas[0].v, 3.6);
+  assert.deepEqual(L.faltas.map((x) => x.n + x.v), ["Q36", "P31"]); // total = por 90 × minutos / 90
 });
