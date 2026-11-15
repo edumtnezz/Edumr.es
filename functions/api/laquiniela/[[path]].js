@@ -7,6 +7,7 @@ import { staleChange, actualizadoHoy, tocadosDe, marcarTocados } from "../../_li
 import { etiquetaDe } from "../../_lib/portada-svg.mjs";
 import { promptFondo, grupoTipo } from "../../_lib/portada-prompt.mjs";
 import { partirInfo, tituloCambio, catCambio, NOMBRE_ESTADO, ajustarOnce, clubKey, emparejar } from "../../_lib/estados.mjs";
+import { itemsMercado, lideres as lideresDe } from "../../_lib/diario.mjs";
 import { compacto, dificultad, calendarioDificultad, oncePropio, aciertoOnces, compararOnce, probInterna, puntuarDuelo } from "../../_lib/analitica.mjs";
 import { cuerpoAHtml } from "../../_lib/noticia-cuerpo.mjs";
 import { minutosEnAlineacion, partidoDelDia } from "../../_lib/fotmob-min.mjs";
@@ -2847,7 +2848,24 @@ async function getCambiosPropios(env) {
     if (!p || conEvento.has(id) || st.e === "ok" || !st.at || now - st.at > 8 * 86400000) continue;
     add(p, "", st.e, st.info, st.at);
   }
-  // Las subidas y bajadas de valor NO van aquí: no son noticia (decisión de Edu, 14/11/2026). Están en Mercado y en el aviso diario de Telegram.
+  // Las subidas y bajadas de cada jugador NO van aquí: no son noticia (decisión de Edu, 14/11/2026). Están en Mercado y en el aviso diario de Telegram.
+  // Diario de LaLiga (15/11/2026): UNA fila al día cuando Futmondo actualiza los valores, y los cambios de clasificación y de goleadores
+  // que apunta el Worker (cron/src/diario.js). Son filas sin jugador (no llevan pid): no duplican ninguna noticia.
+  try {
+    const [log, diario] = await Promise.all([env.PORRA.get("mkchg:v2", "json"), env.PORRA.get("diario:v1", "json")]);
+    const escudo = (tid) => (tid ? "https://images.fotmob.com/image_resources/logo/teamlogo/" + tid + ".png" : "");
+    const uno = (name) => { const k = normKey(String(name || "").toLowerCase()); const h = k ? all.filter((p) => normKey(String(p.name || "").toLowerCase()) === k) : []; return h.length === 1 ? h[0] : null; };
+    for (const e of itemsMercado(log || [], now)) {
+      const p = uno(e.name);
+      items.push({ at: e.at, cat: "mercado", title: e.title, href: e.href, photo: (p && p.photo) || "", logo: "", pid: "", players: [{ name: e.sub, photo: "", from: "", to: "" }] });
+    }
+    for (const e of (diario || [])) {
+      if (!e || !e.at || now - e.at > 8 * 86400000) continue;
+      // Goleador: solo se enlaza con su ficha si en el mercado hay UN jugador con ese nombre exacto; si no, escudo y sin enlace.
+      const p = e.cat === "goleadores" ? uno(e.name) : null;
+      items.push({ at: e.at, cat: e.cat, title: e.title, href: e.cat === "clasificacion" ? "/equipos" : "", photo: (p && p.photo) || escudo(e.tid), logo: escudo(e.tid), pid: "", fid: p ? p.id : "", players: [{ name: e.sub || "", photo: "", from: "", to: "" }] });
+    }
+  } catch (e) {}
   items.sort((a, b) => b.at - a.at);
   const fD = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "long", day: "2-digit" });
   const fT = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hour12: false });
@@ -2858,7 +2876,7 @@ async function getCambiosPropios(env) {
     const day = wd.charAt(0).toUpperCase() + wd.slice(1) + " " + dd;
     let d = days[days.length - 1];
     if (!d || d.day !== day) { d = { day, items: [] }; days.push(d); }
-    d.items.push({ time: fT.format(new Date(it.at)), cat: it.cat, title: it.title, href: it.href, photo: it.photo, logo: it.logo, pid: it.pid, players: it.players });
+    d.items.push({ time: fT.format(new Date(it.at)), cat: it.cat, title: it.title, href: it.href, photo: it.photo, logo: it.logo, pid: it.pid, fid: it.fid || "", players: it.players });
   }
   return { updatedAt: (foto && foto.at) || now, days, propio: true };
 }
@@ -5530,7 +5548,7 @@ async function recordPointsHistory(env) {
 
 // Caché de respuestas públicas (Cache API: sin coste ni límite). Evita recalcular en cada visita
 // y mantiene la CPU por petición por debajo del límite del plan gratis de Cloudflare.
-const EDGE_TTL = { h2h: 21600, "ultimos-cambios": 180, aplazados: 300, calendario: 600, estadios: 3600, "historial-puntos": 120, "puntos-jornada": 30, mercado: 45, rachas: 60, minutos: 300, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 300, "alineaciones-confirmadas": 180, "alineaciones-estado": 300, noticias: 60, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10, "notas-fotmob": 3600, "fm-partido": 21600 };
+const EDGE_TTL = { lideres: 1800, h2h: 21600, "ultimos-cambios": 180, aplazados: 300, calendario: 600, estadios: 3600, "historial-puntos": 120, "puntos-jornada": 30, mercado: 45, rachas: 60, minutos: 300, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 300, "alineaciones-confirmadas": 180, "alineaciones-estado": 300, noticias: 60, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10, "notas-fotmob": 3600, "fm-partido": 21600 };
 // Pantallas donde un dato de hace unos minutos no hace daño: cuando caduca la copia fresca se responde AL MOMENTO con la última buena (hasta 15 min) y se refresca por detrás.
 // Fuera de aquí a propósito: directo, detallepartido, alineaciones-confirmadas, notas-fotmob, fm-partido (en juego deben ser frescos).
 const SWR_OK = new Set(["mercado", "jugador", "ultimos-cambios", "equipos", "calendario", "rachas", "minutos", "temporada", "noticias", "clausulas", "fichajes", "portada", "aplazados", "estadios", "historial-puntos", "once", "alineaciones-estado"]);
@@ -6114,6 +6132,20 @@ async function handleGet({ request, env: env0, params }) {
       items.sort((a, b) => (b.at || 0) - (a.at || 0));
       return json({ updatedAt: now, jornada: (cf && cf.matchday) || 0, items: items.slice(0, 20) });
     } catch (e) { return json({ updatedAt: Date.now(), items: [], error: String(e) }); }
+  }
+  if (path === "lideres") {
+    // Líderes de LaLiga (FotMob): goles (con penaltis marcados), amarillas y faltas por partido. Si la fuente falla, "error" (el borde sirve la última buena).
+    try {
+      const UA = { "user-agent": "Mozilla/5.0 (compatible; edumr)" };
+      const lg = await (await fetch("https://www.fotmob.com/api/data/leagues?id=87&ccode3=ESP", { headers: UA })).json();
+      const links = {};
+      (((lg || {}).stats || {}).players || []).forEach((x) => { if (x && x.name && /^https:\/\/data\.fotmob\.com\/stats\/87\/season\/\d+\/[a-z_]+\.json$/.test(String(x.fetchAllUrl || ""))) links[x.name] = x.fetchAllUrl; });
+      const lista = async (k) => { if (!links[k]) return []; const j = await (await fetch(links[k], { headers: UA })).json(); return ((j.TopLists || [])[0] || {}).StatList || []; };
+      const [g, a, f] = await Promise.all([lista("goals"), lista("yellow_card"), lista("fouls")]);
+      const out = lideresDe(g, a, f);
+      if (out.goles.length < 5) return json({ error: "Sin datos de goleadores." });
+      return json({ ...out, src: "FotMob", at: Date.now() });
+    } catch (e) { return json({ error: "No se pudo consultar la fuente." }); }
   }
   if (path === "tabla") {
     return json({ teams: (await getLeagueTable(env)) || [] });

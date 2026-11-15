@@ -593,10 +593,14 @@
     "recuperado": ["Recuperado", "#16a34a", '<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>'],
     "convocatoria": ["Convocatoria", "#6366f1", '<path d="M8 6h11M8 12h11M8 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/>'],
     "mercado": ["Mercado Futmondo", "#22c55e", '<path d="M4 17l5-5 4 4 7-8"/><path d="M15 8h5v5"/>'],
+    "clasificacion": ["Clasificación", "#2563eb", '<path d="M5 20V10M12 20V4M19 20v-7"/>'],
+    "goleadores": ["Goleadores", "#db2777", '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>'],
     "otro": ["Novedad", "#94a3b8", '<circle cx="12" cy="12" r="8"/>']
   };
   const UP_FILTERS = [["todo", "Todo"], ["once", "Onces"], ["lesion", "Lesiones y dudas"], ["sancion", "Sanciones"], ["mercado", "Mercado"]];
-  const UP_GROUP = { "once-ok": "once", "once": "once", "convocatoria": "once", "tocado": "lesion", "lesion": "lesion", "duda": "lesion", "recuperado": "lesion", "sancion": "sancion", "mercado": "mercado", "otro": "otro" };
+  const UP_GROUP = { "once-ok": "once", "once": "once", "convocatoria": "once", "tocado": "lesion", "lesion": "lesion", "duda": "lesion", "recuperado": "lesion", "sancion": "sancion", "mercado": "mercado", "clasificacion": "otro", "goleadores": "otro", "otro": "otro" };
+  // Filas del diario de LaLiga (sin jugador): valores actualizados, clasificación y goleadores. Van en Inicio y en Últimos cambios, nunca en Noticias.
+  const DIARIO_CATS = { mercado: 1, clasificacion: 1, goleadores: 1 };
   let updData = null, updFilter = "todo";
   try { const sv = localStorage.getItem("merc_updf"); if (sv && UP_FILTERS.some((f) => f[0] === sv)) updFilter = sv; } catch (e) {}
   // Equipo del titular ("Alineación confirmada de Real Madrid" → "Real Madrid") para poder
@@ -4287,10 +4291,14 @@
       pic = thumbBox(x, "nw-row-pic", big ? "m" : "s");
       row.addEventListener("click", () => open(x));
     } else {
-      const srcs = cambioImgs(x);
-      pic = srcs.length ? fichImg(srcs, "nw-row-pic nw-row-pic-c") : el("div", "nw-row-pic nw-row-pic-c");
-      const pfic = x.pid ? (all || []).find((p) => String(p.id) === String(x.pid)) : null;
+      const srcs = DIARIO_CATS[x.cat] ? [x.photo, x.logo].filter(Boolean) : cambioImgs(x);
+      pic = (srcs.length && fichImg(srcs, "nw-row-pic nw-row-pic-c")) || el("div", "nw-row-pic nw-row-pic-c");
+      // Fila del diario sin imagen: el icono de su tipo dentro del círculo (nunca un círculo vacío)
+      if (!srcs.length && DIARIO_CATS[x.cat]) { const c0 = UP_CATS[x.cat]; pic.classList.add("nw-row-ico"); pic.style.color = c0[1]; pic.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + c0[2] + "</svg>"; }
+      const fid = x.pid || x.fid;
+      const pfic = fid ? (all || []).find((p) => String(p.id) === String(fid)) : null;
       if (pfic) { try { row.dataset.pid = pfic.id; } catch (e2) {} row.addEventListener("click", () => openFicha(pfic)); }
+      else if (DIARIO_CATS[x.cat] && /^\/[a-z]/.test(String(x.href || ""))) row.addEventListener("click", () => { location.href = x.href; });
       else row.addEventListener("click", () => { pendingUpdKey = updKey(x); switchTab("actualizaciones"); let n = 0; const t2 = setInterval(() => { if (focusUpd() || ++n > 12) clearInterval(t2); }, 250); });
     }
     row.addEventListener("keydown", (ev) => { if (ev.key === "Enter") row.click(); });
@@ -4347,7 +4355,7 @@
     if (newsMineOnly && myTeam.length) list = list.filter(newsMatchMyTeam);
     const noticias = list.map((x) => ({ kind: "n", x, ts: Number(x.ts) || 0 }));
     // En Noticias los cambios de estado no se repiten: ya tienen su noticia. Aquí solo entran los de mercado.
-    const cambios = cambiosLista(3).filter((e) => !(e.x && e.x.pid && e.x.cat !== "mercado"));
+    const cambios = cambiosLista(3).filter((e) => !(e.x && (e.x.pid || DIARIO_CATS[e.x.cat])));
     const hero = noticias[0] || null;
     if (hero) wrap.appendChild(leadCard(hero.x, open, true));
     let rows = noticias.concat(cambios);
@@ -4408,8 +4416,50 @@
       cambios.forEach((e) => ul.appendChild(inicioRow(e, open)));
       wrap.appendChild(ul);
     } else wrap.appendChild(el("p", "nw-empty", updData ? "Sin cambios ahora mismo." : "Cargando…"));
+    // 3) Líderes de LaLiga (se actualiza solo con cada jornada)
+    const lb = lideresBlock();
+    if (lb) wrap.appendChild(lb);
     box.appendChild(wrap);
     if (!updData || !updData.days) loadInicioCambios();
+    if (!ldData && !ldBusy) loadLideres();
+  }
+  // Líderes de LaLiga: goles, penaltis marcados, amarillas y faltas por partido (FotMob). Sin dato no se pinta nada.
+  let ldData = null, ldBusy = false;
+  async function loadLideres() {
+    ldBusy = true;
+    try { const d = await (await fetch(API + "/lideres")).json(); if (d && Array.isArray(d.goles) && d.goles.length) { ldData = d; paintInicioCambios(); } } catch (e) {}
+    ldBusy = false;
+  }
+  function lideresBlock() {
+    if (!ldData) return null;
+    const box = el("section", "ld");
+    const head = el("div", "nw-head"); head.appendChild(el("h2", "nw-h nw-h-s", "Líderes de LaLiga")); box.appendChild(head);
+    const grid = el("div", "ld-grid");
+    const num = (v) => String(v).replace(".", ",");
+    const escudo = (tid) => { const im = el("img", "ld-cr"); im.alt = ""; im.loading = "lazy"; im.src = "https://images.fotmob.com/image_resources/logo/teamlogo/" + tid + ".png"; im.addEventListener("error", () => im.remove()); return im; };
+    const card = (titulo, lista, unidad) => {
+      if (!lista || !lista.length) return;
+      const c = el("div", "ld-card");
+      c.appendChild(el("div", "ld-k", titulo));
+      lista.forEach((p, i) => {
+        const r = el("div", "ld-r" + (i === 0 ? " top" : ""));
+        if (p.tid) r.appendChild(escudo(p.tid));
+        r.appendChild(el("span", "ld-n", p.n));
+        r.appendChild(el("b", "ld-v", num(p.v)));
+        clubLink(r, p.team);
+        c.appendChild(r);
+      });
+      if (unidad) c.appendChild(el("div", "ld-u", unidad));
+      grid.appendChild(c);
+    };
+    card("Goles", ldData.goles.slice(0, 3));
+    card("Penaltis marcados", (ldData.penaltis || []).slice(0, 3));
+    const am = ldData.amarillas || [];
+    card("Amarillas", am.slice(0, 3), am.length > 3 ? "y " + (am.length - 3) + " más con " + am[0].v : "");
+    card("Faltas", (ldData.faltas || []).slice(0, 3), "por cada 90 minutos");
+    if (!grid.children.length) return null;
+    box.appendChild(grid);
+    return box;
   }
 
   // Si hay un partido en juego, la pieza principal pasa a "Sigue el partido en directo" con la foto

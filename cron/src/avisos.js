@@ -498,7 +498,9 @@ export async function avisar(env, deps) {
         if (cambios.length >= 1) { // solo cambios reales de valor de algún jugador (el resto es ruido de la lista)
           const log = ((await env.PORRA.get("mkchg:v2", "json")) || []);
           const grandes = cambios.map((p) => ({ name: p.name, d: p.value - prev[p.id] })).filter((x) => Math.abs(x.d) >= 500000).sort((x, y) => Math.abs(y.d) - Math.abs(x.d)).slice(0, 8);
-          log.push({ at: now, n: cambios.length, g: grandes }); // g = jugadores que se movieron 500.000 o más en ese momento
+          const difs = cambios.map((p) => ({ name: p.name, d: p.value - prev[p.id] }));
+          const u = difs.filter((x) => x.d > 0).sort((x, y) => y.d - x.d).slice(0, 3), b = difs.filter((x) => x.d < 0).sort((x, y) => x.d - y.d).slice(0, 3);
+          log.push({ at: now, n: cambios.length, g: grandes, u, b }); // g = movimientos de 500.000 o más; u / b = las tres mayores subidas y bajadas (para el diario del Inicio)
           await env.PORRA.put("mkchg:v2", JSON.stringify(log.slice(-200)));
         }
       }

@@ -39,6 +39,9 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 - **Cara a cara**: enlace bajo el próximo partido en la ficha del club y botón «Cara a cara» en la página del partido (antes «Datos del partido»). Antes del partido la pestaña Alineación no pinta un campo vacío: «Aquí solo se muestran datos cuando el partido está en directo».
 - **Mercado 7/14/30 días**: `ffPickEst` debe llamar a `ffPick` (se llamaba a sí misma y el mercado se quedó sin esos datos; `tests/ffpick-guard.test.mjs`). La foto diaria de `vh:v1` guarda el valor YA actualizado del día.
 
+- **Diario de LaLiga en «Últimos cambios»** (`functions/_lib/diario.mjs`, `cron/src/diario.js`, KV `diario:v1` y `diario:foto:v1`): una fila al día cuando Futmondo actualiza los valores (hora real, de `mkchg:v2`), cambios de clasificación (líder, tres primeros, descenso) y de goleadores (cinco primeros). Son filas sin jugador: van en Inicio y en Últimos cambios, nunca en Noticias. Solo se apunta lo que cambia entre dos fotos reales; con un partido en juego no se compara.
+- **Líderes de LaLiga** en Inicio (ruta `lideres`, FotMob): goles, penaltis marcados, amarillas y faltas por 90 min. FotMob no da faltas totales ni «penaltis lanzados»: no inventarlos.
+
 ## Ideas pendientes
 - Avisos Telegram (noticias y alineación probable)
 - Jugadores rentables (SofaScore, calidad-precio)

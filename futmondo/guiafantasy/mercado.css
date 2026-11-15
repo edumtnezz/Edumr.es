@@ -3947,3 +3947,15 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 .eq-h2h-tx b { font-size: .9rem; font-weight: 800; }
 .eq-h2h-tx small { font-size: .76rem; color: var(--muted, #64748b); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .eq-h2h-go .ic { width: 18px; height: 18px; flex: none; }
+
+/* 15/11/2026 · Inicio: líderes de LaLiga (goles, penaltis, amarillas, faltas) */
+.ld { margin-top: 18px; }
+.ld-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.ld-card { min-width: 0; padding: 11px 12px; border-radius: 14px; background: var(--card-solid, #fff); border: 1px solid var(--border, rgba(127,127,127,.22)); }
+.ld-k { margin-bottom: 7px; font-size: .68rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: var(--muted, #64748b); }
+.ld-r { display: flex; align-items: center; gap: 7px; padding: 3px 0; font-size: .8rem; color: var(--muted, #64748b); min-width: 0; }
+.ld-r.top { font-size: .9rem; font-weight: 800; color: var(--text, inherit); }
+.ld-cr { width: 18px; height: 18px; object-fit: contain; flex: none; }
+.ld-n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ld-v { flex: none; font-variant-numeric: tabular-nums; color: var(--text, inherit); }
+.ld-u { margin-top: 5px; font-size: .68rem; color: var(--muted, #64748b); }
