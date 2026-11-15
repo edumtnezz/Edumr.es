@@ -4454,7 +4454,25 @@
     return box;
   }
   // Líderes de LaLiga: goles, penaltis marcados, amarillas y faltas por partido (FotMob). Sin dato no se pinta nada.
-  let ldData = null, ldBusy = false;
+  let ldData = null, ldBusy = false, ldAmOpen = false;
+  // Mismo club (tabla única de clubes) y nombre compatible: todas las palabras del nombre de Futmondo están en el de FotMob.
+  // Solo vale si sale UN jugador; si no, no se enlaza ni se enseña nada (nunca a ojo).
+  const ldFold = (x) => String(x || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter(Boolean);
+  const ldClub = (t) => { try { return (window.EduTeams && window.EduTeams.canon(t)) || ""; } catch (e) { return ""; } };
+  function jugadorDeFotmob(nombre, club) {
+    const ut = ldFold(nombre), ck = ldClub(club);
+    if (!ut.length || !ck) return null;
+    const h = (all || []).filter((p) => p.id && ldClub(p.team) === ck && (() => { const t = ldFold(p.name); return t.length && t.every((w) => ut.indexOf(w) >= 0); })());
+    return h.length === 1 ? h[0] : null;
+  }
+  // Amarillas de un jugador del mercado (LaLiga, temporada en curso, FotMob). null si no se puede saber con seguridad.
+  function amarillasDe(p) {
+    if (!ldData || !Array.isArray(ldData.tarjetas) || !p) return null;
+    const pt = ldFold(p.name), ck = ldClub(p.team);
+    if (!pt.length || !ck) return null;
+    const h = ldData.tarjetas.filter((x) => ldClub(x.team) === ck && pt.every((w) => ldFold(x.n).indexOf(w) >= 0));
+    return h.length === 1 ? h[0].v : null;
+  }
   async function loadLideres() {
     ldBusy = true;
     try { const d = await (await fetch(API + "/lideres")).json(); if (d && Array.isArray(d.goles) && d.goles.length) { ldData = d; paintInicioCambios(); } } catch (e) {}
@@ -4484,10 +4502,32 @@
     };
     card("Goles", ldData.goles.slice(0, 3));
     card("Penaltis marcados", (ldData.penaltis || []).slice(0, 3));
-    // Amarillas: los que están a una de la sanción (4, 9…). Faltas: solo quien además ya lleva 3 amarillas o más.
+    // Amarillas: los que están a una de la sanción (4, 9…). Se ven 6 y «Ver los N» abre el resto en el sitio.
     const am = ldData.amarillas || [];
-    card("A una amarilla de sanción", am.slice(0, 5), am.length > 5 ? "y " + (am.length - 5) + " más" : "");
-    { const fa = (ldData.faltas || []).slice(0, 3).map((p) => Object.assign({}, p, { v: p.v + (p.am != null ? " · " + p.am + " am." : "") })); card("Faltas y amarillas", fa, "faltas calculadas con sus minutos"); }
+    if (am.length) {
+      const c = el("div", "ld-card ld-wide");
+      c.appendChild(el("div", "ld-k", "A una amarilla de sanción · " + am.length));
+      const lst = el("div", "ld-am"); c.appendChild(lst);
+      const pinta = (todos) => {
+        lst.innerHTML = "";
+        (todos ? am : am.slice(0, 6)).forEach((p) => {
+          const r = el("div", "ld-r");
+          if (p.tid) r.appendChild(escudo(p.tid));
+          r.appendChild(el("span", "ld-n", p.n));
+          r.appendChild(el("b", "ld-v", num(p.v)));
+          const pf = jugadorDeFotmob(p.n, p.team);
+          if (pf) { r.classList.add("club-link"); r.setAttribute("role", "link"); r.addEventListener("click", () => openFicha(pf)); }
+          lst.appendChild(r);
+        });
+      };
+      pinta(ldAmOpen);
+      if (am.length > 6) {
+        const bt = el("button", "ld-more", ldAmOpen ? "Ver menos" : "Ver los " + am.length); bt.type = "button";
+        bt.addEventListener("click", () => { ldAmOpen = !ldAmOpen; pinta(ldAmOpen); bt.textContent = ldAmOpen ? "Ver menos" : "Ver los " + am.length; });
+        c.appendChild(bt);
+      }
+      grid.appendChild(c);
+    }
     if (!grid.children.length) return null;
     box.appendChild(grid);
     return box;
@@ -5096,6 +5136,17 @@
     st("Media", String(Math.round((Number(d.average) || 0) * 10) / 10).replace(".", ","), "fs-a");
     st("Partidos", d.matches5 || 0, "fs-m");
     head.appendChild(stats);
+    // Amarillas en LaLiga esta temporada (FotMob). Solo si el jugador se identifica sin dudas; con 4, 9… se avisa de que está a una de la sanción.
+    { const pinta = () => {
+        const v = amarillasDe(p);
+        if (v == null || head.querySelector(".ficha-am")) return;
+        const a1 = el("div", "ficha-am" + (v % 5 === 4 ? " warn" : ""));
+        a1.appendChild(el("i", "ficha-am-c"));
+        a1.appendChild(el("b", null, v + (v === 1 ? " amarilla" : " amarillas")));
+        if (v % 5 === 4) a1.appendChild(el("span", null, "A una de la sanción"));
+        stats.insertAdjacentElement("afterend", a1);
+      };
+      if (ldData) pinta(); else fetch(API + "/lideres").then((r) => r.json()).then((dd) => { if (dd && Array.isArray(dd.goles)) { ldData = dd; pinta(); } }).catch(() => {}); }
     if (p.id || d.id) {
       const cb = el("button", "ficha-cmp", "⚖ Comparar");
       cb.type = "button";

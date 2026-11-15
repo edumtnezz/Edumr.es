@@ -3970,3 +3970,18 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 .t5-n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .t5-v { flex: none; font-size: .76rem; font-variant-numeric: tabular-nums; }
 .t5-e { font-size: .8rem; color: var(--muted, #64748b); }
+
+/* 15/11/2026 (mediodía) · Rentables: la previsión baja a su propia línea si no cabe (se salía por la derecha a 390 px) */
+.rtb-chg { flex-wrap: wrap; gap: 4px 12px; }
+.rtb-pred { max-width: 100%; }
+/* Líderes: tarjeta ancha de amarillas con «Ver los N» */
+.ld-wide { grid-column: 1 / -1; }
+.ld-am { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+.ld-am .ld-r { color: var(--text, inherit); }
+.ld-more { margin-top: 8px; padding: 6px 0; border: none; background: none; font: inherit; font-size: .8rem; font-weight: 700; color: #16a34a; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+/* Ficha: amarillas */
+.ficha-am { display: flex; align-items: center; gap: 7px; margin-top: 8px; font-size: .82rem; color: var(--muted, #64748b); }
+.ficha-am b { color: var(--text, inherit); font-weight: 800; }
+.ficha-am-c { display: inline-block; width: 11px; height: 15px; border-radius: 2px; background: #facc15; flex: none; }
+.ficha-am.warn span { padding: 2px 8px; border-radius: 999px; background: rgba(250, 204, 21, .22); color: #a16207; font-weight: 700; }
+html[data-theme="dark"] .ficha-am.warn span { color: #fde047; }

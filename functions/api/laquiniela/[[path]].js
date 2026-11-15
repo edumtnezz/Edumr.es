@@ -2857,7 +2857,7 @@ async function getCambiosPropios(env) {
     const uno = (name) => { const k = normKey(String(name || "").toLowerCase()); const h = k ? all.filter((p) => normKey(String(p.name || "").toLowerCase()) === k) : []; return h.length === 1 ? h[0] : null; };
     for (const e of itemsMercado(log || [], now)) {
       const p = uno(e.name);
-      items.push({ at: e.at, cat: "mercado", title: e.title, href: e.href, photo: (p && p.photo) || "", logo: "", pid: "", players: [{ name: e.sub, photo: "", from: "", to: "" }] });
+      items.push({ at: e.at, cat: "mercado", title: e.title, href: e.href, photo: (p && p.photo) || "", logo: "", pid: "", players: [] }); // sin línea de «más sube / más baja»: ya se ve en las dos columnas de debajo
     }
     for (const e of (diario || [])) {
       if (!e || !e.at || now - e.at > 8 * 86400000) continue;
@@ -6134,15 +6134,15 @@ async function handleGet({ request, env: env0, params }) {
     } catch (e) { return json({ updatedAt: Date.now(), items: [], error: String(e) }); }
   }
   if (path === "lideres") {
-    // Líderes de LaLiga (FotMob): goles (con penaltis marcados), amarillas y faltas por partido. Si la fuente falla, "error" (el borde sirve la última buena).
+    // Líderes de LaLiga (FotMob): goles (con penaltis marcados) y amarillas. Si la fuente falla, "error" (el borde sirve la última buena).
     try {
       const UA = { "user-agent": "Mozilla/5.0 (compatible; edumr)" };
       const lg = await (await fetch("https://www.fotmob.com/api/data/leagues?id=87&ccode3=ESP", { headers: UA })).json();
       const links = {};
       (((lg || {}).stats || {}).players || []).forEach((x) => { if (x && x.name && /^https:\/\/data\.fotmob\.com\/stats\/87\/season\/\d+\/[a-z_]+\.json$/.test(String(x.fetchAllUrl || ""))) links[x.name] = x.fetchAllUrl; });
       const lista = async (k) => { if (!links[k]) return []; const j = await (await fetch(links[k], { headers: UA })).json(); return ((j.TopLists || [])[0] || {}).StatList || []; };
-      const [g, a, f] = await Promise.all([lista("goals"), lista("yellow_card"), lista("fouls")]);
-      const out = lideresDe(g, a, f);
+      const [g, a] = await Promise.all([lista("goals"), lista("yellow_card")]);
+      const out = lideresDe(g, a);
       if (out.goles.length < 5) return json({ error: "Sin datos de goleadores." });
       return json({ ...out, src: "FotMob", at: Date.now() });
     } catch (e) { return json({ error: "No se pudo consultar la fuente." }); }

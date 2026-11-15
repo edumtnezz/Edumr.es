@@ -64,22 +64,19 @@ export function itemsMercado(log, now = Date.now(), dias = 8) {
   return out.slice(0, 1);
 }
 
-// Líderes de LaLiga a partir de las listas de FotMob (goles con penaltis marcados, amarillas, faltas).
-// lista = TopLists[0].StatList de cada archivo. Solo se ordena y se recorta, salvo el total de faltas (ver abajo).
-export function lideres(goles, amarillas, faltas) {
+// Líderes de LaLiga a partir de las listas de FotMob (LaLiga, temporada en curso): goles con penaltis marcados y amarillas.
+// lista = TopLists[0].StatList de cada archivo. Nada calculado: solo se ordena y se recorta.
+// Comprobado el 15/11/2026: los 19 jugadores con 4 amarillas de esta lista son los mismos 19 «apercibidos» de nuestro registro de estados.
+export function lideres(goles, amarillas) {
   const fila = (x, extra) => Object.assign({ id: x.ParticiantId, n: x.ParticipantName, team: x.TeamName, tid: x.TeamId, v: Number(x.StatValue) }, extra || {});
   const ok = (l) => (Array.isArray(l) ? l.filter((x) => x && x.ParticipantName && Number.isFinite(Number(x.StatValue))) : []);
-  const G = ok(goles), A = ok(amarillas), F = ok(faltas);
+  const G = ok(goles), A = ok(amarillas);
   const out = {};
   out.goles = G.slice(0, 5).map((x) => fila(x, { pen: Number(x.SubStatValue) || 0 }));
   out.penaltis = G.filter((x) => Number(x.SubStatValue) > 0).sort((x, y) => Number(y.SubStatValue) - Number(x.SubStatValue)).slice(0, 3).map((x) => fila(x, { v: Number(x.SubStatValue) }));
   // Amarillas: solo interesan los que están a UNA de la sanción (4, 9, 14…: el ciclo es de cinco). Los que ya llegaron a 5 no se enseñan.
-  const riesgo = A.filter((x) => Number(x.StatValue) % 5 === 4);
-  out.amarillas = riesgo.slice(0, 40).map((x) => fila(x));
-  // Faltas: FotMob solo da «por cada 90 minutos» y los minutos jugados; el total se calcula (por 90 × minutos / 90, redondeado) y
-  // puede bailar una falta. Solo salen los que además ya llevan 3 amarillas o más (su dato de amarillas viene en la misma lista):
-  // muchas faltas sin tarjetas no dicen nada para fichar (Edu, 15/11/2026).
-  out.faltas = F.filter((x) => Number(x.MinutesPlayed) > 0 && Number(x.SubStatValue) >= 3).map((x) => fila(x, { v: Math.round(Number(x.StatValue) * Number(x.MinutesPlayed) / 90), p90: Number(x.StatValue), min: Number(x.MinutesPlayed), am: Number(x.SubStatValue) }))
-    .sort((x, y) => y.v - x.v || y.am - x.am).slice(0, 3);
+  out.amarillas = A.filter((x) => Number(x.StatValue) % 5 === 4).slice(0, 60).map((x) => fila(x));
+  // Todas las amarillas (para la ficha de cada jugador): nombre, club y cuántas lleva.
+  out.tarjetas = A.filter((x) => Number(x.StatValue) >= 1).map((x) => ({ n: x.ParticipantName, team: x.TeamName, v: Number(x.StatValue) }));
   return out;
 }

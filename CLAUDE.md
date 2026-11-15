@@ -45,6 +45,8 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 
 - **Ajustes pedidos por Edu (15/11, noche)**: del mercado solo sale la ÚLTIMA actualización en Últimos cambios, con las 5 que más suben y las 5 que más bajan debajo (`top5Mercado`, campo `change`). En Líderes: amarillas = solo los que están a una de la sanción (4, 9…; los de 5 no), y faltas solo de quien ya lleva 3 amarillas o más. Quiniela: enfrentamientos con escudo y fecha dd/mm/aaaa; pronósticos: el tuyo en verde, los demás en azul.
 
+- **15/11 (mediodía)**: fuera la tarjeta «Faltas y amarillas» y la línea «Más sube / Más baja» de la fila del mercado (ya se ve en las dos columnas). Amarillas: tarjeta ancha con «Ver los N» que abre la lista en el sitio. Ficha del jugador: amarillas de LaLiga (`amarillasDe`, FotMob; solo si club y nombre identifican a UN jugador). Comprobado: los 19 con 4 amarillas de FotMob (LaLiga 2026/2027) son los 19 «apercibidos» de nuestro registro. Rentables: la previsión baja de línea si no cabe (`.rtb-chg` con salto).
+
 ## Ideas pendientes
 - Avisos Telegram (noticias y alineación probable)
 - Jugadores rentables (SofaScore, calidad-precio)
