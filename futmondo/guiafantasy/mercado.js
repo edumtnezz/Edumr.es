@@ -4413,7 +4413,14 @@
     const cambios = cambiosLista(2).filter((e) => !(e.x && e.x.pid && e.x.cat !== "mercado" && conNoticia.has(String(e.x.pid)))).sort((a, b) => b.ts - a.ts).slice(0, 5);
     if (cambios.length) {
       const ul = el("div", "nw-list");
-      cambios.forEach((e) => ul.appendChild(inicioRow(e, open)));
+      // Del mercado solo la última actualización (una fila), con las 5 que más suben y las 5 que más bajan debajo
+      let mkHecho = false;
+      cambios.forEach((e) => {
+        const esMk = e.x && e.x.cat === "mercado";
+        if (esMk && mkHecho) return;
+        ul.appendChild(inicioRow(e, open));
+        if (esMk) { mkHecho = true; const t5 = top5Mercado(); if (t5) ul.appendChild(t5); }
+      });
       wrap.appendChild(ul);
     } else wrap.appendChild(el("p", "nw-empty", updData ? "Sin cambios ahora mismo." : "Cargando…"));
     // 3) Líderes de LaLiga (se actualiza solo con cada jornada)
@@ -4422,6 +4429,29 @@
     box.appendChild(wrap);
     if (!updData || !updData.days) loadInicioCambios();
     if (!ldData && !ldBusy) loadLideres();
+  }
+  // Las 5 mayores subidas y las 5 mayores bajadas de la última actualización de Futmondo (campo `change` del mercado, dato real).
+  function top5Mercado() {
+    const ps = (all || []).filter((p) => p && p.name && Number(p.change));
+    if (!ps.length) return null;
+    const up = ps.filter((p) => p.change > 0).sort((a, b) => b.change - a.change).slice(0, 5), dn = ps.filter((p) => p.change < 0).sort((a, b) => a.change - b.change).slice(0, 5);
+    if (!up.length && !dn.length) return null;
+    const box = el("div", "t5");
+    const col = (titulo, lista, cls) => {
+      const c = el("div", "t5-col " + cls);
+      c.appendChild(el("div", "t5-k", titulo));
+      lista.forEach((p) => {
+        const r = el("button", "t5-r"); r.type = "button";
+        r.appendChild(el("span", "t5-n", p.name));
+        r.appendChild(el("b", "t5-v", (p.change > 0 ? "+" : "−") + formatDots(Math.abs(p.change))));
+        r.addEventListener("click", (ev) => { ev.stopPropagation(); openFicha(p); });
+        c.appendChild(r);
+      });
+      if (!lista.length) c.appendChild(el("div", "t5-e", "—"));
+      box.appendChild(c);
+    };
+    col("Suben más", up, "up"); col("Bajan más", dn, "dn");
+    return box;
   }
   // Líderes de LaLiga: goles, penaltis marcados, amarillas y faltas por partido (FotMob). Sin dato no se pinta nada.
   let ldData = null, ldBusy = false;
@@ -4454,9 +4484,10 @@
     };
     card("Goles", ldData.goles.slice(0, 3));
     card("Penaltis marcados", (ldData.penaltis || []).slice(0, 3));
+    // Amarillas: los que están a una de la sanción (4, 9…). Faltas: solo quien además ya lleva 3 amarillas o más.
     const am = ldData.amarillas || [];
-    card("Amarillas", am.slice(0, 3), am.length > 3 ? "y " + (am.length - 3) + " más con " + am[0].v : "");
-    { const fa = (ldData.faltas || []).slice(0, 3); card("Faltas", fa, fa.length && fa[0].p90 != null ? "total calculado con sus minutos" : "por cada 90 minutos"); }
+    card("A una amarilla de sanción", am.slice(0, 5), am.length > 5 ? "y " + (am.length - 5) + " más" : "");
+    { const fa = (ldData.faltas || []).slice(0, 3).map((p) => Object.assign({}, p, { v: p.v + (p.am != null ? " · " + p.am + " am." : "") })); card("Faltas y amarillas", fa, "faltas calculadas con sus minutos"); }
     if (!grid.children.length) return null;
     box.appendChild(grid);
     return box;

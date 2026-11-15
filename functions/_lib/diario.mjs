@@ -59,7 +59,9 @@ export function itemsMercado(log, now = Date.now(), dias = 8) {
     const sub = [sube ? "Más sube: " + sube.name + " +" + k(sube.d) : "", baja ? "Más baja: " + baja.name + " −" + k(baja.d) : ""].filter(Boolean).join(" · ");
     out.push({ at: e.at, cat: "mercado", title: "Futmondo actualiza los valores", sub: sub || e.n + " jugadores cambian de valor", name: sube ? sube.name : "", href: "/futmondo/guiafantasy/mercado" });
   }
-  return out;
+  // Solo la ÚLTIMA actualización: las de días anteriores ya no dicen nada (Edu veía «dos cambios de Nico Williams», 15/11/2026).
+  out.sort((x, y) => y.at - x.at);
+  return out.slice(0, 1);
 }
 
 // Líderes de LaLiga a partir de las listas de FotMob (goles con penaltis marcados, amarillas, faltas).
@@ -71,11 +73,13 @@ export function lideres(goles, amarillas, faltas) {
   const out = {};
   out.goles = G.slice(0, 5).map((x) => fila(x, { pen: Number(x.SubStatValue) || 0 }));
   out.penaltis = G.filter((x) => Number(x.SubStatValue) > 0).sort((x, y) => Number(y.SubStatValue) - Number(x.SubStatValue)).slice(0, 3).map((x) => fila(x, { v: Number(x.SubStatValue) }));
-  const maxA = A.length ? Number(A[0].StatValue) : 0;
-  out.amarillas = A.filter((x) => Number(x.StatValue) === maxA).slice(0, 8).map((x) => fila(x));
-  // Faltas: FotMob solo da «por cada 90 minutos» y los minutos jugados. El total se calcula (por 90 × minutos / 90, redondeado),
-  // así que puede bailar una falta arriba o abajo: en la web se dice que es calculado (lo pidió Edu, 15/11/2026).
-  out.faltas = F.filter((x) => Number(x.MinutesPlayed) > 0).map((x) => fila(x, { v: Math.round(Number(x.StatValue) * Number(x.MinutesPlayed) / 90), p90: Number(x.StatValue), min: Number(x.MinutesPlayed) }))
-    .sort((x, y) => y.v - x.v || y.p90 - x.p90).slice(0, 3);
+  // Amarillas: solo interesan los que están a UNA de la sanción (4, 9, 14…: el ciclo es de cinco). Los que ya llegaron a 5 no se enseñan.
+  const riesgo = A.filter((x) => Number(x.StatValue) % 5 === 4);
+  out.amarillas = riesgo.slice(0, 40).map((x) => fila(x));
+  // Faltas: FotMob solo da «por cada 90 minutos» y los minutos jugados; el total se calcula (por 90 × minutos / 90, redondeado) y
+  // puede bailar una falta. Solo salen los que además ya llevan 3 amarillas o más (su dato de amarillas viene en la misma lista):
+  // muchas faltas sin tarjetas no dicen nada para fichar (Edu, 15/11/2026).
+  out.faltas = F.filter((x) => Number(x.MinutesPlayed) > 0 && Number(x.SubStatValue) >= 3).map((x) => fila(x, { v: Math.round(Number(x.StatValue) * Number(x.MinutesPlayed) / 90), p90: Number(x.StatValue), min: Number(x.MinutesPlayed), am: Number(x.SubStatValue) }))
+    .sort((x, y) => y.v - x.v || y.am - x.am).slice(0, 3);
   return out;
 }

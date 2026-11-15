@@ -5901,7 +5901,7 @@ async function handleGet({ request, env: env0, params }) {
         .filter((x) => x && x.status && x.status.finished && /^\d+\s*-\s*\d+$/.test(String(x.status.scoreStr || "").trim()) && (x.time || {}).utcTime)
         .sort((x, y) => Date.parse(y.time.utcTime) - Date.parse(x.time.utcTime))
         .slice(0, 5)
-        .map((x) => ({ d: x.time.utcTime, lg: (x.league || {}).name || "", hn: (x.home || {}).name || "", an: (x.away || {}).name || "", sc: String(x.status.scoreStr).replace(/\s+/g, "") }));
+        .map((x) => ({ d: x.time.utcTime, lg: (x.league || {}).name || "", hn: (x.home || {}).name || "", an: (x.away || {}).name || "", hid: /^\d+$/.test(String((x.home || {}).id || "")) ? String(x.home.id) : "", aid: /^\d+$/.test(String((x.away || {}).id || "")) ? String(x.away.id) : "", sc: String(x.status.scoreStr).replace(/\s+/g, "") }));
       return json({ m, src: "FotMob" });
     } catch (e) { return json({ error: "No se pudo consultar la fuente." }); }
   }

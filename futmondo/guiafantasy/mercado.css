@@ -3959,3 +3959,14 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 .ld-n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ld-v { flex: none; font-variant-numeric: tabular-nums; color: var(--text, inherit); }
 .ld-u { margin-top: 5px; font-size: .68rem; color: var(--muted, #64748b); }
+
+/* 15/11/2026 · Inicio: las 5 que más suben y las 5 que más bajan, debajo de «Futmondo actualiza los valores» */
+.t5 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.t5-col { min-width: 0; padding: 10px 11px; border-radius: 14px; background: var(--card-solid, #fff); border: 1px solid var(--border, rgba(127,127,127,.22)); }
+.t5-k { margin-bottom: 5px; font-size: .68rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+.t5-col.up .t5-k, .t5-col.up .t5-v { color: #16a34a; }
+.t5-col.dn .t5-k, .t5-col.dn .t5-v { color: #dc2626; }
+.t5-r { display: flex; align-items: baseline; gap: 6px; width: 100%; padding: 4px 0; border: none; background: none; font: inherit; font-size: .8rem; color: var(--text, inherit); text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.t5-n { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t5-v { flex: none; font-size: .76rem; font-variant-numeric: tabular-nums; }
+.t5-e { font-size: .8rem; color: var(--muted, #64748b); }

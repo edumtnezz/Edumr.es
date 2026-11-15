@@ -227,13 +227,16 @@ function drawH2h(box, d) {
     const w = g[0] > g[1] ? "h" : g[0] < g[1] ? "a" : "";
     const r = mk("div", "bq-h2h-r");
     let f = "";
-    try { f = new Date(x.d).toLocaleDateString("es-ES", { timeZone: "Europe/Madrid", day: "numeric", month: "short", year: "2-digit" }).replace(/\./g, ""); } catch (e) {}
+    try { f = new Date(x.d).toLocaleDateString("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", year: "numeric" }); } catch (e) {}
     const when = mk("span", "bq-h2h-d", f);
     if (x.lg && x.lg !== "LaLiga") when.appendChild(mk("i", null, LG[x.lg] || x.lg));
     r.appendChild(when);
-    r.appendChild(mk("span", "bq-h2h-h" + (w === "h" ? " win" : w ? " lost" : ""), x.hn));
+    // Escudo de cada equipo (FotMob). Si la imagen falla, se queda solo el nombre.
+    const escudo = (id) => { if (!id) return null; const im = document.createElement("img"); im.className = "bq-h2h-cr"; im.alt = ""; im.loading = "lazy"; im.src = "https://images.fotmob.com/image_resources/logo/teamlogo/" + id + ".png"; im.addEventListener("error", () => im.remove()); return im; };
+    const lado = (cls, nombre, id, antes) => { const e = mk("span", cls); const t = mk("em", null, nombre); const c = escudo(id); if (c && antes) e.appendChild(c); e.appendChild(t); if (c && !antes) e.appendChild(c); return e; };
+    r.appendChild(lado("bq-h2h-h" + (w === "h" ? " win" : w ? " lost" : ""), x.hn, x.hid, false));
     r.appendChild(mk("b", "bq-h2h-s", g[0] + " - " + g[1]));
-    r.appendChild(mk("span", "bq-h2h-a" + (w === "a" ? " win" : w ? " lost" : ""), x.an));
+    r.appendChild(lado("bq-h2h-a" + (w === "a" ? " win" : w ? " lost" : ""), x.an, x.aid, true));
     box.appendChild(r);
   });
 }
@@ -245,7 +248,7 @@ async function loadH2h(m, box) {
   let d = null;
   try {
     const dd = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date(m.utcDate)).replace(/-/g, "");
-    d = await (await fetch(API + "/h2h?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&date=" + dd)).json();
+    d = await (await fetch(API + "/h2h?home=" + encodeURIComponent(m.home) + "&away=" + encodeURIComponent(m.away) + "&date=" + dd + "&v=2")).json();
   } catch (e) {}
   delete h2hBusy[m.id];
   if (d && Array.isArray(d.m)) h2hCache[m.id] = d;
@@ -424,7 +427,8 @@ function renderMatches() {
       const ow = mk("div", "bq-others");
       others.forEach((p) => {
         const pk = p.picks[m.id];
-        const chip = mk("span", "bq-oth" + (m.result ? (pk === m.result ? " ok" : " ko") : ""));
+        // El tuyo en verde y el de los demás en azul; con el resultado puesto, verde = acertó y rojo = falló (el tuyo lleva borde grueso)
+        const chip = mk("span", "bq-oth" + (p.name === state.myName ? " me" : " ot") + (m.result ? (pk === m.result ? " ok" : " ko") : ""));
         chip.appendChild(mk("span", "bq-oth-n", p.name));
         chip.appendChild(mk("b", null, pk));
         ow.appendChild(chip);

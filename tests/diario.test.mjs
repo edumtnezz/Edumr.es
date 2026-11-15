@@ -34,14 +34,16 @@ test("mercado: una fila por día con la primera pasada grande", () => {
   const it = itemsMercado(log, d + 7200000);
   assert.equal(it.length, 1);
   assert.equal(it[0].at, d);
+  assert.equal(itemsMercado(log.concat([{ at: d + 86400000, n: 300, g: [{ name: "Otro", d: 600000 }] }]), d + 90000000).length, 1); // solo la última actualización
   assert.match(it[0].sub, /Más sube: Nico Williams \+825\.000/);
 });
 
-test("líderes: goles, penaltis marcados, empate de amarillas y faltas", () => {
+test("líderes: goles, penaltis, amarillas a una de la sanción y faltas con tarjetas", () => {
   const r = (n, v, s) => ({ ParticiantId: n, ParticipantName: n, TeamName: "T", TeamId: 1, StatValue: v, SubStatValue: s });
-  const L = lideres([r("A", 15, 3), r("B", 13, 3), r("C", 10, 1), r("D", 9, 0), r("E", 8, 4), r("F", 7, 0)], [r("X", 5, 0), r("Y", 5, 0), r("Z", 4, 1)], [{ ...r("P", 3.6, 4), MinutesPlayed: 775 }, { ...r("Q", 2.7, 0), MinutesPlayed: 1200 }]);
+  const L = lideres([r("A", 15, 3), r("B", 13, 3), r("C", 10, 1), r("D", 9, 0), r("E", 8, 4), r("F", 7, 0)], [r("X", 5, 0), r("Y", 4, 0), r("Z", 4, 1), r("W", 3, 0), r("V", 9, 0)],
+    [{ ...r("P", 3.6, 4), MinutesPlayed: 775 }, { ...r("Q", 2.7, 0), MinutesPlayed: 1200 }, { ...r("R", 2, 3), MinutesPlayed: 900 }]);
   assert.deepEqual(L.goles.map((x) => x.n), ["A", "B", "C", "D", "E"]);
   assert.deepEqual(L.penaltis.map((x) => x.n + x.v), ["E4", "A3", "B3"]);
-  assert.deepEqual(L.amarillas.map((x) => x.n), ["X", "Y"]);
-  assert.deepEqual(L.faltas.map((x) => x.n + x.v), ["Q36", "P31"]); // total = por 90 × minutos / 90
+  assert.deepEqual(L.amarillas.map((x) => x.n), ["Y", "Z", "V"]); // 4 y 9: a una de la sanción; el de 5 no sale
+  assert.deepEqual(L.faltas.map((x) => x.n + x.v + "/" + x.am), ["P31/4", "R20/3"]); // Q hace muchas faltas pero sin tarjetas: fuera
 });
