@@ -791,6 +791,9 @@ async function conHistorial(env, players) {
     for (const n of [1, 2, 7, 14, 30]) dias[n] = vh.days[fm.format(new Date(Date.now() - n * 864e5))] || null;
     const d1De = (p) => { const b = dias[1] && dias[1][p.id]; return b > 0 && p.value > 0 ? p.value - b : p.chg1; };
     const yaHoy = actualizadoHoy(players.map(d1De));
+    // La foto de cada día es el valor YA actualizado de ese día. De madrugada, antes de que Futmondo actualice, el valor
+    // de ahora es todavía el de ayer: para que "7 días" sean 7 y no 6, se compara con un día más atrás.
+    if (!yaHoy) for (const n of [7, 14, 30]) dias[n] = vh.days[fm.format(new Date(Date.now() - (n + 1) * 864e5))] || null;
     return players.map((p) => {
       const o = {};
       for (const n of [1, 2, 7, 14, 30]) { const b = dias[n] && dias[n][p.id]; if (b > 0 && p.value > 0) o["chg" + n] = p.value - b; }
@@ -826,7 +829,7 @@ async function getMarketPlayers(env, force) {
 }
 // La probabilidad de jugar que viene de fuera se pone a 0 si nuestro estado dice lesionado o sancionado
 function ffPickEst(p, map) {
-  const e = ffPickEst(p, map);
+  const e = ffPick(p && p.name, map); // OJO: aquí va ffPick; si se llama a sí misma, el mercado se queda sin % de jugar, rival, tendencia y cambios a 7/14/30 días
   if (p && (p.est === "lesionado" || p.est === "sancionado")) return { ...(e || {}), prob: 0 };
   return e;
 }

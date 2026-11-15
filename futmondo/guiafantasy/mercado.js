@@ -304,11 +304,15 @@
   }
 
   let hlPeriod = "1";
+  // Si no hay dato de ese periodo NO se usa el de otro (antes salía la subida de hoy con el rótulo "7 días"): cuenta 0 y se pinta "—".
+  function hlKnown(p) {
+    if (hlPeriod === "1") return true;
+    return (hlPeriod === "all" ? p.chgAll : p["chg" + hlPeriod]) != null;
+  }
   function hlChange(p) {
     if (hlPeriod === "1") return Number(p.change) || 0;
-    if (hlPeriod === "all") return p.chgAll != null ? Number(p.chgAll) : (Number(p.chg30) || 0);
-    const v = p["chg" + hlPeriod];
-    return v != null ? Number(v) : (Number(p.change) || 0);
+    if (!hlKnown(p)) return 0;
+    return Number(hlPeriod === "all" ? p.chgAll : p["chg" + hlPeriod]) || 0;
   }
   let rachasData = null;
   function renderMejorFichaje() {
@@ -2811,13 +2815,14 @@
       j.appendChild(jj);
       row.appendChild(j);
       row.appendChild(el("div", "mkt-val", money(p.value) + " €"));
-      row.appendChild(el("div", "mkt-vant", money(prev) + " €"));
+      const sinDato = !hlKnown(p);
+      row.appendChild(el("div", "mkt-vant", sinDato ? "—" : money(prev) + " €"));
       const dif = el("div", "mkt-dif " + (ch > 0 ? "up" : ch < 0 ? "down" : "flat"));
       dif.appendChild(el("span", "mkt-lens", "💹"));
-      dif.appendChild(el("span", null, (ch > 0 ? "+" : ch < 0 ? "−" : "") + formatDots(Math.abs(ch)) + " €"));
+      dif.appendChild(el("span", null, sinDato ? "—" : (ch > 0 ? "+" : ch < 0 ? "−" : "") + formatDots(Math.abs(ch)) + " €"));
       row.appendChild(dif);
       const pctv = prev > 0 ? (ch / prev) * 100 : 0;
-      row.appendChild(el("div", "mkt-pct " + (ch > 0 ? "up" : ch < 0 ? "down" : "flat"), (pctv >= 0 ? "+" : "−") + Math.abs(pctv).toFixed(2).replace(".", ",") + "%"));
+      row.appendChild(el("div", "mkt-pct " + (ch > 0 ? "up" : ch < 0 ? "down" : "flat"), sinDato ? "—" : (pctv >= 0 ? "+" : "−") + Math.abs(pctv).toFixed(2).replace(".", ",") + "%"));
       const t = Number(p.tend) || 0;
       row.appendChild(el("div", "mkt-tend " + (t > 0 ? "up" : t < 0 ? "down" : "flat"), t ? ((t > 0 ? "▲ " : "▼ ") + Math.abs(t) + "d") : "—"));
       const rv = el("div", "mkt-rival");

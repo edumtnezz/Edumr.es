@@ -506,7 +506,7 @@ export async function avisar(env, deps) {
     }
   } catch (e) {}
 
-  // Historial propio de valores de Futmondo (KV vh:v1): una foto al día (la primera pasada de cada día, hora de Madrid).
+  // Historial propio de valores de Futmondo (KV vh:v1): una foto al día (hora de Madrid) con el valor ya actualizado de ese día.
   // Al empezar se rellena una sola vez con los valores de hace 1, 7, 14 y 30 días que daba FutbolFantasy (valor ahora − cambio);
   // esos días "copiados" se sustituyen por la foto real cuando llega. Con esto los cambios 1/7/14/30 salen de Futmondo.
   try {
@@ -517,7 +517,17 @@ export async function avisar(env, deps) {
       const hoy = dia(now);
       const vh = (await env.PORRA.get("vh:v1", "json")) || { days: {}, copied: {} };
       let cambio = false;
-      if (!vh.days[hoy] || vh.copied[hoy]) {
+      // Arreglo único (15/11/2026): hasta hoy la foto se hacía a medianoche, ANTES de que Futmondo actualizara (sobre las 04:30),
+      // así que cada día guardaba el valor del día anterior. Se corre un día atrás, solo esta madrugada y antes de la actualización.
+      const horaM = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", hour: "2-digit", hour12: false }).format(new Date(now)));
+      const CORRER = ["2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13", "2026-11-14", "2026-11-15"];
+      if (!vh.fix1 && hoy === "2026-11-15" && horaM < 4 && CORRER.slice(1).every((d) => vh.days[d] && !vh.copied[d])) {
+        for (let i = 0; i < CORRER.length - 1; i++) { vh.days[CORRER[i]] = vh.days[CORRER[i + 1]]; delete vh.copied[CORRER[i]]; }
+        vh.fix1 = hoy; cambio = true;
+      }
+      // La foto del día es el ÚLTIMO valor visto ese día: se vuelve a guardar cuando Futmondo actualiza los valores.
+      const foto = vh.days[hoy];
+      if (!foto || vh.copied[hoy] || ps.some((p) => foto[p.id] !== p.value)) {
         vh.days[hoy] = Object.fromEntries(ps.map((p) => [p.id, p.value])); delete vh.copied[hoy]; cambio = true;
       }
       if (!vh.base) { // una sola vez: copiar lo que ya daba FutbolFantasy
