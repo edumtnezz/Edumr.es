@@ -2126,7 +2126,7 @@ function ownPublic(items) {
   return items.filter((x) => x.status === "published").sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0)).map((x) => {
     const d = madridDT(x.publishedAt || x.createdAt);
     const lead = String(x.lead || "").replace(/\s+/g, " ").trim().slice(0, 160);
-    return { title: x.title, lead, link: "https://edumr.es/n/" + x.id, date: d.date, time: d.time, thumb: x.thumb || "", src: "EduMR", ts: x.publishedAt || x.createdAt, club: x.club || "", players: (x.players || []).slice(0, 3), tipo: x.tipo || "", veredicto: x.veredicto && x.veredicto !== "ninguno" ? x.veredicto : "", plazo: x.plazo || "", pid: x.pid || "", auto: x.auto || "", cartel: x.cartel || 0 };
+    return { title: x.title, lead, link: "https://edumr.es/n/" + x.id, date: d.date, time: d.time, thumb: x.thumb || "", src: "EduMR", ts: x.publishedAt || x.createdAt, club: x.club || "", players: (x.players || []).slice(0, 3), tipo: x.tipo || "", veredicto: x.veredicto && x.veredicto !== "ninguno" ? x.veredicto : "", plazo: x.plazo || "", pid: x.pid || "", auto: x.auto || "", cartel: x.cartel || 0, fp: x.fp || "" };
   });
 }
 function ownArticle(x) {
@@ -2137,7 +2137,7 @@ function ownArticle(x) {
     const k = lineas.findIndex((l) => /^## /.test(l));
     lineas = lineas.filter((l, i) => !/^Estado del jugador según/.test(l) && !(k > 1 && i >= 1 && i < k));
   }
-  return { title: x.title, lead: x.lead || "", html: cuerpoAHtml(lineas.join("\n")), src: "EduMR", image: x.thumb || "", club: x.club || "", players: x.players || [], date: x.publishedAt || x.createdAt || 0, veredicto: x.veredicto || "", plazo: x.plazo || "", auto: x.auto || "", pid: x.pid || "" };
+  return { title: x.title, lead: x.lead || "", html: cuerpoAHtml(lineas.join("\n")), src: "EduMR", image: x.thumb || "", club: x.club || "", players: x.players || [], date: x.publishedAt || x.createdAt || 0, veredicto: x.veredicto || "", plazo: x.plazo || "", auto: x.auto || "", pid: x.pid || "", tipo: x.tipo || "", fp: x.fp || "" };
 }
 function ownDraftFromVideo(v, sel) {
   const items = (v.items || []).filter((_, i) => (sel ? sel.includes(i) : _.publicable));

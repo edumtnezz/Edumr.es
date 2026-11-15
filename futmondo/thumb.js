@@ -8,6 +8,7 @@
   }
   function tipo(item) {
     if (item && item.tipo === "analisis") return "analisis";
+    if (item && item.tipo === "articulo") return "nota"; // artículo propio: mismo dibujo, con el rótulo «ARTÍCULO»
     var title = String(item && item.title || "");
     if (!/\d+\s*[-–]\s*\d+/.test(title) && /lesi|baja|duda|molest|descartad/i.test(title)) return "lesion";
     var lead = String(item && item.lead || "");
@@ -110,7 +111,7 @@
       im.addEventListener("error", function () { im.remove(); d.classList.add("eth-nophoto"); }, { once: true });
       d.appendChild(im);
     } else d.classList.add("eth-nophoto");
-    d.appendChild(nodo("span", "eth-tag", ETIQ[k] || "NOTICIA"));
+    d.appendChild(nodo("span", "eth-tag", item && item.tipo === "articulo" ? "ARTÍCULO" : (ETIQ[k] || "NOTICIA")));
     var lg = nodo("img", "eth-logo"); lg.alt = ""; lg.src = "/img/noticias-logo.png"; lg.addEventListener("error", function () { lg.remove(); }, { once: true });
     d.appendChild(lg);
     if (dt) {

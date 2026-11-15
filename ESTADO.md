@@ -8,6 +8,7 @@
 - Quiniela: «Últimos enfrentamientos» al abrir un partido (ruta `h2h`, FotMob). Quiniela y Porra: escudo/nombre abren la ficha del club y al volver se recupera el punto exacto (`futmondo/clubgo.js`).
 - Club: enlace «Cara a cara» bajo el próximo partido. Página del partido: el botón «Datos del partido» pasa a «Cara a cara». Alineación sin datos antes del partido: aviso en vez de campo vacío.
 - Inicio: «Últimos cambios» pasa a ser un diario (valores actualizados, clasificación, goleadores) y hay un bloque «Líderes de LaLiga». Pendiente, por orden propuesto a Edu: chollo del día, rachas de equipos, artículos fijos (vender / fichar / clausulazos / parón), onces recomendados (caro, low cost, equilibrado), riesgo de ser suplente.
+- Artículos propios en marcha (a vender, a fichar, clausulazos y parón). Pendiente: chollo del día, rachas, onces recomendados (caro / low cost / equilibrado) y riesgo de ser suplente (quién sustituye a quién).
 
 ## 13/11/2026 — Estilo de las noticias automáticas
 

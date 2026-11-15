@@ -17,6 +17,13 @@ export function cuerpoAHtml(body) {
       continue;
     }
     const l = lineas[i];
+    // Fila de jugador de un artículo: «@ id | Nombre | dato | motivo». La web le pone la foto y el enlace a la ficha (por el id).
+    const pj = l.match(/^@ ([0-9a-zA-Z]{6,40}) \| ([^|]{1,60}) \| ([^|]{1,40}) \| (.{1,160})$/);
+    if (pj) {
+      if (lista) { html += "</ul>"; lista = false; }
+      html += '<div class="art-pl" data-pid="' + esc(pj[1]) + '"><span class="art-pl-t"><b>' + esc(pj[2].trim()) + "</b><small>" + esc(pj[4].trim()) + '</small></span><b class="art-pl-v">' + esc(pj[3].trim()) + "</b></div>";
+      continue;
+    }
     const li = /^- /.test(l);
     if (li && !lista) { html += '<ul class="nw-claves">'; lista = true; }
     if (!li && lista) { html += "</ul>"; lista = false; }

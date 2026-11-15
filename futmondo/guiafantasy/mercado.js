@@ -4250,7 +4250,7 @@
   let inicioFiltro = "todo";
   const OWN_TAG = { cronica: ["Crónica", "#16a34a"], once: ["Once", "#2563eb"], rueda: ["Rueda de prensa", "#7c3aed"], lesion: ["Parte", "#dc2626"], analisis: ["Análisis", "#0891b2"], nota: ["Noticia", "#16a34a"] };
   const EST_TAG = { baja: ["Baja", "#ef4444"], duda: ["Duda", "#eab308"], alta: ["Alta", "#22c55e"] };
-  const ownTag = (x) => (x && x.auto === "estado" && EST_TAG[x.veredicto]) || OWN_TAG[(window.EduThumb && window.EduThumb.tipo(x)) || "nota"] || OWN_TAG.nota;
+  const ownTag = (x) => (x && x.tipo === "articulo" && ["Artículo", "#7c3aed"]) || (x && x.auto === "estado" && EST_TAG[x.veredicto]) || OWN_TAG[(window.EduThumb && window.EduThumb.tipo(x)) || "nota"] || OWN_TAG.nota;
   // Últimos cambios de los últimos días (mercado, partes, onces) con su fecha y hora reales
   function cambiosLista(dias) {
     const out = [];
@@ -4306,7 +4306,7 @@
     const b = el("div", "nw-row-b");
     const tl = el("div", "nw-tag");
     if (e.kind === "n") {
-      const t2 = (x.auto === "estado" && ownTag(x)) || newsTag(x.title) || ownTag(x);
+      const t2 = ((x.auto === "estado" || x.tipo === "articulo") && ownTag(x)) || newsTag(x.title) || ownTag(x);
       tl.style.setProperty("--tc", t2[1]); tl.appendChild(el("i")); tl.appendChild(el("span", null, t2[0]));
     } else {
       const cc = UP_CATS[x.cat] || UP_CATS.otro;
@@ -4324,6 +4324,25 @@
     row.appendChild(b);
     return row;
   }
+  // Artículos: cada fila de jugador (.art-pl con su id) recibe la foto y abre la ficha. Si el mercado aún no ha cargado, se completa al llegar.
+  function wireArtPlayers(art) {
+    const rows = [...art.querySelectorAll(".art-pl[data-pid]")];
+    if (!rows.length) return;
+    const pon = () => rows.forEach((r) => {
+      if (r.dataset.ok) return;
+      const p = (all || []).find((q) => String(q.id) === r.dataset.pid);
+      if (!p) return;
+      r.dataset.ok = "1";
+      const im = el("img", "art-pl-f"); im.alt = ""; im.loading = "lazy"; im.src = p.fotoG || p.photo || p.logo || "";
+      im.addEventListener("error", () => { if (p.logo && im.src !== p.logo) { im.src = p.logo; im.classList.add("crest"); } else im.remove(); });
+      r.prepend(im);
+      const t = r.querySelector(".art-pl-t small");
+      if (t && p.team) t.textContent = shortRival(p.team) + " · " + t.textContent;
+      r.classList.add("club-link"); r.setAttribute("role", "link"); r.tabIndex = 0;
+      r.addEventListener("click", () => openFicha(p));
+    });
+    if (all && all.length) pon(); else load().then(pon).catch(() => {});
+  }
   function leadCard(x, open, conResumen) {
     const lead = el("article", "nw-lead");
     lead.tabIndex = 0;
@@ -4332,7 +4351,7 @@
     lead.addEventListener("keydown", (ev) => { if (ev.key === "Enter") open(x); });
     lead.appendChild(thumbBox(x, "nw-lead-pic", "m"));
     const lb = el("div", "nw-lead-b");
-    const tg = (x.auto === "estado" && ownTag(x)) || newsTag(x.title) || ownTag(x);
+    const tg = ((x.auto === "estado" || x.tipo === "articulo") && ownTag(x)) || newsTag(x.title) || ownTag(x);
     const line = el("div", "nw-tag");
     line.style.setProperty("--tc", tg[1]); line.appendChild(el("i")); line.appendChild(el("span", null, tg[0]));
     lb.appendChild(line);
@@ -4657,7 +4676,7 @@
         if (d.lead) c.appendChild(el("p", "art-lead", d.lead));
         if (d.html) {
           const art = el("div", "art-body");
-          art.innerHTML = d.html; wireCvBtns(art); try { wireStatsLinks(art); } catch (e) {}
+          art.innerHTML = d.html; wireCvBtns(art); try { wireStatsLinks(art); } catch (e) {} try { wireArtPlayers(art); } catch (e) {}
           c.appendChild(art);
         } else {
           c.appendChild(el("p", "muted small", "No pude extraer el texto de esta noticia."));
@@ -4714,7 +4733,8 @@
       const fold = (v) => String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w.length > 3);
       const tt = fold(x.title);
       const enTit = (nom) => fold(nom).some((w) => tt.indexOf(w) >= 0);
-      let pl = x.pid ? (all || []).find((p) => String(p.id) === String(x.pid)) || null : null;
+      const fpid = x.pid || x.fp; // fp = primer jugador de un artículo (su foto hace de portada)
+      let pl = fpid ? (all || []).find((p) => String(p.id) === String(fpid)) || null : null;
       if (!pl) pl = (x.players || []).map((n) => typeof n === "string" ? n : (n && n.name)).filter(enTit).map((n) => playerByFullName(n)).find((p) => p && p.photo);
       if (!pl && (x.players || []).some((n) => enTit(typeof n === "string" ? n : (n && n.name))) && all && all.length && x.club) {
         const cc = teamCanon(x.club);
@@ -4843,7 +4863,7 @@
       if (!d.image) d.image = portadaDe(url);
       const bn = el("div", "art-banner" + (/\/portada\//.test(String(d.image || "")) ? " art-portada" : ""));
       if (d.image) { const im = el("img"); im.alt = ""; im.src = portadaSz(d.image, "m"); bn.appendChild(im); }
-      else if (window.EduThumb && window.EduThumb.el) bn.appendChild(ethFor({ title: d.title || title, lead: d.lead, club: d.club, players: d.players, src: "EduMR", auto: d.auto, veredicto: d.veredicto, plazo: d.plazo, pid: d.pid }));
+      else if (window.EduThumb && window.EduThumb.el) bn.appendChild(ethFor({ title: d.title || title, lead: d.lead, club: d.club, players: d.players, src: "EduMR", auto: d.auto, veredicto: d.veredicto, plazo: d.plazo, pid: d.pid, fp: d.fp, tipo: d.tipo }));
       if (d.auto === "estado") bn.classList.add("art-banner-st");
       box.appendChild(bn);
     }
@@ -4868,7 +4888,7 @@
     }
     if (d.html) {
       const art = el("div", "art-body");
-      art.innerHTML = d.html; wireCvBtns(art); try { wireStatsLinks(art); } catch (e) {}
+      art.innerHTML = d.html; wireCvBtns(art); try { wireStatsLinks(art); } catch (e) {} try { wireArtPlayers(art); } catch (e) {}
       // Ficha del jugador: foto, estado, club y sus números de Futmondo del momento. Toca para abrir su página.
       if (d.ficha) {
         const f = d.ficha, EST = { baja: "Baja", duda: "Duda", alta: "Disponible" };

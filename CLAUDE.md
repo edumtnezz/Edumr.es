@@ -47,6 +47,15 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 
 - **15/11 (mediodía)**: fuera la tarjeta «Faltas y amarillas» y la línea «Más sube / Más baja» de la fila del mercado (ya se ve en las dos columnas). Amarillas: tarjeta ancha con «Ver los N» que abre la lista en el sitio. Ficha del jugador: amarillas de LaLiga (`amarillasDe`, FotMob; solo si club y nombre identifican a UN jugador). Comprobado: los 19 con 4 amarillas de FotMob (LaLiga 2026/2027) son los 19 «apercibidos» de nuestro registro. Rentables: la previsión baja de línea si no cabe (`.rtb-chg` con salto).
 
+## Artículos propios (15/11/2026)
+- **Artículo ≠ noticia.** Noticia = cambio de estado de un jugador (lesión, sanción, alta). Artículo = lista hecha con nuestros datos, con el rótulo «Artículo» (`tipo: "articulo"`, `auto: "articulo"`, en la misma KV `own:news:v2`).
+- Reglas en `functions/_lib/articulos.mjs`, publicación en `cron/src/articulos.js` (KV `art:st:v1`): una edición por jornada y tipo, de martes a domingo desde las 10:00; la nueva sustituye a la anterior. Aviso de Telegram «ARTÍCULOS NUEVOS».
+  - **A vender**: lesionados que vuelven dentro de un mes o más (texto «Retorno estimado» del parte) y disponibles que bajan 1 M o más en 7 días.
+  - **A fichar**: vuelven de lesión/sanción esta semana con media ≥ 5, y disponibles de menos de 50 M con media ≥ 7 que suben 1 M o más en 7 días.
+  - **Clausulazos recomendables**: los 3 disponibles con mejor media por franja de precio (6 partidos o más). Dato general: NUNCA las cláusulas de la liga de Edu.
+  - **Parón**: solo si faltan 5 días o más para el primer partido de la jornada (`esParon`).
+- Las filas de jugador se escriben «@ id | Nombre | dato | motivo» (`noticia-cuerpo.mjs`) y la web les pone foto y enlace (`wireArtPlayers`). La portada es la foto del primer jugador (`fp`). Si una lista queda vacía no se pinta; si todas, no hay artículo.
+
 ## Ideas pendientes
 - Avisos Telegram (noticias y alineación probable)
 - Jugadores rentables (SofaScore, calidad-precio)

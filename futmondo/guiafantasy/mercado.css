@@ -3985,3 +3985,14 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 .ficha-am-c { display: inline-block; width: 11px; height: 15px; border-radius: 2px; background: #facc15; flex: none; }
 .ficha-am.warn span { padding: 2px 8px; border-radius: 999px; background: rgba(250, 204, 21, .22); color: #a16207; font-weight: 700; }
 html[data-theme="dark"] .ficha-am.warn span { color: #fde047; }
+
+/* 15/11/2026 · Artículos: filas de jugador (foto, nombre, motivo y dato) */
+.art-pl { display: flex; align-items: center; gap: 11px; padding: 9px 0; border-bottom: 1px solid var(--border, rgba(127,127,127,.2)); cursor: default; -webkit-tap-highlight-color: transparent; }
+.art-pl.club-link { cursor: pointer; }
+.art-pl-f { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; object-position: top; background: rgba(127,127,127,.12); flex: none; }
+.art-pl-f.crest { object-fit: contain; border-radius: 0; background: none; }
+.art-pl-t { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.art-pl-t b { font-size: .95rem; font-weight: 800; color: var(--text, inherit); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.art-pl-t small { font-size: .78rem; color: var(--muted, #64748b); }
+.art-pl-v { flex: none; font-size: 1rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text, inherit); }
+.art-body .nw-h + p { margin: 2px 0 4px; font-size: .84rem; color: var(--muted, #64748b); }
