@@ -90,3 +90,5 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 - **16/11 (noche) · chollo y Analiza**: Gulácsi (valor bajando, media 7,6 floja para un portero) → el chollo exige además valor sin bajar en 7 días y media ≥ mediana de su posición (`medianasPos`). Analiza «Tu once»: escudo del rival DEBAJO como antes (Edu pidió volver atrás; el escudo junto a la foto era para el chollo de Inicio, `.nw-pw-c`), foto de Futmondo (`photoFm`) para todos, y los dos % (E nuestro, F FutbolFantasy) también ahí (`cargarProbE`, de `/analitica`).
 
 - **16/11 (noche) · chollo en bloque propio**: en Inicio el chollo va aparte, entre Noticias y «Últimos cambios» (`cholloBlock`): foto con anillo de posición, nombre, escudo, posición, valor en color y variación (como Rentables), barras de los últimos 5 puntos. «Últimos cambios» empieza ya en la fila de Mercado.
+
+- **Aviso «Tus jugadores cambian» (17/11)**: imagen fija `img/aviso-titular.jpg` (hecha por Edu con Gemini) como vista previa del aviso de Telegram (`previewUrl` en `send`, `link_preview_options.url`).

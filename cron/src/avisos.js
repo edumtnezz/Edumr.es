@@ -215,7 +215,8 @@ async function tg(env, f, method, body) {
 async function send(env, f, chat, text, opts) {
   opts = opts || {};
   // Los onces van siempre en UN solo mensaje de texto, sin fotos ni vista previa del enlace (opts.noPreview).
-  const lp = opts.noPreview ? { is_disabled: true } : opts.small ? { is_disabled: false, prefer_small_media: true } : { is_disabled: false, prefer_large_media: true };
+  // previewUrl: la vista previa usa esa dirección (una imagen fija) en vez del primer enlace del texto
+  const lp = opts.noPreview ? { is_disabled: true } : opts.previewUrl ? { is_disabled: false, url: opts.previewUrl, prefer_large_media: true, show_above_text: true } : opts.small ? { is_disabled: false, prefer_small_media: true } : { is_disabled: false, prefer_large_media: true };
   const j = await tg(env, f, "sendMessage", { chat_id: chat, text, parse_mode: "HTML", link_preview_options: lp, ...(opts.silent ? { disable_notification: true } : {}) });
   return !!(j && j.ok);
 }
@@ -472,7 +473,7 @@ export async function avisar(env, deps) {
       if (partes.length) cambios.push("• <b>" + esc(p.name) + "</b>: " + esc(partes.join(" · ")));
     }
     const commit = () => { st.sq = nuevo; dirty = true; };
-    if (cambios.length) queue.push({ text: "🚨 <b>TUS JUGADORES CAMBIAN</b>\n" + cambios.join("\n") + "\n\n👉 <b>Míralo en tu web:</b>\n" + WEB, commit });
+    if (cambios.length) queue.push({ text: "🚨 <b>TUS JUGADORES CAMBIAN</b>\n" + cambios.join("\n") + "\n\n👉 <b>Míralo en tu web:</b>\n" + WEB, commit, previewUrl: "https://edumr.es/img/aviso-titular.jpg?v=1" });
     else if (JSON.stringify(nuevo) !== JSON.stringify(st.sq || {})) commit();
   }
 
