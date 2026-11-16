@@ -595,12 +595,14 @@
     "mercado": ["Mercado Futmondo", "#22c55e", '<path d="M4 17l5-5 4 4 7-8"/><path d="M15 8h5v5"/>'],
     "clasificacion": ["Clasificación", "#2563eb", '<path d="M5 20V10M12 20V4M19 20v-7"/>'],
     "goleadores": ["Goleadores", "#db2777", '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>'],
+    "chollo": ["Chollo del día", "#0891b2", '<path d="M6 3h12l3 6-9 12L3 9z"/><path d="M3 9h18"/>'],
+    "rachas": ["Racha", "#ea580c", '<path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z"/>'],
     "otro": ["Novedad", "#94a3b8", '<circle cx="12" cy="12" r="8"/>']
   };
   const UP_FILTERS = [["todo", "Todo"], ["once", "Onces"], ["lesion", "Lesiones y dudas"], ["sancion", "Sanciones"], ["mercado", "Mercado"]];
-  const UP_GROUP = { "once-ok": "once", "once": "once", "convocatoria": "once", "tocado": "lesion", "lesion": "lesion", "duda": "lesion", "recuperado": "lesion", "sancion": "sancion", "mercado": "mercado", "clasificacion": "otro", "goleadores": "otro", "otro": "otro" };
+  const UP_GROUP = { "once-ok": "once", "once": "once", "convocatoria": "once", "tocado": "lesion", "lesion": "lesion", "duda": "lesion", "recuperado": "lesion", "sancion": "sancion", "mercado": "mercado", "clasificacion": "otro", "goleadores": "otro", "chollo": "otro", "rachas": "otro", "otro": "otro" };
   // Filas del diario de LaLiga (sin jugador): valores actualizados, clasificación y goleadores. Van en Inicio y en Últimos cambios, nunca en Noticias.
-  const DIARIO_CATS = { mercado: 1, clasificacion: 1, goleadores: 1 };
+  const DIARIO_CATS = { mercado: 1, clasificacion: 1, goleadores: 1, chollo: 1, rachas: 1 };
   let updData = null, updFilter = "todo";
   try { const sv = localStorage.getItem("merc_updf"); if (sv && UP_FILTERS.some((f) => f[0] === sv)) updFilter = sv; } catch (e) {}
   // Equipo del titular ("Alineación confirmada de Real Madrid" → "Real Madrid") para poder

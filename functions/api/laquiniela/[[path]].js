@@ -7,7 +7,7 @@ import { staleChange, actualizadoHoy, tocadosDe, marcarTocados } from "../../_li
 import { etiquetaDe } from "../../_lib/portada-svg.mjs";
 import { promptFondo, grupoTipo } from "../../_lib/portada-prompt.mjs";
 import { partirInfo, tituloCambio, catCambio, NOMBRE_ESTADO, ajustarOnce, clubKey, emparejar } from "../../_lib/estados.mjs";
-import { itemsMercado, lideres as lideresDe } from "../../_lib/diario.mjs";
+import { itemsMercado, lideres as lideresDe, rachasDe } from "../../_lib/diario.mjs";
 import { compacto, dificultad, calendarioDificultad, oncePropio, aciertoOnces, compararOnce, probInterna, puntuarDuelo } from "../../_lib/analitica.mjs";
 import { cuerpoAHtml } from "../../_lib/noticia-cuerpo.mjs";
 import { minutosEnAlineacion, partidoDelDia } from "../../_lib/fotmob-min.mjs";
@@ -2862,8 +2862,10 @@ async function getCambiosPropios(env) {
     for (const e of (diario || [])) {
       if (!e || !e.at || now - e.at > 8 * 86400000) continue;
       // Goleador: solo se enlaza con su ficha si en el mercado hay UN jugador con ese nombre exacto; si no, escudo y sin enlace.
-      const p = e.cat === "goleadores" ? uno(e.name) : null;
-      items.push({ at: e.at, cat: e.cat, title: e.title, href: e.cat === "clasificacion" ? "/equipos" : "", photo: (p && p.photo) || escudo(e.tid), logo: escudo(e.tid), pid: "", fid: p ? p.id : "", players: [{ name: e.sub || "", photo: "", from: "", to: "" }] });
+      // El chollo trae el id del mercado (lo elige el Worker de nuestros propios datos): foto y ficha directas.
+      const p = e.cat === "goleadores" ? uno(e.name) : e.cat === "chollo" ? (all.find((q) => String(q.id) === String(e.pid)) || null) : null;
+      if (e.cat === "chollo" && !p) continue;
+      items.push({ at: e.at, cat: e.cat, title: e.title, href: e.cat === "clasificacion" || e.cat === "rachas" ? "/equipos" : "", photo: (p && p.photo) || escudo(e.tid), logo: escudo(e.tid), pid: "", fid: p ? p.id : "", players: e.sub ? [{ name: e.sub, photo: "", from: "", to: "" }] : [] });
     }
   } catch (e) {}
   items.sort((a, b) => b.at - a.at);
@@ -6147,7 +6149,10 @@ async function handleGet({ request, env: env0, params }) {
       const [g, a] = await Promise.all([lista("goals"), lista("yellow_card")]);
       const out = lideresDe(g, a);
       if (out.goles.length < 5) return json({ error: "Sin datos de goleadores." });
-      return json({ ...out, src: "FotMob", at: Date.now() });
+      // Rachas de cada equipo con todos los resultados de la temporada (misma respuesta de FotMob)
+      let rachas = [];
+      try { rachas = rachasDe(((lg || {}).fixtures || {}).allMatches || []); } catch (e) {}
+      return json({ ...out, rachas, src: "FotMob", at: Date.now() });
     } catch (e) { return json({ error: "No se pudo consultar la fuente." }); }
   }
   if (path === "tabla") {

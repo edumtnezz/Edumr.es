@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { eventosTabla, eventosGoles, itemsMercado, lideres } from "../functions/_lib/diario.mjs";
+import { eventosTabla, eventosGoles, itemsMercado, lideres, rachasDe, eventosRachas, cholloDe } from "../functions/_lib/diario.mjs";
 
 const tabla = (ids) => ids.map((id, i) => ({ pos: i + 1, id, name: "E" + id }));
 const base = Array.from({ length: 20 }, (_, i) => i + 1);
@@ -46,4 +46,22 @@ test("líderes: goles, penaltis y amarillas a una de la sanción", () => {
   assert.deepEqual(L.amarillas.map((x) => x.n), ["Y", "Z", "V"]); // 4 y 9: a una de la sanción; el de 5 no sale
   assert.equal(L.tarjetas.length, 5); // todos los que llevan alguna
   assert.equal(L.faltas, undefined);
+});
+
+test("rachas: victorias seguidas y partidos sin perder, solo al jugar", () => {
+  const mk = (d, h, a, sc) => ({ home: { id: h, name: "E" + h }, away: { id: a, name: "E" + a }, status: { finished: true, cancelled: false, utcTime: "2026-09-" + String(d).padStart(2, "0") + "T18:00:00Z", scoreStr: sc } });
+  const ms = [mk(1, 1, 2, "1 - 0"), mk(2, 1, 3, "2 - 0"), mk(3, 1, 2, "3 - 1"), mk(4, 1, 3, "1 - 0"), mk(5, 2, 3, "0 - 0")];
+  const r = rachasDe(ms), e1 = r.find((x) => x.tid === "1");
+  assert.deepEqual([e1.w, e1.u, e1.pj], [4, 4, 4]);
+  assert.deepEqual(eventosRachas(null, r).map((e) => e.title), ["E1 lleva 4 victorias seguidas"]);
+  assert.deepEqual(eventosRachas({ 1: { pj: 4 } }, r), []); // no ha vuelto a jugar: no se repite
+  assert.equal(eventosRachas({ 1: { pj: 3 } }, r).length, 1);
+});
+test("chollo del día: barato, disponible y rindiendo; no repite", () => {
+  const P = (o) => Object.assign({ est: "", value: 4e6, avg: 7, matches: 8 }, o);
+  const ps = [P({ id: "a", name: "A", avg: 7.6, value: 4.3e6 }), P({ id: "b", name: "B", avg: 9, value: 20e6 }), P({ id: "c", name: "C", avg: 9, est: "lesionado" }), P({ id: "d", name: "D", avg: 6.5, value: 4e6 })];
+  assert.equal(cholloDe(ps).pid, "a");
+  assert.equal(cholloDe(ps).sub, "Media 7,6 en 8 partidos · 4,3 M");
+  assert.equal(cholloDe(ps, ["a"]).pid, "d");
+  assert.equal(cholloDe([P({ id: "x", name: "X", avg: 3 })]), null);
 });

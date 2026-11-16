@@ -60,6 +60,9 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 - **Telegram mercado (16/11)**: llegó un aviso a las 00:00 por un retoque de la tarde anterior. Ahora siempre hacen falta 50 jugadores o más con otro valor respecto al último aviso (`pxMap`).
 - **Últimos cambios**: un jugador no sale dos veces con el mismo estado en 48 h (se queda la última). La fila de valores lleva icono propio, nunca la foto de un jugador.
 
+- **Diario: chollo del día y rachas (16/11)**: `cholloDe` (disponible, 8 M o menos, 6 partidos o más, media ≥ 6; el que más media da por millón; no repite a los 7 anteriores), uno al día tras la actualización de valores. `rachasDe` / `eventosRachas`: 4 o más victorias seguidas o 5 o más partidos sin perder, contadas con todos los resultados de la temporada (FotMob), solo cuando el equipo juega. Van en `diario:v1` como el resto.
+- **Pendiente pedido por Edu (16/11)**: onces recomendados (caro, low cost, equilibrado; lunes por la noche), quién sustituye a quién (riesgo de ser suplente) y mejorar el comparador.
+
 ## Ideas pendientes
 - Avisos Telegram (noticias y alineación probable)
 - Jugadores rentables (SofaScore, calidad-precio)

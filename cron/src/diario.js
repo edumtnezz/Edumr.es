@@ -1,7 +1,7 @@
 // Diario de LaLiga para «Últimos cambios» del Inicio: compara la clasificación y los goleadores de ahora con la última foto
 // guardada y apunta lo que cambia (nuevo líder, tres primeros, descenso, goles de los máximos goleadores).
 // Fuente: FotMob, a través de la web (/tabla y /lideres). Con un partido en juego no se compara: la tabla baila en directo.
-import { eventosTabla, eventosGoles } from "../../functions/_lib/diario.mjs";
+import { eventosTabla, eventosGoles, eventosRachas, cholloDe } from "../../functions/_lib/diario.mjs";
 
 const K_FOTO = "diario:foto:v1", K_EV = "diario:v1";
 
@@ -18,12 +18,30 @@ export async function apuntarDiario(env, f = fetch, now = Date.now()) {
   const nuevos = [];
   if (tabla && prev.tabla) nuevos.push(...eventosTabla(prev.tabla, tabla));
   if (goles && prev.goles) nuevos.push(...eventosGoles(prev.goles, goles));
+  // Rachas de equipos: evento cuando un equipo juega y alarga la suya (la primera vez salen las que ya están vivas, con su fecha real)
+  const rachas = ld && Array.isArray(ld.rachas) && ld.rachas.length >= 18 ? ld.rachas : null;
+  if (rachas) nuevos.push(...eventosRachas(prev.rachas || null, rachas).filter((e) => now - e.at < 14 * 86400000));
+  const fotoR = rachas ? Object.fromEntries(rachas.map((t) => [t.tid, { pj: t.pj }])) : (prev.rachas || null);
+  // Chollo del día: uno al día, después de que Futmondo actualice los valores (no repite a los 7 anteriores)
+  const hoy = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date(now));
+  let chollo = prev.chollo || { dia: "", ids: [] };
+  if (chollo.dia !== hoy) {
+    try {
+      const log = (await env.PORRA.get("mkchg:v2", "json")) || [];
+      const act = log.some((e) => e && e.n >= 50 && new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date(e.at)) === hoy);
+      if (act) {
+        const mk = await get("mercado");
+        const c = mk && Array.isArray(mk.players) && mk.players.length >= 300 ? cholloDe(mk.players, chollo.ids) : null;
+        if (c) { nuevos.push(c); chollo = { dia: hoy, ids: [c.pid].concat(chollo.ids || []).slice(0, 7) }; }
+      }
+    } catch (e) {}
+  }
   // Si una fuente falla en esta pasada, se conserva su foto anterior (no se pierde la comparación).
-  const foto = { at: now, tabla: tabla || prev.tabla || null, goles: goles || prev.goles || null };
-  if (JSON.stringify([prev.tabla, prev.goles]) !== JSON.stringify([foto.tabla, foto.goles])) await env.PORRA.put(K_FOTO, JSON.stringify(foto));
+  const foto = { at: now, tabla: tabla || prev.tabla || null, goles: goles || prev.goles || null, rachas: fotoR, chollo };
+  if (JSON.stringify([prev.tabla, prev.goles, prev.rachas, prev.chollo]) !== JSON.stringify([foto.tabla, foto.goles, foto.rachas, foto.chollo])) await env.PORRA.put(K_FOTO, JSON.stringify(foto));
   if (nuevos.length) {
     const ev = ((await env.PORRA.get(K_EV, "json")) || []).filter((e) => e && now - e.at < 15 * 86400000);
-    await env.PORRA.put(K_EV, JSON.stringify(ev.concat(nuevos.map((e) => Object.assign({ at: now }, e))).slice(-120)));
+    await env.PORRA.put(K_EV, JSON.stringify(ev.concat(nuevos.map((e) => Object.assign({}, e, { at: e.at || now }))).slice(-120)));
   }
   return { eventos: nuevos.length, primera: !prev.at };
 }

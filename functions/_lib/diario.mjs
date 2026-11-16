@@ -80,3 +80,45 @@ export function lideres(goles, amarillas) {
   out.tarjetas = A.filter((x) => Number(x.StatValue) >= 1).map((x) => ({ n: x.ParticipantName, team: x.TeamName, v: Number(x.StatValue) }));
   return out;
 }
+
+// Rachas de equipos con TODOS los resultados de la temporada (FotMob, fixtures.allMatches): victorias seguidas y partidos seguidos sin perder,
+// contados desde el último partido hacia atrás. Devuelve [{ tid, team, w, u, pj, at }] (at = fecha del último partido).
+export function rachasDe(allMatches) {
+  const res = new Map();
+  const fin = (allMatches || []).filter((x) => x && x.status && x.status.finished && !x.status.cancelled && x.home && x.away && x.status.utcTime)
+    .sort((a, b) => Date.parse(a.status.utcTime) - Date.parse(b.status.utcTime));
+  for (const x of fin) {
+    const g = String(x.status.scoreStr || "").split("-").map((t) => Number(t.trim()));
+    if (g.length !== 2 || g.some((n) => !Number.isFinite(n))) continue;
+    const put = (t, r) => { const k = String(t.id); if (!res.has(k)) res.set(k, { tid: k, team: t.name, r: [], at: 0 }); const o = res.get(k); o.r.push(r); o.at = Date.parse(x.status.utcTime); };
+    put(x.home, g[0] > g[1] ? "W" : g[0] < g[1] ? "L" : "D"); put(x.away, g[1] > g[0] ? "W" : g[1] < g[0] ? "L" : "D");
+  }
+  return [...res.values()].map((o) => {
+    let w = 0, u = 0;
+    for (let i = o.r.length - 1; i >= 0 && o.r[i] === "W"; i--) w++;
+    for (let i = o.r.length - 1; i >= 0 && o.r[i] !== "L"; i--) u++;
+    return { tid: o.tid, team: o.team, w, u, pj: o.r.length, at: o.at };
+  });
+}
+// Evento de racha cuando un equipo juega y alarga la suya: 4 o más victorias seguidas, o 5 o más partidos sin perder.
+// Sin foto anterior (primera vez) salen las rachas que ya están vivas, con la fecha real de su último partido.
+export function eventosRachas(prev, cur) {
+  const out = [];
+  for (const t of (cur || [])) {
+    const a = prev && prev[t.tid];
+    if (prev && (!a || a.pj >= t.pj)) continue; // no ha jugado desde la última foto
+    if (t.w >= 4) out.push({ cat: "rachas", k: "w", tid: t.tid, team: t.team, at: t.at, title: t.team + " lleva " + t.w + " victorias seguidas", sub: "" });
+    else if (t.u >= 5) out.push({ cat: "rachas", k: "u", tid: t.tid, team: t.team, at: t.at, title: t.team + " lleva " + t.u + " partidos sin perder", sub: "" });
+  }
+  return out;
+}
+// Chollo del día: disponible, 8 M o menos, 6 partidos o más y media de 6 o más; gana el que más puntos de media da por cada millón.
+// No repite a los últimos elegidos (usados = ids).
+export function cholloDe(players, usados = []) {
+  const no = new Set((usados || []).map(String));
+  const c = (players || []).filter((p) => p && p.id && (!p.est || p.est === "apercibido") && p.value > 0 && p.value <= 8e6 && p.matches >= 6 && p.avg >= 6 && !no.has(String(p.id)))
+    .sort((a, b) => b.avg / b.value - a.avg / a.value)[0];
+  if (!c) return null;
+  const dec = (v) => (Math.round(v * 10) / 10).toFixed(1).replace(".", ",");
+  return { cat: "chollo", pid: c.id, name: c.name, title: "Chollo del día: " + c.name, sub: "Media " + dec(c.avg) + " en " + c.matches + " partidos · " + dec(c.value / 1e6) + " M" };
+}
