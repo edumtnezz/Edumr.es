@@ -4335,11 +4335,11 @@
       f.forEach((v) => { const col = el("span", "chol-b" + (v >= 8 ? " hi" : v <= 0 ? " lo" : "")); const i = el("i"); i.style.height = Math.max(6, Math.round((v / mx) * 100)) + "%"; col.appendChild(i); col.appendChild(el("b", null, String(v))); bars.appendChild(col); });
       card.appendChild(bars);
       const st = el("div", "chol-s");
-      [[c.valor, "Valor"], c.prob ? [c.prob + " %", "Juega"] : null, [c.media, "Media"]].filter(Boolean).forEach(([v, k]) => { const r = el("div", "chol-r"); r.appendChild(el("small", null, k)); r.appendChild(el("b", null, String(v))); st.appendChild(r); });
+      [[c.media, "Media"], c.prob ? [c.prob + " %", "Juega"] : null].filter(Boolean).forEach(([v, k]) => { const r = el("div", "chol-r"); r.appendChild(el("small", null, k)); r.appendChild(el("b", null, String(v))); st.appendChild(r); });
       card.appendChild(st);
       b.appendChild(card);
       const ft = el("div", "chol-f");
-      ft.appendChild(el("span", null, c.team + " · " + c.pj + " partidos · últimos 5 puntos"));
+      ft.appendChild(el("span", null, c.team + " · " + c.valor));
       if (x.rep) ft.appendChild(el("span", "nw-rep", "Repite"));
       b.appendChild(ft);
     } else if (e.kind === "c" && Array.isArray(x.chips) && x.chips.length) {
@@ -4511,17 +4511,24 @@
     body.appendChild(l2);
     card.appendChild(body);
     box.appendChild(card);
-    // Forma: sus últimos 5 puntos y, a la derecha, % de jugar y media
+    // Forma: sus últimos 5 puntos con su jornada (solo si se conoce de verdad) y, a la derecha, media y % de jugar
+    try { ensurePlayedJ(); } catch (e) {}
     const f = (c.forma || []).slice(-5), mx = Math.max(10, ...f);
     const g = el("div", "chol");
     const bars = el("div", "chol-bars");
-    f.forEach((v) => { const col = el("span", "chol-b" + (v >= 8 ? " hi" : v <= 0 ? " lo" : "")); const i = el("i"); i.style.height = Math.max(6, Math.round((v / mx) * 100)) + "%"; col.appendChild(i); col.appendChild(el("b", null, String(v))); bars.appendChild(col); });
+    f.forEach((v, i) => {
+      const col = el("span", "chol-b" + (v >= 8 ? " hi" : v <= 0 ? " lo" : "")); const b = el("i"); b.style.height = Math.max(6, Math.round((v / mx) * 100)) + "%";
+      col.appendChild(b); col.appendChild(el("b", null, String(v)));
+      let jn = 0; try { jn = jLab(c.team, f.length, f.length - 1 - i); } catch (e) {}
+      col.appendChild(el("em", "chol-j", jn ? "J" + jn : ""));
+      bars.appendChild(col);
+    });
     g.appendChild(bars);
     const st = el("div", "chol-s");
-    [[c.media, "Media"], c.prob ? [c.prob + " %", "Juega"] : null, [c.pj, "Partidos"]].filter(Boolean).forEach(([v, kk]) => { const r = el("div", "chol-r"); r.appendChild(el("small", null, kk)); r.appendChild(el("b", null, String(v))); st.appendChild(r); });
+    [[c.media, "Media"], c.prob ? [c.prob + " %", "Juega"] : null].filter(Boolean).forEach(([v, kk]) => { const r = el("div", "chol-r"); r.appendChild(el("small", null, kk)); r.appendChild(el("b", null, String(v))); st.appendChild(r); });
     g.appendChild(st);
     box.appendChild(g);
-    box.appendChild(el("div", "chol-f", "Últimos 5 puntos"));
+    if (c.motivo) box.appendChild(el("div", "chol-why", "Por qué: " + c.motivo));
     return box;
   }
   function renderInicioFeatured() {

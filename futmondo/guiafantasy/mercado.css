@@ -4134,3 +4134,9 @@ html[data-theme="dark"] .art-sec-ok > h3.nw-h { color: #4ade80; } html[data-them
 .chb-val { font-size: 1.15rem; font-weight: 800; letter-spacing: -.02em; color: #0e7490; font-variant-numeric: tabular-nums; }
 .chb .chol { margin-top: 10px; }
 .chb .chol-f { margin-top: 5px; }
+
+/* 17/11/2026 · Chollo: jornada bajo cada barra, Media y Juega centrados en una columna, resumen del motivo */
+.chol-b .chol-j { font-style: normal; font-size: .58rem; font-weight: 700; color: var(--muted, #64748b); line-height: 1; min-height: .6rem; }
+.chol-s { align-items: center; text-align: center; }
+.chol-s .chol-r { flex-direction: column; align-items: center; gap: 1px; }
+.chol-why { margin-top: 7px; font-size: .78rem; line-height: 1.35; color: var(--muted, #64748b); }
