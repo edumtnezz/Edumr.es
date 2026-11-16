@@ -141,7 +141,7 @@ export async function publicarOnces(env, f = fetch, now = Date.now()) {
   if (nueva && env.TELEGRAM_BOT_TOKEN) {
     let chat = String(env.TELEGRAM_CHAT_ID || "");
     if (!chat) { try { chat = String(((await env.PORRA.get("tg:avisos:v1", "json")) || {}).chat || ""); } catch (e) {} }
-    if (chat) { try { await f("https://api.telegram.org/bot" + env.TELEGRAM_BOT_TOKEN + "/sendMessage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chat, text: "🏆 <b>ONCES RECOMENDADOS</b>\n\n" + escT(fin.title) + "\nhttps://edumr.es/futmondo/guiafantasy/noticias/ed-" + fin.id, parse_mode: "HTML", disable_web_page_preview: true }) }); } catch (e) {} }
+    if (chat) { try { await f("https://api.telegram.org/bot" + env.TELEGRAM_BOT_TOKEN + "/sendMessage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chat, text: "🏆 <b>ONCES RECOMENDADOS</b>\n\n" + escT(fin.title) + "\nhttps://edumr.es/futmondo/guiafantasy/noticias/ed-" + fin.id, parse_mode: "HTML", link_preview_options: { is_disabled: false, prefer_large_media: true, show_above_text: true } }) }); } catch (e) {} } // la vista previa es la portada del artículo (art-once.jpg)
   }
   return { publicado: fin.id, nueva, cambios };
 }
