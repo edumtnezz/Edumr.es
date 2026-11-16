@@ -4,7 +4,7 @@
 import { aVender, aFichar, clausulazos, paron, inicioJornada, esParon, subidasEntre, inicioParon } from "../../functions/_lib/articulos.mjs";
 
 const OWN_KEY = "own:news:v2", K_ST = "art:st:v1", SITE = "https://edumr.es/api/laquiniela/";
-const FORMATO = 3; // súbelo cuando cambie el formato de las filas para rehacer los artículos publicados
+const FORMATO = 4; // súbelo cuando cambie el formato de las filas para rehacer los artículos publicados
 const escT = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 export async function publicarArticulos(env, f = fetch, now = Date.now()) {

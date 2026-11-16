@@ -48,11 +48,13 @@ test("parón: faltan 5 días o más para el primer partido", () => {
   // Con historial propio: los que más suben desde el día siguiente al lunes en que acabó la jornada anterior
   assert.equal(inicioParon(ini), "2026-11-10");
   const vh = { days: {}, copied: {} };
-  ["2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13"].forEach((d, k) => { vh.days[d] = { Sube: 10e6 + k * 1e6, Llega: 5e6, Sigue: 5e6 - k * 1e5 }; });
-  const sub = subidasEntre(vh, [P({ name: "Sube" }), P({ name: "Llega" }), P({ name: "Sigue" })], "2026-11-10", "2026-11-13");
+  ["2026-11-11", "2026-11-12", "2026-11-13", "2026-11-14"].forEach((d, k) => { vh.days[d] = { Sube: 10e6 + k * 1e6, Llega: 5e6, Sigue: 5e6 - k * 1e5 }; });
+  vh.days["2026-11-10"] = vh.days["2026-11-11"]; // día sin dato fiable: no se usa
+  vh.days["2026-11-15"] = vh.days["2026-11-14"]; // foto de antes de actualizar (igual que la de ayer): se salta
+  const sub = subidasEntre(vh, [P({ name: "Sube" }), P({ name: "Llega" }), P({ name: "Sigue" })], "2026-11-10", "2026-11-15");
   assert.deepEqual(sub.map((x) => x.p.name + ":" + x.sube), ["Sube:3000000"]);
   const b = paron([P({ name: "Sube" })], 13, ini, NOW, sub);
-  assert.match(b.body, /~ Sube \| Sube \| 10000000,11000000,12000000,13000000 \| 10\/11 \| 13\/11/);
+  assert.match(b.body, /~ Sube \| Sube \| 10000000,11000000,12000000,13000000 \| 11\/11 \| 14\/11/);
   assert.deepEqual(subidasEntre({ days: { "2026-11-12": {} } }, [], "2026-11-10", "2026-11-13"), []); // falta el primer día: sin gráfica
 });
 

@@ -83,7 +83,7 @@ export function paron(ps, jn, vuelta, now = Date.now(), subidas = null) {
   const A = top(llegan, 3), B = top(siguen, 3), D = top(bajan, 3), S = top(subidas || [], 3);
   const graf = (x) => "~ " + x.p.id + " | " + String(x.p.name).replace(/\|/g, " ") + " | " + x.serie.map((v) => Math.round(v)).join(",") + " | " + x.d0 + " | " + x.d1;
   return item("artparon" + jn, "Parón: repasa tu plantilla antes de la jornada " + jn, "Quién puede volver, quién sigue de baja y quién ha subido más sin partidos.", [
-    { titulo: "Los que más han subido en el parón", nota: S.length ? "Valor de cada día desde el " + S[0].d0 + " (acabó la jornada anterior) hasta el " + S[0].d1 + "." : "", filas: S.map(graf) },
+    { titulo: "Los que más han subido en el parón", nota: S.length ? "Valor de cada día, del " + S[0].d0 + " al " + S[0].d1 + "." : "", filas: S.map(graf) },
     { titulo: "Pueden volver para la jornada " + jn, nota: "Lesionados con vuelta prevista en estas fechas.", filas: A.map((x) => fila(x.p, Cap(x.r.txt), "vuelta")) },
     { titulo: "Siguen de baja", nota: "", filas: B.map((x) => fila(x.p, Cap(x.r.txt), "vuelta")) },
     { titulo: "Los que más bajan", nota: "Mayor bajada de valor en 7 días.", filas: D.map((p) => fila(p, "−" + M(p.chg7), "en 7 días", alDia(p.chg7))) },
@@ -91,10 +91,14 @@ export function paron(ps, jn, vuelta, now = Date.now(), subidas = null) {
 }
 
 // Los que más han subido entre dos días del historial propio de valores (vh.days = { "2026-11-10": { id: valor } }).
-// Solo días con foto real; hace falta el primero y el último, y al menos 4 días. Nada interpolado: los días sin foto se saltan.
+// Solo días con foto real y distinta de la del día anterior: una foto igual a la de ayer es la de antes de que Futmondo actualice
+// (o un día repetido) y se salta, para que cada fecha lleve su valor de verdad. Hacen falta 4 días o más. Nada interpolado.
+// El 2026-11-10 no se usa: al corregir el historial el 15/11 quedó con los valores del día 11.
 export function subidasEntre(vh, ps, desde, hasta, n = 3) {
-  const dias = Object.keys((vh && vh.days) || {}).filter((d) => d >= desde && d <= hasta && !(vh.copied || {})[d]).sort();
-  if (dias.length < 4 || dias[0] !== desde) return [];
+  const todos = Object.keys((vh && vh.days) || {}).filter((d) => d >= desde && d <= hasta && d !== "2026-11-10" && !(vh.copied || {})[d]).sort();
+  const igual = (a, b) => ps.every((p) => vh.days[a][p.id] === vh.days[b][p.id]);
+  const dias = todos.filter((d, k) => k === 0 || !igual(todos[k - 1], d));
+  if (dias.length < 4) return [];
   const fmt = (d) => d.slice(8, 10) + "/" + d.slice(5, 7);
   return ps.map((p) => ({ p, serie: dias.map((d) => vh.days[d][p.id]).filter((v) => v > 0) })).filter((x) => x.serie.length === dias.length)
     .map((x) => Object.assign(x, { sube: x.serie[x.serie.length - 1] - x.serie[0], d0: fmt(dias[0]), d1: fmt(dias[dias.length - 1]) }))
