@@ -4116,3 +4116,8 @@ html[data-theme="dark"] .art-sec-ok > h3.nw-h { color: #4ade80; } html[data-them
 .chol-r b { font-size: .92rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 .chol-f { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 7px; font-size: .74rem; color: var(--muted, #64748b); }
 .chol-f img { width: 16px; height: 16px; object-fit: contain; }
+
+/* Chollo del día: escudo del club pegado a la foto */
+.nw-pw { position: relative; display: block; flex: 0 0 auto; }
+.nw-pw-c { position: absolute; right: -6px; bottom: -4px; width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 1px solid rgba(15,23,42,.15); box-shadow: 0 1px 4px rgba(0,0,0,.2); display: flex; align-items: center; justify-content: center; }
+.nw-pw-c img { width: 18px; height: 18px; object-fit: contain; }

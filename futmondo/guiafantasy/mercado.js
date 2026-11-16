@@ -4308,7 +4308,12 @@
       else row.addEventListener("click", () => { pendingUpdKey = updKey(x); switchTab("actualizaciones"); let n = 0; const t2 = setInterval(() => { if (focusUpd() || ++n > 12) clearInterval(t2); }, 250); });
     }
     row.addEventListener("keydown", (ev) => { if (ev.key === "Enter") row.click(); });
-    row.appendChild(pic);
+    if (e.kind === "c" && x.chol && x.chol.logo) {
+      // Chollo del día: el escudo del club va pegado a la foto del jugador (esquina inferior derecha)
+      const pw = el("span", "nw-pw"); pw.appendChild(pic);
+      const cb = el("span", "nw-pw-c"); const ci = el("img"); ci.src = x.chol.logo; ci.alt = x.chol.team || ""; ci.addEventListener("error", () => cb.remove()); cb.appendChild(ci); pw.appendChild(cb);
+      row.appendChild(pw);
+    } else row.appendChild(pic);
     const b = el("div", "nw-row-b");
     const tl = el("div", "nw-tag");
     if (e.kind === "n") {
@@ -4334,7 +4339,6 @@
       card.appendChild(st);
       b.appendChild(card);
       const ft = el("div", "chol-f");
-      if (c.logo) { const im = el("img"); im.src = c.logo; im.alt = ""; ft.appendChild(im); }
       ft.appendChild(el("span", null, c.team + " · " + c.pj + " partidos · últimos 5 puntos"));
       if (x.rep) ft.appendChild(el("span", "nw-rep", "Repite"));
       b.appendChild(ft);
