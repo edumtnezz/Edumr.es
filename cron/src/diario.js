@@ -1,7 +1,7 @@
 // Diario de LaLiga para «Últimos cambios» del Inicio: compara la clasificación y los goleadores de ahora con la última foto
 // guardada y apunta lo que cambia (nuevo líder, tres primeros, descenso, goles de los máximos goleadores).
 // Fuente: FotMob, a través de la web (/tabla y /lideres). Con un partido en juego no se compara: la tabla baila en directo.
-import { eventosTabla, eventosGoles, eventosRachas, cholloDe } from "../../functions/_lib/diario.mjs";
+import { eventosTabla, eventosGoles, eventosRachas, cholloDe, cholloValido } from "../../functions/_lib/diario.mjs";
 
 const K_FOTO = "diario:foto:v1", K_EV = "diario:v1";
 
@@ -25,6 +25,10 @@ export async function apuntarDiario(env, f = fetch, now = Date.now()) {
   // Chollo del día: uno al día, después de que Futmondo actualice los valores (si repite, sale marcado)
   const hoy = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date(now));
   let chollo = prev.chollo || { dia: "", ids: [] };
+  // Si el chollo de hoy ya no cumple el criterio (se cambió la regla o el jugador cayó en duda), se elige otro
+  if (chollo.dia === hoy && chollo.ids && chollo.ids.length) {
+    try { const mk0 = await get("mercado"); const p0 = mk0 && Array.isArray(mk0.players) ? mk0.players.find((q) => String(q.id) === String(chollo.ids[0])) : null; if (p0 && !cholloValido(p0)) chollo = { dia: "", ids: chollo.ids.slice(1) }; } catch (e) {}
+  }
   if (chollo.dia !== hoy) {
     try {
       const log = (await env.PORRA.get("mkchg:v2", "json")) || [];

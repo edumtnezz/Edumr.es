@@ -114,8 +114,12 @@ export function eventosRachas(prev, cur) {
 }
 // Chollo del día: disponible, 8 M o menos, 6 partidos o más y media de 6 o más; gana el que más puntos de media da por cada millón.
 // Puede repetir (Edu, 16/11/2026): si ya fue chollo en los días guardados (usados = ids), sale marcado con rep = veces anteriores.
+// Criterio del chollo (Edu 16/11/2026, tras salir Turrientes: 40 % de jugar y puntos a rachas): barato, sano, titular y regular
+export function cholloValido(p) {
+  return !!(p && p.id && (!p.est || p.est === "apercibido") && p.value > 0 && p.value <= 8e6 && p.matches >= 8 && p.avg >= 6 && (p.prob || 0) >= 70 && (p.fitness || []).filter((x) => x > 0).length >= 4);
+}
 export function cholloDe(players, usados = []) {
-  const c = (players || []).filter((p) => p && p.id && (!p.est || p.est === "apercibido") && p.value > 0 && p.value <= 8e6 && p.matches >= 6 && p.avg >= 6)
+  const c = (players || []).filter(cholloValido)
     .sort((a, b) => b.avg / b.value - a.avg / a.value)[0];
   if (!c) return null;
   const rep = (usados || []).filter((x) => String(x) === String(c.id)).length;

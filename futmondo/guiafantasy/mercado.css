@@ -4102,3 +4102,17 @@ html[data-theme="dark"] .art-sec-ok > h3.nw-h { color: #4ade80; } html[data-them
 .alin-sub i { font-style: normal; color: #fbbf24; }
 .ficha-sub { display: flex; align-items: flex-start; gap: 7px; margin-top: 6px; font-size: .8rem; line-height: 1.35; color: var(--muted, #64748b); }
 .ficha-sub i { font-style: normal; font-weight: 800; color: #d97706; }
+
+/* 16/11/2026 · Chollo del día: barras de forma + datos a la derecha */
+.chol { display: flex; align-items: stretch; gap: 14px; margin-top: 8px; padding: 10px 12px; border-radius: 14px; background: rgba(8,145,178,.07); border: 1px solid rgba(8,145,178,.22); }
+.chol-bars { flex: 1 1 auto; display: flex; align-items: flex-end; gap: 7px; height: 64px; }
+.chol-b { flex: 1 1 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 3px; }
+.chol-b i { display: block; width: 100%; max-width: 22px; border-radius: 5px 5px 2px 2px; background: #0891b2; }
+.chol-b.hi i { background: #16a34a; } .chol-b.lo i { background: rgba(127,127,127,.35); }
+.chol-b b { font-size: .72rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text, inherit); line-height: 1; }
+.chol-s { flex: 0 0 auto; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 88px; padding-left: 12px; border-left: 1px solid rgba(127,127,127,.25); }
+.chol-r { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.chol-r small { font-size: .62rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted, #64748b); }
+.chol-r b { font-size: .92rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.chol-f { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 7px; font-size: .74rem; color: var(--muted, #64748b); }
+.chol-f img { width: 16px; height: 16px; object-fit: contain; }

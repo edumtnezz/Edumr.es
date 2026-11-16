@@ -7,7 +7,7 @@ import { staleChange, actualizadoHoy, tocadosDe, marcarTocados } from "../../_li
 import { etiquetaDe } from "../../_lib/portada-svg.mjs";
 import { promptFondo, grupoTipo } from "../../_lib/portada-prompt.mjs";
 import { partirInfo, tituloCambio, catCambio, NOMBRE_ESTADO, ajustarOnce, clubKey, emparejar } from "../../_lib/estados.mjs";
-import { itemsMercado, lideres as lideresDe, rachasDe } from "../../_lib/diario.mjs";
+import { itemsMercado, lideres as lideresDe, rachasDe, cholloValido } from "../../_lib/diario.mjs";
 import { agregarSubs, riesgoCambio } from "../../_lib/sustituciones.mjs";
 import { compacto, dificultad, calendarioDificultad, oncePropio, aciertoOnces, compararOnce, probInterna, puntuarDuelo } from "../../_lib/analitica.mjs";
 import { cuerpoAHtml } from "../../_lib/noticia-cuerpo.mjs";
@@ -2865,12 +2865,13 @@ async function getCambiosPropios(env) {
       // Goleador: solo se enlaza con su ficha si en el mercado hay UN jugador con ese nombre exacto; si no, escudo y sin enlace.
       // El chollo trae el id del mercado (lo elige el Worker de nuestros propios datos): foto y ficha directas.
       const p = e.cat === "goleadores" ? uno(e.name) : e.cat === "chollo" ? (all.find((q) => String(q.id) === String(e.pid)) || null) : null;
-      if (e.cat === "chollo" && !p) continue;
+      if (e.cat === "chollo" && (!p || !cholloValido(p))) continue; // un chollo que ya no cumple el criterio se quita
       // Chollo: el título es solo el nombre (la etiqueta ya dice «Chollo del día») y los números van en recuadros, con el dato de ahora
       if (e.cat === "chollo") {
         const d1 = (v) => (Math.round(Number(v) * 10) / 10).toFixed(1).replace(".", ",");
         items.push({ at: e.at, cat: e.cat, title: p.name, href: "", photo: p.photo || "", logo: "", pid: "", fid: p.id, players: [], rep: e.rep || 0,
-          chips: [[d1(p.avg), "Media"], [p.matches || 0, "Partidos"], [d1((p.value || 0) / 1e6) + " M", "Valor"]] });
+          chips: [[d1(p.avg), "Media"], [p.matches || 0, "Partidos"], [d1((p.value || 0) / 1e6) + " M", "Valor"]],
+          chol: { forma: (p.fitness || []).slice(-5).map((v) => Number(v) || 0), prob: p.prob || 0, media: d1(p.avg), valor: d1((p.value || 0) / 1e6) + " M", pj: p.matches || 0, team: p.team || "", logo: p.logo || "" } });
         continue;
       }
       items.push({ at: e.at, cat: e.cat, title: e.title, href: e.cat === "clasificacion" || e.cat === "rachas" ? "/equipos" : "", photo: (p && p.photo) || escudo(e.tid), logo: escudo(e.tid), pid: "", fid: p ? p.id : "", players: e.sub ? [{ name: e.sub, photo: "", from: "", to: "" }] : [] });

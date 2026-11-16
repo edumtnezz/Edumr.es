@@ -4322,7 +4322,23 @@
     b.appendChild(tl);
     b.appendChild(el("div", "nw-row-t", x.title));
     // Chollo del día: sus números en recuadros (media, partidos, valor) y «Repite» solo si ya fue chollo antes
-    if (e.kind === "c" && Array.isArray(x.chips) && x.chips.length) {
+    if (e.kind === "c" && x.chol) {
+      // Chollo del día: barras de sus últimos 5 puntos + valor, % de jugar y media (todo de Futmondo / FutbolFantasy)
+      const c = x.chol, f = (c.forma || []).slice(-5), mx = Math.max(10, ...f);
+      const card = el("div", "chol");
+      const bars = el("div", "chol-bars");
+      f.forEach((v) => { const col = el("span", "chol-b" + (v >= 8 ? " hi" : v <= 0 ? " lo" : "")); const i = el("i"); i.style.height = Math.max(6, Math.round((v / mx) * 100)) + "%"; col.appendChild(i); col.appendChild(el("b", null, String(v))); bars.appendChild(col); });
+      card.appendChild(bars);
+      const st = el("div", "chol-s");
+      [[c.valor, "Valor"], [c.prob + " %", "Juega"], [c.media, "Media"]].forEach(([v, k]) => { const r = el("div", "chol-r"); r.appendChild(el("small", null, k)); r.appendChild(el("b", null, String(v))); st.appendChild(r); });
+      card.appendChild(st);
+      b.appendChild(card);
+      const ft = el("div", "chol-f");
+      if (c.logo) { const im = el("img"); im.src = c.logo; im.alt = ""; ft.appendChild(im); }
+      ft.appendChild(el("span", null, c.team + " · " + c.pj + " partidos · últimos 5 puntos"));
+      if (x.rep) ft.appendChild(el("span", "nw-rep", "Repite"));
+      b.appendChild(ft);
+    } else if (e.kind === "c" && Array.isArray(x.chips) && x.chips.length) {
       const ch = el("div", "nw-chips");
       x.chips.forEach(([v, k]) => { const c = el("span", "art-box"); c.appendChild(el("b", null, String(v))); c.appendChild(el("small", null, k)); ch.appendChild(c); });
       if (x.rep) ch.appendChild(el("span", "nw-rep", "Repite"));

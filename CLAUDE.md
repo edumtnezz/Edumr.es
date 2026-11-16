@@ -82,3 +82,5 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 
 ## Hecho
 - Comparador de jugadores (31/10/2026): pestaña "Comparador" en el menú Más (`/futmondo/guiafantasy/comparador`). Comparaciones guardadas en el dispositivo (localStorage).
+
+- **16/11 (mañana) · chollo del día**: Edu vio a Turrientes (40 % de jugar, ceros entre medias). Ahora `cholloValido`: ≥ 70 % de jugar, 8 partidos o más, media ≥ 6, puntos en 4 de los últimos 5 y sin lesión/duda/sanción. Un chollo que ya no cumple se oculta y el Worker elige otro. Tarjeta nueva (`.chol`): barras de los últimos 5 puntos + valor, % de jugar y media.

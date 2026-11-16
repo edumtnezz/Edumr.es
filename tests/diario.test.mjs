@@ -58,9 +58,17 @@ test("rachas: victorias seguidas y partidos sin perder, solo al jugar", () => {
   assert.equal(eventosRachas({ 1: { pj: 3 } }, r).length, 1);
 });
 test("chollo del día: barato, disponible y rindiendo; si repite, se marca", () => {
-  const P = (o) => Object.assign({ est: "", value: 4e6, avg: 7, matches: 8 }, o);
+  const P = (o) => Object.assign({ est: "", value: 4e6, avg: 7, matches: 8, prob: 90, fitness: [5, 6, 7, 8, 9] }, o);
   const ps = [P({ id: "a", name: "A", avg: 7.6, value: 4.3e6 }), P({ id: "b", name: "B", avg: 9, value: 20e6 }), P({ id: "c", name: "C", avg: 9, est: "lesionado" }), P({ id: "d", name: "D", avg: 6.5, value: 4e6 })];
   assert.deepEqual(cholloDe(ps), { cat: "chollo", pid: "a", name: "A", title: "A", rep: 0 });
   assert.equal(cholloDe(ps, ["a", "x", "a"]).rep, 2);
   assert.equal(cholloDe([P({ id: "x", name: "X", avg: 3 })]), null);
+});
+
+test("chollo: no sale quien juega poco, tiene dudas o puntúa a ratos (Turrientes, 16/11)", () => {
+  const base = { id: "1", name: "A", value: 3e6, matches: 10, avg: 7, prob: 90, fitness: [5, 6, 7, 8, 9] };
+  assert.equal(cholloDe([base]).pid, "1");
+  assert.equal(cholloDe([{ ...base, prob: 40 }]), null);
+  assert.equal(cholloDe([{ ...base, matches: 7 }]), null);
+  assert.equal(cholloDe([{ ...base, fitness: [0, 0, 15, 3, 7] }]), null);
 });
