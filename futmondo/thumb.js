@@ -120,7 +120,7 @@
     }
     var im = nodo("img", "eth-art-img"); im.alt = ""; im.loading = "lazy"; im.decoding = "async"; im.src = ART[k];
     // En la miniatura cuadrada se enseña el dibujo (jugador, candado, pizarra), no el rótulo cortado
-    if (mini) im.style.objectPosition = ({ vender: "52% 30%", fichar: "70% 35%", claus: "70% 40%", paron: "60% 40%", merc: "50% 35%" })[k] || "60% 40%";
+    if (mini) im.style.objectPosition = ({ vender: "80% 50%", fichar: "95% 50%", claus: "95% 50%", paron: "60% 50%", merc: "50% 50%" })[k] || "60% 40%";
     d.appendChild(im);
     return d;
   }
