@@ -56,6 +56,10 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
   - **Parón**: solo si faltan 5 días o más para el primer partido de la jornada (`esParon`).
 - Las filas de jugador se escriben «@ id | Nombre | dato | motivo» (`noticia-cuerpo.mjs`) y la web les pone foto y enlace (`wireArtPlayers`). La portada es la foto del primer jugador (`fp`). Si una lista queda vacía no se pinta; si todas, no hay artículo.
 
+- **16/11/2026 · rediseño de artículos**: todas las filas iguales: foto, nombre, club con escudo, «media · partidos · valor» (dato del momento, lo pone la web) y a la derecha la cifra del artículo con su rótulo. Formato de fila «@ id | Nombre | cifra | qué es | nota»; en bajadas y subidas la nota es el cambio medio por día (7 días / 7). Portada propia por tipo (VENDER, FICHAR, CLAUSULAZOS, PARÓN), sin foto de jugadores (`EduThumb.articulo`). Parón: 3 por lista y gráfica «~ id | Nombre | valores | día | día» de los 3 que más suben desde que acabó la jornada anterior (`subidasEntre`, historial propio). Al cambiar el formato, subir `FORMATO` en `cron/src/articulos.js` para rehacerlos.
+- **Telegram mercado (16/11)**: llegó un aviso a las 00:00 por un retoque de la tarde anterior. Ahora siempre hacen falta 50 jugadores o más con otro valor respecto al último aviso (`pxMap`).
+- **Últimos cambios**: un jugador no sale dos veces con el mismo estado en 48 h (se queda la última). La fila de valores lleva icono propio, nunca la foto de un jugador.
+
 ## Ideas pendientes
 - Avisos Telegram (noticias y alineación probable)
 - Jugadores rentables (SofaScore, calidad-precio)

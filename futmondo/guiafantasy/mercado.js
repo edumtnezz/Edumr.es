@@ -4324,10 +4324,12 @@
     row.appendChild(b);
     return row;
   }
-  // Artículos: cada fila de jugador (.art-pl con su id) recibe la foto y abre la ficha. Si el mercado aún no ha cargado, se completa al llegar.
+  // Artículos: cada fila de jugador (.art-pl) y cada gráfica (.art-gr) llevan el id; aquí reciben la foto, el club con su escudo y
+  // la misma línea de datos en todos los artículos (media, partidos y valor del momento). Tocar abre la ficha.
   function wireArtPlayers(art) {
-    const rows = [...art.querySelectorAll(".art-pl[data-pid]")];
+    const rows = [...art.querySelectorAll(".art-pl[data-pid], .art-gr[data-pid]")];
     if (!rows.length) return;
+    const millones = (v) => (v / 1e6).toFixed(1).replace(".", ",") + " M";
     const pon = () => rows.forEach((r) => {
       if (r.dataset.ok) return;
       const p = (all || []).find((q) => String(q.id) === r.dataset.pid);
@@ -4335,9 +4337,20 @@
       r.dataset.ok = "1";
       const im = el("img", "art-pl-f"); im.alt = ""; im.loading = "lazy"; im.src = p.fotoG || p.photo || p.logo || "";
       im.addEventListener("error", () => { if (p.logo && im.src !== p.logo) { im.src = p.logo; im.classList.add("crest"); } else im.remove(); });
-      r.prepend(im);
-      const t = r.querySelector(".art-pl-t small");
-      if (t && p.team) t.textContent = shortRival(p.team) + " · " + t.textContent;
+      const club = el("span", "art-pl-c");
+      if (p.logo) { const cr = el("img"); cr.alt = ""; cr.loading = "lazy"; cr.src = p.logo; cr.addEventListener("error", () => cr.remove()); club.appendChild(cr); }
+      club.appendChild(el("span", null, shortRival(p.team)));
+      const dat = el("span", "art-pl-d");
+      [[Number(p.avg) ? String(Math.round(p.avg * 10) / 10).replace(".", ",") : "—", "media"], [p.matches || 0, "part."], [millones(p.value || 0), "valor"]].forEach(([v, k]) => { const c = el("span"); c.appendChild(el("b", null, String(v))); c.appendChild(document.createTextNode(" " + k)); dat.appendChild(c); });
+      if (r.classList.contains("art-gr")) {
+        const h = r.querySelector(".art-gr-h"), nm = h.querySelector("b");
+        const izq = el("span", "art-gr-n"); h.insertBefore(izq, nm); izq.appendChild(im); const tx = el("span", "art-pl-t"); tx.appendChild(nm); tx.appendChild(club); izq.appendChild(tx);
+        r.appendChild(dat);
+      } else {
+        r.prepend(im);
+        const t = r.querySelector(".art-pl-t"), nt = t.querySelector(".art-pl-nt");
+        t.insertBefore(club, nt || null); t.insertBefore(dat, nt || null);
+      }
       r.classList.add("club-link"); r.setAttribute("role", "link"); r.tabIndex = 0;
       r.addEventListener("click", () => openFicha(p));
     });
@@ -4727,6 +4740,8 @@
   };
   // Miniatura propia (DOM, animada): foto del jugador + escudo del club (mercado de Futmondo)
   const ethFor = (x, mini) => {
+    // Artículo: portada propia (sin foto de ningún jugador), con su palabra y su color
+    if (x && x.tipo === "articulo" && window.EduThumb && window.EduThumb.articulo) return window.EduThumb.articulo(x, mini);
     let photo = "", crest = "", photoG = "";
     try {
       // Solo el jugador del que habla el titular (nunca otro citado al final del texto)

@@ -4,7 +4,11 @@
 
 const M = (v) => (Math.abs(v) / 1e6).toFixed(1).replace(".", ",") + " M";
 const dec = (v) => (Math.round(Number(v) * 10) / 10).toFixed(1).replace(".", ",");
-const fila = (p, dato, motivo) => "@ " + p.id + " | " + String(p.name).replace(/\|/g, " ") + " | " + dato + " | " + motivo;
+// Fila: «@ id | Nombre | cifra grande | qué es la cifra | nota». El club, la media, los partidos y el valor los pone la web con el dato del momento.
+const fila = (p, grande, pie, nota) => "@ " + p.id + " | " + String(p.name).replace(/\|/g, " ") + " | " + grande + " | " + pie + " | " + (nota || "-");
+const euros = (v) => Math.round(Math.abs(v)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+const alDia = (c7) => (c7 > 0 ? "+" : "−") + euros(c7 / 7) + " € al día de media";
+const Cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
 const libre = (p) => !p.est || p.est === "apercibido"; // disponible para jugar
 const MES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 
@@ -39,8 +43,8 @@ export function aVender(ps, jn, now = Date.now()) {
   const caen = ps.filter((p) => libre(p) && p.value >= 3e6 && Number(p.chg7) <= -1e6).sort((a, b) => a.chg7 - b.chg7);
   const A = top(largas, 6), B = top(caen, 6);
   return item("artvender" + jn, "Jugadores a vender antes de la jornada " + jn, "Bajas largas y jugadores sanos que pierden valor.", [
-    { titulo: "Baja larga", nota: "Lesionados que no vuelven hasta dentro de un mes o más.", filas: A.map((x) => fila(x.p, M(x.p.value), "Vuelta: " + x.r.txt)) },
-    { titulo: "Pierden valor", nota: "Disponibles, pero han bajado 1 M o más en 7 días.", filas: B.map((p) => fila(p, "−" + M(p.chg7), "en 7 días · media " + dec(p.avg))) },
+    { titulo: "Baja larga", nota: "Lesionados que no vuelven hasta dentro de un mes o más.", filas: A.map((x) => fila(x.p, Cap(x.r.txt), "vuelta")) },
+    { titulo: "Pierden valor", nota: "Disponibles, pero han bajado 1 M o más en 7 días.", filas: B.map((p) => fila(p, "−" + M(p.chg7), "en 7 días", alDia(p.chg7))) },
   ], A.map((x) => x.p.name).concat(B.map((p) => p.name)));
 }
 
@@ -55,8 +59,8 @@ export function aFichar(ps, cambios, jn, now = Date.now()) {
   const forma = ps.filter((p) => libre(p) && !visto.has(p.id) && p.value < 50e6 && p.matches >= 5 && p.avg >= 7 && Number(p.chg7) >= 1e6).sort((a, b) => b.avg - a.avg);
   const A = top(vuelven, 6), B = top(forma, 6);
   return item("artfichar" + jn, "Jugadores a fichar antes de la jornada " + jn, "Los que vuelven y los que rinden y suben de valor.", [
-    { titulo: "Vuelven", nota: "Salen de lesión o sanción esta semana y rendían bien.", filas: A.map((x) => fila(x.p, dec(x.p.avg), "de media en " + x.p.matches + " partidos · " + M(x.p.value))) },
-    { titulo: "En forma y subiendo", nota: "Por menos de 50 M, con media de 7 o más y 1 M o más de subida en 7 días.", filas: B.map((p) => fila(p, dec(p.avg), "de media · +" + M(p.chg7) + " en 7 días · " + M(p.value))) },
+    { titulo: "Vuelven", nota: "Salen de lesión o sanción esta semana y rendían bien.", filas: A.map((x) => fila(x.p, dec(x.p.avg), "de media", "Vuelve de " + (x.c.de === "sancionado" ? "sanción" : "lesión"))) },
+    { titulo: "En forma y subiendo", nota: "Por menos de 50 M, con media de 7 o más y 1 M o más de subida en 7 días.", filas: B.map((p) => fila(p, "+" + M(p.chg7), "en 7 días", alDia(p.chg7))) },
   ], A.map((x) => x.p.name).concat(B.map((p) => p.name)));
 }
 
@@ -66,22 +70,41 @@ export function clausulazos(ps, jn) {
   const franja = (min, max) => top(ok.filter((p) => p.value >= min && p.value < max).sort((a, b) => b.avg - a.avg || b.points - a.points), 3);
   const F = [["Hasta 5 M", 0, 5e6], ["De 5 a 15 M", 5e6, 15e6], ["De 15 a 30 M", 15e6, 30e6], ["Más de 30 M", 30e6, Infinity]].map(([t, a, b]) => ({ t, l: franja(a, b) }));
   return item("artclaus" + jn, "Clausulazos recomendables antes de la jornada " + jn, "Los que más rinden en cada franja de precio y están disponibles.",
-    F.map((f) => ({ titulo: f.t, nota: "", filas: f.l.map((p) => fila(p, dec(p.avg), "de media en " + p.matches + " partidos · " + M(p.value))) })), F.flatMap((f) => f.l.map((p) => p.name)));
+    F.map((f) => ({ titulo: f.t, nota: "", filas: f.l.map((p) => fila(p, dec(p.avg), "de media")) })), F.flatMap((f) => f.l.map((p) => p.name)));
 }
 
-// Parón: bajas importantes que siguen, los que pueden volver para la jornada, y quién sube y baja más de valor esta semana.
-export function paron(ps, jn, vuelta, now = Date.now()) {
+// Parón: tres por lista (Edu: «demasiada información»): quién puede volver, quién sigue de baja y quién sube y baja más de valor.
+// `subidas` (opcional) = [{ p, serie:[valores por día], d0, d1 }]: los tres que más han subido desde que acabó la última jornada, con su gráfica.
+export function paron(ps, jn, vuelta, now = Date.now(), subidas = null) {
   const les = ps.filter((p) => p.est === "lesionado" && p.value >= 3e6).map((p) => ({ p, r: retorno(p.estInfo, now) })).filter((x) => x.r);
   const llegan = les.filter((x) => x.r.ms <= vuelta + 10 * 86400000).sort((a, b) => b.p.value - a.p.value);
   const siguen = les.filter((x) => x.r.ms > vuelta + 10 * 86400000).sort((a, b) => b.p.value - a.p.value);
-  const suben = ps.filter((p) => libre(p) && Number(p.chg7) >= 5e5).sort((a, b) => b.chg7 - a.chg7), bajan = ps.filter((p) => Number(p.chg7) <= -5e5).sort((a, b) => a.chg7 - b.chg7);
-  const A = top(llegan, 6), B = top(siguen, 6), C = top(suben, 5), D = top(bajan, 5);
-  return item("artparon" + jn, "Parón: repasa tu plantilla antes de la jornada " + jn, "Quién puede volver, quién sigue de baja y cómo se mueve el mercado sin partidos.", [
-    { titulo: "Pueden volver para la jornada " + jn, nota: "Lesionados con vuelta prevista en estas fechas.", filas: A.map((x) => fila(x.p, M(x.p.value), "Vuelta: " + x.r.txt)) },
-    { titulo: "Siguen de baja", nota: "", filas: B.map((x) => fila(x.p, M(x.p.value), "Vuelta: " + x.r.txt)) },
-    { titulo: "Suben en el parón", nota: "Mayor subida de valor en 7 días.", filas: C.map((p) => fila(p, "+" + M(p.chg7), "en 7 días · media " + dec(p.avg))) },
-    { titulo: "Bajan en el parón", nota: "", filas: D.map((p) => fila(p, "−" + M(p.chg7), "en 7 días · media " + dec(p.avg))) },
-  ], A.map((x) => x.p.name).concat(C.map((p) => p.name)));
+  const bajan = ps.filter((p) => Number(p.chg7) <= -5e5).sort((a, b) => a.chg7 - b.chg7);
+  const A = top(llegan, 3), B = top(siguen, 3), D = top(bajan, 3), S = top(subidas || [], 3);
+  const graf = (x) => "~ " + x.p.id + " | " + String(x.p.name).replace(/\|/g, " ") + " | " + x.serie.map((v) => Math.round(v)).join(",") + " | " + x.d0 + " | " + x.d1;
+  return item("artparon" + jn, "Parón: repasa tu plantilla antes de la jornada " + jn, "Quién puede volver, quién sigue de baja y quién ha subido más sin partidos.", [
+    { titulo: "Los que más han subido en el parón", nota: S.length ? "Valor de cada día desde el " + S[0].d0 + " (acabó la jornada anterior) hasta el " + S[0].d1 + "." : "", filas: S.map(graf) },
+    { titulo: "Pueden volver para la jornada " + jn, nota: "Lesionados con vuelta prevista en estas fechas.", filas: A.map((x) => fila(x.p, Cap(x.r.txt), "vuelta")) },
+    { titulo: "Siguen de baja", nota: "", filas: B.map((x) => fila(x.p, Cap(x.r.txt), "vuelta")) },
+    { titulo: "Los que más bajan", nota: "Mayor bajada de valor en 7 días.", filas: D.map((p) => fila(p, "−" + M(p.chg7), "en 7 días", alDia(p.chg7))) },
+  ], S.map((x) => x.p.name).concat(A.map((x) => x.p.name)));
+}
+
+// Los que más han subido entre dos días del historial propio de valores (vh.days = { "2026-11-10": { id: valor } }).
+// Solo días con foto real; hace falta el primero y el último, y al menos 4 días. Nada interpolado: los días sin foto se saltan.
+export function subidasEntre(vh, ps, desde, hasta, n = 3) {
+  const dias = Object.keys((vh && vh.days) || {}).filter((d) => d >= desde && d <= hasta && !(vh.copied || {})[d]).sort();
+  if (dias.length < 4 || dias[0] !== desde) return [];
+  const fmt = (d) => d.slice(8, 10) + "/" + d.slice(5, 7);
+  return ps.map((p) => ({ p, serie: dias.map((d) => vh.days[d][p.id]).filter((v) => v > 0) })).filter((x) => x.serie.length === dias.length)
+    .map((x) => Object.assign(x, { sube: x.serie[x.serie.length - 1] - x.serie[0], d0: fmt(dias[0]), d1: fmt(dias[dias.length - 1]) }))
+    .filter((x) => x.sube > 0).sort((a, b) => b.sube - a.sube).slice(0, n);
+}
+// Día siguiente al lunes en que acabó la jornada anterior: el lunes igual o anterior a (primer partido − 7 días), más un día. «AAAA-MM-DD».
+export function inicioParon(inicio) {
+  const d = new Date(inicio - 7 * 86400000);
+  const dow = (d.getUTCDay() + 6) % 7; // lunes = 0
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - dow + 1)).toISOString().slice(0, 10);
 }
 
 // Primer partido de la jornada («20/11» + «21:00», hora de Madrid) en milisegundos. null si no se puede leer.

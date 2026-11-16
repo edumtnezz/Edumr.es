@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { retorno, aVender, aFichar, clausulazos, paron, inicioJornada, esParon } from "../functions/_lib/articulos.mjs";
+import { retorno, aVender, aFichar, clausulazos, paron, inicioJornada, esParon, subidasEntre, inicioParon } from "../functions/_lib/articulos.mjs";
 
 const NOW = Date.UTC(2026, 10, 15, 11);
 const P = (o) => Object.assign({ id: o.name, est: "", estInfo: "", value: 10e6, avg: 6, points: 60, matches: 10, chg7: 0 }, o);
@@ -17,8 +17,8 @@ test("a vender: baja larga y sanos que caen; la baja corta y el que sube no sale
     P({ name: "Corto", est: "lesionado", estInfo: "x. Retorno estimado: Finales de Noviembre." }),
     P({ name: "Cae", chg7: -2166594 }), P({ name: "Sube", chg7: 2e6 }), P({ name: "LesionadoCae", est: "lesionado", estInfo: "", chg7: -3e6 }),
   ], 13, NOW);
-  assert.match(a.body, /@ Largo \| Largo \| 10,0 M \| Vuelta: finales de mayo/);
-  assert.match(a.body, /@ Cae \| Cae \| −2,2 M \| en 7 días · media 6,0/);
+  assert.match(a.body, /@ Largo \| Largo \| Finales de mayo \| vuelta \| -/);
+  assert.match(a.body, /@ Cae \| Cae \| −2,2 M \| en 7 días \| −309\.513 € al día de media/);
   assert.ok(!/Corto|Sube|LesionadoCae/.test(a.body));
   assert.equal(a.id, "artvender13");
 });
@@ -26,7 +26,8 @@ test("a fichar: vuelve de lesión con buena media; el que vuelve con mala media 
   const ps = [P({ name: "Vuelve", avg: 8 }), P({ name: "Malo", avg: 2 }), P({ name: "Forma", avg: 9, chg7: 2.7e6 }), P({ name: "Duda", avg: 9, chg7: 3e6, est: "duda" })];
   const a = aFichar(ps, [{ id: "Vuelve", de: "lesionado", a: "ok", at: NOW - 86400000 }, { id: "Malo", de: "lesionado", a: "ok", at: NOW - 86400000 }, { id: "Forma", de: "ok", a: "duda", at: NOW }], 13, NOW);
   assert.match(a.body, /## Vuelven[\s\S]*@ Vuelve/);
-  assert.match(a.body, /## En forma y subiendo[\s\S]*@ Forma \| Forma \| 9,0 \| de media · \+2,7 M en 7 días/);
+  assert.match(a.body, /## Vuelven[\s\S]*@ Vuelve \| Vuelve \| 8,0 \| de media \| Vuelve de lesión/);
+  assert.match(a.body, /## En forma y subiendo[\s\S]*@ Forma \| Forma \| \+2,7 M \| en 7 días \| \+385\.714 € al día de media/);
   assert.ok(!/Malo|Duda/.test(a.body));
 });
 test("clausulazos: tres por franja, solo disponibles y con 6 partidos", () => {
@@ -42,5 +43,23 @@ test("parón: faltan 5 días o más para el primer partido", () => {
   assert.equal(esParon(ini, NOW), true);
   assert.equal(esParon(ini, NOW + 2 * 86400000), false);
   const a = paron([P({ name: "Llega", est: "lesionado", estInfo: "x. Retorno estimado: Finales de Noviembre." }), P({ name: "Sigue", est: "lesionado", estInfo: "x. Retorno estimado: Mediados de Enero." }), P({ name: "Sube", chg7: 2e6 })], 13, ini, NOW);
-  assert.match(a.body, /## Pueden volver para la jornada 13[\s\S]*@ Llega[\s\S]*## Siguen de baja[\s\S]*@ Sigue[\s\S]*## Suben en el parón[\s\S]*@ Sube/);
+  assert.match(a.body, /## Pueden volver para la jornada 13[\s\S]*@ Llega[\s\S]*## Siguen de baja[\s\S]*@ Sigue/);
+  assert.ok(!/más han subido/.test(a.body)); // sin historial no hay gráfica
+  // Con historial propio: los que más suben desde el día siguiente al lunes en que acabó la jornada anterior
+  assert.equal(inicioParon(ini), "2026-11-10");
+  const vh = { days: {}, copied: {} };
+  ["2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13"].forEach((d, k) => { vh.days[d] = { Sube: 10e6 + k * 1e6, Llega: 5e6, Sigue: 5e6 - k * 1e5 }; });
+  const sub = subidasEntre(vh, [P({ name: "Sube" }), P({ name: "Llega" }), P({ name: "Sigue" })], "2026-11-10", "2026-11-13");
+  assert.deepEqual(sub.map((x) => x.p.name + ":" + x.sube), ["Sube:3000000"]);
+  const b = paron([P({ name: "Sube" })], 13, ini, NOW, sub);
+  assert.match(b.body, /~ Sube \| Sube \| 10000000,11000000,12000000,13000000 \| 10\/11 \| 13\/11/);
+  assert.deepEqual(subidasEntre({ days: { "2026-11-12": {} } }, [], "2026-11-10", "2026-11-13"), []); // falta el primer día: sin gráfica
+});
+
+import { cuerpoAHtml } from "../functions/_lib/noticia-cuerpo.mjs";
+test("cuerpo: fila de jugador y gráfica de valor", () => {
+  const h = cuerpoAHtml("## Lista\n@ abc123 | Koke | −2,2 M | en 7 días | −309.513 € al día de media\n~ abc123 | Koke | 10000000,11000000,13000000 | 10/11 | 13/11");
+  assert.match(h, /class="art-pl" data-pid="abc123"/);
+  assert.match(h, /<span class="art-pl-v"><b>−2,2 M<\/b><small>en 7 días<\/small>/);
+  assert.match(h, /class="art-gr"[\s\S]*\+3,0 M · \+30 %[\s\S]*10\/11 · 10,0 M[\s\S]*13\/11 · 13,0 M/);
 });
