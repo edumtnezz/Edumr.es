@@ -123,5 +123,5 @@ export function cholloDe(players, usados = []) {
     .sort((a, b) => b.avg / b.value - a.avg / a.value)[0];
   if (!c) return null;
   const rep = (usados || []).filter((x) => String(x) === String(c.id)).length;
-  return { cat: "chollo", pid: c.id, name: c.name, title: c.name, rep };
+  return { cat: "chollo", pid: c.id, name: c.name, title: c.name, rep, prob: c.prob };
 }

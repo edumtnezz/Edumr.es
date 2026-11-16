@@ -4330,7 +4330,7 @@
       f.forEach((v) => { const col = el("span", "chol-b" + (v >= 8 ? " hi" : v <= 0 ? " lo" : "")); const i = el("i"); i.style.height = Math.max(6, Math.round((v / mx) * 100)) + "%"; col.appendChild(i); col.appendChild(el("b", null, String(v))); bars.appendChild(col); });
       card.appendChild(bars);
       const st = el("div", "chol-s");
-      [[c.valor, "Valor"], [c.prob + " %", "Juega"], [c.media, "Media"]].forEach(([v, k]) => { const r = el("div", "chol-r"); r.appendChild(el("small", null, k)); r.appendChild(el("b", null, String(v))); st.appendChild(r); });
+      [[c.valor, "Valor"], [(c.prob ? c.prob + " %" : "—"), "Juega"], [c.media, "Media"]].forEach(([v, k]) => { const r = el("div", "chol-r"); r.appendChild(el("small", null, k)); r.appendChild(el("b", null, String(v))); st.appendChild(r); });
       card.appendChild(st);
       b.appendChild(card);
       const ft = el("div", "chol-f");

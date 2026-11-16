@@ -60,7 +60,7 @@ test("rachas: victorias seguidas y partidos sin perder, solo al jugar", () => {
 test("chollo del día: barato, disponible y rindiendo; si repite, se marca", () => {
   const P = (o) => Object.assign({ est: "", value: 4e6, avg: 7, matches: 8, prob: 90, fitness: [5, 6, 7, 8, 9] }, o);
   const ps = [P({ id: "a", name: "A", avg: 7.6, value: 4.3e6 }), P({ id: "b", name: "B", avg: 9, value: 20e6 }), P({ id: "c", name: "C", avg: 9, est: "lesionado" }), P({ id: "d", name: "D", avg: 6.5, value: 4e6 })];
-  assert.deepEqual(cholloDe(ps), { cat: "chollo", pid: "a", name: "A", title: "A", rep: 0 });
+  assert.deepEqual(cholloDe(ps), { cat: "chollo", pid: "a", name: "A", title: "A", rep: 0, prob: 90 });
   assert.equal(cholloDe(ps, ["a", "x", "a"]).rep, 2);
   assert.equal(cholloDe([P({ id: "x", name: "X", avg: 3 })]), null);
 });
