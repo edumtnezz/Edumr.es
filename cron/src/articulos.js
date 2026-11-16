@@ -26,8 +26,20 @@ export async function publicarArticulos(env, f = fetch, now = Date.now()) {
   let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
   // El del parón se escribe si hay parón; al rehacer por cambio de formato, también si ya estaba publicado para esta jornada.
   const hayParon = esParon(ini, now) || (rehacer && own.some((x) => x.id === "artparon" + jn));
-  const tipos = ["artvender", "artfichar", "artclaus"].concat(hayParon ? ["artparon"] : []).filter((t) => !st.done[t + jn]);
+  let tipos = ["artvender", "artfichar", "artclaus"].concat(hayParon ? ["artparon"] : []).filter((t) => !st.done[t + jn]);
   if (!tipos.length) return { nuevas: 0 };
+  // Reparto por horas (Edu, 17/11/2026): un artículo por pasada, cada uno desde su hora, con 3 horas o más entre artículos y sin juntar dos
+  // seguidos si no ha salido antes alguna noticia de un jugador (las noticias de estado son lo dinámico; si no hay ninguna, se espera 6 h).
+  if (!rehacer) {
+    const SLOT = { artvender: 10, artfichar: 13, artclaus: 16, artparon: 19 };
+    const arts = own.filter((x) => x && x.tipo === "articulo" && x.art !== "artmercado");
+    const ult = arts.reduce((m, x) => Math.max(m, x.publishedAt || 0), 0);
+    const h = (now - ult) / 3600000;
+    const hayNoticia = own.some((x) => x && x.auto === "estado" && (x.publishedAt || 0) > ult);
+    const toca = tipos.filter((t) => hora >= SLOT[t]);
+    if (!toca.length || h < 3 || (!hayNoticia && h < 6)) return { esperando: true };
+    tipos = [toca[0]];
+  }
   const [mk, es] = await Promise.all([get("mercado"), get("estados")]);
   const ps = mk && Array.isArray(mk.players) ? mk.players : [];
   // Sin mercado completo o sin cambios a 7 días no se escribe nada (saldrían listas falsas)
@@ -44,8 +56,10 @@ export async function publicarArticulos(env, f = fetch, now = Date.now()) {
     st.done[t + jn] = now;
     const a = hechos[t]();
     if (!a) continue;
+    const prev = own.find((x) => x.art === t);
     own = own.filter((x) => x.art !== t); // una sola edición viva de cada tipo
-    const it = { id: a.id, title: a.title, lead: a.lead, body: a.body, status: "published", createdAt: now, publishedAt: now, thumb: "", club: "", players: a.players, tipo: "articulo", auto: "articulo", art: t, f: 1, fp: (a.body.match(/^@ (\S+) \|/m) || [])[1] || "" };
+    const pa = rehacer && prev && prev.publishedAt ? prev.publishedAt : now; // al rehacer por formato se conserva su hora original
+    const it = { id: a.id, title: a.title, lead: a.lead, body: a.body, status: "published", createdAt: pa, publishedAt: pa, thumb: "", club: "", players: a.players, tipo: "articulo", auto: "articulo", art: t, f: 1, fp: (a.body.match(/^@ (\S+) \|/m) || [])[1] || "" };
     own.unshift(it); nuevas.push(it);
   }
   if (nuevas.length) { own.sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0)); await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300))); }
@@ -96,6 +110,11 @@ export async function publicarOnces(env, f = fetch, now = Date.now()) {
   const nueva = st.jn !== jn;
   // Primera edición de la jornada: lunes desde las 23:00, o de martes a viernes
   if (nueva && !((dia === "Mon" && hora >= 23) || ["Tue", "Wed", "Thu", "Fri"].indexOf(dia) >= 0)) return { skipped: "fuera de hora" };
+  if (nueva) { // primera edición: no pegada a otro artículo (menos de 2 h)
+    const own0 = (await env.PORRA.get(OWN_KEY, "json")) || [];
+    const ult = own0.filter((x) => x && x.tipo === "articulo" && x.art !== "artmercado" && x.art !== "artonce").reduce((m, x) => Math.max(m, x.publishedAt || 0), 0);
+    if (now - ult < 2 * 3600000) return { skipped: "hace poco otro artículo" };
+  }
   const mk = await get("mercado");
   const ps = mk && Array.isArray(mk.players) ? mk.players : [];
   if (ps.length < 300 || ps.filter((p) => p.prob != null).length < 300) return { error: "sin mercado" };
