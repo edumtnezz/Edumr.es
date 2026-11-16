@@ -99,7 +99,7 @@
     return d;
   }
   // Portada de artículo: imagen fija por tipo (Edu, 16/11/2026), sin número de jornada. Sin fotos de jugadores.
-  var ART = { vender: "/img/art-vender.jpg?v=1", fichar: "/img/art-fichar.jpg?v=1", claus: "/img/art-claus.jpg?v=1", paron: "/img/art-paron.jpg?v=1", merc: "/img/mercado-subidas-bajadas.jpg?v=3" };
+  var ART = { vender: "/img/art-vender.jpg?v=1", fichar: "/img/art-fichar.jpg?v=1", claus: "/img/art-claus.jpg?v=1", paron: "/img/art-paron.jpg?v=1", merc: "/img/mercado-subidas-bajadas.jpg?v=3", once: "/img/art-once.jpg?v=1" };
   function artKind(item) {
     var a = String(item && item.art || "");
     if (a === "artmercado") return "merc";
@@ -111,16 +111,9 @@
   function articulo(item, mini) {
     var d = nodo("div", mini ? "eth-mini eth-art-mini" : "eth eth-art");
     var k = artKind(item);
-    // Onces recomendados: aún sin imagen propia; se dibuja un campo con la palabra ONCES (sin fotos de jugadores)
-    if (k === "once") {
-      d.classList.add("eth-once");
-      d.appendChild(nodo("i", "eth-once-c"));
-      if (!mini) { d.appendChild(nodo("span", "eth-tag", "ARTÍCULO")); d.appendChild(nodo("b", "eth-once-w", "ONCES")); }
-      return d;
-    }
     var im = nodo("img", "eth-art-img"); im.alt = ""; im.loading = "lazy"; im.decoding = "async"; im.src = ART[k];
     // En la miniatura cuadrada se enseña el dibujo (jugador, candado, pizarra), no el rótulo cortado
-    if (mini) im.style.objectPosition = ({ vender: "80% 50%", fichar: "95% 50%", claus: "95% 50%", paron: "60% 50%", merc: "50% 50%" })[k] || "60% 40%";
+    if (mini) im.style.objectPosition = ({ vender: "80% 50%", fichar: "95% 50%", claus: "95% 50%", paron: "60% 50%", merc: "50% 50%", once: "50% 30%" })[k] || "60% 40%";
     d.appendChild(im);
     return d;
   }
