@@ -27,7 +27,7 @@ export async function apuntarDiario(env, f = fetch, now = Date.now()) {
   let chollo = prev.chollo || { dia: "", ids: [] };
   // Si el chollo de hoy ya no cumple el criterio (se cambió la regla o el jugador cayó en duda), se elige otro
   if (chollo.dia === hoy && chollo.ids && chollo.ids.length) {
-    try { const mk0 = await get("mercado"); const p0 = mk0 && Array.isArray(mk0.players) ? mk0.players.find((q) => String(q.id) === String(chollo.ids[0])) : null; if (p0 && !cholloValido(p0)) chollo = { dia: "", ids: chollo.ids.slice(1) }; } catch (e) {}
+    try { const mk0 = await get("mercado"); const p0 = mk0 && Array.isArray(mk0.players) ? mk0.players.find((q) => String(q.id) === String(chollo.ids[0])) : null; if (p0 && !cholloValido(p0)) { const mal = String(chollo.ids[0]); chollo = { dia: "", ids: chollo.ids.slice(1) }; const ev0 = (await env.PORRA.get(K_EV, "json")) || []; await env.PORRA.put(K_EV, JSON.stringify(ev0.filter((e) => !(e && e.cat === "chollo" && String(e.pid) === mal)))); } } catch (e) {}
   }
   if (chollo.dia !== hoy) {
     try {

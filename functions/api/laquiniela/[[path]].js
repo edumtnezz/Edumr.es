@@ -7,7 +7,7 @@ import { staleChange, actualizadoHoy, tocadosDe, marcarTocados } from "../../_li
 import { etiquetaDe } from "../../_lib/portada-svg.mjs";
 import { promptFondo, grupoTipo } from "../../_lib/portada-prompt.mjs";
 import { partirInfo, tituloCambio, catCambio, NOMBRE_ESTADO, ajustarOnce, clubKey, emparejar } from "../../_lib/estados.mjs";
-import { itemsMercado, lideres as lideresDe, rachasDe, cholloValido } from "../../_lib/diario.mjs";
+import { itemsMercado, lideres as lideresDe, rachasDe } from "../../_lib/diario.mjs";
 import { agregarSubs, riesgoCambio } from "../../_lib/sustituciones.mjs";
 import { compacto, dificultad, calendarioDificultad, oncePropio, aciertoOnces, compararOnce, probInterna, puntuarDuelo } from "../../_lib/analitica.mjs";
 import { cuerpoAHtml } from "../../_lib/noticia-cuerpo.mjs";
@@ -2860,12 +2860,15 @@ async function getCambiosPropios(env) {
       // Sin foto de ningún jugador: la web pinta un icono propio de «valores actualizados» (Edu, 16/11/2026)
       items.push({ at: e.at, cat: "mercado", title: e.title, href: e.href, photo: "", logo: "", pid: "", players: [] });
     }
+    // Del chollo solo se enseña el más reciente de cada día (si se corrige uno, el anterior desaparece)
+    const cholloUlt = new Map(); for (const e of (diario || [])) { if (e && e.cat === "chollo") { const dk = new Date(e.at).toISOString().slice(0, 10); if (!cholloUlt.has(dk) || cholloUlt.get(dk) < e.at) cholloUlt.set(dk, e.at); } }
     for (const e of (diario || [])) {
       if (!e || !e.at || now - e.at > 8 * 86400000) continue;
+      if (e.cat === "chollo" && cholloUlt.get(new Date(e.at).toISOString().slice(0, 10)) !== e.at) continue;
       // Goleador: solo se enlaza con su ficha si en el mercado hay UN jugador con ese nombre exacto; si no, escudo y sin enlace.
       // El chollo trae el id del mercado (lo elige el Worker de nuestros propios datos): foto y ficha directas.
       const p = e.cat === "goleadores" ? uno(e.name) : e.cat === "chollo" ? (all.find((q) => String(q.id) === String(e.pid)) || null) : null;
-      if (e.cat === "chollo" && (!p || !cholloValido(p))) continue; // un chollo que ya no cumple el criterio se quita
+      if (e.cat === "chollo" && !p) continue;
       // Chollo: el título es solo el nombre (la etiqueta ya dice «Chollo del día») y los números van en recuadros, con el dato de ahora
       if (e.cat === "chollo") {
         const d1 = (v) => (Math.round(Number(v) * 10) / 10).toFixed(1).replace(".", ",");
