@@ -4,7 +4,7 @@
 import { aVender, aFichar, clausulazos, paron, inicioJornada, esParon, subidasEntre, inicioParon } from "../../functions/_lib/articulos.mjs";
 
 const OWN_KEY = "own:news:v2", K_ST = "art:st:v1", SITE = "https://edumr.es/api/laquiniela/";
-const FORMATO = 2; // súbelo cuando cambie el formato de las filas para rehacer los artículos publicados
+const FORMATO = 3; // súbelo cuando cambie el formato de las filas para rehacer los artículos publicados
 const escT = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 export async function publicarArticulos(env, f = fetch, now = Date.now()) {
@@ -22,7 +22,10 @@ export async function publicarArticulos(env, f = fetch, now = Date.now()) {
   const jn = jr && Number(jr.matchday);
   if (!jn || !Array.isArray(jr.matches)) return { error: "sin jornada" };
   const ini = inicioJornada(jr.matches, now);
-  const tipos = ["artvender", "artfichar", "artclaus"].concat(esParon(ini, now) ? ["artparon"] : []).filter((t) => !st.done[t + jn]);
+  let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
+  // El del parón se escribe si hay parón; al rehacer por cambio de formato, también si ya estaba publicado para esta jornada.
+  const hayParon = esParon(ini, now) || (rehacer && own.some((x) => x.id === "artparon" + jn));
+  const tipos = ["artvender", "artfichar", "artclaus"].concat(hayParon ? ["artparon"] : []).filter((t) => !st.done[t + jn]);
   if (!tipos.length) return { nuevas: 0 };
   const [mk, es] = await Promise.all([get("mercado"), get("estados")]);
   const ps = mk && Array.isArray(mk.players) ? mk.players : [];
@@ -35,7 +38,6 @@ export async function publicarArticulos(env, f = fetch, now = Date.now()) {
     try { const vh = await env.PORRA.get("vh:v1", "json"); const hoy = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date(now)); subidas = subidasEntre(vh, ps, inicioParon(ini), hoy); } catch (e) {}
   }
   const hechos = { artvender: () => aVender(ps, jn, now), artfichar: () => aFichar(ps, cambios, jn, now), artclaus: () => clausulazos(ps, jn), artparon: () => paron(ps, jn, ini, now, subidas) };
-  let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
   const nuevas = [];
   for (const t of tipos) {
     st.done[t + jn] = now;
