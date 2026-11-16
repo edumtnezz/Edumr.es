@@ -126,3 +126,17 @@ export function inicioJornada(matches, now = Date.now()) {
 }
 // Hay parón si faltan 5 días o más para el primer partido (en una semana normal nunca pasa de 4: lunes → viernes).
 export const esParon = (inicio, now = Date.now()) => inicio != null && inicio - now >= 5 * 86400000;
+
+// Subidas y bajadas (16/11/2026): una edición por cada actualización real de valores de Futmondo, con id fijo «artmercado»
+// (la nueva sustituye a la anterior; el aviso de Telegram de mercado lleva a ella). Solo el cambio de hoy de Futmondo (`change`).
+const kEur = (v) => { const a = Math.abs(v); return a >= 1e6 ? (a / 1e6).toFixed(a >= 1e7 ? 1 : 2).replace(/\.?0+$/, "").replace(".", ",") + " M" : Math.round(a / 1e3) + "k"; };
+const pct = (p) => { const antes = p.value - p.change; return antes > 0 ? (p.change > 0 ? "+" : "−") + dec(Math.abs(p.change) / antes * 100) + " % sobre ayer" : "-"; };
+export function subidasBajadas(ps, fecha, n = 10) {
+  const ok = (ps || []).filter((p) => p && p.id != null && p.name && Number.isFinite(p.change) && Number.isFinite(p.value));
+  const up = top(ok.filter((p) => p.change > 0).sort((a, b) => b.change - a.change), n);
+  const down = top(ok.filter((p) => p.change < 0).sort((a, b) => a.change - b.change), n);
+  return item("artmercado", "Subidas y bajadas del " + fecha, "Lo que ha cambiado Futmondo en la actualización de valores de hoy.", [
+    { titulo: "Más suben", nota: "", filas: up.map((p) => fila(p, "+" + kEur(p.change), "hoy", pct(p))) },
+    { titulo: "Más bajan", nota: "", filas: down.map((p) => fila(p, "−" + kEur(p.change), "hoy", pct(p))) },
+  ], up.slice(0, 2).map((p) => p.name).concat(down.slice(0, 1).map((p) => p.name)));
+}

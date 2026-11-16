@@ -1,3 +1,4 @@
+import { publicarMercado } from "./articulos.js";
 // avisos.js — avisos de Telegram para Edu (liga "Con Permisoo").
 // Se ejecuta dentro del cron de 15 min (index.js) y solo manda lo NUEVO:
 //   1) TODAS las noticias nuevas de FutbolFantasy (⭐ si nombran a un jugador tuyo,
@@ -189,7 +190,7 @@ function noticiaTexto(title, hits, resumen, link, src) {
 }
 
 // Aviso de mercado: 5 mayores subidas y 5 mayores bajadas (valores de Futmondo). null si no hay cambios.
-function mercadoTexto(ps, own, sig) {
+function mercadoTexto(ps, own, sig, artId) {
   const up = ps.filter((p) => p.change > 0).sort((a, b) => b.change - a.change).slice(0, 5);
   const down = ps.filter((p) => p.change < 0).sort((a, b) => a.change - b.change).slice(0, 5);
   if (!up.length && !down.length) return null;
@@ -201,7 +202,7 @@ function mercadoTexto(ps, own, sig) {
     (up.length ? "📈 <b>TOP 5 SUBIDAS</b>\n" + up.map((p, i) => fila(p, i, true)).join("\n") : "") +
     (up.length && down.length ? "\n\n" : "") +
     (down.length ? "📉 <b>TOP 5 BAJADAS</b>\n" + down.map((p, i) => fila(p, i, false)).join("\n") : "") +
-    "\n\n👉 <b>Todo el mercado:</b>\n" + WEB + "mercado?v=" + sig;
+    (artId ? "\n\n👉 <b>Subidas y bajadas:</b>\n" + WEB + "noticias/ed-" + artId + "?v=" + sig : "\n\n👉 <b>Todo el mercado:</b>\n" + WEB + "mercado?v=" + sig);
 }
 
 // ---------- Telegram ----------
@@ -443,7 +444,10 @@ export async function avisar(env, deps) {
       if (mercadoListo(st, now, hoy, nCamb)) {
         const own = new Set(squad.map((p) => String(p.id)));
         const sig = hash(ps.map((p) => p.id + ":" + p.change).join("|"));
-        const mt = mercadoTexto(ps, own, sig);
+        // Artículo «Subidas y bajadas» de esta actualización: el aviso lleva a él (si falla, a la pestaña Mercado)
+        let artId = "";
+        if (!firstRun && st.pxMercArt !== st.pxV) { try { artId = await publicarMercado(env, ps, now); if (artId) st.pxMercArt = st.pxV; } catch (e) {} }
+        const mt = mercadoTexto(ps, own, sig, artId);
         const commit = () => { st.pxSent = st.pxV; st.pxDay = hoy; st.px = sig; st.pxAt = now; st.pxMap = Object.fromEntries(ps.map((p) => [p.id, p.value])); dirty = true; };
         if (firstRun || !mt) commit();
         else queue.push({ text: mt, commit, night: true });

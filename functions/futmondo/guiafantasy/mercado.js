@@ -1,6 +1,6 @@
 // /futmondo/guiafantasy/mercado: la web de siempre, pero con la imagen "Subidas y bajadas" como miniatura
 // en la vista previa del enlace (Telegram, WhatsApp...).
-const IMG = "https://edumr.es/img/mercado-subidas-bajadas.jpg";
+const IMG = "https://edumr.es/img/mercado-subidas-bajadas.jpg?v=3";
 
 export async function onRequest(context) {
   const { env } = context;
@@ -10,7 +10,7 @@ export async function onRequest(context) {
   try {
     const tags = '<meta property="og:site_name" content="Guía Fantasy · Futmondo EduMR"><meta property="og:title" content="Subidas y bajadas">' +
       '<meta property="og:description" content="Las mayores subidas y bajadas de valor de Futmondo Social.">' +
-      '<meta property="og:image" content="' + IMG + '"><meta property="og:image:width" content="1027"><meta property="og:image:height" content="574">' +
+      '<meta property="og:image" content="' + IMG + '"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="670">' +
       '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="' + IMG + '">';
     const html = (await base.text()).replace("</head>", tags + "</head>");
     const headers = new Headers(base.headers);

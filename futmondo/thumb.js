@@ -98,30 +98,19 @@
     d.appendChild(tx);
     return d;
   }
-  // Portada de artículo: una palabra grande, su icono y la jornada. Sin fotos de jugadores (Edu, 16/11/2026).
-  var ART = {
-    vender: ["VENDER", "#7f1d1d", "#fecaca", '<path d="M12 4v14"/><path d="M5 12l7 7 7-7"/>'],
-    fichar: ["FICHAR", "#14532d", "#bbf7d0", '<path d="M12 20V6"/><path d="M5 12l7-7 7 7"/>'],
-    claus: ["CLAUSULAZOS", "#312e81", "#c7d2fe", '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>'],
-    paron: ["PARÓN", "#1e293b", "#cbd5e1", '<rect x="7" y="5" width="3.5" height="14" rx="1"/><rect x="13.5" y="5" width="3.5" height="14" rx="1"/>']
-  };
+  // Portada de artículo: imagen fija por tipo (Edu, 16/11/2026), sin número de jornada. Sin fotos de jugadores.
+  var ART = { vender: "/img/art-vender.jpg?v=1", fichar: "/img/art-fichar.jpg?v=1", claus: "/img/art-claus.jpg?v=1", paron: "/img/art-paron.jpg?v=1", merc: "/img/mercado-subidas-bajadas.jpg?v=3" };
   function artKind(item) {
+    var a = String(item && item.art || "");
+    if (a === "artmercado") return "merc";
+    if (/^art(vender|fichar|claus|paron)/.test(a)) return a.slice(3).replace(/\d+$/, "");
     var t = String(item && item.title || "").toLowerCase();
-    return /vender/.test(t) ? "vender" : /fichar/.test(t) ? "fichar" : /clausul/.test(t) ? "claus" : /par[oó]n/.test(t) ? "paron" : "fichar";
+    return /subidas y bajadas/.test(t) ? "merc" : /vender/.test(t) ? "vender" : /fichar/.test(t) ? "fichar" : /clausul/.test(t) ? "claus" : /par[oó]n/.test(t) ? "paron" : "fichar";
   }
   function articulo(item, mini) {
-    var a = ART[artKind(item)];
-    var ico = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + a[3] + "</svg>";
     var d = nodo("div", mini ? "eth-mini eth-art-mini" : "eth eth-art");
-    d.style.setProperty("--bg", a[1]); d.style.setProperty("--ac", a[2]);
-    if (mini) { d.innerHTML = ico; return d; }
-    var ic = nodo("i", "eth-art-ico"); ic.innerHTML = ico; d.appendChild(ic);
-    d.appendChild(nodo("span", "eth-tag", "ARTÍCULO"));
-    var fig = nodo("div", "eth-art-fig");
-    fig.appendChild(nodo("b", "eth-art-w" + (a[0].length > 8 ? " eth-art-ws" : ""), a[0]));
-    var m = String(item && item.title || "").match(/jornada\s+(\d+)/i);
-    if (m) fig.appendChild(nodo("span", "eth-art-j", "Jornada " + m[1]));
-    d.appendChild(fig);
+    var im = nodo("img", "eth-art-img"); im.alt = ""; im.loading = "lazy"; im.decoding = "async"; im.src = ART[artKind(item)];
+    d.appendChild(im);
     return d;
   }
   function el(item, o) {

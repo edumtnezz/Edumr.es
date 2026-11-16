@@ -57,7 +57,7 @@ export function itemsMercado(log, now = Date.now(), dias = 8) {
     const todos = (e.u || []).concat(e.b || [], e.g || []);
     const sube = todos.filter((x) => x.d > 0).sort((x, y) => y.d - x.d)[0], baja = todos.filter((x) => x.d < 0).sort((x, y) => x.d - y.d)[0];
     const sub = [sube ? "Más sube: " + sube.name + " +" + k(sube.d) : "", baja ? "Más baja: " + baja.name + " −" + k(baja.d) : ""].filter(Boolean).join(" · ");
-    out.push({ at: e.at, cat: "mercado", title: "Futmondo actualiza los valores", sub: sub || e.n + " jugadores cambian de valor", name: sube ? sube.name : "", href: "/futmondo/guiafantasy/mercado" });
+    out.push({ at: e.at, cat: "mercado", title: "Futmondo actualiza los valores", sub: sub || e.n + " jugadores cambian de valor", name: sube ? sube.name : "", href: "/futmondo/guiafantasy/noticias/ed-artmercado" }); // lleva al artículo «Subidas y bajadas» (16/11/2026)
   }
   // Solo la ÚLTIMA actualización: las de días anteriores ya no dicen nada (Edu veía «dos cambios de Nico Williams», 15/11/2026).
   out.sort((x, y) => y.at - x.at);

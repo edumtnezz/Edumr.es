@@ -65,3 +65,15 @@ test("cuerpo: fila de jugador y gráfica de valor", () => {
   assert.match(h, /<span class="art-pl-v"><b>−2,2 M<\/b><small>en 7 días<\/small>/);
   assert.match(h, /class="art-gr"[\s\S]*\+3,0 M · \+30 %[\s\S]*10\/11 · 10,0 M[\s\S]*13\/11 · 13,0 M/);
 });
+
+test("subidas y bajadas: id fijo, cambio real de hoy y nada si no hay cambios", async () => {
+  const { subidasBajadas } = await import("../functions/_lib/articulos.mjs");
+  const ps = [{ id: 1, name: "Uno", value: 11e6, change: 1e6 }, { id: 2, name: "Dos", value: 4e6, change: -500000 }, { id: 3, name: "Tres", value: 5e6, change: 0 }];
+  const a = subidasBajadas(ps, "16/11");
+  assert.equal(a.id, "artmercado");
+  assert.equal(a.title, "Subidas y bajadas del 16/11");
+  assert.match(a.body, /^@ 1 \| Uno \| \+1 M \| hoy \| \+10,0 % sobre ayer$/m);
+  assert.match(a.body, /^@ 2 \| Dos \| −500k \| hoy \| −11,1 % sobre ayer$/m);
+  assert.doesNotMatch(a.body, /Tres/);
+  assert.equal(subidasBajadas([{ id: 3, name: "Tres", value: 5e6, change: 0 }], "16/11"), null);
+});

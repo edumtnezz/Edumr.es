@@ -1,7 +1,7 @@
 // Artículos propios (a vender, a fichar, clausulazos y, solo en parones, el repaso de plantilla).
 // Una edición por jornada y tipo, de martes a domingo a partir de las 10:00 (hora de Madrid). La edición nueva sustituye a la anterior del mismo tipo.
 // Las reglas y los datos están en functions/_lib/articulos.mjs. Sin jugadores que cumplan, ese artículo no se publica.
-import { aVender, aFichar, clausulazos, paron, inicioJornada, esParon, subidasEntre, inicioParon } from "../../functions/_lib/articulos.mjs";
+import { aVender, aFichar, clausulazos, paron, inicioJornada, esParon, subidasEntre, inicioParon, subidasBajadas } from "../../functions/_lib/articulos.mjs";
 
 const OWN_KEY = "own:news:v2", K_ST = "art:st:v1", SITE = "https://edumr.es/api/laquiniela/";
 const FORMATO = 4; // súbelo cuando cambie el formato de las filas para rehacer los artículos publicados
@@ -61,4 +61,19 @@ export async function publicarArticulos(env, f = fetch, now = Date.now()) {
     }
   }
   return { nuevas: nuevas.length };
+}
+
+// Artículo «Subidas y bajadas»: se escribe cuando Futmondo actualiza los valores (lo llama el aviso de mercado de avisos.js).
+// Id fijo: la edición nueva sustituye a la anterior. Devuelve el id publicado o "" si no hay datos.
+export async function publicarMercado(env, ps, now = Date.now()) {
+  if (!env || !env.PORRA) return "";
+  const fecha = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" }).format(new Date(now));
+  const a = subidasBajadas(ps, fecha);
+  if (!a) return "";
+  let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
+  own = own.filter((x) => x.art !== "artmercado" && x.id !== a.id);
+  own.unshift({ id: a.id, title: a.title, lead: a.lead, body: a.body, status: "published", createdAt: now, publishedAt: now, thumb: "", club: "", players: a.players, tipo: "articulo", auto: "articulo", art: "artmercado", f: 1, fp: (a.body.match(/^@ (\S+) \|/m) || [])[1] || "" });
+  own.sort((x, y) => (y.publishedAt || 0) - (x.publishedAt || 0));
+  await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
+  return a.id;
 }
