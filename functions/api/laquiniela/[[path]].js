@@ -2893,7 +2893,7 @@ async function getCambiosPropios(env) {
     const day = wd.charAt(0).toUpperCase() + wd.slice(1) + " " + dd;
     let d = days[days.length - 1];
     if (!d || d.day !== day) { d = { day, items: [] }; days.push(d); }
-    d.items.push({ time: fT.format(new Date(it.at)), cat: it.cat, title: it.title, href: it.href, photo: it.photo, logo: it.logo, pid: it.pid, fid: it.fid || "", players: it.players, chips: it.chips, rep: it.rep });
+    d.items.push({ time: fT.format(new Date(it.at)), cat: it.cat, title: it.title, href: it.href, photo: it.photo, logo: it.logo, pid: it.pid, fid: it.fid || "", players: it.players, chips: it.chips, chol: it.chol, rep: it.rep });
   }
   return { updatedAt: (foto && foto.at) || now, days, propio: true };
 }
