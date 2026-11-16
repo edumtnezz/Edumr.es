@@ -134,7 +134,10 @@ function diaMadrid(now) {
 // REAL de Futmondo: el primero del día siempre; otro el mismo día solo si 50 jugadores o más tienen un valor distinto al del último
 // aviso (nCamb). Un retoque suelto por la tarde no avisa (Edu, 14 y 15/11/2026).
 function mercadoListo(st, now, hoy, nCamb) {
-  return !!(st.pxVAt && now - st.pxVAt >= 6 * 60e3 && st.pxSent !== st.pxV && (st.pxDay !== hoy || nCamb >= 50));
+  // OJO (16/11/2026): antes bastaba con «hoy aún no se mandó», y un retoque suelto de la tarde acababa saliendo a las 00:00 del día
+  // siguiente. Ahora, si ya hay foto del último aviso (pxMap), SIEMPRE hacen falta 50 jugadores o más con otro valor.
+  const real = st.pxMap ? nCamb >= 50 : st.pxDay !== hoy;
+  return !!(st.pxVAt && now - st.pxVAt >= 6 * 60e3 && st.pxSent !== st.pxV && real);
 }
 function statusLabel(s) {
   s = String(s || "");

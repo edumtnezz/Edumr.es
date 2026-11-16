@@ -3996,3 +3996,7 @@ html[data-theme="dark"] .ficha-am.warn span { color: #fde047; }
 .art-pl-t small { font-size: .78rem; color: var(--muted, #64748b); }
 .art-pl-v { flex: none; font-size: 1rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text, inherit); }
 .art-body .nw-h + p { margin: 2px 0 4px; font-size: .84rem; color: var(--muted, #64748b); }
+
+/* 16/11/2026 · Fila del diario sin foto: icono propio dentro del círculo (valores actualizados, clasificación…) */
+.nw-row-pic.nw-row-ico { display: grid; place-items: center; background: color-mix(in srgb, currentColor 14%, transparent); border: 1.5px solid color-mix(in srgb, currentColor 35%, transparent); }
+.nw-row-pic.nw-row-ico svg { width: 55%; height: 55%; }

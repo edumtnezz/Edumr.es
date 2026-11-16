@@ -2856,8 +2856,8 @@ async function getCambiosPropios(env) {
     const escudo = (tid) => (tid ? "https://images.fotmob.com/image_resources/logo/teamlogo/" + tid + ".png" : "");
     const uno = (name) => { const k = normKey(String(name || "").toLowerCase()); const h = k ? all.filter((p) => normKey(String(p.name || "").toLowerCase()) === k) : []; return h.length === 1 ? h[0] : null; };
     for (const e of itemsMercado(log || [], now)) {
-      const p = uno(e.name);
-      items.push({ at: e.at, cat: "mercado", title: e.title, href: e.href, photo: (p && p.photo) || "", logo: "", pid: "", players: [] }); // sin línea de «más sube / más baja»: ya se ve en las dos columnas de debajo
+      // Sin foto de ningún jugador: la web pinta un icono propio de «valores actualizados» (Edu, 16/11/2026)
+      items.push({ at: e.at, cat: "mercado", title: e.title, href: e.href, photo: "", logo: "", pid: "", players: [] });
     }
     for (const e of (diario || [])) {
       if (!e || !e.at || now - e.at > 8 * 86400000) continue;
@@ -2867,6 +2867,9 @@ async function getCambiosPropios(env) {
     }
   } catch (e) {}
   items.sort((a, b) => b.at - a.at);
+  // Un mismo jugador no sale varias veces con lo mismo: si en 48 h se apunta dos o más veces el mismo estado (p. ej. solo cambia la
+  // fecha de vuelta), se queda la última (Edu vio a Rodri tres veces lesionado, 16/11/2026).
+  { const visto = new Map(); for (let k = 0; k < items.length; k++) { const it = items[k]; if (!it.pid) continue; const key = it.pid + "|" + it.cat; const t0 = visto.get(key); if (t0 != null && t0 - it.at < 48 * 3600e3) { items.splice(k--, 1); continue; } visto.set(key, it.at); } }
   const fD = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "long", day: "2-digit" });
   const fT = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hour12: false });
   const days = [];
