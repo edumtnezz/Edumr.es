@@ -2,47 +2,52 @@
 // Mismo diseño que el cartel de la web: color del club, cara del jugador a la derecha, etiqueta, nombre y club.
 import { ImageResponse, loadGoogleFont } from "workers-og";
 
-// Estilo de cada club: fondo izquierdo oscuro (l) y panel de la foto (p, s, modo).
-// modo: "stripes" = rayas verticales p/s, "sash" = banda diagonal p sobre s, "solid" = liso p.
+// Estilo de cada club: p = color principal, s = segundo color, r = rayas finas (camiseta a rayas).
 const CLUB_ST = [
-  [/barc/, { l: "#0b1a3f", p: "#a50044", s: "#004d98", m: "stripes" }],
-  [/real madrid/, { l: "#0b1f4d", p: "#f4f4f6", m: "solid" }],
-  [/atletico|atleti/, { l: "#7a0d1f", p: "#c8102e", s: "#ffffff", m: "stripes" }],
-  [/sevilla/, { l: "#8f1318", p: "#ffffff", m: "solid" }],
-  [/betis/, { l: "#064d24", p: "#0a7d3b", s: "#ffffff", m: "stripes" }],
-  [/valencia/, { l: "#161616", p: "#f08a00", m: "solid" }],
-  [/athletic|bilbao/, { l: "#111111", p: "#d4121a", s: "#ffffff", m: "stripes" }],
-  [/sociedad/, { l: "#07335a", p: "#0067b1", s: "#ffffff", m: "stripes" }],
-  [/villarreal/, { l: "#0a2a55", p: "#f2c500", m: "solid" }],
-  [/celta/, { l: "#1d5a8f", p: "#8ac3ee", m: "solid" }],
-  [/osasuna/, { l: "#16203d", p: "#d91e2a", m: "solid" }],
-  [/getafe/, { l: "#0a2a5c", p: "#0066b8", m: "solid" }],
-  [/rayo/, { l: "#2a0a10", p: "#e30613", s: "#ffffff", m: "sash" }],
-  [/espanyol/, { l: "#06284a", p: "#0069b5", s: "#ffffff", m: "stripes" }],
-  [/alaves/, { l: "#0a1f4f", p: "#0052a5", s: "#ffffff", m: "stripes" }],
-  [/levante/, { l: "#2a0814", p: "#9b1030", s: "#0a3b8c", m: "stripes" }],
-  [/elche/, { l: "#0a4a24", p: "#0c8a3f", s: "#ffffff", m: "sash" }],
-  [/depor/, { l: "#0b1d5c", p: "#1d4ed8", s: "#ffffff", m: "stripes" }],
-  [/racing|santander/, { l: "#06301a", p: "#0a7d3b", m: "solid" }],
-  [/malaga/, { l: "#062a55", p: "#0b66c3", s: "#ffffff", m: "stripes" }],
+  [/barc/, { p: "#a50044", s: "#004d98", r: 1 }],
+  [/real madrid/, { p: "#1e3a8a", s: "#e8e8f0" }],
+  [/atletico|atleti/, { p: "#c8102e", s: "#1b3a7a", r: 1 }],
+  [/sevilla/, { p: "#d71920", s: "#ffffff" }],
+  [/betis/, { p: "#0a7d3b", s: "#ffffff", r: 1 }],
+  [/valencia/, { p: "#1c1c1c", s: "#f08a00" }],
+  [/athletic|bilbao/, { p: "#d4121a", s: "#ffffff", r: 1 }],
+  [/sociedad/, { p: "#0067b1", s: "#ffffff", r: 1 }],
+  [/villarreal/, { p: "#0a4a8f", s: "#f2c500" }],
+  [/celta/, { p: "#5aa7e0", s: "#ffffff" }],
+  [/osasuna/, { p: "#c0102e", s: "#0a1a4a" }],
+  [/getafe/, { p: "#0066b8", s: "#0a1f4a" }],
+  [/rayo/, { p: "#d6101f", s: "#ffffff" }],
+  [/espanyol/, { p: "#0069b5", s: "#ffffff", r: 1 }],
+  [/alaves/, { p: "#0052a5", s: "#ffffff", r: 1 }],
+  [/levante/, { p: "#9b1030", s: "#0a3b8c", r: 1 }],
+  [/elche/, { p: "#0c8a3f", s: "#ffffff" }],
+  [/depor/, { p: "#1d4ed8", s: "#ffffff", r: 1 }],
+  [/racing|santander/, { p: "#0a7d3b", s: "#ffffff" }],
+  [/malaga/, { p: "#0b66c3", s: "#ffffff", r: 1 }],
 ];
 const norm = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 export function estiloClub(name) {
   const n = norm(name);
   for (const [re, st] of CLUB_ST) if (re.test(n)) return st;
-  return { l: "#1b2740", p: "#475569", m: "solid" };
+  return { p: "#1b2740", s: "#475569" };
 }
 export function colorClub(name) { return estiloClub(name).p; }
-// Panel de la foto: devuelve el estilo de fondo y, para las rayas, los hijos (divs de 70 px, sin degradados repetidos)
+// Mezcla dos colores #rrggbb (t = parte del segundo)
+function mezcla(a, b, t) {
+  const h = (x) => [1, 3, 5].map((i) => parseInt(x.slice(i, i + 2), 16));
+  const A = h(a), B = h(b);
+  return "#" + A.map((v, i) => Math.round(v * (1 - t) + B[i] * t).toString(16).padStart(2, "0")).join("");
+}
+// Fondo del cartel: la parte del texto lleva el color principal del club (oscurecido solo lo justo para que se lea el
+// blanco) y el panel de la foto el segundo color; si la camiseta es a rayas, rayas finas encima del panel.
 function panelClub(st) {
-  const p = st.p, s = st.s || st.p;
-  if (st.m === "stripes") {
-    let k = "";
-    for (let i = 0; i < 14; i++) k += `<div style="display:flex;width:70px;height:1100px;background-color:${i % 2 ? s : p}"></div>`;
-    return { css: "", kids: k };
-  }
-  if (st.m === "sash") return { css: `background-image:linear-gradient(115deg,${s} 0%,${s} 36%,${p} 36%,${p} 64%,${s} 64%,${s} 100%);`, kids: "" };
-  return { css: `background-color:${p};`, kids: "" };
+  const h = (x) => [1, 3, 5].map((i) => parseInt(x.slice(i, i + 2), 16));
+  const [r, g, b] = h(st.p), lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  const fondo = mezcla(st.p, "#0b1220", lum > 0.5 ? 0.62 : lum > 0.3 ? 0.4 : 0.22);
+  const panel = mezcla(st.s, st.p, 0.1);
+  let k = "";
+  if (st.r) for (let i = 0; i < 14; i++) k += `<div style="display:flex;width:70px;height:1100px;background-color:${i % 2 ? "rgba(0,0,0,0.10)" : "rgba(0,0,0,0)"}"></div>`;
+  return { fondo, css: `background-color:${panel};`, kids: k };
 }
 const AC = { baja: "#ef4444", duda: "#f59e0b", alta: "#22c55e" };
 const TXT = { baja: "BAJA", duda: "DUDA", alta: "ALTA" };
@@ -65,10 +70,10 @@ function cajaFoto(w, h) {
 
 export function cartelHtml({ nombre, club, veredicto, plazo, color, foto, fotoW, fotoH, escudo }) {
   const v = TXT[veredicto] ? veredicto : "duda", ac = AC[v];
-  const st = club ? estiloClub(club) : { l: "#1b2740", p: color || "#475569", m: "solid" };
+  const st = club ? estiloClub(club) : { p: color || "#1b2740", s: "#475569" };
   const nm = esc(nombre), mw = Math.max(0, ...String(nombre || "").split(/\s+/).map((w) => w.length)), size = mw > 9 ? 84 : mw > 7 ? 100 : mw > 6 ? 116 : 128;
   const f = cajaFoto(fotoW, fotoH), pn = panelClub(st);
-  return `<div style="display:flex;position:relative;width:1200px;height:675px;background:${st.l};font-family:'Figtree';color:#fff;overflow:hidden">
+  return `<div style="display:flex;position:relative;width:1200px;height:675px;background:${pn.fondo};font-family:'Figtree';color:#fff;overflow:hidden">
   <div style="display:flex;position:absolute;left:600px;top:-200px;width:900px;height:1100px;${pn.css}border-left:12px solid ${ac};transform:skewX(-14deg)">${pn.kids}</div>
   ${escudo ? `<img src="${esc(escudo)}" width="520" height="520" style="position:absolute;left:-70px;top:300px;opacity:0.1" />` : ""}
   <div style="display:flex;flex-direction:column;justify-content:center;position:absolute;left:72px;top:0;width:480px;height:675px">
