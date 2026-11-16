@@ -2874,7 +2874,7 @@ async function getCambiosPropios(env) {
         const d1 = (v) => (Math.round(Number(v) * 10) / 10).toFixed(1).replace(".", ",");
         items.push({ at: e.at, cat: e.cat, title: p.name, href: "", photo: p.photo || "", logo: "", pid: "", fid: p.id, players: [], rep: e.rep || 0,
           chips: [[d1(p.avg), "Media"], [p.matches || 0, "Partidos"], [d1((p.value || 0) / 1e6) + " M", "Valor"]],
-          chol: { forma: (p.fitness || []).slice(-5).map((v) => Number(v) || 0), prob: e.prob || p.prob || 0, media: d1(p.avg), valor: d1((p.value || 0) / 1e6) + " M", pj: p.matches || 0, team: p.team || "", logo: p.logo || "" } });
+          chol: { role: p.role || "", role2: p.role2 || "", chg1: Number(p.chg1) || 0, chg7: Number(p.chg7) || 0, forma: (p.fitness || []).slice(-5).map((v) => Number(v) || 0), prob: e.prob || p.prob || 0, media: d1(p.avg), valor: d1((p.value || 0) / 1e6) + " M", pj: p.matches || 0, team: p.team || "", logo: p.logo || "" } });
         continue;
       }
       items.push({ at: e.at, cat: e.cat, title: e.title, href: e.cat === "clasificacion" || e.cat === "rachas" ? "/equipos" : "", photo: (p && p.photo) || escudo(e.tid), logo: escudo(e.tid), pid: "", fid: p ? p.id : "", players: e.sub ? [{ name: e.sub, photo: "", from: "", to: "" }] : [] });

@@ -4486,6 +4486,44 @@
     box.appendChild(wrap);
     if (!updData || !updData.days) loadInicioCambios();
   }
+  // Chollo del día: bloque propio con el mismo estilo que «Jugadores rentables»: foto con anillo de posición, nombre, escudo, posición y valor.
+  function cholloBlock(x, open) {
+    const c = x.chol, pl = (all || []).find((q) => String(q.id) === String(x.fid || x.pid));
+    const box = el("div", "chb");
+    const head = el("div", "nw-head"); head.appendChild(el("h2", "nw-h nw-h-s", "Chollo del día")); head.appendChild(el("span", "chb-t", x.time || "")); box.appendChild(head);
+    const card = el("button", "chb-card"); card.type = "button";
+    if (pl) card.addEventListener("click", () => openFicha(pl));
+    const ph = el("span", "rtb-ph"), inn = el("span", "rtb-in");
+    if (x.photo) { const im = el("img"); im.src = x.photo; im.alt = ""; im.addEventListener("error", () => im.remove()); inn.appendChild(im); }
+    ph.appendChild(inn); posRingCls(ph, c.role, c.role2); card.appendChild(ph);
+    const body = el("span", "chb-body");
+    const l1 = el("span", "rtb-l1");
+    l1.appendChild(el("span", "rtb-name", x.title));
+    if (c.logo) { const lg = el("img", "rtb-crest"); lg.src = c.logo; lg.alt = ""; l1.appendChild(lg); }
+    const rb = roleBadge(c.role), rb2 = roleBadge(c.role2);
+    if (rb) l1.appendChild(el("span", "rtb-pos", rb + (rb2 ? "/" + rb2 : "")));
+    if (x.rep) l1.appendChild(el("span", "nw-rep", "Repite"));
+    body.appendChild(l1);
+    const l2 = el("span", "rtb-l2");
+    l2.appendChild(el("b", "chb-val", c.valor));
+    const k = (v) => (v > 0 ? "+" : "−") + (Math.abs(v) >= 1e6 ? (Math.abs(v) / 1e6).toFixed(1).replace(".", ",") + "M" : Math.round(Math.abs(v) / 1e3) + "k");
+    [[c.chg1, "hoy"], [c.chg7, "7 días"]].forEach(([v, t]) => { if (!v) return; const sp = el("span", v > 0 ? "rtb-up" : "rtb-dn", k(v)); sp.appendChild(el("small", "rtb-when", " " + t)); l2.appendChild(sp); });
+    body.appendChild(l2);
+    card.appendChild(body);
+    box.appendChild(card);
+    // Forma: sus últimos 5 puntos y, a la derecha, % de jugar y media
+    const f = (c.forma || []).slice(-5), mx = Math.max(10, ...f);
+    const g = el("div", "chol");
+    const bars = el("div", "chol-bars");
+    f.forEach((v) => { const col = el("span", "chol-b" + (v >= 8 ? " hi" : v <= 0 ? " lo" : "")); const i = el("i"); i.style.height = Math.max(6, Math.round((v / mx) * 100)) + "%"; col.appendChild(i); col.appendChild(el("b", null, String(v))); bars.appendChild(col); });
+    g.appendChild(bars);
+    const st = el("div", "chol-s");
+    [[c.media, "Media"], c.prob ? [c.prob + " %", "Juega"] : null, [c.pj, "Partidos"]].filter(Boolean).forEach(([v, kk]) => { const r = el("div", "chol-r"); r.appendChild(el("small", null, kk)); r.appendChild(el("b", null, String(v))); st.appendChild(r); });
+    g.appendChild(st);
+    box.appendChild(g);
+    box.appendChild(el("div", "chol-f", "Últimos 5 puntos"));
+    return box;
+  }
   function renderInicioFeatured() {
     const box = $("inicioFeatured");
     if (!box) return;
@@ -4511,11 +4549,14 @@
       tres.forEach((e, i) => { const r = inicioRow(e, open, i === 0); if (i === 0) r.classList.add("nw-big"); ul.appendChild(r); });
       wrap.appendChild(ul);
     } else wrap.appendChild(el("p", "nw-empty", "Sin noticias por ahora."));
-    // 2) Últimos cambios, justo debajo: avatar pequeño y resumen
+    // 2) Chollo del día: bloque propio, separado de «Últimos cambios»
+    const cholE = cambiosLista(2).filter((e) => e.x && e.x.cat === "chollo" && e.x.chol).sort((a, b) => b.ts - a.ts)[0];
+    if (cholE) wrap.appendChild(cholloBlock(cholE.x, open));
+    // 3) Últimos cambios, justo debajo: avatar pequeño y resumen
     wrap.appendChild(sec("Últimos cambios", "actualizaciones"));
     // Lo que ya es noticia no se repite aquí: quedan el mercado y los cambios menores (apercibidos, suplentes)
     const conNoticia = new Set(list.map((x) => String(x.pid || "")).filter(Boolean));
-    const cambios = cambiosLista(2).filter((e) => !(e.x && e.x.pid && e.x.cat !== "mercado" && conNoticia.has(String(e.x.pid)))).sort((a, b) => b.ts - a.ts).slice(0, 5);
+    const cambios = cambiosLista(2).filter((e) => !(e.x && e.x.cat === "chollo")).filter((e) => !(e.x && e.x.pid && e.x.cat !== "mercado" && conNoticia.has(String(e.x.pid)))).sort((a, b) => b.ts - a.ts).slice(0, 5);
     if (cambios.length) {
       const ul = el("div", "nw-list");
       // Del mercado solo la última actualización (una fila), con las 5 que más suben y las 5 que más bajan debajo
@@ -4528,7 +4569,7 @@
       });
       wrap.appendChild(ul);
     } else wrap.appendChild(el("p", "nw-empty", updData ? "Sin cambios ahora mismo." : "Cargando…"));
-    // 3) Líderes de LaLiga (se actualiza solo con cada jornada)
+    // 4) Líderes de LaLiga (se actualiza solo con cada jornada)
     const lb = lideresBlock();
     if (lb) wrap.appendChild(lb);
     box.appendChild(wrap);
