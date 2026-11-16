@@ -214,7 +214,7 @@ async function tg(env, f, method, body) {
 }
 async function send(env, f, chat, text, opts) {
   opts = opts || {};
-  // Los onces van siempre en UN solo mensaje de texto, sin fotos ni vista previa del enlace (opts.noPreview).
+  // Los onces van siempre en UN solo mensaje de texto; la vista previa es una imagen fija de Edu (opts.previewUrl) o ninguna (opts.noPreview).
   // previewUrl: la vista previa usa esa dirección (una imagen fija) en vez del primer enlace del texto
   const lp = opts.noPreview ? { is_disabled: true } : opts.previewUrl ? { is_disabled: false, url: opts.previewUrl, prefer_large_media: true, show_above_text: true } : opts.small ? { is_disabled: false, prefer_small_media: true } : { is_disabled: false, prefer_large_media: true };
   const j = await tg(env, f, "sendMessage", { chat_id: chat, text, parse_mode: "HTML", link_preview_options: lp, ...(opts.silent ? { disable_notification: true } : {}) });
@@ -361,7 +361,7 @@ export async function avisar(env, deps) {
       const text = "✅ <b>ONCE CONFIRMADO · " + esc(m.home.name.toUpperCase()) + " - " + esc(m.away.name.toUpperCase()) + "</b>" + (cuando ? "\n🕒 " + esc(cuando) : "") +
         "\n\n" + bloque(m.home) + "\n\n\n" + bloque(m.away) + (fuera.length ? "\n\n\n⚠️ <b>Tuyos fuera del once:</b> " + esc(fuera.join(", ")) : "") +
         "\n\n👉 <b>Míralo en tu web:</b>\n" + matchUrl(web.home, web.away);
-      queue.push({ text, commit, noPreview: true });
+      queue.push({ text, commit, previewUrl: "https://edumr.es/img/aviso-once-confirmado.jpg?v=1" });
       try { await publicarOnceWeb(env, m, md, key); } catch (e) {}
     }
   }
@@ -426,7 +426,7 @@ export async function avisar(env, deps) {
         const titulo = dd.length === 1 ? "ONCE DEL " + dd[0].team.toUpperCase() : "ONCE " + m.home.toUpperCase() + " - " + m.away.toUpperCase();
         const cuerpo = dd.length === 1 ? dd[0].txt : dd.map((x) => "<b>" + esc(x.team) + "</b>\n" + x.txt).join("\n\n");
         const text = "🔄 <b>" + esc(titulo) + "</b>\n⚽ " + esc(m.home) + " vs " + esc(m.away) + (cu ? " · " + esc(cu) : "") + "\n\n" + cuerpo + "\n\n👉 <b>Míralo en tu web:</b>\n" + matchUrl(m.home, m.away);
-        queue.push({ text, noPreview: true, commit });
+        queue.push({ text, commit, previewUrl: "https://edumr.es/img/aviso-cambio-once.jpg?v=1" });
       }
     } catch (e) {}
   }
