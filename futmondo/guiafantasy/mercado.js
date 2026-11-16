@@ -6505,6 +6505,17 @@
     return bestScore >= 40 ? best : null;
   }
   let anPool = [];
+  // Nuestra probabilidad de ser titular (probE) por jugador, de /analitica (onces propios). Se carga una vez.
+  let anProbE = null, anProbEPend = false;
+  function cargarProbE() {
+    if (anProbE || anProbEPend) return;
+    anProbEPend = true;
+    fetch(API + "/analitica").then((r) => r.json()).then((a) => {
+      const m = new Map();
+      Object.values((a && a.onces) || {}).forEach((o) => (o.prob || []).forEach((x) => { if (x && x.id != null && x.p != null) m.set(String(x.id), x.p); }));
+      if (m.size) { anProbE = m; if (anData && $("anOut") && anTab === "equipo") { const y = window.scrollY; renderAnalisis(anData); window.scrollTo(0, y); } }
+    }).catch(() => {}).then(() => { anProbEPend = false; });
+  }
   function photoOf(p) {
     try { if (window.EduAlineacion && p) return window.EduAlineacion.photoFor({ name: p.nombre, full: p.nombre, photo: p.photo || "" }, anPool); } catch (e) {}
     return p && p.photo;
@@ -7137,6 +7148,7 @@
   let anTab = "equipo"; try { anTab = localStorage.getItem("merc_antab") || "equipo"; } catch (e) {}
   function renderAnalisis(d) {
     anData = d;
+    cargarProbE();
     const outRoot = $("anOut");
     if (!outRoot) return;
     outRoot.innerHTML = "";
@@ -7315,7 +7327,7 @@
     const POSLAB = { POR: "Portero", DEF: "Defensa", CEN: "Mediocampista", DEL: "Delantero" };
     const whenOf = (f) => { if (!f) return ""; const d = new Date(f); if (isNaN(d)) return ""; return d.toLocaleString("es-ES", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }).replace(",", ""); };
     const matchOf = (p) => (p.rival ? { rival: p.rival, logo: clubLogo(p.rival, ""), when: whenOf(p.fecha) } : null);
-    const toSide = (p, pos) => ({ match: matchOf(p), name: p.nombre, full: p.nombre, pos: POSLAB[pos || p.pos] || "Mediocampista", photo: p.photo || "", prob: p.prob != null ? p.prob : null, san: !!p.san || /SANC/i.test(p.estado || ""), inj: !!p.inj || /LESI/i.test(p.estado || ""), _p: p, plan: (() => { const x = swapPairs.find((q) => q.tit === p); return x ? (x.sub.last || x.sub.nombre) : ""; })(), note: useless.indexOf(p) >= 0 ? "⏱ juega pronto" : (earlyDay && p.fecha && dayOf(p.fecha) === earlyDay ? "⏱ juega pronto" : "") });
+    const toSide = (p, pos) => ({ probE: anProbE && p.id != null && anProbE.has(String(p.id)) ? anProbE.get(String(p.id)) : null, match: matchOf(p), name: p.nombre, full: p.nombre, pos: POSLAB[pos || p.pos] || "Mediocampista", photo: p.photo || "", prob: p.prob != null ? p.prob : null, san: !!p.san || /SANC/i.test(p.estado || ""), inj: !!p.inj || /LESI/i.test(p.estado || ""), _p: p, plan: (() => { const x = swapPairs.find((q) => q.tit === p); return x ? (x.sub.last || x.sub.nombre) : ""; })(), note: useless.indexOf(p) >= 0 ? "⏱ juega pronto" : (earlyDay && p.fecha && dayOf(p.fecha) === earlyDay ? "⏱ juega pronto" : "") });
     const myIds = new Set([].concat(tits, sups).map((p) => String(p.id || "")).filter(Boolean));
     const pool = (all || []).filter((q) => myIds.has(String(q.id)));
     anPool = pool;

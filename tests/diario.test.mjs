@@ -72,3 +72,10 @@ test("chollo: no sale quien juega poco, tiene dudas o puntúa a ratos (Turriente
   assert.equal(cholloDe([{ ...base, matches: 7 }]), null);
   assert.equal(cholloDe([{ ...base, fitness: [0, 0, 15, 3, 7] }]), null);
 });
+
+test("chollo: valor que baja o media por debajo de su posición no vale (Gulácsi, 16/11)", () => {
+  const mk = (id, role, avg, chg7) => ({ id, name: id, role, value: 4e6, matches: 10, avg, prob: 90, fitness: [5, 6, 7, 8, 9], chg7, est: "" });
+  const grupo = [mk("a", "portero", 8, 0), mk("b", "portero", 8.5, 0), mk("c", "portero", 8.2, 0), mk("d", "portero", 7.9, 0), mk("e", "portero", 9, 0)];
+  assert.notEqual((cholloDe([...grupo, mk("g", "portero", 7.6, 50000)]) || {}).pid, "g");
+  assert.notEqual((cholloDe([mk("x", "delantero", 7, -1000), mk("y", "delantero", 6.5, 0), mk("z", "delantero", 6.6, 0), mk("w", "delantero", 6.7, 0), mk("v", "delantero", 6.8, 0)]) || {}).pid, "x");
+});

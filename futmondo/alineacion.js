@@ -71,14 +71,15 @@
         var fm = match(s, pool);
         if (!fm) { sinPareja.push(s.full || s.name); console.warn("[alineación] sin pareja en Futmondo:", s.full || s.name); }
         var name = fm ? fm.name : (s.name || s.full);
-        var photo = (fm && fm.photo) || s.photo || "/img/avatar.svg", ffPh = s.photo || "/img/avatar.svg";
+        var photo = (fm && (fm.photoFm || fm.photo)) || s.photo || "/img/avatar.svg", ffPh = s.photo || "/img/avatar.svg";
         // Fotos de Futmondo con nombre en vez de número suelen ser de cuerpo entero: mejor la cara de FF
-        if (fm && fm.photo && s.photo && !/\/faces\/\d+\/\d+\.png/.test(fm.photo) && !GOOD_FACE.test(fm.photo)) photo = s.photo;
+        if (fm && (fm.photoFm || fm.photo) && s.photo && !/\/faces\/\d+\/\d+\.png/.test(fm.photoFm || fm.photo) && !GOOD_FACE.test(fm.photoFm || fm.photo)) photo = s.photo;
         var inner = '<div class="pl-ph"><img src="' + esc(photo) + '" alt="" data-ff="' + esc(ffPh) + '">';
         if (probable && s.bench && (s.san || s.inj) && (s.prob == null || s.prob < 10)) inner += '<span class="pl-prob pl-out">' + (s.san ? "Sancionado" : "Lesionado") + '</span>';
         // Dos porcentajes: E = el nuestro (titularidades reales de Futmondo), F = el de FutbolFantasy. Letra pequeña encima.
         else if (probable && s.probE != null) inner += '<span class="pl-prob2' + (s.prob != null && Math.abs(s.probE - s.prob) >= 25 ? " dif" : "") + '"><span class="pl-pp ' + probCls(s.probE) + '" title="Nuestra probabilidad de ser titular"><i>E</i>' + s.probE + '%</span><span class="pl-pp ' + (s.prob != null ? probCls(s.prob) : "p0") + '" title="Probabilidad de FutbolFantasy"><i>F</i>' + (s.prob != null ? s.prob + "%" : "—") + '</span></span>';
         else if (probable && s.prob != null) inner += '<span class="pl-prob ' + probCls(s.prob) + '">' + s.prob + '%</span>';
+        if (s.match && s.match.logo) inner += '<span class="pl-rv" title="Rival: ' + esc(s.match.rival) + '"><img src="' + esc(s.match.logo) + '" alt="' + esc(s.match.rival) + '" onerror="this.parentNode.remove()"></span>';
         if (mode === "played") inner += '<span class="pl-pts pl-pts-wait" data-full="' + esc(s.full || s.name) + '">–</span>';
         else if (!probable) { /* confirmada: sin dudas */ }
         else if (s.san || s.inj) inner += '<span class="pl-duda bad">' + (s.san ? "✕" : "+") + '</span>';
@@ -89,7 +90,7 @@
         if (s.sw) inner += '<div class="pl-sw ' + s.sw.dir + '"><i>' + (s.sw.dir === "in" ? "▲" : "▼") + "</i>" + esc(s.sw.min) + "'</div>" + (s.sw.with ? '<div class="pl-sw-who">' + (s.sw.dir === "in" ? "por " : "→ ") + esc(s.sw.with.map(function (o) { var f = match(o, pool); return f ? f.name : (o.name || o.full); }).join(" / ")) + "</div>" : "");
         if (s.plan) inner += '<div class="pl-plan">🔁 ' + esc(s.plan) + '</div>';
         if (s.note) inner += '<div class="pl-note">' + esc(s.note) + '</div>';
-        if (s.match) inner += '<div class="pl-match"><div class="pl-vs"><b>VS</b>' + (s.match.logo ? '<img src="' + esc(s.match.logo) + '" alt="' + esc(s.match.rival) + '" onerror="this.replaceWith(document.createTextNode(this.alt))">' : '<em>' + esc(s.match.rival) + '</em>') + '</div>' + (s.match.when ? '<span>' + esc(s.match.when) + '</span>' : '') + '</div>';
+        if (s.match) inner += '<div class="pl-match">' + (s.match.when ? '<span>' + esc(s.match.when) + '</span>' : '') + '</div>';
         if (alt) { var fa = match(alt, pool); inner += '<div class="pl-alt">' + esc(fa ? fa.name : (alt.name || alt.last)) + '</div>'; }
         // Titular del once probable: se marca para poner a su derecha quién le suele sustituir (decorarSubs)
         var dsub = probable && !s.bench && fm ? ' data-subn="' + esc(s.full || s.name) + '" data-subc="' + esc(fm.team || "") + '"' : "";
