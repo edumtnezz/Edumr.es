@@ -86,7 +86,7 @@ export function cartelHtml({ nombre, club, veredicto, plazo, color, foto, fotoW,
   <div style="display:flex;position:absolute;left:596px;top:-112px;width:6px;height:900px;background-color:${ac};transform:skewX(-14deg)"></div>
   <div style="display:flex;position:absolute;left:0;top:0;width:1200px;height:675px;background-image:radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.32) 100%)"></div>
   <div style="display:flex;position:absolute;left:0;top:455px;width:1200px;height:220px;background-image:linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 100%)"></div>
-  ${foto ? `<div style="display:flex;position:absolute;left:${f.left}px;top:${f.top - 40}px;width:${f.w}px;height:${f.h + 40}px;overflow:hidden"><img src="${esc(foto)}" width="${f.w}" height="${f.h}" style="position:absolute;left:0px;top:40px;filter:drop-shadow(0px 0px 2px #ffffff) drop-shadow(0px 0px 10px ${ac})" /></div>` : ""}
+  ${foto ? `<div style="display:flex;position:absolute;left:${f.left}px;top:${f.top - 40}px;width:${f.w}px;height:${f.h + 40}px;overflow:hidden"><img src="${esc(foto)}" width="${f.w}" height="${f.h}" style="position:absolute;left:0px;top:40px;filter:drop-shadow(0px 0px 2px #ffffff) drop-shadow(0px 0px 2px #ffffff) drop-shadow(0px 0px 9px #ffffff)" /></div>` : ""}
   <div style="display:flex;flex-direction:column;justify-content:center;position:absolute;left:80px;top:0;width:470px;height:675px">
     <div style="display:flex;align-self:flex-start;background-color:${ac};color:#06101a;font-size:28px;letter-spacing:5px;padding:9px 26px;border-radius:99px">${TXT[v]}</div>
     <div style="display:flex;font-family:'Bricolage';font-size:${size}px;line-height:0.95;letter-spacing:-3px;margin-top:26px">${nm}</div>
