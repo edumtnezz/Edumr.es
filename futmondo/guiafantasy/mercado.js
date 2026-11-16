@@ -987,6 +987,8 @@
         }
         pl.appendChild(ph);
         pl.appendChild(el("div", "alin-pname", p.last || p.name));
+        pl.dataset.subn = p.full || p.name; if (p.team) pl.dataset.subc = p.team;
+        if (subsData) decorarSubs(); else cargarSubs();
         // Solo se muestra el recambio cuando el titular no tiene la plaza asegurada
         // (probabilidad del 60% o menos); si está prácticamente fijo, no aporta,
         // y dejamos ese hueco del banquillo disponible para otro titular con duda.
@@ -1347,6 +1349,8 @@
         }
         pl.appendChild(ph);
         pl.appendChild(el("div", "alin-pname", p.last || p.name));
+        pl.dataset.subn = p.full || p.name; if (p.team) pl.dataset.subc = p.team;
+        if (subsData) decorarSubs(); else cargarSubs();
         if (ev && ev.hl && ev.hl.length) {
           const evs = mpEv(ev.hl, ev.min);
           evs.classList.add("mpage-xev");
@@ -4546,6 +4550,36 @@
     const h = (all || []).filter((p) => p.id && ldClub(p.team) === ck && (() => { const t = ldFold(p.name); return t.length && t.every((w) => ut.indexOf(w) >= 0); })());
     return h.length === 1 ? h[0] : null;
   }
+  // Quién sustituye a quién (cambios reales de cada partido, ruta /sustituciones). Se carga una vez.
+  let subsData = null, subsBusy = false;
+  function cargarSubs(cb) {
+    if (subsData) { cb && cb(); return; }
+    if (subsBusy) return;
+    subsBusy = true;
+    fetch(API + "/sustituciones").then((r) => r.json()).then((d) => { if (d && Array.isArray(d.jugadores)) { subsData = d.jugadores; decorarSubs(); cb && cb(); } }).catch(() => {}).finally(() => { subsBusy = false; });
+  }
+  // Busca al jugador por nombre (todas las palabras del nombre corto dentro del de FotMob) y, si se sabe, por club. Solo si sale UNO.
+  function cambioDe(nombre, club) {
+    if (!subsData) return null;
+    const ut = ldFold(nombre), ck = club ? ldClub(club) : "";
+    if (!ut.length) return null;
+    const h = subsData.filter((x) => (!ck || ldClub(x.team) === ck) && ut.every((w) => ldFold(x.n).indexOf(w) >= 0));
+    return h.length === 1 ? h[0] : null;
+  }
+  // En el once probable: a la derecha del jugador, quién le suele sustituir (solo si casi siempre es el mismo)
+  function decorarSubs() {
+    if (!subsData) return;
+    document.querySelectorAll(".alin-pl[data-subn]:not([data-subok])").forEach((pl) => {
+      pl.dataset.subok = "1";
+      const c = cambioDe(pl.dataset.subn, pl.dataset.subc || "");
+      if (!c || !c.rev) return;
+      const b = el("div", "alin-sub");
+      b.appendChild(el("i", null, "⇄"));
+      b.appendChild(el("span", null, String(c.rev.n).split(" ").slice(-1)[0]));
+      b.title = "Le cambian en " + c.sale + " de " + c.tit + " partidos (minuto " + c.min + " de media). Suele entrar " + c.rev.n + " (" + c.rev.k + " veces).";
+      pl.appendChild(b);
+    });
+  }
   // Amarillas de un jugador del mercado (LaLiga, temporada en curso, FotMob). null si no se puede saber con seguridad.
   function amarillasDe(p) {
     if (!ldData || !Array.isArray(ldData.tarjetas) || !p) return null;
@@ -5230,6 +5264,16 @@
         if (v % 5 === 4) a1.appendChild(el("span", null, "A una de la sanción"));
         stats.insertAdjacentElement("afterend", a1);
       };
+      // Cambios: a quién le cambian casi siempre y quién entra (datos reales de los partidos)
+      const pintaSub = () => {
+        const c = cambioDe(p.name, p.team);
+        if (!c || head.querySelector(".ficha-sub")) return;
+        const d = el("div", "ficha-sub");
+        d.appendChild(el("i", null, "⇄"));
+        d.appendChild(el("span", null, "Le cambian en " + c.sale + " de " + c.tit + " partidos, hacia el minuto " + c.min + (c.rev ? ". Suele entrar " + c.rev.n : "") + "."));
+        (head.querySelector(".ficha-am") || stats).insertAdjacentElement("afterend", d);
+      };
+      if (subsData) pintaSub(); else cargarSubs(pintaSub);
       if (ldData) pinta(); else fetch(API + "/lideres").then((r) => r.json()).then((dd) => { if (dd && Array.isArray(dd.goles)) { ldData = dd; pinta(); } }).catch(() => {}); }
     if (p.id || d.id) {
       const cb = el("button", "ficha-cmp", "⚖ Comparar");

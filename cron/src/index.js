@@ -5,6 +5,7 @@ import { avisar, colaPuntos, avisarPuntos } from "./avisos.js";
 import { vigilarEstados } from "./estados.js";
 import { publicarPartes } from "./partes.js";
 import { apuntarDiario } from "./diario.js";
+import { apuntarSustituciones } from "./sustituciones.js";
 import { publicarArticulos, publicarOnces } from "./articulos.js";
 
 export default {
@@ -32,6 +33,7 @@ export default {
       // Estado físico de los jugadores: apunta cada cambio con su hora (cada 3 min).
       try { await vigilarEstados(env); } catch (e) { console.error("estados", String(e && e.message || e).slice(0, 180)); }
       // Diario de LaLiga: cambios en la clasificación (arriba y descenso) y en los goleadores (cada 10 min, nunca con un partido en juego).
+      try { await apuntarSustituciones(env); } catch (e) { console.error("subs", String(e && e.message || e).slice(0, 180)); }
       try { await apuntarDiario(env); } catch (e) { console.error("diario", String(e && e.message || e).slice(0, 180)); }
       // Artículos propios (a vender, a fichar, clausulazos y parón): una edición por jornada.
       try { await publicarArticulos(env); } catch (e) { console.error("articulos", String(e && e.message || e).slice(0, 180)); }

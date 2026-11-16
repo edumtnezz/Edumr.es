@@ -69,6 +69,8 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 
 - **Onces recomendados (16/11)**: `functions/_lib/onces.mjs` + `publicarOnces` (cron/src/articulos.js, KV `art:once:v1`). Tres onces 1-4-3-3: caro (sin límite), equilibrado (≤ 15 M por jugador), low cost (≤ 6 M). Solo disponibles, prob ≥ 70 % y 5 partidos o más, por media; máx. 3 por club; un jugador en un solo once (se elige primero el low cost). Primera edición el lunes desde las 23:00 (o mar–vie); si un elegido pasa a lesionado o sancionado se rehace y se dice «Sale X (lesionado), entra Y». Se pinta como campo (`# once | ids | tipo`, `wireArtOnce`). Portada dibujada (campo + ONCES) hasta que Edu pase una imagen.
 
+- **Quién sustituye a quién (16/11)**: `functions/_lib/sustituciones.mjs` + `cron/src/sustituciones.js` (KV `subs:v1`, cambios reales de cada partido terminado de FotMob; en «swap» el primero entra y el segundo sale). Ruta `sustituciones`: titulares (4 o más) a los que cambian en la mitad o más de sus partidos y, si casi siempre entra el mismo (3 o más veces y la mitad de sus cambios), quién. Se ve en el once probable (`.pl-subr` «⇄ Adeyemi 77'», `futmondo/alineacion.js`) y en la ficha del jugador. Los cambios por lesión no cuentan. Comprobado: Gordon sale en 8 de 8 y entra Adeyemi 7 veces.
+
 ## Ideas pendientes
 - Avisos Telegram (noticias y alineación probable)
 - Jugadores rentables (SofaScore, calidad-precio)

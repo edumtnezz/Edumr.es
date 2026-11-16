@@ -8,6 +8,7 @@ import { etiquetaDe } from "../../_lib/portada-svg.mjs";
 import { promptFondo, grupoTipo } from "../../_lib/portada-prompt.mjs";
 import { partirInfo, tituloCambio, catCambio, NOMBRE_ESTADO, ajustarOnce, clubKey, emparejar } from "../../_lib/estados.mjs";
 import { itemsMercado, lideres as lideresDe, rachasDe } from "../../_lib/diario.mjs";
+import { agregarSubs, riesgoCambio } from "../../_lib/sustituciones.mjs";
 import { compacto, dificultad, calendarioDificultad, oncePropio, aciertoOnces, compararOnce, probInterna, puntuarDuelo } from "../../_lib/analitica.mjs";
 import { cuerpoAHtml } from "../../_lib/noticia-cuerpo.mjs";
 import { minutosEnAlineacion, partidoDelDia } from "../../_lib/fotmob-min.mjs";
@@ -5560,7 +5561,7 @@ async function recordPointsHistory(env) {
 
 // Caché de respuestas públicas (Cache API: sin coste ni límite). Evita recalcular en cada visita
 // y mantiene la CPU por petición por debajo del límite del plan gratis de Cloudflare.
-const EDGE_TTL = { lideres: 1800, h2h: 21600, "ultimos-cambios": 180, aplazados: 300, calendario: 600, estadios: 3600, "historial-puntos": 120, "puntos-jornada": 30, mercado: 45, rachas: 60, minutos: 300, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 300, "alineaciones-confirmadas": 180, "alineaciones-estado": 300, noticias: 60, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10, "notas-fotmob": 3600, "fm-partido": 21600 };
+const EDGE_TTL = { sustituciones: 1800, lideres: 1800, h2h: 21600, "ultimos-cambios": 180, aplazados: 300, calendario: 600, estadios: 3600, "historial-puntos": 120, "puntos-jornada": 30, mercado: 45, rachas: 60, minutos: 300, equipos: 1800, portada: 60, jornada: 30, jugador: 300, once: 300, "alineaciones-confirmadas": 180, "alineaciones-estado": 300, noticias: 60, ultimahora: 120, clausulas: 300, fichajes: 300, temporada: 600, detallepartido: 90, directo: 10, "notas-fotmob": 3600, "fm-partido": 21600 };
 // Pantallas donde un dato de hace unos minutos no hace daño: cuando caduca la copia fresca se responde AL MOMENTO con la última buena (hasta 15 min) y se refresca por detrás.
 // Fuera de aquí a propósito: directo, detallepartido, alineaciones-confirmadas, notas-fotmob, fm-partido (en juego deben ser frescos).
 const SWR_OK = new Set(["mercado", "jugador", "ultimos-cambios", "equipos", "calendario", "rachas", "minutos", "temporada", "noticias", "clausulas", "fichajes", "portada", "aplazados", "estadios", "historial-puntos", "once", "alineaciones-estado"]);
@@ -6144,6 +6145,12 @@ async function handleGet({ request, env: env0, params }) {
       items.sort((a, b) => (b.at || 0) - (a.at || 0));
       return json({ updatedAt: now, jornada: (cf && cf.matchday) || 0, items: items.slice(0, 20) });
     } catch (e) { return json({ updatedAt: Date.now(), items: [], error: String(e) }); }
+  }
+  if (path === "sustituciones") {
+    // Titulares a los que suelen cambiar y, si casi siempre entra el mismo, quién (cambios reales de cada partido, KV subs:v1)
+    const st = await env.PORRA.get("subs:v1", "json");
+    if (!st || !Array.isArray(st.p) || st.p.length < 10) return json({ error: "Aún sin datos." });
+    return json({ jugadores: riesgoCambio(agregarSubs(st.p)), partidos: st.p.length, at: Date.now() });
   }
   if (path === "lideres") {
     // Líderes de LaLiga (FotMob): goles (con penaltis marcados) y amarillas. Si la fuente falla, "error" (el borde sirve la última buena).

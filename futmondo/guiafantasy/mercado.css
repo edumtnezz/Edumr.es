@@ -4096,3 +4096,9 @@ html[data-theme="dark"] .art-sec-ok > h3.nw-h { color: #4ade80; } html[data-them
 .eth-once-c::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; border-left: .8cqmin solid rgba(255,255,255,.35); }
 .eth-once-c::after { content: ""; position: absolute; left: 50%; top: 50%; width: 30cqmin; height: 30cqmin; margin: -15cqmin 0 0 -15cqmin; border: .8cqmin solid rgba(255,255,255,.35); border-radius: 50%; }
 .eth-once-w { position: absolute; left: 6cqmin; bottom: 8cqmin; font: 800 26cqmin/.9 'Bricolage Grotesque', 'Figtree', system-ui, sans-serif; letter-spacing: -.03em; color: #fff; }
+
+/* 16/11/2026 · Quién sustituye a quién: en el once probable (a la derecha del jugador) y en la ficha */
+.alin-sub { position: absolute; left: calc(50% + 24px); top: 6px; display: flex; align-items: center; gap: 2px; padding: 1px 5px 1px 3px; border-radius: 6px; background: rgba(15,23,42,.82); color: #fff; font-size: .58rem; font-weight: 800; line-height: 1.4; white-space: nowrap; pointer-events: none; z-index: 3; }
+.alin-sub i { font-style: normal; color: #fbbf24; }
+.ficha-sub { display: flex; align-items: flex-start; gap: 7px; margin-top: 6px; font-size: .8rem; line-height: 1.35; color: var(--muted, #64748b); }
+.ficha-sub i { font-style: normal; font-weight: 800; color: #d97706; }

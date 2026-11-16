@@ -91,7 +91,9 @@
         if (s.note) inner += '<div class="pl-note">' + esc(s.note) + '</div>';
         if (s.match) inner += '<div class="pl-match"><div class="pl-vs"><b>VS</b>' + (s.match.logo ? '<img src="' + esc(s.match.logo) + '" alt="' + esc(s.match.rival) + '" onerror="this.replaceWith(document.createTextNode(this.alt))">' : '<em>' + esc(s.match.rival) + '</em>') + '</div>' + (s.match.when ? '<span>' + esc(s.match.when) + '</span>' : '') + '</div>';
         if (alt) { var fa = match(alt, pool); inner += '<div class="pl-alt">' + esc(fa ? fa.name : (alt.name || alt.last)) + '</div>'; }
-        return fm ? '<a class="pl" href="/jugador/' + encodeURIComponent(fm.id) + '/' + slug(fm.name) + '">' + inner + '</a>' : '<div class="pl">' + inner + '</div>';
+        // Titular del once probable: se marca para poner a su derecha quién le suele sustituir (decorarSubs)
+        var dsub = probable && !s.bench && fm ? ' data-subn="' + esc(s.full || s.name) + '" data-subc="' + esc(fm.team || "") + '"' : "";
+        return fm ? '<a class="pl" href="/jugador/' + encodeURIComponent(fm.id) + '/' + slug(fm.name) + '"' + dsub + '>' + inner + '</a>' : '<div class="pl">' + inner + '</div>';
   }
 
   function benchHtml(subs, pool, mode, title) {
@@ -109,7 +111,29 @@
     }).join("") + '</div></div>';
   }
 
+  // Quién sustituye a quién (16/11/2026): cambios reales de cada partido (/sustituciones). Solo si casi siempre entra el mismo.
+  var subsD = null, subsPend = false;
+  function decorarSubs() {
+    if (!subsD) {
+      if (subsPend) return; subsPend = true;
+      fetch(API + "/sustituciones").then(function (r) { return r.json(); }).then(function (d) { if (d && d.jugadores) { subsD = d.jugadores; decorarSubs(); } }).catch(function () {});
+      return;
+    }
+    document.querySelectorAll(".pl[data-subn]:not([data-subok])").forEach(function (el) {
+      el.setAttribute("data-subok", "1");
+      var ut = strip(el.getAttribute("data-subn")).split(" ").filter(Boolean), club = el.getAttribute("data-subc") || "";
+      if (!ut.length) return;
+      var h = subsD.filter(function (x) { var w = strip(x.n).split(" "); return (!club || teamScore(x.team, club) >= 1) && ut.every(function (t) { return w.indexOf(t) >= 0; }); });
+      if (h.length !== 1 || !h[0].rev) return;
+      var c = h[0], b = document.createElement("div");
+      b.className = "pl-subr";
+      b.title = "Le cambian en " + c.sale + " de " + c.tit + " partidos (minuto " + c.min + " de media). Suele entrar " + c.rev.n + " (" + c.rev.k + " veces).";
+      b.innerHTML = "<i>⇄</i>" + esc(String(c.rev.n).split(" ").slice(-1)[0]) + " <small>" + c.min + "'</small>";
+      var nm = el.querySelector(".pl-nm"); if (nm) nm.insertAdjacentElement("afterend", b); else el.appendChild(b);
+    });
+  }
   function render(side, pool, bench, mode) {
+    setTimeout(decorarSubs, 0);
     var probable = !mode || mode === "probable";
     var groups = { fw: [], md: [], df: [], gk: [] };
     // Nunca el mismo jugador dos veces en el campo
