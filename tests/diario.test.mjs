@@ -57,11 +57,10 @@ test("rachas: victorias seguidas y partidos sin perder, solo al jugar", () => {
   assert.deepEqual(eventosRachas({ 1: { pj: 4 } }, r), []); // no ha vuelto a jugar: no se repite
   assert.equal(eventosRachas({ 1: { pj: 3 } }, r).length, 1);
 });
-test("chollo del día: barato, disponible y rindiendo; no repite", () => {
+test("chollo del día: barato, disponible y rindiendo; si repite, se marca", () => {
   const P = (o) => Object.assign({ est: "", value: 4e6, avg: 7, matches: 8 }, o);
   const ps = [P({ id: "a", name: "A", avg: 7.6, value: 4.3e6 }), P({ id: "b", name: "B", avg: 9, value: 20e6 }), P({ id: "c", name: "C", avg: 9, est: "lesionado" }), P({ id: "d", name: "D", avg: 6.5, value: 4e6 })];
-  assert.equal(cholloDe(ps).pid, "a");
-  assert.equal(cholloDe(ps).sub, "Media 7,6 en 8 partidos · 4,3 M");
-  assert.equal(cholloDe(ps, ["a"]).pid, "d");
+  assert.deepEqual(cholloDe(ps), { cat: "chollo", pid: "a", name: "A", title: "A", rep: 0 });
+  assert.equal(cholloDe(ps, ["a", "x", "a"]).rep, 2);
   assert.equal(cholloDe([P({ id: "x", name: "X", avg: 3 })]), null);
 });

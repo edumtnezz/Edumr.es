@@ -22,7 +22,7 @@ export async function apuntarDiario(env, f = fetch, now = Date.now()) {
   const rachas = ld && Array.isArray(ld.rachas) && ld.rachas.length >= 18 ? ld.rachas : null;
   if (rachas) nuevos.push(...eventosRachas(prev.rachas || null, rachas).filter((e) => now - e.at < 14 * 86400000));
   const fotoR = rachas ? Object.fromEntries(rachas.map((t) => [t.tid, { pj: t.pj }])) : (prev.rachas || null);
-  // Chollo del día: uno al día, después de que Futmondo actualice los valores (no repite a los 7 anteriores)
+  // Chollo del día: uno al día, después de que Futmondo actualice los valores (si repite, sale marcado)
   const hoy = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date(now));
   let chollo = prev.chollo || { dia: "", ids: [] };
   if (chollo.dia !== hoy) {
@@ -32,7 +32,7 @@ export async function apuntarDiario(env, f = fetch, now = Date.now()) {
       if (act) {
         const mk = await get("mercado");
         const c = mk && Array.isArray(mk.players) && mk.players.length >= 300 ? cholloDe(mk.players, chollo.ids) : null;
-        if (c) { nuevos.push(c); chollo = { dia: hoy, ids: [c.pid].concat(chollo.ids || []).slice(0, 7) }; }
+        if (c) { nuevos.push(c); chollo = { dia: hoy, ids: [c.pid].concat(chollo.ids || []).slice(0, 30) }; }
       }
     } catch (e) {}
   }

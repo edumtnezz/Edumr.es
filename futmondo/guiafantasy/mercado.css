@@ -4046,3 +4046,35 @@ html[data-theme="dark"] .ficha-am.warn span { color: #fde047; }
 .eth-art, .eth-art-mini { background: #07090e; }
 .eth-art > .eth-art-img, .eth-art-mini > .eth-art-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 0 88%; display: block; }
 .eth-art-mini > .eth-art-img { object-position: 62% 50%; }
+/* 16/11/2026 (mañana) · Artículos: foto siempre redonda y del mismo tamaño (algunas fotos no son cuadradas) */
+.art-body img.art-pl-f { width: 46px; height: 46px; max-width: none; margin: 2px 0 0; border-radius: 50%; object-fit: cover; object-position: top; }
+.art-body img.art-pl-f.crest { object-fit: contain; border-radius: 0; }
+/* Un recuadro por dato (media, partidos, valor); también en el chollo del día */
+.art-pl-d, .art-body .art-pl-d, .nw-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.art-box { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; min-width: 58px; padding: 5px 9px; border-radius: 10px; background: rgba(127,127,127,.09); border: 1px solid var(--border, rgba(127,127,127,.2)); line-height: 1.15; }
+.art-box b, .art-body .art-box b { font-size: .9rem; font-weight: 800; color: var(--text, inherit); font-variant-numeric: tabular-nums; }
+.art-box small, .art-body .art-box small { margin-top: 1px; font-size: .62rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted, #64748b); }
+.nw-rep { align-self: center; padding: 3px 9px; border-radius: 999px; background: rgba(8,145,178,.14); color: #0e7490; font-size: .72rem; font-weight: 800; }
+html[data-theme="dark"] .nw-rep { color: #67e8f9; }
+/* Apartados del artículo en bloques con color: verde suma, rojo resta */
+.art-sec { margin: 16px 0; padding: 4px 14px 2px; border-radius: 16px; background: var(--card-solid, #fff); border: 1px solid var(--border, rgba(127,127,127,.22)); border-left-width: 5px; }
+.art-sec-ok { border-left-color: #16a34a; }
+.art-sec-ko { border-left-color: #dc2626; }
+.art-sec-nt { border-left-color: #64748b; }
+.art-sec > h3.nw-h { display: flex; align-items: center; gap: 8px; margin: 12px 0 2px; }
+.art-sec-ok > h3.nw-h { color: #15803d; } .art-sec-ko > h3.nw-h { color: #b91c1c; }
+html[data-theme="dark"] .art-sec-ok > h3.nw-h { color: #4ade80; } html[data-theme="dark"] .art-sec-ko > h3.nw-h { color: #f87171; }
+.art-sec-n { margin-left: auto; min-width: 22px; padding: 2px 7px; border-radius: 999px; background: currentColor; text-align: center; }
+.art-sec-n { color: inherit; }
+.art-sec-n { background: rgba(127,127,127,.14); font-size: .72rem; }
+.art-sec .art-pl:last-child, .art-sec .art-gr:last-child { border-bottom: none; }
+/* Fila de valores del Inicio: la flecha más grande, el círculo igual */
+.nw-row-pic.nw-row-ico svg { width: 74%; height: 74%; }
+
+.art-pl { display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; column-gap: 12px; align-items: start; }
+.art-pl > .art-pl-d { grid-column: 2 / -1; margin-top: 8px; }
+.art-pl > .art-pl-v { max-width: none; }
+.art-box { flex: 1 1 0; min-width: 0; }
+.art-body .art-pl-t > b { white-space: normal; overflow: visible; }
+.art-pl > .art-pl-v { max-width: 44vw; }
+.art-pl-c span { white-space: normal; }

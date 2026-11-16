@@ -26,7 +26,7 @@ test("a fichar: vuelve de lesión con buena media; el que vuelve con mala media 
   const ps = [P({ name: "Vuelve", avg: 8 }), P({ name: "Malo", avg: 2 }), P({ name: "Forma", avg: 9, chg7: 2.7e6 }), P({ name: "Duda", avg: 9, chg7: 3e6, est: "duda" })];
   const a = aFichar(ps, [{ id: "Vuelve", de: "lesionado", a: "ok", at: NOW - 86400000 }, { id: "Malo", de: "lesionado", a: "ok", at: NOW - 86400000 }, { id: "Forma", de: "ok", a: "duda", at: NOW }], 13, NOW);
   assert.match(a.body, /## Vuelven[\s\S]*@ Vuelve/);
-  assert.match(a.body, /## Vuelven[\s\S]*@ Vuelve \| Vuelve \| 8,0 \| de media \| Vuelve de lesión/);
+  assert.match(a.body, /## Vuelven[\s\S]*@ Vuelve \| Vuelve \| 60 \| puntos \| Vuelve de lesión/);
   assert.match(a.body, /## En forma y subiendo[\s\S]*@ Forma \| Forma \| \+2,7 M \| en 7 días \| \+385\.714 € al día de media/);
   assert.ok(!/Malo|Duda/.test(a.body));
 });

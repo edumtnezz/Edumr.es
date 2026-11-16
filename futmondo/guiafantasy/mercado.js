@@ -4317,7 +4317,13 @@
     tl.appendChild(el("span", "nw-time", e.kind === "n" ? (x.time || "") : (x.time || "")));
     b.appendChild(tl);
     b.appendChild(el("div", "nw-row-t", x.title));
-    if (e.kind === "c") {
+    // Chollo del día: sus números en recuadros (media, partidos, valor) y «Repite» solo si ya fue chollo antes
+    if (e.kind === "c" && Array.isArray(x.chips) && x.chips.length) {
+      const ch = el("div", "nw-chips");
+      x.chips.forEach(([v, k]) => { const c = el("span", "art-box"); c.appendChild(el("b", null, String(v))); c.appendChild(el("small", null, k)); ch.appendChild(c); });
+      if (x.rep) ch.appendChild(el("span", "nw-rep", "Repite"));
+      b.appendChild(ch);
+    } else if (e.kind === "c") {
       // Registro propio: debajo va el motivo («Molestias en la rodilla · vuelta: …»), no el nombre repetido
       const pl = x.pid ? (x.players || []).slice(0, 1).map((p) => String(p.to || "").split(" · ").slice(1).join(" · ")).join("")
         : (x.players || []).slice(0, 1).map((p) => p.name + (p.from && p.to ? ": " + p.from + " → " + p.to : "")).join(" · ");
@@ -4328,7 +4334,25 @@
   }
   // Artículos: cada fila de jugador (.art-pl) y cada gráfica (.art-gr) llevan el id; aquí reciben la foto, el club con su escudo y
   // la misma línea de datos en todos los artículos (media, partidos y valor del momento). Tocar abre la ficha.
+  // Cada apartado del artículo (título ## y sus jugadores) va en su propio bloque con color: verde lo que suma (vuelven, fichar, suben),
+  // rojo lo que resta (siguen de baja, vender, bajan) y neutro el resto. Así «Pueden volver» y «Siguen de baja» no se confunden.
+  function artSecciones(art) {
+    if (art.dataset.sec || !art.querySelector(".art-pl, .art-gr")) return;
+    art.dataset.sec = "1";
+    const hs = [...art.querySelectorAll(":scope > h3.nw-h")];
+    hs.forEach((h) => {
+      const t = h.textContent.toLowerCase();
+      const tono = /siguen de baja|baja larga|vender|pierden|bajan/.test(t) ? "ko" : /volver|vuelven|fichar|subid|subiendo|suben/.test(t) ? "ok" : "nt";
+      const sec = el("section", "art-sec art-sec-" + tono);
+      h.parentNode.insertBefore(sec, h);
+      let n = h;
+      while (n && !(n !== h && n.matches && n.matches("h3.nw-h"))) { const sig = n.nextSibling; sec.appendChild(n); n = sig; }
+      const k = sec.querySelectorAll(".art-pl, .art-gr").length;
+      if (k) { const c = el("span", "art-sec-n", String(k)); h.appendChild(c); }
+    });
+  }
   function wireArtPlayers(art) {
+    try { artSecciones(art); } catch (e) {}
     const rows = [...art.querySelectorAll(".art-pl[data-pid], .art-gr[data-pid]")];
     if (!rows.length) return;
     const millones = (v) => (v / 1e6).toFixed(1).replace(".", ",") + " M";
@@ -4343,7 +4367,8 @@
       if (p.logo) { const cr = el("img"); cr.alt = ""; cr.loading = "lazy"; cr.src = p.logo; cr.addEventListener("error", () => cr.remove()); club.appendChild(cr); }
       club.appendChild(el("span", null, shortRival(p.team)));
       const dat = el("span", "art-pl-d");
-      [[Number(p.avg) ? String(Math.round(p.avg * 10) / 10).replace(".", ",") : "—", "media"], [p.matches || 0, "part."], [millones(p.value || 0), "valor"]].forEach(([v, k]) => { const c = el("span"); c.appendChild(el("b", null, String(v))); c.appendChild(document.createTextNode(" " + k)); dat.appendChild(c); });
+      // Un recuadro por dato: media, partidos y valor (Edu, 16/11/2026)
+      [[Number(p.avg) ? String(Math.round(p.avg * 10) / 10).replace(".", ",") : "—", "Media"], [p.matches || 0, "Partidos"], [millones(p.value || 0), "Valor"]].forEach(([v, k]) => { const c = el("span", "art-box"); c.appendChild(el("b", null, String(v))); c.appendChild(el("small", null, k)); dat.appendChild(c); });
       if (r.classList.contains("art-gr")) {
         const h = r.querySelector(".art-gr-h"), nm = h.querySelector("b");
         const izq = el("span", "art-gr-n"); h.insertBefore(izq, nm); izq.appendChild(im); const tx = el("span", "art-pl-t"); tx.appendChild(nm); tx.appendChild(club); izq.appendChild(tx);
@@ -4351,7 +4376,8 @@
       } else {
         r.prepend(im);
         const t = r.querySelector(".art-pl-t"), nt = t.querySelector(".art-pl-nt");
-        t.insertBefore(club, nt || null); t.insertBefore(dat, nt || null);
+        t.insertBefore(club, nt || null);
+        r.appendChild(dat); // los recuadros van en su propia línea, a lo ancho
       }
       r.classList.add("club-link"); r.setAttribute("role", "link"); r.tabIndex = 0;
       r.addEventListener("click", () => openFicha(p));

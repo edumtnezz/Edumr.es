@@ -59,18 +59,18 @@ export function aFichar(ps, cambios, jn, now = Date.now()) {
   const forma = ps.filter((p) => libre(p) && !visto.has(p.id) && p.value < 50e6 && p.matches >= 5 && p.avg >= 7 && Number(p.chg7) >= 1e6).sort((a, b) => b.avg - a.avg);
   const A = top(vuelven, 6), B = top(forma, 6);
   return item("artfichar" + jn, "Jugadores a fichar antes de la jornada " + jn, "Los que vuelven y los que rinden y suben de valor.", [
-    { titulo: "Vuelven", nota: "Salen de lesión o sanción esta semana y rendían bien.", filas: A.map((x) => fila(x.p, dec(x.p.avg), "de media", "Vuelve de " + (x.c.de === "sancionado" ? "sanción" : "lesión"))) },
+    { titulo: "Vuelven", nota: "Salen de lesión o sanción esta semana y rendían bien.", filas: A.map((x) => fila(x.p, String(x.p.points || 0), "puntos", "Vuelve de " + (x.c.de === "sancionado" ? "sanción" : "lesión"))) },
     { titulo: "En forma y subiendo", nota: "Por menos de 50 M, con media de 7 o más y 1 M o más de subida en 7 días.", filas: B.map((p) => fila(p, "+" + M(p.chg7), "en 7 días", alDia(p.chg7))) },
   ], A.map((x) => x.p.name).concat(B.map((p) => p.name)));
 }
 
-// Clausulazos recomendables: los tres disponibles con mejor media en cada franja de precio (6 partidos o más). Sin cláusulas de ninguna liga.
+// Clausulazos recomendables (a la derecha, los puntos totales: la media ya va en su recuadro): los tres disponibles con mejor media en cada franja de precio (6 partidos o más). Sin cláusulas de ninguna liga.
 export function clausulazos(ps, jn) {
   const ok = ps.filter((p) => libre(p) && p.matches >= 6 && p.avg > 0);
   const franja = (min, max) => top(ok.filter((p) => p.value >= min && p.value < max).sort((a, b) => b.avg - a.avg || b.points - a.points), 3);
   const F = [["Hasta 5 M", 0, 5e6], ["De 5 a 15 M", 5e6, 15e6], ["De 15 a 30 M", 15e6, 30e6], ["Más de 30 M", 30e6, Infinity]].map(([t, a, b]) => ({ t, l: franja(a, b) }));
   return item("artclaus" + jn, "Clausulazos recomendables antes de la jornada " + jn, "Los que más rinden en cada franja de precio y están disponibles.",
-    F.map((f) => ({ titulo: f.t, nota: "", filas: f.l.map((p) => fila(p, dec(p.avg), "de media")) })), F.flatMap((f) => f.l.map((p) => p.name)));
+    F.map((f) => ({ titulo: f.t, nota: "", filas: f.l.map((p) => fila(p, String(p.points || 0), "puntos")) })), F.flatMap((f) => f.l.map((p) => p.name)));
 }
 
 // Parón: tres por lista (Edu: «demasiada información»): quién puede volver, quién sigue de baja y quién sube y baja más de valor.

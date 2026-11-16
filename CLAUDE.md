@@ -65,6 +65,8 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 - **Diario: chollo del día y rachas (16/11)**: `cholloDe` (disponible, 8 M o menos, 6 partidos o más, media ≥ 6; el que más media da por millón; no repite a los 7 anteriores), uno al día tras la actualización de valores. `rachasDe` / `eventosRachas`: 4 o más victorias seguidas o 5 o más partidos sin perder, contadas con todos los resultados de la temporada (FotMob), solo cuando el equipo juega. Van en `diario:v1` como el resto.
 - **Pendiente pedido por Edu (16/11)**: onces recomendados (caro, low cost, equilibrado; lunes por la noche), quién sustituye a quién (riesgo de ser suplente) y mejorar el comparador.
 
+- **16/11 (mañana) · artículos y chollo**: cada apartado del artículo va en su bloque con borde de color (`artSecciones`: verde vuelven/fichar/suben, rojo baja/vender/bajan, gris el resto) y cada jugador lleva tres recuadros (Media, Partidos, Valor). La cifra de la derecha nunca repite la media (clausulazos y «Vuelven» enseñan los puntos). Fotos de artículo siempre 46×46 redondas. Chollo del día: título = nombre, recuadros con media/partidos/valor del momento y «Repite» solo si ya fue chollo antes (puede repetir).
+
 ## Ideas pendientes
 - Avisos Telegram (noticias y alineación probable)
 - Jugadores rentables (SofaScore, calidad-precio)

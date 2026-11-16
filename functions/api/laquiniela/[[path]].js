@@ -2865,6 +2865,13 @@ async function getCambiosPropios(env) {
       // El chollo trae el id del mercado (lo elige el Worker de nuestros propios datos): foto y ficha directas.
       const p = e.cat === "goleadores" ? uno(e.name) : e.cat === "chollo" ? (all.find((q) => String(q.id) === String(e.pid)) || null) : null;
       if (e.cat === "chollo" && !p) continue;
+      // Chollo: el título es solo el nombre (la etiqueta ya dice «Chollo del día») y los números van en recuadros, con el dato de ahora
+      if (e.cat === "chollo") {
+        const d1 = (v) => (Math.round(Number(v) * 10) / 10).toFixed(1).replace(".", ",");
+        items.push({ at: e.at, cat: e.cat, title: p.name, href: "", photo: p.photo || "", logo: "", pid: "", fid: p.id, players: [], rep: e.rep || 0,
+          chips: [[d1(p.avg), "Media"], [p.matches || 0, "Partidos"], [d1((p.value || 0) / 1e6) + " M", "Valor"]] });
+        continue;
+      }
       items.push({ at: e.at, cat: e.cat, title: e.title, href: e.cat === "clasificacion" || e.cat === "rachas" ? "/equipos" : "", photo: (p && p.photo) || escudo(e.tid), logo: escudo(e.tid), pid: "", fid: p ? p.id : "", players: e.sub ? [{ name: e.sub, photo: "", from: "", to: "" }] : [] });
     }
   } catch (e) {}
@@ -2881,7 +2888,7 @@ async function getCambiosPropios(env) {
     const day = wd.charAt(0).toUpperCase() + wd.slice(1) + " " + dd;
     let d = days[days.length - 1];
     if (!d || d.day !== day) { d = { day, items: [] }; days.push(d); }
-    d.items.push({ time: fT.format(new Date(it.at)), cat: it.cat, title: it.title, href: it.href, photo: it.photo, logo: it.logo, pid: it.pid, fid: it.fid || "", players: it.players });
+    d.items.push({ time: fT.format(new Date(it.at)), cat: it.cat, title: it.title, href: it.href, photo: it.photo, logo: it.logo, pid: it.pid, fid: it.fid || "", players: it.players, chips: it.chips, rep: it.rep });
   }
   return { updatedAt: (foto && foto.at) || now, days, propio: true };
 }

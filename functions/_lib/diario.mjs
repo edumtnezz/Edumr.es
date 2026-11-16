@@ -113,12 +113,11 @@ export function eventosRachas(prev, cur) {
   return out;
 }
 // Chollo del día: disponible, 8 M o menos, 6 partidos o más y media de 6 o más; gana el que más puntos de media da por cada millón.
-// No repite a los últimos elegidos (usados = ids).
+// Puede repetir (Edu, 16/11/2026): si ya fue chollo en los días guardados (usados = ids), sale marcado con rep = veces anteriores.
 export function cholloDe(players, usados = []) {
-  const no = new Set((usados || []).map(String));
-  const c = (players || []).filter((p) => p && p.id && (!p.est || p.est === "apercibido") && p.value > 0 && p.value <= 8e6 && p.matches >= 6 && p.avg >= 6 && !no.has(String(p.id)))
+  const c = (players || []).filter((p) => p && p.id && (!p.est || p.est === "apercibido") && p.value > 0 && p.value <= 8e6 && p.matches >= 6 && p.avg >= 6)
     .sort((a, b) => b.avg / b.value - a.avg / a.value)[0];
   if (!c) return null;
-  const dec = (v) => (Math.round(v * 10) / 10).toFixed(1).replace(".", ",");
-  return { cat: "chollo", pid: c.id, name: c.name, title: "Chollo del día: " + c.name, sub: "Media " + dec(c.avg) + " en " + c.matches + " partidos · " + dec(c.value / 1e6) + " M" };
+  const rep = (usados || []).filter((x) => String(x) === String(c.id)).length;
+  return { cat: "chollo", pid: c.id, name: c.name, title: c.name, rep };
 }
