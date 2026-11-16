@@ -2,6 +2,7 @@
 // Una edición por jornada y tipo, de martes a domingo a partir de las 10:00 (hora de Madrid). La edición nueva sustituye a la anterior del mismo tipo.
 // Las reglas y los datos están en functions/_lib/articulos.mjs. Sin jugadores que cumplan, ese artículo no se publica.
 import { aVender, aFichar, clausulazos, paron, inicioJornada, esParon, subidasEntre, inicioParon, subidasBajadas } from "../../functions/_lib/articulos.mjs";
+import { oncesArticulo, cambiosOnce } from "../../functions/_lib/onces.mjs";
 
 const OWN_KEY = "own:news:v2", K_ST = "art:st:v1", SITE = "https://edumr.es/api/laquiniela/";
 const FORMATO = 5; // súbelo cuando cambie el formato de las filas para rehacer los artículos publicados
@@ -76,4 +77,52 @@ export async function publicarMercado(env, ps, now = Date.now()) {
   own.sort((x, y) => (y.publishedAt || 0) - (x.publishedAt || 0));
   await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
   return a.id;
+}
+
+// Onces recomendados (caro, equilibrado y low cost): primera edición el lunes desde las 23:00 (cuando acaba la jornada) o, si no
+// pudo ser, en cuanto se pueda de martes a viernes. Después, en cada pasada, si alguno de los elegidos pasa a lesionado o
+// sancionado, se rehace y se dice quién sale y quién entra. Reglas en functions/_lib/onces.mjs.
+const K_ONCE = "art:once:v1";
+export async function publicarOnces(env, f = fetch, now = Date.now()) {
+  if (!env || !env.PORRA) return { skipped: "sin kv" };
+  if (new Date(now).getUTCMinutes() % 10 !== 7) return { skipped: "no toca" };
+  const pm = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", weekday: "short", hour: "2-digit", hour12: false }).formatToParts(new Date(now));
+  const dia = (pm.find((x) => x.type === "weekday") || {}).value, hora = Number((pm.find((x) => x.type === "hour") || {}).value);
+  const get = (p) => f(SITE + p, { headers: { "user-agent": "edumr-cron" } }).then((r) => (r.ok ? r.json() : null));
+  const st = (await env.PORRA.get(K_ONCE, "json")) || {};
+  const jr = await get("jornada");
+  const jn = jr && Number(jr.matchday);
+  if (!jn) return { error: "sin jornada" };
+  const nueva = st.jn !== jn;
+  // Primera edición de la jornada: lunes desde las 23:00, o de martes a viernes
+  if (nueva && !((dia === "Mon" && hora >= 23) || ["Tue", "Wed", "Thu", "Fri"].indexOf(dia) >= 0)) return { skipped: "fuera de hora" };
+  const mk = await get("mercado");
+  const ps = mk && Array.isArray(mk.players) ? mk.players : [];
+  if (ps.length < 300 || ps.filter((p) => p.prob != null).length < 300) return { error: "sin mercado" };
+  let cambios = {};
+  if (!nueva) {
+    const porId = new Map(ps.map((p) => [String(p.id), p]));
+    const caidos = Object.values(st.ids || {}).flat().filter((id) => { const p = porId.get(id); return p && (p.est === "lesionado" || p.est === "sancionado"); });
+    if (!caidos.length) return { sin_cambios: true };
+  }
+  const a = oncesArticulo(ps, jn);
+  if (!a) return { error: "no se pudo completar" };
+  if (!nueva) {
+    cambios = cambiosOnce(st.ids, a.ids, ps);
+    // Se guardan también los cambios de antes para que la edición corregida los siga diciendo
+    for (const k of Object.keys(st.cambios || {})) cambios[k] = (st.cambios[k] || []).concat(cambios[k] || []);
+  }
+  const fin = oncesArticulo(ps, jn, cambios);
+  let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
+  own = own.filter((x) => x.art !== "artonce");
+  own.unshift({ id: fin.id, title: fin.title, lead: fin.lead, body: fin.body, status: "published", createdAt: nueva ? now : (st.at || now), publishedAt: nueva ? now : (st.at || now), updatedAt: now, thumb: "", club: "", players: [], tipo: "articulo", auto: "articulo", art: "artonce", f: 1, fp: "" });
+  own.sort((x, y) => (y.publishedAt || 0) - (x.publishedAt || 0));
+  await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
+  await env.PORRA.put(K_ONCE, JSON.stringify({ jn, ids: fin.ids, cambios, at: nueva ? now : (st.at || now) }));
+  if (nueva && env.TELEGRAM_BOT_TOKEN) {
+    let chat = String(env.TELEGRAM_CHAT_ID || "");
+    if (!chat) { try { chat = String(((await env.PORRA.get("tg:avisos:v1", "json")) || {}).chat || ""); } catch (e) {} }
+    if (chat) { try { await f("https://api.telegram.org/bot" + env.TELEGRAM_BOT_TOKEN + "/sendMessage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chat, text: "🏆 <b>ONCES RECOMENDADOS</b>\n\n" + escT(fin.title) + "\nhttps://edumr.es/futmondo/guiafantasy/noticias/ed-" + fin.id, parse_mode: "HTML", disable_web_page_preview: true }) }); } catch (e) {} }
+  }
+  return { publicado: fin.id, nueva, cambios };
 }

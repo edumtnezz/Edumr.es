@@ -67,6 +67,8 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 
 - **16/11 (mañana) · artículos y chollo**: cada apartado del artículo va en su bloque con borde de color (`artSecciones`: verde vuelven/fichar/suben, rojo baja/vender/bajan, gris el resto) y cada jugador lleva tres recuadros (Media, Partidos, Valor). La cifra de la derecha nunca repite la media (clausulazos y «Vuelven» enseñan los puntos). Fotos de artículo siempre 46×46 redondas. Chollo del día: título = nombre, recuadros con media/partidos/valor del momento y «Repite» solo si ya fue chollo antes (puede repetir).
 
+- **Onces recomendados (16/11)**: `functions/_lib/onces.mjs` + `publicarOnces` (cron/src/articulos.js, KV `art:once:v1`). Tres onces 1-4-3-3: caro (sin límite), equilibrado (≤ 15 M por jugador), low cost (≤ 6 M). Solo disponibles, prob ≥ 70 % y 5 partidos o más, por media; máx. 3 por club; un jugador en un solo once (se elige primero el low cost). Primera edición el lunes desde las 23:00 (o mar–vie); si un elegido pasa a lesionado o sancionado se rehace y se dice «Sale X (lesionado), entra Y». Se pinta como campo (`# once | ids | tipo`, `wireArtOnce`). Portada dibujada (campo + ONCES) hasta que Edu pase una imagen.
+
 ## Ideas pendientes
 - Avisos Telegram (noticias y alineación probable)
 - Jugadores rentables (SofaScore, calidad-precio)

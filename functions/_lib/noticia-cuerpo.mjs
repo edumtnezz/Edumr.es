@@ -27,6 +27,17 @@ export function cuerpoAHtml(body) {
         '</span><span class="art-pl-v"><b>' + esc(pj[3].trim()) + "</b>" + (viejo ? "" : "<small>" + esc(pj[4].trim()) + "</small>") + "</span></div>";
       continue;
     }
+    // Once en el campo: «# once | id,id,…(11) | etiqueta» en 1-4-3-3 (portero abajo). La web pone foto, nombre y media (por el id).
+    const oj = l.match(/^# once \| ([0-9a-zA-Z,]{60,600}) \| ([a-z]{1,20})$/);
+    if (oj) {
+      if (lista) { html += "</ul>"; lista = false; }
+      const ids = oj[1].split(",");
+      if (ids.length === 11) {
+        const fila = (xs) => '<div class="art-once-l">' + xs.map((id) => '<span class="art-op" data-pid="' + esc(id) + '"></span>').join("") + "</div>";
+        html += '<div class="art-once art-once-' + esc(oj[2]) + '">' + fila(ids.slice(8, 11)) + fila(ids.slice(5, 8)) + fila(ids.slice(1, 5)) + fila(ids.slice(0, 1)) + "</div>";
+      }
+      continue;
+    }
     // Gráfica de valor de un jugador: «~ id | Nombre | v1,v2,… | día inicial | día final» (valores reales de cada día, de nuestro historial).
     const gj = l.match(/^~ ([0-9a-zA-Z]{6,40}) \| ([^|]{1,60}) \| ([0-9,]{3,400}) \| ([0-9/]{3,10}) \| ([0-9/]{3,10})$/);
     if (gj) {

@@ -5,7 +5,7 @@ import { avisar, colaPuntos, avisarPuntos } from "./avisos.js";
 import { vigilarEstados } from "./estados.js";
 import { publicarPartes } from "./partes.js";
 import { apuntarDiario } from "./diario.js";
-import { publicarArticulos } from "./articulos.js";
+import { publicarArticulos, publicarOnces } from "./articulos.js";
 
 export default {
   async scheduled(event, env, ctx) {
@@ -35,6 +35,7 @@ export default {
       try { await apuntarDiario(env); } catch (e) { console.error("diario", String(e && e.message || e).slice(0, 180)); }
       // Artículos propios (a vender, a fichar, clausulazos y parón): una edición por jornada.
       try { await publicarArticulos(env); } catch (e) { console.error("articulos", String(e && e.message || e).slice(0, 180)); }
+      try { await publicarOnces(env); } catch (e) { console.error("onces", String(e && e.message || e).slice(0, 180)); }
       try { await avisarPuntos(env); } catch (e) {}
       try { await avisar(env); } catch (e) {}
       // Noticias nuevas (12/11/2026): una noticia corta por cada cambio de estado. El redactor antiguo (ruedas de prensa,

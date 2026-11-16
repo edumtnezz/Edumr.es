@@ -4078,3 +4078,21 @@ html[data-theme="dark"] .art-sec-ok > h3.nw-h { color: #4ade80; } html[data-them
 .art-body .art-pl-t > b { white-space: normal; overflow: visible; }
 .art-pl > .art-pl-v { max-width: 44vw; }
 .art-pl-c span { white-space: normal; }
+
+/* 16/11/2026 · Onces recomendados: campo con foto, escudo, nombre y media de cada jugador */
+.art-sec-once { border-left-color: #15803d; }
+.art-once { margin: 10px 0 12px; padding: 12px 6px; border-radius: 14px; background: #15803d; background-image: repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 36px, transparent 36px 72px); position: relative; overflow: hidden; }
+.art-once::before { content: ""; position: absolute; left: 50%; bottom: -34px; width: 120px; height: 68px; margin-left: -60px; border: 2px solid rgba(255,255,255,.35); border-radius: 50%; }
+.art-once-l { position: relative; display: flex; justify-content: space-evenly; gap: 4px; padding: 6px 0; }
+.art-op { display: flex; flex-direction: column; align-items: center; gap: 1px; width: 23%; max-width: 86px; min-width: 0; position: relative; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.art-body img.art-op-f, .art-op-f { width: 46px; height: 46px; margin: 0; border-radius: 50%; object-fit: cover; object-position: top; background: #fff; border: 2px solid #fff; max-width: none; }
+.art-body img.art-op-cr, .art-op-cr { position: absolute; top: 28px; left: calc(50% + 10px); width: 18px; height: 18px; margin: 0; object-fit: contain; border-radius: 0; }
+.art-op-n { max-width: 100%; margin-top: 2px; padding: 1px 6px; border-radius: 6px; background: rgba(0,0,0,.45); color: #fff; font-size: .7rem; font-weight: 800; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.art-op-m { font-size: .72rem; font-weight: 800; color: #fff; line-height: 1.2; }
+.art-sec ul { margin: 6px 0; padding-left: 18px; font-size: .84rem; }
+/* Portada de los onces (dibujada, sin imagen) */
+.eth-once { background: #166534; }
+.eth-once-c { position: absolute; inset: 8cqmin; border: .8cqmin solid rgba(255,255,255,.35); border-radius: 2cqmin; }
+.eth-once-c::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; border-left: .8cqmin solid rgba(255,255,255,.35); }
+.eth-once-c::after { content: ""; position: absolute; left: 50%; top: 50%; width: 30cqmin; height: 30cqmin; margin: -15cqmin 0 0 -15cqmin; border: .8cqmin solid rgba(255,255,255,.35); border-radius: 50%; }
+.eth-once-w { position: absolute; left: 6cqmin; bottom: 8cqmin; font: 800 26cqmin/.9 'Bricolage Grotesque', 'Figtree', system-ui, sans-serif; letter-spacing: -.03em; color: #fff; }

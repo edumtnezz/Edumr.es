@@ -4337,22 +4337,43 @@
   // Cada apartado del artículo (título ## y sus jugadores) va en su propio bloque con color: verde lo que suma (vuelven, fichar, suben),
   // rojo lo que resta (siguen de baja, vender, bajan) y neutro el resto. Así «Pueden volver» y «Siguen de baja» no se confunden.
   function artSecciones(art) {
-    if (art.dataset.sec || !art.querySelector(".art-pl, .art-gr")) return;
+    if (art.dataset.sec || !art.querySelector(".art-pl, .art-gr, .art-once")) return;
     art.dataset.sec = "1";
     const hs = [...art.querySelectorAll(":scope > h3.nw-h")];
     hs.forEach((h) => {
       const t = h.textContent.toLowerCase();
-      const tono = /siguen de baja|baja larga|vender|pierden|bajan/.test(t) ? "ko" : /volver|vuelven|fichar|subid|subiendo|suben/.test(t) ? "ok" : "nt";
+      const tono = /siguen de baja|baja larga|vender|pierden|bajan/.test(t) ? "ko" : /volver|vuelven|fichar|subid|subiendo|suben/.test(t) ? "ok" : /once/.test(t) ? "once" : "nt";
       const sec = el("section", "art-sec art-sec-" + tono);
       h.parentNode.insertBefore(sec, h);
       let n = h;
       while (n && !(n !== h && n.matches && n.matches("h3.nw-h"))) { const sig = n.nextSibling; sec.appendChild(n); n = sig; }
-      const k = sec.querySelectorAll(".art-pl, .art-gr").length;
+      const k = sec.querySelector(".art-once") ? 0 : sec.querySelectorAll(".art-pl, .art-gr").length;
       if (k) { const c = el("span", "art-sec-n", String(k)); h.appendChild(c); }
     });
   }
+  // Once en el campo: cada hueco (.art-op con su id) recibe foto, nombre corto y media. Tocar abre la ficha.
+  function wireArtOnce(art) {
+    const ops = [...art.querySelectorAll(".art-op[data-pid]")];
+    if (!ops.length) return;
+    const pon = () => ops.forEach((o) => {
+      if (o.dataset.ok) return;
+      const p = (all || []).find((q) => String(q.id) === o.dataset.pid);
+      if (!p) return;
+      o.dataset.ok = "1";
+      const im = el("img", "art-op-f"); im.alt = ""; im.loading = "lazy"; im.src = p.fotoG || p.photo || p.logo || "";
+      im.addEventListener("error", () => { if (p.logo && im.src !== p.logo) im.src = p.logo; else im.remove(); });
+      o.appendChild(im);
+      if (p.logo) { const cr = el("img", "art-op-cr"); cr.alt = ""; cr.loading = "lazy"; cr.src = p.logo; cr.addEventListener("error", () => cr.remove()); o.appendChild(cr); }
+      o.appendChild(el("b", "art-op-n", String(p.name).split(" ").slice(-1)[0].length > 2 && String(p.name).length > 12 ? String(p.name).split(" ").slice(-1)[0] : p.name));
+      o.appendChild(el("small", "art-op-m", (Math.round(p.avg * 10) / 10).toFixed(1).replace(".", ",")));
+      o.setAttribute("role", "link"); o.tabIndex = 0;
+      o.addEventListener("click", () => openFicha(p));
+    });
+    if (all && all.length) pon(); else load().then(pon).catch(() => {});
+  }
   function wireArtPlayers(art) {
     try { artSecciones(art); } catch (e) {}
+    try { wireArtOnce(art); } catch (e) {}
     const rows = [...art.querySelectorAll(".art-pl[data-pid], .art-gr[data-pid]")];
     if (!rows.length) return;
     const millones = (v) => (v / 1e6).toFixed(1).replace(".", ",") + " M";

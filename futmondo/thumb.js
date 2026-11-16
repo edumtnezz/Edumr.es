@@ -103,6 +103,7 @@
   function artKind(item) {
     var a = String(item && item.art || "");
     if (a === "artmercado") return "merc";
+    if (/^artonce/.test(a) || /onces recomendados/i.test(String(item && item.title || ""))) return "once";
     if (/^art(vender|fichar|claus|paron)/.test(a)) return a.slice(3).replace(/\d+$/, "");
     var t = String(item && item.title || "").toLowerCase();
     return /subidas y bajadas/.test(t) ? "merc" : /vender/.test(t) ? "vender" : /fichar/.test(t) ? "fichar" : /clausul/.test(t) ? "claus" : /par[oó]n/.test(t) ? "paron" : "fichar";
@@ -110,6 +111,13 @@
   function articulo(item, mini) {
     var d = nodo("div", mini ? "eth-mini eth-art-mini" : "eth eth-art");
     var k = artKind(item);
+    // Onces recomendados: aún sin imagen propia; se dibuja un campo con la palabra ONCES (sin fotos de jugadores)
+    if (k === "once") {
+      d.classList.add("eth-once");
+      d.appendChild(nodo("i", "eth-once-c"));
+      if (!mini) { d.appendChild(nodo("span", "eth-tag", "ARTÍCULO")); d.appendChild(nodo("b", "eth-once-w", "ONCES")); }
+      return d;
+    }
     var im = nodo("img", "eth-art-img"); im.alt = ""; im.loading = "lazy"; im.decoding = "async"; im.src = ART[k];
     // En la miniatura cuadrada se enseña el dibujo (jugador, candado, pizarra), no el rótulo cortado
     if (mini) im.style.objectPosition = ({ vender: "52% 30%", fichar: "70% 35%", claus: "70% 40%", paron: "60% 40%", merc: "50% 35%" })[k] || "60% 40%";
