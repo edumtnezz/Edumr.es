@@ -38,18 +38,9 @@ function mezcla(a, b, t) {
   const A = h(a), B = h(b);
   return "#" + A.map((v, i) => Math.round(v * (1 - t) + B[i] * t).toString(16).padStart(2, "0")).join("");
 }
-// Fondo del cartel: la parte del texto lleva el color principal del club (oscurecido solo lo justo para que se lea el
-// blanco) y el panel de la foto el segundo color; si la camiseta es a rayas, rayas finas encima del panel.
-function panelClub(st) {
-  const h = (x) => [1, 3, 5].map((i) => parseInt(x.slice(i, i + 2), 16));
-  const [r, g, b] = h(st.p), lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  const fondo = mezcla(st.p, "#0b1220", lum > 0.5 ? 0.62 : lum > 0.3 ? 0.4 : 0.22);
-  const panel = mezcla(st.s, st.p, 0.1);
-  let k = "";
-  if (st.r) for (let i = 0; i < 14; i++) k += `<div style="display:flex;width:70px;height:1100px;background-color:${i % 2 ? "rgba(0,0,0,0.10)" : "rgba(0,0,0,0)"}"></div>`;
-  return { fondo, css: `background-color:${panel};`, kids: k };
-}
-const AC = { baja: "#ef4444", duda: "#f59e0b", alta: "#22c55e" };
+const lumHex = (x) => { const h = [1, 3, 5].map((i) => parseInt(x.slice(i, i + 2), 16)); return (0.299 * h[0] + 0.587 * h[1] + 0.114 * h[2]) / 255; };
+const rgbaHex = (x, a) => { const h = [1, 3, 5].map((i) => parseInt(x.slice(i, i + 2), 16)); return `rgba(${h[0]},${h[1]},${h[2]},${a})`; };
+const AC = { baja: "#ff4d4d", duda: "#ffb020", alta: "#2dff7a" };
 const TXT = { baja: "BAJA", duda: "DUDA", alta: "ALTA" };
 const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 let _fonts = null;
@@ -63,27 +54,46 @@ async function fonts() {
 // Caja de la foto: se mantiene la proporción real de la imagen (las fotos de Biwenger no son cuadradas)
 function cajaFoto(w, h) {
   if (!(w > 0 && h > 0)) { w = 1; h = 1; }
-  let alto = 540, ancho = Math.round(alto * w / h);
-  if (ancho > 500) { ancho = 500; alto = Math.round(ancho * h / w); }
+  let alto = 560, ancho = Math.round(alto * w / h);
+  if (ancho > 520) { ancho = 520; alto = Math.round(ancho * h / w); }
   return { w: ancho, h: alto, left: 935 - Math.round(ancho / 2), top: 675 - alto };
 }
 
 export function cartelHtml({ nombre, club, veredicto, plazo, color, foto, fotoW, fotoH, escudo }) {
   const v = TXT[veredicto] ? veredicto : "duda", ac = AC[v];
-  const st = club ? estiloClub(club) : { p: color || "#1b2740", s: "#475569" };
-  const nm = esc(nombre), mw = Math.max(0, ...String(nombre || "").split(/\s+/).map((w) => w.length)), size = mw > 9 ? 84 : mw > 7 ? 100 : mw > 6 ? 116 : 128;
-  const f = cajaFoto(fotoW, fotoH), pn = panelClub(st);
-  return `<div style="display:flex;position:relative;width:1200px;height:675px;background:${pn.fondo};font-family:'Figtree';color:#fff;overflow:hidden">
-  <div style="display:flex;position:absolute;left:600px;top:-200px;width:900px;height:1100px;${pn.css}border-left:12px solid ${ac};transform:skewX(-14deg)">${pn.kids}</div>
-  ${escudo ? `<img src="${esc(escudo)}" width="520" height="520" style="position:absolute;left:-70px;top:300px;opacity:0.1" />` : ""}
-  <div style="display:flex;flex-direction:column;justify-content:center;position:absolute;left:72px;top:0;width:480px;height:675px">
-    <div style="display:flex;align-self:flex-start;background:${ac};color:#0b1220;font-size:30px;letter-spacing:4px;padding:10px 26px;border-radius:99px">${TXT[v]}</div>
-    <div style="display:flex;font-family:'Bricolage';font-size:${size}px;line-height:1;letter-spacing:-4px;margin-top:22px">${nm}</div>
-    <div style="display:flex;width:170px;height:10px;border-radius:99px;background:${ac};margin-top:18px"></div>
-    <div style="display:flex;align-items:center;margin-top:26px;font-size:40px">${escudo ? `<img src="${esc(escudo)}" width="64" height="64" style="margin-right:18px" />` : ""}${esc(club)}</div>
-    ${plazo ? `<div style="display:flex;margin-top:14px;font-size:32px;color:rgba(255,255,255,0.8)">Vuelta: ${esc(String(plazo).charAt(0).toLowerCase() + String(plazo).slice(1))}</div>` : ""}
+  const st = club ? { ...estiloClub(club), sash: /rayo|elche/.test(norm(club)) } : { p: color || "#1b2740", s: "#475569" };
+  const clara = lumHex(st.s) > 0.85;
+  // Lado del texto: color principal del club; lado de la foto: segundo color (o principal más oscuro si el segundo es blanco)
+  const izq1 = mezcla(st.p, "#ffffff", 0.06), izq2 = mezcla(st.p, "#0b1220", 0.42);
+  const der = clara ? mezcla(st.p, "#0b1220", 0.55) : mezcla(st.s, "#0b1220", 0.15);
+  const derLuz = clara ? mezcla(st.p, "#ffffff", 0.05) : mezcla(st.s, "#ffffff", 0.22);
+  // Dibujo de la camiseta en el lado del texto: rayas (clubes a rayas), banda diagonal (Rayo, Elche) o rayitas finas
+  let det = "";
+  if (st.r) for (let i = 0; i < 20; i++) det += `<div style="display:flex;position:absolute;left:${i * 120 + 60}px;top:0;width:60px;height:900px;background-color:${rgbaHex(clara ? "#ffffff" : st.s, clara ? 0.13 : 0.5)}"></div>`;
+  else for (let i = 0; i < 70; i++) det += `<div style="display:flex;position:absolute;left:${i * 14}px;top:0;width:2px;height:900px;background-color:rgba(255,255,255,0.035)"></div>`;
+  if (st.sash) det += `<div style="display:flex;position:absolute;left:0;top:300px;width:1400px;height:170px;background-color:rgba(255,255,255,0.24);transform:rotate(-24deg)"></div>`;
+  const nm = esc(String(nombre || "").toUpperCase()), mw = Math.max(0, ...String(nombre || "").split(/\s+/).map((w) => w.length));
+  const size = mw > 9 ? 76 : mw > 8 ? 84 : mw > 7 ? 92 : mw > 6 ? 100 : mw > 5 ? 108 : 118;
+  const f = cajaFoto(fotoW, fotoH);
+  return `<div style="display:flex;position:relative;width:1200px;height:675px;background-color:${der};font-family:'Figtree';color:#fff;overflow:hidden">
+  <div style="display:flex;position:absolute;left:560px;top:0;width:640px;height:675px;background-image:radial-gradient(circle at 50% 55%, ${derLuz} 0%, rgba(0,0,0,0) 70%)"></div>
+  <div style="display:flex;position:absolute;left:-600px;top:-112px;width:1200px;height:900px;background-image:linear-gradient(160deg, ${izq1} 0%, ${izq2} 100%);transform:skewX(-14deg);overflow:hidden">${det}</div>
+  <div style="display:flex;position:absolute;left:0;top:0;width:700px;height:675px;background-image:radial-gradient(circle at 0% 0%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0) 62%)"></div>
+  ${escudo ? `<img src="${esc(escudo)}" width="540" height="540" style="position:absolute;left:-10px;top:95px;opacity:0.2" />` : ""}
+  <div style="display:flex;position:absolute;left:584px;top:-112px;width:30px;height:900px;background-color:${ac};opacity:0.16;transform:skewX(-14deg)"></div>
+  <div style="display:flex;position:absolute;left:592px;top:-112px;width:14px;height:900px;background-color:${ac};opacity:0.28;transform:skewX(-14deg)"></div>
+  <div style="display:flex;position:absolute;left:608px;top:-112px;width:24px;height:900px;background-color:${st.s};transform:skewX(-14deg)"></div>
+  <div style="display:flex;position:absolute;left:596px;top:-112px;width:6px;height:900px;background-color:${ac};transform:skewX(-14deg)"></div>
+  <div style="display:flex;position:absolute;left:0;top:0;width:1200px;height:675px;background-image:radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.32) 100%)"></div>
+  <div style="display:flex;position:absolute;left:0;top:455px;width:1200px;height:220px;background-image:linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.5) 100%)"></div>
+  ${foto ? `<div style="display:flex;position:absolute;left:${f.left}px;top:${f.top - 40}px;width:${f.w}px;height:${f.h + 40}px;overflow:hidden"><img src="${esc(foto)}" width="${f.w}" height="${f.h}" style="position:absolute;left:0px;top:40px;filter:drop-shadow(0px 0px 2px #ffffff) drop-shadow(0px 0px 10px ${ac})" /></div>` : ""}
+  <div style="display:flex;flex-direction:column;justify-content:center;position:absolute;left:80px;top:0;width:470px;height:675px">
+    <div style="display:flex;align-self:flex-start;background-color:${ac};color:#06101a;font-size:28px;letter-spacing:5px;padding:9px 26px;border-radius:99px">${TXT[v]}</div>
+    <div style="display:flex;font-family:'Bricolage';font-size:${size}px;line-height:0.95;letter-spacing:-3px;margin-top:26px">${nm}</div>
+    <div style="display:flex;width:150px;height:8px;border-radius:99px;background-color:${ac};margin-top:24px"></div>
+    <div style="display:flex;align-items:center;margin-top:28px;font-size:38px">${escudo ? `<img src="${esc(escudo)}" width="64" height="64" style="margin-right:18px" />` : ""}${esc(club)}</div>
+    ${plazo ? `<div style="display:flex;margin-top:14px;font-size:30px;color:rgba(255,255,255,0.8)">Vuelta: ${esc(String(plazo).charAt(0).toLowerCase() + String(plazo).slice(1))}</div>` : ""}
   </div>
-  ${foto ? `<img src="${esc(foto)}" width="${f.w}" height="${f.h}" style="position:absolute;left:${f.left}px;top:${f.top}px" />` : ""}
 </div>`;
 }
 
