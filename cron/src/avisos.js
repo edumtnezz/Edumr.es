@@ -600,7 +600,7 @@ export async function avisarPuntos(env, deps) {
   let sent = 0;
   for (const it of q) {
     if (sent >= 8) { rest.push(it); continue; }
-    const ok = await send(env, f, chat, textoPuntos(it), { noPreview: true });
+    const ok = await send(env, f, chat, textoPuntos(it), { previewUrl: "https://edumr.es/img/aviso-puntos.jpg?v=1" });
     if (ok) sent++; else rest.push(it);
   }
   try { await env.PORRA.put(PTS_Q_KEY, JSON.stringify(rest)); } catch (e) {}
