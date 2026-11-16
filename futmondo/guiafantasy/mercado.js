@@ -4507,7 +4507,7 @@
     const l2 = el("span", "rtb-l2");
     l2.appendChild(el("b", "chb-val", c.valor));
     const k = (v) => (v > 0 ? "+" : "−") + (Math.abs(v) >= 1e6 ? (Math.abs(v) / 1e6).toFixed(1).replace(".", ",") + "M" : Math.round(Math.abs(v) / 1e3) + "k");
-    [[c.chg1, "hoy"], [c.chg7, "7 días"]].forEach(([v, t]) => { if (!v) return; const sp = el("span", v > 0 ? "rtb-up" : "rtb-dn", k(v)); sp.appendChild(el("small", "rtb-when", " " + t)); l2.appendChild(sp); });
+    [[pl ? pl.chg1 : c.chg1, "hoy"], [pl ? pl.chg7 : c.chg7, "7 días"]].forEach(([v, t]) => { v = Number(v) || 0; if (!v) return; const sp = el("span", v > 0 ? "rtb-up" : "rtb-dn", k(v)); sp.appendChild(el("small", "rtb-when", " " + t)); l2.appendChild(sp); });
     body.appendChild(l2);
     card.appendChild(body);
     box.appendChild(card);
