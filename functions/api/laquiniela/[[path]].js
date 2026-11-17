@@ -2809,7 +2809,7 @@ async function analiticaCalc(env, ds, deMercado, now) {
       if (r) { duelo.resultados.push({ j: pv.j, team: pv.team, at: pv.at, ...r }); duelo.hechos[dk] = 1; delete duelo.previos[dk]; }
       else if (pv.j < Number(jor.matchday) - 2) delete duelo.previos[dk]; // jornada vieja sin datos: se descarta
     }
-    duelo.resultados = duelo.resultados.slice(-400);
+    duelo.resultados = duelo.resultados.slice(-1000); // una temporada entera (20 equipos × 38 jornadas)
     await env.PORRA.put(AN_DUELO, JSON.stringify(duelo));
     {
       const conFf = duelo.resultados.filter((x) => x.ff != null);

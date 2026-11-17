@@ -4393,7 +4393,7 @@
       const posDe = (i) => (i === 0 ? 0 : i <= fm[0] ? 1 : i <= fm[0] + fm[1] ? 2 : 3);
       const k = (String(box.className).match(/art-once-([a-z]+)/) || [])[1] || "";
       const t = TT[k] || ["Once", ""];
-      const side = { starters: ps.map((p, i) => ({ name: p.name, full: p.name, pos: POS[posDe(i)], photo: p.photo || "", prob: p.prob != null ? Math.round(p.prob) : null, note: "Media " + (Math.round(p.avg * 10) / 10).toFixed(1).replace(".", ",") })), bench: [] };
+      const side = { starters: ps.map((p, i) => ({ name: p.name, full: p.name, pos: POS[posDe(i)], photo: p.photo || "", probE: anProbE && anProbE.has(String(p.id)) ? anProbE.get(String(p.id)) : null, prob: p.prob != null ? Math.round(p.prob) : null, note: "Media " + (Math.round(p.avg * 10) / 10).toFixed(1).replace(".", ",") })), bench: [] };
       const card = window.EduAlineacion.card(side, t[1], "/img/avatar.svg", "", ps, "probable", [], { pool: ps, title: t[0], noAuto: true, noCrest: true });
       card.querySelectorAll("a.pl").forEach((a) => a.addEventListener("click", (ev) => {
         const m = (a.getAttribute("href") || "").match(/\/jugador\/([^/]+)/);
@@ -4409,10 +4409,17 @@
         [[tope ? tope + " M" : "Sin límite", "Tope por jugador"], [mt[2], "Formación"], [mt[3], "Total"], [mt[4], "Media"]].forEach(([v, kk]) => { const c = el("div", "once-c"); c.appendChild(el("b", null, v)); c.appendChild(el("small", null, kk)); st.appendChild(c); });
         pr.replaceWith(st);
       }
+      // Escudo pequeño del club en una esquina de la foto
+      card.querySelectorAll("a.pl").forEach((a) => {
+        const m = (a.getAttribute("href") || "").match(/\/jugador\/([^/]+)/), pl = m && ps.find((x) => String(x.id) === decodeURIComponent(m[1])), ph = a.querySelector(".pl-ph");
+        if (pl && pl.logo && ph) { const cr = el("img", "pl-cr"); cr.alt = ""; cr.src = pl.logo; cr.addEventListener("error", () => cr.remove()); ph.appendChild(cr); }
+      });
       box.dataset.ok = "1";
       box.replaceWith(card);
     });
-    if (all && all.length) pon(); else load().then(pon).catch(() => {});
+    const listo = all && all.length ? Promise.resolve() : load();
+    // Los % E (nuestro) y F (FutbolFantasy) como en el resto de la web; si /analitica falla, solo F
+    listo.then(() => cargarProbE().catch(() => null)).then(pon, pon).catch(() => {});
   }
   function wireArtPlayers(art) {
     try { artSecciones(art); } catch (e) {}
@@ -6583,15 +6590,17 @@
   }
   let anPool = [];
   // Nuestra probabilidad de ser titular (probE) por jugador, de /analitica (onces propios). Se carga una vez.
-  let anProbE = null, anProbEPend = false;
+  let anProbE = null, anProbEPend = false, anProbEP = null;
   function cargarProbE() {
-    if (anProbE || anProbEPend) return;
+    if (anProbE) return Promise.resolve(anProbE);
+    if (anProbEPend) return anProbEP;
     anProbEPend = true;
-    fetch(API + "/analitica").then((r) => r.json()).then((a) => {
+    anProbEP = fetch(API + "/analitica").then((r) => r.json()).then((a) => {
       const m = new Map();
       Object.values((a && a.onces) || {}).forEach((o) => (o.prob || []).forEach((x) => { if (x && x.id != null && x.p != null) m.set(String(x.id), x.p); }));
       if (m.size) { anProbE = m; if (anData && $("anOut") && anTab === "equipo") { const y = window.scrollY; renderAnalisis(anData); window.scrollTo(0, y); } }
-    }).catch(() => {}).then(() => { anProbEPend = false; });
+    }).catch(() => {}).then(() => { anProbEPend = false; return anProbE; });
+    return anProbEP;
   }
   function photoOf(p) {
     try { if (window.EduAlineacion && p) return window.EduAlineacion.photoFor({ name: p.nombre, full: p.nombre, photo: p.photo || "" }, anPool); } catch (e) {}

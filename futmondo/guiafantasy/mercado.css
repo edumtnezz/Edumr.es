@@ -4171,3 +4171,6 @@ html[data-theme="dark"] .art-sec-ok > h3.nw-h { color: #4ade80; } html[data-them
 .once-c b { font-size: .92rem; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .once-c small { font-size: .6rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted, #64748b); }
 .art-body .al .al-foot { display: none; }
+
+/* 17/11/2026 · Onces: escudo del club pequeño en la esquina de la foto */
+.al .pl-ph img.pl-cr, .art-body .al .pl-ph img.pl-cr { position: absolute; top: -3px; left: -5px; width: 18px; height: 18px; padding: 1px; margin: 0; border: 0; border-radius: 50%; background: #fff; object-fit: contain; box-shadow: 0 1px 3px rgba(0,0,0,.4); z-index: 2; }
