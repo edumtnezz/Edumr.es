@@ -4384,7 +4384,8 @@
     const TT = { caro: ["Once <b>caro</b>", "Sin límite de precio"], equilibrado: ["Once <b>equilibrado</b>", "Hasta 15 M por jugador"], lowcost: ["Once <b>low cost</b>", "Hasta 6 M por jugador"] };
     const pon = () => boxes.forEach((box) => {
       if (box.dataset.ok) return;
-      const ids = [...box.querySelectorAll(".art-op[data-pid]")].map((o) => o.dataset.pid);
+      // En el HTML las filas van de delanteros a portero: se da la vuelta para tener portero, defensas, medios, delanteros
+      const ids = [...box.querySelectorAll(".art-once-l")].reverse().flatMap((r) => [...r.querySelectorAll(".art-op[data-pid]")].map((o) => o.dataset.pid));
       const ps = ids.map((id) => (all || []).find((q) => String(q.id) === id));
       if (ps.length !== 11 || ps.some((p) => !p) || !window.EduAlineacion) return;
       const fm = box.dataset.form.split("-").map(Number);
