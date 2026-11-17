@@ -156,7 +156,16 @@ export function probInterna(peso, est, cal, sit, calSit) {
 export function puntuarDuelo(previo, reales) {
   if (!previo || !reales || reales.size < 11) return null;
   const cuenta = (ids) => (ids || []).filter((id) => reales.has(id)).length;
-  return { propio: cuenta(previo.propio), ff: previo.ff && previo.ff.length >= 10 ? cuenta(previo.ff) : null, ffN: (previo.ff || []).length };
+  const r = { propio: cuenta(previo.propio), ff: previo.ff && previo.ff.length >= 10 ? cuenta(previo.ff) : null, ffN: (previo.ff || []).length };
+  // Aprendizaje por jugador (17/11/2026): % de cada uno (E nuestro, F FutbolFantasy) contra si fue titular de verdad.
+  // Brier = media de (probabilidad − 1 si fue titular, 0 si no)²; cuanto más bajo, mejor. Solo con los jugadores de los que hay los dos %.
+  const pe = previo.pe || {}, pf = previo.pf || {}, ids = Object.keys(pf).filter((id) => pe[id] != null && pf[id] != null);
+  if (ids.length >= 8) {
+    let be = 0, bf = 0, se = 0, sf = 0, sr = 0;
+    for (const id of ids) { const o = reales.has(id) ? 1 : 0, e = pe[id] / 100, f = pf[id] / 100; be += (e - o) ** 2; bf += (f - o) ** 2; se += e; sf += f; sr += o; }
+    r.jug = { n: ids.length, be: +(be / ids.length).toFixed(4), bf: +(bf / ids.length).toFixed(4), e: +se.toFixed(2), f: +sf.toFixed(2), real: sr };
+  }
+  return r;
 }
 
 // Compara nuestro once con el de otra fuente (lista de titulares con nombre) para el mismo equipo
@@ -165,12 +174,15 @@ export function compararOnce(propio, equipo, titularesFuera, jugEquipo) {
   const fm = jugEquipo.map((p) => ({ id: p.id, name: p.n, team: equipo, role: p.ro }));
   const m = emparejar(titularesFuera.map((p, i) => ({ id: i, name: p.full || p.name, teamID: 1 })), { 1: { name: equipo } }, fm);
   const fuera = new Map([...m.values()].map((f) => [f.id, f.name]));
+  // % de FutbolFantasy de cada titular emparejado (para el aprendizaje por jugador)
+  const pf = {};
+  for (const [k, f] of m.entries()) { const t = titularesFuera[k]; if (t && t.prob != null && !isNaN(Number(t.prob))) pf[f.id] = Number(t.prob); }
   const mios = new Map(propio.xi.map((x) => [x.id, x.name]));
   return {
     coinciden: [...mios.keys()].filter((id) => fuera.has(id)).length, emparejados: fuera.size,
     soloPropio: [...mios.entries()].filter(([id]) => !fuera.has(id)).map(([, n]) => n),
     soloFuera: [...fuera.entries()].filter(([id]) => !mios.has(id)).map(([, n]) => n),
-    firma: [...fuera.keys()].sort().join(","),
+    firma: [...fuera.keys()].sort().join(","), pf,
   };
 }
 

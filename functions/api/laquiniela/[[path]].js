@@ -2798,7 +2798,7 @@ async function analiticaCalc(env, ds, deMercado, now) {
         const ko = ffWhenAt(m.date, m.time);
         const abierto = !enJuego && ko && now < ko - 90 * 60e3;
         const dk = jor.matchday + ":" + k;
-        if (abierto && !(duelo.hechos || {})[dk]) duelo.previos[dk] = { j: Number(jor.matchday), k, team: mio.team, at: now, propio: mio.xi.map((x) => x.id), ff: cmp.firma ? cmp.firma.split(",") : [] };
+        if (abierto && !(duelo.hechos || {})[dk]) duelo.previos[dk] = { j: Number(jor.matchday), k, team: mio.team, at: now, propio: mio.xi.map((x) => x.id), ff: cmp.firma ? cmp.firma.split(",") : [], pf: cmp.pf || {}, pe: Object.fromEntries((mio.prob || []).filter((x) => cmp.pf && cmp.pf[x.id] != null).map((x) => [x.id, x.p])) };
       }
     }
     // Duelo: cuando Futmondo ya da los titulares reales de esa jornada, se puntúa a los dos y se guarda el resultado
@@ -2815,6 +2815,7 @@ async function analiticaCalc(env, ds, deMercado, now) {
       const conFf = duelo.resultados.filter((x) => x.ff != null);
       out.duelo = { onces: duelo.resultados.length, pendientes: Object.keys(duelo.previos).length, comparables: conFf.length,
         propio: conFf.reduce((t, x) => t + x.propio, 0), ff: conFf.reduce((t, x) => t + x.ff, 0), de: conFf.length * 11,
+        jugadores: (() => { const a = duelo.resultados.filter((x) => x.jug), n = a.reduce((t, x) => t + x.jug.n, 0); return n ? { n, onces: a.length, brierE: +(a.reduce((t, x) => t + x.jug.be * x.jug.n, 0) / n).toFixed(4), brierF: +(a.reduce((t, x) => t + x.jug.bf * x.jug.n, 0) / n).toFixed(4), sumaE: +a.reduce((t, x) => t + x.jug.e, 0).toFixed(1), sumaF: +a.reduce((t, x) => t + x.jug.f, 0).toFixed(1), titularesReales: a.reduce((t, x) => t + x.jug.real, 0) } : null; })(),
         ultimos: duelo.resultados.slice(-20).reverse() };
     }
     log.eventos = log.eventos.slice(-300);
