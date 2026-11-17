@@ -4332,7 +4332,7 @@
       const c = x.chol, f = (c.forma || []).slice(-5), mx = Math.max(10, ...f);
       const card = el("div", "chol");
       const bars = el("div", "chol-bars");
-      f.forEach((v) => { const col = el("span", "chol-b" + (v >= 8 ? " hi" : v <= 0 ? " lo" : "")); const i = el("i"); i.style.height = Math.max(6, Math.round((v / mx) * 100)) + "%"; col.appendChild(i); col.appendChild(el("b", null, String(v))); col.appendChild(el("em", "chol-j", "")); bars.appendChild(col); });
+      f.forEach((v) => { const col = el("span", "chol-b" + (v >= 8 ? " hi" : v <= 0 ? " lo" : "")); const i = el("i"); i.style.height = Math.max(6, Math.round((v / mx) * 100)) + "%"; col.appendChild(el("b", null, String(v))); { const t = el("span", "chol-t"); t.appendChild(i); col.appendChild(t); } col.appendChild(el("em", "chol-j", "")); bars.appendChild(col); });
       cholJ(bars, c.team, f.length);
       card.appendChild(bars);
       card.appendChild(cholStats(c));
@@ -4541,7 +4541,7 @@
     const bars = el("div", "chol-bars");
     f.forEach((v, i) => {
       const col = el("span", "chol-b" + (v >= 8 ? " hi" : v <= 0 ? " lo" : "")); const b = el("i"); b.style.height = Math.max(6, Math.round((v / mx) * 100)) + "%";
-      col.appendChild(b); col.appendChild(el("b", null, String(v)));
+      col.appendChild(el("b", null, String(v))); { const t = el("span", "chol-t"); t.appendChild(b); col.appendChild(t); }
       col.appendChild(el("em", "chol-j", ""));
       bars.appendChild(col);
     });

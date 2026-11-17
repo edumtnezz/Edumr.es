@@ -4182,13 +4182,13 @@ html[data-theme="dark"] .art-sec-ok > h3.nw-h { color: #4ade80; } html[data-them
 /* 17/11/2026 · Onces: escudo del club pequeño en la esquina de la foto */
 .al .pl-ph img.pl-cr, .art-body .al .pl-ph img.pl-cr { position: absolute; top: -3px; left: -5px; width: 18px; height: 18px; padding: 1px; margin: 0; border: 0; border-radius: 50%; background: #fff; object-fit: contain; box-shadow: 0 1px 3px rgba(0,0,0,.4); z-index: 2; }
 
-/* 17/11/2026 · Chollo (v3): barras tipo píldora sobre un carril claro; el valor encima de cada barra, la jornada debajo y el último partido resaltado */
-.chol-bars { height: 96px; gap: 10px; align-items: stretch; }
-.chol-b { position: relative; justify-content: flex-end; gap: 4px; }
-.chol-b::before { content: ""; position: absolute; top: 0; bottom: 16px; left: 50%; width: 100%; max-width: 30px; transform: translateX(-50%); border-radius: 99px; background: rgba(127,127,127,.13); }
-.chol-b > * { position: relative; }
-.chol-b b { order: 1; }
-.chol-b i { order: 2; width: 100%; max-width: 30px; border-radius: 99px; opacity: .5; }
+/* 17/11/2026 · Chollo (v4): carril de altura fija con la barra dentro (altura = puntos), valor arriba, jornada abajo, último partido resaltado */
+.chol-bars { height: auto; gap: 10px; align-items: flex-end; }
+.chol-b { height: auto; gap: 5px; justify-content: flex-end; position: static; }
+.chol-b::before { content: none; }
+.chol-b b { order: 1; font-size: .85rem; }
+.chol-t { order: 2; width: 100%; max-width: 32px; height: 70px; display: flex; align-items: flex-end; border-radius: 99px; background: rgba(127,127,127,.14); overflow: hidden; }
+.chol-b i { order: 0; width: 100%; max-width: none; border-radius: 99px; opacity: .55; }
 .chol-b .chol-j { order: 3; }
 .chol-b:last-child i { opacity: 1; }
 .chol-b:last-child b, .chol-b:last-child .chol-j { font-weight: 800; color: var(--text, inherit); }
