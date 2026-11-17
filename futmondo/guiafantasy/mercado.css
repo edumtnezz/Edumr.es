@@ -4192,9 +4192,9 @@ html[data-theme="dark"] .art-sec-ok > h3.nw-h { color: #4ade80; } html[data-them
 .chol-b .chol-j { order: 3; }
 .chol-b:last-child i { opacity: 1; }
 .chol-b:last-child b, .chol-b:last-child .chol-j { font-weight: 800; color: var(--text, inherit); }
-/* 17/11/2026 · Onces más ligeros: recuadros pequeños y menos cosas en el campo (sin «?» ni «⇄ sustituto»; quedan foto, escudo, E/F, nombre y media) */
+/* 17/11/2026 · Onces más ligeros: recuadros pequeños y menos cosas en el campo (sin «?»; el sustituto «⇄» se mantiene) */
 .once-st { gap: 5px; margin: 6px 0 8px; }
 .once-c { padding: 4px 2px; gap: 0; border-radius: 9px; }
 .once-c b { font-size: .78rem; }
 .once-c small { font-size: .5rem; letter-spacing: .03em; }
-.art-body .al .pl-duda, .art-body .al .pl-subr, .art-body .al .pl-sw { display: none; }
+.art-body .al .pl-duda { display: none; }
