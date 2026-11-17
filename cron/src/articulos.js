@@ -97,6 +97,7 @@ export async function publicarMercado(env, ps, now = Date.now()) {
 // pudo ser, en cuanto se pueda de martes a viernes. Después, en cada pasada, si alguno de los elegidos pasa a lesionado o
 // sancionado, se rehace y se dice quién sale y quién entra. Reglas en functions/_lib/onces.mjs.
 const K_ONCE = "art:once:v1";
+const FMT_ONCE = 2; // 1 = 1-4-3-3 fijo; 2 = mejor formación de cada once (17/11/2026). Al subirlo se rehace la edición de la jornada sin avisar.
 export async function publicarOnces(env, f = fetch, now = Date.now()) {
   if (!env || !env.PORRA) return { skipped: "sin kv" };
   if (new Date(now).getUTCMinutes() % 10 !== 7) return { skipped: "no toca" };
@@ -108,6 +109,7 @@ export async function publicarOnces(env, f = fetch, now = Date.now()) {
   const jn = jr && Number(jr.matchday);
   if (!jn) return { error: "sin jornada" };
   const nueva = st.jn !== jn;
+  const rehacer = !nueva && st.fmt !== FMT_ONCE;
   // Primera edición de la jornada: lunes desde las 23:00, o de martes a viernes
   if (nueva && !((dia === "Mon" && hora >= 23) || ["Tue", "Wed", "Thu", "Fri"].indexOf(dia) >= 0)) return { skipped: "fuera de hora" };
   if (nueva) { // primera edición: no pegada a otro artículo (menos de 2 h)
@@ -122,12 +124,12 @@ export async function publicarOnces(env, f = fetch, now = Date.now()) {
   if (!nueva) {
     const porId = new Map(ps.map((p) => [String(p.id), p]));
     const caidos = Object.values(st.ids || {}).flat().filter((id) => { const p = porId.get(id); return p && (p.est === "lesionado" || p.est === "sancionado"); });
-    if (!caidos.length) return { sin_cambios: true };
+    if (!caidos.length && !rehacer) return { sin_cambios: true };
   }
   const a = oncesArticulo(ps, jn);
   if (!a) return { error: "no se pudo completar" };
   if (!nueva) {
-    cambios = cambiosOnce(st.ids, a.ids, ps);
+    cambios = rehacer ? {} : cambiosOnce(st.ids, a.ids, ps);
     // Se guardan también los cambios de antes para que la edición corregida los siga diciendo
     for (const k of Object.keys(st.cambios || {})) cambios[k] = (st.cambios[k] || []).concat(cambios[k] || []);
   }
@@ -137,7 +139,7 @@ export async function publicarOnces(env, f = fetch, now = Date.now()) {
   own.unshift({ id: fin.id, title: fin.title, lead: fin.lead, body: fin.body, status: "published", createdAt: nueva ? now : (st.at || now), publishedAt: nueva ? now : (st.at || now), updatedAt: now, thumb: "", club: "", players: [], tipo: "articulo", auto: "articulo", art: "artonce", f: 1, fp: "" });
   own.sort((x, y) => (y.publishedAt || 0) - (x.publishedAt || 0));
   await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
-  await env.PORRA.put(K_ONCE, JSON.stringify({ jn, ids: fin.ids, cambios, at: nueva ? now : (st.at || now) }));
+  await env.PORRA.put(K_ONCE, JSON.stringify({ jn, ids: fin.ids, cambios, fmt: FMT_ONCE, at: nueva ? now : (st.at || now) }));
   if (nueva && env.TELEGRAM_BOT_TOKEN) {
     let chat = String(env.TELEGRAM_CHAT_ID || "");
     if (!chat) { try { chat = String(((await env.PORRA.get("tg:avisos:v1", "json")) || {}).chat || ""); } catch (e) {} }

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { elegirOnce, oncesArticulo, cambiosOnce } from "../functions/_lib/onces.mjs";
+import { elegirOnce, mejorOnce, oncesArticulo, cambiosOnce } from "../functions/_lib/onces.mjs";
 import { cuerpoAHtml } from "../functions/_lib/noticia-cuerpo.mjs";
 
 let n = 0;
@@ -33,4 +33,21 @@ test("cambios: si uno de los elegidos se lesiona, se dice quién sale y quién e
   const b = oncesArticulo(ps, 13);
   const c = cambiosOnce(a.ids, b.ids, ps);
   assert.match(c.caro[0], new RegExp("^Sale " + x.name + " \\(lesionado\\), entra J"));
+});
+
+test("mejor formación: si los delanteros rinden más, sale 3-4-3; si los medios, 3-5-2", () => {
+  const ps = []; n = 0;
+  ps.push(P("portero", 5, 1e6));
+  for (let i = 0; i < 6; i++) ps.push(P("defensa", 4, 1e6, { team: "D" + i }));
+  for (let i = 0; i < 6; i++) ps.push(P("centrocampista", 5, 1e6, { team: "M" + i }));
+  for (let i = 0; i < 4; i++) ps.push(P("delantero", 9, 1e6, { team: "F" + i }));
+  assert.deepEqual(mejorOnce(ps, Infinity).form, [3, 4, 3]);
+  const qs = ps.map((p) => (p.role === "delantero" ? { ...p, avg: 4 } : p.role === "centrocampista" ? { ...p, avg: 9 } : p));
+  assert.deepEqual(mejorOnce(qs, Infinity).form, [3, 5, 2]);
+});
+test("el campo se pinta con la formación indicada", () => {
+  const a = oncesArticulo(plantel(), 13);
+  assert.match(a.body, /# once \| [^|]+ \| caro \| \d-\d-\d/);
+  assert.match(cuerpoAHtml(a.body), /data-form="\d-\d-\d"/);
+  assert.doesNotMatch(a.lead + a.body, /1-4-3-3/);
 });

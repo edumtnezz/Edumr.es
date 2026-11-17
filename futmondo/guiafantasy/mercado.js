@@ -4376,22 +4376,30 @@
     });
   }
   // Once en el campo: cada hueco (.art-op con su id) recibe foto, nombre corto y media. Tocar abre la ficha.
+  // Onces recomendados: se pintan con la misma plantilla que «Analiza tu once» (campo con foto, nombre, % de jugar y banquillo vacío)
   function wireArtOnce(art) {
-    const ops = [...art.querySelectorAll(".art-op[data-pid]")];
-    if (!ops.length) return;
-    const pon = () => ops.forEach((o) => {
-      if (o.dataset.ok) return;
-      const p = (all || []).find((q) => String(q.id) === o.dataset.pid);
-      if (!p) return;
-      o.dataset.ok = "1";
-      const im = el("img", "art-op-f"); im.alt = ""; im.loading = "lazy"; im.src = p.fotoG || p.photo || p.logo || "";
-      im.addEventListener("error", () => { if (p.logo && im.src !== p.logo) im.src = p.logo; else im.remove(); });
-      o.appendChild(im);
-      if (p.logo) { const cr = el("img", "art-op-cr"); cr.alt = ""; cr.loading = "lazy"; cr.src = p.logo; cr.addEventListener("error", () => cr.remove()); o.appendChild(cr); }
-      o.appendChild(el("b", "art-op-n", String(p.name).split(" ").slice(-1)[0].length > 2 && String(p.name).length > 12 ? String(p.name).split(" ").slice(-1)[0] : p.name));
-      o.appendChild(el("small", "art-op-m", (Math.round(p.avg * 10) / 10).toFixed(1).replace(".", ",")));
-      o.setAttribute("role", "link"); o.tabIndex = 0;
-      o.addEventListener("click", () => openFicha(p));
+    const boxes = [...art.querySelectorAll(".art-once[data-form]")];
+    if (!boxes.length) return;
+    const POS = ["Portero", "Defensa", "Mediocampista", "Delantero"];
+    const TT = { caro: ["Once <b>caro</b>", "Sin límite de precio"], equilibrado: ["Once <b>equilibrado</b>", "Hasta 15 M por jugador"], lowcost: ["Once <b>low cost</b>", "Hasta 6 M por jugador"] };
+    const pon = () => boxes.forEach((box) => {
+      if (box.dataset.ok) return;
+      const ids = [...box.querySelectorAll(".art-op[data-pid]")].map((o) => o.dataset.pid);
+      const ps = ids.map((id) => (all || []).find((q) => String(q.id) === id));
+      if (ps.length !== 11 || ps.some((p) => !p) || !window.EduAlineacion) return;
+      const fm = box.dataset.form.split("-").map(Number);
+      const posDe = (i) => (i === 0 ? 0 : i <= fm[0] ? 1 : i <= fm[0] + fm[1] ? 2 : 3);
+      const k = (String(box.className).match(/art-once-([a-z]+)/) || [])[1] || "";
+      const t = TT[k] || ["Once", ""];
+      const side = { starters: ps.map((p, i) => ({ name: p.name, full: p.name, pos: POS[posDe(i)], photo: p.photo || "", prob: p.prob != null ? Math.round(p.prob) : null, note: "Media " + (Math.round(p.avg * 10) / 10).toFixed(1).replace(".", ",") })), bench: [] };
+      const card = window.EduAlineacion.card(side, t[1], "/img/avatar.svg", "", ps, "probable", [], { pool: ps, title: t[0], noAuto: true, noCrest: true });
+      card.querySelectorAll("a.pl").forEach((a) => a.addEventListener("click", (ev) => {
+        const m = (a.getAttribute("href") || "").match(/\/jugador\/([^/]+)/);
+        const pl = m && ps.find((x) => String(x.id) === decodeURIComponent(m[1]));
+        if (pl) { ev.preventDefault(); openFicha(pl); }
+      }));
+      box.dataset.ok = "1";
+      box.replaceWith(card);
     });
     if (all && all.length) pon(); else load().then(pon).catch(() => {});
   }

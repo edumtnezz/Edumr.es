@@ -27,14 +27,18 @@ export function cuerpoAHtml(body) {
         '</span><span class="art-pl-v"><b>' + esc(pj[3].trim()) + "</b>" + (viejo ? "" : "<small>" + esc(pj[4].trim()) + "</small>") + "</span></div>";
       continue;
     }
-    // Once en el campo: «# once | id,id,…(11) | etiqueta» en 1-4-3-3 (portero abajo). La web pone foto, nombre y media (por el id).
-    const oj = l.match(/^# once \| ([0-9a-zA-Z,]{60,600}) \| ([a-z]{1,20})$/);
+    // Once en el campo: «# once | id,id,…(11) | etiqueta | 3-4-3» (portero, defensas, medios, delanteros; sin formación = 4-3-3, portero abajo).
+    // La web pone foto, nombre y media (por el id) con la plantilla de «Analiza tu once».
+    const oj = l.match(/^# once \| ([0-9a-zA-Z,]{60,600}) \| ([a-z]{1,20})(?: \| ([3-5]-[2-5]-[1-4]))?$/);
     if (oj) {
       if (lista) { html += "</ul>"; lista = false; }
       const ids = oj[1].split(",");
       if (ids.length === 11) {
+        const fm = (oj[3] || "4-3-3").split("-").map(Number);
+        if (fm[0] + fm[1] + fm[2] !== 10) continue;
         const fila = (xs) => '<div class="art-once-l">' + xs.map((id) => '<span class="art-op" data-pid="' + esc(id) + '"></span>').join("") + "</div>";
-        html += '<div class="art-once art-once-' + esc(oj[2]) + '">' + fila(ids.slice(8, 11)) + fila(ids.slice(5, 8)) + fila(ids.slice(1, 5)) + fila(ids.slice(0, 1)) + "</div>";
+        const a = 1 + fm[0], b = a + fm[1];
+        html += '<div class="art-once art-once-' + esc(oj[2]) + '" data-form="' + esc(fm.join("-")) + '">' + fila(ids.slice(b, 11)) + fila(ids.slice(a, b)) + fila(ids.slice(1, a)) + fila(ids.slice(0, 1)) + "</div>";
       }
       continue;
     }
