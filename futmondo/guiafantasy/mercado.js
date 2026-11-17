@@ -4332,10 +4332,11 @@
       const c = x.chol, f = (c.forma || []).slice(-5), mx = Math.max(10, ...f);
       const card = el("div", "chol");
       const bars = el("div", "chol-bars");
-      f.forEach((v) => { const col = el("span", "chol-b" + (v >= 8 ? " hi" : v <= 0 ? " lo" : "")); const i = el("i"); i.style.height = Math.max(6, Math.round((v / mx) * 100)) + "%"; col.appendChild(i); col.appendChild(el("b", null, String(v))); bars.appendChild(col); });
+      f.forEach((v) => { const col = el("span", "chol-b" + (v >= 8 ? " hi" : v <= 0 ? " lo" : "")); const i = el("i"); i.style.height = Math.max(6, Math.round((v / mx) * 100)) + "%"; col.appendChild(i); col.appendChild(el("b", null, String(v))); col.appendChild(el("em", "chol-j", "")); bars.appendChild(col); });
+      cholJ(bars, c.team, f.length);
       card.appendChild(bars);
       const st = el("div", "chol-s");
-      [[c.media, "Media"], c.prob ? [c.prob + " %", "Juega"] : null].filter(Boolean).forEach(([v, k]) => { const r = el("div", "chol-r"); r.appendChild(el("small", null, k)); r.appendChild(el("b", null, String(v))); st.appendChild(r); });
+      [[c.media, "Media"], c.prob ? [c.prob + " %", "Prob. jugar"] : null].filter(Boolean).forEach(([v, k]) => { const r = el("div", "chol-r"); r.appendChild(el("small", null, k)); r.appendChild(el("b", null, String(v))); st.appendChild(r); });
       card.appendChild(st);
       b.appendChild(card);
       const ft = el("div", "chol-f");
@@ -4521,24 +4522,29 @@
     card.appendChild(body);
     box.appendChild(card);
     // Forma: sus últimos 5 puntos con su jornada (solo si se conoce de verdad) y, a la derecha, media y % de jugar
-    try { ensurePlayedJ(); } catch (e) {}
     const f = (c.forma || []).slice(-5), mx = Math.max(10, ...f);
     const g = el("div", "chol");
     const bars = el("div", "chol-bars");
     f.forEach((v, i) => {
       const col = el("span", "chol-b" + (v >= 8 ? " hi" : v <= 0 ? " lo" : "")); const b = el("i"); b.style.height = Math.max(6, Math.round((v / mx) * 100)) + "%";
       col.appendChild(b); col.appendChild(el("b", null, String(v)));
-      let jn = 0; try { jn = jLab(c.team, f.length, f.length - 1 - i); } catch (e) {}
-      col.appendChild(el("em", "chol-j", jn ? "J" + jn : ""));
+      col.appendChild(el("em", "chol-j", ""));
       bars.appendChild(col);
     });
+    cholJ(bars, c.team, f.length);
     g.appendChild(bars);
     const st = el("div", "chol-s");
-    [[c.media, "Media"], c.prob ? [c.prob + " %", "Juega"] : null].filter(Boolean).forEach(([v, kk]) => { const r = el("div", "chol-r"); r.appendChild(el("small", null, kk)); r.appendChild(el("b", null, String(v))); st.appendChild(r); });
+    [[c.media, "Media"], c.prob ? [c.prob + " %", "Prob. jugar"] : null].filter(Boolean).forEach(([v, kk]) => { const r = el("div", "chol-r"); r.appendChild(el("small", null, kk)); r.appendChild(el("b", null, String(v))); st.appendChild(r); });
     g.appendChild(st);
     box.appendChild(g);
-    if (c.motivo) box.appendChild(el("div", "chol-why", "Por qué: " + c.motivo));
     return box;
+  }
+  // Jornada bajo cada barra del chollo (la más reciente a la derecha). Se rellena cuando llegan las jornadas jugadas; si no se conocen, queda vacía.
+  function cholJ(bars, team, n) {
+    const pon = () => { bars.querySelectorAll(".chol-j").forEach((em, i) => { let jn = 0; try { jn = jLab(team, n, n - 1 - i); } catch (e) {} em.textContent = jn ? "J" + jn : ""; }); };
+    pon();
+    try { ensurePlayedJ(); } catch (e) {}
+    let t = 0; const iv = setInterval(() => { if (playedJ || ++t > 20) { clearInterval(iv); pon(); } }, 400);
   }
   function renderInicioFeatured() {
     const box = $("inicioFeatured");
@@ -6155,7 +6161,7 @@
         if (fit.length) {
           const sc = el("div", "sq3-pts");
           const j0 = (Number(p.jornadaFf) || 0) - 1;
-          for (let k = 0; k < fit.length; k++) {
+          for (let k = fit.length - 1; k >= 0; k--) {
             const idx = fit.length - 1 - k, v = Math.round(fit[idx]);
             const j = jLab(p.team, fit.length, k, j0 > 0 ? j0 : 0);
             const cell = el("span", "sq3-pt " + (v >= 6 ? "hi" : v >= 4 ? "mid" : v > 0 ? "lo" : v < 0 ? "neg" : fitPlayed(p, idx) ? "z0" : "zero"));
@@ -6216,7 +6222,7 @@
         rs.appendChild(el("div", "eq-sech")).appendChild(el("h3", null, "🔥 Jugadores en racha"));
         if (!hot.length) rs.appendChild(el("p", "muted small", "Ningún jugador del club lleva 3 partidos seguidos puntuando."));
         hot.slice(0, 5).forEach((p) => {
-          const l3 = (p.fitness || []).slice(-3).map((x) => Math.round(Number(x))).reverse();
+          const l3 = (p.fitness || []).slice(-3).map((x) => Math.round(Number(x)));
           const tot = l3.reduce((a, v) => a + v, 0);
           rs.appendChild(plRow(p, "🔥 3 partidos seguidos puntuando: " + l3.join(" + ") + " = " + tot + " pts"));
         });
@@ -6997,7 +7003,7 @@
       tx.appendChild(el("small", null, (p.equipo || "") + (tits.indexOf(p) >= 0 ? "" : " · banquillo")));
       head.appendChild(tx);
       const mini = el("div", "an-fm-mini");
-      { const fa = (p.fitness || []).map(Number); fa.slice(-5).reverse().forEach((v, k) => { const jn = jLab(p.equipo, fa.length, k, j0); const ci = el("i", v === 0 ? "z" : v <= 3 ? "l" : v >= 10 ? "h" : "m"); ci.appendChild(el("em", null, jn ? "J" + jn : "")); ci.appendChild(document.createTextNode(v === 0 ? "–" : String(Math.round(v)))); mini.appendChild(ci); }); }
+      { const fa = (p.fitness || []).map(Number); fa.slice(-5).forEach((v, i, arr) => { const k = arr.length - 1 - i; const jn = jLab(p.equipo, fa.length, k, j0); const ci = el("i", v === 0 ? "z" : v <= 3 ? "l" : v >= 10 ? "h" : "m"); ci.appendChild(el("em", null, jn ? "J" + jn : "")); ci.appendChild(document.createTextNode(v === 0 ? "–" : String(Math.round(v)))); mini.appendChild(ci); }); }
       head.appendChild(mini);
       card.appendChild(head);
       const body = el("div", "an-fm-body");
@@ -7007,7 +7013,7 @@
       const row = el("div", "an-fm-row");
       const len = f.length;
       const ptsByJ = {};
-      f.map((v, i) => [v, i]).reverse().forEach(([v, i]) => {
+      (() => { const r = f.map((v, i) => [v, i]).reverse(), o = []; for (let q = 0; q < r.length; q += 5) o.push(...r.slice(q, q + 5).reverse()); return o; })().forEach(([v, i]) => {
         const jn = jLab(p.equipo, len, len - 1 - i, j0);
         if (jn) ptsByJ[jn] = v;
         const op = jn && oppJ[teamCanon(p.equipo)] && oppJ[teamCanon(p.equipo)][jn];
@@ -7184,7 +7190,8 @@
       if (f.length) {
         const row = el("div", "an-pb-last an-pb-lastj"); row.appendChild(el("span", null, "Últimos"));
         const lenAll = (p.fitness || []).length;
-        f.slice().reverse().forEach((v, i) => {
+        f.forEach((v, i0) => {
+          const i = f.length - 1 - i0;
           let jn = 0; try { jn = jLab(p.equipo || p.team, lenAll, i); } catch (e) {}
           const c = el("i", v === 0 ? "z" : v <= 3 ? "l" : v >= 10 ? "h" : "m");
           c.appendChild(el("em", null, jn ? "J" + jn : ""));
