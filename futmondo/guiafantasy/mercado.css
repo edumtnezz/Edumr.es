@@ -4164,3 +4164,10 @@ html[data-theme="dark"] .art-sec-ok > h3.nw-h { color: #4ade80; } html[data-them
 .chol-bars { height: 52px; gap: 6px; flex: none; }
 .chol-b i { max-width: 18px; }
 .chol-b b { font-size: .66rem; }
+
+/* 17/11/2026 · Onces: tope, formación, total y media en cuatro recuadros iguales */
+.once-st { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0 10px; }
+.once-c { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border-radius: 12px; background: rgba(22,163,74,.09); border: 1px solid rgba(22,163,74,.25); text-align: center; min-width: 0; }
+.once-c b { font-size: .92rem; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.once-c small { font-size: .6rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted, #64748b); }
+.art-body .al .al-foot { display: none; }

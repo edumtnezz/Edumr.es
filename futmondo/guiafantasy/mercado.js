@@ -4400,6 +4400,15 @@
         const pl = m && ps.find((x) => String(x.id) === decodeURIComponent(m[1]));
         if (pl) { ev.preventDefault(); openFicha(pl); }
       }));
+      // Sin pie verde; el tope, la formación, el total y la media van en cuatro recuadros (Edu, 17/11)
+      const ft = card.querySelector(".al-foot"); if (ft) ft.remove();
+      const pr = box.previousElementSibling, mt = pr && /^(.*?) · (\d-\d-\d) · total (.+?) · media del once (.+)$/.exec(pr.textContent.trim());
+      if (mt) {
+        const tope = (/(\d+) M/.exec(mt[1]) || [])[1];
+        const st = el("div", "once-st");
+        [[tope ? tope + " M" : "Sin límite", "Tope por jugador"], [mt[2], "Formación"], [mt[3], "Total"], [mt[4], "Media"]].forEach(([v, kk]) => { const c = el("div", "once-c"); c.appendChild(el("b", null, v)); c.appendChild(el("small", null, kk)); st.appendChild(c); });
+        pr.replaceWith(st);
+      }
       box.dataset.ok = "1";
       box.replaceWith(card);
     });
@@ -4959,6 +4968,7 @@
   async function newsPlayersBlock(box, text) {
     if (!all || !all.length) { try { await load(); } catch (e) {} }
     if (!all || !all.length || !document.body.contains(box)) return;
+    if (box.querySelector(".art-once, .al")) return; // los onces recomendados ya son todo jugadores: sin «Jugadores de la noticia»
     const fold = (x) => String(x == null ? "" : x).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const T = fold(text);
     const keyOf = (w) => fold(w).toLowerCase();
