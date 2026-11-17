@@ -5,8 +5,9 @@
 // rinden no se los lleve el caro) y como mucho 3 del mismo club por once. Se enseñan en orden caro, equilibrado, low cost.
 // Se escribe como «# once | id,id,…(11) | etiqueta» y la web lo pinta como un campo con foto, nombre y media.
 
-// Formaciones posibles (defensas-medios-delanteros; el portero no cuenta). Cada once usa la que más media suma con sus propios jugadores.
-export const FORMS = [[3, 4, 3], [3, 5, 2], [4, 3, 3], [4, 4, 2], [4, 5, 1], [5, 3, 2], [5, 4, 1]];
+// Formaciones (defensas-medios-delanteros; el portero no cuenta): solo las que recomiendan los análisis de fantasy (3-4-3, 3-5-2 y 4-4-2; en Futmondo mixto el gol vale 3
+// para todas las posiciones, así que conviene tener pocos defensas). Cada once usa la que más media suma con sus propios jugadores.
+export const FORMS = [[3, 4, 3], [3, 5, 2], [4, 4, 2]];
 const formDe = (f) => [["portero", 1], ["defensa", f[0]], ["centrocampista", f[1]], ["delantero", f[2]]];
 export const TIERS = [["caro", "Once caro", "Sin límite de precio", Infinity], ["equilibrado", "Once equilibrado", "Hasta 15 M por jugador", 15e6], ["lowcost", "Once low cost", "Hasta 6 M por jugador", 6e6]];
 

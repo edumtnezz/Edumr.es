@@ -97,7 +97,7 @@ export async function publicarMercado(env, ps, now = Date.now()) {
 // pudo ser, en cuanto se pueda de martes a viernes. Después, en cada pasada, si alguno de los elegidos pasa a lesionado o
 // sancionado, se rehace y se dice quién sale y quién entra. Reglas en functions/_lib/onces.mjs.
 const K_ONCE = "art:once:v1";
-const FMT_ONCE = 2; // 1 = 1-4-3-3 fijo; 2 = mejor formación de cada once (17/11/2026). Al subirlo se rehace la edición de la jornada sin avisar.
+const FMT_ONCE = 3; // 1 = 1-4-3-3 fijo; 2 = mejor de 7 formaciones; 3 = mejor entre 3-4-3, 3-5-2 y 4-4-2 (17/11/2026). Al subirlo se rehace la edición de la jornada sin avisar.
 export async function publicarOnces(env, f = fetch, now = Date.now()) {
   if (!env || !env.PORRA) return { skipped: "sin kv" };
   if (new Date(now).getUTCMinutes() % 10 !== 7) return { skipped: "no toca" };
