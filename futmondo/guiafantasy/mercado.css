@@ -4154,3 +4154,13 @@ html[data-theme="dark"] .art-sec-ok > h3.nw-h { color: #4ade80; } html[data-them
 .art-body .al .pl-ph img { width: 100%; height: 100%; border-radius: 50%; }
 .art-body .al .al-head img { width: 36px; height: 36px; border-radius: 0; }
 .art-body .al .pl-vs img { width: 18px; height: 18px; border-radius: 0; }
+
+/* 17/11/2026 · Chollo rediseñado: arriba Media y Prob. jugar en grande, debajo las barras pequeñas con su jornada */
+.chol { flex-direction: column; gap: 10px; padding: 10px; }
+.chol-s { order: -1; flex-direction: row; gap: 8px; min-width: 0; padding: 0; border-left: 0; align-items: stretch; }
+.chol-s .chol-r { flex: 1 1 0; flex-direction: column-reverse; justify-content: center; align-items: center; gap: 2px; padding: 8px 6px; border-radius: 12px; background: rgba(127,127,127,.10); }
+.chol-s .chol-r b { font-size: 1.7rem; line-height: 1; font-weight: 800; }
+.chol-s .chol-r small { font-size: .66rem; letter-spacing: .05em; }
+.chol-bars { height: 52px; gap: 6px; flex: none; }
+.chol-b i { max-width: 18px; }
+.chol-b b { font-size: .66rem; }
