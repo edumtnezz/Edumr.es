@@ -4335,9 +4335,7 @@
       f.forEach((v) => { const col = el("span", "chol-b" + (v >= 8 ? " hi" : v <= 0 ? " lo" : "")); const i = el("i"); i.style.height = Math.max(6, Math.round((v / mx) * 100)) + "%"; col.appendChild(i); col.appendChild(el("b", null, String(v))); col.appendChild(el("em", "chol-j", "")); bars.appendChild(col); });
       cholJ(bars, c.team, f.length);
       card.appendChild(bars);
-      const st = el("div", "chol-s");
-      [[c.media, "Media"], c.prob ? [c.prob + " %", "Prob. jugar"] : null].filter(Boolean).forEach(([v, k]) => { const r = el("div", "chol-r"); r.appendChild(el("small", null, k)); r.appendChild(el("b", null, String(v))); st.appendChild(r); });
-      card.appendChild(st);
+      card.appendChild(cholStats(c));
       b.appendChild(card);
       const ft = el("div", "chol-f");
       ft.appendChild(el("span", null, c.team + " · " + c.valor));
@@ -4549,11 +4547,22 @@
     });
     cholJ(bars, c.team, f.length);
     g.appendChild(bars);
-    const st = el("div", "chol-s");
-    [[c.media, "Media"], c.prob ? [c.prob + " %", "Prob. jugar"] : null].filter(Boolean).forEach(([v, kk]) => { const r = el("div", "chol-r"); r.appendChild(el("small", null, kk)); r.appendChild(el("b", null, String(v))); st.appendChild(r); });
-    g.appendChild(st);
+    g.appendChild(cholStats(c));
     box.appendChild(g);
     return box;
+  }
+  // Media y probabilidad de jugar: Media en una pastilla y la probabilidad con una barra horizontal (verde ≥ 80, ámbar ≥ 50, roja si menos)
+  function cholStats(c) {
+    const st = el("div", "chol-s");
+    const m = el("div", "chol-m"); m.appendChild(el("small", null, "Media")); m.appendChild(el("b", null, String(c.media))); st.appendChild(m);
+    if (c.prob) {
+      const pr = Math.max(0, Math.min(100, Number(c.prob) || 0));
+      const q = el("div", "chol-p"), h = el("div", "chol-ph");
+      h.appendChild(el("small", null, "Prob. jugar")); h.appendChild(el("b", null, pr + " %")); q.appendChild(h);
+      const tr = el("div", "chol-pt"), fl = el("i", pr >= 80 ? "ok" : pr >= 50 ? "mid" : "low"); fl.style.width = pr + "%"; tr.appendChild(fl); q.appendChild(tr);
+      st.appendChild(q);
+    }
+    return st;
   }
   // Jornada bajo cada barra del chollo (la más reciente a la derecha). Se rellena cuando llegan las jornadas jugadas; si no se conocen, queda vacía.
   function cholJ(bars, team, n) {

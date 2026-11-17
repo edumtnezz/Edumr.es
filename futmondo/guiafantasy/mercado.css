@@ -4155,15 +4155,22 @@ html[data-theme="dark"] .art-sec-ok > h3.nw-h { color: #4ade80; } html[data-them
 .art-body .al .al-head img { width: 36px; height: 36px; border-radius: 0; }
 .art-body .al .pl-vs img { width: 18px; height: 18px; border-radius: 0; }
 
-/* 17/11/2026 · Chollo rediseñado: arriba Media y Prob. jugar en grande, debajo las barras pequeñas con su jornada */
-.chol { flex-direction: column; gap: 10px; padding: 10px; }
-.chol-s { order: -1; flex-direction: row; gap: 8px; min-width: 0; padding: 0; border-left: 0; align-items: stretch; }
-.chol-s .chol-r { flex: 1 1 0; flex-direction: column-reverse; justify-content: center; align-items: center; gap: 2px; padding: 8px 6px; border-radius: 12px; background: rgba(127,127,127,.10); }
-.chol-s .chol-r b { font-size: 1.7rem; line-height: 1; font-weight: 800; }
-.chol-s .chol-r small { font-size: .66rem; letter-spacing: .05em; }
-.chol-bars { height: 52px; gap: 6px; flex: none; }
-.chol-b i { max-width: 18px; }
-.chol-b b { font-size: .66rem; }
+/* 17/11/2026 · Chollo (v2): arriba Media y barra horizontal de probabilidad, debajo barras grandes con su jornada */
+.chol { flex-direction: column; gap: 12px; padding: 12px; background: rgba(127,127,127,.07); border: 0; border-radius: 16px; }
+.chol-s { order: -1; display: flex; flex-direction: row; align-items: center; gap: 14px; min-width: 0; padding: 0; border: 0; text-align: left; }
+.chol-m { flex: none; display: flex; flex-direction: column; gap: 1px; padding: 6px 12px; border-radius: 12px; background: rgba(8,145,178,.14); }
+.chol-m small, .chol-ph small { font-size: .6rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted, #64748b); }
+.chol-m b { font-size: 1.15rem; font-weight: 800; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.chol-p { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.chol-ph { display: flex; justify-content: space-between; align-items: baseline; }
+.chol-ph b { font-size: .95rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.chol-pt { height: 8px; border-radius: 99px; background: rgba(127,127,127,.22); overflow: hidden; }
+.chol-pt i { display: block; height: 100%; border-radius: 99px; background: #16a34a; }
+.chol-pt i.mid { background: #f59e0b; } .chol-pt i.low { background: #ef4444; }
+.chol-bars { height: 84px; gap: 8px; flex: none; }
+.chol-b i { max-width: 34px; border-radius: 8px 8px 3px 3px; }
+.chol-b b { font-size: .8rem; }
+.chol-b .chol-j { font-size: .62rem; }
 
 /* 17/11/2026 · Onces: tope, formación, total y media en cuatro recuadros iguales */
 .once-st { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0 10px; }
