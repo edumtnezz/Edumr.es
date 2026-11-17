@@ -2876,7 +2876,7 @@ async function getCambiosPropios(env) {
         const eur = (v) => String(Math.round(Number(v) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " €";
         const f5 = (p.fitness || []).slice(-5).map((v) => Number(v) || 0), con = f5.filter((v) => v > 0).length;
         const med = (medianasPos(all) || {})[p.role];
-        const mot = ["media " + d1(p.avg) + (med ? " (la mitad de su posición no llega a " + d1(med) + ")" : ""), "puntúa en " + con + " de sus últimos " + f5.length, "valor " + (Number(p.chg7) > 0 ? "subiendo" : "sin bajar") + " esta semana", "cuesta " + eur(p.value)];
+        const mot = ["media " + d1(p.avg) + (med ? " (mediana de su posición: " + d1(med) + ")" : ""), "puntúa en " + con + " de sus últimos " + f5.length, "valor " + (Number(p.chg7) > 0 ? "subiendo" : "sin bajar") + " esta semana"];
         const prb = e.prob || p.prob || 0; if (prb) mot.splice(2, 0, prb + " % de jugar");
         items.push({ at: e.at, cat: e.cat, title: p.name, href: "", photo: p.photo || "", logo: "", pid: "", fid: p.id, players: [], rep: e.rep || 0,
           chips: [[d1(p.avg), "Media"], [p.matches || 0, "Partidos"], [eur(p.value), "Valor"]],
