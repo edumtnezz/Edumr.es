@@ -76,7 +76,10 @@
     var v = VERED[item.veredicto] ? item.veredicto : "duda";
     var d = nodo("div", "eth eth-st2 eth-v-" + v);
     if (o.color) d.style.setProperty("--club", o.color);
-    var crestHi = o.crest ? String(o.crest).replace(/\/teams\/64\//, "/teams/256/") : "";
+    // Escudo en vector (football-data, nítido a cualquier tamaño) para los 20 clubes; si no, el de 256 px de Futmondo
+    var FD = {"deportivo-alaves":263,"athletic-de-bilbao":77,"atletico-de-madrid":78,"barcelona":81,"betis":90,"celta-de-vigo":558,"deportivo-de-la-coruna":560,"elche":285,"espanyol":80,"getafe":82,"levante":88,"malaga":84,"osasuna":79,"racing-santander":5335,"rayo-vallecano":87,"real-madrid":86,"real-sociedad":92,"sevilla":559,"valencia":95,"villarreal":94};
+    var slug = o.crest ? (String(o.crest).match(/\/teams\/\d+\/([^/]+)\.png/) || [])[1] : "";
+    var crestHi = o.crest ? (FD[slug] ? "https://crests.football-data.org/" + FD[slug] + ".svg" : String(o.crest).replace(/\/teams\/64\//, "/teams/256/")) : "";
     // Fondo: palabra gigante del estado en contorno y el escudo en marca de agua (256 px, nítido)
     d.appendChild(nodo("span", "eth-ghost", VERED[v]));
     if (crestHi) { var wm = nodo("img", "eth-wm2"); wm.alt = ""; wm.loading = "lazy"; wm.src = crestHi; wm.addEventListener("error", function () { wm.remove(); }, { once: true }); d.appendChild(wm); }
