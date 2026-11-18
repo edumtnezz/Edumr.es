@@ -3873,7 +3873,8 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 .eth-st2 .eth-wm2 { position: absolute; z-index: -1; left: -10cqh; bottom: -22cqh; width: 78cqh; height: 78cqh; object-fit: contain; opacity: .1; filter: grayscale(1) brightness(3); pointer-events: none; }
 .eth-st2 .eth-nm { position: relative; padding-bottom: .16em; }
 .eth-st2 .eth-nm::after { content: ""; position: absolute; left: 0; bottom: 0; width: 1.6em; height: .09em; border-radius: 99px; background: var(--ac); }
-.eth-st2 .eth-big { height: min(96cqh, 240px); right: 1cqw; }
+/* 18/11/2026: la foto del jugador era pequeña en escritorio (tope de 240 px); ahora ocupa casi todo el alto, como en el cartel de Telegram */
+.eth-st2 .eth-big { height: min(92cqh, 560px); right: 1cqw; }
 @media (prefers-reduced-motion: no-preference) {
   .eth-st2 .eth-big { animation: ethIn .7s cubic-bezier(.2, .8, .2, 1) both; }
   .eth-st2 .eth-tx > * { animation: ethUp .55s cubic-bezier(.2, .8, .2, 1) both; }
