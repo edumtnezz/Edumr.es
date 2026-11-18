@@ -3870,7 +3870,7 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 .eth-st2::before { background: rgba(8, 12, 22, .5); }
 .eth-st2::after { right: auto; left: 46cqw; top: -30cqh; width: 80cqw; height: 160cqh; transform: skewX(-14deg); border-radius: 0; border: none; box-shadow: none; background: rgba(255, 255, 255, .07); border-left: .9cqw solid var(--ac); }
 .eth-st2 .eth-ghost { position: absolute; z-index: -1; right: -3cqw; top: -6cqh; font: 800 54cqh/1 'Bricolage Grotesque', 'Figtree', system-ui, sans-serif; letter-spacing: -.05em; color: transparent; -webkit-text-stroke: 1.5px rgba(255, 255, 255, .13); white-space: nowrap; pointer-events: none; user-select: none; }
-.eth-st2 .eth-wm2 { position: absolute; z-index: -1; left: -10cqh; bottom: -22cqh; width: 78cqh; height: 78cqh; object-fit: contain; opacity: .1; filter: grayscale(1) brightness(3); pointer-events: none; }
+.eth-st2 .eth-wm2 { position: absolute; z-index: -1; left: -10cqh; bottom: -22cqh; width: 78cqh; height: 78cqh; object-fit: contain; opacity: .16; filter: grayscale(1) brightness(1.6) contrast(.85); pointer-events: none; }
 .eth-st2 .eth-nm { position: relative; padding-bottom: .16em; }
 .eth-st2 .eth-nm::after { content: ""; position: absolute; left: 0; bottom: 0; width: 1.6em; height: .09em; border-radius: 99px; background: var(--ac); }
 /* 18/11/2026: la foto del jugador era pequeña en escritorio (tope de 240 px); ahora ocupa casi todo el alto, como en el cartel de Telegram */
