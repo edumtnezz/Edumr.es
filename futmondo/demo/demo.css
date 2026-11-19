@@ -395,3 +395,10 @@ html:not([data-theme="light"]) .gm .tv[alt="DAZN"]{filter:invert(1)}
 .nx-t b{font-size:14px;line-height:1.15;font-weight:800}
 .nx-vs img{width:44px;height:44px}
 @media (min-width:600px){.nx-t{flex-direction:row;gap:10px}.nx-t:last-child{flex-direction:row-reverse}}
+
+/* barra inferior: como la web antigua (blanca, pegada abajo), más pequeña y sin llegar a los bordes */
+.btm{width:min(330px,calc(100% - 40px));margin:6px auto 0;bottom:0;padding:4px 6px calc(4px + env(safe-area-inset-bottom));background:var(--card);border:1px solid var(--line);border-bottom:0;border-radius:16px 16px 0 0;box-shadow:0 -4px 14px rgba(15,26,20,.08)}
+.btm a{padding:4px 2px 3px;gap:1px;font-size:10px;font-weight:700;color:var(--mu);border-radius:10px}
+.btm a.on{background:none;color:var(--ac)}
+.btm a:not(.on):active{background:rgba(100,116,139,.12)}
+.btm svg{width:18px;height:18px}
