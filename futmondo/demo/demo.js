@@ -99,7 +99,7 @@
     if (!first) { nx.hidden = true; return; }
     nx.href = "/futmondo/guiafantasy/partido/" + matchSlug(first.m.home, first.m.away) + "?j=" + j.matchday;
     var started = j.matches.some(function (m) { var k = kickoff(m); return (m.live && m.live.state) || (k && k < now); });
-    nx.innerHTML = '<span class="nx-vs"><img src="' + esc(first.m.homeCrest) + '" alt=""><em>VS</em><img src="' + esc(first.m.awayCrest) + '" alt=""></span>' +
+    nx.innerHTML = '<span class="nx-vs"><span class="nx-t"><img src="' + esc(first.m.homeCrest) + '" alt=""><b>' + esc(first.m.home) + '</b></span><em>VS</em><span class="nx-t"><img src="' + esc(first.m.awayCrest) + '" alt=""><b>' + esc(first.m.away) + '</b></span></span>' +
       '<span class="nx-l"><span>' + (started ? "Próximo partido" : "Empieza la jornada") + '</span><b class="nx-d">' + esc(whenTxt(first.k)) + '</b></span>';
     nx.hidden = false;
   }
@@ -178,6 +178,7 @@
       var p = i.pid ? players.find(function (q) { return String(q.id) === String(i.pid); }) : null;
       var href = i.href || playerUrl(p);
       var de = (i.players && i.players[0] && i.players[0].to) || "";
+      de = de.replace(/^(Duda|Lesionado|Sancionado|Apercibido|Disponible)(\s*·\s*)?/i, ""); // el estado ya sale en la etiqueta y el título
       var img = i.photo || (p && p.photo) ? '<span class="lg ph"><img src="' + esc(i.photo || p.photo) + '" alt=""></span>' : i.logo ? '<span class="lg"><img src="' + esc(i.logo) + '" alt=""></span>' : '<span class="lg"></span>';
       var inner = img + '<span class="b"><span class="ti"><span class="pill p-' + c[0] + '">' + esc(c[1]) + "</span>" + esc(i.title) + "</span>" + (de ? '<span class="de">' + esc(de) + "</span>" : "") + '</span><span class="tm">' + esc(i.time) + "</span>";
       return href ? '<a class="it" href="' + esc(href) + '">' + inner + "</a>" : '<div class="it">' + inner + "</div>";
