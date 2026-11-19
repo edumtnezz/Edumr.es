@@ -172,7 +172,7 @@
     });
     var box = $("#cam");
     if (!items.length) box.innerHTML = '<p class="muted">Sin cambios ahora mismo.</p>';
-    else box.innerHTML = items.slice(0, 5).map(function (e) {
+    else box.innerHTML = items.slice(0, window.matchMedia("(min-width:900px)").matches ? 7 : 5).map(function (e) {
       var i = e.i, c = CAT[i.cat] || ["nota", i.cat];
       var p = i.pid ? players.find(function (q) { return String(q.id) === String(i.pid); }) : null;
       var href = i.href || playerUrl(p);
@@ -262,12 +262,16 @@
   var mvKey = "up";
   function paintMercado() {
     var ps = players.filter(function (p) { return p && p.name && Number(p.change); });
-    var list = mvKey === "up"
-      ? ps.filter(function (p) { return p.change > 0; }).sort(function (a, b) { return b.change - a.change; })
-      : ps.filter(function (p) { return p.change < 0; }).sort(function (a, b) { return a.change - b.change; });
-    $("#mv").innerHTML = list.length ? list.slice(0, 5).map(function (p) {
-      return '<a class="row" href="' + esc(playerUrl(p)) + '">' + (p.logo ? '<img src="' + esc(p.logo) + '" alt="">' : "") + "<span>" + esc(p.name) + '</span><span class="v ' + (p.change > 0 ? "up" : "dn") + '">' + (p.change > 0 ? "+" : "−") + dots(p.change) + " €</span></a>";
-    }).join("") : '<p class="muted">Sin cambios de valor ahora mismo.</p>';
+    var blk = function (k, tit) {
+      var list = k === "up"
+        ? ps.filter(function (p) { return p.change > 0; }).sort(function (a, b) { return b.change - a.change; })
+        : ps.filter(function (p) { return p.change < 0; }).sort(function (a, b) { return a.change - b.change; });
+      return '<div class="mvb" data-k="' + k + '"><h3 class="mvh ' + k + '">' + tit + "</h3>" + (list.length ? list.slice(0, 5).map(function (p) {
+        return '<a class="mr" href="' + esc(playerUrl(p)) + '"><span class="mp">' + (p.photo ? '<img src="' + esc(p.photo) + '" alt="">' : "") + (p.logo ? '<img class="mc" src="' + esc(p.logo) + '" alt="">' : "") + '</span><span class="mn"><b>' + esc(p.name) + "</b><small>" + esc(p.team || "") + '</small></span><span class="v ' + (p.change > 0 ? "up" : "dn") + '">' + (p.change > 0 ? "+" : "−") + dots(p.change) + " €</span></a>";
+      }).join("") : '<p class="muted">Sin cambios de valor.</p>') + "</div>";
+    };
+    var mv = $("#mv"); mv.setAttribute("data-k", mvKey);
+    mv.innerHTML = blk("up", "▲ Suben") + blk("dn", "▼ Bajan");
   }
   $("#mvTabs").addEventListener("click", function (e) {
     var b = e.target.closest("button"); if (!b) return;
