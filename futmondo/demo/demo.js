@@ -7,7 +7,8 @@
   var esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
   var fold = function (s) { return String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(); };
   var nameSlug = function (s) { return fold(s).replace(/[^a-z0-9]/g, ""); };
-  var dots = function (v) { return Math.round(Math.abs(v)).toLocaleString("es-ES"); };
+  var miles = function (n) { return String(Math.round(Math.abs(n))).replace(/\B(?=(\d{3})+(?!\d))/g, "."); };
+  var dots = miles;
   var canon = function (t) { try { return window.EduTeams ? window.EduTeams.canon(t) : fold(t); } catch (e) { return fold(t); } };
 
   function get(route) {
@@ -75,8 +76,10 @@
       var at = pr[m.home + "|" + m.away];
       var tv = (m.tv || []).map(function (t) { return t.logo ? '<img class="tv" src="' + esc(t.logo) + '" alt="' + esc(t.name) + '">' : ""; }).join("");
       var lab = m.live ? "En juego" : m.aplazado ? "Aplazado" : "";
-      return '<a class="gm' + (at ? " p" : "") + '" href="/futmondo/guiafantasy/partido/' + matchSlug(m.home, m.away) + "?j=" + j.matchday + '">' +
-        (at ? '<div class="pr">' + (m.confirmed ? "Once confirmado" : "Once probable") + (at > 1e9 ? "<span>" + hm(at) + "</span>" : "") + "</div>" : "") +
+      var ago = at > 1e9 ? Math.round((Date.now() - at) / 60000) : -1;
+      var fresh = ago >= 0 && ago < 60;
+      return '<a class="gm' + (at ? " p" : "") + (fresh ? " new" : "") + '" href="/futmondo/guiafantasy/partido/' + matchSlug(m.home, m.away) + "?j=" + j.matchday + '">' +
+        (at ? '<div class="pr">' + "<b>" + (fresh ? '<i class="dot"></i>' : "") + (m.confirmed ? "Once confirmado" : "Once probable") + "</b>" + (at > 1e9 ? "<span>" + (fresh ? "hace " + Math.max(1, ago) + " min" : hm(at)) + "</span>" : "") + "</div>" : "") +
         '<div class="in"><img class="c" src="' + esc(m.homeCrest) + '" alt="' + esc(m.home) + '">' +
         '<div class="mid"><b>' + esc(m.day) + " " + esc(m.date) + "</b>" + esc(lab || m.time) + tv + "</div>" +
         '<img class="c" src="' + esc(m.awayCrest) + '" alt="' + esc(m.away) + '"></div></a>';
@@ -162,24 +165,80 @@
     }).join("");
     paintChollo(chol);
   }
+  // jornadas jugadas de un equipo (para poner la J bajo cada barra); si falta alguna jornada, no se pone ninguna
+  var playedCache = null;
+  function dateKey(d, t) {
+    var a = String(d || "").split("/").map(Number), hm2 = String(t || "0:0").replace(":", "") * 1 || 0;
+    return (((a[1] >= 7 ? a[1] : a[1] + 12) || 0) * 100 + (a[0] || 0)) * 10000 + hm2;
+  }
+  function playedJ() {
+    if (playedCache) return playedCache;
+    playedCache = get("jornada").then(function (jr) {
+      var cur = Number(jr && jr.matchday) || 0;
+      if (!cur) return null;
+      var ns = []; for (var n = 1; n <= cur; n++) ns.push(n);
+      return Promise.all(ns.map(function (n) { return n === cur ? Promise.resolve(jr) : get("jornada?jornada=" + n); })).then(function (rs) {
+        if (rs.some(function (r) { return !r || !r.matches || !r.matches.length; })) return null;
+        var m = {};
+        rs.forEach(function (r, i) {
+          r.matches.forEach(function (x) {
+            if (!x.live || x.live.state !== "final") return;
+            [x.home, x.away].forEach(function (t) { var k = canon(t); (m[k] = m[k] || []).push({ n: i + 1, k: dateKey(x.date, x.time) }); });
+          });
+        });
+        Object.keys(m).forEach(function (k) { m[k] = m[k].sort(function (a, b) { return a.k - b.k; }).map(function (e) { return e.n; }); });
+        return m;
+      });
+    });
+    return playedCache;
+  }
+  function teamPub(team) { // partidos con puntos YA publicados por Futmondo (nunca los del partido anterior)
+    var k = canon(team), mx = 0;
+    players.forEach(function (p) { if (canon(p.team) === k && (Number(p.matches) || 0) > mx) mx = Number(p.matches) || 0; });
+    return mx;
+  }
+  function eur(v) { v = Math.round(Number(v) || 0); return (v > 0 ? "+" : v < 0 ? "−" : "") + miles(v) + " €"; }
   function paintChollo(x) {
     var box = $("#chol");
     if (!x || !x.chol) { box.hidden = true; return; }
     var c = x.chol, p = players.find(function (q) { return String(q.id) === String(x.fid || x.pid); });
     var href = playerUrl(p);
     var f = (c.forma || []).slice(-5), mx = Math.max(10, Math.max.apply(null, f.concat([0])));
-    box.innerHTML = '<div class="hd"><h2>Chollo del día</h2><span class="muted">' + esc(x.time || "") + "</span></div>" +
+    var rep = Number(x.rep) || 0;
+    var repTxt = rep ? "Ya ha sido chollo " + rep + (rep === 1 ? " vez" : " veces") : "Primera vez como chollo";
+    // valor: hoy, ayer y 7 días (Futmondo, de la lista del mercado)
+    var vh = p ? Number(p.chg1) || 0 : null, v2 = p && p.chg2 != null && p.chg2 !== "" ? Number(p.chg2) || 0 : null, v7 = p && p.chg7 != null && p.chg7 !== "" ? Number(p.chg7) || 0 : null;
+    var vay = vh != null && v2 != null ? v2 - vh : null;
+    var cell = function (lab, v) { return '<div><small>' + lab + '</small><b class="' + (v > 0 ? "up" : v < 0 ? "dn" : "") + '">' + (v == null ? "—" : eur(v)) + "</b></div>"; };
+    // previsión a 3 días: misma regla que el resto de la web (hoy ≥ 100.000 € y ayer en el mismo sentido)
+    var prev = '<span class="chol-pv none">Previsión 3 días: sin señal clara hoy</span>';
+    if (vh != null && Math.abs(vh) >= 100000 && vay != null && vh * vay > 0) {
+      var mn = Math.floor(Math.abs(vh) / 10000) * 10000;
+      prev = '<span class="chol-pv ' + (vh > 0 ? "up" : "dn") + '">Previsión 3 días: ' + (vh > 0 ? "▲ más de +" : "▼ más de −") + miles(mn) + " €</span>";
+    }
+    box.innerHTML = '<div class="hd"><h2>Chollo del día</h2></div>' +
       '<a class="chol-top" href="' + esc(href || "/futmondo/guiafantasy/mercado") + '"><span class="chol-ph">' + (x.photo ? '<img src="' + esc(x.photo) + '" alt="">' : "") + "</span>" +
       '<span><span class="chol-nm">' + esc(x.title) + (c.logo ? '<img src="' + esc(c.logo) + '" alt="">' : "") + '</span><span class="chol-vl">' + esc(c.valor) + "</span></span></a>" +
-      '<div class="chol-row"><div class="chol-bars" id="cholBars"></div><div class="chol-st"><div><b>' + esc(c.media) + "</b>media</div>" + (c.prob ? "<div><b>" + esc(c.prob) + " %</b>prob. jugar</div>" : "") + "</div></div>";
+      '<div class="chol-rep">' + esc(repTxt) + "</div>" +
+      '<div class="chol-row"><div class="chol-bars" id="cholBars"></div><div class="chol-st"><div><b>' + esc(c.media) + "</b>media</div>" + (c.prob ? "<div><b>" + esc(c.prob) + " %</b>prob. jugar</div>" : "") + "</div></div>" +
+      '<div class="chol-val"><div class="chol-vg">' + cell("Hoy", vh) + cell("Ayer", vay) + cell("7 días", v7) + "</div>" + prev + "</div>";
     var bars = $("#cholBars");
     f.forEach(function (v) {
       var s = document.createElement("span"); s.className = v >= 8 ? "hi" : v <= 0 ? "lo" : "";
       s.appendChild(document.createTextNode(String(v)));
-      var i = document.createElement("i"); i.style.height = Math.max(6, Math.round((v / mx) * 80)) + "%"; s.appendChild(i);
+      var i = document.createElement("i"); i.style.height = Math.max(6, Math.round((v / mx) * 100)) + "%"; s.appendChild(i);
+      var e = document.createElement("em"); s.appendChild(e);
       bars.appendChild(s);
     });
     box.hidden = false;
+    var team = c.team || (p && p.team) || "";
+    playedJ().then(function (m) {
+      var l = m && m[canon(team)];
+      if (!l) return; // sin las jornadas reales no se inventa la J
+      var n = Math.min(l.length, teamPub(team) || l.length);
+      if (n < f.length) return;
+      bars.querySelectorAll("em").forEach(function (e, i) { e.textContent = "J" + l[n - 1 - (f.length - 1 - i)]; });
+    });
   }
 
   // ---------- mercado: suben / bajan ----------
@@ -248,7 +307,12 @@
   var pNews = get("noticias");
   Promise.all([pJor, pJor.then(function (j) { return j && j.matchday ? get("alineaciones-estado?jornada=" + j.matchday) : null; })])
     .then(function (r) { paintJornada(r[0], r[1]); });
-  pNews.then(function (n) { paintTicker((n && n.noticias) || []); });
+  pNews.then(function (n) {
+    var l = (n && n.noticias) || [];
+    paintTicker(l);
+    var a = l.find(function (x) { return /\/n\/artmercado/.test(x.link || ""); });
+    if (a) $("#mvAll").href = a.link;
+  });
   Promise.all([pMerc, pNews]).then(function (r) { paintNews((r[1] && r[1].noticias) || []); });
   Promise.all([pMerc, get("ultimos-cambios")]).then(function (r) { paintCambios(r[1]); });
   Promise.all([pMerc, get("tabla"), get("lideres")]).then(function (r) { tabla = r[1]; lideres = r[2]; paintLiga(); });

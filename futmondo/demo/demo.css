@@ -9,21 +9,21 @@ h2,h3{font-family:'Bricolage Grotesque',sans-serif;margin:0;letter-spacing:-.02e
 .muted{color:var(--mu);font-size:13px;margin:6px 0}
 [hidden]{display:none!important}
 
-.top{background:#0b0f14;color:#fff;display:flex;align-items:center;gap:2px;padding:10px 10px;font-weight:700;font-size:13px;overflow-x:auto;scrollbar-width:none}
+.top{background:#fff;color:var(--tx);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:2px;padding:10px 10px;font-weight:700;font-size:13px;overflow-x:auto;scrollbar-width:none}
 .top::-webkit-scrollbar{display:none}
 .top a{padding:7px 8px;white-space:nowrap;border-radius:999px}
 .top a.on{background:var(--ac);padding:7px 12px}
 .demo-flag{background:#fef3c7;color:#92400e;font-size:12px;font-weight:700;text-align:center;padding:6px 10px}
 
-.tick{background:#0b0f14;color:#fff;overflow:hidden;white-space:nowrap;border-top:1px solid #1e293b}
+.tick{background:#fff;color:var(--tx);overflow:hidden;white-space:nowrap;border-bottom:1px solid var(--line)}
 .tick-tr{display:inline-flex;padding:9px 0;animation:tk 70s linear infinite}
 .tick:hover .tick-tr{animation-play-state:paused}
-.tick a{display:inline-flex;align-items:center;gap:8px;padding:0 14px;border-right:1px solid #1e293b;font-size:13px;font-weight:600}
+.tick a{display:inline-flex;align-items:center;gap:8px;padding:0 14px;border-right:1px solid var(--line);font-size:13px;font-weight:600}
 @keyframes tk{to{transform:translateX(-50%)}}
 
 .pill{display:inline-flex;align-items:center;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;border-radius:999px;line-height:1;flex:none}
 .p-baja{background:#fee2e2;color:#b91c1c}.p-alta{background:#dcfce7;color:#15803d}.p-duda{background:#fef3c7;color:#b45309}.p-articulo{background:#dbeafe;color:#1d4ed8}.p-nota{background:#f1f5f9;color:#334155}.p-sancion{background:#ede9fe;color:#6d28d9}
-.tick .p-baja,.dk .p-baja{background:#7f1d1d;color:#fecaca}.tick .p-alta,.dk .p-alta{background:#14532d;color:#bbf7d0}.tick .p-duda,.dk .p-duda{background:#78350f;color:#fde68a}.tick .p-articulo,.dk .p-articulo{background:#1e3a8a;color:#bfdbfe}.tick .p-nota,.dk .p-nota{background:#334155;color:#e2e8f0}.dk .p-sancion{background:#4c1d95;color:#ddd6fe}
+.dk .p-baja{background:#7f1d1d;color:#fecaca}.dk .p-alta{background:#14532d;color:#bbf7d0}.dk .p-duda{background:#78350f;color:#fde68a}.dk .p-articulo{background:#1e3a8a;color:#bfdbfe}.dk .p-nota{background:#334155;color:#e2e8f0}.dk .p-sancion{background:#4c1d95;color:#ddd6fe}
 
 .clubs{background:#fff;display:flex;gap:14px;padding:10px 12px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none}
 .clubs::-webkit-scrollbar{display:none}
@@ -37,11 +37,11 @@ h2,h3{font-family:'Bricolage Grotesque',sans-serif;margin:0;letter-spacing:-.02e
 .hd a,.lnk{font-size:13px;font-weight:700;color:var(--ac);background:none;border:0;padding:0}
 
 /* barra próximo partido */
-.nx{display:flex;align-items:center;gap:8px;background:var(--dk);color:#fff;border-radius:14px;padding:9px 12px;margin-bottom:10px;font-size:13px;font-weight:700}
-.nx img{width:22px;height:22px;object-fit:contain}
+.nx{display:flex;align-items:center;gap:10px;background:var(--ac);color:#fff;border-radius:16px;padding:13px 14px;margin-bottom:10px;font-size:15px;font-weight:800}
+.nx img{width:28px;height:28px;object-fit:contain;background:#fff;border-radius:50%;padding:2px}
 .nx .cdn{margin-left:auto;display:flex;gap:4px;font-family:'Bricolage Grotesque',sans-serif;font-variant-numeric:tabular-nums}
-.nx .cdn span{background:rgba(255,255,255,.1);border-radius:6px;padding:3px 6px;font-size:13px}
-.nx .cdn small{font-size:9px;color:#94a3b8;margin-left:1px}
+.nx .cdn span{background:rgba(0,0,0,.18);border-radius:8px;padding:4px 7px;font-size:15px}
+.nx .cdn small{font-size:10px;color:#dcfce7;margin-left:1px}
 
 /* partidos */
 .gg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -50,6 +50,13 @@ h2,h3{font-family:'Bricolage Grotesque',sans-serif;margin:0;letter-spacing:-.02e
 .gm.p{border-color:#86efac}
 .gm .pr{background:#dcfce7;color:#15803d;font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;display:flex;justify-content:space-between}
 .gm .pr span{font-weight:700;letter-spacing:0;opacity:.85}
+.gm .pr{white-space:nowrap}
+.gm .pr b{font-weight:800;display:inline-flex;align-items:center;gap:5px}
+.gm.new{border:2px solid var(--ac)}
+.gm.new .pr{background:var(--ac);color:#fff;padding:3px 8px 3px 7px}
+.gm.new .pr span{opacity:1;font-weight:800}
+.gm .pr .dot{width:6px;height:6px;border-radius:50%;background:#fff;animation:pulso 1.6s ease-in-out infinite}
+@keyframes pulso{0%,100%{opacity:1}50%{opacity:.25}}
 .gm .in{padding:6px 8px;display:flex;align-items:center;gap:6px}
 .gm img.c{width:24px;height:24px;object-fit:contain}
 .gm .mid{flex:1;text-align:center;font-size:11px;font-weight:700;color:var(--mu);line-height:1.25}
@@ -127,7 +134,7 @@ tr.gap td{text-align:center;color:var(--mu);border:0;padding:0}
 .tab{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);display:flex;justify-content:space-around;padding:8px 0 calc(10px + env(safe-area-inset-bottom));font-size:11.5px;font-weight:700;color:var(--mu);z-index:5}
 .tab a.on{color:var(--ac)}
 
-@media (prefers-reduced-motion:reduce){.tick-tr{animation:none}}
+@media (prefers-reduced-motion:reduce){.tick-tr,.gm .pr .dot{animation:none}}
 
 /* ---- Miniaturas de noticia (copiadas de guiafantasy/mercado.css, reglas .eth*) ---- */
 /* ===== Cartel propio (EduThumb.el): fondo por tipo, dato grande, foto, club con escudo ===== */
@@ -249,3 +256,26 @@ tr.gap td{text-align:center;color:var(--mu);border:0;padding:0}
 .eth-once-c::after { content: ""; position: absolute; left: 50%; top: 50%; width: 30cqmin; height: 30cqmin; margin: -15cqmin 0 0 -15cqmin; border: .8cqmin solid rgba(255,255,255,.35); border-radius: 50%; }
 .eth-once-w { position: absolute; left: 6cqmin; bottom: 8cqmin; font: 800 26cqmin/.9 'Bricolage Grotesque', 'Figtree', system-ui, sans-serif; letter-spacing: -.03em; color: #fff; }
 @keyframes eth-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.5cqmin); } }
+/* Miniatura pequeña de noticia: el nombre largo (Álex Calatrava) no se pega al club ni al borde de abajo */
+.nr .th .eth-st2 .eth-tx{justify-content:center;gap:9px;top:0;bottom:0;padding:0}
+.nr .th .eth-st2 .eth-sb{display:none}
+.nr .th .eth-st2 .eth-nm{font-size:19px;line-height:1.05;-webkit-line-clamp:2;padding-bottom:.2em}
+.nr .th .eth-st2 .eth-cl{font-size:12px}
+
+/* chollo */
+.chol-rep{margin-top:8px;font-size:12.5px;font-weight:800;color:#b45309;background:#fef3c7;border-radius:999px;padding:4px 10px;display:inline-block}
+.chol-bars{height:78px}
+.chol-bars span{position:relative;padding-bottom:15px}
+.chol-bars em{position:absolute;bottom:0;font-style:normal;font-size:10px;color:var(--mu);font-weight:700;letter-spacing:.02em}
+.chol-bars i{min-height:4px}
+.chol-val{margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
+.chol-vg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.chol-vg div{background:#f1f5f3;border-radius:10px;padding:6px 4px;text-align:center}
+.chol-vg small{display:block;font-size:10.5px;color:var(--mu);font-weight:700}
+.chol-vg b{font-family:'Bricolage Grotesque',sans-serif;font-size:13.5px;white-space:nowrap}
+.chol-pv{display:block;margin-top:8px;font-size:12.5px;font-weight:800}
+.chol-pv.up{color:var(--ac)}.chol-pv.dn{color:var(--re)}.chol-pv.none{color:var(--mu);font-weight:700}
+.gm .pr{gap:6px}
+.gm.new .pr{font-size:9px;letter-spacing:.03em}
+.gm.new .pr span{text-transform:none;font-size:10.5px;letter-spacing:0}
+.gm .pr .dot{flex:none}
