@@ -383,3 +383,8 @@ html:not([data-theme="light"]) .gm .tv[alt="DAZN"]{filter:invert(1)}
 .clubs-w .ca{position:absolute;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--tx);font-size:15px;line-height:1;padding:0 0 2px;box-shadow:0 1px 4px rgba(15,26,20,.18);display:grid;place-items:center;z-index:2}
 .clubs-w .ca.l{left:4px}.clubs-w .ca.r{right:4px}
 .clubs-w .ca[hidden]{display:none}
+
+/* barra inferior más compacta */
+.btm{width:min(310px,calc(100% - 28px));padding:3px;margin:4px auto 6px;bottom:calc(6px + env(safe-area-inset-bottom));box-shadow:0 6px 18px rgba(15,26,20,.25)}
+.btm a{padding:5px 2px 4px;gap:1px;font-size:9.5px}
+.btm svg{width:17px;height:17px}
