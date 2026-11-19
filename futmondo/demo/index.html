@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Demo · Inicio Guía Fantasy</title>
+<link rel="icon" href="/img/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="./demo.css?v=1">
+</head>
+<body>
+<header class="top">
+  <a href="/futmondo/lapuja/">La Puja</a>
+  <a href="/futmondo/quiniela/">La Quiniela</a>
+  <a href="/futmondo/porra/">La Porra</a>
+  <a class="on" href="/futmondo/guiafantasy/inicio">Guía Fantasy</a>
+</header>
+<div class="demo-flag">Página de prueba · tu Inicio real no ha cambiado</div>
+<div class="tick" id="tick" aria-label="Últimas noticias"><div class="tick-tr" id="tickTr"></div></div>
+<nav class="clubs" id="clubs" aria-label="Clubes"></nav>
+
+<main class="wrap">
+  <a class="nx" id="next" href="#jornada" hidden></a>
+
+  <section class="card" id="jornada">
+    <div class="hd"><h2 id="jTit">Jornada</h2><a href="/futmondo/guiafantasy/calendario">Calendario</a></div>
+    <div class="gg" id="games"><p class="muted">Cargando partidos…</p></div>
+  </section>
+
+  <section class="card">
+    <div class="hd"><h2>Noticias</h2><a href="/futmondo/guiafantasy/noticias">Ver todas</a></div>
+    <div id="news"><p class="muted">Cargando noticias…</p></div>
+  </section>
+
+  <section class="card dk">
+    <div class="hd"><h2>Últimos cambios</h2><a href="/futmondo/guiafantasy/actualizaciones">Ver todos</a></div>
+    <div id="cam"><p class="muted">Cargando…</p></div>
+  </section>
+
+  <section class="card" id="chol" hidden></section>
+
+  <section class="card">
+    <div class="hd"><h2>Mercado</h2><a href="/futmondo/guiafantasy/mercado">Ver mercado</a></div>
+    <div class="seg" id="mvTabs" role="tablist"><button class="on" data-k="up" type="button">Suben</button><button data-k="dn" type="button">Bajan</button></div>
+    <div id="mv"><p class="muted">Cargando…</p></div>
+  </section>
+
+  <section class="card">
+    <div class="hd"><h2>LaLiga</h2><button class="lnk" id="tblFull" type="button">Ver completa</button></div>
+    <div class="seg" id="ligaTabs" role="tablist">
+      <button class="on" data-k="tabla" type="button">Tabla</button>
+      <button data-k="goles" type="button">Goles</button>
+      <button data-k="penaltis" type="button">Penaltis</button>
+      <button data-k="amarillas" type="button">Amarillas</button>
+    </div>
+    <div id="liga"><p class="muted">Cargando…</p></div>
+  </section>
+
+  <a class="same" href="/futmondo/guiafantasy/rentables">Jugadores rentables →</a>
+</main>
+
+<nav class="tab" aria-label="Guía Fantasy">
+  <a class="on" href="/futmondo/demo/">Inicio</a>
+  <a href="/futmondo/guiafantasy/noticias">Noticias</a>
+  <a href="/futmondo/guiafantasy/mercado">Mercado</a>
+  <a href="/futmondo/guiafantasy/inicio">Inicio real</a>
+</nav>
+
+<script src="/futmondo/teams.js?v=1"></script>
+<script src="/futmondo/thumb.js?v=1"></script>
+<script src="./demo.js?v=1"></script>
+</body>
+</html>

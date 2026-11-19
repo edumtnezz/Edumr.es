@@ -31,3 +31,5 @@
 /futmondo/guiafantasy/confirmadas /futmondo/guiafantasy/inicio 301
 /equipos /futmondo/guiafantasy/ 200
 /equipos/* /futmondo/guiafantasy/ 200
+/demo /futmondo/demo/ 302
+/demo/ /futmondo/demo/ 302
