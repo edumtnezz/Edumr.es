@@ -23,6 +23,7 @@ h2,h3{font-family:'Bricolage Grotesque',sans-serif;margin:0;letter-spacing:-.02e
 
 .clubs{background:#fff;display:flex;gap:14px;padding:10px 12px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none}
 .clubs::-webkit-scrollbar{display:none}
+.clubs a:first-child{margin-left:auto}.clubs a:last-child{margin-right:auto}
 .clubs a{flex:none;width:40px;height:40px;display:grid;place-items:center}
 .clubs img{width:37px;height:37px;object-fit:contain}
 
@@ -317,3 +318,25 @@ html:not([data-theme="light"]) .pill.p-nota{background:#334155;color:#e2e8f0}
 html:not([data-theme="light"]) .it .lg{background:#fff}
 html:not([data-theme="light"]) .dk{border-color:var(--line)}
 html:not([data-theme="light"]) .gm .tv[alt="DAZN"]{filter:invert(1)}
+
+/* última noticia más grande, como novedad */
+.nr.big{flex-direction:column;align-items:stretch;gap:8px;padding-bottom:12px}
+.nr.big .th{width:100%;aspect-ratio:16/8;border-radius:14px}
+.nr.big .th>*{width:100%!important;height:100%!important;transform:none}
+.nr.big h3{font-size:18px;line-height:1.2;-webkit-line-clamp:3}
+.nr.big .m{font-size:12px}
+.nr.big .th .eth-st2 .eth-sb{display:block}
+.pill.p-nuevo{background:#16a34a;color:#fff}
+/* últimos cambios: foto del jugador más grande */
+.it .lg{width:52px;height:52px;border-radius:50%}
+.it .lg.ph img{width:52px;height:52px}
+.it .lg img{width:38px;height:38px}
+/* suben y bajan + últimos cambios, uno al lado del otro en pantallas grandes */
+.duo{display:block}
+.duo>.card{min-width:0}
+@media (min-width:900px){
+  .wrap{max-width:980px}
+  .duo{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+  .duo>.card{margin-bottom:0}
+}
+.nr.big .th{width:min(100%,460px)}

@@ -147,13 +147,15 @@
     var box = $("#news");
     if (!news.length) { box.innerHTML = '<p class="muted">Sin noticias ahora mismo.</p>'; return; }
     box.innerHTML = "";
-    news.slice(0, 4).forEach(function (x) {
-      var a = document.createElement("a"); a.className = "nr"; a.href = x.link;
+    var hoy = new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", timeZone: "Europe/Madrid" });
+    news.slice(0, 4).forEach(function (x, n) {
+      var esHoy = String(x.date || "").trim() === hoy;
+      var a = document.createElement("a"); a.className = "nr" + (n === 0 ? " big" : ""); a.href = x.link;
       var th = document.createElement("div"); th.className = "th";
       var t = thumbOf(x); if (t) th.appendChild(t);
       a.appendChild(th);
       var tg = newsTag(x);
-      a.insertAdjacentHTML("beforeend", '<div class="b"><div class="m"><span class="pill p-' + tg[0] + '">' + tg[1] + "</span><span>" + esc(x.date) + " · " + esc(x.time) + "</span></div><h3>" + esc(x.title) + "</h3></div>");
+      a.insertAdjacentHTML("beforeend", '<div class="b"><div class="m"><span class="pill p-' + tg[0] + '">' + tg[1] + "</span>" + (n === 0 && esHoy ? '<span class="pill p-nuevo">Nuevo</span>' : "") + "<span>" + (esHoy ? "" : esc(x.date) + " · ") + esc(x.time) + "</span></div><h3>" + esc(x.title) + "</h3></div>");
       box.appendChild(a);
     });
   }
