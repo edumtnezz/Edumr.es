@@ -66,37 +66,53 @@
     var d = new Date(ts), h = d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
     return d.toDateString() === new Date().toDateString() ? h : d.getDate() + "/" + (d.getMonth() + 1) + " " + h;
   }
-  var nextKo = null;
+  var nextKo = null, curJ = 0, selJ = 0;
   function paintJornada(j, est) {
     if (!j || !j.matches || !j.matches.length) { $("#games").innerHTML = '<p class="muted">Sin partidos ahora mismo.</p>'; return; }
+    if (!curJ) curJ = j.matchday;
+    selJ = j.matchday;
     $("#jTit").textContent = "Jornada " + j.matchday;
+    $("#jPrev").disabled = selJ <= 1; $("#jNext").disabled = selJ >= 38;
     var pr = {};
     ((est && est.items) || []).forEach(function (i) { pr[i.home + "|" + i.away] = i.at || 1; });
     $("#games").innerHTML = j.matches.map(function (m) {
-      var at = pr[m.home + "|" + m.away];
+      var st = m.live && m.live.state;
+      var at = st === "final" ? 0 : pr[m.home + "|" + m.away];
       var tv = (m.tv || []).map(function (t) { return t.logo ? '<img class="tv" src="' + esc(t.logo) + '" alt="' + esc(t.name) + '">' : ""; }).join("");
-      var lab = m.live ? "En juego" : m.aplazado ? "Aplazado" : "";
+      var score = m.live && m.live.score ? m.live.score : "";
+      var lab = st === "live" ? (score || "En juego") : st === "final" ? score : m.aplazado ? "Aplazado" : m.time;
+      var sub = st === "live" ? '<span class="lv">' + esc(m.live.minute || "En directo") + "</span>" : st === "final" ? '<span class="fn">Final</span>' : tv;
       var ago = at > 1e9 ? Math.round((Date.now() - at) / 60000) : -1;
       var fresh = ago >= 0 && ago < 60;
       return '<a class="gm' + (at ? " p" : "") + (fresh ? " new" : "") + '" href="/futmondo/guiafantasy/partido/' + matchSlug(m.home, m.away) + "?j=" + j.matchday + '">' +
-        (at ? '<div class="pr">' + "<b>" + (fresh ? '<i class="dot"></i>' : "") + (m.confirmed ? "Once confirmado" : "Once probable") + "</b>" + (at > 1e9 ? "<span>" + (fresh ? "hace " + Math.max(1, ago) + " min" : hm(at)) + "</span>" : "") + "</div>" : "") +
+        (at ? '<div class="pr"><b>' + (fresh ? '<i class="dot"></i>' : "") + (m.confirmed ? "Once confirmado" : "Once probable") + "</b>" + (at > 1e9 ? "<span>" + (fresh ? "hace " + Math.max(1, ago) + " min" : hm(at)) + "</span>" : "") + "</div>" : "") +
         '<div class="in"><img class="c" src="' + esc(m.homeCrest) + '" alt="' + esc(m.home) + '">' +
-        '<div class="mid"><b>' + esc(m.day) + " " + esc(m.date) + "</b>" + esc(lab || m.time) + tv + "</div>" +
+        '<div class="mid"><b>' + esc(m.day) + " " + esc(m.date) + "</b>" + esc(lab) + sub + "</div>" +
         '<img class="c" src="' + esc(m.awayCrest) + '" alt="' + esc(m.away) + '"></div></a>';
     }).join("");
-    // barra fina: cuenta atrás al primer partido que aún no ha empezado
-    var now = Date.now(), first = null;
-    j.matches.forEach(function (m) { var k = kickoff(m); if (k && k > now && !m.live && (!first || k < first.k)) first = { k: k, m: m }; });
+    // barra de cuenta atrás (solo en la jornada actual): al primer partido que aún no ha empezado
     var nx = $("#next");
+    if (selJ !== curJ) { nx.hidden = true; nextKo = null; return; }
+    var now = Date.now(), first = null;
+    j.matches.forEach(function (m) { var k = kickoff(m); if (k && k > now && !(m.live && m.live.state)) { if (!first || k < first.k) first = { k: k, m: m }; } });
     if (!first) { nx.hidden = true; return; }
     nextKo = first.k;
     nx.href = "/futmondo/guiafantasy/partido/" + matchSlug(first.m.home, first.m.away) + "?j=" + j.matchday;
-    nx.innerHTML = '<img src="' + esc(first.m.homeCrest) + '" alt=""><img src="' + esc(first.m.awayCrest) + '" alt=""><span>' +
-      (j.matches.some(function (m) { var k = kickoff(m); return m.live || (k && k < now); }) ? "Próximo partido" : "Empieza la jornada") +
-      '</span><span class="cdn" id="cdn"></span>';
+    var started = j.matches.some(function (m) { var k = kickoff(m); return (m.live && m.live.state) || (k && k < now); });
+    nx.innerHTML = '<span class="nx-vs"><img src="' + esc(first.m.homeCrest) + '" alt=""><em>VS</em><img src="' + esc(first.m.awayCrest) + '" alt=""></span>' +
+      '<span class="nx-l"><span>' + (started ? "Próximo partido" : "Empieza la jornada") + '</span><span class="cdn" id="cdn"></span></span>';
     nx.hidden = false;
     tick();
   }
+  function loadJornada(n) {
+    var q = n && n !== curJ ? "jornada?jornada=" + n : "jornada";
+    get(q).then(function (jr) {
+      if (!jr) return;
+      return (n && n !== curJ ? Promise.resolve(null) : get("alineaciones-estado?jornada=" + jr.matchday)).then(function (est) { paintJornada(jr, est); });
+    });
+  }
+  $("#jPrev").addEventListener("click", function () { if (selJ > 1) loadJornada(selJ - 1); });
+  $("#jNext").addEventListener("click", function () { if (selJ < 38) loadJornada(selJ + 1); });
   function tick() {
     var c = $("#cdn"); if (!c || !nextKo) return;
     var s = Math.max(0, Math.floor((nextKo - Date.now()) / 1000));
@@ -205,7 +221,7 @@
     var href = playerUrl(p);
     var f = (c.forma || []).slice(-5), mx = Math.max(10, Math.max.apply(null, f.concat([0])));
     var rep = Number(x.rep) || 0;
-    var repTxt = rep ? "Ya ha sido chollo " + rep + (rep === 1 ? " vez" : " veces") : "Primera vez como chollo";
+    var repHtml = rep ? '<span class="chol-rp"><b>' + rep + '</b><small>' + (rep === 1 ? "vez" : "veces") + ' chollo</small></span>' : '<span class="chol-rp"><b>1ª</b><small>vez chollo</small></span>';
     // valor: hoy, ayer y 7 días (Futmondo, de la lista del mercado)
     var vh = p ? Number(p.chg1) || 0 : null, v2 = p && p.chg2 != null && p.chg2 !== "" ? Number(p.chg2) || 0 : null, v7 = p && p.chg7 != null && p.chg7 !== "" ? Number(p.chg7) || 0 : null;
     var vay = vh != null && v2 != null ? v2 - vh : null;
@@ -218,8 +234,7 @@
     }
     box.innerHTML = '<div class="hd"><h2>Chollo del día</h2></div>' +
       '<a class="chol-top" href="' + esc(href || "/futmondo/guiafantasy/mercado") + '"><span class="chol-ph">' + (x.photo ? '<img src="' + esc(x.photo) + '" alt="">' : "") + "</span>" +
-      '<span><span class="chol-nm">' + esc(x.title) + (c.logo ? '<img src="' + esc(c.logo) + '" alt="">' : "") + '</span><span class="chol-vl">' + esc(c.valor) + "</span></span></a>" +
-      '<div class="chol-rep">' + esc(repTxt) + "</div>" +
+      '<span><span class="chol-nm">' + esc(x.title) + (c.logo ? '<img src="' + esc(c.logo) + '" alt="">' : "") + '</span><span class="chol-vl">' + esc(c.valor) + "</span></span>" + repHtml + "</a>" +
       '<div class="chol-row"><div class="chol-bars" id="cholBars"></div><div class="chol-st"><div><b>' + esc(c.media) + "</b>media</div>" + (c.prob ? "<div><b>" + esc(c.prob) + " %</b>prob. jugar</div>" : "") + "</div></div>" +
       '<div class="chol-val"><div class="chol-vg">' + cell("Hoy", vh) + cell("Ayer", vay) + cell("7 días", v7) + "</div>" + prev + "</div>";
     var bars = $("#cholBars");
@@ -296,6 +311,22 @@
     paintLiga();
   });
   $("#tblFull").addEventListener("click", function () { full = !full; paintLiga(); });
+
+  // ---------- perfil (igual que en el resto de la web) ----------
+  (function () {
+    var ub = $("#userBox"); if (!ub) return;
+    fetch(API + "/me", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
+      var name = d && d.user && d.user.name; if (!name) return;
+      var parts = String(name).trim().split(/\s+/).filter(Boolean);
+      var ini = (parts.length <= 1 ? parts[0].slice(0, 2) : parts[0][0] + parts[1][0]).toUpperCase();
+      ub.hidden = false;
+      ub.innerHTML = '<button type="button" class="user-chip"><span class="user-avatar">' + esc(ini) + '</span><span class="user-name">' + esc(name) + '</span><span class="user-caret">▾</span></button><div class="user-menu"><button type="button" class="user-menu-exit">Salir</button></div>';
+      var menu = ub.querySelector(".user-menu");
+      ub.querySelector(".user-chip").addEventListener("click", function (e) { e.stopPropagation(); menu.classList.toggle("open"); });
+      document.addEventListener("click", function (e) { if (!ub.contains(e.target)) menu.classList.remove("open"); });
+      ub.querySelector(".user-menu-exit").addEventListener("click", function () { fetch(API + "/logout", { method: "POST" }).catch(function () {}).then(function () { location.reload(); }); });
+    }).catch(function () {});
+  })();
 
   // ---------- carga ----------
   var pMerc = get("mercado").then(function (m) {
