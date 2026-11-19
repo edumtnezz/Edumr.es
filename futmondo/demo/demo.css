@@ -374,3 +374,17 @@ html:not([data-theme="light"]) .gm .tv[alt="DAZN"]{filter:invert(1)}
   #news .nr:not(.big) .th{width:128px}
   #news .nr:not(.big) h3{font-size:15px}
 }
+
+/* una sola línea: novedad + detalle, y nombre + club */
+.it .b{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+.it .ti{flex:0 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.it .de{flex:1 1 0;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0}
+.it{align-items:center}
+.mn{flex-direction:row;align-items:baseline;gap:8px}
+.mn b{flex:0 1 auto}
+.mn small{flex:1 1 0;min-width:0}
+.it .ti{display:block}.it .ti .pill{margin-right:7px;vertical-align:1px}
+@media (max-width:600px){
+  .it .ti{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .it .de{display:none}
+}
