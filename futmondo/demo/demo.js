@@ -51,6 +51,7 @@
       h += '<a href="' + esc(href) + '" aria-label="' + esc(p.team) + '"><img src="' + esc(logoByTeam[k]) + '" alt=""></a>';
     });
     $("#clubs").innerHTML = h;
+    clubArrows();
   }
 
   // ---------- jornada ----------
@@ -66,7 +67,7 @@
     var d = new Date(ts), h = d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
     return d.toDateString() === new Date().toDateString() ? h : d.getDate() + "/" + (d.getMonth() + 1) + " " + h;
   }
-  var nextKo = null, curJ = 0, selJ = 0;
+  var curJ = 0, selJ = 0;
   function paintJornada(j, est) {
     if (!j || !j.matches || !j.matches.length) { $("#games").innerHTML = '<p class="muted">Sin partidos ahora mismo.</p>'; return; }
     if (!curJ) curJ = j.matchday;
@@ -92,17 +93,15 @@
     }).join("");
     // barra de cuenta atrás (solo en la jornada actual): al primer partido que aún no ha empezado
     var nx = $("#next");
-    if (selJ !== curJ) { nx.hidden = true; nextKo = null; return; }
+    if (selJ !== curJ) { nx.hidden = true;  return; }
     var now = Date.now(), first = null;
     j.matches.forEach(function (m) { var k = kickoff(m); if (k && k > now && !(m.live && m.live.state)) { if (!first || k < first.k) first = { k: k, m: m }; } });
     if (!first) { nx.hidden = true; return; }
-    nextKo = first.k;
     nx.href = "/futmondo/guiafantasy/partido/" + matchSlug(first.m.home, first.m.away) + "?j=" + j.matchday;
     var started = j.matches.some(function (m) { var k = kickoff(m); return (m.live && m.live.state) || (k && k < now); });
     nx.innerHTML = '<span class="nx-vs"><img src="' + esc(first.m.homeCrest) + '" alt=""><em>VS</em><img src="' + esc(first.m.awayCrest) + '" alt=""></span>' +
-      '<span class="nx-l"><span>' + (started ? "Próximo partido" : "Empieza la jornada") + '</span><span class="cdn" id="cdn"></span></span>';
+      '<span class="nx-l"><span>' + (started ? "Próximo partido" : "Empieza la jornada") + '</span><b class="nx-d">' + esc(whenTxt(first.k)) + '</b></span>';
     nx.hidden = false;
-    tick();
   }
   function loadJornada(n) {
     var q = n && n !== curJ ? "jornada?jornada=" + n : "jornada";
@@ -113,14 +112,16 @@
   }
   $("#jPrev").addEventListener("click", function () { if (selJ > 1) loadJornada(selJ - 1); });
   $("#jNext").addEventListener("click", function () { if (selJ < 38) loadJornada(selJ + 1); });
-  function tick() {
-    var c = $("#cdn"); if (!c || !nextKo) return;
-    var s = Math.max(0, Math.floor((nextKo - Date.now()) / 1000));
-    var d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
-    var parts = d ? [[d, "d"], [h, "h"], [m, "m"]] : [[h, "h"], [m, "m"], [s % 60, "s"]];
-    c.innerHTML = parts.map(function (p) { return "<span>" + p[0] + "<small>" + p[1] + "</small></span>"; }).join("");
+  // cuándo es, en palabras: hoy, mañana, pasado mañana o el día de la semana (hora de Madrid)
+  function whenTxt(ms) {
+    var tz = "Europe/Madrid", d = new Date(ms);
+    var ymd = function (x) { return x.toLocaleDateString("en-CA", { timeZone: tz }); };
+    var diff = Math.round((Date.parse(ymd(d)) - Date.parse(ymd(new Date()))) / 86400000);
+    var wd = d.toLocaleDateString("es-ES", { weekday: "long", timeZone: tz });
+    var hh = d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", timeZone: tz });
+    var w = wd.charAt(0).toUpperCase() + wd.slice(1);
+    return (diff <= 0 ? "Hoy" : diff === 1 ? "Mañana, " + wd : diff === 2 ? "Pasado mañana, " + wd : w) + " · " + hh;
   }
-  setInterval(tick, 1000);
 
   // ---------- noticias (miniatura propia: EduThumb, con la foto de Futmondo del jugador del titular) ----------
   var CLUB_COL = [[/barc/, "#a50044"], [/real madrid/, "#1e3a8a"], [/atletico|atleti/, "#c8102e"], [/sevilla/, "#d71920"], [/betis/, "#0a7d3b"], [/valencia/, "#e8731a"], [/athletic|bilbao/, "#d4121a"], [/sociedad/, "#0067b1"], [/villarreal/, "#b58900"], [/celta/, "#2a7fbf"], [/osasuna/, "#c0102e"], [/getafe/, "#004fa3"], [/rayo/, "#d6101f"], [/espanyol/, "#0069b5"], [/alaves/, "#0052a5"], [/levante/, "#9b1030"], [/elche/, "#0c8a3f"], [/depor|coruna/, "#1d4ed8"], [/racing|santander/, "#0a7d3b"], [/malaga/, "#0b66c3"]];
@@ -317,6 +318,27 @@
     paintLiga();
   });
   $("#tblFull").addEventListener("click", function () { full = !full; paintLiga(); });
+
+  // flechitas para avisar de que la tira de clubes se desliza
+  function clubArrows() {
+    var nav = $("#clubs");
+    if (!nav.parentNode.classList.contains("clubs-w")) {
+      var w = document.createElement("div"); w.className = "clubs-w"; nav.parentNode.insertBefore(w, nav); w.appendChild(nav);
+      ["l", "r"].forEach(function (k) {
+        var b = document.createElement("button"); b.type = "button"; b.className = "ca " + k; b.setAttribute("aria-label", k === "l" ? "Anteriores" : "Siguientes");
+        b.textContent = k === "l" ? "\u2039" : "\u203a";
+        b.addEventListener("click", function () { nav.scrollBy({ left: (k === "l" ? -1 : 1) * nav.clientWidth * 0.7, behavior: "smooth" }); });
+        w.appendChild(b);
+      });
+      nav.addEventListener("scroll", upd, { passive: true }); window.addEventListener("resize", upd);
+    }
+    function upd() {
+      var w = nav.parentNode, max = nav.scrollWidth - nav.clientWidth;
+      w.querySelector(".ca.l").hidden = nav.scrollLeft < 8;
+      w.querySelector(".ca.r").hidden = max < 8 || nav.scrollLeft > max - 8;
+    }
+    upd();
+  }
 
   // ---------- perfil (igual que en el resto de la web) ----------
   (function () {
