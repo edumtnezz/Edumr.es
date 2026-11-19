@@ -405,4 +405,5 @@ html:not([data-theme="light"]) .gm .tv[alt="DAZN"]{filter:invert(1)}
 
 /* barra inferior fija en pantalla */
 .btm{position:fixed;left:50%;transform:translateX(-50%);bottom:0;margin:0}
-body{padding-bottom:calc(84px + env(safe-area-inset-bottom))}
+body{padding-bottom:calc(58px + env(safe-area-inset-bottom))}
+.btm{bottom:0!important;padding-bottom:env(safe-area-inset-bottom);padding-top:3px}
