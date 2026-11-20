@@ -87,8 +87,8 @@ test("chollo del día: mismo jugador y reglas que Inicio; cada razón con su dat
   assert.match(a.body, /@ Chollo \| Chollo \| 1,67 \| puntos por millón/);
   assert.match(a.body, /- Cuesta 4\.300\.000 €/);
   assert.match(a.body, /- Tiene un 85 % de jugar/);
-  assert.match(a.body, /- Ha jugado 11 partidos \(mínimo 8\) y puntuó en 4 de sus últimos 5/);
-  assert.match(a.body, /es el que más media da por millón: 1,67/);
+  assert.match(a.body, /- Ha jugado 11 partidos y puntuó en 4 de sus últimos 5\./);
+  assert.ok(!/mínimo|no pasa de|que cumplen/.test(a.body));
   assert.match(a.body, /## Los siguientes de hoy[\s\S]*@ Segundo/);
   assert.ok(!/@ Caro/.test(a.body));
   assert.equal(chollo(ps, "Caro", "20/11"), null); // no cumple el criterio: no se inventa
@@ -102,6 +102,6 @@ test("chollo del día: calendario difícil (3,5 o más) no vale; sin dato del eq
   assert.equal(chollo(ps, "Dificil", "20/11", dif), null);
   assert.equal(chollo(ps, "SinDato", "20/11", dif), null);
   const a = chollo(ps, "Facil", "20/11", dif);
-  assert.match(a.body, /- Su calendario es fácil: sus próximos 5 rivales tienen dificultad 2,8 de 5 \(a partir de 3,5 es difícil\)\./);
+  assert.match(a.body, /- Su calendario es fácil: sus próximos 5 rivales tienen dificultad 2,8 de 5\./);
   assert.ok(!/@ Dificil|@ SinDato/.test(a.body));
 });
