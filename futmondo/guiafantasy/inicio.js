@@ -1,3 +1,13 @@
+  function loadJornada(n) {
+    var q = n && n !== curJ ? "jornada?jornada=" + n : "jornada";
+    get(q).then(function (jr) {
+      if (!jr) return;
+      if (n && n !== curJ) { paintJornada(jr, null); return; }
+      var er = "alineaciones-estado?jornada=" + jr.matchday;
+      paintJornada(jr, cached(er));            // primero los partidos, sin esperar a los onces
+      get(er).then(function (est) { paintJornada(jr, est); });
+    });
+  }
 /* Inicio de Guía Fantasy (20/11/2026). Solo lee la API.
    Todo dato sale de /api/laquiniela. Si una fuente falla, se enseña el último dato bueno guardado. */
 (function () {
@@ -18,6 +28,8 @@
       .then(function (d) { try { localStorage.setItem(key, JSON.stringify(d)); } catch (e) {} return d; })
       .catch(function () { try { var s = localStorage.getItem(key); if (s) return JSON.parse(s); } catch (e) {} return null; });
   }
+
+  function cached(route) { try { var v = localStorage.getItem("ini:" + route); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
 
   // ---------- mercado (fotos, escudos y cambios de valor) ----------
   var players = [], logoByTeam = {};
@@ -347,10 +359,18 @@
     players.forEach(function (p) { if (p.logo && p.team) { var k = canon(p.team); if (!logoByTeam[k]) logoByTeam[k] = p.logo; } });
     paintClubs(); paintMercado();
   });
-  var pJor = get("jornada");
   var pNews = get("noticias");
-  Promise.all([pJor, pJor.then(function (j) { return j && j.matchday ? get("alineaciones-estado?jornada=" + j.matchday) : null; })])
-    .then(function (r) { paintJornada(r[0], r[1]); });
+  // Jornada: lo último guardado sale al instante; luego los partidos y, cuando llegan, los onces
+  (function () {
+    var cj = cached("jornada");
+    if (cj && cj.matchday) paintJornada(cj, cached("alineaciones-estado?jornada=" + cj.matchday));
+    get("jornada").then(function (jr) {
+      if (!jr) return;
+      var er = "alineaciones-estado?jornada=" + jr.matchday;
+      paintJornada(jr, cached(er));
+      get(er).then(function (est) { paintJornada(jr, est); });
+    });
+  })();
   pNews.then(function (n) {
     var l = (n && n.noticias) || [];
     paintTicker(l);
