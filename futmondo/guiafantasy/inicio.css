@@ -209,7 +209,10 @@ html:not([data-theme="light"]) :is(#inicioTop,#tab-inicio) .gm .tv[alt="DAZN"]{f
 :is(#inicioTop,#tab-inicio) .mvh{display:block}
 :is(#inicioTop,#tab-inicio) .duo{align-items:stretch}
 :is(#inicioTop,#tab-inicio) .duo>.card{margin-bottom:10px;display:flex;flex-direction:column}
-:is(#inicioTop,#tab-inicio) .duo>.card.dk{display:block}
+:is(#inicioTop,#tab-inicio) .duo>.card.dk{display:flex;flex-direction:column}
+:is(#inicioTop,#tab-inicio) .duo>.card.dk>.dk-b{flex:1}
+:is(#inicioTop,#tab-inicio) #cam{display:flex;flex-direction:column}
+:is(#inicioTop,#tab-inicio) #cam>.it{flex:1;align-items:center}
 :is(#inicioTop,#tab-inicio) #news{display:grid;grid-template-columns:1.1fr 1fr;gap:18px;align-items:stretch}
 :is(#inicioTop,#tab-inicio) #news .nr.big{grid-row:1/span 3;border:0;padding:0;align-self:start}
 :is(#inicioTop,#tab-inicio) #news .nr.big .th{width:100%;aspect-ratio:16/10}
