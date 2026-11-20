@@ -1,4 +1,4 @@
-/* Página de prueba del nuevo Inicio (/futmondo/demo). Solo lee la API; no cambia nada de la web.
+/* Inicio de Guía Fantasy (20/11/2026). Solo lee la API.
    Todo dato sale de /api/laquiniela. Si una fuente falla, se enseña el último dato bueno guardado. */
 (function () {
   "use strict";
@@ -12,7 +12,7 @@
   var canon = function (t) { try { return window.EduTeams ? window.EduTeams.canon(t) : fold(t); } catch (e) { return fold(t); } };
 
   function get(route) {
-    var key = "demo:" + route;
+    var key = "ini:" + route;
     return fetch(API + "/" + route, { cache: "no-store" })
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (d) { try { localStorage.setItem(key, JSON.stringify(d)); } catch (e) {} return d; })
@@ -38,7 +38,7 @@
     if (!news.length) { $("#tick").hidden = true; return; }
     var h = news.slice(0, 8).map(function (n) {
       var t = newsTag(n);
-      return '<a href="' + esc(n.link) + '"><span class="pill p-' + t[0] + '">' + t[1] + "</span>" + esc(n.title) + "</a>";
+      return '<a href="' + esc(n.link) + '" data-news="1" data-title="' + esc(n.title) + '"><span class="pill p-' + t[0] + '">' + t[1] + "</span>" + esc(n.title) + "</a>";
     }).join("");
     $("#tickTr").innerHTML = h + h;
   }
@@ -69,7 +69,7 @@
   }
   var curJ = 0, selJ = 0;
   function paintJornada(j, est) {
-    if (!j || !j.matches || !j.matches.length) { $("#games").innerHTML = '<p class="muted">Sin partidos ahora mismo.</p>'; return; }
+    if (!j || !j.matches || !j.matches.length) { $("#games").innerHTML = '<p class="i-muted">Sin partidos ahora mismo.</p>'; return; }
     if (!curJ) curJ = j.matchday;
     selJ = j.matchday;
     $("#jTit").textContent = "Jornada " + j.matchday;
@@ -146,12 +146,12 @@
   }
   function paintNews(news) {
     var box = $("#news");
-    if (!news.length) { box.innerHTML = '<p class="muted">Sin noticias ahora mismo.</p>'; return; }
+    if (!news.length) { box.innerHTML = '<p class="i-muted">Sin noticias ahora mismo.</p>'; return; }
     box.innerHTML = "";
     var hoy = new Date().toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", timeZone: "Europe/Madrid" });
     news.slice(0, 4).forEach(function (x, n) {
       var esHoy = String(x.date || "").trim() === hoy;
-      var a = document.createElement("a"); a.className = "nr" + (n === 0 ? " big" : ""); a.href = x.link;
+      var a = document.createElement("a"); a.className = "nr" + (n === 0 ? " big" : ""); a.href = x.link; a.setAttribute("data-news", "1"); a.setAttribute("data-title", x.title || "");
       var th = document.createElement("div"); th.className = "th";
       var t = thumbOf(x); if (t) th.appendChild(t);
       a.appendChild(th);
@@ -172,7 +172,7 @@
       });
     });
     var box = $("#cam");
-    if (!items.length) box.innerHTML = '<p class="muted">Sin cambios ahora mismo.</p>';
+    if (!items.length) box.innerHTML = '<p class="i-muted">Sin cambios ahora mismo.</p>';
     else box.innerHTML = items.slice(0, window.matchMedia("(min-width:900px)").matches ? 7 : 5).map(function (e) {
       var i = e.i, c = CAT[i.cat] || ["nota", i.cat];
       var p = i.pid ? players.find(function (q) { return String(q.id) === String(i.pid); }) : null;
@@ -237,9 +237,9 @@
       prev = '<span class="chol-pv ' + (vh > 0 ? "up" : "dn") + '">Previsión 3 días: ' + (vh > 0 ? "▲ más de +" : "▼ más de −") + miles(mn) + " €</span>";
     }
     box.innerHTML = '<div class="hd"><h2>Chollo del día</h2></div>' +
-      '<a class="chol-top" href="' + esc(href || "/futmondo/guiafantasy/mercado") + '"><span class="chol-ph">' + (x.photo ? '<img src="' + esc(x.photo) + '" alt="">' : "") + "</span>" +
+      '<a class="chol-top" href="' + esc(href || "/futmondo/guiafantasy/mercado") + '"><span class="ic-ph">' + (x.photo ? '<img src="' + esc(x.photo) + '" alt="">' : "") + "</span>" +
       '<span><span class="chol-nm">' + esc(x.title) + (c.logo ? '<img src="' + esc(c.logo) + '" alt="">' : "") + '</span><span class="chol-vl">' + esc(c.valor) + "</span></span>" + repHtml + "</a>" +
-      '<div class="chol-row"><div class="chol-bars" id="cholBars"></div><div class="chol-st"><div><b>' + esc(c.media) + "</b>media</div>" + (c.prob ? "<div><b>" + esc(c.prob) + " %</b>prob. jugar</div>" : "") + "</div></div>" +
+      '<div class="chol-row"><div class="ic-bars" id="cholBars"></div><div class="chol-st"><div><b>' + esc(c.media) + "</b>media</div>" + (c.prob ? "<div><b>" + esc(c.prob) + " %</b>prob. jugar</div>" : "") + "</div></div>" +
       '<div class="chol-val"><div class="chol-vg">' + cell("Hoy", vh) + cell("Ayer", vay) + cell("7 días", v7) + "</div>" + prev + "</div>";
     var bars = $("#cholBars");
     f.forEach(function (v) {
@@ -270,7 +270,7 @@
         : ps.filter(function (p) { return p.change < 0; }).sort(function (a, b) { return a.change - b.change; });
       return '<div class="mvb" data-k="' + k + '"><h3 class="mvh ' + k + '">' + tit + "</h3>" + (list.length ? list.slice(0, 5).map(function (p) {
         return '<a class="mr" href="' + esc(playerUrl(p)) + '"><span class="mp">' + (p.photo ? '<img src="' + esc(p.photo) + '" alt="">' : "") + (p.logo ? '<img class="mc" src="' + esc(p.logo) + '" alt="">' : "") + '</span><span class="mn"><b>' + esc(p.name) + "</b><small>" + esc(p.team || "") + '</small></span><span class="v ' + (p.change > 0 ? "up" : "dn") + '">' + (p.change > 0 ? "+" : "−") + dots(p.change) + " €</span></a>";
-      }).join("") : '<p class="muted">Sin cambios de valor.</p>') + "</div>";
+      }).join("") : '<p class="i-muted">Sin cambios de valor.</p>') + "</div>";
     };
     var mv = $("#mv"); mv.setAttribute("data-k", mvKey);
     mv.innerHTML = blk("up", "▲ Suben") + blk("dn", "▼ Bajan");
@@ -289,7 +289,7 @@
     btn.hidden = ligaKey !== "tabla";
     if (ligaKey === "tabla") {
       var T = (tabla && tabla.teams) || [];
-      if (!T.length) { box.innerHTML = '<p class="muted">Sin clasificación ahora mismo.</p>'; return; }
+      if (!T.length) { box.innerHTML = '<p class="i-muted">Sin clasificación ahora mismo.</p>'; return; }
       var n = T.length;
       var row = function (t) {
         var cls = t.pos <= 3 ? "q" : t.pos > n - 3 ? "d" : "";
@@ -305,8 +305,8 @@
     }
     var L = (lideres && lideres[ligaKey]) || [];
     if (ligaKey === "amarillas") L = L.filter(function (x) { return Number(x.v) % 5 === 4; }); // a una de la sanción
-    if (!L.length) { box.innerHTML = '<p class="muted">Sin datos ahora mismo.</p>'; return; }
-    box.innerHTML = (ligaKey === "amarillas" ? '<p class="muted">A una amarilla de la sanción</p>' : "") +
+    if (!L.length) { box.innerHTML = '<p class="i-muted">Sin datos ahora mismo.</p>'; return; }
+    box.innerHTML = (ligaKey === "amarillas" ? '<p class="i-muted">A una amarilla de la sanción</p>' : "") +
       L.slice(0, ligaKey === "amarillas" ? 10 : 5).map(function (x, i) {
         var lg = logoOf(x.team);
         return '<div class="row"><span class="n' + (i ? "" : " n1") + '">' + (i + 1) + "</span>" + (lg ? '<img src="' + esc(lg) + '" alt="">' : "") + "<span>" + esc(x.n) + '<span class="sm">' + esc(x.team) + '</span></span><span class="v big">' + esc(x.v) + "</span></div>";
@@ -341,22 +341,6 @@
     upd();
   }
 
-  // ---------- perfil (igual que en el resto de la web) ----------
-  (function () {
-    var ub = $("#userBox"); if (!ub) return;
-    fetch(API + "/me", { cache: "no-store" }).then(function (r) { return r.json(); }).then(function (d) {
-      var name = d && d.user && d.user.name; if (!name) return;
-      var parts = String(name).trim().split(/\s+/).filter(Boolean);
-      var ini = (parts.length <= 1 ? parts[0].slice(0, 2) : parts[0][0] + parts[1][0]).toUpperCase();
-      ub.hidden = false;
-      ub.innerHTML = '<button type="button" class="user-chip"><span class="user-avatar">' + esc(ini) + '</span><span class="user-name">' + esc(name) + '</span><span class="user-caret">▾</span></button><div class="user-menu"><button type="button" class="user-menu-exit">Salir</button></div>';
-      var menu = ub.querySelector(".user-menu");
-      ub.querySelector(".user-chip").addEventListener("click", function (e) { e.stopPropagation(); menu.classList.toggle("open"); });
-      document.addEventListener("click", function (e) { if (!ub.contains(e.target)) menu.classList.remove("open"); });
-      ub.querySelector(".user-menu-exit").addEventListener("click", function () { fetch(API + "/logout", { method: "POST" }).catch(function () {}).then(function () { location.reload(); }); });
-    }).catch(function () {});
-  })();
-
   // ---------- carga ----------
   var pMerc = get("mercado").then(function (m) {
     players = (m && m.players) || [];
@@ -376,4 +360,14 @@
   Promise.all([pMerc, pNews]).then(function (r) { paintNews((r[1] && r[1].noticias) || []); });
   Promise.all([pMerc, get("ultimos-cambios")]).then(function (r) { paintCambios(r[1]); });
   Promise.all([pMerc, get("tabla"), get("lideres")]).then(function (r) { tabla = r[1]; lideres = r[2]; paintLiga(); });
+
+  // dentro de la web (sin recargar): pestañas y noticias. Lo demás (jugadores, partidos, clubes) abre su página.
+  document.addEventListener("click", function (e) {
+    var a = e.target.closest && e.target.closest("#inicioTop a, #tab-inicio a");
+    if (!a || e.defaultPrevented || e.metaKey || e.ctrlKey || e.shiftKey || e.button) return;
+    var h = a.getAttribute("href") || "";
+    var m = h.match(/^\/futmondo\/guiafantasy\/(noticias|actualizaciones|calendario|rentables|mercado)\/?$/);
+    if (m && window.gfGo) { e.preventDefault(); window.gfGo(m[1]); return; }
+    if (a.getAttribute("data-news") && window.gfOpenNews) { e.preventDefault(); window.gfOpenNews(h, a.getAttribute("data-title") || ""); }
+  });
 })();

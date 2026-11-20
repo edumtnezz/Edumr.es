@@ -3865,6 +3865,9 @@
   }
 
   let currentTab = "inicio";
+  // Para inicio.js: abrir una pestaña o una noticia sin recargar la página
+  window.gfGo = (n) => switchTab(n === "mercado" ? "plantillas" : n);
+  window.gfOpenNews = (link, title) => { switchTab("noticias"); openNoticiaInline(link, title); };
   function switchTab(name, fromPop) {
     closeNoticiaInline();
     currentTab = name;
@@ -3876,7 +3879,7 @@
     if (panel) panel.classList.remove("hidden");
     const ch = $("cxChrome");
     if (ch) {
-      ch.classList.toggle("hidden", name !== "mercado" && name !== "noticias" && name !== "inicio");
+      ch.classList.toggle("hidden", name !== "mercado" && name !== "noticias");
       // La cinta de "Última hora" (chrome.js) es la primera cosa de la
       // portada: solo se enseña en Inicio.
       ch.classList.toggle("hide-ticker", name !== "inicio");
@@ -3886,6 +3889,9 @@
       // Los partidos de la jornada solo se ven en Inicio.
       ch.classList.toggle("hide-jornada", name !== "inicio");
     }
+    // Cinta y escudos del Inicio nuevo (inicio.js): solo en Inicio
+    const itop = $("inicioTop");
+    if (itop) itop.hidden = name !== "inicio";
     // La cinta de la portada se recalcula al volver a Inicio (al estar
     // oculta su ancho era 0 y la duración de la animación quedaba corta).
     if (name === "inicio") { try { if (window.__cxTickerSync) window.__cxTickerSync(); } catch (e) {} }
