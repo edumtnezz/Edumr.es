@@ -112,8 +112,12 @@
     if (!first) { nx.hidden = true; return; }
     nx.href = "/futmondo/guiafantasy/partido/" + matchSlug(first.m.home, first.m.away) + "?j=" + j.matchday;
     var started = j.matches.some(function (m) { var k = kickoff(m); return (m.live && m.live.state) || (k && k < now); });
-    nx.innerHTML = '<span class="nx-vs"><span class="nx-t"><img src="' + esc(first.m.homeCrest) + '" alt=""><b>' + esc(first.m.home) + '</b></span><em>VS</em><span class="nx-t"><img src="' + esc(first.m.awayCrest) + '" alt=""><b>' + esc(first.m.away) + '</b></span></span>' +
-      '<span class="nx-l"><span>' + (started ? "Próximo partido" : "Empieza la jornada") + '</span><b class="nx-d">' + esc(whenTxt(first.k)) + '</b></span>';
+    var wp = whenParts(first.k);
+    var team = function (n, c) { return '<span class="nx-t"><img src="' + esc(c) + '" alt=""><b>' + esc(n) + '</b></span>'; };
+    nx.innerHTML = '<span class="nx-top">' + (started ? "Próximo partido" : "Empieza la jornada") + '</span>' +
+      '<span class="nx-vs">' + team(first.m.home, first.m.homeCrest) +
+      '<span class="nx-mid"><b class="nx-h">' + esc(wp.hh) + '</b><span class="nx-day">' + esc(wp.day) + '</span></span>' +
+      team(first.m.away, first.m.awayCrest) + '</span>';
     nx.hidden = false;
   }
   function loadJornada(n) {
@@ -126,6 +130,10 @@
   $("#jPrev").addEventListener("click", function () { if (selJ > 1) loadJornada(selJ - 1); });
   $("#jNext").addEventListener("click", function () { if (selJ < 38) loadJornada(selJ + 1); });
   // cuándo es, en palabras: hoy, mañana, pasado mañana o el día de la semana (hora de Madrid)
+  function whenParts(ms) {
+    var t = whenTxt(ms).split(" · ");
+    return { day: t[0], hh: t[1] || "" };
+  }
   function whenTxt(ms) {
     var tz = "Europe/Madrid", d = new Date(ms);
     var ymd = function (x) { return x.toLocaleDateString("en-CA", { timeZone: tz }); };
