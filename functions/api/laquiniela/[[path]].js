@@ -4902,6 +4902,8 @@ async function recordMatchPoints(env) {
       Object.keys(results).forEach((id) => { const r = results[id]; if (r && r.f === true && r.p != null) store.pts[id] = r.p; });
       [pm.home, pm.away].forEach((k) => { if (store.teams.indexOf(k) < 0) store.teams.push(k); });
       store.at = Date.now();
+      store.ta = store.ta || {}; // hora real en que se guardaron los puntos de cada equipo (para el aviso del Inicio)
+      [pm.home, pm.away].forEach((k) => { if (!store.ta[k]) store.ta[k] = store.at; });
       try { await env.PORRA.put(PTJ_PREFIX + n, JSON.stringify(store), { expirationTtl: 120 * 24 * 3600 }); out.saved.push(pm.home + "-" + pm.away); const nm = (k) => { const q = roster.find((x) => sameTeam(teamKey(x.team || ""), k)); return q ? q.team : k; }; out.savedInfo.push({ j: n, home: nm(pm.home), away: nm(pm.away) }); } catch (e) { out.waiting.push(pm.home + "-" + pm.away + ":kv-error"); }
     }
   }
@@ -6662,7 +6664,23 @@ async function handleGet({ request, env: env0, params }) {
       const j = Number(url.searchParams.get("jornada")) || 0;
       if (!j) return json({ jornada: 0, pts: {} });
       const rec = await env.PORRA.get(PTJ_PREFIX + j, "json");
-      return json({ jornada: j, pts: (rec && rec.pts) || {}, teams: (rec && rec.teams) || [] });
+      // items: partidos de la jornada con los puntos YA guardados (publicados por Futmondo) y la hora en que se guardaron
+      const items = [];
+      if (url.searchParams.has("items") && rec && rec.teams && rec.teams.length) {
+        try {
+          const jd = await getJornada(env, j);
+          ((jd && jd.matches) || []).forEach((m) => {
+            const nm = (x) => { const n = (x && (x.shortName || x.name)) || ""; return n === "Santander" ? "Racing de Santander" : n; }; // mismos nombres que la ruta jornada
+            const hn = nm(m.homeTeam), an = nm(m.awayTeam);
+            const hk = teamKey((m.homeTeam && (m.homeTeam.shortName || m.homeTeam.name)) || ""), ak = teamKey((m.awayTeam && (m.awayTeam.shortName || m.awayTeam.name)) || "");
+            const kh = rec.teams.find((d) => sameTeam(d, hk)), ka = rec.teams.find((d) => sameTeam(d, ak));
+            if (!kh || !ka) return;
+            const ta = rec.ta || {};
+            items.push({ home: hn, away: an, at: Math.max(Number(ta[kh]) || 0, Number(ta[ka]) || 0) || Number(rec.at) || 0 });
+          });
+        } catch (e) {}
+      }
+      return json({ jornada: j, pts: (rec && rec.pts) || {}, teams: (rec && rec.teams) || [], items });
     } catch (e) { return json({ jornada: 0, pts: {} }); }
   }
   if (path === "puntos") {

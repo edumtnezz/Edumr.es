@@ -1,13 +1,3 @@
-  function loadJornada(n) {
-    var q = n && n !== curJ ? "jornada?jornada=" + n : "jornada";
-    get(q).then(function (jr) {
-      if (!jr) return;
-      if (n && n !== curJ) { paintJornada(jr, null); return; }
-      var er = "alineaciones-estado?jornada=" + jr.matchday;
-      paintJornada(jr, cached(er));            // primero los partidos, sin esperar a los onces
-      get(er).then(function (est) { paintJornada(jr, est); });
-    });
-  }
 /* Inicio de Guía Fantasy (20/11/2026). Solo lee la API.
    Todo dato sale de /api/laquiniela. Si una fuente falla, se enseña el último dato bueno guardado. */
 (function () {
@@ -79,11 +69,26 @@
     var d = new Date(ts), h = d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
     return d.toDateString() === new Date().toDateString() ? h : d.getDate() + "/" + (d.getMonth() + 1) + " " + h;
   }
-  var curJ = 0, selJ = 0;
+  var curJ = 0, selJ = 0, lastJ = null, lastEst = null, ptMap = {}, ptFor = 0;
+  // Partidos con los puntos YA publicados por Futmondo (los guarda el servidor solo cuando son reales)
+  function loadPts(n) {
+    if (!n || ptFor === n) return;
+    ptFor = n;
+    var r = "puntos-jornada?jornada=" + n + "&items=1";
+    var apply = function (d) {
+      var m = {};
+      ((d && d.items) || []).forEach(function (i) { m[i.home + "|" + i.away] = i.at || 1; });
+      return m;
+    };
+    ptMap = apply(cached(r));
+    get(r).then(function (d) { if (n !== selJ) return; ptMap = apply(d); if (lastJ) paintJornada(lastJ, lastEst); });
+  }
   function paintJornada(j, est) {
+    lastJ = j; lastEst = est;
     if (!j || !j.matches || !j.matches.length) { $("#games").innerHTML = '<p class="i-muted">Sin partidos ahora mismo.</p>'; return; }
     if (!curJ) curJ = j.matchday;
     selJ = j.matchday;
+    loadPts(selJ);
     $("#jTit").textContent = "Jornada " + j.matchday;
     $("#jPrev").disabled = selJ <= 1; $("#jNext").disabled = selJ >= 38;
     var pr = {};
@@ -91,6 +96,7 @@
     $("#games").innerHTML = j.matches.map(function (m) {
       var st = m.live && m.live.state;
       var at = st === "final" ? 0 : pr[m.home + "|" + m.away];
+      var pt = st === "final" ? ptMap[m.home + "|" + m.away] : 0; // hora a la que se guardaron los puntos (0 = aún sin publicar)
       var tv = (m.tv || []).map(function (t) { return t.logo ? '<img class="tv" src="' + esc(t.logo) + '" alt="' + esc(t.name) + '">' : ""; }).join("");
       var score = m.live && m.live.score ? m.live.score : "";
       var lab = st === "live" ? (score || "En juego") : st === "final" ? score : m.aplazado ? "Aplazado" : m.time;
@@ -98,8 +104,9 @@
       var ago = at > 1e9 ? Math.round((Date.now() - at) / 60000) : -1;
       var fresh = ago >= 0 && ago < 60;
       var live = st === "live", conf = !live && at && m.confirmed;
-      return '<a class="gm' + (at || live ? " p" : "") + (fresh && !live && !conf ? " new" : "") + (conf ? " cf" : "") + (live ? " en" : "") + '" href="/futmondo/guiafantasy/partido/' + matchSlug(m.home, m.away) + "?j=" + j.matchday + '">' +
-        (live ? '<div class="pr"><b><i class="dot"></i>PARTIDO EN JUEGO</b></div>' : at ? '<div class="pr"><b>' + (fresh ? '<i class="dot"></i>' : "") + (m.confirmed ? "Once confirmado" : "Once probable") + "</b>" + (at > 1e9 ? "<span>" + (fresh ? "hace " + Math.max(1, ago) + " min" : hm(at)) + "</span>" : "") + "</div>" : "") +
+      var pago = pt > 1e9 ? Math.round((Date.now() - pt) / 60000) : -1, pfresh = pago >= 0 && pago < 60;
+      return '<a class="gm' + (pt ? " pt" + (pfresh ? " ptn" : "") : "") + (at || live ? " p" : "") + (fresh && !live && !conf ? " new" : "") + (conf ? " cf" : "") + (live ? " en" : "") + '" href="/futmondo/guiafantasy/partido/' + matchSlug(m.home, m.away) + "?j=" + j.matchday + '">' +
+        (live ? '<div class="pr"><b><i class="dot"></i>PARTIDO EN JUEGO</b></div>' : pt ? '<div class="pr"><b>' + (pfresh ? '<i class="dot"></i>' : "") + "Puntos actualizados</b>" + (pt > 1e9 ? "<span>" + (pfresh ? "hace " + Math.max(1, pago) + " min" : hm(pt)) + "</span>" : "") + "</div>" : at ? '<div class="pr"><b>' + (fresh ? '<i class="dot"></i>' : "") + (m.confirmed ? "Once confirmado" : "Once probable") + "</b>" + (at > 1e9 ? "<span>" + (fresh ? "hace " + Math.max(1, ago) + " min" : hm(at)) + "</span>" : "") + "</div>" : "") +
         '<div class="in"><img class="c" src="' + esc(m.homeCrest) + '" alt="' + esc(m.home) + '">' +
         '<div class="mid"><b>' + esc(m.day) + " " + esc(m.date) + "</b>" + esc(lab) + sub + "</div>" +
         '<img class="c" src="' + esc(m.awayCrest) + '" alt="' + esc(m.away) + '"></div></a>';

@@ -25,12 +25,20 @@ test("pendingMatches: terminado hace más de 105 min y sin guardar", () => {
 test("pendingMatches: aún no han pasado 105 min, no terminado, o ya guardado → nada", () => {
   const recent = [M("A", "B", "FINISHED", "2026-11-08T21:00:00Z")];
   assert.equal(pendingMatches(recent, [], keyOf, NOW).length, 0);
-  const live = [M("Real Sociedad", "Rayo Vallecano", "IN_PLAY", "2026-11-08T17:30:00Z")];
+  const live = [M("Real Sociedad", "Rayo Vallecano", "IN_PLAY", "2026-11-08T17:30:00Z")]; // 4,5 h: demasiado viejo
   assert.equal(pendingMatches(live, [], keyOf, NOW).length, 0);
   const done = [M("Real Sociedad", "Rayo Vallecano", "FINISHED", "2026-11-08T17:30:00Z")];
   assert.equal(pendingMatches(done, ["realsociedad", "rayovallecano"], keyOf, NOW).length, 0);
   // Si solo uno de los dos equipos está guardado, el partido sigue pendiente
   assert.equal(pendingMatches(done, ["realsociedad"], keyOf, NOW).length, 1);
+});
+
+test("pendingMatches: partido sin cerrar en football-data se mira pasados 110 min (hasta 4 h)", () => {
+  const abierto = (iso) => [M("Athletic", "Espanyol", "IN_PLAY", iso)];
+  assert.equal(pendingMatches(abierto("2026-11-08T20:00:00Z"), [], keyOf, NOW).length, 1); // 2 h después
+  assert.equal(pendingMatches(abierto("2026-11-08T20:30:00Z"), [], keyOf, NOW).length, 0); // 90 min: aún no
+  assert.equal(pendingMatches(abierto("2026-11-08T17:30:00Z"), [], keyOf, NOW).length, 0); // 4,5 h: ya no
+  assert.equal(pendingMatches([M("A", "B", "POSTPONED", "2026-11-08T20:00:00Z")], [], keyOf, NOW).length, 0);
 });
 
 test("pendingMatches: pasadas 40 h ya no se insiste", () => {

@@ -11,13 +11,20 @@ export function sameTeam(a, b) {
 // Partidos terminados que todavía no tienen sus puntos guardados.
 // - matches: lista de football-data ({ status, utcDate, homeTeam, awayTeam }).
 // - done: claves de equipo ya guardadas para esa jornada.
-// - Solo cuenta un partido pasados 105 min del inicio y hasta 40 h después.
+// - Un partido terminado cuenta pasados 105 min del inicio y hasta 40 h después.
+// - football-data tarda a veces más de 3 h en cerrar un partido (Athletic–Espanyol, 20/11/2026: Futmondo ya
+//   había publicado los puntos y aquí seguía "en juego"). Por eso un partido aún sin cerrar también se mira,
+//   pasados 110 min y hasta 4 h: es solo una consulta de prueba a Futmondo, que decide si ya hay puntos.
 export function pendingMatches(matches, done, keyOf, now) {
   const out = [];
   (Array.isArray(matches) ? matches : []).forEach((m) => {
-    if (!m || (m.status !== "FINISHED" && m.status !== "AWARDED")) return;
+    if (!m) return;
+    const fin = m.status === "FINISHED" || m.status === "AWARDED";
+    const abierto = m.status === "IN_PLAY" || m.status === "PAUSED" || m.status === "TIMED" || m.status === "SCHEDULED";
+    if (!fin && !abierto) return;
     const t = Date.parse(m.utcDate) || 0;
-    if (!t || now < t + 105 * 60000 || now > t + 40 * 3600000) return;
+    if (!t) return;
+    if (fin ? (now < t + 105 * 60000 || now > t + 40 * 3600000) : (now < t + 110 * 60000 || now > t + 4 * 3600000)) return;
     const h = keyOf((m.homeTeam && (m.homeTeam.shortName || m.homeTeam.name)) || "");
     const a = keyOf((m.awayTeam && (m.awayTeam.shortName || m.awayTeam.name)) || "");
     if (!h || !a) return;

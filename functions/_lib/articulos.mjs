@@ -173,3 +173,31 @@ export function chollo(ps, pid, fecha, dif) {
     { titulo: "Los siguientes de hoy", nota: "", filas: otros.map((p) => fila(p, dec2(ppm(p)), "puntos por millón")) },
   ], [c.name].concat(otros.map((p) => p.name)));
 }
+
+
+// Puntos de un partido (artículo «Puntos del X – Y (J13)»): los puntos de Futmondo de sus jugadores, ya publicados.
+// pts = { id: puntos } de la jornada (solo los que Futmondo ya ha publicado). Un 0 es «no jugó» (misma regla que fitness), no se enseña.
+// marcador = «0 - 1» o "" si no se conoce (no se inventa). Sin ningún jugador con puntos: null.
+export function puntosPartido(ps, pts, it, marcador) {
+  const num = (p) => Number(pts && pts[p.id]);
+  const juega = (p) => p && p.id && p.team && pts && pts[p.id] != null && Number.isFinite(num(p)) && num(p) !== 0;
+  const club = (n) => (ps || []).filter((p) => juega(p) && p.team === n).sort((a, b) => num(b) - num(a) || b.value - a.value);
+  const H = club(it.home), A = club(it.away);
+  if (!H.length || !A.length) return null; // aún no están los dos equipos
+  const sg = (v) => (v < 0 ? "−" + Math.abs(v) : String(v));
+  const mejor = H.concat(A).sort((a, b) => num(b) - num(a))[0];
+  const peores = H.concat(A).filter((p) => num(p) < 3).sort((a, b) => num(a) - num(b)).slice(0, 3);
+  const chips = [
+    marcador ? "= MARCADOR | " + marcador + " | az | " + it.home + " – " + it.away : "",
+    "= MEJOR | " + sg(num(mejor)) + " puntos | ok | " + mejor.name,
+  ].filter(Boolean);
+  const id = "artpuntos" + Number(it.j) + String(it.home + it.away).toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g, "").slice(0, 10);
+  const a = item(id, "Puntos del " + it.home + " – " + it.away + " (J" + Number(it.j) + ")", "Los puntos de Futmondo de los jugadores del partido.", [
+    { titulo: "Resumen", nota: "", filas: chips },
+    { titulo: it.home, nota: "", filas: top(H, 5).map((p) => fila(p, sg(num(p)), "puntos")) },
+    { titulo: it.away, nota: "", filas: top(A, 5).map((p) => fila(p, sg(num(p)), "puntos")) },
+    { titulo: "Los que menos", nota: "", filas: peores.map((p) => fila(p, sg(num(p)), "puntos")) },
+  ], [mejor.name]);
+  if (a) a.top = [mejor].concat(H.concat(A).filter((p) => p !== mejor).sort((x, y) => num(y) - num(x))).slice(0, 3).map((p) => p.name + " " + sg(num(p)));
+  return a;
+}

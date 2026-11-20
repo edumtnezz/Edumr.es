@@ -7,7 +7,7 @@ import { publicarPartes } from "./partes.js";
 import { vigilarFotmob } from "./fotmob-estados.js";
 import { apuntarDiario } from "./diario.js";
 import { apuntarSustituciones } from "./sustituciones.js";
-import { publicarArticulos, publicarOnces } from "./articulos.js";
+import { publicarArticulos, publicarOnces, publicarPuntos } from "./articulos.js";
 
 export default {
   async scheduled(event, env, ctx) {
@@ -21,7 +21,7 @@ export default {
         const r = await fetch("https://edumr.es/api/laquiniela/puntos-jornada?run=1&t=" + Date.now(), { headers: { "user-agent": "edumr-cron" } });
         const j = await r.json().catch(() => null);
         // Partidos cuyos puntos acaba de guardar el servidor: aviso por Telegram (de noche se retiene hasta las 08:00)
-        if (j && j.result && Array.isArray(j.result.savedInfo)) await colaPuntos(env, j.result.savedInfo);
+        if (j && j.result && Array.isArray(j.result.savedInfo) && j.result.savedInfo.length) { let its = j.result.savedInfo; try { its = await publicarPuntos(env, its); } catch (e) {} await colaPuntos(env, its); } // artículo con los puntos + aviso
       } catch (e) {}
       // Mantiene al día la copia global (KV) de lo más visto, para que nadie espere en la primera visita.
       // Casi siempre es una respuesta ya guardada (barata); el servidor escribe en KV como mucho cada 2 min por ruta.

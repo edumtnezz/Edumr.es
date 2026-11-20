@@ -251,3 +251,17 @@ html:not([data-theme="light"]) :is(#inicioTop,#tab-inicio) .gm.en .pr{background
 :is(#inicioTop,#tab-inicio) .gm.en{border-color:#fca5a5}
 html:not([data-theme="light"]) :is(#inicioTop,#tab-inicio) .gm.cf{border-color:#1e40af}
 html:not([data-theme="light"]) :is(#inicioTop,#tab-inicio) .gm.en{border-color:#991b1b}
+
+/* Partido terminado: contenido centrado en la tarjeta y banda de "Puntos actualizados" (ámbar, distinta del verde del once probable) */
+:is(#inicioTop,#tab-inicio) .gm{display:flex;flex-direction:column}
+:is(#inicioTop,#tab-inicio) .gm .in{flex:1}
+:is(#inicioTop,#tab-inicio) .gm.pt .pr{background:#fef3c7;color:#b45309}
+:is(#inicioTop,#tab-inicio) .gm.pt{border-color:#fcd34d}
+:is(#inicioTop,#tab-inicio) .gm.pt.ptn{border:2px solid #f59e0b}
+:is(#inicioTop,#tab-inicio) .gm.pt.ptn .pr{background:#f59e0b;color:#1f1300;padding:3px 8px 3px 7px}
+:is(#inicioTop,#tab-inicio) .gm.pt.ptn .pr .dot{background:#1f1300}
+:is(#inicioTop,#tab-inicio) .gm.pt .pr span{font-weight:800}
+html:not([data-theme="light"]) :is(#inicioTop,#tab-inicio) .gm.pt .pr{background:#3a2a08;color:#fcd34d}
+html:not([data-theme="light"]) :is(#inicioTop,#tab-inicio) .gm.pt{border-color:#92400e}
+html:not([data-theme="light"]) :is(#inicioTop,#tab-inicio) .gm.pt.ptn{border-color:#f59e0b}
+html:not([data-theme="light"]) :is(#inicioTop,#tab-inicio) .gm.pt.ptn .pr{background:#f59e0b;color:#1f1300}

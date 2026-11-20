@@ -1,7 +1,7 @@
 // Artículos propios (a vender, a fichar, clausulazos y, solo en parones, el repaso de plantilla).
 // Una edición por jornada y tipo, de martes a domingo a partir de las 10:00 (hora de Madrid). La edición nueva sustituye a la anterior del mismo tipo.
 // Las reglas y los datos están en functions/_lib/articulos.mjs. Sin jugadores que cumplan, ese artículo no se publica.
-import { aVender, aFichar, clausulazos, paron, inicioJornada, esParon, subidasEntre, inicioParon, subidasBajadas, chollo } from "../../functions/_lib/articulos.mjs";
+import { aVender, aFichar, clausulazos, paron, inicioJornada, esParon, subidasEntre, inicioParon, subidasBajadas, chollo, puntosPartido } from "../../functions/_lib/articulos.mjs";
 import { oncesArticulo, cambiosOnce } from "../../functions/_lib/onces.mjs";
 
 const OWN_KEY = "own:news:v2", K_ST = "art:st:v1", SITE = "https://edumr.es/api/laquiniela/";
@@ -32,7 +32,7 @@ export async function publicarArticulos(env, f = fetch, now = Date.now()) {
   // seguidos si no ha salido antes alguna noticia de un jugador (las noticias de estado son lo dinámico; si no hay ninguna, se espera 6 h).
   if (!rehacer) {
     const SLOT = { artvender: 10, artfichar: 13, artclaus: 16, artparon: 19 };
-    const arts = own.filter((x) => x && x.tipo === "articulo" && x.art !== "artmercado" && x.art !== "artchollo");
+    const arts = own.filter((x) => x && x.tipo === "articulo" && x.art !== "artmercado" && x.art !== "artchollo" && x.art !== "artpuntos");
     const ult = arts.reduce((m, x) => Math.max(m, x.publishedAt || 0), 0);
     const h = (now - ult) / 3600000;
     const hayNoticia = own.some((x) => x && x.auto === "estado" && (x.publishedAt || 0) > ult);
@@ -128,7 +128,7 @@ export async function publicarOnces(env, f = fetch, now = Date.now()) {
   if (nueva && !((dia === "Mon" && hora >= 23) || ["Tue", "Wed", "Thu", "Fri"].indexOf(dia) >= 0)) return { skipped: "fuera de hora" };
   if (nueva) { // primera edición: no pegada a otro artículo (menos de 2 h)
     const own0 = (await env.PORRA.get(OWN_KEY, "json")) || [];
-    const ult = own0.filter((x) => x && x.tipo === "articulo" && x.art !== "artmercado" && x.art !== "artchollo" && x.art !== "artonce").reduce((m, x) => Math.max(m, x.publishedAt || 0), 0);
+    const ult = own0.filter((x) => x && x.tipo === "articulo" && x.art !== "artmercado" && x.art !== "artchollo" && x.art !== "artpuntos" && x.art !== "artonce").reduce((m, x) => Math.max(m, x.publishedAt || 0), 0);
     if (now - ult < 2 * 3600000) return { skipped: "hace poco otro artículo" };
   }
   const mk = await get("mercado");
@@ -183,4 +183,34 @@ export async function cholloSinArticulo(env, pid, now = Date.now()) {
   const own = (await env.PORRA.get(OWN_KEY, "json")) || [];
   const x = own.find((y) => y && y.art === "artchollo");
   return !(x && x.cf === 2 && String(x.fp) === String(pid) && dia(x.publishedAt || 0) === dia(now)); // cf = formato del cuerpo (2: recuadros de colores)
+}
+
+
+// Artículo «Puntos del X – Y»: se escribe en cuanto el servidor guarda los puntos de un partido (los publica Futmondo).
+// Devuelve los mismos partidos con `art` (id del artículo) y `top` (los tres mejores) para el aviso de Telegram. Si algo falla, el aviso sale sin enlace.
+export async function publicarPuntos(env, items, f = fetch, now = Date.now()) {
+  if (!env || !env.PORRA || !Array.isArray(items) || !items.length) return items || [];
+  const get = (p) => f(SITE + p + (p.indexOf("?") < 0 ? "?" : "&") + "t=" + now, { headers: { "user-agent": "edumr-cron" } }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  const fold = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "");
+  const mismo = (a, b) => { a = fold(a); b = fold(b); return !!a && !!b && (a === b || a.indexOf(b) >= 0 || b.indexOf(a) >= 0); };
+  const mk = await get("mercado");
+  const ps = mk && Array.isArray(mk.players) ? mk.players : [];
+  let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
+  let cambio = false;
+  const out = [];
+  for (const it of items) {
+    try {
+      const [pj, jr] = await Promise.all([get("puntos-jornada?jornada=" + Number(it.j)), get("jornada?jornada=" + Number(it.j))]);
+      if (ps.length < 300 || !pj || !pj.pts) { out.push(it); continue; }
+      const m = jr && Array.isArray(jr.matches) ? jr.matches.find((x) => mismo(x.home, it.home) && mismo(x.away, it.away)) : null;
+      const a = puntosPartido(ps, pj.pts, it, m && m.live && m.live.state === "final" && m.live.score ? m.live.score : "");
+      if (!a) { out.push(it); continue; }
+      own = own.filter((x) => x.id !== a.id);
+      own.unshift({ id: a.id, title: a.title, lead: a.lead, body: a.body, status: "published", createdAt: now, publishedAt: now, thumb: "", club: "", players: a.players, tipo: "articulo", auto: "articulo", art: "artpuntos", f: 1, fp: (a.body.match(/^@ (\S+) \|/m) || [])[1] || "" });
+      cambio = true;
+      out.push(Object.assign({}, it, { art: a.id, top: a.top }));
+    } catch (e) { out.push(it); }
+  }
+  if (cambio) { own.sort((x, y) => (y.publishedAt || 0) - (x.publishedAt || 0)); await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300))); }
+  return out;
 }

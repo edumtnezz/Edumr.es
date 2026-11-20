@@ -9,7 +9,7 @@ export function ogDePropia(slug, own) {
   if (!m) return null;
   const x = (own || []).find((o) => o && o.id === m[1] && o.status === "published");
   if (!x) return { missing: true };
-  if (x.tipo === "articulo") { const k = String(x.art || "").replace(/\d+$/, ""); const im = { artvender: "art-vender.jpg?v=1", artfichar: "art-fichar.jpg?v=1", artclaus: "art-claus.jpg?v=1", artparon: "art-paron.jpg?v=1", artmercado: "mercado-subidas-bajadas.jpg?v=3", artonce: "art-once.jpg?v=1", artchollo: "art-chollo.jpg?v=2" }[k]; if (im) return { t: x.title || "", d: x.lead || "", i: "/img/" + im }; }
+  if (x.tipo === "articulo") { const k = String(x.art || "").replace(/\d+$/, ""); const im = { artvender: "art-vender.jpg?v=1", artfichar: "art-fichar.jpg?v=1", artclaus: "art-claus.jpg?v=1", artparon: "art-paron.jpg?v=1", artmercado: "mercado-subidas-bajadas.jpg?v=3", artonce: "art-once.jpg?v=1", artchollo: "art-chollo.jpg?v=2", artpuntos: "aviso-puntos.jpg?v=1" }[k]; if (im) return { t: x.title || "", d: x.lead || "", i: "/img/" + im }; }
   return { t: x.title || "", d: x.lead || "", i: x.thumb || (x.cartel ? "/api/laquiniela/cartel?id=" + x.id + "&v=" + x.cartel : x.auto === "estado" && x.veredicto !== "alta" ? "/img/parte-medico.jpg?v=2" : "") };
 }
 const srcUrl = (slug) => {

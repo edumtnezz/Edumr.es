@@ -583,7 +583,9 @@ export async function avisar(env, deps) {
 // y aquí se mandan. De 00:00 a 08:00 no suena nada: se quedan en la cola y salen a las 08:00.
 const PTS_Q_KEY = "tg:puntos-cola:v1";
 export function textoPuntos(it) {
-  return "✅ <b>PUNTOS DE FUTMONDO</b>\n" + esc(it.home) + " – " + esc(it.away) + " (J" + Number(it.j) + ")\n\n👉 " + WEB;
+  const tops = Array.isArray(it.top) && it.top.length ? "\n\n⭐ " + it.top.map(esc).join(" · ") : "";
+  const enlace = it.art && /^[a-z0-9]+$/.test(String(it.art)) ? "https://edumr.es/futmondo/guiafantasy/noticias/ed-" + it.art : WEB; // el artículo con todos los puntos
+  return "✅ <b>PUNTOS DE FUTMONDO</b>\n" + esc(it.home) + " – " + esc(it.away) + " (J" + Number(it.j) + ")" + tops + "\n\n👉 " + enlace;
 }
 export async function colaPuntos(env, items) {
   if (!env || !env.PORRA || !Array.isArray(items) || !items.length) return 0;
@@ -594,7 +596,7 @@ export async function colaPuntos(env, items) {
   items.forEach((it) => {
     if (!it || !it.home || !it.away || !it.j) return;
     if (q.some((x) => x.j === it.j && x.home === it.home && x.away === it.away)) return;
-    q.push({ j: Number(it.j), home: String(it.home), away: String(it.away) }); n++;
+    q.push({ j: Number(it.j), home: String(it.home), away: String(it.away), art: it.art ? String(it.art) : undefined, top: Array.isArray(it.top) ? it.top.map(String).slice(0, 3) : undefined }); n++;
   });
   if (n) { try { await env.PORRA.put(PTS_Q_KEY, JSON.stringify(q.slice(-40))); } catch (e) { return 0; } }
   return n;
