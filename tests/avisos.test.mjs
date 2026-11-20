@@ -51,3 +51,22 @@ test("mercado: un solo aviso al día, cuando los valores llevan 6 min quietos", 
   assert.equal(_t.mercadoListo({ pxV: "b", pxVAt: t + 9 * 3600e3, pxSent: "a", pxDay: "2026-11-14", pxMap: {} }, t + 20 * 3600e3, "2026-11-15", 3), false);
   assert.equal(_t.mercadoListo({ pxV: "c", pxVAt: t + 24 * 3600e3, pxSent: "a", pxDay: "2026-11-14", pxMap: {} }, t + 24 * 3600e3 + 7 * 60e3, "2026-11-15", 350), true); // la actualización de verdad, a su hora
 });
+
+test("⭐ solo para Nico Williams si es el único Williams de tu plantilla (once Athletic, 20/11/2026)", () => {
+  const sq = [{ id: "7", name: "Nico Williams", team: "Athletic" }];
+  const once = ["unai simon", "hugo rincon", "alex berenguer", "williams", "nico williams"];
+  assert.equal(_t.star(sq, "Athletic", "Williams", once), "Williams");
+  assert.equal(_t.star(sq, "Athletic", "Nico Williams", once), "⭐Nico Williams");
+});
+
+test("⭐ solo para Iñaki si es el tuyo, aunque Nico esté en el once", () => {
+  const sq = [{ id: "8", name: "Iñaki Williams", team: "Athletic" }];
+  const once = ["williams", "nico williams"];
+  assert.equal(_t.star(sq, "Athletic", "Williams", once), "⭐Williams");
+  assert.equal(_t.star(sq, "Athletic", "Nico Williams", once), "Nico Williams");
+});
+
+test("apellido suelto sigue marcando si no hay otro con ese apellido", () => {
+  const sq = [{ id: "1", name: "Valentín Gómez", team: "Betis" }];
+  assert.equal(_t.star(sq, "Betis", "Gómez", ["gomez", "pedri"]), "⭐Gómez");
+});

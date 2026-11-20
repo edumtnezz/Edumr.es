@@ -159,13 +159,27 @@ function inLineup(pname, names) {
   return names.some((ln) => ln === pn || ln.split(" ").some((t) => toks.indexOf(t) >= 0));
 }
 
-// ¿Es de mis jugadores? (mismo equipo + nombre parecido). Devuelve el nombre con ⭐ si lo es.
-function star(squad, team, name) {
-  const mine = squad.some((p) => sameTeam(p.team, team) && inLineup(p.name, [norm(name)]));
+// Qué nombres del once son este jugador mío. Primero el nombre exacto; si no, los que comparten una palabra (4+ letras), pero
+// quedándose con los que no traen palabras de más ("Williams" encaja con Iñaki Williams; "Nico Williams" NO).
+// Así, con Nico en tu plantilla y los dos Williams en el once, solo Nico lleva ⭐ (Edu, 20/11/2026).
+function matchesIn(pname, names) {
+  const pn = norm(pname);
+  if (names.indexOf(pn) >= 0) return [pn];
+  const toks = pn.split(" ").filter((t) => t.length >= 4 && !STOP.has(t));
+  const c = names.filter((ln) => ln.split(" ").some((t) => toks.indexOf(t) >= 0));
+  if (c.length < 2) return c;
+  const ps = new Set(pn.split(" "));
+  const sub = c.filter((ln) => ln.split(" ").every((t) => ps.has(t) || STOP.has(t)));
+  return sub.length ? sub : c;
+}
+// ¿Es de mis jugadores? (mismo equipo + nombre parecido). Devuelve el nombre con ⭐ si lo es. `names`: todo el once de ese equipo.
+function star(squad, team, name, names) {
+  const n = norm(name), lista = names && names.length ? names : [n];
+  const mine = squad.some((p) => sameTeam(p.team, team) && matchesIn(p.name, lista).indexOf(n) >= 0);
   return (mine ? "⭐" : "") + name;
 }
-function posLine(label, arr, squad, team) {
-  return arr && arr.length ? label + ": " + arr.map((p) => esc(star(squad, team, p.name))).join(", ") : "";
+function posLine(label, arr, squad, team, names) {
+  return arr && arr.length ? label + ": " + arr.map((p) => esc(star(squad, team, p.name, names))).join(", ") : "";
 }
 
 // Dinero en español: 131484278 → "131,5M€", 552707 → "553k€"
@@ -353,11 +367,11 @@ export async function avisar(env, deps) {
       const fuera = [];
       for (const p of squad) {
         const side = sameTeam(p.team, m.home.name) ? m.home : sameTeam(p.team, m.away.name) ? m.away : null;
-        if (side && !inLineup(p.name, lineupNames(side))) fuera.push(p.name);
+        if (side && !matchesIn(p.name, lineupNames(side)).length) fuera.push(p.name);
       }
       // Una línea en blanco entre portero, defensas, medios y delanteros para que se lea sin apretar
-      const bloque = (t) => "<b>" + esc(t.name) + "</b>" + (t.formation ? " (" + esc(t.formation) + ")" : "") + "\n\n" +
-        [posLine("Por", t.portero, squad, t.name), posLine("Def", t.defensas, squad, t.name), posLine("Med", t.medios, squad, t.name), posLine("Del", t.delanteros, squad, t.name)].filter(Boolean).join("\n\n");
+      const bloque = (t) => { const nn = lineupNames(t); return "<b>" + esc(t.name) + "</b>" + (t.formation ? " (" + esc(t.formation) + ")" : "") + "\n\n" +
+        [posLine("Por", t.portero, squad, t.name, nn), posLine("Def", t.defensas, squad, t.name, nn), posLine("Med", t.medios, squad, t.name, nn), posLine("Del", t.delanteros, squad, t.name, nn)].filter(Boolean).join("\n\n"); };
       const text = "✅ <b>ONCE CONFIRMADO · " + esc(m.home.name.toUpperCase()) + " - " + esc(m.away.name.toUpperCase()) + "</b>" + (cuando ? "\n🕒 " + esc(cuando) : "") +
         "\n\n" + bloque(m.home) + "\n\n\n" + bloque(m.away) + (fuera.length ? "\n\n\n⚠️ <b>Tuyos fuera del once:</b> " + esc(fuera.join(", ")) : "") +
         "\n\n👉 <b>Míralo en tu web:</b>\n" + matchUrl(web.home, web.away);
@@ -407,13 +421,13 @@ export async function avisar(env, deps) {
         const diff = (team, ahora, antes, fAntes, fAhora) => {
           antes = old(antes);
           const mb = new Map(antes.map((x) => [norm(x.n), x])), mn = new Map(ahora.map((x) => [norm(x.n), x]));
-          const nm = (x) => "<b>" + esc(star(squad, team, x.n)) + "</b>" + (x.s ? " (" + x.s + ")" : "");
+          const nm = (x, lista) => "<b>" + esc(star(squad, team, x.n, lista.map((y) => norm(y.n)))) + "</b>" + (x.s ? " (" + x.s + ")" : "");
           const byPos = (a, b) => (ORD[a.s || ""] - ORD[b.s || ""]);
           const entra = ahora.filter((x) => !mb.has(norm(x.n))).sort(byPos);
           const sale = antes.filter((x) => !mn.has(norm(x.n))).sort(byPos);
           if (!entra.length && !sale.length) return null;
           const sist = fAhora && fAntes && fAhora !== fAntes ? "\nSistema " + esc(fAntes) + " → " + esc(fAhora) : "";
-          const l = [].concat(entra.map((x) => "🟢 Entra: " + nm(x)), sale.map((x) => "🔴 Sale: " + nm(x)));
+          const l = [].concat(entra.map((x) => "🟢 Entra: " + nm(x, ahora)), sale.map((x) => "🔴 Sale: " + nm(x, antes)));
           return { team, txt: l.join("\n") + sist };
         };
         const dd = [diff(m.home, H, prev.h, prev.fh, nuevo.fh), diff(m.away, A, prev.a, prev.fa, nuevo.fa)].filter(Boolean);
@@ -632,4 +646,4 @@ async function publicarOnceWeb(env, m, md, key) {
   await env.PORRA.put(OWN, JSON.stringify(own.slice(0, 300)));
 }
 
-export const _t = { norm, ownMatch, sameTeam, newsAt, KW, inLineup, statusLabel, mercadoTexto, estadoClave, fraseEstado, mercadoListo, diaMadrid };
+export const _t = { norm, ownMatch, sameTeam, newsAt, KW, inLineup, matchesIn, star, statusLabel, mercadoTexto, estadoClave, fraseEstado, mercadoListo, diaMadrid };
