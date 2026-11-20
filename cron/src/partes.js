@@ -19,7 +19,10 @@ export function proximo(jor, team) {
   return jor && jor.matchday ? { jornada: jor.matchday, rival: "", casa: null } : null;
 }
 
-export function candidatos(foto, eventos, now, eventosFo) {
+// Edu (20/11/2026): en caso de duda manda Biwenger, que parece actualizarse antes. FotMob solo se apunta (para medir) y no publica.
+// Para que sus avisos vuelvan a publicar cuando Biwenger aún no los tiene: poner a true.
+export const FOTMOB_PUBLICA = false;
+export function candidatos(foto, eventos, now, eventosFo, usarFo = FOTMOB_PUBLICA) {
   const out = new Map();
   // Estados que ya estaban al empezar: valen los de los últimos 5 días (con la hora real en que cambió)
   for (const id of Object.keys((foto && foto.bw) || {})) {
@@ -33,7 +36,7 @@ export function candidatos(foto, eventos, now, eventosFo) {
     else if (MALO.has(e.de)) out.delete(e.id);
   }
   // FotMob (20/11/2026): solo cuenta cuando Biwenger aún lo tiene como disponible. Si Biwenger ya lo apunta, la noticia es la suya.
-  for (const e of eventosFo || []) {
+  for (const e of usarFo ? eventosFo || [] : []) {
     if (e.src !== "fo" || now - e.at > 2 * 86400000 || !MALO.has(e.a)) continue;
     const b = foto && foto.bw && foto.bw[e.id];
     if (b && b.e !== "ok") continue;

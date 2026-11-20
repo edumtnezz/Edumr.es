@@ -71,12 +71,17 @@ test("noticias: FotMob solo cuenta si Biwenger aún lo tiene disponible", () => 
   const now = 1e9;
   const evFo = [{ src: "fo", id: "a", de: "ok", a: "lesionado", info: "Retorno estimado: final de temporada.", at: now - 1000 }, { src: "fo", id: "b", de: "ok", a: "duda", info: "", at: now - 1000 }, { src: "fo", id: "c", de: "ok", a: "ok", info: "", at: now - 1000 }];
   const foto = { bw: { a: { e: "ok", info: "", at: 0 }, b: { e: "lesionado", info: "Lesión.", at: 5 } } };
-  const c = candidatos(foto, [], now, evFo);
+  const c = candidatos(foto, [], now, evFo, true);
   assert.deepEqual(c.map((x) => x.id), ["a"]);
   assert.equal(c[0].src, "fo"); assert.equal(c[0].a, "lesionado");
 });
 
 test("noticias: pasados dos días el aviso de FotMob caduca", () => {
   const now = 1e10;
-  assert.equal(candidatos({ bw: {} }, [], now, [{ src: "fo", id: "a", a: "duda", info: "", at: now - 3 * 86400000 }]).length, 0);
+  assert.equal(candidatos({ bw: {} }, [], now, [{ src: "fo", id: "a", a: "duda", info: "", at: now - 3 * 86400000 }], true).length, 0);
+});
+
+test("por defecto manda Biwenger: FotMob no publica noticias", () => {
+  const now = 1e9;
+  assert.equal(candidatos({ bw: { a: { e: "ok", info: "", at: 0 } } }, [], now, [{ src: "fo", id: "a", a: "lesionado", info: "", at: now - 1000 }]).length, 0);
 });
