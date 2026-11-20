@@ -85,9 +85,10 @@ test("chollo del día: mismo jugador y reglas que Inicio; cada razón con su dat
   assert.equal(a.id, "artchollo");
   assert.match(a.title, /^Chollo del día 20\/11: Chollo$/);
   assert.match(a.body, /@ Chollo \| Chollo \| 1,67 \| puntos por millón/);
-  assert.match(a.body, /- Cuesta 4\.300\.000 €/);
-  assert.match(a.body, /- Tiene un 85 % de jugar/);
-  assert.match(a.body, /- Ha jugado 11 partidos y puntuó en 4 de sus últimos 5\./);
+  assert.match(a.body, /= PRECIO \| 4,3 M \| az \| 4\.300\.000 €/);
+  assert.match(a.body, /= DE JUGAR \| 85 % \| ok/);
+  assert.match(a.body, /= PARTIDOS \| 11 \| mo/);
+  assert.match(a.body, /= ÚLTIMOS 5 \| 4 de 5 \| na/);
   assert.ok(!/mínimo|no pasa de|que cumplen/.test(a.body));
   assert.match(a.body, /## Los siguientes de hoy[\s\S]*@ Segundo/);
   assert.ok(!/@ Caro/.test(a.body));
@@ -102,6 +103,13 @@ test("chollo del día: calendario difícil (3,5 o más) no vale; sin dato del eq
   assert.equal(chollo(ps, "Dificil", "20/11", dif), null);
   assert.equal(chollo(ps, "SinDato", "20/11", dif), null);
   const a = chollo(ps, "Facil", "20/11", dif);
-  assert.match(a.body, /- Su calendario es fácil: sus próximos 5 rivales tienen dificultad 2,8 de 5\./);
+  assert.match(a.body, /= CALENDARIO \| 2,8 \/ 5 \| az/);
   assert.ok(!/@ Dificil|@ SinDato/.test(a.body));
+});
+
+test("recuadros de colores del chollo: los seguidos van en una sola cuadrícula y se cierran antes de lo siguiente", () => {
+  const h = cuerpoAHtml("## Por qué\n= MEDIA | 6,1 | ok | mediana: 5,6\n= PRECIO | 2,9 M | az | -\n## Siguientes\n@ abc123 | Koke | 1,40 | puntos por millón | -");
+  assert.equal((h.match(/class="art-chips"/g) || []).length, 1);
+  assert.match(h, /<div class="art-chip art-chip-ok"><small>MEDIA<\/small><b>6,1<\/b><i>mediana: 5,6<\/i><\/div>/);
+  assert.match(h, /<div class="art-chip art-chip-az"><small>PRECIO<\/small><b>2,9 M<\/b><\/div><\/div><h3/);
 });

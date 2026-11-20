@@ -170,7 +170,7 @@ export async function publicarChollo(env, ps, pid, now = Date.now(), dif) {
   if (!a) return "";
   let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
   own = own.filter((x) => x.art !== "artchollo" && x.id !== a.id);
-  own.unshift({ id: a.id, title: a.title, lead: a.lead, body: a.body, status: "published", createdAt: now, publishedAt: now, thumb: "", club: "", players: a.players, tipo: "articulo", auto: "articulo", art: "artchollo", f: 1, fp: (a.body.match(/^@ (\S+) \|/m) || [])[1] || "" });
+  own.unshift({ id: a.id, title: a.title, lead: a.lead, body: a.body, status: "published", createdAt: now, publishedAt: now, thumb: "", club: "", players: a.players, tipo: "articulo", auto: "articulo", art: "artchollo", f: 1, cf: 2, fp: (a.body.match(/^@ (\S+) \|/m) || [])[1] || "" });
   own.sort((x, y) => (y.publishedAt || 0) - (x.publishedAt || 0));
   await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
   return a.id;
@@ -182,5 +182,5 @@ export async function cholloSinArticulo(env, pid, now = Date.now()) {
   const dia = (t) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date(t));
   const own = (await env.PORRA.get(OWN_KEY, "json")) || [];
   const x = own.find((y) => y && y.art === "artchollo");
-  return !(x && String(x.fp) === String(pid) && dia(x.publishedAt || 0) === dia(now));
+  return !(x && x.cf === 2 && String(x.fp) === String(pid) && dia(x.publishedAt || 0) === dia(now)); // cf = formato del cuerpo (2: recuadros de colores)
 }

@@ -4200,3 +4200,16 @@ html[data-theme="dark"] .art-sec-ok > h3.nw-h { color: #4ade80; } html[data-them
 .once-c b { font-size: .78rem; }
 .once-c small { font-size: .5rem; letter-spacing: .03em; }
 .art-body .al .pl-duda { display: none; }
+
+/* Chollo del día (20/11/2026): datos en recuadros de colores */
+.art-chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(136px, 1fr)); gap: 8px; margin: 8px 0 12px; }
+.art-chip { display: flex; flex-direction: column; gap: 1px; padding: 10px 12px; border-radius: 14px; border: 1px solid transparent; }
+.art-chip small { font-size: .66rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; opacity: .85; }
+.art-chip b { font-size: 1.4rem; font-weight: 800; line-height: 1.15; }
+.art-chip i { font-style: normal; font-size: .72rem; opacity: .8; }
+.art-chip-ok { background: rgba(22,163,74,.13); border-color: rgba(22,163,74,.3); color: #15803d; }
+.art-chip-az { background: rgba(37,99,235,.12); border-color: rgba(37,99,235,.3); color: #1d4ed8; }
+.art-chip-na { background: rgba(234,88,12,.13); border-color: rgba(234,88,12,.3); color: #c2410c; }
+.art-chip-mo { background: rgba(124,58,237,.12); border-color: rgba(124,58,237,.3); color: #6d28d9; }
+html[data-theme="dark"] .art-chip-ok { color: #4ade80; } html[data-theme="dark"] .art-chip-az { color: #60a5fa; }
+html[data-theme="dark"] .art-chip-na { color: #fb923c; } html[data-theme="dark"] .art-chip-mo { color: #a78bfa; }

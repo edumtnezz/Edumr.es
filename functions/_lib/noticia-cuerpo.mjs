@@ -5,8 +5,18 @@ const fmt = (l) => esc(l).replace(/\*\*([^*]{1,160})\*\*/g, "<b>$1</b>");
 
 export function cuerpoAHtml(body) {
   const lineas = String(body || "").split(/\n+/).map((t) => t.trim()).filter(Boolean);
-  let html = "", lista = false, consejo = false;
+  let html = "", lista = false, consejo = false, chips = false;
+  // Recuadro de dato de un artículo: «= RÓTULO | valor | tono (ok verde, az azul, na naranja, mo morado) | detalle». Los seguidos van en una cuadrícula.
+  const CH = /^= ([^|]{1,30}) \| ([^|]{1,30}) \| (ok|az|na|mo) \| ?(.{0,60})$/;
   for (let i = 0; i < lineas.length; i++) {
+    if (chips && !CH.test(lineas[i])) { html += "</div>"; chips = false; }
+    const ch = lineas[i].match(CH);
+    if (ch) {
+      if (lista) { html += "</ul>"; lista = false; }
+      if (!chips) { html += '<div class="art-chips">'; chips = true; }
+      html += '<div class="art-chip art-chip-' + ch[3] + '"><small>' + esc(ch[1].trim()) + "</small><b>" + esc(ch[2].trim()) + "</b>" + (ch[4].trim() && ch[4].trim() !== "-" ? "<i>" + esc(ch[4].trim()) + "</i>" : "") + "</div>";
+      continue;
+    }
     const rot = lineas[i].match(/^\*\*([^*]{2,80})\*\*$/);
     const cita = lineas[i + 1] || "";
     if (rot && /^[«"“]/.test(cita)) {
@@ -68,6 +78,7 @@ export function cuerpoAHtml(body) {
     else if (/^Estado del jugador según/.test(l)) { if (consejo) { html += "</div>"; consejo = false; } html += '<p class="nw-fuente">' + fmt(l) + "</p>"; }
     else html += "<p>" + fmt(l) + "</p>";
   }
+  if (chips) html += "</div>";
   if (lista) html += "</ul>";
   if (consejo) html += "</div>";
   return html;

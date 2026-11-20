@@ -156,14 +156,16 @@ export function chollo(ps, pid, fecha, dif) {
   const f5 = (c.fitness || []).slice(-5).map((v) => Number(v) || 0);
   const con = f5.filter((v) => v > 0).length;
   const m = med[c.role];
+  const chip = (rot, val, tono, det) => "= " + rot + " | " + val + " | " + tono + " | " + (det || "-");
   const razones = [
-    "Cuesta " + euros(c.value) + " €.",
-    "Su media es " + dec(c.avg) + (m ? " y la mediana de su posición es " + dec(m) + "." : "."),
-    "Ha jugado " + c.matches + " partidos y puntuó en " + con + " de sus últimos " + f5.length + ".",
-    "Tiene un " + Math.round(c.prob) + " % de jugar.",
-    dif ? "Su calendario es fácil: sus próximos 5 rivales tienen dificultad " + dec(mediaCalendario(c, dif)) + " de 5." : "",
-    Number(c.chg7) > 0 ? "Su valor ha subido " + euros(c.chg7) + " € en 7 días." : "Su valor no ha bajado en 7 días.",
-  ].filter(Boolean).map((t) => "- " + t);
+    chip("PRECIO", M(c.value), "az", euros(c.value) + " €"),
+    chip("MEDIA", dec(c.avg), "ok", m ? "mediana de su puesto: " + dec(m) : ""),
+    chip("PARTIDOS", String(c.matches), "mo", ""),
+    chip("ÚLTIMOS 5", con + " de " + f5.length, "na", "partidos puntuando"),
+    chip("DE JUGAR", Math.round(c.prob) + " %", "ok", ""),
+    dif ? chip("CALENDARIO", dec(mediaCalendario(c, dif)) + " / 5", "az", "próximos 5 rivales: fácil") : "",
+    chip("VALOR 7 DÍAS", Number(c.chg7) > 0 ? "+" + euros(c.chg7) + " €" : "Sin bajar", "ok", ""),
+  ].filter(Boolean);
   const otros = top(cand.filter((p) => String(p.id) !== String(c.id)), 2);
   return item("artchollo", "Chollo del día " + fecha + ": " + c.name, "El que más media da por cada millón entre los jugadores baratos, sanos y titulares.", [
     { titulo: "Chollo del día", nota: "", filas: [fila(c, dec2(ppm(c)), "puntos por millón", "Media ÷ precio en millones")] },

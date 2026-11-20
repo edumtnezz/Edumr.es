@@ -4371,7 +4371,7 @@
     const hs = [...art.querySelectorAll(":scope > h3.nw-h")];
     hs.forEach((h) => {
       const t = h.textContent.toLowerCase();
-      const tono = /siguen de baja|baja larga|vender|pierden|bajan/.test(t) ? "ko" : /volver|vuelven|fichar|subid|subiendo|suben/.test(t) ? "ok" : /once/.test(t) ? "once" : "nt";
+      const tono = /siguen de baja|baja larga|vender|pierden|bajan/.test(t) ? "ko" : /volver|vuelven|fichar|subid|subiendo|suben|chollo/.test(t) ? "ok" : /once/.test(t) ? "once" : "nt";
       const sec = el("section", "art-sec art-sec-" + tono);
       h.parentNode.insertBefore(sec, h);
       let n = h;
