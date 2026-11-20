@@ -95,3 +95,26 @@ test("modelo E2: se entrena con las jornadas pasadas y da % por jugador (0-100),
   const r = puntuarDuelo({ propio: [], ff: [], pf, pe, pe2 }, reales);
   assert.ok(r.jug.b2 != null && r.jug.n2 === 12);
 });
+
+test("FotMob: once oficial y clave de club (Alavés no se confunde con el Deportivo)", async () => {
+  const { fmKey, titularesFotmob } = await import("../functions/_lib/analitica.mjs");
+  assert.equal(fmKey("Deportivo Alavés"), "alave");
+  assert.equal(fmKey("Deportivo A Coruña"), "depor");
+  assert.equal(fmKey("Athletic Club"), "athle");
+  const st = Array.from({ length: 11 }, (_, i) => ({ id: i, name: "J" + i }));
+  assert.equal(titularesFotmob({ content: { lineup: { lineupType: "standard", homeTeam: { name: "Athletic Club", formation: "4-2-3-1", starters: st }, awayTeam: { name: "Espanyol", starters: st.slice(0, 10) } } } }).length, 1);
+  assert.equal(titularesFotmob({ content: { lineup: { homeTeam: { name: "X", starters: st } } } }).length, 0);
+});
+
+test("comparativa: cada jugador con E, F, si fue titular y quién acertó", async () => {
+  const { detalleDuelo } = await import("../functions/_lib/analitica.mjs");
+  const jug = ["a", "b", "c"].map((id) => ({ id, n: id.toUpperCase(), ro: "defensa", m: [1, 2, 3, 4, 5].map((r) => [r, 1, "x", 5, id === "c" ? "b" : "c", id === "c" ? 10 : 90]) }));
+  const d = detalleDuelo({ j: 6, team: "T", real: ["a", "c"], pe: { a: 85, b: 82, c: 20 }, pf: { a: 90, c: 70 }, ffIds: ["a", "c"], propioIds: ["a", "b"], propio: 1, ff: 2 }, jug);
+  const by = Object.fromEntries(d.jugadores.map((x) => [x.id, x]));
+  assert.equal(by.a.veredicto, "ambos");
+  assert.equal(by.c.veredicto, "ff");
+  assert.equal(by.b.F, 0);
+  assert.equal(by.b.veredicto, "ff");
+  assert.deepEqual(by.a.ult, ["T", "T", "T", "T", "T"]);
+  assert.equal(by.c.ult[0], "S");
+});

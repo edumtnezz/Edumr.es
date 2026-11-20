@@ -1,0 +1,62 @@
+/* Alineación comparativa (privada). Usa los colores de admin.css */
+.cp-bk { display: inline-flex; align-items: center; gap: 8px; margin: 0 0 12px 4px; color: var(--txt); text-decoration: none; font-weight: 600; font-size: .9rem; }
+.cp-bk-c { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); display: grid; place-items: center; font-size: 1.1rem; line-height: 1; }
+.cp-sum { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.cp-box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; }
+.cp-box b { display: block; font-size: 1.5rem; letter-spacing: -.02em; }
+.cp-box span { color: var(--mut); font-size: .75rem; }
+.cp-box.e b { color: var(--accent); }
+.cp-box.f b { color: #60a5fa; }
+.cp-tabs { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; }
+.cp-tab { flex: none; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); color: var(--txt); font-weight: 600; font-size: .85rem; cursor: pointer; }
+.cp-tab.on { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.cp-empty { color: var(--mut); text-align: center; padding: 28px 10px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+
+.cp-m { background: var(--card); border: 1px solid var(--line); border-radius: 16px; margin-bottom: 12px; overflow: hidden; }
+.cp-mh { display: flex; align-items: center; gap: 10px; padding: 12px; cursor: pointer; }
+.cp-mh img { width: 30px; height: 30px; object-fit: contain; flex: none; }
+.cp-mt { flex: 1; min-width: 0; }
+.cp-mt b { display: block; font-size: .95rem; }
+.cp-mt span { color: var(--mut); font-size: .72rem; }
+.cp-score { display: flex; gap: 6px; flex: none; }
+.cp-sc { text-align: center; min-width: 50px; padding: 5px 6px; border-radius: 10px; background: var(--soft); }
+.cp-sc b { display: block; font-size: 1rem; }
+.cp-sc i { font-style: normal; font-size: .62rem; color: var(--mut); text-transform: uppercase; letter-spacing: .04em; }
+.cp-sc.e b { color: var(--accent); }
+.cp-sc.f b { color: #60a5fa; }
+.cp-sc.win { outline: 2px solid currentColor; }
+.cp-body { border-top: 1px solid var(--line); padding: 4px 0 8px; }
+.cp-sec { padding: 10px 12px 4px; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--mut); }
+.cp-p { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-left: 3px solid transparent; }
+.cp-p.v-nosotros { border-left-color: var(--accent); }
+.cp-p.v-ff, .cp-p.v-ninguno { border-left-color: var(--bad); }
+.cp-ph { position: relative; flex: none; width: 42px; height: 42px; }
+.cp-ph img.f { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; object-position: top; background: var(--soft); }
+.cp-ph img.c { position: absolute; right: -3px; bottom: -3px; width: 16px; height: 16px; object-fit: contain; background: var(--card); border-radius: 50%; padding: 1px; }
+.cp-pi { flex: 1; min-width: 0; }
+.cp-pi b { display: block; font-size: .88rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cp-why { color: var(--mut); font-size: .7rem; line-height: 1.3; margin-top: 2px; }
+.cp-dots { display: inline-flex; gap: 3px; margin-top: 4px; }
+.cp-dot { width: 14px; height: 14px; border-radius: 4px; font-size: .55rem; font-weight: 700; display: grid; place-items: center; color: #fff; }
+.cp-dot.T { background: #16a34a; }
+.cp-dot.S { background: #d97706; }
+.cp-dot.N { background: #64748b; }
+.cp-pct { display: flex; gap: 5px; flex: none; }
+.cp-q { width: 44px; text-align: center; border-radius: 10px; padding: 4px 0; background: var(--soft); border: 1px solid var(--line); }
+.cp-q small { display: block; font-size: .58rem; font-weight: 700; color: var(--mut); }
+.cp-q b { font-size: .85rem; }
+.cp-q.ok { border-color: var(--accent); }
+.cp-q.ok b { color: var(--accent); }
+.cp-q.ko { border-color: var(--bad); }
+.cp-q.ko b { color: var(--bad); }
+.cp-leg { display: flex; flex-wrap: wrap; gap: 10px; color: var(--mut); font-size: .7rem; margin: 0 2px 12px; }
+.cp-leg span { display: inline-flex; align-items: center; gap: 4px; }
+
+.cp-ap { background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.cp-ar { display: grid; grid-template-columns: 1fr 44px 44px 50px; gap: 6px; align-items: center; padding: 10px 12px; border-top: 1px solid var(--line); font-size: .8rem; }
+.cp-ar:first-child { border-top: 0; color: var(--mut); font-size: .65rem; font-weight: 700; text-transform: uppercase; }
+.cp-ar > :not(:first-child) { text-align: center; font-weight: 700; }
+.cp-ar small { display: block; color: var(--mut); font-size: .68rem; font-weight: 400; }
+.cp-ar .e { color: var(--accent); }
+.cp-ar .f { color: #60a5fa; }
+.cp-note { color: var(--mut); font-size: .75rem; margin: 10px 2px; line-height: 1.4; }

@@ -275,3 +275,81 @@ export function probModelo(modelo, jug, estados) {
   }
   return out;
 }
+
+// ──────────────────────────────────────────────────────────────────────────────────────────────
+// ONCE OFICIAL DE FOTMOB (20/11/2026): después del partido Comuniate ya no da la alineación; FotMob sí.
+// Clave de club con los nombres de FotMob: «Deportivo Alavés» y «Deportivo A Coruña» darían los dos «depor».
+export function fmKey(name) {
+  const n = String(name || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  if (/alav/.test(n)) return "alave";
+  return clubKey(name);
+}
+// Titulares de cada equipo de un matchDetails de FotMob. Solo con alineación oficial (lineupType) y 11 titulares.
+export function titularesFotmob(det) {
+  const l = det && det.content && det.content.lineup;
+  if (!l || !l.lineupType) return [];
+  const out = [];
+  for (const k of ["homeTeam", "awayTeam"]) {
+    const t = l[k];
+    if (!t || !t.name || !Array.isArray(t.starters) || t.starters.length !== 11) continue;
+    out.push({ k: fmKey(t.name), team: t.name, formation: t.formation || "", starters: t.starters.map((x) => ({ id: x.id, name: x.name })) });
+  }
+  return out;
+}
+
+// COMPARATIVA (página privada de Edu): para un resultado del duelo, cada jugador con su E, su F, si fue titular y POR QUÉ
+// tenía nuestra E (su situación y sus últimos 5 partidos antes de esa jornada, de Futmondo). Nada se calcula a ojo.
+export const SIT_TXT = {
+  "por-fijo": "Portero titular en los 5 últimos",
+  fijo90: "Titular en los 5 últimos y 90' en el último",
+  fijo70: "Titular en los 5 últimos; en el último salió entre el 70' y el 89'",
+  "fijo-": "Titular en los 5 últimos; en el último salió antes del 70'",
+  vuelve1: "Habitual que no jugó el último partido",
+  vuelve2: "Habitual que no jugó los 2 últimos",
+  rotado: "Habitual que en el último salió desde el banquillo",
+};
+export function detalleDuelo(res, jug) {
+  const porId = new Map((jug || []).map((p) => [p.id, p]));
+  const prev = [...new Set((jug || []).flatMap((p) => p.m.filter((x) => (x[4] === "c" || x[4] === "s") && x[0] < res.j).map((x) => x[0])))].sort((a, b) => b - a);
+  const real = new Set(res.real || []), pe = res.pe || {}, pf = res.pf || {}, pe2 = res.pe2 || {};
+  const ff = new Set(res.ffIds || Object.keys(pf)), propio = new Set(res.propioIds || []);
+  const ids = new Set([...real, ...Object.keys(pf), ...propio, ...Object.keys(pe).filter((id) => pe[id] >= 40)]);
+  const filas = [...ids].map((id) => {
+    const p = porId.get(id) || { id, n: id, ro: "", m: [] };
+    const by = new Map(p.m.map((x) => [x[0], x]));
+    const ult = prev.slice(0, 5).map((j) => { const x = by.get(j); return x ? (x[4] === "c" || x[4] === "s" ? "T" : x[4] === "b" ? "S" : "N") : "N"; });
+    const sit = (res.sit || {})[id] || situacion({ ...p, m: p.m.filter((x) => x[0] < res.j) }, prev) || null;
+    const E = pe[id] != null ? pe[id] : null, F = ff.has(id) ? (pf[id] != null ? pf[id] : null) : 0;
+    const tit = real.has(id);
+    let veredicto = "";
+    if (E != null && F != null) {
+      const okE = (E >= 50) === tit, okF = (F >= 50) === tit;
+      veredicto = okE && okF ? "ambos" : okE ? "nosotros" : okF ? "ff" : "ninguno";
+    } else if (F != null) veredicto = (F >= 50) === tit ? "ff-sinE" : "ninguno-sinE";
+    return { id, name: p.n, role: p.ro, titular: tit, E, F, E2: pe2[id] != null ? pe2[id] : null, enOnceFF: ff.has(id), enOncePropio: propio.has(id), sit, sitTxt: sit ? SIT_TXT[sit] || "" : "Titular en " + ult.filter((u) => u === "T").length + " de sus 5 últimos", ult, veredicto };
+  });
+  const ord = { portero: 0, defensa: 1, centrocampista: 2, delantero: 3 };
+  filas.sort((a, b) => (b.titular - a.titular) || ((ord[a.role] ?? 9) - (ord[b.role] ?? 9)) || ((b.F || 0) - (a.F || 0)));
+  const titE = filas.filter((x) => x.titular && x.E != null), titF = filas.filter((x) => x.titular && x.F != null);
+  return {
+    j: res.j, team: res.team, src: res.src, forma: res.forma || "", at: res.at,
+    aciertos: { propio: res.propio, ff: res.ff },
+    mediaTitulares: { E: titE.length ? Math.round(titE.reduce((t, x) => t + x.E, 0) / titE.length) : null, F: titF.length ? Math.round(titF.reduce((t, x) => t + x.F, 0) / titF.length) : null },
+    brier: res.jug ? { E: res.jug.be, F: res.jug.bf, E2: res.jug.b2 != null ? res.jug.b2 : null, n: res.jug.n } : null,
+    jugadores: filas,
+  };
+}
+// Aprendizaje: en cada situación, E media, F media y cuántos fueron titulares de verdad (todos los resultados guardados)
+export function aprendizaje(resultados, sitDe) {
+  const g = {};
+  for (const r of resultados || []) {
+    const real = new Set(r.real || []), pe = r.pe || {}, pf = r.pf || {};
+    for (const id of Object.keys(pf)) {
+      if (pe[id] == null) continue;
+      const s = ((r.sit || {})[id]) || (sitDe ? sitDe(r, id) : null) || "otra";
+      const x = g[s] = g[s] || { n: 0, e: 0, f: 0, tit: 0 };
+      x.n++; x.e += pe[id]; x.f += pf[id]; if (real.has(id)) x.tit++;
+    }
+  }
+  return Object.entries(g).map(([s, x]) => ({ sit: s, txt: SIT_TXT[s] || "Sin situación clara", n: x.n, E: Math.round(x.e / x.n), F: Math.round(x.f / x.n), real: Math.round((100 * x.tit) / x.n) })).sort((a, b) => b.n - a.n);
+}
