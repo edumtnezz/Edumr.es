@@ -77,3 +77,21 @@ test("situación del jugador: portero fijo, vuelta tras ausencia, fijo y rotado"
   assert.equal(probInterna(95, "ok", { 9: [80, 100] }, "por-fijo", { "por-fijo": [10, 10] }), 80);
   assert.equal(probInterna(95, "sancionado", { 9: [80, 100] }, "por-fijo", { "por-fijo": [105, 110] }), 0);
 });
+
+test("modelo E2: se entrena con las jornadas pasadas y da % por jugador (0-100), lesionado 0", async () => {
+  const { entrenarModelo, probModelo, puntuarDuelo } = await import("../functions/_lib/analitica.mjs");
+  // 3 equipos de 14 jugadores; los 1-11 son titulares fijos y 12-14 suplentes, durante 8 jornadas
+  const ds = [];
+  for (const t of ["Alfa", "Beta", "Gama"]) for (let i = 1; i <= 14; i++) ds.push({ id: t + i, n: t + i, t, ro: i === 1 ? "portero" : i < 6 ? "defensa" : i < 10 ? "centrocampista" : "delantero", m: Array.from({ length: 8 }, (_, r) => [r + 1, r % 2, "x", 5, i <= 11 ? "c" : "b", i <= 11 ? 90 : 10]) });
+  const mod = entrenarModelo(ds.concat(ds.map((p) => ({ ...p, id: "b" + p.id, t: p.t + "2" })), ds.map((p) => ({ ...p, id: "c" + p.id, t: p.t + "3" })), ds.map((p) => ({ ...p, id: "d" + p.id, t: p.t + "4" }))), 400);
+  assert.ok(mod && mod.w.length === 16 && mod.n >= 500);
+  const jug = ds.filter((p) => p.t === "Alfa");
+  const pm = probModelo(mod, jug, { Alfa2: { e: "lesionado" } });
+  assert.ok(pm.Alfa1 > 60 && pm.Alfa13 < 40);
+  const pm2 = probModelo(mod, jug, { Alfa2: { e: "lesionado" } });
+  assert.equal(pm2.Alfa2, 0);
+  const reales = new Set(jug.slice(0, 11).map((p) => p.id));
+  const pf = {}, pe = {}, pe2 = {}; jug.slice(0, 12).forEach((p) => { pf[p.id] = 90; pe[p.id] = 80; pe2[p.id] = pm[p.id]; });
+  const r = puntuarDuelo({ propio: [], ff: [], pf, pe, pe2 }, reales);
+  assert.ok(r.jug.b2 != null && r.jug.n2 === 12);
+});

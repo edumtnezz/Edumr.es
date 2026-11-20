@@ -164,6 +164,9 @@ export function puntuarDuelo(previo, reales) {
     let be = 0, bf = 0, se = 0, sf = 0, sr = 0;
     for (const id of ids) { const o = reales.has(id) ? 1 : 0, e = pe[id] / 100, f = pf[id] / 100; be += (e - o) ** 2; bf += (f - o) ** 2; se += e; sf += f; sr += o; }
     r.jug = { n: ids.length, be: +(be / ids.length).toFixed(4), bf: +(bf / ids.length).toFixed(4), e: +se.toFixed(2), f: +sf.toFixed(2), real: sr };
+    // Modelo E2 (en sombra): mismos jugadores, para ver si gana a E y a F
+    const p2 = previo.pe2 || {}, i2 = ids.filter((id) => p2[id] != null);
+    if (i2.length >= 8) { let b2 = 0, bE = 0, bF = 0; for (const id of i2) { const o = reales.has(id) ? 1 : 0; b2 += (p2[id] / 100 - o) ** 2; bE += (pe[id] / 100 - o) ** 2; bF += (pf[id] / 100 - o) ** 2; } r.jug.n2 = i2.length; r.jug.b2 = +(b2 / i2.length).toFixed(4); r.jug.be2 = +(bE / i2.length).toFixed(4); r.jug.bf2 = +(bF / i2.length).toFixed(4); }
   }
   return r;
 }
@@ -205,4 +208,70 @@ export function previsionValor(cambioHoy, cambioAyer, valor) {
     if (min < 50000) return null;
   }
   return { dias: 3, min: c > 0 ? min : -min };
+}
+
+// ──────────────────────────────────────────────────────────────────────────────────────────────
+// MODELO E2 (20/11/2026): probabilidad de ser titular con regresión logística entrenada con las titularidades reales de
+// Futmondo de toda la temporada. Probado con las jornadas 6–12 de 2026/27 (entrenado con 6–9, medido en 10–12 sin verlas):
+// Brier 0,1576 → 0,1440 y 8,22 → 8,52 aciertos de 11 frente a la fórmula por tramos (E). Va EN SOMBRA: se guarda al lado de E
+// (`pe2` en el duelo) y solo se enseña si gana en el duelo real. Con menos de 5 partidos del equipo no hay modelo (null).
+const STIT = (c) => catN(c) === "completo" || catN(c) === "sustituido";
+// Filas (una por jugador) con las variables de cada jugador ANTES de la jornada j (null = el próximo partido)
+export function filasModelo(jug, j) {
+  const cnt = {};
+  for (const p of jug) for (const x of p.m) if (STIT(x[4])) cnt[x[0]] = (cnt[x[0]] || 0) + 1;
+  const games = Object.keys(cnt).map(Number).filter((r) => cnt[r] >= 9).sort((a, b) => a - b);
+  const prior = (j == null ? games : games.filter((r) => r < j)).slice().reverse();
+  if (prior.length < 5) return null;
+  const L = prior.slice(0, 6);
+  const pl = jug.map((p) => {
+    const by = new Map(p.m.map((x) => [x[0], x]));
+    const e = L.map((r) => by.get(r) || null);
+    const s = e.map((x) => (x && STIT(x[4]) ? 1 : 0)), b = e.map((x) => (x && catN(x[4]) === "banquillo" ? 1 : 0)), mi = e.map((x) => (x ? Math.min(1, (x[5] || 0) / 90) : 0));
+    const starts = prior.filter((r) => { const x = by.get(r); return x && STIT(x[4]); }).length;
+    let streak = 0; while (streak < 6 && !(e[streak] && (STIT(e[streak][4]) || catN(e[streak][4]) === "banquillo"))) streak++;
+    const sc = W.reduce((t, w, i) => t + w * (s[i] || 0), 0) / 15;
+    const jx = j == null ? null : by.get(j);
+    return { id: p.id, ro: p.ro, s, b, mi, rate: starts / prior.length, streak: streak / 6, sc, y: jx && STIT(jx[4]) ? 1 : 0 };
+  });
+  const slots = {};
+  for (const x of pl) if (x.s[0]) slots[x.ro] = (slots[x.ro] || 0) + 1;
+  for (const ro of Object.keys(slots)) { const g = pl.filter((x) => x.ro === ro).sort((a, b) => b.sc - a.sc), th = (g[slots[ro] - 1] || { sc: 0 }).sc; for (const x of g) x.gap = x.sc - th; }
+  for (const x of pl) if (x.gap === undefined) x.gap = x.sc - 0.5;
+  return pl;
+}
+export const featModelo = (x) => [1, x.s[0] || 0, x.s[1] || 0, x.s[2] || 0, x.s[3] || 0, x.s[4] || 0, x.b[0] || 0, x.b[1] || 0, x.mi[0] || 0, x.mi[1] || 0, x.mi[2] || 0, x.rate, x.streak, x.sc, x.gap, x.ro === "portero" ? 1 : 0];
+const sigm = (z) => 1 / (1 + Math.exp(-z));
+// Entrena con todas las jornadas pasadas de todos los equipos (nunca con la jornada que se va a predecir)
+export function entrenarModelo(ds, iter) {
+  const porEquipo = new Map();
+  for (const p of ds || []) { const k = clubKey(p.t); if (!porEquipo.has(k)) porEquipo.set(k, []); porEquipo.get(k).push(p); }
+  const X = [], Y = [];
+  for (const jug of porEquipo.values()) {
+    const cnt = {};
+    for (const p of jug) for (const x of p.m) if (STIT(x[4])) cnt[x[0]] = (cnt[x[0]] || 0) + 1;
+    const games = Object.keys(cnt).map(Number).filter((r) => cnt[r] >= 9).sort((a, b) => a - b);
+    for (let gi = 5; gi < games.length; gi++) { const f = filasModelo(jug, games[gi]); if (f) for (const x of f) { X.push(featModelo(x)); Y.push(x.y); } }
+  }
+  if (X.length < 500) return null;
+  const d = X[0].length; const w = new Array(d).fill(0);
+  for (let it = 0; it < (iter || 3000); it++) {
+    const g = new Array(d).fill(0);
+    for (let i = 0; i < X.length; i++) { let z = 0; for (let k = 0; k < d; k++) z += X[i][k] * w[k]; const e = sigm(z) - Y[i]; for (let k = 0; k < d; k++) g[k] += e * X[i][k]; }
+    for (let k = 0; k < d; k++) w[k] -= 0.5 * (g[k] / X.length + (k ? 0.001 * w[k] : 0));
+  }
+  return { w: w.map((v) => +v.toFixed(4)), n: X.length };
+}
+// % (0-100) de cada jugador del equipo para el próximo partido; lesionado/sancionado 0, duda ×0,6 (igual que E)
+export function probModelo(modelo, jug, estados) {
+  if (!modelo || !modelo.w) return null;
+  const f = filasModelo(jug, null); if (!f) return null;
+  const out = {};
+  for (const x of f) {
+    const e = estados ? (estados[x.id] || {}).e : "";
+    let p = sigm(featModelo(x).reduce((t, v, k) => t + v * modelo.w[k], 0));
+    if (e === "lesionado" || e === "sancionado") p = 0; else if (e === "duda") p *= 0.6;
+    out[x.id] = Math.round(p * 100);
+  }
+  return out;
 }

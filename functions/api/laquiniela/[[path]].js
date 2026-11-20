@@ -10,7 +10,7 @@ import { partirInfo, tituloCambio, catCambio, NOMBRE_ESTADO, ajustarOnce, clubKe
 import { itemsMercado, lideres as lideresDe, rachasDe, medianasPos } from "../../_lib/diario.mjs";
 import { agregarSubs, riesgoCambio } from "../../_lib/sustituciones.mjs";
 import { parseEquipos, parseJugadores, slugEquipo, slugJugador, parseLesionesFichajes, marcarLesiones } from "../../_lib/lesiones.mjs";
-import { compacto, dificultad, calendarioDificultad, oncePropio, aciertoOnces, compararOnce, probInterna, puntuarDuelo } from "../../_lib/analitica.mjs";
+import { compacto, dificultad, calendarioDificultad, oncePropio, aciertoOnces, compararOnce, probInterna, puntuarDuelo, entrenarModelo, probModelo } from "../../_lib/analitica.mjs";
 import { cuerpoAHtml } from "../../_lib/noticia-cuerpo.mjs";
 import { minutosEnAlineacion, partidoDelDia } from "../../_lib/fotmob-min.mjs";
 const COMPETITION = "PD";
@@ -2737,17 +2737,37 @@ function parseCambios(html) {
 // El cron llama a /analitica?run=1 cada minuto. Cada llamada lee la ficha de 40 jugadores en Futmondo; al terminar la vuelta
 // (unos 14 min) calcula los resultados y descansa 6 h. Todo queda en KV; las páginas solo leen el resultado.
 const AN_DS = "an:ds:v1", AN_CUR = "an:cur:v1", AN_OUT = "an:out:v1", AN_LOG = "an:onces-log:v1", AN_DUELO = "an:duelo:v1";
+// Rellena los jugadores del mercado que no tienen ficha guardada. Devuelve cuántos faltaban y cuántos se leyeron.
+async function analiticaRellenar(env, ds) {
+  const mk = await getMarketPlayers(env);
+  const all = (mk && mk.players) || [];
+  if (all.length < 300) return { nuevos: 0, faltan: 0, total: 0, sin: [] };
+  const sin = all.filter((p) => !ds[p.id]);
+  let nuevos = 0;
+  const lote = sin.slice(0, 30);
+  for (let k = 0; k < lote.length; k += 5) {
+    const fs = await Promise.all(lote.slice(k, k + 5).map((p) => playerFicha(env, p.id, false, false).catch(() => null)));
+    fs.forEach((f) => { const c = f && Array.isArray(f.matches) ? compacto(f) : null; if (c) { ds[c.id] = c; nuevos++; } });
+  }
+  const quedan = all.filter((p) => !ds[p.id]);
+  return { nuevos, faltan: quedan.length, total: all.length, sin: quedan.slice(0, 60).map((p) => ({ id: p.id, name: p.name, team: p.team })) };
+}
 async function analiticaRun(env, reset) {
   const now = Date.now();
   let cur = (await env.PORRA.get(AN_CUR, "json")) || { pend: null, done: 0 };
   // ?reset=1 fuerza una vuelta nueva (como mucho una cada 10 min)
   if (reset && !cur.pend && cur.done && now - cur.done > 600000) cur = { pend: null, done: 0 };
   if (!cur.pend && cur.done && now - cur.done < 6 * 3600000) {
-    if (reset === "calc" || now - (cur.calc || cur.done) > 30 * 60000) {
-      const ds0 = (await env.PORRA.get(AN_DS, "json")) || {};
-      if (Object.keys(ds0).length > 300) { const o = await analiticaCalc(env, ds0, Object.keys(ds0).length, now); cur.calc = now; await env.PORRA.put(AN_CUR, JSON.stringify(cur)); return { recalculado: true, comparacion: o.comparacion }; }
+    const ds0 = (await env.PORRA.get(AN_DS, "json")) || {};
+    // Huecos (20/11/2026): jugadores del mercado sin ficha guardada (fallaron 3 veces en la vuelta) se rellenan aparte, 30 por pasada,
+    // para que TODOS tengan su probabilidad E. Antes quedaban fuera para siempre (40 de 526: Sancet, Pol Lozano, Bauzà…).
+    let rell = { nuevos: 0, faltan: 0 };
+    if (Object.keys(ds0).length > 300 && now - (cur.fill || 0) > 4 * 60000) { rell = await analiticaRellenar(env, ds0); cur.fill = now; if (rell.nuevos) await env.PORRA.put(AN_DS, JSON.stringify(ds0)); }
+    if (reset === "calc" || rell.nuevos || now - (cur.calc || cur.done) > 30 * 60000) {
+      if (Object.keys(ds0).length > 300) { const o = await analiticaCalc(env, ds0, rell.total || Object.keys(ds0).length, now, rell.sin); cur.calc = now; await env.PORRA.put(AN_CUR, JSON.stringify(cur)); return { recalculado: true, comparacion: o.comparacion, rellenados: rell.nuevos, faltan: rell.faltan }; }
     }
-    return { alDia: true, hecho: cur.done };
+    if (cur.fill === now) await env.PORRA.put(AN_CUR, JSON.stringify(cur));
+    return { alDia: true, hecho: cur.done, faltan: rell.faltan };
   }
   const mk = await getMarketPlayers(env);
   const all = (mk && mk.players) || [];
@@ -2771,25 +2791,32 @@ async function analiticaRun(env, reset) {
   await env.PORRA.put(AN_DS, JSON.stringify(ds));
   if (!fin) { await env.PORRA.put(AN_CUR, JSON.stringify(cur)); return { faltan: cur.pend.length, de: cur.total, leidos: Object.keys(ds).length }; }
   // Fin de la vuelta: resultados
-  await analiticaCalc(env, ds, all.length, now);
+  await analiticaCalc(env, ds, all.length, now, all.filter((p) => !ds[p.id]).slice(0, 60).map((p) => ({ id: p.id, name: p.name, team: p.team })));
   await env.PORRA.put(AN_CUR, JSON.stringify({ pend: null, done: now, calc: now }));
   return { fin: true, jugadores: Object.keys(ds).length };
 }
 // Resultados a partir de los datos guardados. Se repite cada 30 min sin volver a leer Futmondo, para que el once propio
 // siga los cambios de estado y quede apuntado cuándo cambia el once de fuera.
-async function analiticaCalc(env, ds, deMercado, now) {
+async function analiticaCalc(env, ds, deMercado, now, sinFicha) {
   const all = { length: deMercado };
   const lista = Object.values(ds);
-  const out = { at: now, jugadores: lista.length, deMercado: all.length, dificultad: dificultad(lista), acierto: aciertoOnces(lista, 5), onces: {} };
+  const out = { at: now, jugadores: lista.length, deMercado: all.length, sinFicha: sinFicha || [], dificultad: dificultad(lista), acierto: aciertoOnces(lista, 5), onces: {} };
   const foto = await estFoto(env);
   const porEquipo = new Map();
   for (const p of lista) { const k = clubKey(p.t); if (!porEquipo.has(k)) porEquipo.set(k, []); porEquipo.get(k).push(p); }
   const cal = out.acierto.cal || {};
+  // Modelo E2 (en sombra): se reentrena como mucho cada 12 h con todas las jornadas ya jugadas
+  let modelo = null;
+  try {
+    modelo = await env.PORRA.get("an:modelo:v1", "json");
+    if (!modelo || now - (modelo.at || 0) > 12 * 3600000) { const m = entrenarModelo(lista, 3000); if (m) { modelo = { ...m, at: now }; await env.PORRA.put("an:modelo:v1", JSON.stringify(modelo)); } }
+  } catch (e) { out.errorModelo = String(e && e.message || e).slice(0, 100); }
+  out.modelo = modelo ? { n: modelo.n, at: modelo.at } : null;
   for (const [k, jug] of porEquipo) {
     const o = oncePropio(jug, null, foto); if (!o) continue;
     // Probabilidad interna de cada jugador de la plantilla (frecuencia real de su tramo de peso). Solo los que tienen alguna opción.
     const prob = o.cand.map((c) => ({ id: c.id, name: c.name, role: c.role, p: probInterna(c.peso, c.est, cal, c.sit, out.acierto.calSit), est: c.est, sit: c.sit || undefined })).filter((c) => c.p != null && (c.p > 0 || c.est === "lesionado" || c.est === "sancionado")).sort((x, y) => y.p - x.p);
-    out.onces[k] = { team: jug[0].t, forma: o.forma, jornadas: o.jornadas, xi: o.xi, prob };
+    out.onces[k] = { team: jug[0].t, forma: o.forma, jornadas: o.jornadas, xi: o.xi, prob, pm: probModelo(modelo, jug, foto) || undefined };
   }
   // Comparación con el once probable que ya usamos (FutbolFantasy), partido a partido de la próxima jornada
   try {
@@ -2824,15 +2851,36 @@ async function analiticaCalc(env, ds, deMercado, now) {
         const ko = ffWhenAt(m.date, m.time);
         const abierto = !enJuego && ko && now < ko - 90 * 60e3;
         const dk = jor.matchday + ":" + k;
-        if (abierto && !(duelo.hechos || {})[dk]) duelo.previos[dk] = { j: Number(jor.matchday), k, team: mio.team, at: now, propio: mio.xi.map((x) => x.id), ff: cmp.firma ? cmp.firma.split(",") : [], pf: cmp.pf || {}, pe: Object.fromEntries((mio.prob || []).filter((x) => cmp.pf && cmp.pf[x.id] != null).map((x) => [x.id, x.p])) };
+        if (abierto && !(duelo.hechos || {})[dk]) {
+          // Se guarda la E de TODA la plantilla (no solo la de los titulares de FutbolFantasy) y cómo fue cambiando su once: sirve para afinar la fórmula
+          const ant = duelo.previos[dk], hist = ((ant && ant.hist) || []).slice(-9);
+          if (!hist.length || hist[hist.length - 1].f !== cmp.firma) hist.push({ at: now, f: cmp.firma });
+          duelo.previos[dk] = { j: Number(jor.matchday), k, team: mio.team, at: now, propio: mio.xi.map((x) => x.id), ff: cmp.firma ? cmp.firma.split(",") : [], pf: cmp.pf || {}, pe: Object.fromEntries((mio.prob || []).map((x) => [x.id, x.p])), pe2: mio.pm || {}, sit: Object.fromEntries((mio.prob || []).filter((x) => x.sit).map((x) => [x.id, x.sit])), hist };
+        }
       }
     }
     // Duelo: cuando Futmondo ya da los titulares reales de esa jornada, se puntúa a los dos y se guarda el resultado
+    // Once real al instante (20/11/2026): en cuanto sale la alineación confirmada se puntúa, sin esperar a que Futmondo publique la jornada.
+    // Solo vale si se emparejan los 11 con jugadores de Futmondo; si no, se espera a Futmondo (nunca se completa a ojo).
+    const realesConf = new Map();
+    try {
+      const conf = await getAlineacionesConfirmadas(env, String(jor.matchday), false);
+      for (const mt of (conf && conf.matches) || []) for (const lado of ["home", "away"]) {
+        const sd = mt[lado]; if (!sd) continue;
+        const k = clubKey(sd.name), jugs = porEquipo.get(k) || [];
+        const lista = ["portero", "defensas", "medios", "delanteros"].flatMap((x) => sd[x] || []);
+        if (lista.length !== 11 || !jugs.length) continue;
+        const mm = emparejar(lista.map((x, i) => ({ id: i, name: x.name, teamID: 1 })), { 1: { name: sd.name } }, jugs.map((p) => ({ id: p.id, name: p.n, team: p.t, role: p.ro })));
+        const ids = new Set([...mm.values()].map((f) => f.id));
+        if (ids.size === 11) realesConf.set(k, ids);
+      }
+    } catch (e) {}
     for (const dk of Object.keys(duelo.previos)) {
       const pv = duelo.previos[dk];
-      const reales = new Set((porEquipo.get(pv.k) || []).filter((p) => p.m.some((x) => x[0] === pv.j && (x[4] === "c" || x[4] === "s"))).map((p) => p.id));
+      const delConf = pv.j === Number(jor.matchday) ? realesConf.get(pv.k) : null;
+      const reales = delConf || new Set((porEquipo.get(pv.k) || []).filter((p) => p.m.some((x) => x[0] === pv.j && (x[4] === "c" || x[4] === "s"))).map((p) => p.id));
       const r = puntuarDuelo(pv, reales);
-      if (r) { duelo.resultados.push({ j: pv.j, team: pv.team, at: pv.at, ...r }); duelo.hechos[dk] = 1; delete duelo.previos[dk]; }
+      if (r) { duelo.resultados.push({ j: pv.j, team: pv.team, at: pv.at, src: delConf ? "once-confirmado" : "futmondo", real: [...reales], pe: pv.pe, pe2: pv.pe2, pf: pv.pf, sit: pv.sit, ...r }); duelo.hechos[dk] = 1; delete duelo.previos[dk]; }
       else if (pv.j < Number(jor.matchday) - 2) delete duelo.previos[dk]; // jornada vieja sin datos: se descarta
     }
     duelo.resultados = duelo.resultados.slice(-1000); // una temporada entera (20 equipos × 38 jornadas)
@@ -2842,7 +2890,8 @@ async function analiticaCalc(env, ds, deMercado, now) {
       out.duelo = { onces: duelo.resultados.length, pendientes: Object.keys(duelo.previos).length, comparables: conFf.length,
         propio: conFf.reduce((t, x) => t + x.propio, 0), ff: conFf.reduce((t, x) => t + x.ff, 0), de: conFf.length * 11,
         jugadores: (() => { const a = duelo.resultados.filter((x) => x.jug), n = a.reduce((t, x) => t + x.jug.n, 0); return n ? { n, onces: a.length, brierE: +(a.reduce((t, x) => t + x.jug.be * x.jug.n, 0) / n).toFixed(4), brierF: +(a.reduce((t, x) => t + x.jug.bf * x.jug.n, 0) / n).toFixed(4), sumaE: +a.reduce((t, x) => t + x.jug.e, 0).toFixed(1), sumaF: +a.reduce((t, x) => t + x.jug.f, 0).toFixed(1), titularesReales: a.reduce((t, x) => t + x.jug.real, 0) } : null; })(),
-        ultimos: duelo.resultados.slice(-20).reverse() };
+        modelo2: (() => { const a = duelo.resultados.filter((x) => x.jug && x.jug.n2), n = a.reduce((t, x) => t + x.jug.n2, 0); return n ? { n, onces: a.length, brierE2: +(a.reduce((t, x) => t + x.jug.b2 * x.jug.n2, 0) / n).toFixed(4), brierE: +(a.reduce((t, x) => t + x.jug.be2 * x.jug.n2, 0) / n).toFixed(4), brierF: +(a.reduce((t, x) => t + x.jug.bf2 * x.jug.n2, 0) / n).toFixed(4) } : null; })(),
+        ultimos: duelo.resultados.slice(-20).reverse().map((x) => { const { pe, pe2, pf, real, sit, ...r } = x; return r; }) };
     }
     log.eventos = log.eventos.slice(-300);
     await env.PORRA.put(AN_LOG, JSON.stringify(log));
