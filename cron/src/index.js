@@ -4,6 +4,7 @@
 import { avisar, colaPuntos, avisarPuntos } from "./avisos.js";
 import { vigilarEstados } from "./estados.js";
 import { publicarPartes } from "./partes.js";
+import { vigilarFotmob } from "./fotmob-estados.js";
 import { apuntarDiario } from "./diario.js";
 import { apuntarSustituciones } from "./sustituciones.js";
 import { publicarArticulos, publicarOnces } from "./articulos.js";
@@ -32,6 +33,8 @@ export default {
       try { await fetch("https://edumr.es/api/laquiniela/analitica?run=1", { headers: { "user-agent": "edumr-cron" } }); } catch (e) {}
       // Estado físico de los jugadores: apunta cada cambio con su hora (cada 3 min).
       try { await vigilarEstados(env); } catch (e) { console.error("estados", String(e && e.message || e).slice(0, 180)); }
+      // Segunda fuente de estado (FotMob): cada 6 min, solo apunta cambios; las noticias lo usan si Biwenger aún no lo tiene.
+      try { await vigilarFotmob(env); } catch (e) { console.error("fotmob-estados", String(e && e.message || e).slice(0, 180)); }
       // Diario de LaLiga: cambios en la clasificación (arriba y descenso) y en los goleadores (cada 10 min, nunca con un partido en juego).
       try { await apuntarSustituciones(env); } catch (e) { console.error("subs", String(e && e.message || e).slice(0, 180)); }
       try { await apuntarDiario(env); } catch (e) { console.error("diario", String(e && e.message || e).slice(0, 180)); }

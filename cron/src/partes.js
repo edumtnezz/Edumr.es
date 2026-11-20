@@ -3,7 +3,7 @@
 // La IA solo redacta el resumen con esos hechos; si mete un número o un nombre que no está en ellos, se usa la plantilla fija.
 import { hechosNoticia, noticiaPlantilla, cuerpoNoticia, resumenValido, recambio, norm, clubKey } from "../../functions/_lib/estados.mjs";
 
-const OWN_KEY = "own:news:v2", K_ST = "partes:st:v1", K_FOTO = "est:foto:v1", K_EV = "est:eventos:v1";
+const OWN_KEY = "own:news:v2", K_ST = "partes:st:v1", K_FOTO = "est:foto:v1", K_EV = "est:eventos:v1", K_EVFO = "est:fo:ev:v1";
 const MODEL = "gemini-3.5-flash-lite";
 const SITE = "https://edumr.es/api/laquiniela/";
 const MALO = new Set(["duda", "lesionado", "sancionado"]);
@@ -19,7 +19,7 @@ export function proximo(jor, team) {
   return jor && jor.matchday ? { jornada: jor.matchday, rival: "", casa: null } : null;
 }
 
-export function candidatos(foto, eventos, now) {
+export function candidatos(foto, eventos, now, eventosFo) {
   const out = new Map();
   // Estados que ya estaban al empezar: valen los de los últimos 5 días (con la hora real en que cambió)
   for (const id of Object.keys((foto && foto.bw) || {})) {
@@ -31,6 +31,13 @@ export function candidatos(foto, eventos, now) {
     if (MALO.has(e.a)) out.set(e.id, { id: e.id, de: e.de, a: e.a, info: e.info, at: e.fuenteAt && e.fuenteAt <= e.at ? e.fuenteAt : e.at });
     else if (e.a === "ok" && MALO.has(e.de)) out.set(e.id, { id: e.id, de: e.de, a: "ok", info: "", at: e.at });
     else if (MALO.has(e.de)) out.delete(e.id);
+  }
+  // FotMob (20/11/2026): solo cuenta cuando Biwenger aún lo tiene como disponible. Si Biwenger ya lo apunta, la noticia es la suya.
+  for (const e of eventosFo || []) {
+    if (e.src !== "fo" || now - e.at > 2 * 86400000 || !MALO.has(e.a)) continue;
+    const b = foto && foto.bw && foto.bw[e.id];
+    if (b && b.e !== "ok") continue;
+    if (!out.has(e.id)) out.set(e.id, { id: e.id, de: "ok", a: e.a, info: e.info, at: e.at, src: "fo" });
   }
   return [...out.values()].sort((a, b) => b.at - a.at);
 }
@@ -65,10 +72,11 @@ const escT = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;")
 export async function publicarPartes(env, f = fetch, now = Date.now()) {
   if (!env || !env.PORRA) return { skipped: "sin kv" };
   if (new Date(now).getUTCMinutes() % 3 !== 1) return { skipped: "no toca" };
-  const [foto, eventos, st0] = await Promise.all([env.PORRA.get(K_FOTO, "json"), env.PORRA.get(K_EV, "json"), env.PORRA.get(K_ST, "json")]);
+  const [foto, eventos, st0, eventosFo] = await Promise.all([env.PORRA.get(K_FOTO, "json"), env.PORRA.get(K_EV, "json"), env.PORRA.get(K_ST, "json"), env.PORRA.get(K_EVFO, "json")]);
   if (!foto) return { skipped: "sin foto" };
   const st = st0 || { done: {} };
-  const pend = candidatos(foto, eventos, now).filter((c) => !st.done[clave(c)]);
+  // Si FotMob ya dio ese mismo estado y se publicó, la noticia posterior de Biwenger no se repite
+  const pend = candidatos(foto, eventos, now, eventosFo).filter((c) => !st.done[clave(c)] && !(c.src !== "fo" && st.done["fo:" + c.id + ":" + c.a]));
   if (!pend.length) return { nuevas: 0 };
   const get = (p) => f(SITE + p, { headers: { "user-agent": "edumr-cron" } }).then((r) => r.json());
   const [mk, mn, jor] = await Promise.all([get("mercado"), get("minutos"), get("jornada")]);
@@ -83,6 +91,8 @@ export async function publicarPartes(env, f = fetch, now = Date.now()) {
   const nuevas = [];
   for (const c of pend.slice(0, 4)) {
     st.done[clave(c)] = now;
+    if (c.src === "fo") st.done["fo:" + c.id + ":" + c.a] = now;
+    else if (c.a === "ok") for (const k of Object.keys(st.done)) if (k.indexOf("fo:" + c.id + ":") === 0) delete st.done[k];
     const p = porId.get(c.id);
     // Solo jugadores que cuentan en el fantasy: han jugado o valen 1 M o más
     if (!p || !((p.matches || 0) > 0 || (p.value || 0) >= 1000000)) continue;
@@ -92,7 +102,7 @@ export async function publicarPartes(env, f = fetch, now = Date.now()) {
     const ia = null;
     const item = {
       id: idNoticia(c), pid: p.id, title: n.title, lead: n.lead, body: cuerpoNoticia(n), status: "published",
-      createdAt: now, publishedAt: Math.min(now, c.at || now), thumb: "", club: p.team, players: [p.name], tipo: n.tipo, veredicto: n.veredicto, plazo: n.plazo, ia: !!ia, auto: "estado", f: 5, img: foto.bw[c.id] && foto.bw[c.id].b ? "https://cdn.biwenger.com/i/p/" + foto.bw[c.id].b + ".png" : "",
+      createdAt: now, publishedAt: Math.min(now, c.at || now), thumb: "", club: p.team, players: [p.name], tipo: n.tipo, veredicto: n.veredicto, plazo: n.plazo, ia: !!ia, auto: "estado", f: 5, ...(c.src === "fo" ? { fuente: "fotmob" } : {}), img: foto.bw[c.id] && foto.bw[c.id].b ? "https://cdn.biwenger.com/i/p/" + foto.bw[c.id].b + ".png" : "",
     };
     // Cartel en imagen (para Telegram, WhatsApp y la vista previa del enlace). Si falla, la noticia sale igual, sin imagen.
     try {

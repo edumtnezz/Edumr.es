@@ -6431,7 +6431,10 @@ async function handleGet({ request, env: env0, params }) {
     try { foto = await env.PORRA.get("est:foto:v1", "json"); ev = (await env.PORRA.get("est:eventos:v1", "json")) || []; } catch (e) {}
     const bw = (foto && foto.bw) || {}, estados = {};
     for (const id of Object.keys(bw)) if (bw[id].e !== "ok") estados[id] = bw[id];
-    return json({ updatedAt: (foto && foto.at) || 0, estados, cambios: ev.slice(-200).reverse() });
+    // FotMob (segunda fuente, desde 20/11/2026): su foto y sus cambios con la hora a la que los detectamos
+    let fo = null, evFo = [];
+    try { fo = await env.PORRA.get("est:fo:v1", "json"); evFo = (await env.PORRA.get("est:fo:ev:v1", "json")) || []; } catch (e) {}
+    return json({ updatedAt: (foto && foto.at) || 0, estados, cambios: ev.slice(-200).reverse(), fotmob: { updatedAt: (fo && fo.at) || 0, estados: (fo && fo.fo) || {}, cambios: evFo.slice(-200).reverse() } });
   }
   // Diagnóstico: ¿llega fichajes.com desde el Worker? /api/laquiniela/lesiones?name=De%20Jong&club=Barcelona
   if (path === "lesiones") {
