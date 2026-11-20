@@ -5144,7 +5144,6 @@
           lg.appendChild(el("span", "nw-tl-ley-n", "El número son sus puntos"));
           card.appendChild(lg);
         }
-        const LIN = { portero: "porteros", defensa: "defensas", centrocampista: "centrocampistas", delantero: "delanteros" }[f.role] || "jugadores";
         const g = el("div", "nw-datos");
         const dato = (k, v, sub, pct) => {
           const r = el("div", "nw-dato"); r.appendChild(el("span", "nw-dato-k", k));
@@ -5152,8 +5151,7 @@
           if (pct != null) { const bar = el("span", "nw-dato-bar"); const fi = el("i"); fi.style.width = Math.max(4, Math.min(100, pct)) + "%"; bar.appendChild(fi); r.appendChild(bar); }
           g.appendChild(r);
         };
-        const pu = d.puesto;
-        dato("Puntos", String(f.puntos), pu ? "puesto " + pu.pos + " de " + pu.de + " " + LIN : "", pu ? 100 * (1 - (pu.pos - 1) / Math.max(1, pu.de - 1)) : null);
+        dato("Puntos", String(f.puntos), "", null); // sin el puesto entre los de su línea: a Edu no le interesa (20/11/2026)
         dato("Media por partido", f.partidos ? String(Number(f.media).toFixed(1)).replace(".", ",") : "—", f.partidos ? "en " + f.partidos + (f.partidos === 1 ? " partido" : " partidos") : "sin jugar");
         dato("Valor", eqMoney(f.valor), ""); // sin la subida o bajada del día: eso no es parte de la noticia
         card.appendChild(g);
