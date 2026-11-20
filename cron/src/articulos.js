@@ -1,7 +1,7 @@
 // Artículos propios (a vender, a fichar, clausulazos y, solo en parones, el repaso de plantilla).
 // Una edición por jornada y tipo, de martes a domingo a partir de las 10:00 (hora de Madrid). La edición nueva sustituye a la anterior del mismo tipo.
 // Las reglas y los datos están en functions/_lib/articulos.mjs. Sin jugadores que cumplan, ese artículo no se publica.
-import { aVender, aFichar, clausulazos, paron, inicioJornada, esParon, subidasEntre, inicioParon, subidasBajadas } from "../../functions/_lib/articulos.mjs";
+import { aVender, aFichar, clausulazos, paron, inicioJornada, esParon, subidasEntre, inicioParon, subidasBajadas, chollo } from "../../functions/_lib/articulos.mjs";
 import { oncesArticulo, cambiosOnce } from "../../functions/_lib/onces.mjs";
 
 const OWN_KEY = "own:news:v2", K_ST = "art:st:v1", SITE = "https://edumr.es/api/laquiniela/";
@@ -32,7 +32,7 @@ export async function publicarArticulos(env, f = fetch, now = Date.now()) {
   // seguidos si no ha salido antes alguna noticia de un jugador (las noticias de estado son lo dinámico; si no hay ninguna, se espera 6 h).
   if (!rehacer) {
     const SLOT = { artvender: 10, artfichar: 13, artclaus: 16, artparon: 19 };
-    const arts = own.filter((x) => x && x.tipo === "articulo" && x.art !== "artmercado");
+    const arts = own.filter((x) => x && x.tipo === "articulo" && x.art !== "artmercado" && x.art !== "artchollo");
     const ult = arts.reduce((m, x) => Math.max(m, x.publishedAt || 0), 0);
     const h = (now - ult) / 3600000;
     const hayNoticia = own.some((x) => x && x.auto === "estado" && (x.publishedAt || 0) > ult);
@@ -114,7 +114,7 @@ export async function publicarOnces(env, f = fetch, now = Date.now()) {
   if (nueva && !((dia === "Mon" && hora >= 23) || ["Tue", "Wed", "Thu", "Fri"].indexOf(dia) >= 0)) return { skipped: "fuera de hora" };
   if (nueva) { // primera edición: no pegada a otro artículo (menos de 2 h)
     const own0 = (await env.PORRA.get(OWN_KEY, "json")) || [];
-    const ult = own0.filter((x) => x && x.tipo === "articulo" && x.art !== "artmercado" && x.art !== "artonce").reduce((m, x) => Math.max(m, x.publishedAt || 0), 0);
+    const ult = own0.filter((x) => x && x.tipo === "articulo" && x.art !== "artmercado" && x.art !== "artchollo" && x.art !== "artonce").reduce((m, x) => Math.max(m, x.publishedAt || 0), 0);
     if (now - ult < 2 * 3600000) return { skipped: "hace poco otro artículo" };
   }
   const mk = await get("mercado");
@@ -146,4 +146,27 @@ export async function publicarOnces(env, f = fetch, now = Date.now()) {
     if (chat) { try { await f("https://api.telegram.org/bot" + env.TELEGRAM_BOT_TOKEN + "/sendMessage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chat, text: "🏆 <b>ONCES RECOMENDADOS</b>\n\n" + escT(fin.title) + "\nhttps://edumr.es/futmondo/guiafantasy/noticias/ed-" + fin.id, parse_mode: "HTML", link_preview_options: { is_disabled: false, prefer_large_media: true, show_above_text: true } }) }); } catch (e) {} } // la vista previa es la portada del artículo (art-once.jpg)
   }
   return { publicado: fin.id, nueva, cambios };
+}
+
+// Artículo «Chollo del día»: lo llama el diario cuando elige el chollo de hoy (mismo jugador y mismas reglas). Id fijo: sustituye al anterior.
+export async function publicarChollo(env, ps, pid, now = Date.now()) {
+  if (!env || !env.PORRA) return "";
+  const fecha = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" }).format(new Date(now));
+  const a = chollo(ps, pid, fecha);
+  if (!a) return "";
+  let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
+  own = own.filter((x) => x.art !== "artchollo" && x.id !== a.id);
+  own.unshift({ id: a.id, title: a.title, lead: a.lead, body: a.body, status: "published", createdAt: now, publishedAt: now, thumb: "", club: "", players: a.players, tipo: "articulo", auto: "articulo", art: "artchollo", f: 1, fp: (a.body.match(/^@ (\S+) \|/m) || [])[1] || "" });
+  own.sort((x, y) => (y.publishedAt || 0) - (x.publishedAt || 0));
+  await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
+  return a.id;
+}
+
+// ¿Falta el artículo del chollo de hoy? (el chollo ya elegido antes de existir el artículo, o corregido a otro jugador)
+export async function cholloSinArticulo(env, pid, now = Date.now()) {
+  if (!env || !env.PORRA || pid == null) return false;
+  const dia = (t) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date(t));
+  const own = (await env.PORRA.get(OWN_KEY, "json")) || [];
+  const x = own.find((y) => y && y.art === "artchollo");
+  return !(x && String(x.fp) === String(pid) && dia(x.publishedAt || 0) === dia(now));
 }

@@ -71,6 +71,10 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 
 - **Quién sustituye a quién (16/11)**: `functions/_lib/sustituciones.mjs` + `cron/src/sustituciones.js` (KV `subs:v1`, cambios reales de cada partido terminado de FotMob; en «swap» el primero entra y el segundo sale). Ruta `sustituciones`: titulares (4 o más) a los que cambian en la mitad o más de sus partidos y, si casi siempre entra el mismo (3 o más veces y la mitad de sus cambios), quién. Se ve en el once probable (`.pl-subr` «⇄ Adeyemi 77'», `futmondo/alineacion.js`) y en la ficha del jugador. Los cambios por lesión no cuentan. Comprobado: Gordon sale en 8 de 8 y entra Adeyemi 7 veces.
 
+## Chollo del día como artículo (20/11/2026)
+- `chollo()` en `functions/_lib/articulos.mjs` + `publicarChollo` / `cholloSinArticulo` en `cron/src/articulos.js`, llamados desde `cron/src/diario.js`: el artículo es del MISMO jugador y con las MISMAS reglas que el chollo de Inicio (`cholloValido`). Id fijo `artchollo` (el de hoy sustituye al anterior), título «Chollo del día dd/mm: Nombre». Cuerpo: jugador con puntos de media por millón, «Por qué es el chollo» (una línea por regla con su dato real: precio, media y mediana de su posición, partidos, puntos en sus últimos 5, % de jugar, valor en 7 días, puesto entre los que cumplen) y «Los siguientes de hoy» (2). Si el elegido ya no cumple, no se escribe. No cuenta para el reparto por horas de los otros artículos.
+- Portada: `img/art-chollo.jpg` es PROVISIONAL (copia de la de «fichar»); Edu la sustituirá por una hecha con Gemini (subir `?v=` en `futmondo/thumb.js` y `noticias/[[slug]].js`).
+
 ## Ideas pendientes
 - Avisos Telegram (noticias y alineación probable)
 - Jugadores rentables (SofaScore, calidad-precio)

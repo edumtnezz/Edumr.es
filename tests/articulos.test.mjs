@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { retorno, aVender, aFichar, clausulazos, paron, inicioJornada, esParon, subidasEntre, inicioParon } from "../functions/_lib/articulos.mjs";
+import { retorno, aVender, aFichar, clausulazos, paron, inicioJornada, esParon, subidasEntre, inicioParon, chollo } from "../functions/_lib/articulos.mjs";
 
 const NOW = Date.UTC(2026, 10, 15, 11);
 const P = (o) => Object.assign({ id: o.name, est: "", estInfo: "", value: 10e6, avg: 6, points: 60, matches: 10, chg7: 0 }, o);
@@ -76,4 +76,21 @@ test("subidas y bajadas: id fijo, cambio real de hoy y nada si no hay cambios", 
   assert.match(a.body, /^@ 2 \| Dos \| −500k \| hoy \| −11,1 % sobre ayer$/m);
   assert.doesNotMatch(a.body, /Tres/);
   assert.equal(subidasBajadas([{ id: 3, name: "Tres", value: 5e6, change: 0 }], "16/11"), null);
+});
+
+test("chollo del día: mismo jugador y reglas que Inicio; cada razón con su dato; si ya no cumple, no hay artículo", () => {
+  const Q = (o) => P(Object.assign({ role: "defensa", value: 4.3e6, avg: 7.2, matches: 11, prob: 85, fitness: [6, 8, 7, 0, 9, 7, 6, 8], chg7: 0 }, o));
+  const ps = [Q({ name: "Chollo" }), Q({ name: "Segundo", value: 6e6 }), Q({ name: "Caro", value: 20e6 }), Q({ name: "Mediano", avg: 5, role: "defensa" }), Q({ name: "Otro", avg: 5.5, role: "defensa" }), Q({ name: "Más", avg: 5.2, role: "defensa" }), Q({ name: "Y", avg: 5.1, role: "defensa" }), Q({ name: "Z", avg: 5.3, role: "defensa" })];
+  const a = chollo(ps, "Chollo", "20/11");
+  assert.equal(a.id, "artchollo");
+  assert.match(a.title, /^Chollo del día 20\/11: Chollo$/);
+  assert.match(a.body, /@ Chollo \| Chollo \| 1,67 \| puntos por millón/);
+  assert.match(a.body, /- Cuesta 4\.300\.000 €/);
+  assert.match(a.body, /- Tiene un 85 % de jugar/);
+  assert.match(a.body, /- Ha jugado 11 partidos \(mínimo 8\) y puntuó en 4 de sus últimos 5/);
+  assert.match(a.body, /es el que más media da por millón: 1,67/);
+  assert.match(a.body, /## Los siguientes de hoy[\s\S]*@ Segundo/);
+  assert.ok(!/@ Caro/.test(a.body));
+  assert.equal(chollo(ps, "Caro", "20/11"), null); // no cumple el criterio: no se inventa
+  assert.equal(chollo(ps, "NoExiste", "20/11"), null);
 });

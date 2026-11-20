@@ -1,6 +1,7 @@
 // Diario de LaLiga para «Últimos cambios» del Inicio: compara la clasificación y los goleadores de ahora con la última foto
 // guardada y apunta lo que cambia (nuevo líder, tres primeros, descenso, goles de los máximos goleadores).
 // Fuente: FotMob, a través de la web (/tabla y /lideres). Con un partido en juego no se compara: la tabla baila en directo.
+import { publicarChollo, cholloSinArticulo } from "./articulos.js";
 import { eventosTabla, eventosGoles, eventosRachas, cholloDe, cholloValido, medianasPos } from "../../functions/_lib/diario.mjs";
 
 const K_FOTO = "diario:foto:v1", K_EV = "diario:v1";
@@ -36,9 +37,13 @@ export async function apuntarDiario(env, f = fetch, now = Date.now()) {
       if (act) {
         const mk = await get("mercado");
         const c = mk && Array.isArray(mk.players) && mk.players.length >= 300 ? cholloDe(mk.players, chollo.ids) : null;
-        if (c) { nuevos.push(c); chollo = { dia: hoy, ids: [c.pid].concat(chollo.ids || []).slice(0, 30) }; }
+        if (c) { nuevos.push(c); chollo = { dia: hoy, ids: [c.pid].concat(chollo.ids || []).slice(0, 30) }; try { await publicarChollo(env, mk.players, c.pid, now); } catch (e) {} }
       }
     } catch (e) {}
+  }
+  // Artículo del chollo de hoy: si ya había chollo elegido y aún no tiene artículo (o se cambió de jugador), se escribe ahora.
+  if (chollo.dia === hoy && chollo.ids && chollo.ids.length) {
+    try { if (await cholloSinArticulo(env, chollo.ids[0], now)) { const mka = await get("mercado"); if (mka && Array.isArray(mka.players) && mka.players.length >= 300) await publicarChollo(env, mka.players, chollo.ids[0], now); } } catch (e) {}
   }
   // Si una fuente falla en esta pasada, se conserva su foto anterior (no se pierde la comparación).
   const foto = { at: now, tabla: tabla || prev.tabla || null, goles: goles || prev.goles || null, rachas: fotoR, chollo };

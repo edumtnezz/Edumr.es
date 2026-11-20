@@ -102,10 +102,11 @@
     return d;
   }
   // Portada de artículo: imagen fija por tipo (Edu, 16/11/2026), sin número de jornada. Sin fotos de jugadores.
-  var ART = { vender: "/img/art-vender.jpg?v=1", fichar: "/img/art-fichar.jpg?v=1", claus: "/img/art-claus.jpg?v=1", paron: "/img/art-paron.jpg?v=1", merc: "/img/mercado-subidas-bajadas.jpg?v=3", once: "/img/art-once.jpg?v=1" };
+  var ART = { vender: "/img/art-vender.jpg?v=1", fichar: "/img/art-fichar.jpg?v=1", claus: "/img/art-claus.jpg?v=1", paron: "/img/art-paron.jpg?v=1", merc: "/img/mercado-subidas-bajadas.jpg?v=3", once: "/img/art-once.jpg?v=1", chollo: "/img/art-chollo.jpg?v=1" };
   function artKind(item) {
     var a = String(item && item.art || "");
     if (a === "artmercado") return "merc";
+    if (a === "artchollo" || /^chollo del d/i.test(String(item && item.title || ""))) return "chollo";
     if (/^artonce/.test(a) || /onces recomendados/i.test(String(item && item.title || ""))) return "once";
     if (/^art(vender|fichar|claus|paron)/.test(a)) return a.slice(3).replace(/\d+$/, "");
     var t = String(item && item.title || "").toLowerCase();
@@ -116,7 +117,7 @@
     var k = artKind(item);
     var im = nodo("img", "eth-art-img"); im.alt = ""; im.loading = "lazy"; im.decoding = "async"; im.src = ART[k];
     // En la miniatura cuadrada se enseña el dibujo (jugador, candado, pizarra), no el rótulo cortado
-    if (mini) im.style.objectPosition = ({ vender: "80% 50%", fichar: "95% 50%", claus: "95% 50%", paron: "60% 50%", merc: "50% 50%", once: "50% 30%" })[k] || "60% 40%";
+    if (mini) im.style.objectPosition = ({ vender: "80% 50%", fichar: "95% 50%", claus: "95% 50%", paron: "60% 50%", merc: "50% 50%", once: "50% 30%", chollo: "50% 50%" })[k] || "60% 40%";
     d.appendChild(im);
     return d;
   }
