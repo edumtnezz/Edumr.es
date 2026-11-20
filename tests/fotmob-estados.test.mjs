@@ -81,7 +81,10 @@ test("noticias: pasados dos días el aviso de FotMob caduca", () => {
   assert.equal(candidatos({ bw: {} }, [], now, [{ src: "fo", id: "a", a: "duda", info: "", at: now - 3 * 86400000 }], true).length, 0);
 });
 
-test("por defecto manda Biwenger: FotMob no publica noticias", () => {
-  const now = 1e9;
-  assert.equal(candidatos({ bw: { a: { e: "ok", info: "", at: 0 } } }, [], now, [{ src: "fo", id: "a", a: "lesionado", info: "", at: now - 1000 }]).length, 0);
+test("sin FotMob activado no publica; con él, lo que ya tenía apuntado y Biwenger no también cuenta", () => {
+  const now = 1e9, bw = { a: { e: "ok", info: "", at: 0 }, b: { e: "lesionado", info: "x", at: 1 } };
+  assert.equal(candidatos({ bw }, [], now, [{ src: "fo", id: "a", a: "lesionado", info: "", at: now - 1000 }], false).length, 0);
+  const fo = { a: { e: "duda", info: "", at: now - 5000 }, b: { e: "duda", info: "", at: now - 5000 }, c: { e: "ok", info: "", at: now - 5000 } };
+  const c = candidatos({ bw }, [], now, [], true, fo);
+  assert.deepEqual(c.map((x) => x.id), ["a"]); assert.equal(c[0].a, "duda");
 });

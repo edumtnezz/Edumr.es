@@ -3,7 +3,7 @@
 // La IA solo redacta el resumen con esos hechos; si mete un número o un nombre que no está en ellos, se usa la plantilla fija.
 import { hechosNoticia, noticiaPlantilla, cuerpoNoticia, resumenValido, recambio, norm, clubKey } from "../../functions/_lib/estados.mjs";
 
-const OWN_KEY = "own:news:v2", K_ST = "partes:st:v1", K_FOTO = "est:foto:v1", K_EV = "est:eventos:v1", K_EVFO = "est:fo:ev:v1";
+const OWN_KEY = "own:news:v2", K_ST = "partes:st:v1", K_FOTO = "est:foto:v1", K_EV = "est:eventos:v1", K_EVFO = "est:fo:ev:v1", K_FOFOTO = "est:fo:v1";
 const MODEL = "gemini-3.5-flash-lite";
 const SITE = "https://edumr.es/api/laquiniela/";
 const MALO = new Set(["duda", "lesionado", "sancionado"]);
@@ -19,10 +19,9 @@ export function proximo(jor, team) {
   return jor && jor.matchday ? { jornada: jor.matchday, rival: "", casa: null } : null;
 }
 
-// Edu (20/11/2026): en caso de duda manda Biwenger, que parece actualizarse antes. FotMob solo se apunta (para medir) y no publica.
-// Para que sus avisos vuelvan a publicar cuando Biwenger aún no los tiene: poner a true.
-export const FOTMOB_PUBLICA = false;
-export function candidatos(foto, eventos, now, eventosFo, usarFo = FOTMOB_PUBLICA) {
+// Edu (20/11/2026): manda Biwenger; FotMob solo publica lo que Biwenger NO tiene (lo ve como disponible). Si no coinciden, gana Biwenger.
+export const FOTMOB_PUBLICA = true;
+export function candidatos(foto, eventos, now, eventosFo, usarFo = FOTMOB_PUBLICA, fotoFo) {
   const out = new Map();
   // Estados que ya estaban al empezar: valen los de los últimos 5 días (con la hora real en que cambió)
   for (const id of Object.keys((foto && foto.bw) || {})) {
@@ -41,6 +40,12 @@ export function candidatos(foto, eventos, now, eventosFo, usarFo = FOTMOB_PUBLIC
     const b = foto && foto.bw && foto.bw[e.id];
     if (b && b.e !== "ok") continue;
     if (!out.has(e.id)) out.set(e.id, { id: e.id, de: "ok", a: e.a, info: e.info, at: e.at, src: "fo" });
+  }
+  // Lo que FotMob ya tenía apuntado y Biwenger no (pedido de Edu 20/11, noche): también cuenta, con la hora en que lo detectamos
+  if (usarFo) for (const id of Object.keys(fotoFo || {})) {
+    const s = fotoFo[id], b = foto && foto.bw && foto.bw[id];
+    if (!MALO.has(s.e) || !s.at || now - s.at > 5 * 86400000 || (b && b.e !== "ok") || out.has(id)) continue;
+    out.set(id, { id, de: "ok", a: s.e, info: s.info, at: s.at, src: "fo" });
   }
   return [...out.values()].sort((a, b) => b.at - a.at);
 }
@@ -75,11 +80,11 @@ const escT = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;")
 export async function publicarPartes(env, f = fetch, now = Date.now()) {
   if (!env || !env.PORRA) return { skipped: "sin kv" };
   if (new Date(now).getUTCMinutes() % 3 !== 1) return { skipped: "no toca" };
-  const [foto, eventos, st0, eventosFo] = await Promise.all([env.PORRA.get(K_FOTO, "json"), env.PORRA.get(K_EV, "json"), env.PORRA.get(K_ST, "json"), env.PORRA.get(K_EVFO, "json")]);
+  const [foto, eventos, st0, eventosFo, fotoFo] = await Promise.all([env.PORRA.get(K_FOTO, "json"), env.PORRA.get(K_EV, "json"), env.PORRA.get(K_ST, "json"), env.PORRA.get(K_EVFO, "json"), env.PORRA.get(K_FOFOTO, "json")]);
   if (!foto) return { skipped: "sin foto" };
   const st = st0 || { done: {} };
   // Si FotMob ya dio ese mismo estado y se publicó, la noticia posterior de Biwenger no se repite
-  const pend = candidatos(foto, eventos, now, eventosFo).filter((c) => !st.done[clave(c)] && !(c.src !== "fo" && st.done["fo:" + c.id + ":" + c.a]));
+  const pend = candidatos(foto, eventos, now, eventosFo, FOTMOB_PUBLICA, fotoFo && fotoFo.fo).filter((c) => !st.done[clave(c)] && !(c.src !== "fo" && st.done["fo:" + c.id + ":" + c.a]));
   if (!pend.length) return { nuevas: 0 };
   const get = (p) => f(SITE + p, { headers: { "user-agent": "edumr-cron" } }).then((r) => r.json());
   const [mk, mn, jor] = await Promise.all([get("mercado"), get("minutos"), get("jornada")]);
