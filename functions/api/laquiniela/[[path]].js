@@ -2872,9 +2872,11 @@ async function analiticaCalc(env, ds, deMercado, now, sinFicha) {
         if (lista.length !== 11 || !jugs.length) continue;
         const mm = emparejar(lista.map((x, i) => ({ id: i, name: x.name, teamID: 1 })), { 1: { name: sd.name } }, jugs.map((p) => ({ id: p.id, name: p.n, team: p.t, role: p.ro })));
         const ids = new Set([...mm.values()].map((f) => f.id));
-        if (ids.size === 11) realesConf.set(k, ids);
+        if (ids.size === 11) realesConf.set(k, ids); else (dbg.confSin = dbg.confSin || []).push(k + ":" + ids.size);
       }
-    } catch (e) {}
+      dbg.confirmadas = [...realesConf.keys()]; dbg.confPartidos = ((conf && conf.matches) || []).length;
+    } catch (e) { dbg.errConf = String(e && e.message || e).slice(0, 120); }
+    dbg.previos = Object.keys(duelo.previos);
     for (const dk of Object.keys(duelo.previos)) {
       const pv = duelo.previos[dk];
       const delConf = pv.j === Number(jor.matchday) ? realesConf.get(pv.k) : null;
