@@ -283,7 +283,7 @@
   });
 
   // ---------- LaLiga: tabla y líderes juntos ----------
-  var tabla = null, lideres = null, ligaKey = "tabla", full = false;
+  var tabla = null, lideres = null, ligaKey = "goles", full = false;
   function paintLiga() {
     var box = $("#liga"), btn = $("#tblFull");
     btn.hidden = ligaKey !== "tabla";
