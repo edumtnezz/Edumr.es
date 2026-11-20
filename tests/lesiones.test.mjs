@@ -31,3 +31,19 @@ test("solo marca los no jugados que caen dentro de una lesión", () => {
   assert.match(r[3].les, /cadera/);
   assert.equal(r[4].les, undefined);
 });
+
+import { parseEquipos, parseJugadores, slugEquipo, slugJugador, parseLesionesFichajes } from "../functions/_lib/lesiones.mjs";
+test("fichajes.com: equipo, jugador y tabla", () => {
+  const eq = parseEquipos('<a href="https://www.fichajes.com/equipo/fc-barcelona/">x</a><a href="https://www.fichajes.com/equipo/fc-barcelona/plantilla/">y</a><a href="https://www.fichajes.com/equipo/real-madrid-cf/">z</a><a href="https://www.fichajes.com/equipo/club-atletico-de-madrid/">a</a><a href="https://www.fichajes.com/equipo/real-sociedad-de-futbol/">b</a>');
+  assert.deepEqual(eq, ["fc-barcelona", "real-madrid-cf", "club-atletico-de-madrid", "real-sociedad-de-futbol"]);
+  assert.equal(slugEquipo("Barcelona", eq), "fc-barcelona");
+  assert.equal(slugEquipo("Real Madrid", eq), "real-madrid-cf");
+  assert.equal(slugEquipo("Atlético de Madrid", eq), "club-atletico-de-madrid");
+  assert.equal(slugEquipo("Real Sociedad", eq), "real-sociedad-de-futbol");
+  assert.equal(slugEquipo("Inventado", eq), "");
+  const js = parseJugadores('<a href="https://www.fichajes.com/jugador/frenkie-de-jong/">a</a><a href="https://www.fichajes.com/jugador/pedro-gonzalez-lopez/">b</a><a href="https://www.fichajes.com/jugador/jose-gonzalez/">c</a>');
+  assert.equal(slugJugador("De Jong", js), "frenkie-de-jong");
+  assert.equal(slugJugador("Gonzalez", js), ""); // dos posibles: no se adivina
+  const t = parseLesionesFichajes("<h2>Histórico de lesiones</h2><table><tr><th>Temporada</th><th>Tipo</th><th>Inicio</th><th>Final</th></tr><tr><td>2026/2027</td><td>Lesión del ligamento de la rodilla</td><td>01/07/2026</td><td>18/10/2026</td><td>106</td><td>12</td></tr></table>");
+  assert.deepEqual(t, [{ t: "Lesión del ligamento de la rodilla", d: "2026-07-01", h: "2026-10-18" }]);
+});
