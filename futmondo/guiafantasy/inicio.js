@@ -97,8 +97,9 @@
       var sub = st === "live" ? '<span class="lv">' + esc(m.live.minute || "En directo") + "</span>" : st === "final" ? '<span class="fn">Final</span>' : tv;
       var ago = at > 1e9 ? Math.round((Date.now() - at) / 60000) : -1;
       var fresh = ago >= 0 && ago < 60;
-      return '<a class="gm' + (at ? " p" : "") + (fresh ? " new" : "") + '" href="/futmondo/guiafantasy/partido/' + matchSlug(m.home, m.away) + "?j=" + j.matchday + '">' +
-        (at ? '<div class="pr"><b>' + (fresh ? '<i class="dot"></i>' : "") + (m.confirmed ? "Once confirmado" : "Once probable") + "</b>" + (at > 1e9 ? "<span>" + (fresh ? "hace " + Math.max(1, ago) + " min" : hm(at)) + "</span>" : "") + "</div>" : "") +
+      var live = st === "live", conf = !live && at && m.confirmed;
+      return '<a class="gm' + (at || live ? " p" : "") + (fresh && !live && !conf ? " new" : "") + (conf ? " cf" : "") + (live ? " en" : "") + '" href="/futmondo/guiafantasy/partido/' + matchSlug(m.home, m.away) + "?j=" + j.matchday + '">' +
+        (live ? '<div class="pr"><b><i class="dot"></i>PARTIDO EN JUEGO</b></div>' : at ? '<div class="pr"><b>' + (fresh ? '<i class="dot"></i>' : "") + (m.confirmed ? "Once confirmado" : "Once probable") + "</b>" + (at > 1e9 ? "<span>" + (fresh ? "hace " + Math.max(1, ago) + " min" : hm(at)) + "</span>" : "") + "</div>" : "") +
         '<div class="in"><img class="c" src="' + esc(m.homeCrest) + '" alt="' + esc(m.home) + '">' +
         '<div class="mid"><b>' + esc(m.day) + " " + esc(m.date) + "</b>" + esc(lab) + sub + "</div>" +
         '<img class="c" src="' + esc(m.awayCrest) + '" alt="' + esc(m.away) + '"></div></a>';

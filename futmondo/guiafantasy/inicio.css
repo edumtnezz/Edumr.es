@@ -240,3 +240,14 @@ html:not([data-theme="light"]) :is(#inicioTop,#tab-inicio) .gm .tv[alt="DAZN"]{f
 
 #inicioTop[hidden]{display:none}
 @media (max-width:720px){#tab-inicio .wrap{padding:0 0 4px;margin:-6px -2px 0}}
+
+/* once confirmado = azul; partido en juego = rojo */
+:is(#inicioTop,#tab-inicio) .gm.cf .pr{background:#dbeafe;color:#1d4ed8}
+:is(#inicioTop,#tab-inicio) .gm.en .pr{background:#dc2626;color:#fff}
+:is(#inicioTop,#tab-inicio) .gm.en .pr .dot{background:#fff}
+html:not([data-theme="light"]) :is(#inicioTop,#tab-inicio) .gm.cf .pr{background:#172554;color:#93c5fd}
+html:not([data-theme="light"]) :is(#inicioTop,#tab-inicio) .gm.en .pr{background:#dc2626;color:#fff}
+:is(#inicioTop,#tab-inicio) .gm.cf{border-color:#93c5fd}
+:is(#inicioTop,#tab-inicio) .gm.en{border-color:#fca5a5}
+html:not([data-theme="light"]) :is(#inicioTop,#tab-inicio) .gm.cf{border-color:#1e40af}
+html:not([data-theme="light"]) :is(#inicioTop,#tab-inicio) .gm.en{border-color:#991b1b}
