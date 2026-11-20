@@ -102,7 +102,7 @@
     return d;
   }
   // Portada de artículo: imagen fija por tipo (Edu, 16/11/2026), sin número de jornada. Sin fotos de jugadores.
-  var ART = { vender: "/img/art-vender.jpg?v=1", fichar: "/img/art-fichar.jpg?v=1", claus: "/img/art-claus.jpg?v=1", paron: "/img/art-paron.jpg?v=1", merc: "/img/mercado-subidas-bajadas.jpg?v=3", once: "/img/art-once.jpg?v=1", chollo: "/img/art-chollo.jpg?v=1" };
+  var ART = { vender: "/img/art-vender.jpg?v=1", fichar: "/img/art-fichar.jpg?v=1", claus: "/img/art-claus.jpg?v=1", paron: "/img/art-paron.jpg?v=1", merc: "/img/mercado-subidas-bajadas.jpg?v=3", once: "/img/art-once.jpg?v=1", chollo: "/img/art-chollo.jpg?v=2" };
   function artKind(item) {
     var a = String(item && item.art || "");
     if (a === "artmercado") return "merc";

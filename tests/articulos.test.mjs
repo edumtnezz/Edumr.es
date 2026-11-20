@@ -94,3 +94,14 @@ test("chollo del día: mismo jugador y reglas que Inicio; cada razón con su dat
   assert.equal(chollo(ps, "Caro", "20/11"), null); // no cumple el criterio: no se inventa
   assert.equal(chollo(ps, "NoExiste", "20/11"), null);
 });
+
+test("chollo del día: calendario difícil (3,5 o más) no vale; sin dato del equipo tampoco; con calendario fácil lo explica", () => {
+  const Q = (o) => P(Object.assign({ role: "defensa", value: 4.3e6, avg: 7.2, matches: 11, prob: 85, fitness: [6, 8, 7, 0, 9, 7, 6, 8], chg7: 0, team: "Elche" }, o));
+  const ps = [Q({ name: "Facil", team: "Elche" }), Q({ name: "Dificil", team: "Celta de Vigo", value: 3e6 }), Q({ name: "SinDato", team: "Nuevo FC", value: 2e6 }), Q({ name: "Base", avg: 5, team: "Elche" }), Q({ name: "B2", avg: 5.1, team: "Elche" }), Q({ name: "B3", avg: 5.2, team: "Elche" })];
+  const dif = { equipos: [{ team: "Elche", media: 2.8 }, { team: "Celta de Vigo", media: 4.6 }, { team: "Betis", media: 3.4 }] };
+  assert.equal(chollo(ps, "Dificil", "20/11", dif), null);
+  assert.equal(chollo(ps, "SinDato", "20/11", dif), null);
+  const a = chollo(ps, "Facil", "20/11", dif);
+  assert.match(a.body, /- Su calendario es fácil: sus próximos 5 rivales tienen dificultad 2,8 de 5 \(a partir de 3,5 es difícil\)\./);
+  assert.ok(!/@ Dificil|@ SinDato/.test(a.body));
+});

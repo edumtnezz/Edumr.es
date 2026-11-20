@@ -2,7 +2,7 @@
 // Cada regla está escrita aquí y cada jugador sale con el dato que lo justifica. Si una lista queda vacía, no se pinta; si todas, no hay artículo.
 // Las filas de jugador van como «@ id | Nombre | dato | motivo» y la web las pinta con su foto y enlace a la ficha.
 
-import { cholloValido, medianasPos } from "./diario.mjs";
+import { cholloValido, medianasPos, mediaCalendario, CAL_DIFICIL } from "./diario.mjs";
 
 const M = (v) => (Math.abs(v) / 1e6).toFixed(1).replace(".", ",") + " M";
 const dec = (v) => (Math.round(Number(v) * 10) / 10).toFixed(1).replace(".", ",");
@@ -147,11 +147,11 @@ export function subidasBajadas(ps, fecha, n = 10) {
 // con cada razón escrita con su dato real de Futmondo / FutbolFantasy. Id fijo «artchollo»: la edición del día sustituye a la anterior.
 // Solo se escribe si el jugador elegido sigue cumpliendo el criterio.
 const dec2 = (v) => (Math.round(Number(v) * 100) / 100).toFixed(2).replace(".", ",");
-export function chollo(ps, pid, fecha) {
+export function chollo(ps, pid, fecha, dif) {
   const med = medianasPos(ps);
   const c = (ps || []).find((p) => p && String(p.id) === String(pid));
-  if (!c || !cholloValido(c, med)) return null;
-  const cand = ps.filter((p) => cholloValido(p, med)).sort((a, b) => b.avg / b.value - a.avg / a.value);
+  if (!c || !cholloValido(c, med, dif)) return null;
+  const cand = ps.filter((p) => cholloValido(p, med, dif)).sort((a, b) => b.avg / b.value - a.avg / a.value);
   const ppm = (p) => p.avg / (p.value / 1e6);
   const pos = cand.findIndex((p) => String(p.id) === String(c.id)) + 1;
   const f5 = (c.fitness || []).slice(-5).map((v) => Number(v) || 0);
@@ -162,9 +162,10 @@ export function chollo(ps, pid, fecha) {
     "Su media es " + dec(c.avg) + (m ? " y la mediana de su posición es " + dec(m) + "." : "."),
     "Ha jugado " + c.matches + " partidos (mínimo 8) y puntuó en " + con + " de sus últimos " + f5.length + ".",
     "Tiene un " + Math.round(c.prob) + " % de jugar (mínimo 70 %).",
+    dif ? "Su calendario es fácil: sus próximos 5 rivales tienen dificultad " + dec(mediaCalendario(c, dif)) + " de 5 (a partir de " + dec(CAL_DIFICIL) + " es difícil)." : "",
     Number(c.chg7) > 0 ? "Su valor ha subido " + euros(c.chg7) + " € en 7 días." : "Su valor no ha bajado en 7 días.",
     cand.length > 1 ? (pos === 1 ? "De los " + cand.length + " que cumplen todo esto, es el que más media da por millón: " + dec2(ppm(c)) + "." : "Es el n.º " + pos + " de los " + cand.length + " que cumplen todo esto en media por millón: " + dec2(ppm(c)) + ".") : "Es el único que cumple todo esto hoy.",
-  ].map((t) => "- " + t);
+  ].filter(Boolean).map((t) => "- " + t);
   const otros = top(cand.filter((p) => String(p.id) !== String(c.id)), 2);
   return item("artchollo", "Chollo del día " + fecha + ": " + c.name, "El que más media da por cada millón entre los jugadores baratos, sanos y titulares.", [
     { titulo: "Chollo del día", nota: "", filas: [fila(c, dec2(ppm(c)), "puntos por millón", "Media ÷ precio en millones")] },

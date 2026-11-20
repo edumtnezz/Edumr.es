@@ -28,22 +28,23 @@ export async function apuntarDiario(env, f = fetch, now = Date.now()) {
   let chollo = prev.chollo || { dia: "", ids: [] };
   // Si el chollo de hoy ya no cumple el criterio (se cambió la regla o el jugador cayó en duda), se elige otro
   if (chollo.dia === hoy && chollo.ids && chollo.ids.length) {
-    try { const mk0 = await get("mercado"); const p0 = mk0 && Array.isArray(mk0.players) ? mk0.players.find((q) => String(q.id) === String(chollo.ids[0])) : null; if (p0 && !cholloValido(p0, medianasPos(mk0.players))) { const mal = String(chollo.ids[0]); chollo = { dia: "", ids: chollo.ids.slice(1) }; const ev0 = (await env.PORRA.get(K_EV, "json")) || []; await env.PORRA.put(K_EV, JSON.stringify(ev0.filter((e) => !(e && e.cat === "chollo" && String(e.pid) === mal)))); } } catch (e) {}
+    try { const mk0 = await get("mercado"); const dif0 = await get("dificultad"); const p0 = mk0 && Array.isArray(mk0.players) ? mk0.players.find((q) => String(q.id) === String(chollo.ids[0])) : null; if (p0 && !cholloValido(p0, medianasPos(mk0.players), dif0 && dif0.equipos && dif0.equipos.length ? dif0 : undefined)) { const mal = String(chollo.ids[0]); chollo = { dia: "", ids: chollo.ids.slice(1) }; const ev0 = (await env.PORRA.get(K_EV, "json")) || []; await env.PORRA.put(K_EV, JSON.stringify(ev0.filter((e) => !(e && e.cat === "chollo" && String(e.pid) === mal)))); } } catch (e) {}
   }
   if (chollo.dia !== hoy) {
     try {
       const log = (await env.PORRA.get("mkchg:v2", "json")) || [];
       const act = log.some((e) => e && e.n >= 50 && new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date(e.at)) === hoy);
       if (act) {
-        const mk = await get("mercado");
-        const c = mk && Array.isArray(mk.players) && mk.players.length >= 300 ? cholloDe(mk.players, chollo.ids) : null;
-        if (c) { nuevos.push(c); chollo = { dia: hoy, ids: [c.pid].concat(chollo.ids || []).slice(0, 30) }; try { await publicarChollo(env, mk.players, c.pid, now); } catch (e) {} }
+        const [mk, dif] = await Promise.all([get("mercado"), get("dificultad")]);
+        // Sin el calendario de dificultad no se puede confirmar que el calendario sea fácil: hoy no se elige chollo hasta tenerlo
+        const c = mk && Array.isArray(mk.players) && mk.players.length >= 300 && dif && dif.equipos && dif.equipos.length ? cholloDe(mk.players, chollo.ids, dif) : null;
+        if (c) { nuevos.push(c); chollo = { dia: hoy, ids: [c.pid].concat(chollo.ids || []).slice(0, 30) }; try { await publicarChollo(env, mk.players, c.pid, now, dif); } catch (e) {} }
       }
     } catch (e) {}
   }
   // Artículo del chollo de hoy: si ya había chollo elegido y aún no tiene artículo (o se cambió de jugador), se escribe ahora.
   if (chollo.dia === hoy && chollo.ids && chollo.ids.length) {
-    try { if (await cholloSinArticulo(env, chollo.ids[0], now)) { const mka = await get("mercado"); if (mka && Array.isArray(mka.players) && mka.players.length >= 300) await publicarChollo(env, mka.players, chollo.ids[0], now); } } catch (e) {}
+    try { if (await cholloSinArticulo(env, chollo.ids[0], now)) { const [mka, difa] = await Promise.all([get("mercado"), get("dificultad")]); if (mka && Array.isArray(mka.players) && mka.players.length >= 300 && difa && difa.equipos && difa.equipos.length) await publicarChollo(env, mka.players, chollo.ids[0], now, difa); } } catch (e) {}
   }
   // Si una fuente falla en esta pasada, se conserva su foto anterior (no se pierde la comparación).
   const foto = { at: now, tabla: tabla || prev.tabla || null, goles: goles || prev.goles || null, rachas: fotoR, chollo };

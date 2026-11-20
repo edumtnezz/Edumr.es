@@ -124,13 +124,19 @@ export function medianasPos(players) {
   }
   return out;
 }
-export function cholloValido(p, med = {}) {
+// Calendario (20/11/2026, pedido de Edu): un chollo con calendario difícil no sale. `dif` = respuesta de /dificultad ({ equipos: [{ team, media }] }):
+// media del nivel de los rivales de las próximas 5 jornadas (1 muy fácil … 5 muy difícil); 3,5 o más = difícil. Sin dato del equipo no se puede confirmar: no vale.
+const kn = (s) => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+export const CAL_DIFICIL = 3.5;
+export const mediaCalendario = (p, dif) => { const e = ((dif && dif.equipos) || []).find((x) => kn(x.team) === kn(p && p.team)); return e && e.media != null ? Number(e.media) : null; };
+export function cholloValido(p, med = {}, dif) {
+  if (dif !== undefined) { const m = mediaCalendario(p, dif); if (m == null || m >= CAL_DIFICIL) return false; }
   return !!(p && p.id && (!p.est || p.est === "apercibido") && p.value > 0 && p.value <= 8e6 && p.matches >= 8 && p.avg >= 6 && p.avg >= (med[p.role] || 0)
     && (p.prob || 0) >= 70 && (p.fitness || []).filter((x) => x > 0).length >= 4 && !(p.chg7 < 0));
 }
-export function cholloDe(players, usados = []) {
+export function cholloDe(players, usados = [], dif) {
   const med = medianasPos(players);
-  const c = (players || []).filter((p) => cholloValido(p, med))
+  const c = (players || []).filter((p) => cholloValido(p, med, dif))
     .sort((a, b) => b.avg / b.value - a.avg / a.value)[0];
   if (!c) return null;
   const rep = (usados || []).filter((x) => String(x) === String(c.id)).length;

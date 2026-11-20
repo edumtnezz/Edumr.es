@@ -73,7 +73,9 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 
 ## Chollo del día como artículo (20/11/2026)
 - `chollo()` en `functions/_lib/articulos.mjs` + `publicarChollo` / `cholloSinArticulo` en `cron/src/articulos.js`, llamados desde `cron/src/diario.js`: el artículo es del MISMO jugador y con las MISMAS reglas que el chollo de Inicio (`cholloValido`). Id fijo `artchollo` (el de hoy sustituye al anterior), título «Chollo del día dd/mm: Nombre». Cuerpo: jugador con puntos de media por millón, «Por qué es el chollo» (una línea por regla con su dato real: precio, media y mediana de su posición, partidos, puntos en sus últimos 5, % de jugar, valor en 7 días, puesto entre los que cumplen) y «Los siguientes de hoy» (2). Si el elegido ya no cumple, no se escribe. No cuenta para el reparto por horas de los otros artículos.
-- Portada: `img/art-chollo.jpg` es PROVISIONAL (copia de la de «fichar»); Edu la sustituirá por una hecha con Gemini (subir `?v=` en `futmondo/thumb.js` y `noticias/[[slug]].js`).
+- Portada: `img/art-chollo.jpg` (hecha por Edu con Gemini, 20/11/2026; para cambiarla, sustituir el archivo y subir `?v=` en `futmondo/thumb.js` y `noticias/[[slug]].js`).
+- **Calendario difícil = no hay chollo (20/11/2026, pedido de Edu).** `cholloValido(p, med, dif)` / `cholloDe(…, dif)` reciben la respuesta de `/dificultad`: la media del nivel de los rivales de las próximas 5 jornadas del equipo (`mediaCalendario`); 3,5 o más (`CAL_DIFICIL`) = difícil y no vale; sin dato del equipo tampoco. Sin `/dificultad` no se elige chollo nuevo esa pasada (se reintenta); un chollo ya elegido cuyo equipo pasa a calendario difícil se cambia por otro. El artículo lo explica con la línea «Su calendario es fácil: … dificultad X de 5».
+- **Aviso de Telegram del chollo (20/11/2026)**: `publicarChollo` manda «🏷️ CHOLLO DEL DÍA» con el enlace al artículo (vista previa = su portada), uno por jugador y día (KV `art:chollo:tg:v1`); antes de las 08:00 va en silencio.
 
 ## Ideas pendientes
 - Avisos Telegram (noticias y alineación probable)

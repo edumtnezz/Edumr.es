@@ -90,6 +90,20 @@ export async function publicarMercado(env, ps, now = Date.now()) {
   own.unshift({ id: a.id, title: a.title, lead: a.lead, body: a.body, status: "published", createdAt: now, publishedAt: now, thumb: "", club: "", players: a.players, tipo: "articulo", auto: "articulo", art: "artmercado", f: 1, fp: (a.body.match(/^@ (\S+) \|/m) || [])[1] || "" });
   own.sort((x, y) => (y.publishedAt || 0) - (x.publishedAt || 0));
   await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
+  // Aviso de Telegram (20/11/2026): uno por jugador y día; de madrugada, en silencio. La vista previa es la portada del artículo (art-chollo.jpg).
+  try {
+    const dia = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date(now)), clave = dia + "|" + pid;
+    const ya = await env.PORRA.get("art:chollo:tg:v1", "json");
+    if (env.TELEGRAM_BOT_TOKEN && !(ya && ya.k === clave)) {
+      let chat = String(env.TELEGRAM_CHAT_ID || "");
+      if (!chat) { try { chat = String(((await env.PORRA.get("tg:avisos:v1", "json")) || {}).chat || ""); } catch (e) {} }
+      const hora = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", hour: "2-digit", hour12: false }).format(new Date(now)));
+      if (chat) {
+        const r = await fetch("https://api.telegram.org/bot" + env.TELEGRAM_BOT_TOKEN + "/sendMessage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chat, text: "🏷️ <b>CHOLLO DEL DÍA</b>\n\n" + escT(a.title) + "\nhttps://edumr.es/futmondo/guiafantasy/noticias/ed-" + a.id, parse_mode: "HTML", disable_notification: hora < 8, link_preview_options: { is_disabled: false, prefer_large_media: true, show_above_text: true } }) });
+        if (r && r.ok) await env.PORRA.put("art:chollo:tg:v1", JSON.stringify({ k: clave, at: now }));
+      }
+    }
+  } catch (e) {}
   return a.id;
 }
 
@@ -149,10 +163,10 @@ export async function publicarOnces(env, f = fetch, now = Date.now()) {
 }
 
 // Artículo «Chollo del día»: lo llama el diario cuando elige el chollo de hoy (mismo jugador y mismas reglas). Id fijo: sustituye al anterior.
-export async function publicarChollo(env, ps, pid, now = Date.now()) {
+export async function publicarChollo(env, ps, pid, now = Date.now(), dif) {
   if (!env || !env.PORRA) return "";
   const fecha = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" }).format(new Date(now));
-  const a = chollo(ps, pid, fecha);
+  const a = chollo(ps, pid, fecha, dif);
   if (!a) return "";
   let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
   own = own.filter((x) => x.art !== "artchollo" && x.id !== a.id);
