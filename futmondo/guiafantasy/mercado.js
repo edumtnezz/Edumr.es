@@ -5132,15 +5132,15 @@
           const tl = el("div", "nw-tl");
           pa.forEach((x) => {
             const k = x.cat === "c" || x.cat === "s" ? "t" : x.cat === "b" ? "s" : "n";
-            const c = el("div", "nw-tl-c nw-tl-" + k);
+            const c = el("div", "nw-tl-c nw-tl-" + k + (k === "n" && x.les ? " nw-tl-l" : ""));
             c.appendChild(el("small", null, "J" + x.j));
             c.appendChild(el("b", null, k === "n" ? "–" : x.pts == null ? "·" : String(x.pts)));
-            c.title = "Jornada " + x.j + ": " + (k === "t" ? "titular" : k === "s" ? "suplente" : "no jugó") + (k !== "n" && x.min ? ", " + x.min + " min" : "") + (k !== "n" && x.pts != null ? ", " + x.pts + " puntos" : "");
+            c.title = "Jornada " + x.j + ": " + (k === "t" ? "titular" : k === "s" ? "suplente" : x.les ? "no jugó, lesionado (" + x.les + ")" : "no jugó") + (k !== "n" && x.min ? ", " + x.min + " min" : "") + (k !== "n" && x.pts != null ? ", " + x.pts + " puntos" : "");
             tl.appendChild(c);
           });
           card.appendChild(tl);
           const lg = el("div", "nw-tl-ley");
-          [["t", "Titular"], ["s", "Suplente"], ["n", "No jugó"]].forEach((q) => { const i = el("span"); i.appendChild(el("i", "nw-tl-" + q[0])); i.appendChild(document.createTextNode(q[1])); lg.appendChild(i); });
+          [["t", "Titular"], ["s", "Suplente"], ["n", "No jugó"]].concat(pa.some((x) => x.les) ? [["l", "Lesionado"]] : []).forEach((q) => { const i = el("span"); i.appendChild(el("i", "nw-tl-" + q[0])); i.appendChild(document.createTextNode(q[1])); lg.appendChild(i); });
           lg.appendChild(el("span", "nw-tl-ley-n", "El número son sus puntos"));
           card.appendChild(lg);
         }

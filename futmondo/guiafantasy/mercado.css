@@ -3843,6 +3843,7 @@ html:not([data-theme="light"]) .plt-pts { background: #263241; }
 .nw-tl-c b { width: 100%; aspect-ratio: 1; max-width: 40px; display: flex; align-items: center; justify-content: center; border-radius: 9px; font-size: .86rem; font-weight: 800; font-variant-numeric: tabular-nums; color: #fff; background: var(--tc); }
 .nw-tl-t { --tc: #16a34a; } .nw-tl-s { --tc: #d97706; } .nw-tl-n { --tc: rgba(127, 127, 127, .22); }
 .nw-tl-n b { color: var(--muted); }
+.nw-tl-l { --tc: #ef4444; } .nw-tl-l b { color: #fff; }
 .nw-tl-ley { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 8px 14px 12px; font-size: .68rem; font-weight: 600; color: var(--muted); }
 .nw-tl-ley span { display: inline-flex; align-items: center; gap: 5px; }
 .nw-tl-ley i { width: 10px; height: 10px; border-radius: 3px; background: var(--tc); }

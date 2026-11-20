@@ -9,6 +9,7 @@ import { promptFondo, grupoTipo } from "../../_lib/portada-prompt.mjs";
 import { partirInfo, tituloCambio, catCambio, NOMBRE_ESTADO, ajustarOnce, clubKey, emparejar } from "../../_lib/estados.mjs";
 import { itemsMercado, lideres as lideresDe, rachasDe, medianasPos } from "../../_lib/diario.mjs";
 import { agregarSubs, riesgoCambio } from "../../_lib/sustituciones.mjs";
+import { parseLesiones, marcarLesiones } from "../../_lib/lesiones.mjs";
 import { compacto, dificultad, calendarioDificultad, oncePropio, aciertoOnces, compararOnce, probInterna, puntuarDuelo } from "../../_lib/analitica.mjs";
 import { cuerpoAHtml } from "../../_lib/noticia-cuerpo.mjs";
 import { minutosEnAlineacion, partidoDelDia } from "../../_lib/fotmob-min.mjs";
@@ -1454,6 +1455,38 @@ async function tmProfile(env, name, club) {
   } catch (e) {}
   try { if (out.date) await env.PORRA.put(k, JSON.stringify(out), { expirationTtl: 30 * 24 * 3600 }); } catch (e) {}
   return out;
+}
+
+// Lesiones del jugador en Transfermarkt (histórico con fechas). Se guarda 6 h; si falla, no se dice nada (nunca se inventa).
+async function tmLesiones(env, name, club, dbg) {
+  const k = "tm:les:v1:" + normKey(String(name || "").toLowerCase());
+  if (!dbg) { try { const c = await env.PORRA.get(k, "json"); if (c && Array.isArray(c.l)) return c.l; } catch (e) {} }
+  let lista = null;
+  try {
+    const UA = { "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36", "accept-language": "es-ES,es" };
+    const rs = await fetch("https://www.transfermarkt.es/schnellsuche/ergebnis/schnellsuche?query=" + encodeURIComponent(name), { headers: UA });
+    if (dbg) dbg.busqueda = rs.status;
+    const s = await rs.text();
+    const links = [...new Set([...s.matchAll(/href="(\/[^"]+\/profil\/spieler\/\d+)"/g)].map((m) => m[1]))].slice(0, 4);
+    const nk = normKey(String(name || "").toLowerCase());
+    for (const lk of links) {
+      try {
+        const rp = await fetch("https://www.transfermarkt.es" + lk.replace("/profil/", "/verletzungen/"), { headers: UA });
+        if (dbg) (dbg.paginas = dbg.paginas || []).push(rp.status);
+        const p = await rp.text();
+        const h1m = p.match(/data-header__headline-wrapper[^>]*>([\s\S]*?)<\/h1>/);
+        const nm = h1m ? h1m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").replace(/^#?\d*\s*/, "").trim() : "";
+        const clm = p.match(/data-header__club[^>]*>([\s\S]{0,140}?)<\/span>/);
+        const cl = clm ? clm[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "";
+        const nmk = normKey(nm.toLowerCase());
+        const nameOk = nmk && (nmk === nk || nk.indexOf(nmk) >= 0 || nmk.indexOf(nk) >= 0);
+        const teamOk = !club || teamScore(cl, club) >= 2;
+        if (nameOk && teamOk) { lista = parseLesiones(p); break; }
+      } catch (e) {}
+    }
+  } catch (e) {}
+  if (lista) { try { await env.PORRA.put(k, JSON.stringify({ l: lista, at: Date.now() }), { expirationTtl: 6 * 3600 }); } catch (e) {} }
+  return lista || [];
 }
 
 // Entidades HTML (&#039; &amp; &aacute; ...) que llegan tal cual en textos
@@ -6359,6 +6392,12 @@ async function handleGet({ request, env: env0, params }) {
     for (const id of Object.keys(bw)) if (bw[id].e !== "ok") estados[id] = bw[id];
     return json({ updatedAt: (foto && foto.at) || 0, estados, cambios: ev.slice(-200).reverse() });
   }
+  // Diagnóstico: ¿llega Transfermarkt desde el Worker? /api/laquiniela/lesiones?name=De%20Jong&club=Barcelona
+  if (path === "lesiones") {
+    const dbg = {};
+    const l = await tmLesiones(env, url.searchParams.get("name") || "", url.searchParams.get("club") || "", dbg);
+    return json({ http: dbg, n: l.length, lesiones: l.slice(0, 10) });
+  }
   // Diagnóstico de solo lectura: qué pasó con cada tema detectado (sin secretos)
   if (path === "redactor-estado") {
     let st = null, doc = null;
@@ -6404,9 +6443,18 @@ async function handleGet({ request, env: env0, params }) {
             try {
               const ds = (await env.PORRA.get(AN_DS, "json")) || {};
               let me = ds[pl.id];
-              // Si aún no está en la copia guardada, se lee su ficha de Futmondo ahora
-              if (!me || !me.m || !me.m.length) { try { const f = await playerFicha(env, pl.id, false, false); const c = f && Array.isArray(f.matches) ? compacto(f) : null; if (c) me = c; } catch (e) {} }
-              if (me && me.m && me.m.length) art.partidos = me.m.slice().sort((a, b) => a[0] - b[0]).slice(-12).map((x) => ({ j: x[0], cat: x[4], pts: x[3], min: x[5] }));
+              // Ficha de Futmondo ahora: trae la fecha de cada partido (para casarla con sus lesiones) y sirve si aún no está en la copia guardada
+              let fechas = {};
+              try {
+                const f = await playerFicha(env, pl.id, true, false);
+                for (const x of (f && f.matches) || []) if (x && x.date) fechas[x.r] = x.date;
+                if (!me || !me.m || !me.m.length) { const c = f && Array.isArray(f.matches) ? compacto(f) : null; if (c) me = c; }
+              } catch (e) {}
+              if (me && me.m && me.m.length) {
+                art.partidos = me.m.slice().sort((a, b) => a[0] - b[0]).slice(-12).map((x) => ({ j: x[0], cat: x[4], pts: x[3], min: x[5], f: fechas[x[0]] || "" }));
+                // Los «no jugó» que caen dentro de una lesión de Transfermarkt se marcan con su tipo; el resto se queda sin explicación
+                if (art.partidos.some((x) => x.cat === "n")) { try { art.partidos = marcarLesiones(art.partidos, await Promise.race([tmLesiones(env, pl.name, pl.team), new Promise((res) => setTimeout(() => res([]), 5000))])); } catch (e) {} }
+              }
             } catch (e) {}
             const linea = ((mk && mk.players) || []).filter((q) => q.role === pl.role && (q.matches || 0) > 0).sort((a, b) => (b.points || 0) - (a.points || 0));
             const pos = linea.findIndex((q) => q.id === pl.id);
