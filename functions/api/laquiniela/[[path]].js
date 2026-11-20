@@ -2728,7 +2728,8 @@ async function analiticaRun(env, reset) {
   const all = (mk && mk.players) || [];
   if (all.length < 300) return { error: "sin mercado" };
   const nueva = !cur.pend;
-  const ds = nueva ? {} : ((await env.PORRA.get(AN_DS, "json")) || {});
+  // La vuelta nueva parte de lo ya guardado (no de {}): si se vaciara, las noticias perdían los partidos de los jugadores aún no releídos
+  const ds = (await env.PORRA.get(AN_DS, "json")) || {};
   if (nueva) { cur.pend = all.map((p) => p.id); cur.fallos = {}; cur.total = all.length; }
   const lote = cur.pend.splice(0, 40);
   for (let k = 0; k < lote.length; k += 5) {
@@ -6402,7 +6403,9 @@ async function handleGet({ request, env: env0, params }) {
             // Últimos partidos de su equipo (titular, suplente o sin jugar, con sus puntos) y puesto entre los de su línea
             try {
               const ds = (await env.PORRA.get(AN_DS, "json")) || {};
-              const me = ds[pl.id];
+              let me = ds[pl.id];
+              // Si aún no está en la copia guardada, se lee su ficha de Futmondo ahora
+              if (!me || !me.m || !me.m.length) { try { const f = await playerFicha(env, pl.id, false, false); const c = f && Array.isArray(f.matches) ? compacto(f) : null; if (c) me = c; } catch (e) {} }
               if (me && me.m && me.m.length) art.partidos = me.m.slice().sort((a, b) => a[0] - b[0]).slice(-12).map((x) => ({ j: x[0], cat: x[4], pts: x[3], min: x[5] }));
             } catch (e) {}
             const linea = ((mk && mk.players) || []).filter((q) => q.role === pl.role && (q.matches || 0) > 0).sort((a, b) => (b.points || 0) - (a.points || 0));
