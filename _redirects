@@ -1,3 +1,7 @@
+/futmondo/admin-noticias /futmondo/admin/#noticias 301
+/futmondo/admin-noticias/ /futmondo/admin/#noticias 301
+/futmondo/comparativa /futmondo/admin/#alineaciones 301
+/futmondo/comparativa/ /futmondo/admin/#alineaciones 301
 /futmondo /futmondo/ 301
 /laquiniela/* /futmondo/quiniela/:splat 301
 /laquiniela /futmondo/quiniela/ 301

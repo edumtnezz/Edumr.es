@@ -17,7 +17,7 @@ const paginas = [
   // que responde (el contenido se revisa a mano con captura).
   { ruta: "/equipos/alaves", debe: [] },
   { ruta: "/futmondo/stats/", debe: ["Visitas"] },
-  { ruta: "/futmondo/admin-noticias/", debe: ["Administrador de noticias"] },
+  { ruta: "/futmondo/admin/", debe: ["Administración"] },
 ];
 
 const apis = [

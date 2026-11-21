@@ -16,7 +16,7 @@
     if (!ms) return "";
     try { return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(ms)); } catch (e) { return ""; }
   }
-  function toast(t) { var d = el("div", "ad-toast", t); document.body.appendChild(d); setTimeout(function () { d.remove(); }, 2200); }
+  function toast(t) { var d = el("div", "ad-toast", t); ($("adminRoot") || document.body).appendChild(d); setTimeout(function () { d.remove(); }, 2200); }
   function post(body) {
     return fetch(API + "/admin-noticias", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).then(function (r) {
       return r.text().then(function (tx) {
