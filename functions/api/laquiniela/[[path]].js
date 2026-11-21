@@ -2193,6 +2193,13 @@ async function admLog(env, e) {
 async function adminNoticias(env, request, url, data) {
   const user = await getSessionUser(env, request);
   if (!isAdmin(env, user)) return json({ error: "No autorizado." }, 403);
+  if (!data && url.searchParams.get("lite")) {
+    // Vista reducida (Administración → Noticias): solo las noticias propias publicadas y los cambios de estado detectados (con su fuente y hora)
+    const own = (await getOwn(env)).filter((x) => x && x.status === "published").slice(0, 80);
+    const ev = ((await env.PORRA.get("est:eventos:v1", "json").catch(() => null)) || []).slice(-300).map((e) => ({ src: e.src === "fm" ? "futmondo" : "biwenger", id: e.id, name: e.name, de: e.de, a: e.a, info: String(e.info || "").slice(0, 300), at: e.at }));
+    const evFo = ((await env.PORRA.get("est:fo:ev:v1", "json").catch(() => null)) || []).slice(-300).map((e) => ({ src: "fotmob", id: e.id, de: e.de, a: e.a, info: String(e.info || "").slice(0, 300), at: e.at }));
+    return json({ own: own.map((x) => ({ id: x.id, title: x.title, lead: x.lead, body: x.body, tipo: x.tipo, auto: x.auto, art: x.art, veredicto: x.veredicto, plazo: x.plazo, club: x.club, players: x.players, pid: x.pid, publishedAt: x.publishedAt, fuente: x.fuente || "" })), ev: ev.concat(evFo) });
+  }
   if (!data) {
     const own = await getOwn(env);
     const sombra = [];

@@ -917,3 +917,13 @@ body { overflow-x: clip; overscroll-behavior-x: none; max-width: 100%; }
 
 /* Foto de jugador recortada en vertical: entera dentro del círculo (ver chrome.js) */
 img.ph-alto { object-fit: contain !important; object-position: 50% 100% !important; }
+
+/* Cabecera en verde con el icono E (21/11/2026, pedido de Edu): vale para Puja, Quiniela, Porra, Guía Fantasy y Administración */
+/* Administración: cabecera en verde con el icono E de la web de inicio */
+.cx-header .cx-top { background: #16a34a; border-bottom: 0; }
+.cx-header .cx-nav a, .cx-header .cx-inicio { color: #fff; }
+.cx-header .cx-nav a.active { box-shadow: inset 0 -3px 0 #fff; }
+.cx-header .theme-toggle { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.4); color: #fff; }
+.cx-header .cx-logo svg { display: block; }
+.cx-header .cx-logo { display: flex !important; align-items: center; flex: none; margin-right: 6px; }
+@media (max-width: 640px) { .cx-header .cx-nav a { padding-left: 4px; padding-right: 4px; font-size: .72rem; white-space: nowrap; } .cx-header .cx-top-inner { gap: 6px; } }

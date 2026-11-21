@@ -5,19 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Administración · edumr.es</title>
   <meta name="robots" content="noindex, nofollow">
-  <meta name="theme-color" content="#07090e">
+  <meta name="theme-color" content="#16a34a">
   <link rel="icon" type="image/svg+xml" href="/img/favicon.svg">
   <script src="/futmondo/theme.js?v=65"></script>
   <link rel="stylesheet" href="/futmondo/quiniela/quiniela.css?v=151">
   <link rel="stylesheet" href="/futmondo/edumr.css?v=90">
+  <link rel="stylesheet" href="/futmondo/admin/admin.css?v=1">
   <link rel="stylesheet" href="/futmondo/admin/noticias.css?v=1">
   <link rel="stylesheet" href="/futmondo/admin/alineaciones.css?v=1">
 </head>
-<body class="page-simple cx-page gf-page">
+<body class="page-simple cx-page gf-page adm-page">
   <header class="appbar cx-header">
     <div class="cx-top">
       <div class="cx-top-inner">
-        <a class="cx-logo" href="/futmondo/" title="Inicio"><img src="/img/balonmundial.webp" alt="Futmondo"></a>
+        <a class="cx-logo" href="/" title="edumr.es"><svg width="30" height="30" viewBox="0 0 32 32" fill="none" aria-label="EduMR"><rect width="32" height="32" rx="9" fill="#fff"/><rect x="5" y="5" width="22" height="22" rx="7" fill="#16a34a"/><path d="M11 11.5H21M11 16H18M11 20.5H21" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg></a>
         <nav class="cx-nav">
           <a href="/futmondo/lapuja/">La Puja<span class="cx-nav-caret">▾</span></a>
           <a href="/futmondo/quiniela/">La Quiniela<span class="cx-nav-caret">▾</span></a>
@@ -46,7 +47,7 @@
       <a class="bk" href="/futmondo/guiafantasy/"><svg class="gi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span class="bk-t">Guía Fantasy</span></a>
 
       <section id="pnl-noticias">
-        <div class="ad-top"><header class="ad-head"><h1>Noticias</h1><p id="adSub">Solo visible para ti.</p></header></div>
+        <div class="ad-top"><header class="ad-head"><h1>Noticias</h1><p id="adSub">Las que escribe nuestro redactor, con cómo y por qué.</p></header></div>
         <div id="adGate" class="ad-card hidden"></div>
         <div id="adApp" class="hidden">
           <div class="ad-tabs" id="adTabs"></div>
@@ -55,11 +56,12 @@
       </section>
 
       <section id="pnl-alineaciones" class="hidden">
-        <div class="ad-top"><header class="ad-head"><h1>Alineaciones</h1><p>Nosotros (E) contra FutbolFantasy (F) y el once oficial.</p></header></div>
+        <div class="ad-top"><header class="ad-head"><h1>Alineaciones</h1><p>Qué % de ser titular daba nuestra web y cuál FutbolFantasy, contra el once oficial.</p></header></div>
         <div id="cpGate" class="ad-card hidden"></div>
         <div id="cpApp" class="hidden">
           <div id="cpSum" class="cp-sum"></div>
           <div class="cp-tabs" id="cpTabs"></div>
+          <div class="alz-filtros" id="cpFiltros"></div>
           <div id="cpView"></div>
         </div>
       </section>
