@@ -68,6 +68,6 @@
 #adminRoot .alz-tr { display: grid; grid-template-columns: 1.4fr 1fr 1.2fr .9fr; gap: 6px; padding: 9px 12px; border-top: 1px solid var(--line); font-size: .85rem; align-items: center; }
 #adminRoot .alz-tr span:not(:first-child) { text-align: right; font-weight: 700; }
 #adminRoot .alz-tr.h { border-top: 0; color: var(--mut); font-size: .7rem; font-weight: 800; text-transform: uppercase; }
-#adminRoot .alz-tr.E span:first-child { color: var(--accent); font-weight: 800; } #adminRoot .alz-tr.F span:first-child { color: #3b82f6; font-weight: 800; }
-#adminRoot .alz-tr.E2, #adminRoot .alz-tr.E3 { color: var(--mut); }
+#adminRoot .alz-tr.E2 span:first-child { color: var(--accent); font-weight: 800; } #adminRoot .alz-tr.F span:first-child { color: #3b82f6; font-weight: 800; }
+#adminRoot .alz-tr.E, #adminRoot .alz-tr.E3 { color: var(--mut); }
 #adminRoot .alz-tr.E4 { color: var(--mut); }

@@ -5937,6 +5937,8 @@ async function handleGet({ request, env: env0, params }) {
             const side = o[k]; if (!side || !Array.isArray(side.starters)) return;
             const mio = an.onces[clubKey(side.name)]; if (!mio || !Array.isArray(mio.prob)) return;
             const pr = new Map(mio.prob.map((x) => [x.id, x.p]));
+            // 21/11/2026 (pedido de Edu: ajustar los %): la E de la web es el modelo E2 (aprendido con todo el historial) cuando existe
+            if (mio.pm) for (const [id, v] of Object.entries(mio.pm)) if (v != null) pr.set(id, v);
             const todos = side.starters.concat(side.bench || []);
             const m = emparejar(todos.map((x, i) => ({ id: i, name: x.full || x.name, teamID: 1 })), { 1: { name: mio.team } }, mkP.filter((q) => clubKey(q.team) === clubKey(mio.team)));
             const con = (x, i) => { const f = m.get(i); const v = f ? pr.get(f.id) : null; return v == null ? x : { ...x, probE: v }; };

@@ -6638,6 +6638,8 @@
     anProbEP = fetch(API + "/analitica").then((r) => r.json()).then((a) => {
       const m = new Map();
       Object.values((a && a.onces) || {}).forEach((o) => (o.prob || []).forEach((x) => { if (x && x.id != null && x.p != null) m.set(String(x.id), x.p); }));
+      // La E de la web es el modelo E2 cuando existe (21/11/2026)
+      Object.values((a && a.onces) || {}).forEach((o) => Object.entries((o && o.pm) || {}).forEach(([id, v]) => { if (v != null) m.set(String(id), v); }));
       if (m.size) { anProbE = m; if (anData && $("anOut") && anTab === "equipo") { const y = window.scrollY; renderAnalisis(anData); window.scrollTo(0, y); } }
     }).catch(() => {}).then(() => { anProbEPend = false; return anProbE; });
     return anProbEP;
