@@ -42,15 +42,46 @@
   function pintar() {
     $("cpGate").classList.add("hidden"); $("cpApp").classList.remove("hidden");
     var T = totales(), sum = $("cpSum"); sum.textContent = "";
-    [["E", "Nuestra web", T.E], ["F", "FutbolFantasy", T.F]].forEach(function (s) {
-      var c = el("div", "alz-box " + s[0] + (fuente === s[0] ? " sel" : ""));
-      c.appendChild(el("b", null, pc(s[2])));
+    var M = D.marcador || null;
+    // MARCADOR grande: once acertado de media (de 11) de cada uno
+    var big = el("div", "alz-big");
+    big.appendChild(el("div", "alz-big-t", "¿Quién acierta más el once?"));
+    var fila = el("div", "alz-big-r");
+    [["E", "Nuestra web"], ["F", "FutbolFantasy"]].forEach(function (s) {
+      var v = M && M[s[0]], c = el("div", "alz-big-c " + s[0]);
+      c.appendChild(el("b", null, v ? String(v.once).replace(".", ",") : "—"));
+      c.appendChild(el("i", null, "de 11"));
       c.appendChild(el("span", null, s[1]));
-      c.appendChild(el("small", null, s[2].n ? s[2].ok + " de " + s[2].n + " jugadores bien" : "sin datos"));
-      sum.appendChild(c);
+      fila.appendChild(c);
     });
-    var nota = el("p", "alz-note", "Acierto = decir 50 % o más y que fuera titular, o menos de 50 % y que no lo fuera. Sobre " + T.partidos + " equipos ya jugados.");
-    sum.appendChild(nota);
+    big.appendChild(fila);
+    if (M && M.E && M.F) {
+      var dif = Math.round((M.F.once - M.E.once) * 10) / 10;
+      big.appendChild(el("div", "alz-big-v " + (dif > 0 ? "pierde" : dif < 0 ? "gana" : ""), dif > 0 ? "FutbolFantasy acierta " + String(dif).replace(".", ",") + " titulares más por equipo" : dif < 0 ? "Nuestra web acierta " + String(-dif).replace(".", ",") + " titulares más por equipo" : "Empate"));
+      big.appendChild(el("small", null, M.E.equipos + " equipos medidos · jornada " + (M.jornadas || []).join(", ")));
+    }
+    sum.appendChild(big);
+    if (M && M.E) {
+      var tb = el("div", "alz-tab2");
+      var h = el("div", "alz-tr h"); ["", "Once", "Jugadores bien", "Error"].forEach(function (x) { h.appendChild(el("span", null, x)); }); tb.appendChild(h);
+      [["E", "Nuestra web"], ["F", "FutbolFantasy"], ["E2", "Prueba E2"], ["E3", "Prueba E3"]].forEach(function (s) {
+        var v = M[s[0]]; if (!v) return;
+        var r = el("div", "alz-tr " + s[0]);
+        r.appendChild(el("span", null, s[1]));
+        r.appendChild(el("span", null, String(v.once).replace(".", ",") + "/11"));
+        r.appendChild(el("span", null, v.bienPct + "%"));
+        r.appendChild(el("span", null, String(v.brier).replace(".", ",")));
+        tb.appendChild(r);
+      });
+      sum.appendChild(tb);
+      sum.appendChild(el("p", "alz-note", "Medido con toda la plantilla. «Error» = Brier: cuanto más bajo, mejor. E2 y E3 son pruebas que aún no salen en la web."));
+    } else {
+      [["E", "Nuestra web", T.E], ["F", "FutbolFantasy", T.F]].forEach(function (s) {
+        var c = el("div", "alz-box " + s[0]);
+        c.appendChild(el("b", null, pc(s[2]))); c.appendChild(el("span", null, s[1]));
+        sum.appendChild(c);
+      });
+    }
 
     var ff = $("cpFiltros"); ff.textContent = "";
     [["ambos", "Los dos"], ["E", "Nuestra web"], ["F", "FutbolFantasy"]].forEach(function (f) {

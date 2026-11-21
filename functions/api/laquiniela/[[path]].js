@@ -12,7 +12,7 @@ import { agregarSubs, riesgoCambio } from "../../_lib/sustituciones.mjs";
 import { parseEquipos, parseJugadores, slugEquipo, slugJugador, parseLesionesFichajes, marcarLesiones } from "../../_lib/lesiones.mjs";
 import { FM_MATCHES, FM_DETAIL, FM_LIGA } from "../../_lib/fotmob-estados.mjs";
 import { formacionesDe, sumar as sumarFormacion, terminados as terminadosFm, publico as formacionesPublico } from "../../_lib/formaciones.mjs";
-import { compacto, dificultad, calendarioDificultad, oncePropio, aciertoOnces, compararOnce, probInterna, puntuarDuelo, entrenarModelo, probModelo, fmKey, titularesFotmob, situacion, detalleDuelo, aprendizaje } from "../../_lib/analitica.mjs";
+import { compacto, dificultad, calendarioDificultad, oncePropio, aciertoOnces, compararOnce, probInterna, puntuarDuelo, entrenarModelo, probModelo, fmKey, titularesFotmob, situacion, detalleDuelo, aprendizaje, marcadorFormulas } from "../../_lib/analitica.mjs";
 import { cuerpoAHtml } from "../../_lib/noticia-cuerpo.mjs";
 import { minutosEnAlineacion, partidoDelDia } from "../../_lib/fotmob-min.mjs";
 const COMPETITION = "PD";
@@ -6511,7 +6511,7 @@ async function handleGet({ request, env: env0, params }) {
     const conFf = res.filter((x) => x.ff != null);
     return json({ at: Date.now(), jornada: jor && jor.matchday,
       resumen: { onces: res.length, propio: conFf.reduce((t, x) => t + x.propio, 0), ff: conFf.reduce((t, x) => t + x.ff, 0), de: conFf.length * 11 },
-      aprendizaje: aprendizaje(res, sitDe), resultados, pendientes: pendientes.sort((a, b) => String(a.rival && a.rival.date).localeCompare(String(b.rival && b.rival.date))) });
+      aprendizaje: aprendizaje(res, sitDe), marcador: marcadorFormulas(res), resultados, pendientes: pendientes.sort((a, b) => String(a.rival && a.rival.date).localeCompare(String(b.rival && b.rival.date))) });
   }
   if (path === "analitica") {
     if (url.searchParams.has("run")) { try { return json({ ok: true, result: await analiticaRun(env, url.searchParams.has("calc") ? "calc" : url.searchParams.has("reset")) }); } catch (e) { return json({ ok: false, error: String(e && e.message || e).slice(0, 200) }); } }
@@ -6520,7 +6520,7 @@ async function handleGet({ request, env: env0, params }) {
     if (url.searchParams.has("detalle")) {
       const [duelo, ds] = await Promise.all([env.PORRA.get(AN_DUELO, "json"), env.PORRA.get(AN_DS, "json")]);
       const pe = new Map(); for (const p of Object.values(ds || {})) { const k = clubKey(p.t); if (!pe.has(k)) pe.set(k, []); pe.get(k).push(p); }
-      return json({ resultados: ((duelo && duelo.resultados) || []).filter((r) => r.real && r.pf).slice(-20).reverse().map((r) => detalleDuelo(r, pe.get(clubKey(r.team)) || [])), pendientes: Object.keys((duelo && duelo.previos) || {}) });
+      return json({ marcador: marcadorFormulas(((duelo && duelo.resultados) || []).filter((r) => r.real && r.pf)), resultados: ((duelo && duelo.resultados) || []).filter((r) => r.real && r.pf).slice(-20).reverse().map((r) => detalleDuelo(r, pe.get(clubKey(r.team)) || [])), pendientes: Object.keys((duelo && duelo.previos) || {}) });
     }
     if (url.searchParams.has("ds")) { let ds = null; try { ds = await env.PORRA.get(AN_DS, "json"); } catch (e) {} return json(ds || {}); }
     let out = null, log = null;

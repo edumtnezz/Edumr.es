@@ -353,3 +353,53 @@ export function aprendizaje(resultados, sitDe) {
   }
   return Object.entries(g).map(([s, x]) => ({ sit: s, txt: SIT_TXT[s] || "Sin situación clara", n: x.n, E: Math.round(x.e / x.n), F: Math.round(x.f / x.n), real: Math.round((100 * x.tit) / x.n) })).sort((a, b) => b.n - a.n);
 }
+
+// MARCADOR (21/11/2026): mide cada fórmula con TODOS los partidos puntuados y TODA la plantilla (no solo los del once).
+// E = la de la web; F = FutbolFantasy (0 si no lo pone en su once); E2 = modelo en sombra;
+// E3 = E reescalada para que el equipo sume 11 titulares (en sombra, idea nueva: E da % repartidos de más).
+export function normalizar11(pe) {
+  const ids = Object.keys(pe || {});
+  let v = Object.fromEntries(ids.map((id) => [id, Math.max(0, Number(pe[id]) || 0)]));
+  for (let i = 0; i < 4; i++) {
+    const libres = ids.filter((id) => v[id] < 97), fijos = ids.length - libres.length;
+    const s = libres.reduce((t, id) => t + v[id], 0);
+    if (!s) break;
+    const f = (1100 - fijos * 97) / s;
+    libres.forEach((id) => { v[id] = Math.min(97, v[id] * f); });
+  }
+  return Object.fromEntries(ids.map((id) => [id, Math.round(v[id])]));
+}
+export function marcadorFormulas(resultados) {
+  const V = { E: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, F: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E2: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E3: { n: 0, ok: 0, b: 0, once: 0, p: 0 } };
+  const jornadas = new Set();
+  for (const r of resultados || []) {
+    if (!r.real || !r.real.length || !r.pe || !Object.keys(r.pe).length) continue;
+    jornadas.add(r.j);
+    const real = new Set(r.real), pe = r.pe, ids = Object.keys(pe);
+    const ff = new Set(r.ffIds || Object.keys(r.pf || {}));
+    const val = {
+      E: pe,
+      F: Object.fromEntries(ids.map((id) => [id, ff.has(id) ? Number((r.pf || {})[id] ?? 50) : 0])),
+      E2: r.pe2 && Object.keys(r.pe2).length ? r.pe2 : null,
+      E3: normalizar11(pe),
+    };
+    for (const k of Object.keys(V)) {
+      const m = val[k]; if (!m) continue;
+      const v = V[k]; v.p++;
+      for (const id of ids) {
+        const p = Number(m[id]) || 0, t = real.has(id) ? 1 : 0;
+        v.n++; v.b += (p / 100 - t) ** 2; if ((p >= 50) === !!t) v.ok++;
+      }
+      // once: los 11 con más % (en F, su once tal cual)
+      const top = k === "F" && ff.size ? [...ff] : ids.slice().sort((a, b) => (Number(m[b]) || 0) - (Number(m[a]) || 0)).slice(0, 11);
+      v.once += top.filter((id) => real.has(id)).length;
+    }
+  }
+  const out = { equipos: 0, jornadas: [...jornadas].sort((a, b) => a - b) };
+  for (const k of Object.keys(V)) {
+    const v = V[k];
+    out.equipos = Math.max(out.equipos, V.E.p);
+    out[k] = v.p ? { equipos: v.p, once: Math.round((v.once / v.p) * 10) / 10, oncePct: Math.round((100 * v.once) / (v.p * 11)), jugadores: v.n, bien: v.ok, bienPct: Math.round((100 * v.ok) / v.n), brier: Math.round((v.b / v.n) * 10000) / 10000 } : null;
+  }
+  return out;
+}
