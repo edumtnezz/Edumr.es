@@ -70,3 +70,13 @@ test("apellido suelto sigue marcando si no hay otro con ese apellido", () => {
   const sq = [{ id: "1", name: "Valentín Gómez", team: "Betis" }];
   assert.equal(_t.star(sq, "Betis", "Gómez", ["gomez", "pedri"]), "⭐Gómez");
 });
+
+test("cambio del once probable: se espera al confirmado entre 75 y 25 min antes del partido (21/11/2026)", async () => {
+  const { esperaOnce } = await import("../cron/src/avisos.js");
+  const ko = Date.parse("2026-11-21T13:00:00Z"), min = 60e3;
+  assert.equal(esperaOnce(ko, ko - 55 * min), true);   // 13:05 hora Madrid de un 14:00: justo cuando salen las alineaciones
+  assert.equal(esperaOnce(ko, ko - 74 * min), true);
+  assert.equal(esperaOnce(ko, ko - 90 * min), false);  // un cambio editorial de antes sí avisa
+  assert.equal(esperaOnce(ko, ko - 24 * min), false);  // si el confirmado no llegó, avisa como plan B
+  assert.equal(esperaOnce(0, ko), false);              // sin hora conocida, como siempre
+});

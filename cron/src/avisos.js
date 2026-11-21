@@ -36,6 +36,8 @@ const STATE_KEY = "tg:avisos:v1";
 const MAX_MSGS = 10;                // mensajes por pasada; lo que sobre espera a la siguiente
 const NEWS_MAX_AGE = 4 * 3600e3;    // no se avisa de noticias con más de 4 h
 const QUIET_FROM = 0, QUIET_TO = 8; // silencio de 00:00 a 08:00 (hora de Madrid)
+const HOLD_DESDE = 75 * 60e3, HOLD_HASTA = 25 * 60e3; // espera del aviso de cambio de once probable antes de que salgan las alineaciones oficiales
+export function esperaOnce(ko, now) { const falta = ko - now; return !!ko && falta <= HOLD_DESDE && falta > HOLD_HASTA; }
 
 // ---------- utilidades de texto ----------
 function norm(s) {
@@ -435,6 +437,10 @@ export async function avisar(env, deps) {
         if (!dd.length) continue;
         // Si ese partido ya tiene el once CONFIRMADO, no se manda también el probable: solo se guarda
         if (confSet.some((c) => sameTeam(c.home, m.home) && sameTeam(c.away, m.away))) { commit(); continue; }
+        // Hora de las alineaciones oficiales (entre 75 y 25 min antes del partido): el cambio del probable suele ser el once real
+        // que FutbolFantasy acaba de copiar, y el confirmado llega unos minutos después. Se espera sin guardar ni avisar (21/11/2026);
+        // si el confirmado no llega a tiempo (faltan menos de 25 min), se avisa como siempre.
+        if (!all && esperaOnce(m.ko, now)) continue;
         const cu = cuandoKo(m.ko);
         // Título corto: "ONCE DEL ATHLETIC" (si cambian los dos equipos: "ONCE ATHLETIC - REAL SOCIEDAD")
         const titulo = dd.length === 1 ? "ONCE DEL " + dd[0].team.toUpperCase() : "ONCE " + m.home.toUpperCase() + " - " + m.away.toUpperCase();
