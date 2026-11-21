@@ -32,12 +32,13 @@ export default {
       // Análisis propios (dificultad de calendario, once propio): una tanda de jugadores por minuto hasta completar la vuelta; luego descansa 6 h.
       try { await fetch("https://edumr.es/api/laquiniela/analitica?run=1", { headers: { "user-agent": "edumr-cron" } }); } catch (e) {}
       // Estado físico de los jugadores: apunta cada cambio con su hora (cada 3 min).
-      try { await vigilarEstados(env); } catch (e) { console.error("estados", String(e && e.message || e).slice(0, 180)); }
+      try { await vigilarEstados(env, fetch, event.scheduledTime); } catch (e) { console.error("estados", String(e && e.message || e).slice(0, 180)); }
       // Segunda fuente de estado (FotMob): cada 6 min, solo apunta cambios; las noticias lo usan si Biwenger aún no lo tiene.
-      try { await vigilarFotmob(env); } catch (e) { console.error("fotmob-estados", String(e && e.message || e).slice(0, 180)); }
+      try { await vigilarFotmob(env, fetch, event.scheduledTime); } catch (e) { console.error("fotmob-estados", String(e && e.message || e).slice(0, 180)); }
       // Noticias de estado: van justo después de leer los estados (21/11/2026: al final de la cadena no llegaban a ejecutarse).
       try {
-        const r = await publicarPartes(env);
+        // La hora es la del disparo del cron, no la de cuando llega el turno: si antes se tarda casi un minuto, «cada 3 min» se saltaba el minuto
+        const r = await publicarPartes(env, fetch, event.scheduledTime);
         // Diagnóstico: último resultado que no fue «no toca» (se ve en /api/laquiniela/estados → partes)
         if (!(r && r.skipped === "no toca")) await env.PORRA.put("partes:last:v1", JSON.stringify({ at: Date.now(), r }));
       } catch (e) { console.error("partes", String(e && e.message || e).slice(0, 180)); try { await env.PORRA.put("partes:last:v1", JSON.stringify({ at: Date.now(), error: String(e && e.message || e).slice(0, 200) })); } catch (e2) {} }
