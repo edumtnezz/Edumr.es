@@ -63,7 +63,7 @@
     var sub = "J" + m.j;
     if (m.rival && m.rival.r) sub += " · " + (m.rival.casa ? "contra " : "en casa del ") + m.rival.r;
     if (m.pendiente && m.rival) sub += " · " + (m.rival.date || "") + " " + (m.rival.time || "");
-    else if (m.src) sub += " · once oficial (" + (m.src === "fotmob" ? "FotMob" : m.src === "comuniate" ? "Comuniate" : "Futmondo") + ")";
+    else if (m.src) sub += " · once oficial (" + (m.src === "futmondo" ? "Futmondo" : "FotMob") + ")";
     t.appendChild(el("span", null, sub));
     h.appendChild(t);
     if (!m.pendiente && m.aciertos) {

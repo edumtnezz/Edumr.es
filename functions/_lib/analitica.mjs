@@ -277,7 +277,7 @@ export function probModelo(modelo, jug, estados) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────────────────────
-// ONCE OFICIAL DE FOTMOB (20/11/2026): después del partido Comuniate ya no da la alineación; FotMob sí.
+// ONCE OFICIAL DE FOTMOB (20-21/11/2026): única fuente del once oficial (Edu no quiere Comuniate).
 // Clave de club con los nombres de FotMob: «Deportivo Alavés» y «Deportivo A Coruña» darían los dos «depor».
 export function fmKey(name) {
   const n = String(name || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -287,7 +287,7 @@ export function fmKey(name) {
 // Titulares de cada equipo de un matchDetails de FotMob. Solo con alineación oficial (lineupType) y 11 titulares.
 export function titularesFotmob(det) {
   const l = det && det.content && det.content.lineup;
-  if (!l || !l.lineupType) return [];
+  if (!l || !l.lineupType || l.lineupType === "predicted") return []; // «predicted» = la probable de FotMob, no la oficial
   const out = [];
   for (const k of ["homeTeam", "awayTeam"]) {
     const t = l[k];
