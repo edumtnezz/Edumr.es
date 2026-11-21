@@ -10,7 +10,7 @@ const ymd = (t) => { const d = new Date(t); return d.getUTCFullYear() + String(d
 
 export async function vigilarFotmob(env, f = fetch, now = Date.now()) {
   if (!env || !env.PORRA) return { skipped: "sin kv" };
-  if (new Date(now).getUTCMinutes() % 6 !== 2) return { skipped: "no toca" };
+  if (new Date(now).getUTCMinutes() % 6 !== 0) return { skipped: "no toca" };
   const rm = await f("https://edumr.es/api/laquiniela/mercado", { headers: { "user-agent": "edumr-cron" } });
   if (!rm.ok) return { error: "mercado " + rm.status };
   const mk = await rm.json();

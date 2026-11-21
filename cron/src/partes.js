@@ -79,7 +79,7 @@ const escT = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;")
 
 export async function publicarPartes(env, f = fetch, now = Date.now()) {
   if (!env || !env.PORRA) return { skipped: "sin kv" };
-  if (new Date(now).getUTCMinutes() % 3 !== 1) return { skipped: "no toca" };
+  // Sin filtro de minuto (21/11/2026): solo hay trabajo cuando hay candidatos nuevos y el resto es leer KV. El cron no pasa por todos los minutos.
   const [foto, eventos, st0, eventosFo, fotoFo] = await Promise.all([env.PORRA.get(K_FOTO, "json"), env.PORRA.get(K_EV, "json"), env.PORRA.get(K_ST, "json"), env.PORRA.get(K_EVFO, "json"), env.PORRA.get(K_FOFOTO, "json")]);
   if (!foto) return { skipped: "sin foto" };
   const st = st0 || { done: {} };
