@@ -5,11 +5,21 @@ const fmt = (l) => esc(l).replace(/\*\*([^*]{1,160})\*\*/g, "<b>$1</b>");
 
 export function cuerpoAHtml(body) {
   const lineas = String(body || "").split(/\n+/).map((t) => t.trim()).filter(Boolean);
-  let html = "", lista = false, consejo = false, chips = false;
+  let html = "", lista = false, consejo = false, chips = false, pts = false;
   // Recuadro de dato de un artículo: «= RÓTULO | valor | tono (ok verde, az azul, na naranja, mo morado) | detalle». Los seguidos van en una cuadrícula.
   const CH = /^= ([^|]{1,30}) \| ([^|]{1,30}) \| (ok|az|na|mo) \| ?(.{0,60})$/;
   for (let i = 0; i < lineas.length; i++) {
     if (chips && !CH.test(lineas[i])) { html += "</div>"; chips = false; }
+    // Puntos de un jugador en un artículo de partido: «+ Nombre | 19». Los seguidos van en dos columnas, sin foto (lista corta).
+    const PT = lineas[i].match(/^\+ ([^|]{1,40}) \| ([−-]?\d{1,3})$/);
+    if (pts && !PT) { html += "</div>"; pts = false; }
+    if (PT) {
+      if (lista) { html += "</ul>"; lista = false; }
+      if (!pts) { html += '<div class="art-pts">'; pts = true; }
+      const v = Number(PT[2].replace("−", "-"));
+      html += '<div class="art-pt ' + (v >= 8 ? "art-pt-hi" : v <= 2 ? "art-pt-lo" : "") + '"><span>' + esc(PT[1].trim()) + "</span><b>" + esc(PT[2]) + "</b></div>";
+      continue;
+    }
     const ch = lineas[i].match(CH);
     if (ch) {
       if (lista) { html += "</ul>"; lista = false; }
@@ -79,6 +89,7 @@ export function cuerpoAHtml(body) {
     else html += "<p>" + fmt(l) + "</p>";
   }
   if (chips) html += "</div>";
+  if (pts) html += "</div>";
   if (lista) html += "</ul>";
   if (consejo) html += "</div>";
   return html;

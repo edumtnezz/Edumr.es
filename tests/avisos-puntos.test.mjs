@@ -19,6 +19,30 @@ test("el texto lleva los dos equipos, la jornada y el enlace a edumr.es", () => 
   assert.match(t, /edumr\.es/);
 });
 
+test("el texto lleva los puntos de todos los jugadores de los dos equipos", () => {
+  const t = textoPuntos({ j: 13, home: "Athletic", away: "Espanyol", marcador: "0 - 1", art: "artpuntos13athleticde", eq: [{ n: "Athletic", j: ["Williams 9", "Sancet 2"] }, { n: "Espanyol", j: ["Dolan 12", "Pol −1"] }] });
+  assert.match(t, /Athletic 0-1 Espanyol \(J13\)/);
+  assert.match(t, /Williams 9 · Sancet 2/);
+  assert.match(t, /Dolan 12 · Pol −1/);
+  assert.match(t, /ed-artpuntos13athleticde/);
+});
+
+test("un partido ya avisado no se vuelve a avisar aunque vuelva a entrar en la cola", async () => {
+  const e = env(), log = [];
+  await colaPuntos(e, [item]);
+  assert.equal((await avisarPuntos(e, { fetch: fakeFetch(log), now: DIA })).sent, 1);
+  assert.equal(await colaPuntos(e, [item]), 0);
+  assert.equal((await avisarPuntos(e, { fetch: fakeFetch(log), now: DIA })).sent, 0);
+  assert.equal(log.length, 1);
+});
+
+test("a medianoche en punto también rige el silencio", async () => {
+  const e = env(), log = [];
+  await colaPuntos(e, [item]);
+  assert.equal((await avisarPuntos(e, { fetch: fakeFetch(log), now: Date.parse("2026-11-20T23:25:00Z") })).skipped, "noche");
+  assert.equal(log.length, 0);
+});
+
 test("de día se manda una vez y la cola queda vacía", async () => {
   const e = env(), log = [];
   assert.equal(await colaPuntos(e, [item, item]), 1); // sin duplicados

@@ -7,7 +7,7 @@ import { publicarPartes } from "./partes.js";
 import { vigilarFotmob } from "./fotmob-estados.js";
 import { apuntarDiario } from "./diario.js";
 import { apuntarSustituciones } from "./sustituciones.js";
-import { publicarArticulos, publicarOnces, publicarPuntos } from "./articulos.js";
+import { publicarArticulos, publicarOnces, publicarPuntos, rehacerPuntos } from "./articulos.js";
 
 export default {
   async scheduled(event, env, ctx) {
@@ -50,6 +50,7 @@ export default {
       try { await publicarArticulos(env); } catch (e) { console.error("articulos", String(e && e.message || e).slice(0, 180)); }
       try { await publicarOnces(env); } catch (e) { console.error("onces", String(e && e.message || e).slice(0, 180)); }
       try { await avisarPuntos(env); } catch (e) {}
+      try { await rehacerPuntos(env); } catch (e) { console.error("rehacer-puntos", String(e && e.message || e).slice(0, 180)); }
       try { await avisar(env); } catch (e) {}
       // Noticias nuevas (12/11/2026): una noticia corta por cada cambio de estado. El redactor antiguo (ruedas de prensa,
       // notas de otras webs y portadas generadas) queda apagado; su código sigue en redactor.js sin usarse.

@@ -5,7 +5,7 @@ const PFX = "https://www.futbolfantasy.com/laliga/noticias/";
 // slug → página de la noticia: FutbolFantasy (tal cual), Comuniate ("cm-<id>-<slug>") o Jornada Perfecta ("jp-<slug>")
 // Noticia propia (ed-<id>): el título sale de lo guardado, no de otra web.
 export function ogDePropia(slug, own) {
-  const m = String(slug || "").match(/^ed-([a-z0-9]{6,16})$/);
+  const m = String(slug || "").match(/^ed-([a-z0-9]{6,40})$/);
   if (!m) return null;
   const x = (own || []).find((o) => o && o.id === m[1] && o.status === "published");
   if (!x) return { missing: true };

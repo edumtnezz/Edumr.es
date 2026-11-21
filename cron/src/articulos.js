@@ -205,12 +205,26 @@ export async function publicarPuntos(env, items, f = fetch, now = Date.now()) {
       const m = jr && Array.isArray(jr.matches) ? jr.matches.find((x) => mismo(x.home, it.home) && mismo(x.away, it.away)) : null;
       const a = puntosPartido(ps, pj.pts, it, m && m.live && m.live.state === "final" && m.live.score ? m.live.score : "");
       if (!a) { out.push(it); continue; }
+      const prev = own.find((x) => x.id === a.id); // si ya existía (rehacer en otro formato), conserva su hora de publicación
       own = own.filter((x) => x.id !== a.id);
-      own.unshift({ id: a.id, title: a.title, lead: a.lead, body: a.body, status: "published", createdAt: now, publishedAt: now, thumb: "", club: "", players: a.players, tipo: "articulo", auto: "articulo", art: "artpuntos", f: 1, fp: (a.body.match(/^@ (\S+) \|/m) || [])[1] || "" });
+      own.unshift({ id: a.id, title: a.title, lead: a.lead, body: a.body, status: "published", createdAt: prev ? prev.createdAt || now : now, publishedAt: prev ? prev.publishedAt || now : now, thumb: "", club: "", players: a.players, tipo: "articulo", auto: "articulo", art: "artpuntos", f: 2, fp: (a.body.match(/^@ (\S+) \|/m) || [])[1] || "" });
       cambio = true;
-      out.push(Object.assign({}, it, { art: a.id, top: a.top }));
+      out.push(Object.assign({}, it, { art: a.id, top: a.top, eq: a.equipos, marcador: a.marcador }));
     } catch (e) { out.push(it); }
   }
   if (cambio) { own.sort((x, y) => (y.publishedAt || 0) - (x.publishedAt || 0)); await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300))); }
   return out;
+}
+
+
+// Rehace, de uno en uno y sin aviso de Telegram, los artículos de puntos escritos con un formato anterior (f distinto de 2: solo 5 mejores por equipo).
+export async function rehacerPuntos(env, f = fetch, now = Date.now()) {
+  if (!env || !env.PORRA) return 0;
+  const own = (await env.PORRA.get(OWN_KEY, "json")) || [];
+  const x = own.find((y) => y && y.art === "artpuntos" && y.f !== 2);
+  if (!x) return 0;
+  const m = String(x.title || "").match(/^Puntos del (.+) – (.+) \(J(\d+)\)$/);
+  if (!m) return 0;
+  const r = await publicarPuntos(env, [{ j: Number(m[3]), home: m[1], away: m[2] }], f, now);
+  return r && r[0] && r[0].art ? 1 : 0;
 }

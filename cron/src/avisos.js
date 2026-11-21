@@ -91,7 +91,7 @@ function madridOffsetMs(utcMs) {
   return Date.UTC(g("year"), g("month") - 1, g("day"), g("hour"), g("minute"), g("second")) - utcMs;
 }
 function madridHour(now) {
-  return Number(new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Madrid", hourCycle: "h23", hour: "2-digit" }).format(new Date(now)));
+  return Number(new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Madrid", hourCycle: "h23", hour: "2-digit" }).format(new Date(now))) % 24; // % 24: algunos motores dan «24» a medianoche y el silencio no valdría
 }
 function hhmm(ms) {
   return new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(ms));
@@ -582,21 +582,31 @@ export async function avisar(env, deps) {
 // El servidor (recordMatchPoints) devuelve los partidos que acaba de guardar; el cron los mete en una cola
 // y aquí se mandan. De 00:00 a 08:00 no suena nada: se quedan en la cola y salen a las 08:00.
 const PTS_Q_KEY = "tg:puntos-cola:v1";
+const PTS_SENT_KEY = "tg:puntos-enviados:v1"; // partidos YA avisados: un partido se avisa una sola vez, pase lo que pase con la cola
+const ptsClave = (it) => Number(it.j) + "|" + String(it.home) + "|" + String(it.away);
 export function textoPuntos(it) {
-  const tops = Array.isArray(it.top) && it.top.length ? "\n\n⭐ " + it.top.map(esc).join(" · ") : "";
   const enlace = it.art && /^[a-z0-9]+$/.test(String(it.art)) ? "https://edumr.es/futmondo/guiafantasy/noticias/ed-" + it.art : WEB; // el artículo con todos los puntos
-  return "✅ <b>PUNTOS DE FUTMONDO</b>\n" + esc(it.home) + " – " + esc(it.away) + " (J" + Number(it.j) + ")" + tops + "\n\n👉 " + enlace;
+  const m = it.marcador && /^\d{1,2} - \d{1,2}$/.test(String(it.marcador)) ? String(it.marcador).replace(" - ", "-") : "";
+  const cab = esc(it.home) + (m ? " " + m + " " : " – ") + esc(it.away) + " (J" + Number(it.j) + ")";
+  // Resumen corto: los puntos de todos los jugadores de cada equipo (de mayor a menor), una línea por equipo. Sin datos de jugadores: solo el partido.
+  const eq = Array.isArray(it.eq) ? it.eq.filter((e) => e && e.n && Array.isArray(e.j) && e.j.length) : [];
+  const lin = eq.map((e) => "<b>" + esc(e.n) + "</b>\n" + e.j.map(esc).join(" · ")).join("\n\n");
+  return "✅ <b>PUNTOS DE FUTMONDO</b>\n" + cab + (lin ? "\n\n" + lin : "") + "\n\n👉 " + enlace;
 }
 export async function colaPuntos(env, items) {
   if (!env || !env.PORRA || !Array.isArray(items) || !items.length) return 0;
-  let q = [];
+  let q = [], sent = [];
   try { q = (await env.PORRA.get(PTS_Q_KEY, "json")) || []; } catch (e) { return 0; }
+  try { sent = (await env.PORRA.get(PTS_SENT_KEY, "json")) || []; } catch (e) {}
   if (!Array.isArray(q)) q = [];
+  if (!Array.isArray(sent)) sent = [];
   let n = 0;
   items.forEach((it) => {
     if (!it || !it.home || !it.away || !it.j) return;
     if (q.some((x) => x.j === it.j && x.home === it.home && x.away === it.away)) return;
-    q.push({ j: Number(it.j), home: String(it.home), away: String(it.away), art: it.art ? String(it.art) : undefined, top: Array.isArray(it.top) ? it.top.map(String).slice(0, 3) : undefined }); n++;
+    if (sent.indexOf(ptsClave(it)) >= 0) return; // ya se avisó de este partido
+    const eq = Array.isArray(it.eq) ? it.eq.slice(0, 2).map((e) => ({ n: String(e.n), j: (e.j || []).slice(0, 40).map(String) })) : undefined;
+    q.push({ j: Number(it.j), home: String(it.home), away: String(it.away), art: it.art ? String(it.art) : undefined, top: Array.isArray(it.top) ? it.top.map(String).slice(0, 3) : undefined, eq, marcador: it.marcador ? String(it.marcador) : undefined }); n++;
   });
   if (n) { try { await env.PORRA.put(PTS_Q_KEY, JSON.stringify(q.slice(-40))); } catch (e) { return 0; } }
   return n;
@@ -616,8 +626,20 @@ export async function avisarPuntos(env, deps) {
   let sent = 0;
   for (const it of q) {
     if (sent >= 8) { rest.push(it); continue; }
+    // Se apunta como avisado ANTES de mandar (releyendo el registro): si otra pasada del cron va a la vez, ve la marca y no repite.
+    // Si Telegram falla, la marca se quita y el aviso sigue en la cola.
+    const k = ptsClave(it);
+    let reg = [];
+    try { reg = (await env.PORRA.get(PTS_SENT_KEY, "json")) || []; } catch (e) {}
+    if (!Array.isArray(reg)) reg = [];
+    if (reg.indexOf(k) >= 0) continue; // ya avisado: se descarta de la cola
+    try { await env.PORRA.put(PTS_SENT_KEY, JSON.stringify(reg.concat(k).slice(-80))); } catch (e) { rest.push(it); continue; }
     const ok = await send(env, f, chat, textoPuntos(it), { previewUrl: "https://edumr.es/img/aviso-puntos.jpg?v=1" });
-    if (ok) sent++; else rest.push(it);
+    if (ok) sent++;
+    else {
+      rest.push(it);
+      try { const r2 = (await env.PORRA.get(PTS_SENT_KEY, "json")) || []; await env.PORRA.put(PTS_SENT_KEY, JSON.stringify(r2.filter((x) => x !== k))); } catch (e) {}
+    }
   }
   try { await env.PORRA.put(PTS_Q_KEY, JSON.stringify(rest)); } catch (e) {}
   return { sent, pending: rest.length };

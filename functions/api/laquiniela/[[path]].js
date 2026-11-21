@@ -2138,7 +2138,7 @@ async function playerFicha(env, id, fast, raw) {
 /* ---------- Noticias PROPIAS (redactor) y panel de administrador ---------- */
 // v2 (12/11/2026): noticias nuevas por cambio de estado. Las antiguas se quedan guardadas en own:news:v1, sin mostrarse.
 const OWN_KEY = "own:news:v2";
-const OWN_LINK = /^https:\/\/edumr\.es\/n\/([a-z0-9]{6,16})$/;
+const OWN_LINK = /^https:\/\/edumr\.es\/n\/([a-z0-9]{6,40})$/; // 40: «artpuntos13athleticde» tiene 21 (con 16 la noticia de puntos salía «eliminada»)
 const OWN_ETIQ = { disponible: "disponible", opcion_titular: "opción de titular", duda: "duda", recuperacion_con_grupo: "entrena con el grupo", recuperacion_parcial: "entrena parcialmente", baja: "baja", titular_confirmado: "titular confirmado", rotacion: "rotación" };
 async function getOwn(env) { try { return (await env.PORRA.get(OWN_KEY, "json")) || []; } catch (e) { return []; } }
 async function putOwn(env, arr) { await env.PORRA.put(OWN_KEY, JSON.stringify(arr.slice(0, 300))); }
@@ -4898,6 +4898,8 @@ async function recordMatchPoints(env) {
       // Se relee antes de escribir por si otro partido de la misma jornada se guardó mientras tanto
       let cur2 = null;
       try { cur2 = await env.PORRA.get(PTJ_PREFIX + n, "json"); } catch (e) {}
+      // Otra pasada del cron ya guardó este partido mientras éste leía los 40 jugadores: no se repite (ni el aviso de Telegram)
+      if (cur2 && Array.isArray(cur2.teams) && cur2.teams.indexOf(pm.home) >= 0 && cur2.teams.indexOf(pm.away) >= 0) { out.waiting.push(pm.home + "-" + pm.away + ":ya-guardado"); continue; }
       const store = cur2 && cur2.pts ? cur2 : { at: 0, pts: {}, teams: [] };
       Object.keys(results).forEach((id) => { const r = results[id]; if (r && r.f === true && r.p != null) store.pts[id] = r.p; });
       [pm.home, pm.away].forEach((k) => { if (store.teams.indexOf(k) < 0) store.teams.push(k); });

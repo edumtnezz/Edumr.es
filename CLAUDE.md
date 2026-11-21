@@ -98,6 +98,11 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 - **Hora del cron (21/11/2026)**: `vigilarEstados`, `vigilarFotmob` y `publicarPartes` reciben `event.scheduledTime`. Antes usaban `Date.now()` y, como la cadena tarda casi un minuto en llegar a ellos, el «minuto % 3» caía en otro minuto y las noticias de estado no se publicaban. Diagnóstico: `/api/laquiniela/estados` → `partes` (último resultado).
 - Medir: comparar `cambios` de `estados` (Biwenger) y `fotmob.cambios` unos días para ver quién avisa antes.
 
+## Puntos de un partido: aviso y artículo (21/11/2026)
+- **Noticia «No pude extraer el texto»**: el id del artículo de puntos (`artpuntos13athleticde`, 21 letras) no cabía en los enlaces (`OWN_LINK`, `ogDePropia`: 6–16) y la web decía «eliminada». Ahora 6–40. No acortar ids ni volver a 16.
+- **Duplicados en Telegram**: cada partido se avisa UNA vez (`tg:puntos-enviados:v1`, se apunta antes de mandar; si Telegram falla se quita) y `recordMatchPoints` no repite un partido que otra pasada ya guardó. `madridHour` usa `% 24` (el silencio 00:00–08:00 debe valer a medianoche).
+- **Formato** (pedido por Edu): aviso y artículo con los puntos de TODOS los jugadores de los dos equipos, de mayor a menor, en lista corta. Artículo: marcador + mejor, y por equipo líneas «+ Nombre | puntos» en dos columnas (`.art-pts`). Los antiguos (`f` distinto de 2) se rehacen solos (`rehacerPuntos`).
+
 ## Ideas pendientes
 - Avisos Telegram (noticias y alineación probable)
 - Jugadores rentables (SofaScore, calidad-precio)

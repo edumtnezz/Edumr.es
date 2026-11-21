@@ -4213,3 +4213,12 @@ html[data-theme="dark"] .art-sec-ok > h3.nw-h { color: #4ade80; } html[data-them
 .art-chip-mo { background: rgba(124,58,237,.12); border-color: rgba(124,58,237,.3); color: #6d28d9; }
 html[data-theme="dark"] .art-chip-ok { color: #4ade80; } html[data-theme="dark"] .art-chip-az { color: #60a5fa; }
 html[data-theme="dark"] .art-chip-na { color: #fb923c; } html[data-theme="dark"] .art-chip-mo { color: #a78bfa; }
+
+/* Puntos de un partido: lista corta, dos columnas, sin fotos */
+.art-pts { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; margin: 4px 0 14px; }
+.art-pt { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 6px 2px; border-bottom: 1px solid rgba(128,128,128,.18); font-size: .9rem; }
+.art-pt span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.art-pt b { font-weight: 800; font-variant-numeric: tabular-nums; }
+.art-pt-hi b { color: #15803d; }
+.art-pt-lo b { color: #dc2626; }
+html[data-theme="dark"] .art-pt-hi b { color: #4ade80; } html[data-theme="dark"] .art-pt-lo b { color: #f87171; }
