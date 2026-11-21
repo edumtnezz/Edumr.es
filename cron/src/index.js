@@ -35,6 +35,12 @@ export default {
       try { await vigilarEstados(env); } catch (e) { console.error("estados", String(e && e.message || e).slice(0, 180)); }
       // Segunda fuente de estado (FotMob): cada 6 min, solo apunta cambios; las noticias lo usan si Biwenger aún no lo tiene.
       try { await vigilarFotmob(env); } catch (e) { console.error("fotmob-estados", String(e && e.message || e).slice(0, 180)); }
+      // Noticias de estado: van justo después de leer los estados (21/11/2026: al final de la cadena no llegaban a ejecutarse).
+      try {
+        const r = await publicarPartes(env);
+        // Diagnóstico: último resultado que no fue «no toca» (se ve en /api/laquiniela/estados → partes)
+        if (!(r && r.skipped === "no toca")) await env.PORRA.put("partes:last:v1", JSON.stringify({ at: Date.now(), r }));
+      } catch (e) { console.error("partes", String(e && e.message || e).slice(0, 180)); try { await env.PORRA.put("partes:last:v1", JSON.stringify({ at: Date.now(), error: String(e && e.message || e).slice(0, 200) })); } catch (e2) {} }
       // Diario de LaLiga: cambios en la clasificación (arriba y descenso) y en los goleadores (cada 10 min, nunca con un partido en juego).
       try { await apuntarSustituciones(env); } catch (e) { console.error("subs", String(e && e.message || e).slice(0, 180)); }
       try { await apuntarDiario(env); } catch (e) { console.error("diario", String(e && e.message || e).slice(0, 180)); }
@@ -45,11 +51,7 @@ export default {
       try { await avisar(env); } catch (e) {}
       // Noticias nuevas (12/11/2026): una noticia corta por cada cambio de estado. El redactor antiguo (ruedas de prensa,
       // notas de otras webs y portadas generadas) queda apagado; su código sigue en redactor.js sin usarse.
-      try {
-        const r = await publicarPartes(env);
-        // Diagnóstico: último resultado que no fue «no toca» (se ve en /api/laquiniela/estados → partes)
-        if (!(r && r.skipped === "no toca")) await env.PORRA.put("partes:last:v1", JSON.stringify({ at: Date.now(), r }));
-      } catch (e) { console.error("partes", String(e && e.message || e).slice(0, 180)); try { await env.PORRA.put("partes:last:v1", JSON.stringify({ at: Date.now(), error: String(e && e.message || e).slice(0, 200) })); } catch (e2) {} }
+
       return;
     }
     // "0 8 * * *" = vigilante diario: comprueba que las 20 páginas de
