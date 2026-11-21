@@ -79,8 +79,10 @@
 :is(#inicioTop,#tab-inicio) .it .lg img{width:24px;height:24px;object-fit:contain}
 :is(#inicioTop,#tab-inicio) .it .lg.ph img{width:30px;height:30px;object-fit:cover}
 :is(#inicioTop,#tab-inicio) .it .b{flex:1;min-width:0}
-:is(#inicioTop,#tab-inicio) .it .ti{font-weight:800;font-size:14px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-:is(#inicioTop,#tab-inicio) .it .de{font-size:12px;color:var(--mu);margin-top:2px;line-height:1.35}
+:is(#inicioTop,#tab-inicio) .it .ti{font-weight:800;font-size:14px;display:flex;gap:6px;align-items:center;flex-wrap:nowrap;min-width:0}
+:is(#inicioTop,#tab-inicio) .it .ti .pill{flex:none}
+:is(#inicioTop,#tab-inicio) .it .ti .tx{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+:is(#inicioTop,#tab-inicio) .it .de{display:block;font-size:12px;color:var(--mu);margin-top:2px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 :is(#inicioTop,#tab-inicio) .it .tm{font-size:12px;color:var(--mu);flex:none}
 :is(#inicioTop,#tab-inicio) .chol-top{display:flex;align-items:center;gap:10px}
 :is(#inicioTop,#tab-inicio) .ic-ph{width:46px;height:46px;border-radius:50%;overflow:hidden;background:#e2e8f0;flex:none;border:2px solid var(--ac)}
