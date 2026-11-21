@@ -15,6 +15,18 @@ export default {
     // jugadores). Lee las fuentes directamente; sin el secreto TELEGRAM_BOT_TOKEN
     // no hace nada, y un fallo aquí nunca afecta a lo demás.
     if (event.cron === "* * * * *") {
+      // Lo de los estados y las noticias va PRIMERO (21/11/2026): los pasos pesados de después a veces tardaban más de un minuto y no llegaban a ejecutarse.
+      // Estado físico de los jugadores: apunta cada cambio con su hora (cada 3 min).
+      try { await vigilarEstados(env, fetch, event.scheduledTime); } catch (e) { console.error("estados", String(e && e.message || e).slice(0, 180)); }
+      // Segunda fuente de estado (FotMob): cada 6 min, solo apunta cambios; las noticias lo usan si Biwenger aún no lo tiene.
+      try { await vigilarFotmob(env, fetch, event.scheduledTime); } catch (e) { console.error("fotmob-estados", String(e && e.message || e).slice(0, 180)); }
+      // Noticias de estado: van justo después de leer los estados (21/11/2026: al final de la cadena no llegaban a ejecutarse).
+      try {
+        // La hora es la del disparo del cron, no la de cuando llega el turno: si antes se tarda casi un minuto, «cada 3 min» se saltaba el minuto
+        const r = await publicarPartes(env, fetch, event.scheduledTime);
+        // Diagnóstico: último resultado que no fue «no toca» (se ve en /api/laquiniela/estados → partes)
+        await env.PORRA.put("partes:last:v1", JSON.stringify({ at: Date.now(), sched: event.scheduledTime, r }));
+      } catch (e) { console.error("partes", String(e && e.message || e).slice(0, 180)); try { await env.PORRA.put("partes:last:v1", JSON.stringify({ at: Date.now(), error: String(e && e.message || e).slice(0, 200) })); } catch (e2) {} }
       // Puntos de Futmondo: en cuanto los publica tras el final de un partido, se guardan en KV para que
       // la página del partido ya los traiga al abrirla. Si no hay partidos pendientes casi no cuesta nada.
       try {
@@ -31,17 +43,6 @@ export default {
       } catch (e) {}
       // Análisis propios (dificultad de calendario, once propio): una tanda de jugadores por minuto hasta completar la vuelta; luego descansa 6 h.
       try { await fetch("https://edumr.es/api/laquiniela/analitica?run=1", { headers: { "user-agent": "edumr-cron" } }); } catch (e) {}
-      // Estado físico de los jugadores: apunta cada cambio con su hora (cada 3 min).
-      try { await vigilarEstados(env, fetch, event.scheduledTime); } catch (e) { console.error("estados", String(e && e.message || e).slice(0, 180)); }
-      // Segunda fuente de estado (FotMob): cada 6 min, solo apunta cambios; las noticias lo usan si Biwenger aún no lo tiene.
-      try { await vigilarFotmob(env, fetch, event.scheduledTime); } catch (e) { console.error("fotmob-estados", String(e && e.message || e).slice(0, 180)); }
-      // Noticias de estado: van justo después de leer los estados (21/11/2026: al final de la cadena no llegaban a ejecutarse).
-      try {
-        // La hora es la del disparo del cron, no la de cuando llega el turno: si antes se tarda casi un minuto, «cada 3 min» se saltaba el minuto
-        const r = await publicarPartes(env, fetch, event.scheduledTime);
-        // Diagnóstico: último resultado que no fue «no toca» (se ve en /api/laquiniela/estados → partes)
-        await env.PORRA.put("partes:last:v1", JSON.stringify({ at: Date.now(), sched: event.scheduledTime, r }));
-      } catch (e) { console.error("partes", String(e && e.message || e).slice(0, 180)); try { await env.PORRA.put("partes:last:v1", JSON.stringify({ at: Date.now(), error: String(e && e.message || e).slice(0, 200) })); } catch (e2) {} }
       // Diario de LaLiga: cambios en la clasificación (arriba y descenso) y en los goleadores (cada 10 min, nunca con un partido en juego).
       try { await apuntarSustituciones(env); } catch (e) { console.error("subs", String(e && e.message || e).slice(0, 180)); }
       try { await apuntarDiario(env); } catch (e) { console.error("diario", String(e && e.message || e).slice(0, 180)); }
