@@ -100,7 +100,7 @@
       var tv = (m.tv || []).map(function (t) { return t.logo ? '<img class="tv" src="' + esc(t.logo) + '" alt="' + esc(t.name) + '">' : ""; }).join("");
       var score = m.live && m.live.score ? m.live.score : "";
       var lab = st === "live" ? (score || "En juego") : st === "final" ? score : m.aplazado ? "Aplazado" : m.time;
-      var sub = st === "live" ? '<span class="lv">' + esc(m.live.minute || "En directo") + "</span>" : st === "final" ? '<span class="fn">Final</span>' : tv;
+      var sub = st === "live" ? '<span class="lv">' + esc(m.live.minute || "En directo") + "</span>" + tv : st === "final" ? '<span class="fn">Final</span>' : tv;
       var ago = at > 1e9 ? Math.round((Date.now() - at) / 60000) : -1;
       var fresh = ago >= 0 && ago < 60;
       var live = st === "live", conf = !live && at && m.confirmed;
