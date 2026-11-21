@@ -3220,6 +3220,7 @@ async function getPartidoFF(env, home, away, jornada) {
     const entran = new Set(fm.events.filter((e) => e.type === "Substitution" && e.swap && e.home === sideHome).map((e) => e.swap[0].id));
     return t.starters.concat(t.subs.filter((p) => entran.has(p.id))).map((p) => ({ pos: FM_POS2[p.pos] || "", name: p.name, pts: null, hl: hlDe(p.id, sideHome), min: "" }));
   };
+  const empezado = !!(fm.started || fm.finished);
   const goles = (sideHome) => fm.events.filter((e) => e.type === "Goal" && e.home === sideHome).map((e) => ({ text: e.name + (e.own ? " (p.p.)" : e.pen ? " (p)" : "") + " " + e.time + (e.x ? "+" + e.x : "") + "'" }));
   // FotMob marca la propia puerta con el equipo del que marca: un gol en propia suma al rival (ya viene así en el marcador)
   return {
@@ -3228,7 +3229,9 @@ async function getPartidoFF(env, home, away, jornada) {
     state: fm.finished ? "FINALIZADO" : "",
     stadium: fm.infoBox.stadium, referee: fm.infoBox.referee,
     goalsHome: goles(true), goalsAway: goles(false),
-    homePlayers: jugadores(fm.home, true), awayPlayers: jugadores(fm.away, false),
+    // Antes del pitido inicial FotMob da su alineación PROBABLE: no son jugadores del partido.
+    // Sin esto la web veía 11+11 jugadores y pintaba "Partido en juego" horas antes (21/11/2026).
+    homePlayers: empezado ? jugadores(fm.home, true) : [], awayPlayers: empezado ? jugadores(fm.away, false) : [],
     fuente: "fotmob", fmId: fm.id,
   };
 }

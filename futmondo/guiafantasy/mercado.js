@@ -2543,7 +2543,9 @@
       if (!d) { if (first) box.innerHTML = '<p class="muted small">No se pudo cargar el partido. <a href="" onclick="location.reload();return false">Reintentar</a></p>'; return false; }
       const finalNow = (m.live && m.live.state === "final") || /finaliz/i.test(String(d.state || ""));
       // En juego: se enseña lo que hay ahora en el campo (tabla de jugadores) en vez de la probable
-      mpLive = !!(!finalNow && d.homePlayers && d.homePlayers.length >= 11 && d.awayPlayers && d.awayPlayers.length >= 11);
+      // Nunca "en juego" antes de la hora del partido (aunque la fuente traiga jugadores)
+      const koMs = kickoffMs(m);
+      mpLive = !!(!finalNow && (!koMs || Date.now() >= koMs) && d.homePlayers && d.homePlayers.length >= 11 && d.awayPlayers && d.awayPlayers.length >= 11);
       const finished = finalNow || mpLive;
       // Alineación para el campo (solo si el partido NO ha acabado): primero
       // la confirmada (Comuniate, literal); si aún no está, la probable
