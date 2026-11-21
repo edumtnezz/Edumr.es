@@ -1298,7 +1298,7 @@
     const POS = { portero: "Portero", defensas: "Defensa", medios: "Mediocampista", delanteros: "Delantero" };
     const starters = [];
     ["portero", "defensas", "medios", "delanteros"].forEach((k) => (g[k] || []).forEach((p) => {
-      starters.push({ name: p.name, full: p.full || p.name, alt: p.alt || ffFullFor(photoMap, p.full || p.name), pos: POS[k], photo: (keepPhoto && p.photo) || ffPhotoFor(photoMap, p.full || p.name) || "" });
+      starters.push({ name: p.name, full: p.full || p.name, alt: p.alt || ffFullFor(photoMap, p.full || p.name), pos: POS[k], photo: (keepPhoto && p.photo) || ffPhotoFor(photoMap, p.full || p.name) || "", y: p.y });
     }));
     return { starters, bench: [], formation: [g.defensas.length, g.medios.length, g.delanteros.length].join("-") };
   }
@@ -1412,19 +1412,27 @@
     const sameC = (a, b) => { const p = nT(a), q = nT(b); if (!p.length || !q.length) return false; return p.every((t) => q.indexOf(t) >= 0) || q.every((t) => p.indexOf(t) >= 0) || (p[p.length - 1].length >= 4 && p[p.length - 1] === q[q.length - 1]); };
     // Fila real de un jugador según el once oficial. Antes: la primera fila donde el apellido coincidía, y «Iñaki Williams» caía en la fila de
     // «Nico Williams» (4-6-0). Ahora se prueba por exactitud: nombre igual → palabras contenidas → solo el apellido, y ese solo si es único en el once.
-    const rowOf = (nm) => {
-      if (!cg) return "";
+    const rowInfo = (nm) => {
+      if (!cg) return null;
       const todos = [];
-      ["defensas", "medios", "delanteros"].forEach((k) => cg[k].forEach((c) => todos.push({ k, n: nT(c.full || c.name) })));
-      const q = nT(nm); if (!q.length) return "";
+      ["defensas", "medios", "delanteros"].forEach((k) => cg[k].forEach((c) => todos.push({ k, i: todos.length, n: nT(c.full || c.name) })));
+      const q = nT(nm); if (!q.length) return null;
       const eq = (a, b) => a.length === b.length && a.every((t) => b.indexOf(t) >= 0);
       const cont = (a, b) => a.every((t) => b.indexOf(t) >= 0) || b.every((t) => a.indexOf(t) >= 0);
-      let h = todos.filter((c) => eq(c.n, q)); if (h.length === 1) return h[0].k;
-      h = todos.filter((c) => cont(c.n, q)); if (h.length === 1) return h[0].k;
+      let h = todos.filter((c) => eq(c.n, q)); if (h.length === 1) return h[0];
+      h = todos.filter((c) => cont(c.n, q)); if (h.length === 1) return h[0];
       const ap = q[q.length - 1];
-      if (ap.length >= 4) { h = todos.filter((c) => c.n[c.n.length - 1] === ap); if (h.length === 1) return h[0].k; }
-      return ""; // ambiguo: mejor sin fila del once oficial (se usa la posición de la ficha) que ponerlo en la fila de otro
+      if (ap.length >= 4) { h = todos.filter((c) => c.n[c.n.length - 1] === ap); if (h.length === 1) return h[0]; }
+      return null; // ambiguo: mejor sin fila del once oficial (se usa la posición de la ficha) que ponerlo en la fila de otro
     };
+    const rowOf = (nm) => { const r = rowInfo(nm); return r ? r.k : ""; };
+    // Formación real del once oficial (FotMob, p. ej. «4-2-3-1»): si cuadra con las filas conocidas, cada titular lleva su fila exacta (y) y el campo se dibuja así
+    let filasReales = null;
+    if (cg && conf && /^\d(-\d){2,3}$/.test(String(conf.formation || ""))) {
+      const nums = String(conf.formation).split("-").map(Number);
+      if (nums.reduce((a, b) => a + b, 0) === 10 && nums[0] === cg.defensas.length && nums[nums.length - 1] === cg.delanteros.length) filasReales = nums;
+    }
+    const filaDe = (i) => { if (!filasReales) return null; let acc = 0; for (let r = 0; r < filasReales.length; r++) { acc += filasReales[r]; if (i < acc) return r; } return null; };
     const g = { name, crest, portero: [], defensas: [], medios: [], delanteros: [], subs: [] };
     (list || []).forEach((p) => {
       const q = stripAccents(String(p.pos || "").toLowerCase()).trim();
@@ -1432,7 +1440,8 @@
       const mi = marketInfo(p.name, name);
       const o = { pos: q, name: p.name, full: p.name, alt: ffFullFor(photoMap, p.name), last: String(p.name || "").split(/\s+/).pop(), photo: ffPhotoFor(photoMap, p.name) || (mi && mi.photo) || "" };
       if (isSub) { g.subs.push(o); return; }
-      const cr = esPorteroPos(q) ? "" : rowOf(p.name);
+      const ri = esPorteroPos(q) ? null : rowInfo(p.name), cr = ri ? ri.k : "";
+      if (ri && filasReales) { const fr = filaDe(ri.i); if (fr != null) o.y = 90 - fr * 20; }
       if (cr) g[cr].push(o);
       else if (esPorteroPos(q)) g.portero.push(o);
       else if (q === "df" || /defens/.test(q)) g.defensas.push(o);
@@ -1453,7 +1462,7 @@
         else break;
       }
     }
-    g.formation = [g.defensas.length, g.medios.length, g.delanteros.length].join("-");
+    g.formation = filasReales ? conf.formation : [g.defensas.length, g.medios.length, g.delanteros.length].join("-");
     return g;
   }
   function mpSubsGrid(list, evIdx) {
