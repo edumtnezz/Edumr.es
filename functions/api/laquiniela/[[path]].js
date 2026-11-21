@@ -6505,7 +6505,7 @@ async function handleGet({ request, env: env0, params }) {
     // FotMob (segunda fuente, desde 20/11/2026): su foto y sus cambios con la hora a la que los detectamos
     let fo = null, evFo = [];
     try { fo = await env.PORRA.get("est:fo:v1", "json"); evFo = (await env.PORRA.get("est:fo:ev:v1", "json")) || []; } catch (e) {}
-    return json({ updatedAt: (foto && foto.at) || 0, estados, cambios: ev.slice(-200).reverse(), fotmob: { updatedAt: (fo && fo.at) || 0, estados: (fo && fo.fo) || {}, cambios: evFo.slice(-200).reverse() } });
+    return json({ updatedAt: (foto && foto.at) || 0, estados, cambios: ev.slice(-200).reverse(), partes: await env.PORRA.get("partes:last:v1", "json").catch(() => null), fotmob: { updatedAt: (fo && fo.at) || 0, estados: (fo && fo.fo) || {}, cambios: evFo.slice(-200).reverse() } });
   }
   // Diagnóstico: ¿llega fichajes.com desde el Worker? /api/laquiniela/lesiones?name=De%20Jong&club=Barcelona
   if (path === "lesiones") {

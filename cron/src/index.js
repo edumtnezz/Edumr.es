@@ -45,7 +45,11 @@ export default {
       try { await avisar(env); } catch (e) {}
       // Noticias nuevas (12/11/2026): una noticia corta por cada cambio de estado. El redactor antiguo (ruedas de prensa,
       // notas de otras webs y portadas generadas) queda apagado; su código sigue en redactor.js sin usarse.
-      try { await publicarPartes(env); } catch (e) { console.error("partes", String(e && e.message || e).slice(0, 180)); }
+      try {
+        const r = await publicarPartes(env);
+        // Diagnóstico: último resultado que no fue «no toca» (se ve en /api/laquiniela/estados → partes)
+        if (!(r && r.skipped === "no toca")) await env.PORRA.put("partes:last:v1", JSON.stringify({ at: Date.now(), r }));
+      } catch (e) { console.error("partes", String(e && e.message || e).slice(0, 180)); try { await env.PORRA.put("partes:last:v1", JSON.stringify({ at: Date.now(), error: String(e && e.message || e).slice(0, 200) })); } catch (e2) {} }
       return;
     }
     // "0 8 * * *" = vigilante diario: comprueba que las 20 páginas de
