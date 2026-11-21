@@ -1408,7 +1408,21 @@
     if (conf) { cg = xiGroups(conf); if (!(cg.defensas.length + cg.medios.length + cg.delanteros.length >= 8)) cg = null; }
     const nT = (x) => stripAccents(String(x || "")).replace(/[^a-z0-9 ]/g, " ").trim().split(/\s+/).filter(Boolean);
     const sameC = (a, b) => { const p = nT(a), q = nT(b); if (!p.length || !q.length) return false; return p.every((t) => q.indexOf(t) >= 0) || q.every((t) => p.indexOf(t) >= 0) || (p[p.length - 1].length >= 4 && p[p.length - 1] === q[q.length - 1]); };
-    const rowOf = (nm) => { if (!cg) return ""; for (const k of ["defensas", "medios", "delanteros"]) if (cg[k].some((c) => sameC(c.full || c.name, nm))) return k; return ""; };
+    // Fila real de un jugador según el once oficial. Antes: la primera fila donde el apellido coincidía, y «Iñaki Williams» caía en la fila de
+    // «Nico Williams» (4-6-0). Ahora se prueba por exactitud: nombre igual → palabras contenidas → solo el apellido, y ese solo si es único en el once.
+    const rowOf = (nm) => {
+      if (!cg) return "";
+      const todos = [];
+      ["defensas", "medios", "delanteros"].forEach((k) => cg[k].forEach((c) => todos.push({ k, n: nT(c.full || c.name) })));
+      const q = nT(nm); if (!q.length) return "";
+      const eq = (a, b) => a.length === b.length && a.every((t) => b.indexOf(t) >= 0);
+      const cont = (a, b) => a.every((t) => b.indexOf(t) >= 0) || b.every((t) => a.indexOf(t) >= 0);
+      let h = todos.filter((c) => eq(c.n, q)); if (h.length === 1) return h[0].k;
+      h = todos.filter((c) => cont(c.n, q)); if (h.length === 1) return h[0].k;
+      const ap = q[q.length - 1];
+      if (ap.length >= 4) { h = todos.filter((c) => c.n[c.n.length - 1] === ap); if (h.length === 1) return h[0].k; }
+      return ""; // ambiguo: mejor sin fila del once oficial (se usa la posición de la ficha) que ponerlo en la fila de otro
+    };
     const g = { name, crest, portero: [], defensas: [], medios: [], delanteros: [], subs: [] };
     (list || []).forEach((p) => {
       const q = stripAccents(String(p.pos || "").toLowerCase()).trim();

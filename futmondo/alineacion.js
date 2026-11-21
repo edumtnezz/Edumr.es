@@ -178,6 +178,7 @@
       if (!side || !side.starters || !side.starters.length) return msg(card, "Todavía no hay once probable.");
       var teamName = best.home ? m.home : m.away;
       var pool = players.filter(function (p) { return teamScore(p.team, teamName) >= 1; });
+      side = Object.assign({}, side, { __team: teamName });
       card.querySelector(".pitch").innerHTML = render(side, pool, side.bench || []);
       var rival = best.home ? m.away : m.home;
       card.querySelector(".al-foot").textContent = teamName + " · J" + jd.matchday + " · " + (best.home ? "vs " : "en ") + rival + " · " + formacion(side);
@@ -206,7 +207,23 @@
     if (rows.length === 4 && rows[0].length === 3 && rows[1].length === 3 && rows[2].length === 2 && rows[3].length === 2) {
       rows = [rows[0], rows[1].concat(rows[2]), rows[3]];
     }
-    return rows;
+    return ajustarAlRegistro(rows, f, side);
+  }
+  // Registro de formaciones reales del equipo (FotMob). Si la formación dibujada no es una que el equipo haya jugado esta temporada,
+  // se pone la más parecida de las que sí. Sin registro o con menos de 3 partidos, se deja tal cual.
+  function regDe(team) {
+    var D = window.EduFormaciones && window.EduFormaciones.get(); if (!D || !team) return null;
+    var best = null, bs = 0, tie = false;
+    D.equipos.forEach(function (e) { var sc = teamScore(team, e.name); if (sc > bs) { bs = sc; best = e; tie = false; } else if (sc === bs && sc > 0) tie = true; });
+    return best && !tie && best.n >= 3 ? best : null;
+  }
+  function ajustarAlRegistro(rows, outfield, side) {
+    var EF = window.EduFormaciones, reg = EF && regDe(side.__team);
+    if (!reg || !rows) return rows;
+    var lab = rows.map(function (r) { return r.length; }).join("-");
+    var pick = EF.elegir(lab, reg.f);
+    if (!pick || pick === lab) return rows;
+    return EF.repartir(outfield, pick);
   }
   // La etiqueta sale SIEMPRE de lo que se dibuja (mismas filas).
   function formacion(side) {
@@ -249,6 +266,7 @@
       if (opts.noCrest) card.classList.add("al-nocrest");
       setCrest(card.querySelector(".al-head img"), crest);
       var pool = opts.pool || (players || []).filter(function (p) { return teamScore(p.team, teamName) >= 1; });
+      side = Object.assign({}, side, { __team: opts.noRegistro ? "" : teamName }); // los onces recomendados llevan su formación elegida: no se tocan
       card.querySelector(".pitch").innerHTML = render(side, pool, side.bench || [], mode);
       if (subs && subs.length) card.querySelector(".pitch").insertAdjacentHTML("afterend", benchHtml(subs, pool, mode, opts.benchTitle));
       card.querySelector(".al-foot").textContent = teamName + (subtitle ? " · " + subtitle : "") + " · " + formacion(side);

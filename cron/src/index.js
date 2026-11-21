@@ -43,6 +43,8 @@ export default {
       } catch (e) {}
       // Análisis propios (dificultad de calendario, once propio): una tanda de jugadores por minuto hasta completar la vuelta; luego descansa 6 h.
       try { await fetch("https://edumr.es/api/laquiniela/analitica?run=1", { headers: { "user-agent": "edumr-cron" } }); } catch (e) {}
+      // Registro de formaciones de cada equipo (FotMob): lee 6 partidos terminados por pasada hasta completar la temporada y luego mira cada 30 min
+      try { await fetch("https://edumr.es/api/laquiniela/formaciones?run=1", { headers: { "user-agent": "edumr-cron" } }); } catch (e) {}
       // Diario de LaLiga: cambios en la clasificación (arriba y descenso) y en los goleadores (cada 10 min, nunca con un partido en juego).
       try { await apuntarSustituciones(env); } catch (e) { console.error("subs", String(e && e.message || e).slice(0, 180)); }
       try { await apuntarDiario(env); } catch (e) { console.error("diario", String(e && e.message || e).slice(0, 180)); }

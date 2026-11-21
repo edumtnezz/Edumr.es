@@ -103,6 +103,11 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 - **Duplicados en Telegram**: cada partido se avisa UNA vez (`tg:puntos-enviados:v1`, se apunta antes de mandar; si Telegram falla se quita) y `recordMatchPoints` no repite un partido que otra pasada ya guardó. `madridHour` usa `% 24` (el silencio 00:00–08:00 debe valer a medianoche).
 - **Formato** (pedido por Edu): aviso y artículo con los puntos de TODOS los jugadores de los dos equipos, de mayor a menor, en lista corta. Artículo: marcador + mejor, y por equipo líneas «+ Nombre | puntos» en dos columnas (`.art-pts`). Los antiguos (`f` distinto de 2) se rehacen solos (`rehacerPuntos`).
 
+## Formaciones reales (21/11/2026)
+- **Athletic salía 4-6-0 en «Partido finalizado»**: `xiFinishedSide.rowOf` cruzaba el once oficial por apellido y «Iñaki Williams» caía en la fila de «Nico Williams». Ahora: nombre igual → palabras contenidas → apellido solo si es único en el once; si es ambiguo no se fuerza fila. Nunca volver a cruzar «el primero que tenga el mismo apellido».
+- **Registro de formaciones por equipo**: `functions/_lib/formaciones.mjs` + ruta `/api/laquiniela/formaciones` (KV `form:v1`; `?run=1` lo llena el cron: lee 6 partidos terminados de FotMob por pasada y luego mira cada 30 min). Cuenta cuántas veces ha jugado cada equipo cada formación (solo 3–4 filas que suman 10; oficial, nunca la «predicted»).
+- **Uso** (`futmondo/formaciones.js` + `ajustarAlRegistro` en `alineacion.js`): en el once probable, si la formación dibujada (por la altura y de FutbolFantasy) no es una que el equipo haya jugado, se pone la más parecida de las que sí ha jugado (a igualdad, la más usada). Con menos de 3 partidos en el registro no se toca. Sin saltos: si el registro aún no ha llegado, la tarjeta se pinta como antes (hay copia en localStorage).
+
 ## Ideas pendientes
 - Avisos Telegram (noticias y alineación probable)
 - Jugadores rentables (SofaScore, calidad-precio)

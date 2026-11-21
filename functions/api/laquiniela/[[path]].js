@@ -11,6 +11,7 @@ import { itemsMercado, lideres as lideresDe, rachasDe, medianasPos } from "../..
 import { agregarSubs, riesgoCambio } from "../../_lib/sustituciones.mjs";
 import { parseEquipos, parseJugadores, slugEquipo, slugJugador, parseLesionesFichajes, marcarLesiones } from "../../_lib/lesiones.mjs";
 import { FM_MATCHES, FM_DETAIL, FM_LIGA } from "../../_lib/fotmob-estados.mjs";
+import { formacionesDe, sumar as sumarFormacion, terminados as terminadosFm, publico as formacionesPublico } from "../../_lib/formaciones.mjs";
 import { compacto, dificultad, calendarioDificultad, oncePropio, aciertoOnces, compararOnce, probInterna, puntuarDuelo, entrenarModelo, probModelo, fmKey, titularesFotmob, situacion, detalleDuelo, aprendizaje } from "../../_lib/analitica.mjs";
 import { cuerpoAHtml } from "../../_lib/noticia-cuerpo.mjs";
 import { minutosEnAlineacion, partidoDelDia } from "../../_lib/fotmob-min.mjs";
@@ -5784,6 +5785,35 @@ async function handleGet({ request, env: env0, params }) {
       items.sort((a, b) => (b.at || 0) - (a.at || 0));
       return json({ updatedAt: now, jornada: (cf && cf.matchday) || 0, items: items.slice(0, 20) });
     } catch (e) { return json({ updatedAt: Date.now(), items: [], error: String(e) }); }
+  }
+  if (path === "formaciones") {
+    // Registro de formaciones de cada equipo (FotMob, partidos terminados de la temporada). La web lo usa para no dibujar formaciones que el equipo no juega.
+    const KF = "form:v1";
+    let reg = null;
+    try { reg = await env.PORRA.get(KF, "json"); } catch (e) {}
+    if (url.searchParams.has("run")) {
+      reg = reg && reg.eq ? reg : { done: [], eq: {}, pend: [], chk: 0 };
+      const now = Date.now(), UA = { "user-agent": "Mozilla/5.0 (compatible; edumr)" };
+      let cambio = false, n = 0;
+      try {
+        // Cada 30 min se mira si hay partidos terminados nuevos; los pendientes se leen de 6 en 6
+        if ((!reg.pend || !reg.pend.length) && now - (reg.chk || 0) >= 30 * 60e3) {
+          const lg = await (await fetch("https://www.fotmob.com/api/data/leagues?id=87&ccode3=ESP", { headers: UA })).json();
+          const ids = terminadosFm(((lg || {}).fixtures || {}).allMatches || []);
+          if (ids.length) { reg.pend = ids.filter((id) => reg.done.indexOf(id) < 0); reg.chk = now; cambio = true; }
+        }
+        while (reg.pend && reg.pend.length && n < 6) {
+          const id = reg.pend[0];
+          const det = await fetch("https://www.fotmob.com/api/data/matchDetails?matchId=" + id, { headers: UA }).then((r) => r.json()).catch(() => null);
+          if (!det || !det.content) break; // falló: se reintenta en la próxima pasada, no se da por leído
+          sumarFormacion(reg, id, formacionesDe(det));
+          reg.pend.shift(); n++; cambio = true;
+        }
+      } catch (e) {}
+      if (cambio) { try { await env.PORRA.put(KF, JSON.stringify(reg)); } catch (e) {} }
+      return json({ ok: true, leidos: n, pendientes: (reg.pend || []).length, partidos: reg.done.length });
+    }
+    return json(formacionesPublico(reg));
   }
   if (path === "sustituciones") {
     // Titulares a los que suelen cambiar y, si casi siempre entra el mismo, quién (cambios reales de cada partido, KV subs:v1)
