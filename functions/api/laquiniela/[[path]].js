@@ -2153,7 +2153,7 @@ function ownPublic(items) {
   return items.filter((x) => x.status === "published").sort((a, b) => (b.publishedAt || 0) - (a.publishedAt || 0)).map((x) => {
     const d = madridDT(x.publishedAt || x.createdAt);
     const lead = String(x.lead || "").replace(/\s+/g, " ").trim().slice(0, 160);
-    return { title: x.title, lead, link: "https://edumr.es/n/" + x.id, date: d.date, time: d.time, thumb: x.thumb || "", src: "EduMR", ts: x.publishedAt || x.createdAt, club: x.club || "", players: (x.players || []).slice(0, 3), tipo: x.tipo || "", veredicto: x.veredicto && x.veredicto !== "ninguno" ? x.veredicto : "", plazo: x.plazo || "", pid: x.pid || "", auto: x.auto || "", cartel: x.cartel || 0, fp: x.fp || "" };
+    return { title: x.title, lead, link: "https://edumr.es/n/" + x.id, date: d.date, time: d.time, thumb: x.thumb || "", src: "EduMR", ts: x.publishedAt || x.createdAt, club: x.club || "", players: (x.players || []).slice(0, 3), tipo: x.tipo || "", veredicto: x.veredicto && x.veredicto !== "ninguno" ? x.veredicto : "", plazo: x.plazo || "", pid: x.pid || "", auto: x.auto || "", art: x.art || "", cartel: x.cartel || 0, fp: x.fp || "" };
   });
 }
 function ownArticle(x) {

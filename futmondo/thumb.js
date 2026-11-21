@@ -106,7 +106,7 @@
   function artKind(item) {
     var a = String(item && item.art || "");
     if (a === "artmercado") return "merc";
-    if (a === "artpuntos") return "puntos";
+    if (a === "artpuntos" || /^puntos del /i.test(String(item && item.title || ""))) return "puntos";
     if (a === "artchollo" || /^chollo del d/i.test(String(item && item.title || ""))) return "chollo";
     if (/^artonce/.test(a) || /onces recomendados/i.test(String(item && item.title || ""))) return "once";
     if (/^art(vender|fichar|claus|paron)/.test(a)) return a.slice(3).replace(/\d+$/, "");
