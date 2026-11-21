@@ -16,14 +16,14 @@ export function clubKey(name) {
 }
 const teamKey = clubKey;
 // Nombres que no se parecen entre Biwenger y Futmondo (comprobados a mano, 12 y 14/11/2026)
-const ALIAS = { "ez abde": "abde ezzalzouli", "odysseas": "vlachodimos", "el hilali": "omar", "johnny": "j cardoso", "johaneko": "louis jean", "sadick": "mujaid", "sainz maza": "inigo sainz" };
+const ALIAS = { "ez abde": "abde ezzalzouli", "odysseas": "vlachodimos", "el hilali": "omar", "johnny": "j cardoso", "johaneko": "louis jean", "sadick": "mujaid", "sainz maza": "inigo sainz", "vini jr": "vinicius" };
 const ROLES = { 1: "portero", 2: "defensa", 3: "centrocampista", 4: "delantero" };
 // Estado de Biwenger → el nuestro
 export const ESTADO = { ok: "ok", doubt: "duda", injured: "lesionado", sanctioned: "sancionado", warned: "apercibido" };
 
 // Empareja cada jugador de Biwenger con uno de Futmondo del mismo equipo. Si hay duda entre dos, no empareja:
 // es mejor no publicar que publicar sobre el jugador equivocado.
-export function emparejar(bwPlayers, bwTeams, fmPlayers) {
+export function emparejar(bwPlayers, bwTeams, fmPlayers, opts = {}) {
   const porEquipo = new Map();
   for (const f of fmPlayers || []) {
     const k = teamKey(f.team);
@@ -38,7 +38,8 @@ export function emparejar(bwPlayers, bwTeams, fmPlayers) {
     (b, c) => b.n.replace(/ /g, "").length > 4 && (c.n.replace(/ /g, "").includes(b.n.replace(/ /g, "")) || b.n.replace(/ /g, "").includes(c.n.replace(/ /g, ""))),
   ];
   const lista = (Array.isArray(bwPlayers) ? bwPlayers : Object.values(bwPlayers || {})).map((p) => { const n = ALIAS[norm(p.name)] || norm(p.name); return { p, n, tok: n.split(" "), k: teamKey(((bwTeams || {})[String(p.teamID)] || {}).name) }; });
-  for (const test of pasadas) {
+  // estricto: sin la última pasada (un nombre contenido dentro de otro). Para listas oficiales, donde un falso emparejamiento sería un dato falso.
+  for (const test of opts.estricto ? pasadas.slice(0, 3) : pasadas) {
     for (const b of lista) {
       if (out.has(b.p.id) || !b.n) continue;
       let c = (porEquipo.get(b.k) || []).filter((x) => !usados.has(x.f.id) && test(b, x));

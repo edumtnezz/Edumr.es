@@ -5,6 +5,7 @@ import { avisar, colaPuntos, avisarPuntos } from "./avisos.js";
 import { vigilarEstados } from "./estados.js";
 import { publicarPartes } from "./partes.js";
 import { vigilarFotmob } from "./fotmob-estados.js";
+import { vigilarConvocatorias } from "./convocatorias.js";
 import { apuntarDiario } from "./diario.js";
 import { apuntarSustituciones } from "./sustituciones.js";
 import { publicarArticulos, publicarOnces, publicarPuntos, rehacerPuntos } from "./articulos.js";
@@ -27,6 +28,8 @@ export default {
         // Diagnóstico: último resultado que no fue «no toca» (se ve en /api/laquiniela/estados → partes)
         if (!(r && r.skipped === "no toca")) await env.PORRA.put("partes:last:v1", JSON.stringify({ at: Date.now(), sched: event.scheduledTime, r }));
       } catch (e) { console.error("partes", String(e && e.message || e).slice(0, 180)); try { await env.PORRA.put("partes:last:v1", JSON.stringify({ at: Date.now(), error: String(e && e.message || e).slice(0, 200) })); } catch (e2) {} }
+      // Convocatorias oficiales de los clubes (Real Madrid y Betis de momento): una lista nueva = un artículo propio.
+      try { await vigilarConvocatorias(env, fetch, event.scheduledTime); } catch (e) { console.error("convocatorias", String(e && e.message || e).slice(0, 180)); }
       // Puntos de Futmondo: en cuanto los publica tras el final de un partido, se guardan en KV para que
       // la página del partido ya los traiga al abrirla. Si no hay partidos pendientes casi no cuesta nada.
       try {
