@@ -952,7 +952,7 @@ function isAdmin(env, user) {
 // Avisos para Edu (admin) sobre cosas que convendría revisar: cuentas
 // nuevas (para detectar si alguien se registra con el nombre de un amigo
 // antes de que ese amigo entre, "ocupándolo") y fallos de scraping en las
-// webs de terceros de las que sacamos datos (futbolfantasy.com
+// webs de terceros de las que sacamos datos (Comuniate, futbolfantasy.com
 // aparte de las 20 fichas de equipo que ya vigila checkFFHealth). No se
 // hacen peticiones nuevas para esto: se aprovechan las que YA se hacen por
 // el cron de cada 15 min, para no darle más tráfico a esas webs.
@@ -1652,17 +1652,112 @@ async function getFfNoticias(env) {
 }
 
 
+// ---------- Otras fuentes de noticias: Comuniate y Jornada Perfecta ----------
+// Solo título, foto, hora y enlace (el texto de la noticia se lee en su web). Sin duplicar historias: si otra fuente cuenta
+// lo mismo que FutbolFantasy se queda solo una. Si una fuente falla o bloquea, se ignora (nunca se inventa nada).
+const EXT_SKIP = /(comunio|biwenger|mister|fantasy marca|laliga fantasy|mercado fantasy|subidas y bajadas|rosco|confesionario|portadas|descarga la app|nueva version|alineaciones confirmadas|app de comuniate)/;
+const EXT_STOP = new Set("para sobre ante tras este esta estos estas desde entre hasta como pero sino aunque cuando donde jornada fantasy segun mientras tiene tienen habla hablan confirma confirman vuelve vuelven sigue siguen sera tambien despues antes porque quien dice parte medico oficial lesion lesionado lesiones baja bajas partido equipo entrenador convocatoria convocados convocado jugador jugadores ultima hora ultimo tras sera podria puede pide pasa deja queda recupera recuperacion real madrid barcelona atletico athletic bilbao club sevilla betis valencia villarreal getafe osasuna celta espanyol girona levante alaves mallorca rayo vallecano racing santander deportivo coruna oviedo elche sociedad cadiz granada almeria laliga liga copa".split(" "));
+function titleTokens(t) {
+  return Array.from(new Set(String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !EXT_STOP.has(w))));
+}
+// ¿Cuentan lo mismo? ≥2 palabras clave compartidas y el 40 % de las del título más corto
+function sameStory(a, b) {
+  const A = titleTokens(a), B = titleTokens(b);
+  if (!A.length || !B.length) return false;
+  const bs = new Set(B);
+  const n = A.filter((w) => bs.has(w)).length;
+  return n >= 2 && n >= 0.4 * Math.min(A.length, B.length);
+}
 function madridDM(ts) {
   const p = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(new Date(ts));
   const g = (t) => (p.find((x) => x.type === t) || {}).value || "";
   return { date: g("day") + "/" + g("month"), time: g("hour") + ":" + g("minute") };
 }
-// 21/11/2026: fuera Comuniate y Jornada Perfecta (decisión de Edu: nada de competidores). Solo queda lo que ya llegaba de la lista base.
+async function getCmNoticias() {
+  const out = [];
+  try {
+    const res = await fetch("https://www.comuniate.com/noticias/comunio", { headers: cmHeaders() });
+    if (!res.ok) return out;
+    const html = await res.text();
+    const now = Date.now();
+    const seen = new Set();
+    for (const m of html.matchAll(/<article class="cm-row-card[^"]*">([\s\S]*?)<\/article>/g)) {
+      const b = m[1];
+      const tag = b.match(/<a[^>]*href="(https:\/\/www\.comuniate\.com\/noticias\/(\d+)\/[^"]+)"[^>]*>/);
+      if (!tag || seen.has(tag[2])) continue;
+      const lk = [tag[0], tag[1], tag[2]];
+      const title = decodeEntities(((tag[0].match(/title="([^"]*)"/) || [])[1]) || stripHtml((b.match(/<h3[^>]*class="[^"]*cm-title[^"]*"[^>]*>([\s\S]*?)<\/h3>/) || [])[1] || ""));
+      if (!title) continue;
+      const age = b.match(/HACE\s+(\d+)\s+(MINUTOS?|HORAS?|D[ÍI]AS?)/i);
+      if (!age) continue;
+      const unit = /^M/i.test(age[2]) ? 60e3 : /^H/i.test(age[2]) ? 3600e3 : 86400e3;
+      const ts = now - Number(age[1]) * unit;
+      if (EXT_SKIP.test(title.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""))) continue;
+      let thumb = "";
+      for (const im of b.matchAll(/<img[^>]+src="([^"]+)"/g)) { if (/intranet\/noticias\/fotos/.test(im[1])) { thumb = im[1]; break; } }
+      if (thumb && thumb.startsWith("/")) thumb = "https://www.comuniate.com" + thumb;
+      seen.add(lk[2]);
+      out.push(Object.assign({ src: "Comuniate", link: lk[1], title, thumb, ts }, madridDM(ts)));
+    }
+  } catch (e) {}
+  return out;
+}
+async function getJpNoticias() {
+  const out = [];
+  try {
+    const res = await fetch("https://www.jornadaperfecta.com/", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+    if (!res.ok) return out;
+    const html = await res.text();
+    const now = Date.now();
+    const seen = new Set();
+    for (const m of html.matchAll(/<a href="(https:\/\/www\.jornadaperfecta\.com\/blog\/[a-z0-9-]+\/)">\s*<img[^>]*?src="([^"]+)"[^>]*>\s*<div class="text"><span class="title">([\s\S]*?)<\/span>\s*(?:<br\s*\/?>)?\s*<span class="author">([^<]*)<\/span>/g)) {
+      if (seen.has(m[1])) continue;
+      const title = stripHtml(m[3]);
+      const dm = m[4].match(/(\d{2})\/(\d{2})\/(\d{2})/);
+      if (!title || !dm) continue;
+      if (EXT_SKIP.test(title.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, ""))) continue;
+      seen.add(m[1]);
+      const hoy = madridDM(now).date;
+      const date = dm[1] + "/" + dm[2];
+      // Solo trae el día, sin hora: la hora de la noticia se desconoce (no se inventa)
+      out.push({ src: "Jornada Perfecta", link: m[1], title, thumb: m[2], ts: date === hoy ? now : ffWhenAt(date, "12:00"), date, time: "", dateOnly: true, hoy: date === hoy });
+    }
+  } catch (e) {}
+  return out;
+}
+// FutbolFantasy + Comuniate + Jornada Perfecta en una sola lista, sin historias repetidas (gana FutbolFantasy, luego Comuniate)
 async function getNoticiasMulti(ff) {
-  return (ff || []).map((x) => Object.assign({ src: "FutbolFantasy" }, x));
+  const [cm, jp] = await Promise.all([getCmNoticias(), getJpNoticias()]);
+  const base = (ff || []).map((x) => Object.assign({ src: "FutbolFantasy" }, x));
+  const kept = [];
+  for (const x of cm.concat(jp)) {
+    // Solo se compara con noticias de OTRAS fuentes (dos seguidas de la misma fuente son distintas)
+    if (base.slice(0, 40).some((y) => y.src !== x.src && sameStory(x.title, y.title)) || kept.some((y) => y.src !== x.src && sameStory(x.title, y.title))) continue;
+    kept.push(x);
+  }
+  kept.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  // Mezcla por hora manteniendo el orden de FutbolFantasy
+  const out = [];
+  let i = 0, j = 0;
+  while (i < base.length || j < kept.length) {
+    const a = base[i], b = kept[j];
+    const ta = a ? (ffWhenAt(a.date, a.time) || 0) : -1;
+    if (a && (!b || !ta || ta >= (b.ts || 0))) { out.push(a); i++; } else { out.push(b); j++; }
+  }
+  return out;
 }
 
 async function getNoticia(url) {
+  const ext = String(url || "").match(/^https:\/\/www\.(comuniate\.com\/noticias\/\d+\/|jornadaperfecta\.com\/blog\/)[a-z0-9-]+\/?$/);
+  if (ext) {
+    // Otras fuentes: solo titular, foto y resumen; el texto completo se lee en su web
+    try {
+      const h = await (await fetch(url, { headers: cmHeaders() })).text();
+      const meta = (p) => { const a = h.match(new RegExp('<meta[^>]+(?:property|name)="' + p + '"[^>]+content="([^"]*)"', "i")) || h.match(new RegExp('<meta[^>]+content="([^"]*)"[^>]+(?:property|name)="' + p + '"', "i")); return a ? decodeEntities(a[1]) : ""; };
+      const src = /comuniate/.test(url) ? "Comuniate" : "Jornada Perfecta";
+      return { external: true, src, url, title: meta("og:title").replace(/\s*[|\-–]\s*(Comuniate|Jornada Perfecta).*$/i, "").trim(), lead: meta("og:description") || meta("description"), image: meta("og:image") };
+    } catch (e) { return { external: true, error: "no disponible" }; }
+  }
   if (!/^https:\/\/www\.futbolfantasy\.com\//.test(String(url || ""))) return { error: "no permitido" };
   const res = await fetch(url, { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
   const html = await res.text();
@@ -2098,13 +2193,6 @@ async function admLog(env, e) {
 async function adminNoticias(env, request, url, data) {
   const user = await getSessionUser(env, request);
   if (!isAdmin(env, user)) return json({ error: "No autorizado." }, 403);
-  if (!data && url.searchParams.get("lite")) {
-    // Vista reducida (Administración → Noticias): solo las noticias propias publicadas y los cambios de estado detectados (con su fuente y hora)
-    const own = (await getOwn(env)).filter((x) => x && x.status === "published").slice(0, 80);
-    const ev = ((await env.PORRA.get("est:eventos:v1", "json").catch(() => null)) || []).slice(-300).map((e) => ({ src: e.src === "fm" ? "futmondo" : "biwenger", id: e.id, name: e.name, de: e.de, a: e.a, info: String(e.info || "").slice(0, 300), at: e.at }));
-    const evFo = ((await env.PORRA.get("est:fo:ev:v1", "json").catch(() => null)) || []).slice(-300).map((e) => ({ src: "fotmob", id: e.id, de: e.de, a: e.a, info: String(e.info || "").slice(0, 300), at: e.at }));
-    return json({ own: own.map((x) => ({ id: x.id, title: x.title, lead: x.lead, body: x.body, tipo: x.tipo, auto: x.auto, art: x.art, veredicto: x.veredicto, plazo: x.plazo, club: x.club, players: x.players, pid: x.pid, publishedAt: x.publishedAt, fuente: x.fuente || "" })), ev: ev.concat(evFo) });
-  }
   if (!data) {
     const own = await getOwn(env);
     const sombra = [];
@@ -2934,7 +3022,38 @@ async function getCambios(env) {
   return data;
 }
 
-/* ---------- Alineaciones probables (FutbolFantasy, solo %; estadio y árbitro de FotMob) ---------- */
+/* ---------- Alineaciones probables (Comuniate) ---------- */
+function cmHeaders(extra) {
+  return Object.assign({ "user-agent": "Mozilla/5.0 (compatible; edumr)", "x-requested-with": "XMLHttpRequest" }, extra || {});
+}
+function parseOnceLines(r) {
+  const out = {};
+  const parts = r.split(/<div id="(delanteros|medios|centrocampistas|defensas|portero|entrenador)"/);
+  for (let i = 1; i < parts.length; i += 2) {
+    const seg = parts[i + 1] || "";
+    const blocks = seg.split(/class="[^"]*\bjugador\b[^"]*"/).slice(1);
+    const players = [];
+    for (const b of blocks) {
+      const nm = (b.match(/nombre_jugador">\s*([^<]+?)\s*</) || [])[1] || "";
+      const ph = (b.match(/caras3\/(\d+)\.png/) || [])[1] || "";
+      const pid = (b.match(/ver_observaciones\('(\d+)'\)/) || [])[1] || ph;
+      if (nm) players.push({ name: stripHtml(nm), photo: ph ? "https://www.comuniate.com/caras3/" + ph + ".png" : "", pid });
+    }
+    if (players.length) out[parts[i] === "centrocampistas" ? "medios" : parts[i]] = players;
+  }
+  return out;
+}
+async function cmPct(id) {
+  if (!id) return null;
+  try {
+    const r = await (await fetch("https://www.comuniate.com/ajax/observaciones_jugador.php", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded" }), body: "id_jugador=" + encodeURIComponent(id) })).text();
+    const m = r.match(/player-start-meter__value">(\d{1,3})%/);
+    if (m) return Number(m[1]);
+    if (/player-start-card is-success/.test(r)) return 100;
+    return null;
+  } catch (e) { return null; }
+}
+
 // Caché en el edge (Cache API): no gasta el límite diario de escrituras de KV
 async function edgeGet(key) {
   try { const r = await caches.default.match(new Request("https://edumr.es/__c/" + encodeURIComponent(key))); return r ? await r.json() : null; } catch (e) { return null; }
@@ -3060,7 +3179,25 @@ async function getOnce(env, home, away, jornada) {
   const key = "once:v13:" + j + ":" + normKey(String(home).toLowerCase()) + "-" + normKey(String(away).toLowerCase());
   try { const c = await env.PORRA.get(key, "json"); if (c && c.at && Date.now() - c.at < 30 * 60 * 1000) return c.data; } catch (e) {}
   let stadium = "", kickoff = "", referee = "";
-  try { const fm = await fmPartido(env, home, away, j); if (fm) { stadium = fm.infoBox.stadium; kickoff = fm.infoBox.utc; referee = fm.infoBox.referee; } } catch (e) {}
+  try {
+    const body = "id_jornada=" + encodeURIComponent(j) + "&modo_alineaciones=jornada_actual";
+    const mh = await (await fetch("https://www.comuniate.com/ajax/partidos_jornada.php", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded" }), body })).text();
+    const links = [...mh.matchAll(/href="(\/partido\/[^"]+)"/g)].map((m) => m[1]);
+    const sHome = (normKey(String(home).toLowerCase()).split(" ")[0]) || "";
+    const sAway = (normKey(String(away).toLowerCase()).split(" ")[0]) || "";
+    let href = "";
+    for (const l of links) { const slug = stripAccents(l.split("/").pop().toLowerCase()); if (sHome && sAway && slug.indexOf(sHome) >= 0 && slug.indexOf(sAway) >= 0) { href = l; break; } }
+    if (!href) for (const l of links) { const slug = stripAccents(l.split("/").pop().toLowerCase()); if ((sHome && slug.indexOf(sHome) >= 0) || (sAway && slug.indexOf(sAway) >= 0)) { href = l; break; } }
+    if (href) {
+      const ph = await (await fetch("https://www.comuniate.com" + href, { headers: cmHeaders() })).text();
+      stadium = (ph.match(/"location":\{"@type":"Place","name":"([^"]+)"/) || [])[1] || "";
+      kickoff = (ph.match(/"startDate":"([^"]+)"/) || [])[1] || "";
+      referee = (ph.match(/cronista\.png[^>]*>[\s\S]*?<span>([^<]+)<\/span>/) || [])[1] || "";
+    }
+    await clearScrape(env, "comuniate");
+  } catch (e) {
+    await flagScrape(env, "comuniate", "No se pudo consultar comuniate.com para el estadio/hora/árbitro del partido.");
+  }
   let data = null;
   try {
     const [hT, aT] = await Promise.all([getFFTeam(env, home), getFFTeam(env, away)]);
@@ -3070,6 +3207,80 @@ async function getOnce(env, home, away, jornada) {
   return data || { home: { name: home, starters: [], bench: [] }, away: { name: away, starters: [], bench: [] }, stadium, kickoff, referee };
 }
 
+/* ---------- Alineaciones CONFIRMADAS (copia tal cual de Comuniate) ----------
+   A diferencia de "Alineaciones probables" (getOnce, arriba), que mezcla datos
+   de futbolfantasy.com con un % calculado, esto es un volcado literal del
+   once YA CONFIRMADO que publica comuniate.com en la ficha de cada partido
+   (solo nombre, foto y posición en el campo — nada de porcentajes ni
+   banquillo, porque esa página no los trae). Edu pidió explícitamente que
+   fuera "tal cual" como sale ahí, sin tocar nada. */
+async function getComuniateMatches(env, jornada) {
+  const key = "cm:matches:v2:" + jornada;
+  try { const c = await env.PORRA.get(key, "json"); if (c && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c.list; } catch (e) {}
+  let list = [];
+  try {
+    const body = "id_jornada=" + encodeURIComponent(jornada) + "&modo_alineaciones=jornada_actual";
+    const mh = await (await fetch("https://www.comuniate.com/ajax/partidos_jornada.php", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded" }), body })).text();
+    // El título de cada enlace trae los nombres completos de los dos
+    // equipos (p.ej. title="Alineaciones probables Málaga  y Espanyol
+    // Jornada 8"), que son los que de verdad hacen falta para emparejar
+    // con los nombres cortos que usa Futmondo (p.ej. "Real Betis",
+    // "Atleti", "Barça"): la propia URL (href) va en slugs tipo
+    // "betis-osasuna" y comparar solo por la primera palabra del nombre
+    // fallaba con casi todos los equipos de nombre compuesto.
+    const re = /<a href="(\/partido\/[^"]+)" title="Alineaciones \S+ (.+?)\s+y\s+(.+?)\s+Jornada \d+"/g;
+    let m;
+    while ((m = re.exec(mh))) list.push({ href: m[1], home: stripHtml(m[2]).trim(), away: stripHtml(m[3]).trim() });
+  } catch (e) {}
+  try { if (list.length) await env.PORRA.put(key, JSON.stringify({ at: Date.now(), list }), { expirationTtl: 1800 }); } catch (e) {}
+  return list;
+}
+function findComuniateMatch(list, home, away) {
+  let best = null, bs = 0;
+  for (const it of list) {
+    const s = teamScore(it.home, home) + teamScore(it.away, away);
+    if (s > bs) { bs = s; best = it; }
+  }
+  return bs >= 4 ? best : null;
+}
+// Comuniate pinta el campo de un partido confirmado como UN solo bloque: el
+// once local (portero→defensas→medios→delanteros) seguido, sin separación
+// especial en el HTML, del once visitante en orden inverso (delanteros→
+// portero) porque visualmente queda reflejado en el otro lado del campo.
+// Cada bloque de posición cierra siempre con el mismo comentario
+// "<!-- fin XXX-->", así que separarlos así es fiable pase lo que pase con
+// la alineación (formación, número de jugadores, etc). Si no salen los 8
+// bloques (4 del equipo local + 4 del visitante) es que uno de los dos
+// onces todavía no está confirmado del todo, y entonces no se muestra nada
+// de ese partido en esta sección (solo onces 100% confirmados, tal y como
+// pidió Edu).
+function parseConfirmedPitch(html) {
+  const re = /<div id="(portero|defensas|medios|delanteros)"[^>]*>([\s\S]*?)<!--\s*fin\s+\w+\s*-->/g;
+  const blocks = [...html.matchAll(re)];
+  if (blocks.length < 8) return null;
+  const parsePlayers = (seg) => {
+    const chunks = seg.split('class="jugador jugador_campo').slice(1);
+    const players = [];
+    for (const c of chunks) {
+      const nm = (c.match(/nombre_jugador">\s*([^<]+?)\s*</) || [])[1] || "";
+      const ph = (c.match(/caras3\/(\d+)\.png/) || [])[1] || "";
+      const pid = (c.match(/ver_observaciones\('(\d+)'\)/) || [])[1] || ph;
+      if (nm) players.push({ name: stripHtml(nm), photo: ph ? "https://www.comuniate.com/caras3/" + ph + ".png" : "", pid });
+    }
+    return players;
+  };
+  const side = (arr) => {
+    const out = { portero: [], defensas: [], medios: [], delanteros: [] };
+    for (const b of arr) out[b[1]] = parsePlayers(b[2]);
+    return out;
+  };
+  const home = side(blocks.slice(0, 4));
+  const away = side(blocks.slice(4, 8));
+  const fmt = (o) => o.defensas.length + "-" + o.medios.length + "-" + o.delanteros.length;
+  home.formation = fmt(home);
+  away.formation = fmt(away);
+  return { home, away };
+}
 // ONCE OFICIAL (21/11/2026, decisión de Edu: nada de Comuniate). Sale de FotMob: solo la alineación OFICIAL
 // (lineupType distinto de «predicted», que es la probable de FotMob), con 11 titulares por equipo.
 // Una vez vista se guarda (KV `fm:conf:v1:<id FotMob>`, 7 días) y no se vuelve a pedir. Las fotos y el id son los de
@@ -3162,85 +3373,91 @@ async function getAlineacionesConfirmadas(env, matchdayParam, fresh) {
   return out;
 }
 
-// ---------- Partido desde FotMob (21/11/2026: nada de Comuniate) ----------
-// Una sola lectura de matchDetails por partido, resumida y guardada 45 s en el edge (sin escrituras de KV).
-// El id de FotMob de cada partido se guarda 30 días (una escritura por partido).
-async function fmPartido(env, home, away, jornada) {
-  const j = Number(jornada) || 0;
-  const UA = { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } };
-  const ik = "fm:id:v1:" + j + ":" + normKey(String(home || "").toLowerCase()) + "-" + normKey(String(away || "").toLowerCase());
-  let id = null;
-  try { id = await env.PORRA.get(ik); } catch (e) {}
-  if (!id) {
-    let jd = null;
-    try { jd = await getJornada(env, j || null); } catch (e) {}
-    const m = ((jd && jd.matches) || []).find((x) => teamScore(home, (x.homeTeam && (x.homeTeam.shortName || x.homeTeam.name)) || "") + teamScore(away, (x.awayTeam && (x.awayTeam.shortName || x.awayTeam.name)) || "") >= 4);
-    const d = m && new Date(m.utcDate);
-    if (!d || isNaN(d.getTime())) return null;
-    const dia = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).format(d).replace(/-/g, "");
-    const lista = await fetch(FM_MATCHES(dia), UA).then((r) => r.json()).catch(() => null);
-    for (const lg of ((lista && lista.leagues) || [])) if (lg.id === FM_LIGA || lg.primaryId === FM_LIGA) for (const x of lg.matches || []) if (x && x.home && fmKey(x.home.name) === clubKey(home) && fmKey(x.away.name) === clubKey(away)) id = String(x.id);
-    if (!id) return null;
-    try { await env.PORRA.put(ik, id, { expirationTtl: 30 * 24 * 3600 }); } catch (e) {}
+function cmParseGoals(seg) {
+  // El último gol de cada columna puede venir sin su </div> de cierre dentro
+  // del trozo capturado (el corte de la columna se come ese cierre), así que
+  // además de <div>...</div> se acepta un <div> final abierto hasta el final.
+  const out = [];
+  const re = /<div>\s*([\s\S]*?)(?:<\/div>|$)/g;
+  let m;
+  while ((m = re.exec(seg))) {
+    const txt = m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    if (txt) out.push({ text: txt });
+    if (re.lastIndex >= seg.length) break;
   }
-  const ck = "fm:det:v1:" + id;
-  const hit = await edgeGet(ck);
-  if (hit && Date.now() - (hit.at || 0) < 45000) return hit.d;
-  let det = null;
-  try { det = await fetch(FM_DETAIL(id), UA).then((r) => r.json()); } catch (e) {}
-  if (!det || !det.content) return (hit && hit.d) || null;
-  const c = det.content || {}, mf = c.matchFacts || {}, lu = c.lineup || {}, ib = mf.infoBox || {}, st = (det.header && det.header.status) || {};
-  const lig = (p) => ({ id: String(p.id), name: p.name || "", pos: p.usualPlayingPositionId, sub: ((p.performance || {}).substitutionEvents || []).map((x) => ({ t: x.time, k: x.type })) });
-  const lado = (t) => t ? { name: t.name || "", formation: t.formation || "", starters: (t.starters || []).map(lig), subs: (t.subs || []).map(lig) } : { name: "", formation: "", starters: [], subs: [] };
-  const d = {
-    id, started: !!st.started, finished: !!st.finished, scoreStr: String(st.scoreStr || ""), reason: (st.reason && st.reason.short) || "", liveTime: (st.liveTime && (st.liveTime.short || st.liveTime.long)) || "",
-    events: (((mf.events || {}).events) || []).filter((e) => e && !e.isPenaltyShootoutEvent).map((e) => ({ type: e.type, time: Number(e.time) || 0, x: Number(e.overloadTime) || 0, home: !!e.isHome, pid: e.playerId != null ? String(e.playerId) : "", name: e.nameStr || (e.player && e.player.name) || "", card: e.card || "", own: !!e.ownGoal, pen: /pen/i.test(String(e.goalDescription || "") + String(e.goalDescriptionKey || "")), ast: e.assistPlayerId != null ? String(e.assistPlayerId) : "", ns: Array.isArray(e.newScore) ? e.newScore.join(" - ") : "", swap: e.swap && e.swap.length === 2 ? [{ id: String(e.swap[0].id), name: e.swap[0].name || "" }, { id: String(e.swap[1].id), name: e.swap[1].name || "" }] : null })),
-    infoBox: { stadium: (ib.Stadium && ib.Stadium.name) || "", referee: (ib.Referee && ib.Referee.text) || "", utc: (ib["Match Date"] && ib["Match Date"].utcTime) || "" },
-    home: lado(lu.homeTeam), away: lado(lu.awayTeam),
-  };
-  await edgePut(ck, { at: Date.now(), d }, 60);
-  return d;
+  return out;
 }
-const FM_POS2 = { 0: "PO", 1: "DF", 2: "ME", 3: "DL" };
-async function getPartidoFF(env, home, away, jornada) {
-  const fm = await fmPartido(env, home, away, jornada).catch(() => null);
-  if (!fm) return { error: "No se encontró el partido." };
-  const sc = fm.scoreStr.match(/^(\d+)\s*-\s*(\d+)$/);
-  const hlDe = (pid, sideHome) => {
-    const hl = [];
-    fm.events.forEach((e) => {
-      if (e.type === "Goal" && e.pid === pid) hl.push(e.own ? { cls: "text-danger", ico: "fa-circle" } : { cls: "", ico: "fa-circle" });
-      if (e.type === "Goal" && e.ast === pid) hl.push({ cls: "", ico: "fa-arrow-right" });
-      if (e.type === "Card" && e.pid === pid) hl.push({ cls: /yellow/i.test(e.card) && !/red/i.test(e.card) ? "text-warning" : "text-danger", ico: "fa-square" });
-      if (e.type === "Substitution" && e.swap) { if (e.swap[0].id === pid) hl.push({ cls: "", ico: "fa-sign-in" }); if (e.swap[1].id === pid) hl.push({ cls: "", ico: "fa-sign-out" }); }
-    });
-    return hl;
-  };
-  const jugadores = (t, sideHome) => {
-    const entran = new Set(fm.events.filter((e) => e.type === "Substitution" && e.swap && e.home === sideHome).map((e) => e.swap[0].id));
-    return t.starters.concat(t.subs.filter((p) => entran.has(p.id))).map((p) => ({ pos: FM_POS2[p.pos] || "", name: p.name, pts: null, hl: hlDe(p.id, sideHome), min: "" }));
-  };
-  const empezado = !!(fm.started || fm.finished);
-  const goles = (sideHome) => fm.events.filter((e) => e.type === "Goal" && e.home === sideHome).map((e) => ({ text: e.name + (e.own ? " (p.p.)" : e.pen ? " (p)" : "") + " " + e.time + (e.x ? "+" + e.x : "") + "'" }));
-  // FotMob marca la propia puerta con el equipo del que marca: un gol en propia suma al rival (ya viene así en el marcador)
+function cmParseMatch(h) {
+  const sc = [...h.matchAll(/score-num[^>]*>\s*(\d+)\s*</g)].map((m) => Number(m[1]));
+  const state = ((h.match(/estado-bottom[^>]*>\s*([^<]*?)\s*</) || [])[1] || "").trim();
+  const stadium = ((h.match(/🏟️\s*([^<]+)</) || [])[1] || "").trim();
+  const referee = ((h.match(/arbitro_silbato\.svg"[^>]*>\s*<span>([^<]+)</) || [])[1] || "").trim();
+  const cronista = ((h.match(/cronista\.png"[^>]*>\s*<span>([^<]+)</) || [])[1] || "").trim();
+  const sofa = (h.match(/id_sofascore=(\d+)/) || [])[1] || "";
+  const gl = (h.match(/goleadores-col local">([\s\S]*?)(?:goleadores-icon|goleadores-col visit)/) || [])[1] || "";
+  const gv = (h.match(/goleadores-col visit">([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/) || [])[1] || "";
   return {
-    home, away,
-    score: sc ? Number(sc[1]) : null, scoreAway: sc ? Number(sc[2]) : null,
-    state: fm.finished ? "FINALIZADO" : "",
-    stadium: fm.infoBox.stadium, referee: fm.infoBox.referee,
-    goalsHome: goles(true), goalsAway: goles(false),
-    // Antes del pitido inicial FotMob da su alineación PROBABLE: no son jugadores del partido.
-    // Sin esto la web veía 11+11 jugadores y pintaba "Partido en juego" horas antes (21/11/2026).
-    homePlayers: empezado ? jugadores(fm.home, true) : [], awayPlayers: empezado ? jugadores(fm.away, false) : [],
-    fuente: "fotmob", fmId: fm.id,
+    score: sc.length >= 1 ? sc[0] : null, scoreAway: sc.length >= 2 ? sc[1] : null,
+    state, stadium, referee, cronista, sofa,
+    goalsHome: cmParseGoals(gl), goalsAway: cmParseGoals(gv),
   };
+}
+function cmParsePoints(h) {
+  const tables = h.split(/<table/i).slice(1);
+  const parse = (t) => {
+    const out = [];
+    const rows = (t || "").split('class="playerRow"').slice(1);
+    for (const r of rows) {
+      const seg = r.slice(0, 1500);
+      const pos = ((seg.match(/playerPosBig[^>]*>\s*([A-Z]{2})/) || [])[1] || "");
+      const name = ((seg.match(/playerName[^>]*>\s*([^<]+?)\s*</) || [])[1] || "").trim();
+      const pts = (seg.match(/playerPoints[^>]*>\s*(-?\d+)\s*</) || [])[1];
+      const hl = [...seg.matchAll(/<span class="hl ([^"]*)">\s*<i class="fa ([a-z-]+)/g)].map((m) => ({ cls: m[1], ico: m[2] }));
+      const hlMin = (seg.match(/hlMin">(\d+)'/) || [])[1] || "";
+      if (name) out.push({ pos, name, pts: pts != null ? Number(pts) : null, hl, min: hlMin });
+    }
+    return out;
+  };
+  return { home: parse(tables[0]), away: parse(tables[1]) };
+}
+async function getPartidoFF(env, home, away, jornada) {
+  const j = Number(jornada) || 0;
+  const key = "partido:v4:" + j + ":" + normKey(String(home || "").toLowerCase()) + "-" + normKey(String(away || "").toLowerCase());
+  try { const c = await env.PORRA.get(key, "json"); if (c && c.data && Date.now() - (c.at || 0) < 10 * 60 * 1000) return c.data; } catch (e) {}
+  let data = null;
+  try {
+    let cmHref = "";
+    try {
+      const body = "id_jornada=" + encodeURIComponent(j) + "&modo_alineaciones=jornada_actual";
+      const mh = await (await fetch("https://www.comuniate.com/ajax/partidos_jornada.php", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded" }), body })).text();
+      const links = [...mh.matchAll(/href="(\/partido\/[^"]+)"/g)].map((m) => m[1]);
+      const wH = wkey(home), wA = wkey(away);
+      let best = 0;
+      for (const l of links) { const slug = stripAccents(l.split("/").pop().toLowerCase()); let s = 0; wH.forEach((w) => { if (slug.indexOf(w) >= 0) s++; }); wA.forEach((w) => { if (slug.indexOf(w) >= 0) s++; }); if (wH.some((w) => slug.indexOf(w) >= 0) && wA.some((w) => slug.indexOf(w) >= 0) && s > best) { best = s; cmHref = l; } }
+    } catch (e) {}
+    if (cmHref) {
+      const mh = await (await fetch("https://www.comuniate.com" + cmHref, { headers: cmHeaders() })).text();
+      const base = cmParseMatch(mh);
+      let hp = [], ap = [];
+      if (base.sofa) {
+        try {
+          const aj = await (await fetch("https://www.comuniate.com/ajax/partidos/carga_puntos_futmondo.php?modo=PRENSA", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded" }), body: "id_sofascore=" + base.sofa + "&temporada=26" })).text();
+          const pts = cmParsePoints(aj);
+          hp = pts.home; ap = pts.away;
+        } catch (e) {}
+      }
+      data = { home, away, ...base, homePlayers: hp, awayPlayers: ap, url: "https://www.comuniate.com" + cmHref };
+    }
+  } catch (e) {}
+  if (data) { try { await env.PORRA.put(key, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 600 }); } catch (e) {} }
+  return data || { error: "No se encontró el partido." };
 }
 
 /* ---------- Franja de jornada (escudos, día/hora y TV) ---------- */
 // Apodos que no comparten ni una palabra con el nombre "normal" del equipo
 // (p.ej. "Barça" → "barca", que no es ni empieza igual que "barcelona"), así
 // que sin esto teamScore() les daba 0 y no emparejaban con fuentes que usan
-// el nombre completo (como FotMob).
+// el nombre completo (como Comuniate).
 const TEAM_ALIASES = { barca: "barcelona", atleti: "atletico", santander: "racing" };
 function wkey(s) {
   return stripAccents(String(s || "").toLowerCase()).replace(/[^a-z0-9 ]/g, " ").split(/\s+/)
@@ -3266,6 +3483,61 @@ function ffTvFind(map, home, away) {
     if (s > bs) { bs = s; best = map[k]; }
   }
   return bs >= 4 ? best : null;
+}
+async function ffTvMap(env) {
+  try {
+    const c = await env.PORRA.get("ff:tv:v9", "json");
+    if (c && c.list && Date.now() - (c.at || 0) < 30 * 60 * 1000) return c;
+  } catch (e) {}
+  const byName = {}, list = [];
+  try {
+    const res = await fetch("https://www.futbolfantasy.com/laliga/calendario", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } });
+    const html = await res.text();
+    const parts = html.split('class="partido');
+    for (let i = 1; i < parts.length; i++) {
+      const r = parts[i].slice(0, 1800);
+      const tt = r.match(/data-tooltip="([^"]*)"/);
+      if (!tt) continue;
+      let home = "", away = "";
+      const um = tt[1].match(/^(.*?)\s+-\s+(.*)$/);
+      if (um) { home = um[1]; away = um[2]; }
+      else { const fm = tt[1].match(/^(.*?)\s+\d+\s*-\s*\d+\s+(.*)$/); if (fm) { home = fm[1]; away = fm[2]; } }
+      home = home.replace(/&amp;/g, "&").trim();
+      away = away.replace(/&amp;/g, "&").trim();
+      if (!home || !away) continue;
+      const BAD = /comunio|sofascore|futmondo|prensa|fantasy|biwenger|mister|jornada|anal[ií]tica|^stats$|previa|picaroja|estrella/i;
+      const tv = [];
+      const imgs = r.match(/<img[^>]*class="canal[^"]*"[^>]*>/g) || [];
+      for (const tag of imgs) {
+        const a = (tag.match(/alt="([^"]*)"/) || [])[1] || "";
+        let d = (tag.match(/data-src="([^"]*)"/) || [])[1] || "";
+        if (a && !BAD.test(a) && d) {
+          if (d.indexOf("//") === 0) d = "https:" + d;
+          // El logo de Movistar que trae futbolfantasy.com en su propio <img>
+          // es un icono antiguo/distinto al que usamos en el resto de la
+          // web (p.ej. en los partidos que solo sale aquí y no en
+          // futbolenlatv.es, que es de donde viene el logo bueno). Para que
+          // el mismo canal se vea SIEMPRE igual, se fuerza aquí también al
+          // mismo archivo que usa fltvMap().
+          if (/dazn/i.test(a)) d = "/img/dazn.svg?v=3";
+          else if (/movistar|^m\+/i.test(a)) d = "/img/movistar.png?v=2";
+          tv.push({ name: a, logo: d });
+        }
+      }
+      if (!tv.length) continue;
+      const fecha = (r.match(/class="fecha">([\s\S]*?)<\/div>/) || [])[1] || "";
+      const clean = fecha.replace(/<br\s*\/?>/gi, " ").replace(/&nbsp;/g, " ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      const dv = clean.match(/(\d{1,2}\/\d{1,2})/);
+      const tm = clean.match(/(\d{1,2}:\d{2})/);
+      const entry = { home, away, date: dv ? dv[1] : "", time: tm ? tm[1].padStart(5, "0") : "", tv };
+      list.push(entry);
+      const key = stripAccents(home.toLowerCase()) + "|" + stripAccents(away.toLowerCase());
+      if (!byName[key]) byName[key] = entry;
+    }
+  } catch (e) {}
+  const out = { at: Date.now(), byName, list };
+  if (list.length > 10) { try { await env.PORRA.put("ff:tv:v9", JSON.stringify(out), { expirationTtl: 3600 }); } catch (e) {} }
+  return out;
 }
 async function fltvMap(env) {
   try {
@@ -3312,9 +3584,136 @@ async function fltvMap(env) {
   return out;
 }
 
+/* ---------- Extras de Comuniate para la franja de jornada: canal de TV,
+   si el once ya está confirmado, y el marcador/estado en vivo ----------
+   futbolenlatv.es y futbolfantasy.com (arriba) solo enseñan partidos de
+   HOY en adelante: en cuanto un partido ya se ha jugado (aunque sea el
+   mismo día, unas horas antes) desaparece de su listado y la franja se
+   queda diciendo "Canal por confirmar" aunque el canal llevara anunciado
+   toda la semana (le pasó con Barcelona-Getafe y Real Madrid-Villarreal).
+   Comuniate, en cambio, enseña el canal en la ficha de cada partido pase
+   lo que pase (jugado o no), así que se usa como fuente principal y las
+   otras dos quedan de apoyo para cuando Comuniate aún no lo sepa. */
+function cmTvIcon(src, alt) {
+  const a = String(alt || "").toLowerCase();
+  if (/dazn/.test(a)) return { name: "DAZN", logo: "/img/dazn.svg?v=3" };
+  if (/movistar|^m\+/.test(a)) return { name: "Movistar LaLiga", logo: "/img/movistar.png?v=2" };
+  if (!src) return null;
+  const abs = src.indexOf("http") === 0 ? src : "https://www.comuniate.com" + src;
+  return { name: alt ? alt.toUpperCase() : "TV", logo: abs };
+}
+async function getComuniateExtras(env, jornada) {
+  const cacheKey = "cm:extras:v2:" + jornada;
+  try { const c = await env.PORRA.get(cacheKey, "json"); if (c && Date.now() - (c.at || 0) < 10 * 60 * 1000) return c.data; } catch (e) {}
+  let data = [];
+  try {
+    const links = await getComuniateMatches(env, jornada);
+    data = await Promise.all(links.map(async (l) => {
+      try {
+        const html = await (await fetch("https://www.comuniate.com" + l.href, { headers: cmHeaders() })).text();
+        // Comuniate no es consistente con las comillas del <img> (a veces
+        // comillas simples, a veces dobles), así que primero se acota el
+        // trocito del div "tv-compact" (hasta su propio cierre) y luego se
+        // sacan src/alt sueltos, sin asumir ni el orden ni el tipo de comilla.
+        const divM = html.match(/class="tv-compact">([\s\S]*?)<\/div>/);
+        let tv = null;
+        if (divM) {
+          const srcM = divM[1].match(/src=['"]([^'"]+)['"]/);
+          const altM = divM[1].match(/alt=['"]([^'"]*)['"]/);
+          if (srcM) tv = cmTvIcon(srcM[1], altM ? altM[1] : "");
+        }
+        const confirmed = !!parseConfirmedPitch(html);
+        return { home: l.home, away: l.away, tv, confirmed };
+      } catch (e) { return { home: l.home, away: l.away, tv: null, confirmed: false }; }
+    }));
+  } catch (e) {}
+  try { if (data.length) await env.PORRA.put(cacheKey, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 600 }); } catch (e) {}
+  return data;
+}
+// La franja de "resultados en directo" (marcador, minuto, FINAL/DIRECTO/
+// PREVIA) que Comuniate pinta arriba de CADA ficha de partido enseña, en
+// realidad, TODOS los partidos de la jornada a la vez (es un carrusel), así
+// que basta con pedir UNA sola ficha para sacar el estado de los demás.
+function parseComuniateSwiper(html) {
+  const out = [];
+  const parts = html.split('class="partido-link"');
+  for (let i = 1; i < parts.length; i++) {
+    const seg = parts[i].slice(0, 1600);
+    const imgs = [...seg.matchAll(/team-logo__img"\s+src="([^"]+)"\s+alt="([^"]*)"/g)];
+    if (imgs.length < 2) continue;
+    const scoreM = seg.match(/partido-score">\s*([^<]*)</);
+    const clsM = seg.match(/class="(badge-esquina[^"]*)"/);
+    const badgeM = seg.match(/badge-esquina[^>]*>\s*([^<]*?)\s*</);
+    const subM = seg.match(/partido-sub">\s*([^<]*)</);
+    out.push({
+      home: stripHtml(imgs[0][2]).trim(), away: stripHtml(imgs[1][2]).trim(),
+      score: scoreM ? scoreM[1].trim() : "",
+      statusCls: clsM ? clsM[1] : "",
+      statusText: badgeM ? stripHtml(badgeM[1]).trim() : "",
+      sub: subM ? stripHtml(subM[1]).trim() : "",
+    });
+  }
+  return out;
+}
+async function getComuniateStrip(env, jornada) {
+  const cacheKey = "cm:strip:v1:" + jornada;
+  // Caché corta: es en vivo (marcador y minuto van cambiando).
+  try { const c = await env.PORRA.get(cacheKey, "json"); if (c && Date.now() - (c.at || 0) < 3 * 60 * 1000) return c.data; } catch (e) {}
+  let data = [];
+  try {
+    const links = await getComuniateMatches(env, jornada);
+    if (links.length) {
+      const html = await (await fetch("https://www.comuniate.com" + links[0].href, { headers: cmHeaders() })).text();
+      data = parseComuniateSwiper(html);
+    }
+  } catch (e) {}
+  try { if (data.length) await env.PORRA.put(cacheKey, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 180 }); } catch (e) {}
+  return data;
+}
+// Minuto REAL de los partidos en juego: el widget de jornada de Comuniate pinta
+// <span class='live-dot'></span><span class='danger'>29' </span> bajo el marcador.
+async function getComuniateLiveMinutes(env, jornada) {
+  const key = "cm:livemin:v1:" + jornada;
+  try { const c = await env.PORRA.get(key, "json"); if (c && Date.now() - (c.at || 0) < 40 * 1000) return c.data; } catch (e) {}
+  const data = [];
+  try {
+    const body = "id_jornada=" + encodeURIComponent(jornada) + "&modo_alineaciones=jornada_actual";
+    const mh = await (await fetch("https://www.comuniate.com/ajax/partidos_jornada.php", { method: "POST", headers: cmHeaders({ "content-type": "application/x-www-form-urlencoded" }), body })).text();
+    const parts = mh.split('<a href="/partido/');
+    for (let i = 1; i < parts.length; i++) {
+      const seg = parts[i].slice(0, 2600);
+      const mm = seg.match(/live-dot'?"?><\/span>\s*<span[^>]*>([^<]*)</);
+      if (!mm) continue;
+      const alts = [...seg.matchAll(/alt=['"]([^'"]+)['"]/g)].map((x) => stripHtml(x[1]).trim());
+      if (alts.length < 2) continue;
+      data.push({ home: alts[0], away: alts[1], text: stripHtml(mm[1]).trim() });
+    }
+  } catch (e) { return []; }
+  try { await env.PORRA.put(key, JSON.stringify({ at: Date.now(), data }), { expirationTtl: 60 }); } catch (e) {}
+  return data;
+}
+function cmLiveState(cls) {
+  if (/label-success/.test(cls)) return "final";
+  if (/label-info/.test(cls)) return "live";
+  if (/label-danger/.test(cls)) return "suspended";
+  return "previa";
+}
+// Etiqueta "1ª parte · Min. 23" a partir del texto REAL que da Comuniate (nunca se calcula con el reloj).
+function liveMinuteLabel(texts) {
+  const t = (texts || []).filter(Boolean).join(" ").trim();
+  if (!t) return "";
+  if (/descanso|half/i.test(t)) return "Descanso";
+  const mm = t.match(/(\d{1,3})\s*(?:\+\s*(\d{1,2}))?\s*['’′]?/);
+  const half = /1\s*[ªa]|primera/i.test(t) ? 1 : /2\s*[ªa]|segunda/i.test(t) ? 2 : 0;
+  if (!mm && !half) return "";
+  const base = mm ? Number(mm[1]) : 0;
+  const h = half || (base > 45 ? 2 : 1);
+  const minTxt = mm ? " · Min. " + mm[1] + (mm[2] ? "+" + mm[2] : "") : "";
+  return h + "ª parte" + minTxt;
+}
 // Marcador/estado en directo desde football-data (ya viene dentro de la
 // jornada, es el mismo equipo que el resto de datos, y se actualiza al
-// minuto). Se usa como fuente principal y FotMob la corrige, así
+// minuto). Se usa como fuente principal y Comuniate queda de respaldo, así
 // los partidos que están jugando ahora mismo (p.ej. Málaga o Racing) sí
 // muestran su marcador en cuanto football-data lo publica.
 function flLive(m) {
@@ -3414,10 +3813,15 @@ async function getJornadaStrip(env, matchday) {
       }
     } catch (e) {}
   }
-  let fl = { byName: {}, list: [] };
+  let fl = { byName: {}, list: [] }, ffc = { byName: {}, list: [] };
   try { fl = await fltvMap(env); } catch (e) {}
-  const list = fl.list || [];
+  try { ffc = await ffTvMap(env); } catch (e) {}
+  const list = (fl.list || []).concat(ffc.list || []);
   const jnum = jd.matchday || matchday || "";
+  let cmExtras = [], cmStrip = [], cmMin = [];
+  try { cmExtras = await getComuniateExtras(env, jnum); } catch (e) {}
+  try { cmStrip = await getComuniateStrip(env, jnum); } catch (e) {}
+  try { cmMin = await getComuniateLiveMinutes(env, jnum); } catch (e) {}
   let cambiosCache = null;
   // Solo si hay un aplazado en la rejilla (leer y analizar el feed completo es costoso)
   // El resultado se recuerda 2 min por partido para no repetir el análisis en cada visita
@@ -3473,7 +3877,7 @@ async function getJornadaStrip(env, matchday) {
     const st = (await env.PORRA.get("cm:confset:v1:" + jnum, "json")) || [];
     st.forEach((p) => cfList.push({ home: { name: p[0] }, away: { name: p[1] } }));
   } catch (e) {}
-  // FotMob: lo más fresco para partidos que están jugándose ahora (la lista de football-data va con retraso)
+  // FotMob: lo más fresco para partidos que están jugándose ahora (la lista de Comuniate/football-data va con retraso)
   let fmList = [];
   try {
     const now0 = Date.now(), dset = new Set();
@@ -3486,7 +3890,10 @@ async function getJornadaStrip(env, matchday) {
   const matches = prep.map((p) => {
     const key = wkey(p.home).join(" ") + "|" + wkey(p.away).join(" ") + "|" + wkey(p.away).join(" ");
     let tv = [];
-    // Canal: futbolenlatv.es; si ya no sale ahí, lo último que supimos (memoria de abajo).
+    // 1) Canal: primero Comuniate, que lo enseña siempre (jugado o no).
+    const cmE = cmExtras.find((e) => teamScore(e.home, p.home) + teamScore(e.away, p.away) >= 4);
+    if (cmE && cmE.tv) tv = [cmE.tv];
+    // 2) si no, las fuentes de antes (futbolenlatv.es / futbolfantasy.com).
     if (!tv.length) {
       if (p.bs >= 4 && p.bi >= 0) tv = list[p.bi].tv;
       else {
@@ -3503,13 +3910,30 @@ async function getJornadaStrip(env, matchday) {
     }
 
     // Marcador y estado: primero football-data (en directo de verdad);
-    // si aún no lo tiene, se usa FotMob.
+    // si aún no lo tiene, se usa Comuniate como respaldo.
     let live = flLive(p.m);
-    // football-data a veces se queda con el partido "en juego" mucho después de acabar: pasadas 3 h del saque inicial, un "en juego" no es creíble
-    // (FotMob, justo debajo, lo corrige con el marcador y el minuto reales).
-    if (live && live.state === "live" && live.label !== "Descanso") {
-      const ko = new Date(p.m && p.m.utcDate).getTime();
-      if (ko && Date.now() - ko > 3 * 3600 * 1000) live = null;
+    const cmM = cmStrip.find((e) => teamScore(e.home, p.home) + teamScore(e.away, p.away) >= 4);
+    if (!live && cmM && (cmM.score || cmM.statusCls)) {
+      const state = cmLiveState(cmM.statusCls);
+      if (cmM.score && (state === "final" || state === "live")) {
+        live = { state, label: cmM.statusText || "", minute: state === "live" ? (liveMinuteLabel([(cmMin.find((e) => teamScore(e.home, p.home) + teamScore(e.away, p.away) >= 4) || {}).text, cmM.sub]) || "EN JUEGO") : "", score: cmM.score };
+      }
+    }
+    // football-data a veces se queda con el partido "en juego" mucho después de acabar:
+    // si Comuniate ya lo da por finalizado, manda Comuniate; y si han pasado más de 3 h
+    // del saque inicial, un "en juego" no es creíble.
+    if (live && live.state === "live") {
+      const cmState = cmM ? cmLiveState(cmM.statusCls) : "";
+      if (cmState !== "final" && live.label !== "Descanso") {
+        const lm = cmMin.find((e) => teamScore(e.home, p.home) + teamScore(e.away, p.away) >= 4);
+        const lab = lm ? liveMinuteLabel([lm.text]) : "";
+        if (lab) live.minute = lab;
+      }
+      if (cmState === "final" && cmM.score) live = { state: "final", label: "FINALIZADO", minute: "", score: cmM.score };
+      else {
+        const ko = new Date(p.m && p.m.utcDate).getTime();
+        if (ko && Date.now() - ko > 3 * 3600 * 1000) live = null;
+      }
     }
     try {
       const fmM = fmList.find((x) => teamScore(x.home.longName || x.home.name, p.home) + teamScore(x.away.longName || x.away.name, p.away) >= 4);
@@ -3524,7 +3948,7 @@ async function getJornadaStrip(env, matchday) {
         }
       }
     } catch (e) {}
-    const confirmed = cfList.some((c) => teamScore(c.home.name, p.home) + teamScore(c.away.name, p.away) >= 4);
+    const confirmed = !!(cmE && cmE.confirmed) || cfList.some((c) => teamScore(c.home.name, p.home) + teamScore(c.away.name, p.away) >= 4);
 
     // Partido aplazado: su once no está en las listas de la jornada actual, así que se lee del feed de últimas actualizaciones
     // (solo de hoy o el día anterior al partido, para no arrastrar onces de otros partidos del mismo equipo).
@@ -4251,7 +4675,7 @@ async function handleAnaliza(request, env, user) {
   // ideal (con el número real de líneas, no uno fijo) y multiposición.
   const LIGA_CONTEXTO = "CONTEXTO REAL DE LA LIGA (ajustes de la liga del usuario, \"Con Permisoo\"): Futmondo Social, puntuación CONFIGURABLE: Diario AS 50%, Marca 50%, SofaScore 50%, Tiempo de juego 0%, estadísticas básicas. Capitán permitido (doble puntos), multiposición, estrategias extra, entrenador manual, se puede cambiar un jugador ya puntuado. Primas: 70.000€ por punto, 1.000.000€ por jugador en el equipo ideal, 2.000.000€ por MVP de la jornada.\n" +
     "CÓMO PUNTÚA (fuente: ayuda oficial de Futmondo, modo Configurable; comprobado con 4 jugadores reales de esa liga). Los puntos de cada medio se multiplican por su % y se suman: con 50%, cada medio aporta la MITAD de los puntos de su tabla. AS y Marca: 4 picas/estrellas = 14 pts, 3 = 10, 2 = 6, 1 = 2, guion = -2, sin calificar = 0. SofaScore (nota 0-10): 10 = 15 pts, 9,7-9,9 = 14, ... 6 = 0, 5,6-5,9 = -1, 5-5,5 = -2, 3,1-4,9 = -3, 0-3 = -4 (no se conocen las notas intermedias: no las inventes). ESTADÍSTICAS BÁSICAS: jugar 60 min o más +1; asistencia +1; gol de penalti +2; gol: portero +8, defensa +6, centrocampista +4, delantero +3 (por eso un delantero multiposición que juegue de centrocampista gana +1 por gol); portería a cero (45+ min) +1 SOLO portero y defensa; por cada 2 goles encajados -1 SOLO portero y defensa; gol en propia puerta -1; penalti fallado -2; doble amarilla -3; roja directa -5; parar un penalti (portero) +3. La amarilla simple no resta puntos en esa tabla.\n" +
-    "QUÉ RESTA EN SOFASCORE (orientativo, no son cifras de tu liga): tarjetas, pérdidas de balón, duelos y regates perdidos, faltas cometidas, ocasiones claras falladas, errores que provocan gol o disparo, penaltis cometidos o fallados, goles en propia, expulsiones (restan más cuanto antes); en portero y defensa los goles encajados (si el equipo encaja 3 o más el portero puede salir muy bajo); en centrocampistas las pérdidas y pases fallidos. Suma: goles, asistencias, pases clave, ocasiones creadas, tiros a puerta, duelos ganados, regates, y en defensa despejes, entradas e intercepciones.";
+    "QUÉ RESTA EN SOFASCORE (guías de Jornada Perfecta y Comuniate; orientativo, no son cifras de tu liga): tarjetas, pérdidas de balón, duelos y regates perdidos, faltas cometidas, ocasiones claras falladas, errores que provocan gol o disparo, penaltis cometidos o fallados, goles en propia, expulsiones (restan más cuanto antes); en portero y defensa los goles encajados (si el equipo encaja 3 o más el portero puede salir muy bajo); en centrocampistas las pérdidas y pases fallidos. Suma: goles, asistencias, pases clave, ocasiones creadas, tiros a puerta, duelos ganados, regates, y en defensa despejes, entradas e intercepciones.";
   const REGLAS_IA = "REGLAS ESTRICTAS: usa SOLO los datos de arriba. NO inventes cifras, estadísticas de SofaScore ni penaltis. La \"dificultad\" del rival que acompaña a cada jugador es una ESTIMACIÓN calculada con la clasificación y los goles reales (dilo así y menciona la muestra corta si la hay); lo que no se te ha dado, así que si hace falta algo así di \"sin dato\". Puedes razonar con lo que sí tienes (forma = puntos de sus últimos partidos, probabilidad de jugar, casa/fuera, estado, hora del partido) y con el contexto de la liga, pero explícalo con esos datos concretos.";
   const prompt = "Eres un analista experto de fútbol fantasy (Futmondo Social). Analiza la PRÓXIMA jornada del equipo del usuario. Cada jugador trae posición(es), estado, probabilidad de ser titular, sus puntos en los últimos partidos, si juega en CASA/FUERA, rival, dificultad estimada, penaltis y la FECHA/HORA de su partido.\n\n" + LIGA_CONTEXTO + "\n\n" + ctx + "\n\n" + REGLAS_IA + " Escribe SIEMPRE en español claro, sin abreviaturas ni jerga (nada de \"últ5\" ni \"pts esp\"): habla de \"sus últimos 5 partidos\", \"no jugó\", \"media\". Un 0 en la serie significa que no jugó. IMPORTANTE: toda cifra va con su unidad y su significado, NUNCA una cifra suelta: escribe \"hizo 11 puntos en su último partido\", \"media de 9,3 puntos por partido en los que jugó\", \"tiene un 70% de probabilidad de jugar\", \"vale 4 puntos por gol como centrocampista\"; jamás \"Espart: 11\" ni \"9 en su último partido\" ni \"vale 4\". Si un jugador puntúa bien pero es irregular (se pierde partidos), dilo siempre: es información importante. NO decidas quién entra o sale del once ni digas \"ponlo en el banquillo\": eso lo calcula la web aparte; tú solo describes la situación de cada jugador con datos. Si el jugador juega pronto en la jornada y le conviene a quien vigila los cambios, dilo.\n\nResponde en español, BREVE, con emojis y **negrita** (prohibido #, tablas o listas con guiones). Usa EXACTAMENTE este título, en su propia línea, sin nada más en esa línea:\n**CLAVES DE LA JORNADA**\n(UNA sola sección, ULTRA CORTA: 2 o 3 líneas como MÁXIMO, una por jugador, solo los jugadores MÁS interesantes de ESTA jornada (los que más pueden cambiar tu once o tus puntos: una duda importante, una baja o 0% de un titular clave, el que mejor o peor está, o un doble posición que importe). No rellenes con jugadores de poco interés. Formato EXACTO de cada línea: Nombre: 2 o 3 datos muy cortos separados por comas (máximo 14 palabras en total, sin repetir lo que ya se sabe de él), por ejemplo \"tiene un 60% de probabilidad de jugar, media de 9,3 puntos y juega el sábado ante el Elche 🏠\". El día sale de la FECHA/HORA que trae el jugador (\"juega el sábado\"); para casa o fuera usa SOLO el emoji 🏠 o ✈️. Si el jugador tiene doble posición, añade al final y en pocas palabras en cuál conviene alinearlo (\"mejor de centrocampista\"); esa lista de doble posición es: " + multiHint + " Solo cuenta la posición por su rol, su forma y su rival, NUNCA por la probabilidad de ser titular, y con la tabla real de puntos (el gol vale más como centrocampista (4) o defensa (6) que como delantero (3); la portería a cero solo cuenta en defensa y portero). No repitas ideas ni escribas más de una frase por jugador.)";
   const analisis = await dsChat(env, [{ role: "user", content: prompt }], "deepseek-flash");
@@ -5624,11 +6048,25 @@ async function handleGet({ request, env: env0, params }) {
     } catch (e) { return json({ error: "No se pudo consultar la fuente." }); }
   }
   if (path === "directo") {
-    // Directo de un partido: eventos y estadísticas de FotMob (sin crónica escrita: era de Comuniate). Sin KV: caché de borde de 30 s.
+    // Directo de un partido: crónica de Comuniate + eventos y estadísticas de FotMob. Sin KV: caché de borde de 30 s.
     const hh = url.searchParams.get("home") || "", aa = url.searchParams.get("away") || "", jj = url.searchParams.get("jornada") || "";
     const dd = /^\d{8}$/.test(url.searchParams.get("date") || "") ? url.searchParams.get("date") : "";
     const out = { entries: [], fm: null };
     const UA = { "user-agent": "Mozilla/5.0 (compatible; edumr)" };
+    const cron = (async () => {
+      try {
+        const d = await getPartidoFF(env, hh, aa, jj);
+        if (!(d && d.url)) return;
+        const html = await (await fetch(d.url, { headers: cmHeaders() })).text();
+        const texts = [...new Set([...html.matchAll(/"articleBody":"([^"]*)"/g)].map((m) => m[1]))];
+        for (const raw of texts) {
+          const mm = raw.match(/^(\d+)(?:\+(\d+))?'\s*[—-]\s*(.*)$/);
+          if (!mm) continue;
+          out.entries.push({ min: Number(mm[1]), x: Number(mm[2]) || 0, t: mm[3].replace(/\s+/g, " ").trim() });
+        }
+        out.entries.sort((a, b) => (a.min + a.x / 100) - (b.min + b.x / 100));
+      } catch (e) {}
+    })();
     const fot = (async () => {
       try {
         if (!dd) return;
@@ -5721,7 +6159,7 @@ async function handleGet({ request, env: env0, params }) {
         out.fm = { info, form, h2h, next: nexts, potm, hl: hlx, lineup, table, hid: teams[0] && teams[0].id, aid: teams[1] && teams[1].id, id: hit.id, started: !!st.started, finished: !!st.finished, halfs: st.halfs || null, lt: st.liveTime || null, score: [teams[0] && teams[0].score, teams[1] && teams[1].score], events, stats, src: "FotMob" };
       } catch (e) {}
     })();
-    await fot;
+    await Promise.all([cron, fot]);
     return json(out);
   }
   if (path === "cambios") {
@@ -5730,15 +6168,63 @@ async function handleGet({ request, env: env0, params }) {
     try { const c = await env.PORRA.get(ck, "json"); if (c && Date.now() - (c.at || 0) < 10 * 60 * 1000) return json(c.data); } catch (e) {}
     const out = { subs: [] };
     try {
-      const fm = await fmPartido(env, hh, aa, jj);
-      if (fm) {
-        const gm = { home: [], away: [] };
-        fm.events.forEach((e) => {
-          if (e.type === "Substitution" && e.swap) out.subs.push({ min: e.time, x: e.x, in: e.swap[0].name, out: e.swap[1].name });
-          if (e.type === "Card" && /red/i.test(e.card)) (out.reds = out.reds || []).push({ min: e.time, x: e.x, name: e.name });
-          if (e.type === "Goal") gm[e.home ? "home" : "away"].push({ m: e.time, x: e.x, sc: e.ns || "" });
-        });
-        if (gm.home.length + gm.away.length) out.gm = gm;
+      const d = await getPartidoFF(env, hh, aa, jj);
+      if (d && d.url) {
+        const html = await (await fetch(d.url, { headers: cmHeaders() })).text();
+        const texts = [...new Set([...html.matchAll(/"articleBody":"([^"]*)"/g)].map((m) => m[1]))];
+        const clean = (t) => String(t || "").replace(/\([^)]*\)/g, "").replace(/^(?:del campo|del terreno de juego)\s+/i, "").replace(/\s+abandona el terreno de juego(?: y)?$/i, "").replace(/\s+y$/i, "").replace(/[.¡!]+\s*$/g, "").replace(/\s+/g, " ").trim();
+        if (url.searchParams.get("raw")) out.raw = texts.filter((x) => /^\d+/.test(x));
+        const goalLines = [];
+        for (const raw of texts) {
+          const mm = raw.match(/^(\d+)(?:\+(\d+))?'\s*[—-]\s*(.*)$/);
+          if (!mm) continue;
+          const min = Number(mm[1]), x = Number(mm[2]) || 0, t = mm[3];
+          if (/¡\s*gol\b|golazo/i.test(t) && !/anulad|malogr|ocasi[oó]n|fuera de juego/i.test(t)) goalLines.push({ min, x, t });
+          let rj = t.match(/tarjeta roja a ([^(!.]+?)\s*\(/i) || t.match(/expulsa(?:do)? a ([^(!.]+?)\s*\(/i);
+          if (!rj && /expulsi[oó]n|expulsad|doble amarilla|segunda amarilla|tarjeta roja/i.test(t) && !/le muestra tarjeta amarilla|tarjeta amarilla a/i.test(t)) rj = t.match(/^([^.()!¡]+?)\s*\(/);
+          if (rj) { (out.reds = out.reds || []).push({ min, x, name: rj[1].trim() }); continue; }
+          if (!/entr|sustitu|cambio|sale\b/i.test(t)) continue;
+          let a = null, b = null, m2;
+          if ((m2 = t.match(/sale (.+?) y entra (.+?)(?:\s*\(|\.|$)/i))) { b = m2[1]; a = m2[2]; }
+          else if ((m2 = t.match(/(?:^|\. |, que |\s)(?:es|ha sido) sustituido por (.+?)(?:\s*\(|\.|$)/i)) && (m2[0])) {
+            const pre = t.slice(0, m2.index).replace(/^.*?(?:para|\. )\s*/i, "");
+            b = pre; a = m2[1];
+          }
+          else if ((m2 = t.match(/(.+?) sale del terreno de juego,? y (.+?) entra en su lugar/i))) { b = m2[1].replace(/^.*\. /, ""); a = m2[2]; }
+          else if ((m2 = t.match(/dar entrada a (.+?) por (.+?)(?:\s*\(|\.|$)/i))) { a = m2[1]; b = m2[2]; }
+          else if ((m2 = t.match(/sustituir a (.+?) por (.+?)(?:\s*\(|\.|$)/i))) { b = m2[1]; a = m2[2]; }
+          else if ((m2 = t.match(/(.+?) (?:ha )?entra(?:do)?(?: en el (?:terreno de juego|campo))? (?:en sustituci[oó]n de|en lugar de|por|como sustituto de) (.+?)(?:\s*\(|\.|$)/i))) { a = m2[1].replace(/^.*\. /, ""); b = m2[2]; }
+          else if ((m2 = t.match(/entra (.+?) en sustituci[oó]n de (.+?)(?:\s*\(|\.|$)/i))) { a = m2[1]; b = m2[2]; }
+          if (a && b) out.subs.push({ min, x, in: clean(a), out: clean(b) });
+        }
+        // Minuto exacto de cada gol (con descuento) cruzando la crónica con la lista de goleadores
+        try {
+          const nrm = (v) => String(v || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+          const hk = nrm(hh).split(/\s+/)[0], ak = nrm(aa).split(/\s+/)[0];
+          const sideOf = (t) => { const m3 = [...t.matchAll(/\(([^)]+)\)/g)].map((q) => nrm(q[1])); for (const q of m3) { if (hk.length >= 3 && q.indexOf(hk) >= 0) return "home"; if (ak.length >= 3 && q.indexOf(ak) >= 0) return "away"; } return ""; };
+          const bySide = { home: [], away: [] };
+          goalLines.forEach((g) => { const sd = sideOf(g.t); if (sd) bySide[sd].push(g); });
+          const gm = { home: [], away: [] }; let okAll = true;
+          [["home", d.goalsHome], ["away", d.goalsAway]].forEach(([sd, gl]) => {
+            gl = gl || []; const lines = bySide[sd].slice();
+            if (gl.length !== lines.length) { okAll = false; return; }
+            const used = new Array(lines.length).fill(false), res = new Array(gl.length).fill(null);
+            gl.forEach((g, i) => {
+              const name = nrm(String(g.text || "").replace(/\([^)]*\)/g, " ")); const toks = name.split(/[^a-z]+/).filter((w) => w.length >= 4);
+              const k = lines.findIndex((l, li) => !used[li] && toks.some((w) => nrm(l.t).indexOf(w) >= 0));
+              if (k >= 0) { used[k] = true; res[i] = lines[k]; }
+            });
+            gl.forEach((g, i) => { if (!res[i]) { const k = used.indexOf(false); if (k >= 0) { used[k] = true; res[i] = lines[k]; } } });
+            gm[sd] = res.map((l) => l ? { m: l.min, x: l.x } : null);
+          });
+          if (url.searchParams.get("raw")) out.dbg = { gl: goalLines.map((g) => g.min + "+" + g.x + " " + sideOf(g.t)), gh: (d.goalsHome || []).length, ga: (d.goalsAway || []).length, hk, ak };
+          if (okAll) {
+            const all2 = []; ["home", "away"].forEach((sd) => gm[sd].forEach((q) => { if (q) all2.push({ sd, q }); }));
+            all2.sort((a, b) => (a.q.m + a.q.x / 100) - (b.q.m + b.q.x / 100));
+            let h = 0, a2 = 0; all2.forEach((e) => { if (e.sd === "home") h++; else a2++; e.q.sc = h + " - " + a2; });
+            out.gm = gm;
+          }
+        } catch (e) {}
       }
     } catch (e) { out.err = String(e).slice(0, 120); }
     try { if (out.subs.length || out.reds || out.gm) await env.PORRA.put(ck, JSON.stringify({ at: Date.now(), data: out }), { expirationTtl: 3600 }); } catch (e) {}
