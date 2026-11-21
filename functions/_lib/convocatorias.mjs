@@ -100,7 +100,7 @@ export function articuloConvocatoria({ club, convocados, sinEmparejar, prev, par
   const nuevos = prev ? en.filter((p) => !prev.has(String(p.id))).sort((a, b) => b.value - a.value) : [];
   const caen = prev ? plantilla.filter((p) => prev.has(String(p.id)) && !convocados.has(String(p.id)) && !ambiguo(p)).sort((a, b) => b.value - a.value) : [];
   const lt = (arr, n) => arr.slice(0, n);
-  const chips = [chip("CONVOCADOS", String(convocados.size), "ok", partido ? club.team + (partido.casa ? " ante " : " en ") + partido.rival : club.team)];
+  const chips = [chip("CONVOCADOS", String(convocados.size), "ok", partido ? "Jornada " + partido.jornada + " · " + (partido.casa ? "en casa ante " : "fuera, en ") + partido.rival : club.team)];
   if (prev) chips.push(chip("ENTRAN", String(nuevos.length), "az", "respecto a la lista anterior"), chip("SALEN", String(caen.length), "mo", "respecto a la lista anterior"));
   const secs = [
     { titulo: "Resumen", nota: "", filas: chips },
