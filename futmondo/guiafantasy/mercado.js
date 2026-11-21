@@ -4990,7 +4990,7 @@
   async function newsPlayersBlock(box, text) {
     if (!all || !all.length) { try { await load(); } catch (e) {} }
     if (!all || !all.length || !document.body.contains(box)) return;
-    if (box.querySelector(".art-once, .al")) return; // los onces recomendados ya son todo jugadores: sin «Jugadores de la noticia»
+    if (box.querySelector(".art-once, .al, .art-pts")) return; // onces y puntos de partido ya son todo jugadores: sin «Jugadores de la noticia»
     const fold = (x) => String(x == null ? "" : x).normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const T = fold(text);
     const keyOf = (w) => fold(w).toLowerCase();
