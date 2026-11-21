@@ -69,19 +69,19 @@
     var d = new Date(ts), h = d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
     return d.toDateString() === new Date().toDateString() ? h : d.getDate() + "/" + (d.getMonth() + 1) + " " + h;
   }
-  var curJ = 0, selJ = 0, lastJ = null, lastEst = null, ptMap = {}, ptFor = 0;
+  var curJ = 0, selJ = 0, lastJ = null, lastEst = null, ptMap = {}, ptFor = 0, ptOk = false;
   // Partidos con los puntos YA publicados por Futmondo (los guarda el servidor solo cuando son reales)
   function loadPts(n) {
     if (!n || ptFor === n) return;
-    ptFor = n;
+    ptFor = n; ptOk = false;
     var r = "puntos-jornada?jornada=" + n + "&items=1";
     var apply = function (d) {
       var m = {};
       ((d && d.items) || []).forEach(function (i) { m[i.home + "|" + i.away] = i.at || 1; });
       return m;
     };
-    ptMap = apply(cached(r));
-    get(r).then(function (d) { if (n !== selJ) return; ptMap = apply(d); if (lastJ) paintJornada(lastJ, lastEst); });
+    var c0 = cached(r); if (c0) { ptMap = apply(c0); ptOk = true; }
+    get(r).then(function (d) { if (n !== selJ) return; ptMap = apply(d); ptOk = true; if (lastJ) paintJornada(lastJ, lastEst); });
   }
   function paintJornada(j, est) {
     lastJ = j; lastEst = est;
@@ -106,7 +106,7 @@
       var live = st === "live", conf = !live && at && m.confirmed;
       var pago = pt > 1e9 ? Math.round((Date.now() - pt) / 60000) : -1, pfresh = pago >= 0 && pago < 60;
       return '<a class="gm' + (pt ? " pt" + (pfresh ? " ptn" : "") : "") + (at || live ? " p" : "") + (fresh && !live && !conf ? " new" : "") + (conf ? " cf" : "") + (live ? " en" : "") + '" href="/futmondo/guiafantasy/partido/' + matchSlug(m.home, m.away) + "?j=" + j.matchday + '">' +
-        (live ? '<div class="pr"><b><i class="dot"></i>PARTIDO EN JUEGO</b></div>' : pt ? '<div class="pr"><b>' + (pfresh ? '<i class="dot"></i>' : "") + "Puntos actualizados</b>" + (pt > 1e9 ? "<span>" + (pfresh ? "hace " + Math.max(1, pago) + " min" : hm(pt)) + "</span>" : "") + "</div>" : at ? '<div class="pr"><b>' + (fresh ? '<i class="dot"></i>' : "") + (m.confirmed ? "Once confirmado" : "Once probable") + "</b>" + (at > 1e9 ? "<span>" + (fresh ? "hace " + Math.max(1, ago) + " min" : hm(at)) + "</span>" : "") + "</div>" : "") +
+        (live ? '<div class="pr"><b><i class="dot"></i>PARTIDO EN JUEGO</b></div>' : (st === "final" && !pt && ptOk) ? '<div class="pr pend"><b>Pendiente de puntos</b></div>' : pt ? '<div class="pr"><b>' + (pfresh ? '<i class="dot"></i>' : "") + "Puntos actualizados</b>" + (pt > 1e9 ? "<span>" + (pfresh ? "hace " + Math.max(1, pago) + " min" : hm(pt)) + "</span>" : "") + "</div>" : at ? '<div class="pr"><b>' + (fresh ? '<i class="dot"></i>' : "") + (m.confirmed ? "Once confirmado" : "Once probable") + "</b>" + (at > 1e9 ? "<span>" + (fresh ? "hace " + Math.max(1, ago) + " min" : hm(at)) + "</span>" : "") + "</div>" : "") +
         '<div class="in"><img class="c" src="' + esc(m.homeCrest) + '" alt="' + esc(m.home) + '">' +
         '<div class="mid"><b>' + esc(m.day) + " " + esc(m.date) + "</b>" + esc(lab) + sub + "</div>" +
         '<img class="c" src="' + esc(m.awayCrest) + '" alt="' + esc(m.away) + '"></div></a>';

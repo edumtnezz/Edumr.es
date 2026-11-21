@@ -2589,7 +2589,7 @@
       // Partido acabado pero sin puntos todavía: se sigue buscando cada minuto hasta que lleguen
       let pointsIn = true;
       if (finished) { try { const r = await fillMpPoints(box, d, jn); if (!mpLive) pointsIn = r !== false; } catch (e) { pointsIn = false; } }
-      if (finalNow && !pointsIn) { const h = box.querySelector(".mpage-xi-h"); if (h) h.insertAdjacentElement("afterend", el("p", "muted small mpage-live-note", "⏳ Esperando los puntos de Futmondo…")); }
+      if (finalNow && !pointsIn) { const h = box.querySelector(".mpage-xi-h"); if (h) h.insertAdjacentElement("afterend", el("p", "muted small mpage-live-note", "Pendiente de puntos")); }
       waitPts = finalNow && !pointsIn;
       return !finalNow || !pointsIn;
     };

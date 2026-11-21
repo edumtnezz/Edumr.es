@@ -3884,7 +3884,7 @@ async function getJornadaStrip(env, matchday) {
     prep.forEach((p) => { const ko = new Date(p.m && p.m.utcDate).getTime(); if (ko && ko <= now0 + 120000 && now0 - ko < 4 * 3600 * 1000) { const pp = {}; new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(ko)).forEach((x) => { pp[x.type] = x.value; }); dset.add(pp.year + pp.month + pp.day); } });
     for (const dd of [...dset].slice(0, 2)) {
       const lj = await (await fetch("https://www.fotmob.com/api/data/matches?date=" + dd + "&timezone=Europe%2FMadrid&ccode3=ESP", { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } })).json();
-      (lj.leagues || []).forEach((lg) => (lg.matches || []).forEach((m) => { if (m && m.status && m.home && m.away) fmList.push(m); }));
+      (lj.leagues || []).forEach((lg) => { if (!(lg.id === FM_LIGA || lg.primaryId === FM_LIGA)) return; (lg.matches || []).forEach((m) => { if (m && m.status && m.home && m.away) fmList.push(m); }); }); // solo LaLiga: otra competición con equipos parecidos daba «en juego» falso
     }
   } catch (e) {}
   const matches = prep.map((p) => {
@@ -3936,7 +3936,8 @@ async function getJornadaStrip(env, matchday) {
       }
     }
     try {
-      const fmM = fmList.find((x) => teamScore(x.home.longName || x.home.name, p.home) + teamScore(x.away.longName || x.away.name, p.away) >= 4);
+      const koP = new Date(p.m && p.m.utcDate).getTime();
+      const fmM = (koP && koP > Date.now() + 120000) ? null : fmList.find((x) => teamScore(x.home.longName || x.home.name, p.home) + teamScore(x.away.longName || x.away.name, p.away) >= 4);
       const fs = fmM && fmM.status;
       if (fs && fs.started && /^\d+\s*-\s*\d+$/.test(String(fs.scoreStr || "").trim())) {
         const sc = String(fs.scoreStr).replace(/\s*-\s*/, " - ");

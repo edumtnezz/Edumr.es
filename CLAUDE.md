@@ -112,6 +112,11 @@ Edu no sabe programar, escribe en español desde el móvil. Léete también AGEN
 - `functions/_lib/convocatorias.mjs` + `cron/src/convocatorias.js` (KV `conv:v1`, cada 5 min como mucho): Real Madrid (`/es-ES/noticias/.../convocatorias/…`) y Betis (`/noticias/actualidad/lista-de-convocados…`) publican «PORTEROS: / DEFENSAS: / …» con apellidos. Se lee la última, se comprueba que el rival citado es el de nuestro próximo partido de LaLiga (`partidoDe`; si no, es de otra competición y se ignora) y se empareja con Futmondo en modo `estricto` (sin la pasada «un nombre dentro de otro»). Artículo `artconv<club>` (rótulo «Artículo», portada `aviso-once-confirmado.jpg` de momento): resumen, «Entran en la lista» (frente a la lista anterior del club), «Se quedan fuera» (jugadores de Futmondo con 3 partidos o 2 M que no están; nunca se acusa a quien se parezca a un nombre de la lista sin identificar). Sin aviso de Telegram aún.
 - Pendiente: Sevilla, Valencia y Villarreal (publican distinto; Sevilla solo da sitemap enorme), Barça, y el resto de clubes tras revisar su `robots.txt` uno a uno. Antes de añadir un club: comprobar que deja leer, que la lista sale con nombres y que su fecha es del día.
 
+## Vuelta a Comuniate (21/11/2026, tarde, decisión de Edu)
+- Edu pidió volver a como estaba con Comuniate porque con FotMob salió «Partido en juego» falso. Se revirtieron `78bc369` (ficha, directo, cambios, franja) y `9f28af1` (once oficial): la ficha del partido, `alineaciones-confirmadas`, el directo y los cambios vuelven a leer Comuniate. Lo posterior se conserva (formaciones reales, puntos, artículos, convocatorias, comparativa privada, que sigue leyendo el once oficial de FotMob por su cuenta). Esto sustituye a lo escrito arriba sobre «Once oficial SOLO de FotMob» y «Fuentes que quiere Edu».
+- «En juego» falso de la franja: la lectura de FotMob de la jornada cogía partidos de otras competiciones con equipos parecidos (Racing–Real Sociedad salió en juego el sábado). Ahora solo LaLiga y solo si el partido ya ha empezado.
+- Partido terminado sin puntos de Futmondo: «Pendiente de puntos» (Inicio, en gris, y ficha del partido). Nunca «Esperando…».
+
 ## Ideas pendientes
 - Avisos Telegram (noticias y alineación probable)
 - Jugadores rentables (SofaScore, calidad-precio)
