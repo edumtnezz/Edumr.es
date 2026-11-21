@@ -39,7 +39,7 @@ export async function vigilarConvocatorias(env, f = fetch, now = Date.now()) {
       own = own.filter((x) => x.id !== a.id);
       const pub = c.publicada && !isNaN(Date.parse(c.publicada)) ? Math.min(now, Date.parse(c.publicada)) : now;
       own.unshift({ id: a.id, title: a.title, lead: a.lead, body: a.body, status: "published", createdAt: now, publishedAt: pub, thumb: "", club: club.team, players: a.players, tipo: "articulo", auto: "articulo", art: "artconv", f: 1, fp: (a.body.match(/^@ (\S+) \|/m) || [])[1] || "" });
-      st.club[club.key] = { jornada: partido.jornada, ids: [...ids], at: now, url };
+      st.club[club.key] = { jornada: partido.jornada, team: club.team, ids: [...ids], sin: (sinEmparejar || []).length, at: now, url };
       nuevas++;
     } catch (e) { console.error("convocatoria", club.key, String(e && e.message || e).slice(0, 120)); }
   }

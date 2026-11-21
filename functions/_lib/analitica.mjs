@@ -370,7 +370,7 @@ export function normalizar11(pe) {
   return Object.fromEntries(ids.map((id) => [id, Math.round(v[id])]));
 }
 export function marcadorFormulas(resultados) {
-  const V = { E: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, F: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E2: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E3: { n: 0, ok: 0, b: 0, once: 0, p: 0 } };
+  const V = { E4: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, F: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E2: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E3: { n: 0, ok: 0, b: 0, once: 0, p: 0 } };
   const jornadas = new Set();
   for (const r of resultados || []) {
     if (!r.real || !r.real.length || !r.pe || !Object.keys(r.pe).length) continue;
@@ -382,6 +382,7 @@ export function marcadorFormulas(resultados) {
       F: Object.fromEntries(ids.map((id) => [id, ff.has(id) ? Number((r.pf || {})[id] ?? 50) : 0])),
       E2: r.pe2 && Object.keys(r.pe2).length ? r.pe2 : null,
       E3: normalizar11(pe),
+      E4: r.pe4 && Object.keys(r.pe4).length ? r.pe4 : pe, // sin convocatoria del club, E4 = E
     };
     for (const k of Object.keys(V)) {
       const m = val[k]; if (!m) continue;
@@ -395,11 +396,20 @@ export function marcadorFormulas(resultados) {
       v.once += top.filter((id) => real.has(id)).length;
     }
   }
-  const out = { equipos: 0, jornadas: [...jornadas].sort((a, b) => a - b) };
+  const out = { equipos: 0, jornadas: [...jornadas].sort((a, b) => a - b), conConvocatoria: (resultados || []).filter((r) => r.pe4 && Object.keys(r.pe4).length).length };
   for (const k of Object.keys(V)) {
     const v = V[k];
     out.equipos = Math.max(out.equipos, V.E.p);
     out[k] = v.p ? { equipos: v.p, once: Math.round((v.once / v.p) * 10) / 10, oncePct: Math.round((100 * v.once) / (v.p * 11)), jugadores: v.n, bien: v.ok, bienPct: Math.round((100 * v.ok) / v.n), brier: Math.round((v.b / v.n) * 10000) / 10000 } : null;
   }
   return out;
+}
+
+// E4 (21/11/2026, en sombra, aprobado por Edu): la E de siempre, pero con la convocatoria OFICIAL del club de esa jornada:
+// quien no está en la lista pasa a 0. Solo si la lista es de esa jornada, tiene 18 o más y no quedó ningún nombre sin identificar
+// (si alguno no se identificó, podría ser uno de nuestra plantilla y lo dejaríamos a 0 por error). Si no hay lista válida: null.
+export function conConvocatoria(pe, conv, jornada) {
+  if (!pe || !conv || Number(conv.jornada) !== Number(jornada) || !Array.isArray(conv.ids) || conv.ids.length < 18 || (conv.sin || 0) > 0) return null;
+  const ok = new Set(conv.ids);
+  return Object.fromEntries(Object.keys(pe).map((id) => [id, ok.has(id) ? pe[id] : 0]));
 }

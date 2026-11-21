@@ -70,3 +70,4 @@
 #adminRoot .alz-tr.h { border-top: 0; color: var(--mut); font-size: .7rem; font-weight: 800; text-transform: uppercase; }
 #adminRoot .alz-tr.E span:first-child { color: var(--accent); font-weight: 800; } #adminRoot .alz-tr.F span:first-child { color: #3b82f6; font-weight: 800; }
 #adminRoot .alz-tr.E2, #adminRoot .alz-tr.E3 { color: var(--mut); }
+#adminRoot .alz-tr.E4 { color: var(--mut); }

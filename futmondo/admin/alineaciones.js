@@ -64,7 +64,7 @@
     if (M && M.E) {
       var tb = el("div", "alz-tab2");
       var h = el("div", "alz-tr h"); ["", "Once", "Jugadores bien", "Error"].forEach(function (x) { h.appendChild(el("span", null, x)); }); tb.appendChild(h);
-      [["E", "Nuestra web"], ["F", "FutbolFantasy"], ["E2", "Prueba E2"], ["E3", "Prueba E3"]].forEach(function (s) {
+      [["E", "Nuestra web"], ["F", "FutbolFantasy"], ["E2", "Prueba E2"], ["E3", "Prueba E3"], ["E4", "Prueba E4 (convocatoria)"]].forEach(function (s) {
         var v = M[s[0]]; if (!v) return;
         var r = el("div", "alz-tr " + s[0]);
         r.appendChild(el("span", null, s[1]));
@@ -74,7 +74,7 @@
         tb.appendChild(r);
       });
       sum.appendChild(tb);
-      sum.appendChild(el("p", "alz-note", "Medido con toda la plantilla. «Error» = Brier: cuanto más bajo, mejor. E2 y E3 son pruebas que aún no salen en la web."));
+      sum.appendChild(el("p", "alz-note", "Medido con toda la plantilla. «Error» = Brier: cuanto más bajo, mejor. E2, E3 y E4 son pruebas que aún no salen en la web. E4 = nuestra web + convocatoria oficial del club (no convocado = 0 %); de momento solo Real Madrid y Betis, en " + (M.conConvocatoria || 0) + " equipos medidos."));
     } else {
       [["E", "Nuestra web", T.E], ["F", "FutbolFantasy", T.F]].forEach(function (s) {
         var c = el("div", "alz-box " + s[0]);
