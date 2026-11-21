@@ -2864,7 +2864,7 @@ async function analiticaCalc(env, ds, deMercado, now, sinFicha) {
         if (abierto && !(duelo.hechos || {})[dk]) {
           // Se guarda la E de TODA la plantilla (no solo la de los titulares de FutbolFantasy) y cómo fue cambiando su once: sirve para afinar la fórmula
           if (convSt === undefined) { try { convSt = (await env.PORRA.get("conv:v1", "json")) || null; } catch (e) { convSt = null; } }
-          const convClub = convSt && convSt.club ? (Object.entries(convSt.club).find(([ck, c]) => c && clubKey(c.team || ({ realmadrid: "Real Madrid", betis: "Real Betis" })[ck] || ck) === k) || [])[1] || null : null;
+          const convClub = convSt && convSt.club ? (Object.entries(convSt.club).find(([ck, c]) => c && clubKey(c.team || ({ realmadrid: "Real Madrid", betis: "Real Betis", osasuna: "Osasuna" })[ck] || ck) === k) || [])[1] || null : null;
           const ant = duelo.previos[dk], hist = ((ant && ant.hist) || []).slice(-9);
           if (!hist.length || hist[hist.length - 1].f !== cmp.firma) hist.push({ at: now, f: cmp.firma });
           duelo.previos[dk] = { j: Number(jor.matchday), k, team: mio.team, at: now, propio: mio.xi.map((x) => x.id), ff: cmp.firma ? cmp.firma.split(",") : [], pf: cmp.pf || {}, pe: Object.fromEntries((mio.prob || []).map((x) => [x.id, x.p])), pe2: mio.pm || {}, pe4: conConvocatoria(Object.fromEntries((mio.prob || []).map((x) => [x.id, x.p])), convClub, jor.matchday) || undefined, sit: Object.fromEntries((mio.prob || []).filter((x) => x.sit).map((x) => [x.id, x.sit])), hist };

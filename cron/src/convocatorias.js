@@ -1,6 +1,6 @@
 // Convocatorias oficiales (21/11/2026): mira la web de cada club que deja leer y que publica los nombres,
 // y cuando sale una lista nueva escribe un artículo propio (quién entra, quién se queda fuera). KV `conv:v1`.
-import { CLUBES, urlsConvocatoria, leerConvocatoria, partidoDe, emparejarLista, articuloConvocatoria } from "../../functions/_lib/convocatorias.mjs";
+import { CLUBES, urlsConvocatoria, leerConvocatoria, partidoDe, emparejarLista, articuloConvocatoria, dudososConvocatoria } from "../../functions/_lib/convocatorias.mjs";
 
 const OWN_KEY = "own:news:v2", K = "conv:v1";
 const UA = { "user-agent": "Mozilla/5.0 (compatible; edumr.es; contacto en la web)" };
@@ -39,7 +39,7 @@ export async function vigilarConvocatorias(env, f = fetch, now = Date.now()) {
       own = own.filter((x) => x.id !== a.id);
       const pub = c.publicada && !isNaN(Date.parse(c.publicada)) ? Math.min(now, Date.parse(c.publicada)) : now;
       own.unshift({ id: a.id, title: a.title, lead: a.lead, body: a.body, status: "published", createdAt: now, publishedAt: pub, thumb: "", club: club.team, players: a.players, tipo: "articulo", auto: "articulo", art: "artconv", f: 1, fp: (a.body.match(/^@ (\S+) \|/m) || [])[1] || "" });
-      st.club[club.key] = { jornada: partido.jornada, team: club.team, ids: [...ids], sin: (sinEmparejar || []).length, at: now, url };
+      st.club[club.key] = { jornada: partido.jornada, team: club.team, ids: [...ids], sin: (sinEmparejar || []).length, dudosos: dudososConvocatoria(club.team, ids, sinEmparejar, ps), at: now, url };
       nuevas++;
     } catch (e) { console.error("convocatoria", club.key, String(e && e.message || e).slice(0, 120)); }
   }

@@ -407,9 +407,11 @@ export function marcadorFormulas(resultados) {
 
 // E4 (21/11/2026, en sombra, aprobado por Edu): la E de siempre, pero con la convocatoria OFICIAL del club de esa jornada:
 // quien no está en la lista pasa a 0. Solo si la lista es de esa jornada, tiene 18 o más y no quedó ningún nombre sin identificar
-// (si alguno no se identificó, podría ser uno de nuestra plantilla y lo dejaríamos a 0 por error). Si no hay lista válida: null.
+// Con nombres sin identificar solo vale si el cron dejó apartados los «dudosos» (los que podrían ser uno de esos nombres):
+// a esos se les deja su E. Si no hay lista válida: null.
 export function conConvocatoria(pe, conv, jornada) {
-  if (!pe || !conv || Number(conv.jornada) !== Number(jornada) || !Array.isArray(conv.ids) || conv.ids.length < 18 || (conv.sin || 0) > 0) return null;
-  const ok = new Set(conv.ids);
+  if (!pe || !conv || Number(conv.jornada) !== Number(jornada) || !Array.isArray(conv.ids) || conv.ids.length < 18) return null;
+  if ((conv.sin || 0) > 0 && !Array.isArray(conv.dudosos)) return null;
+  const ok = new Set(conv.ids.concat(conv.dudosos || []));
   return Object.fromEntries(Object.keys(pe).map((id) => [id, ok.has(id) ? pe[id] : 0]));
 }

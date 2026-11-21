@@ -6,6 +6,8 @@ import { emparejar, norm, clubKey } from "./estados.mjs";
 // Cómo encontrar la convocatoria en la web de cada club. `enlace` saca la URL del artículo de la página de noticias.
 export const CLUBES = [
   { key: "realmadrid", team: "Real Madrid", lista: "https://www.realmadrid.com/es-ES/noticias", enlace: /href="((?:https:\/\/www\.realmadrid\.com)?\/es-ES\/noticias\/futbol\/primer-equipo\/convocatorias\/[^"#?]+)"/g, base: "https://www.realmadrid.com" },
+  // Osasuna (21/11/2026): «/convocatoria-osasunamalaga-2026/27», con «Porteros: … / Defensas: …». Las del femenino llevan «fem»: fuera.
+  { key: "osasuna", team: "Osasuna", lista: "https://www.osasuna.es/noticias", enlace: /href="((?:https:\/\/www\.osasuna\.es)?\/convocatoria-(?![^"]*fem)[^"#?]+)"/g, base: "https://www.osasuna.es" },
   { key: "betis", team: "Real Betis", lista: "https://www.realbetisbalompie.es/noticias/actualidad", enlace: /href="((?:https:\/\/www\.realbetisbalompie\.es)?\/noticias\/actualidad\/lista-de-convocados[^"#?]+)"/g, base: "https://www.realbetisbalompie.es" },
 ];
 
@@ -27,7 +29,7 @@ export function lineas(html) {
 const meta = (html, p) => { const m = String(html || "").match(new RegExp('<meta[^>]+property="' + p + '"[^>]+content="([^"]*)"', "i")); return m ? ent(m[1]) : ""; };
 
 const PUESTOS = { porteros: 1, defensas: 2, centrocampistas: 3, delanteros: 4 };
-const FIN = /^(temas relacionados|« noticia anterior|noticia anterior|nuestros partners|compartir|comparte en)/i;
+const FIN = /^(últimas noticias|ultimas noticias|ver todo|temas relacionados|« noticia anterior|noticia anterior|nuestros partners|compartir|comparte en)/i;
 
 // Texto de la convocatoria → { puestos: { 1: [nombres], 2: […], 3: […], 4: […] } } (o null si no se reconoce)
 export function parsearLista(html) {
@@ -111,4 +113,17 @@ export function articuloConvocatoria({ club, convocados, sinEmparejar, prev, par
   const titulo = "Convocatoria " + (/^real sociedad/i.test(club.team) ? "de la " : "del ") + club.team + (partido ? (partido.casa ? " ante el " : " en el campo del ") + partido.rival + " (J" + partido.jornada + ")" : "");
   const protagonistas = lt(nuevos.concat(fuera), 3).map((p) => p.name);
   return { id: "artconv" + club.key, title: titulo.replace(/ante el Real Sociedad/, "ante la Real Sociedad"), lead: "Quién entra y quién se queda fuera, según la lista oficial del club.", body, players: protagonistas.length ? protagonistas : lt(en, 1).map((p) => p.name) };
+}
+
+// E4: jugadores de Futmondo del club que NO están en la lista pero que podrían ser uno de los nombres sin identificar
+// (comparten una palabra, o el nombre de la lista es una abreviatura suya, p. ej. «Fdez» → «Fernández»). A esos no se les pone a 0.
+export function dudososConvocatoria(team, ids, sinEmparejar, fmPlayers) {
+  const toks = (x) => norm(x).split(/[^a-z0-9]+/).filter((t) => t.length >= 3);
+  const sub = (a, b) => { let i = 0; for (const c of b) if (c === a[i]) i++; return i === a.length; };
+  const sin = (sinEmparejar || []).flatMap(toks);
+  const ok = new Set(ids || []);
+  return (fmPlayers || []).filter((p) => p.team === team && !ok.has(p.id)).filter((p) => {
+    const pt = toks(p.name);
+    return sin.some((a) => pt.some((b) => a === b || (a[0] === b[0] && a.length < b.length && sub(a, b))));
+  }).map((p) => p.id);
 }
