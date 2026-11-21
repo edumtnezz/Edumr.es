@@ -1256,6 +1256,8 @@
     });
     return bs >= 2 ? best : null;
   }
+  // Portero según cómo venga la posición: «PT», «PO», «GK» o «Portero» (las tablas de puntos y el once oficial no usan la misma)
+  const esPorteroPos = (q) => q === "pt" || q === "po" || q === "gk" || /porter|goalkeeper/.test(q);
   function xiGroups(side) {
     const g = { portero: [], defensas: [], medios: [], delanteros: [] };
     if (side.portero || side.defensas || side.medios || side.delanteros) {
@@ -1263,7 +1265,7 @@
     } else {
       (side.starters || []).forEach((p) => {
         const q = stripAccents(String(p.pos || "").toLowerCase()).trim();
-        if (q === "pt" || /porter/.test(q)) g.portero.push(p);
+        if (esPorteroPos(q)) g.portero.push(p);
         else if (q === "df" || /defens|central|lateral|carrilero/.test(q)) g.defensas.push(p);
         else if (q === "md" || q === "cen" || /medio|centro|pivote|interior/.test(q)) g.medios.push(p);
         else if (q === "dl" || /delant|extremo|punta/.test(q)) g.delanteros.push(p);
@@ -1430,12 +1432,12 @@
       const mi = marketInfo(p.name, name);
       const o = { pos: q, name: p.name, full: p.name, alt: ffFullFor(photoMap, p.name), last: String(p.name || "").split(/\s+/).pop(), photo: ffPhotoFor(photoMap, p.name) || (mi && mi.photo) || "" };
       if (isSub) { g.subs.push(o); return; }
-      const cr = (q === "pt" || /porter/.test(q)) ? "" : rowOf(p.name);
+      const cr = esPorteroPos(q) ? "" : rowOf(p.name);
       if (cr) g[cr].push(o);
-      else if (q === "pt" || /porter/.test(q)) g.portero.push(o);
+      else if (esPorteroPos(q)) g.portero.push(o);
       else if (q === "df" || /defens/.test(q)) g.defensas.push(o);
       else if (q === "dl" || /delant/.test(q)) g.delanteros.push(o);
-      else if (!q && mi && mi.role) { const r = String(mi.role).toLowerCase(); if (/defens/.test(r)) g.defensas.push(o); else if (/delant/.test(r)) g.delanteros.push(o); else g.medios.push(o); }
+      else if (!q && mi && mi.role) { const r = String(mi.role).toLowerCase(); if (/porter/.test(r)) g.portero.push(o); else if (/defens/.test(r)) g.defensas.push(o); else if (/delant/.test(r)) g.delanteros.push(o); else g.medios.push(o); }
       else g.medios.push(o);
     });
     // Formaciones imposibles (3-6-1, 6-3-1…): la tabla de puntos clasifica a los carrileros/pivotes
