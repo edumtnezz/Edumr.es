@@ -2863,7 +2863,9 @@ async function analiticaCalc(env, ds, deMercado, now, sinFicha) {
     }
     // Duelo: cuando Futmondo ya da los titulares reales de esa jornada, se puntúa a los dos y se guarda el resultado
     // Once real al instante (20/11/2026): en cuanto sale la alineación confirmada se puntúa, sin esperar a que Futmondo publique la jornada.
-    // El once oficial (FotMob, ver getAlineacionesConfirmadas) se GUARDA por jornada y club (KV `an:conf:v1`).
+    // Solo vale si se emparejan los 11 con jugadores de Futmondo; si no, se espera a Futmondo (nunca se completa a ojo).
+    // El once oficial se GUARDA (KV `an:conf:v1`, 20/11/2026): Comuniate lo da antes del partido pero lo quita al acabar,
+    // así que se apunta en cuanto se ve. Si no se vio, se lee de FotMob (mantiene el once oficial después del partido).
     // Solo vale si se emparejan los 11 con jugadores de Futmondo; si no, se espera a Futmondo (nunca se completa a ojo).
     const confKV = (await env.PORRA.get(AN_CONF, "json")) || {};
     const empar11 = (k, nombres, eqName) => {
@@ -2881,9 +2883,32 @@ async function analiticaCalc(env, ds, deMercado, now, sinFicha) {
         const sd = mt[lado]; if (!sd) continue;
         const k = clubKey(sd.name), ck = jn + ":" + k; if (confKV[ck]) continue;
         const ids = empar11(k, ["portero", "defensas", "medios", "delanteros"].flatMap((x) => sd[x] || []).map((x) => x.name), sd.name);
-        if (ids) confKV[ck] = { ids, src: "fotmob", forma: sd.formation || "", at: now };
+        if (ids) confKV[ck] = { ids, src: "comuniate", forma: sd.formation || "", at: now };
       }
     } catch (e) { dbg.errConf = String(e && e.message || e).slice(0, 120); }
+    // FotMob: partidos ya empezados (o terminados) de la jornada sin once guardado
+    try {
+      const faltan = ((jor && jor.matches) || []).filter((m) => {
+        const ko = ffWhenAt(m.date, m.time); if (!ko || now < ko) return false;
+        return !confKV[jn + ":" + clubKey(m.home)] || !confKV[jn + ":" + clubKey(m.away)];
+      });
+      const porDia = {};
+      for (const m of faltan.slice(0, 6)) {
+        const ko = ffWhenAt(m.date, m.time);
+        const dia = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(ko)).replace(/-/g, "");
+        if (!porDia[dia]) porDia[dia] = fetch(FM_MATCHES(dia), { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } }).then((r) => r.json()).catch(() => null);
+        const lista = await porDia[dia];
+        let fm = null;
+        for (const lg of ((lista && lista.leagues) || [])) if (lg.id === FM_LIGA || lg.primaryId === FM_LIGA) for (const x of lg.matches || []) if (x && x.home && fmKey(x.home.name) === clubKey(m.home) && fmKey(x.away.name) === clubKey(m.away)) fm = x;
+        if (!fm) continue;
+        const det = await fetch(FM_DETAIL(fm.id), { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } }).then((r) => r.json()).catch(() => null);
+        for (const t of titularesFotmob(det)) {
+          const ck = jn + ":" + t.k; if (confKV[ck]) continue;
+          const ids = empar11(t.k, t.starters.map((x) => x.name), t.team);
+          if (ids) confKV[ck] = { ids, src: "fotmob", forma: t.formation, at: now };
+        }
+      }
+    } catch (e) { dbg.errFotmob = String(e && e.message || e).slice(0, 120); }
     for (const ck of Object.keys(confKV)) if (Number(ck.split(":")[0]) < jn - 3) delete confKV[ck];
     await env.PORRA.put(AN_CONF, JSON.stringify(confKV));
     const realesConf = new Map(Object.entries(confKV).map(([ck, v]) => [ck, new Set(v.ids)]));
@@ -3281,71 +3306,46 @@ function parseConfirmedPitch(html) {
   away.formation = fmt(away);
   return { home, away };
 }
-// ONCE OFICIAL (21/11/2026, decisión de Edu: nada de Comuniate). Sale de FotMob: solo la alineación OFICIAL
-// (lineupType distinto de «predicted», que es la probable de FotMob), con 11 titulares por equipo.
-// Una vez vista se guarda (KV `fm:conf:v1:<id FotMob>`, 7 días) y no se vuelve a pedir. Las fotos y el id son los de
-// Futmondo si el nombre se empareja con un jugador de ese club; si no, la foto de FotMob.
 async function getAlineacionesConfirmadas(env, matchdayParam, fresh) {
-  const cacheKey = "fm:confirmadas:v1:" + (matchdayParam || "current");
-  if (!fresh) { try { const c = await env.PORRA.get(cacheKey, "json"); if (c && Date.now() - (c.at || 0) < 3 * 60 * 1000) return c.data; } catch (e) {} }
+  const cacheKey = "cm:confirmadas:v3:" + (matchdayParam || "current");
+  if (!fresh) { try { const c = await env.PORRA.get(cacheKey, "json"); if (c && Date.now() - (c.at || 0) < 10 * 60 * 1000) return c.data; } catch (e) {} }
   let jd = null;
   try { jd = await getJornada(env, matchdayParam || null); } catch (e) {}
   const out = { matchday: (jd && jd.matchday) || 0, updatedAt: Date.now(), matches: [] };
   if (jd && jd.matches && jd.matches.length) {
-    const now = Date.now();
-    const UA = { headers: { "user-agent": "Mozilla/5.0 (compatible; edumr)" } };
-    const dayF = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid", year: "numeric", month: "2-digit", day: "2-digit" });
-    const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
+    const links = await getComuniateMatches(env, out.matchday || matchdayParam || "");
+  const wdF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short" });
     const dtF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" });
     const tF = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit", hour12: false });
-    const listas = {};
-    let mkp = [];
-    try { mkp = ((await getMarketPlayers(env)) || {}).players || []; } catch (e) {}
     const results = await Promise.all(jd.matches.map(async (m) => {
       const home = (m.homeTeam && (m.homeTeam.shortName || m.homeTeam.name)) || "";
       const away = (m.awayTeam && (m.awayTeam.shortName || m.awayTeam.name)) || "";
+      if (!home || !away) return null;
+      const found = findComuniateMatch(links, home, away);
+      if (!found) return null;
+      let html = "";
+      try { html = await (await fetch("https://www.comuniate.com" + found.href, { headers: cmHeaders() })).text(); } catch (e) { return null; }
+      const pitch = parseConfirmedPitch(html);
+      if (!pitch) return null;
+      const stadium = (html.match(/"location":\{"@type":"Place","name":"([^"]+)"/) || [])[1] || "";
+      const referee = (html.match(/cronista\.png[^>]*>[\s\S]*?<span>([^<]+)<\/span>/) || [])[1] || "";
       const d = new Date(m.utcDate);
-      if (!home || !away || isNaN(d.getTime())) return null;
-      // La alineación oficial sale ~1 h antes: antes de 2 h no se pregunta
-      if (now < d.getTime() - 2 * 3600e3) return null;
-      const dia = dayF.format(d).replace(/-/g, "");
-      if (!listas[dia]) listas[dia] = fetch(FM_MATCHES(dia), UA).then((r) => r.json()).catch(() => null);
-      const lista = await listas[dia];
-      let fm = null;
-      for (const lg of ((lista && lista.leagues) || [])) if (lg.id === FM_LIGA || lg.primaryId === FM_LIGA) for (const x of lg.matches || []) if (x && x.home && fmKey(x.home.name) === clubKey(home) && fmKey(x.away.name) === clubKey(away)) fm = x;
-      if (!fm) return null;
-      const kk = "fm:conf:v1:" + fm.id;
-      let lu = null;
-      try { lu = await env.PORRA.get(kk, "json"); } catch (e) {}
-      if (!lu) {
-        const det = await fetch(FM_DETAIL(fm.id), UA).then((r) => r.json()).catch(() => null);
-        const t = titularesFotmob(det);
-        if (t.length !== 2) return null;
-        const ib = (det.content.matchFacts || {}).infoBox || {};
-        lu = { teams: t, stadium: (ib.Stadium && ib.Stadium.name) || "", referee: (ib.Referee && ib.Referee.text) || "", at: now };
-        try { await env.PORRA.put(kk, JSON.stringify(lu), { expirationTtl: 7 * 24 * 3600 }); } catch (e) {}
+      let day = "", date = "", time = "";
+      if (!isNaN(d.getTime())) {
+        let w = wdF.format(d).replace(".", "");
+        day = w.charAt(0).toUpperCase() + w.slice(1);
+        date = dtF.format(d);
+        time = tF.format(d);
       }
-      const lado = (t, nombre) => {
-        const jugs = mkp.filter((p) => clubKey(p.team) === clubKey(nombre));
-        const mm = emparejar(t.starters.map((x, i) => ({ id: i, name: x.name, teamID: 1 })), { 1: { name: nombre } }, jugs);
-        const pl = t.starters.map((x, i) => { const f = mm.get(i); return { name: x.name, photo: (f && f.photo) || "https://images.fotmob.com/image_resources/playerimages/" + x.id + ".png", pid: (f && f.id) || "" }; });
-        // FotMob ordena por líneas (portero, defensas, …); el dibujo dice cuántos hay en cada una
-        const lineas = String(t.formation || "").split("-").map(Number).filter((n) => n > 0);
-        const nDef = lineas[0] || 4, nDel = lineas.length > 1 ? lineas[lineas.length - 1] : 2;
-        return { portero: pl.slice(0, 1), defensas: pl.slice(1, 1 + nDef), medios: pl.slice(1 + nDef, 11 - nDel), delanteros: pl.slice(11 - nDel), formation: t.formation || "" };
-      };
-      const th = lu.teams.find((x) => x.k === clubKey(home)) || lu.teams[0], ta = lu.teams.find((x) => x.k === clubKey(away)) || lu.teams[1];
-      const H = lado(th, home), A = lado(ta, away);
-      let w = wdF.format(d).replace(".", "");
       return {
-        home: { name: home, crest: (m.homeTeam && m.homeTeam.crest) || "", ...H },
-        away: { name: away, crest: (m.awayTeam && m.awayTeam.crest) || "", ...A },
-        day: w.charAt(0).toUpperCase() + w.slice(1), date: dtF.format(d), time: tF.format(d), stadium: lu.stadium, referee: lu.referee, fuente: "fotmob",
+        home: { name: home, crest: (m.homeTeam && m.homeTeam.crest) || "", formation: pitch.home.formation, portero: pitch.home.portero, defensas: pitch.home.defensas, medios: pitch.home.medios, delanteros: pitch.home.delanteros },
+        away: { name: away, crest: (m.awayTeam && m.awayTeam.crest) || "", formation: pitch.away.formation, portero: pitch.away.portero, defensas: pitch.away.defensas, medios: pitch.away.medios, delanteros: pitch.away.delanteros },
+        day, date, time, stadium, referee,
       };
     }));
     out.matches = results.filter(Boolean);
     // Lista persistente de partidos ya confirmados (la sigue usando la ficha de la
-    // jornada aunque la caché de arriba se vacíe por un fallo puntual de FotMob).
+    // jornada aunque la caché de arriba se vacíe por un fallo puntual de Comuniate).
     if (out.matches.length && out.matchday) {
       try {
         const sk = "cm:confset:v1:" + out.matchday;

@@ -104,8 +104,6 @@ test("FotMob: once oficial y clave de club (Alavés no se confunde con el Deport
   const st = Array.from({ length: 11 }, (_, i) => ({ id: i, name: "J" + i }));
   assert.equal(titularesFotmob({ content: { lineup: { lineupType: "standard", homeTeam: { name: "Athletic Club", formation: "4-2-3-1", starters: st }, awayTeam: { name: "Espanyol", starters: st.slice(0, 10) } } } }).length, 1);
   assert.equal(titularesFotmob({ content: { lineup: { homeTeam: { name: "X", starters: st } } } }).length, 0);
-  // «predicted» es la probable de FotMob: nunca cuenta como once oficial
-  assert.equal(titularesFotmob({ content: { lineup: { lineupType: "predicted", homeTeam: { name: "X", starters: st }, awayTeam: { name: "Y", starters: st } } } }).length, 0);
 });
 
 test("comparativa: cada jugador con E, F, si fue titular y quién acertó", async () => {
