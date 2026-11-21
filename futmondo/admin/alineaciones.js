@@ -150,7 +150,7 @@
   function caja(lbl, v, tit, prox) {
     var q = el("div", "alz-q " + (lbl === "E" ? "E" : "F"));
     q.appendChild(el("small", null, lbl === "E" ? "Nuestra web" : "FutbolFantasy"));
-    q.appendChild(el("b", null, v == null ? "—" : v + "%"));
+    q.appendChild(el("b", null, v == null ? "—" : (lbl === "E" ? Math.max(0, Math.min(95, Math.round(v / 5) * 5)) : v) + "%"));
     if (!prox && v != null) { var ok = acierta(v, tit); q.classList.add(ok ? "ok" : "ko"); q.appendChild(el("i", null, ok ? "✓ acertó" : "✗ falló")); }
     return q;
   }

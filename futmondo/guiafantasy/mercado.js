@@ -6640,6 +6640,8 @@
       Object.values((a && a.onces) || {}).forEach((o) => (o.prob || []).forEach((x) => { if (x && x.id != null && x.p != null) m.set(String(x.id), x.p); }));
       // La E de la web es el modelo E2 cuando existe (21/11/2026)
       Object.values((a && a.onces) || {}).forEach((o) => Object.entries((o && o.pm) || {}).forEach(([id, v]) => { if (v != null) m.set(String(id), v); }));
+      // De 5 en 5 como FutbolFantasy (21/11/2026), máximo 95
+      m.forEach((v, k) => m.set(k, Math.max(0, Math.min(95, Math.round(v / 5) * 5))));
       if (m.size) { anProbE = m; if (anData && $("anOut") && anTab === "equipo") { const y = window.scrollY; renderAnalisis(anData); window.scrollTo(0, y); } }
     }).catch(() => {}).then(() => { anProbEPend = false; return anProbE; });
     return anProbEP;

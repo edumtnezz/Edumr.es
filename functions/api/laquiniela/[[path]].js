@@ -5941,7 +5941,9 @@ async function handleGet({ request, env: env0, params }) {
             if (mio.pm) for (const [id, v] of Object.entries(mio.pm)) if (v != null) pr.set(id, v);
             const todos = side.starters.concat(side.bench || []);
             const m = emparejar(todos.map((x, i) => ({ id: i, name: x.full || x.name, teamID: 1 })), { 1: { name: mio.team } }, mkP.filter((q) => clubKey(q.team) === clubKey(mio.team)));
-            const con = (x, i) => { const f = m.get(i); const v = f ? pr.get(f.id) : null; return v == null ? x : { ...x, probE: v }; };
+            // Cifras de 5 en 5 como FutbolFantasy (pedido de Edu 21/11/2026): 70, 75, 80… máximo 95. Solo al enseñar; lo medido sigue con el valor exacto.
+            const r5 = (v) => Math.max(0, Math.min(95, Math.round(v / 5) * 5));
+            const con = (x, i) => { const f = m.get(i); const v = f ? pr.get(f.id) : null; return v == null ? x : { ...x, probE: r5(v) }; };
             o[k] = { ...side, starters: side.starters.map((x, i) => con(x, i)), bench: (side.bench || []).map((x, i) => con(x, side.starters.length + i)) };
           });
         }
