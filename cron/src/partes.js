@@ -97,7 +97,8 @@ export async function publicarPartes(env, f = fetch, now = Date.now()) {
   // Las de un formato anterior se retiran: si el estado sigue vivo, se vuelven a escribir en esta misma tanda o en la siguiente
   own = own.filter((x) => x.auto !== "estado" || x.f === 5);
   const nuevas = [];
-  for (const c of pend.slice(0, 4)) {
+  // Una por pasada (21/11/2026): con cuatro, los carteles en imagen se pasaban del límite de CPU y no se publicaba ninguna
+  for (const c of pend.slice(0, 1)) {
     st.done[clave(c)] = now;
     if (c.src === "fo") st.done["fo:" + c.id + ":" + c.a] = now;
     else if (c.a === "ok") for (const k of Object.keys(st.done)) if (k.indexOf("fo:" + c.id + ":") === 0) delete st.done[k];
@@ -147,5 +148,5 @@ export async function publicarPartes(env, f = fetch, now = Date.now()) {
       } catch (e) {}
     }
   }
-  return { nuevas: nuevas.length, pendientes: Math.max(0, pend.length - 4) };
+  return { nuevas: nuevas.length, pendientes: Math.max(0, pend.length - 1) };
 }
