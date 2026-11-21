@@ -40,7 +40,7 @@ export default {
         // La hora es la del disparo del cron, no la de cuando llega el turno: si antes se tarda casi un minuto, «cada 3 min» se saltaba el minuto
         const r = await publicarPartes(env, fetch, event.scheduledTime);
         // Diagnóstico: último resultado que no fue «no toca» (se ve en /api/laquiniela/estados → partes)
-        if (!(r && r.skipped === "no toca")) await env.PORRA.put("partes:last:v1", JSON.stringify({ at: Date.now(), r }));
+        await env.PORRA.put("partes:last:v1", JSON.stringify({ at: Date.now(), sched: event.scheduledTime, r }));
       } catch (e) { console.error("partes", String(e && e.message || e).slice(0, 180)); try { await env.PORRA.put("partes:last:v1", JSON.stringify({ at: Date.now(), error: String(e && e.message || e).slice(0, 200) })); } catch (e2) {} }
       // Diario de LaLiga: cambios en la clasificación (arriba y descenso) y en los goleadores (cada 10 min, nunca con un partido en juego).
       try { await apuntarSustituciones(env); } catch (e) { console.error("subs", String(e && e.message || e).slice(0, 180)); }
