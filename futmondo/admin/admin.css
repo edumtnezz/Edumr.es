@@ -1,0 +1,8 @@
+/* Administración: cabecera en verde con el icono E de la web de inicio */
+body.adm-page .cx-header .cx-top { background: #16a34a; border-bottom: 0; }
+body.adm-page .cx-header .cx-nav a, body.adm-page .cx-header .cx-inicio { color: #fff; }
+body.adm-page .cx-header .cx-nav a.active { box-shadow: inset 0 -3px 0 #fff; }
+body.adm-page .cx-header .theme-toggle { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.4); color: #fff; }
+body.adm-page .cx-header .cx-logo svg { display: block; }
+body.adm-page .cx-header .cx-logo { display: flex !important; align-items: center; flex: none; margin-right: 6px; }
+@media (max-width: 640px) { body.adm-page .cx-header .cx-nav a { padding-left: 4px; padding-right: 4px; font-size: .72rem; white-space: nowrap; } body.adm-page .cx-header .cx-top-inner { gap: 6px; } }

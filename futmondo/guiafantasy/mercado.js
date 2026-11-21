@@ -4902,20 +4902,16 @@
   }
 
   const NEWS_PFX = "https://www.futbolfantasy.com/laliga/noticias/";
-  // Noticias de FutbolFantasy (slug tal cual), de Comuniate ("cm-<id>-<slug>") y de Jornada Perfecta ("jp-<slug>")
+  // Noticias de FutbolFantasy (slug tal cual) y propias ("ed-<id>")
   const newsSlug = (link) => {
     link = String(link || "");
     if (link.indexOf(NEWS_PFX) === 0) return link.slice(NEWS_PFX.length).replace(/[?#].*$/, "").replace(/\/+$/, "");
-    let m = link.match(/^https:\/\/www\.comuniate\.com\/noticias\/(\d+)\/([a-z0-9-]+)\/?$/); if (m) return "cm-" + m[1] + "-" + m[2];
-    m = link.match(/^https:\/\/www\.jornadaperfecta\.com\/blog\/([a-z0-9-]+)\/?$/); if (m) return "jp-" + m[1];
-    m = link.match(/^https:\/\/edumr\.es\/n\/([a-z0-9]+)$/); if (m) return "ed-" + m[1]; // noticia propia
+    let m = link.match(/^https:\/\/edumr\.es\/n\/([a-z0-9]+)$/); if (m) return "ed-" + m[1]; // noticia propia
     return "";
   };
   const slugToUrl = (sl) => {
     sl = String(sl || "");
-    let m = sl.match(/^cm-(\d+)-([a-z0-9-]+)$/); if (m) return "https://www.comuniate.com/noticias/" + m[1] + "/" + m[2];
-    m = sl.match(/^jp-([a-z0-9-]+)$/); if (m) return "https://www.jornadaperfecta.com/blog/" + m[1] + "/";
-    m = sl.match(/^ed-([a-z0-9]+)$/); if (m) return "https://edumr.es/n/" + m[1];
+    let m = sl.match(/^ed-([a-z0-9]+)$/); if (m) return "https://edumr.es/n/" + m[1];
     return NEWS_PFX + sl;
   };
   const newsHref = (link) => { const sl = newsSlug(link); return sl ? "/futmondo/guiafantasy/noticias/" + sl : "/futmondo/guiafantasy/noticias"; };
