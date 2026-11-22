@@ -217,18 +217,22 @@ export function previsionValor(cambioHoy, cambioAyer, valor) {
 // (`pe2` en el duelo) y solo se enseña si gana en el duelo real. Con menos de 5 partidos del equipo no hay modelo (null).
 const STIT = (c) => catN(c) === "completo" || catN(c) === "sustituido";
 // Filas (una por jugador) con las variables de cada jugador ANTES de la jornada j (null = el próximo partido)
-export function filasModelo(jug, j) {
+export function filasModelo(jug, j, bajas) {
   const cnt = {};
   for (const p of jug) for (const x of p.m) if (STIT(x[4])) cnt[x[0]] = (cnt[x[0]] || 0) + 1;
   const games = Object.keys(cnt).map(Number).filter((r) => cnt[r] >= 9).sort((a, b) => a - b);
-  const prior = (j == null ? games : games.filter((r) => r < j)).slice().reverse();
-  if (prior.length < 5) return null;
-  const L = prior.slice(0, 6);
+  const prior0 = (j == null ? games : games.filter((r) => r < j)).slice().reverse();
+  if (prior0.length < 5) return null;
   const pl = jug.map((p) => {
     const by = new Map(p.m.map((x) => [x[0], x]));
+    // E6 (22/11/2026): los partidos que se perdió por estar lesionado o sancionado no cuentan como «el entrenador no lo puso»
+    const bj = bajas && bajas.get(String(p.id));
+    const prior = bj ? prior0.filter((r) => !(bj.has(r) && !(by.get(r) && (STIT(by.get(r)[4]) || catN(by.get(r)[4]) === "banquillo")))) : prior0;
+    const L = prior.slice(0, 6);
     const e = L.map((r) => by.get(r) || null);
     const s = e.map((x) => (x && STIT(x[4]) ? 1 : 0)), b = e.map((x) => (x && catN(x[4]) === "banquillo" ? 1 : 0)), mi = e.map((x) => (x ? Math.min(1, (x[5] || 0) / 90) : 0));
     const starts = prior.filter((r) => { const x = by.get(r); return x && STIT(x[4]); }).length;
+    if (!prior.length) return { id: p.id, ro: p.ro, s: [], b: [], mi: [], rate: 0, streak: 1, sc: 0, y: 0 };
     let streak = 0; while (streak < 6 && !(e[streak] && (STIT(e[streak][4]) || catN(e[streak][4]) === "banquillo"))) streak++;
     const sc = W.reduce((t, w, i) => t + w * (s[i] || 0), 0) / 15;
     const jx = j == null ? null : by.get(j);
@@ -263,9 +267,9 @@ export function entrenarModelo(ds, iter) {
   return { w: w.map((v) => +v.toFixed(4)), n: X.length };
 }
 // % (0-100) de cada jugador del equipo para el próximo partido; lesionado/sancionado 0, duda ×0,6 (igual que E)
-export function probModelo(modelo, jug, estados) {
+export function probModelo(modelo, jug, estados, bajas) {
   if (!modelo || !modelo.w) return null;
-  const f = filasModelo(jug, null); if (!f) return null;
+  const f = filasModelo(jug, null, bajas); if (!f) return null;
   const out = {};
   for (const x of f) {
     const e = estados ? (estados[x.id] || {}).e : "";
@@ -370,7 +374,7 @@ export function normalizar11(pe) {
   return Object.fromEntries(ids.map((id) => [id, Math.round(v[id])]));
 }
 export function marcadorFormulas(resultados) {
-  const V = { E5: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E4: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, F: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E2: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E3: { n: 0, ok: 0, b: 0, once: 0, p: 0 } };
+  const V = { E6: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E5: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E4: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, F: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E2: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E3: { n: 0, ok: 0, b: 0, once: 0, p: 0 } };
   const jornadas = new Set();
   for (const r of resultados || []) {
     if (!r.real || !r.real.length || !r.pe || !Object.keys(r.pe).length) continue;
@@ -382,8 +386,9 @@ export function marcadorFormulas(resultados) {
       F: Object.fromEntries(ids.map((id) => [id, ff.has(id) ? Number((r.pf || {})[id] ?? 50) : 0])),
       E2: r.pe2 && Object.keys(r.pe2).length ? r.pe2 : null,
       E3: normalizar11(pe),
+      E6: r.pe6 && Object.keys(r.pe6).length ? r.pe6 : null, // E2 sin contar los partidos perdidos por lesión/sanción
       // E5 (22/11/2026, prueba): mitad nuestra (E2, o E si no hay) y mitad FutbolFantasy
-      E5: Object.fromEntries(ids.map((id) => { const e = r.pe2 && r.pe2[id] != null ? Number(r.pe2[id]) : Number(pe[id]) || 0; const f = ff.has(id) ? Number((r.pf || {})[id] ?? 50) : 0; return [id, Math.round((e + f) / 2)]; })),
+      E5: Object.fromEntries(ids.map((id) => { const e = r.pe6 && r.pe6[id] != null ? Number(r.pe6[id]) : r.pe2 && r.pe2[id] != null ? Number(r.pe2[id]) : Number(pe[id]) || 0; const f = ff.has(id) ? Number((r.pf || {})[id] ?? 50) : 0; return [id, Math.round((e + f) / 2)]; })),
       E4: r.pe4 && Object.keys(r.pe4).length ? r.pe4 : pe, // sin convocatoria del club, E4 = E
     };
     for (const k of Object.keys(V)) {
@@ -416,4 +421,28 @@ export function conConvocatoria(pe, conv, jornada) {
   if ((conv.sin || 0) > 0 && !Array.isArray(conv.dudosos)) return null;
   const ok = new Set(conv.ids.concat(conv.dudosos || []));
   return Object.fromEntries(Object.keys(pe).map((id) => [id, ok.has(id) ? pe[id] : 0]));
+}
+
+// Jornadas en que cada jugador estaba de baja (lesionado o sancionado) cuando jugó su equipo, según nuestro registro de estados
+// (cambios de Biwenger/Futmondo con su hora; antes del primer cambio vale su estado «de»). Sin registro del jugador: nada.
+export function bajasPorJornada(jug, eventos, cal) {
+  const teams = (cal && cal.teams) || {}, matches = (cal && cal.matches) || [];
+  const evs = new Map();
+  for (const e of eventos || []) { if (!e || !e.id || !e.at) continue; const k = String(e.id); if (!evs.has(k)) evs.set(k, []); evs.get(k).push(e); }
+  const tid = {}; for (const [id, t] of Object.entries(teams)) tid[clubKey(t.n)] = Number(id);
+  const out = new Map();
+  for (const p of jug || []) {
+    const ev = evs.get(String(p.id)); if (!ev) continue;
+    ev.sort((a, b) => a.at - b.at);
+    const t = tid[clubKey(p.t)]; if (t == null) continue;
+    const set = new Set();
+    for (const m of matches) {
+      if (m[1] !== t && m[2] !== t) continue;
+      const d = new Date(m[3]).getTime(); if (!d || d > Date.now()) continue;
+      let est = ev[0].de; for (const e of ev) if (e.at <= d) est = e.a;
+      if (est === "lesionado" || est === "sancionado") set.add(Number(m[0]));
+    }
+    if (set.size) out.set(String(p.id), set);
+  }
+  return out;
 }

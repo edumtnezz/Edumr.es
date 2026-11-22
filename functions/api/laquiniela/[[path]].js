@@ -12,7 +12,7 @@ import { agregarSubs, riesgoCambio } from "../../_lib/sustituciones.mjs";
 import { parseEquipos, parseJugadores, slugEquipo, slugJugador, parseLesionesFichajes, marcarLesiones } from "../../_lib/lesiones.mjs";
 import { FM_MATCHES, FM_DETAIL, FM_LIGA } from "../../_lib/fotmob-estados.mjs";
 import { formacionesDe, sumar as sumarFormacion, terminados as terminadosFm, publico as formacionesPublico } from "../../_lib/formaciones.mjs";
-import { compacto, dificultad, calendarioDificultad, oncePropio, aciertoOnces, compararOnce, probInterna, puntuarDuelo, entrenarModelo, probModelo, fmKey, titularesFotmob, situacion, detalleDuelo, aprendizaje, marcadorFormulas, conConvocatoria } from "../../_lib/analitica.mjs";
+import { compacto, dificultad, calendarioDificultad, oncePropio, aciertoOnces, compararOnce, probInterna, puntuarDuelo, entrenarModelo, probModelo, fmKey, titularesFotmob, situacion, detalleDuelo, aprendizaje, marcadorFormulas, conConvocatoria, bajasPorJornada } from "../../_lib/analitica.mjs";
 import { cuerpoAHtml } from "../../_lib/noticia-cuerpo.mjs";
 import { minutosEnAlineacion, partidoDelDia } from "../../_lib/fotmob-min.mjs";
 const COMPETITION = "PD";
@@ -2822,11 +2822,15 @@ async function analiticaCalc(env, ds, deMercado, now, sinFicha) {
     if (!modelo || now - (modelo.at || 0) > 12 * 3600000) { const m = entrenarModelo(lista, 3000); if (m) { modelo = { ...m, at: now }; await env.PORRA.put("an:modelo:v1", JSON.stringify(modelo)); } }
   } catch (e) { out.errorModelo = String(e && e.message || e).slice(0, 100); }
   out.modelo = modelo ? { n: modelo.n, at: modelo.at } : null;
+  // E6: partidos perdidos por lesión o sanción no cuentan como decisión del entrenador (registro de estados + calendario)
+  let evBajas = [], calBajas = null;
+  try { [evBajas, calBajas] = await Promise.all([env.PORRA.get("est:eventos:v1", "json").then((x) => x || []), getCalendario(env)]); } catch (e) {}
   for (const [k, jug] of porEquipo) {
     const o = oncePropio(jug, null, foto); if (!o) continue;
     // Probabilidad interna de cada jugador de la plantilla (frecuencia real de su tramo de peso). Solo los que tienen alguna opción.
     const prob = o.cand.map((c) => ({ id: c.id, name: c.name, role: c.role, p: probInterna(c.peso, c.est, cal, c.sit, out.acierto.calSit), est: c.est, sit: c.sit || undefined })).filter((c) => c.p != null && (c.p > 0 || c.est === "lesionado" || c.est === "sancionado")).sort((x, y) => y.p - x.p);
-    out.onces[k] = { team: jug[0].t, forma: o.forma, jornadas: o.jornadas, xi: o.xi, prob, pm: probModelo(modelo, jug, foto) || undefined };
+    let pm6; try { pm6 = probModelo(modelo, jug, foto, bajasPorJornada(jug, evBajas, calBajas)) || undefined; } catch (e) {}
+    out.onces[k] = { team: jug[0].t, forma: o.forma, jornadas: o.jornadas, xi: o.xi, prob, pm: probModelo(modelo, jug, foto) || undefined, pm6 };
   }
   // Comparación con el once probable que ya usamos (FutbolFantasy), partido a partido de la próxima jornada
   try {
@@ -2867,7 +2871,7 @@ async function analiticaCalc(env, ds, deMercado, now, sinFicha) {
           const convClub = convSt && convSt.club ? (Object.entries(convSt.club).find(([ck, c]) => c && clubKey(c.team || ({ realmadrid: "Real Madrid", betis: "Real Betis", osasuna: "Osasuna" })[ck] || ck) === k) || [])[1] || null : null;
           const ant = duelo.previos[dk], hist = ((ant && ant.hist) || []).slice(-9);
           if (!hist.length || hist[hist.length - 1].f !== cmp.firma) hist.push({ at: now, f: cmp.firma });
-          duelo.previos[dk] = { j: Number(jor.matchday), k, team: mio.team, at: now, propio: mio.xi.map((x) => x.id), ff: cmp.firma ? cmp.firma.split(",") : [], pf: cmp.pf || {}, pe: Object.fromEntries((mio.prob || []).map((x) => [x.id, x.p])), pe2: mio.pm || {}, pe4: conConvocatoria(Object.fromEntries((mio.prob || []).map((x) => [x.id, x.p])), convClub, jor.matchday) || undefined, sit: Object.fromEntries((mio.prob || []).filter((x) => x.sit).map((x) => [x.id, x.sit])), hist };
+          duelo.previos[dk] = { j: Number(jor.matchday), k, team: mio.team, at: now, propio: mio.xi.map((x) => x.id), ff: cmp.firma ? cmp.firma.split(",") : [], pf: cmp.pf || {}, pe: Object.fromEntries((mio.prob || []).map((x) => [x.id, x.p])), pe2: mio.pm || {}, pe6: mio.pm6 || undefined, pe4: conConvocatoria(Object.fromEntries((mio.prob || []).map((x) => [x.id, x.p])), convClub, jor.matchday) || undefined, sit: Object.fromEntries((mio.prob || []).filter((x) => x.sit).map((x) => [x.id, x.sit])), hist };
         }
       }
     }
@@ -2929,7 +2933,7 @@ async function analiticaCalc(env, ds, deMercado, now, sinFicha) {
       const delConf = realesConf.get(pv.j + ":" + pv.k) || null;
       const reales = delConf || new Set((porEquipo.get(pv.k) || []).filter((p) => p.m.some((x) => x[0] === pv.j && (x[4] === "c" || x[4] === "s"))).map((p) => p.id));
       const r = puntuarDuelo(pv, reales);
-      if (r) { duelo.resultados.push({ j: pv.j, team: pv.team, at: pv.at, src: delConf ? (confKV[pv.j + ":" + pv.k] || {}).src || "once-confirmado" : "futmondo", forma: (confKV[pv.j + ":" + pv.k] || {}).forma || "", real: [...reales], pe: pv.pe, pe2: pv.pe2, pe4: pv.pe4, pf: pv.pf, sit: pv.sit, propioIds: pv.propio, ffIds: pv.ff, ...r }); duelo.hechos[dk] = 1; delete duelo.previos[dk]; }
+      if (r) { duelo.resultados.push({ j: pv.j, team: pv.team, at: pv.at, src: delConf ? (confKV[pv.j + ":" + pv.k] || {}).src || "once-confirmado" : "futmondo", forma: (confKV[pv.j + ":" + pv.k] || {}).forma || "", real: [...reales], pe: pv.pe, pe2: pv.pe2, pe6: pv.pe6, pe4: pv.pe4, pf: pv.pf, sit: pv.sit, propioIds: pv.propio, ffIds: pv.ff, ...r }); duelo.hechos[dk] = 1; delete duelo.previos[dk]; }
       else if (pv.j < Number(jor.matchday) - 2) delete duelo.previos[dk]; // jornada vieja sin datos: se descarta
     }
     duelo.resultados = duelo.resultados.slice(-1000); // una temporada entera (20 equipos × 38 jornadas)
@@ -2940,7 +2944,7 @@ async function analiticaCalc(env, ds, deMercado, now, sinFicha) {
         propio: conFf.reduce((t, x) => t + x.propio, 0), ff: conFf.reduce((t, x) => t + x.ff, 0), de: conFf.length * 11,
         jugadores: (() => { const a = duelo.resultados.filter((x) => x.jug), n = a.reduce((t, x) => t + x.jug.n, 0); return n ? { n, onces: a.length, brierE: +(a.reduce((t, x) => t + x.jug.be * x.jug.n, 0) / n).toFixed(4), brierF: +(a.reduce((t, x) => t + x.jug.bf * x.jug.n, 0) / n).toFixed(4), sumaE: +a.reduce((t, x) => t + x.jug.e, 0).toFixed(1), sumaF: +a.reduce((t, x) => t + x.jug.f, 0).toFixed(1), titularesReales: a.reduce((t, x) => t + x.jug.real, 0) } : null; })(),
         modelo2: (() => { const a = duelo.resultados.filter((x) => x.jug && x.jug.n2), n = a.reduce((t, x) => t + x.jug.n2, 0); return n ? { n, onces: a.length, brierE2: +(a.reduce((t, x) => t + x.jug.b2 * x.jug.n2, 0) / n).toFixed(4), brierE: +(a.reduce((t, x) => t + x.jug.be2 * x.jug.n2, 0) / n).toFixed(4), brierF: +(a.reduce((t, x) => t + x.jug.bf2 * x.jug.n2, 0) / n).toFixed(4) } : null; })(),
-        ultimos: duelo.resultados.slice(-20).reverse().map((x) => { const { pe, pe2, pe4, pf, real, sit, propioIds, ffIds, ...r } = x; return r; }) };
+        ultimos: duelo.resultados.slice(-20).reverse().map((x) => { const { pe, pe2, pe6, pe4, pf, real, sit, propioIds, ffIds, ...r } = x; return r; }) };
     }
     log.eventos = log.eventos.slice(-300);
     await env.PORRA.put(AN_LOG, JSON.stringify(log));
@@ -5938,12 +5942,12 @@ async function handleGet({ request, env: env0, params }) {
             const mio = an.onces[clubKey(side.name)]; if (!mio || !Array.isArray(mio.prob)) return;
             const pr = new Map(mio.prob.map((x) => [x.id, x.p]));
             // 21/11/2026 (pedido de Edu: ajustar los %): la E de la web es el modelo E2 (aprendido con todo el historial) cuando existe
-            if (mio.pm) for (const [id, v] of Object.entries(mio.pm)) if (v != null) pr.set(id, v);
+            if (mio.pm) for (const [id, v] of Object.entries(mio.pm6 || mio.pm)) if (v != null) pr.set(id, v);
             const todos = side.starters.concat(side.bench || []);
             const m = emparejar(todos.map((x, i) => ({ id: i, name: x.full || x.name, teamID: 1 })), { 1: { name: mio.team } }, mkP.filter((q) => clubKey(q.team) === clubKey(mio.team)));
             // Cifras de 5 en 5 como FutbolFantasy (pedido de Edu 21/11/2026): 70, 75, 80… máximo 95. Solo al enseñar; lo medido sigue con el valor exacto.
             const r5 = (v) => Math.max(0, Math.min(95, Math.round(v / 5) * 5));
-            const con = (x, i) => { const f = m.get(i); const v = f ? pr.get(f.id) : null; return v == null ? x : { ...x, probE: r5(v) }; };
+            const con = (x, i) => { const f = m.get(i); const v = f ? pr.get(f.id) : null; return v == null ? x : { ...x, probE: r5(x.prob != null ? (v + Number(x.prob)) / 2 : v) }; }; // E5: mitad nuestra, mitad FutbolFantasy (22/11/2026)
             o[k] = { ...side, starters: side.starters.map((x, i) => con(x, i)), bench: (side.bench || []).map((x, i) => con(x, side.starters.length + i)) };
           });
         }

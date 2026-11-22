@@ -4424,7 +4424,7 @@
       const posDe = (i) => (i === 0 ? 0 : i <= fm[0] ? 1 : i <= fm[0] + fm[1] ? 2 : 3);
       const k = (String(box.className).match(/art-once-([a-z]+)/) || [])[1] || "";
       const t = TT[k] || ["Once", ""];
-      const side = { starters: ps.map((p, i) => ({ name: p.name, full: p.name, pos: POS[posDe(i)], photo: p.photo || "", probE: anProbE && anProbE.has(String(p.id)) ? anProbE.get(String(p.id)) : null, prob: p.prob != null ? Math.round(p.prob) : null, note: "Media " + (Math.round(p.avg * 10) / 10).toFixed(1).replace(".", ",") })), bench: [] };
+      const side = { starters: ps.map((p, i) => ({ name: p.name, full: p.name, pos: POS[posDe(i)], photo: p.photo || "", probE: eWeb(p.id, p.prob), prob: p.prob != null ? Math.round(p.prob) : null, note: "Media " + (Math.round(p.avg * 10) / 10).toFixed(1).replace(".", ",") })), bench: [] };
       const card = window.EduAlineacion.card(side, t[1], "/img/avatar.svg", "", ps, "probable", [], { pool: ps, title: t[0], noAuto: true, noCrest: true });
       card.querySelectorAll("a.pl").forEach((a) => a.addEventListener("click", (ev) => {
         const m = (a.getAttribute("href") || "").match(/\/jugador\/([^/]+)/);
@@ -6629,6 +6629,12 @@
     return bestScore >= 40 ? best : null;
   }
   let anPool = [];
+  // % de la web (E5, 22/11/2026, decidido por Edu): mitad nuestra E2 y mitad FutbolFantasy si hay su %; de 5 en 5, máx. 95.
+  function eWeb(id, f) {
+    if (!anProbE || id == null || !anProbE.has(String(id))) return null;
+    const e = anProbE.get(String(id)), v = f != null ? (e + Number(f)) / 2 : e;
+    return Math.max(0, Math.min(95, Math.round(v / 5) * 5));
+  }
   // Nuestra probabilidad de ser titular (probE) por jugador, de /analitica (onces propios). Se carga una vez.
   let anProbE = null, anProbEPend = false, anProbEP = null;
   function cargarProbE() {
@@ -6639,9 +6645,7 @@
       const m = new Map();
       Object.values((a && a.onces) || {}).forEach((o) => (o.prob || []).forEach((x) => { if (x && x.id != null && x.p != null) m.set(String(x.id), x.p); }));
       // La E de la web es el modelo E2 cuando existe (21/11/2026)
-      Object.values((a && a.onces) || {}).forEach((o) => Object.entries((o && o.pm) || {}).forEach(([id, v]) => { if (v != null) m.set(String(id), v); }));
-      // De 5 en 5 como FutbolFantasy (21/11/2026), máximo 95
-      m.forEach((v, k) => m.set(k, Math.max(0, Math.min(95, Math.round(v / 5) * 5))));
+      Object.values((a && a.onces) || {}).forEach((o) => Object.entries((o && (o.pm6 || o.pm)) || {}).forEach(([id, v]) => { if (v != null) m.set(String(id), v); }));
       if (m.size) { anProbE = m; if (anData && $("anOut") && anTab === "equipo") { const y = window.scrollY; renderAnalisis(anData); window.scrollTo(0, y); } }
     }).catch(() => {}).then(() => { anProbEPend = false; return anProbE; });
     return anProbEP;
@@ -7458,7 +7462,7 @@
     const POSLAB = { POR: "Portero", DEF: "Defensa", CEN: "Mediocampista", DEL: "Delantero" };
     const whenOf = (f) => { if (!f) return ""; const d = new Date(f); if (isNaN(d)) return ""; return d.toLocaleString("es-ES", { weekday: "short", hour: "2-digit", minute: "2-digit", timeZone: "Europe/Madrid" }).replace(",", ""); };
     const matchOf = (p) => (p.rival ? { rival: p.rival, logo: clubLogo(p.rival, ""), when: whenOf(p.fecha) } : null);
-    const toSide = (p, pos) => ({ probE: anProbE && p.id != null && anProbE.has(String(p.id)) ? anProbE.get(String(p.id)) : null, match: matchOf(p), name: p.nombre, full: p.nombre, pos: POSLAB[pos || p.pos] || "Mediocampista", photo: p.photo || "", prob: p.prob != null ? p.prob : null, san: !!p.san || /SANC/i.test(p.estado || ""), inj: !!p.inj || /LESI/i.test(p.estado || ""), _p: p, plan: (() => { const x = swapPairs.find((q) => q.tit === p); return x ? (x.sub.last || x.sub.nombre) : ""; })(), note: useless.indexOf(p) >= 0 ? "⏱ juega pronto" : (earlyDay && p.fecha && dayOf(p.fecha) === earlyDay ? "⏱ juega pronto" : "") });
+    const toSide = (p, pos) => ({ probE: eWeb(p.id, p.prob), match: matchOf(p), name: p.nombre, full: p.nombre, pos: POSLAB[pos || p.pos] || "Mediocampista", photo: p.photo || "", prob: p.prob != null ? p.prob : null, san: !!p.san || /SANC/i.test(p.estado || ""), inj: !!p.inj || /LESI/i.test(p.estado || ""), _p: p, plan: (() => { const x = swapPairs.find((q) => q.tit === p); return x ? (x.sub.last || x.sub.nombre) : ""; })(), note: useless.indexOf(p) >= 0 ? "⏱ juega pronto" : (earlyDay && p.fecha && dayOf(p.fecha) === earlyDay ? "⏱ juega pronto" : "") });
     const myIds = new Set([].concat(tits, sups).map((p) => String(p.id || "")).filter(Boolean));
     const pool = (all || []).filter((q) => myIds.has(String(q.id)));
     anPool = pool;
