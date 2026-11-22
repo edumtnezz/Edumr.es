@@ -64,7 +64,7 @@
     if (M && M.E) {
       var tb = el("div", "alz-tab2");
       var h = el("div", "alz-tr h"); ["", "Once", "Jugadores bien", "Error"].forEach(function (x) { h.appendChild(el("span", null, x)); }); tb.appendChild(h);
-      [["E2", "Nuestra web (E2)"], ["F", "FutbolFantasy"], ["E", "E antigua"], ["E3", "Prueba E3"], ["E4", "Prueba E4 (convocatoria)"]].forEach(function (s) {
+      [["E2", "Nuestra web (E2)"], ["F", "FutbolFantasy"], ["E", "E antigua"], ["E3", "Prueba E3"], ["E4", "Prueba E4 (convocatoria)"], ["E5", "Prueba E5 (mitad y mitad)"]].forEach(function (s) {
         var v = M[s[0]]; if (!v) return;
         var r = el("div", "alz-tr " + s[0]);
         r.appendChild(el("span", null, s[1]));
