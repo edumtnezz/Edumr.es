@@ -63,3 +63,11 @@ test("isComplete: exige casi toda la plantilla con puntos finales", () => {
   const mix = Object.assign(mk(20, true), { x: null, y: { p: null, f: false } });
   assert.equal(isComplete(mix, 40), false); // 20 de 40 = 50 %
 });
+
+import { claveClub } from "../functions/_lib/matchpoints.mjs";
+test("22/11: «Barça» del calendario y «Barcelona» de Futmondo tienen la misma clave (antes «arca» y «arcelona»)", () => {
+  // teamKey de la API quita la primera mayúscula: «Barça» → «arca», «Barcelona» → «arcelona»
+  assert.equal(claveClub("arca"), claveClub("arcelona"));
+  assert.equal(sameTeam(claveClub("arca"), claveClub("arcelona")), true);
+  assert.equal(claveClub("illarreal"), "illarreal"); // el resto de equipos no cambia
+});

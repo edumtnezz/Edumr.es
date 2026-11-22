@@ -80,7 +80,7 @@ test("clubKey iguala los nombres del calendario y de Futmondo", () => {
 test("candidatos: estados recientes y altas; sin duplicar jugador", () => {
   const now = 10 * 86400000;
   const foto = { bw: { a: { e: "duda", info: "x", at: now - 86400000 }, b: { e: "lesionado", info: "y", at: now - 9 * 86400000 }, c: { e: "apercibido", info: "", at: now - 1000 } } };
-  const ev = [{ src: "bw", id: "d", de: "lesionado", a: "ok", at: now - 5000 }, { src: "fm", id: "z", de: "ok", a: "duda", at: now - 5000 }, { src: "bw", id: "a", de: "duda", a: "lesionado", info: "roto", at: now - 4000, fuenteAt: now - 6000 }];
+  const ev = [{ src: "bw", id: "d", de: "lesionado", a: "ok", at: now - 3600000 }, { src: "fm", id: "z", de: "ok", a: "duda", at: now - 5000 }, { src: "bw", id: "a", de: "duda", a: "lesionado", info: "roto", at: now - 4000, fuenteAt: now - 6000 }];
   const c = candidatos(foto, ev, now);
   assert.deepEqual(c.map((x) => x.id + ":" + x.a).sort(), ["a:lesionado", "d:ok"]);
   assert.match(idNoticia(c[0]), /^[a-z0-9]{2,16}$/);
@@ -93,4 +93,22 @@ test("emparejar: nombres distintos entre Biwenger y Futmondo (Sørloth, Johaneko
   const fm = [{ id: "a", name: "Sorloth", team: "Atlético de Madrid", role: "delantero" }, { id: "b", name: "Louis-Jean", team: "Athletic de Bilbao", role: "defensa" }, { id: "c", name: "Mujaid", team: "Rayo Vallecano", role: "defensa" }, { id: "d", name: "Iñigo Sainz", team: "Racing", role: "centrocampista" }];
   const m = emparejar(bw, teams, fm);
   assert.deepEqual([1, 2, 3, 4].map((i) => (m.get(i) || {}).id), ["a", "b", "c", "d"]);
+});
+
+test("22/11: si su equipo ya jugó, el próximo partido es de la jornada siguiente (no «jornada 13» ya jugada)", () => {
+  const fin = { live: { state: "final" } };
+  assert.deepEqual(proximo({ matchday: 13, matches: [{ home: "Barça", away: "Villarreal", ...fin }] }, "Villarreal"), { jornada: 14, rival: "", casa: null });
+  assert.deepEqual(proximo({ matchday: 13, matches: [{ home: "Barça", away: "Villarreal", ...fin }, { home: "Getafe", away: "Atleti" }] }, "Getafe"), { jornada: 13, rival: "Atleti", casa: true });
+});
+
+test("22/11: un ALTA que dura menos de 45 min (Biwenger quita y pone la sanción) no se publica", () => {
+  const now = 10 * 86400000, min = 60000;
+  const san = { src: "bw", id: "f", de: "ok", a: "sancionado", info: "Roja directa.", at: now - 90 * min };
+  const reciente = candidatos({ bw: {} }, [san, { src: "bw", id: "f", de: "sancionado", a: "ok", info: "", at: now - 24 * min }], now);
+  assert.deepEqual(reciente.map((x) => x.id + ":" + x.a), ["f:sancionado"]);
+  const estable = candidatos({ bw: {} }, [san, { src: "bw", id: "f", de: "sancionado", a: "ok", info: "", at: now - 50 * min }], now);
+  assert.deepEqual(estable.map((x) => x.id + ":" + x.a), ["f:ok"]);
+  // y si vuelve a salir sancionado, el estado actual es sancionado
+  const otra = candidatos({ bw: {} }, [san, { src: "bw", id: "f", de: "sancionado", a: "ok", info: "", at: now - 60 * min }, { src: "bw", id: "f", de: "ok", a: "sancionado", info: "Roja directa.", at: now - 30 * min }], now);
+  assert.deepEqual(otra.map((x) => x.id + ":" + x.a), ["f:sancionado"]);
 });

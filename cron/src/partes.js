@@ -11,16 +11,23 @@ const MALO = new Set(["duda", "lesionado", "sancionado"]);
 export { clubKey };
 export function proximo(jor, team) {
   const k = clubKey(team);
+  let jugado = false;
   for (const m of (jor && jor.matches) || []) {
-    if (m.live && m.live.state === "final") continue;
+    const mio = clubKey(m.home) === k || clubKey(m.away) === k;
+    if (m.live && m.live.state === "final") { if (mio) jugado = true; continue; }
     if (clubKey(m.home) === k) return { jornada: jor.matchday, rival: m.away, casa: true };
     if (clubKey(m.away) === k) return { jornada: jor.matchday, rival: m.home, casa: false };
   }
+  // 22/11/2026: si su equipo ya jugó esta jornada, el próximo partido es de la siguiente (antes decía «puede jugar la jornada 13» con el partido ya terminado)
+  if (jugado && jor && jor.matchday) return { jornada: Number(jor.matchday) + 1, rival: "", casa: null };
   return jor && jor.matchday ? { jornada: jor.matchday, rival: "", casa: null } : null;
 }
 
 // Edu (20/11/2026): manda Biwenger; FotMob solo publica lo que Biwenger NO tiene (lo ve como disponible). Si no coinciden, gana Biwenger.
 export const FOTMOB_PUBLICA = true;
+// 22/11/2026: Biwenger a veces quita la sanción 24 min y la vuelve a poner (Fermín y Pau Navarro, tras ver la roja). Un ALTA que viene de
+// una baja/duda/sanción solo se publica si el estado «disponible» lleva 45 min o más sin cambiar.
+export const ESPERA_ALTA = 45 * 60000;
 export function candidatos(foto, eventos, now, eventosFo, usarFo = FOTMOB_PUBLICA, fotoFo) {
   const out = new Map();
   // Estados que ya estaban al empezar: valen los de los últimos 5 días (con la hora real en que cambió)
@@ -31,7 +38,7 @@ export function candidatos(foto, eventos, now, eventosFo, usarFo = FOTMOB_PUBLIC
   for (const e of eventos || []) {
     if (e.src !== "bw" || now - e.at > 2 * 86400000) continue;
     if (MALO.has(e.a)) out.set(e.id, { id: e.id, de: e.de, a: e.a, info: e.info, at: e.fuenteAt && e.fuenteAt <= e.at ? e.fuenteAt : e.at });
-    else if (e.a === "ok" && MALO.has(e.de)) out.set(e.id, { id: e.id, de: e.de, a: "ok", info: "", at: e.at });
+    else if (e.a === "ok" && MALO.has(e.de)) { if (now - e.at >= ESPERA_ALTA) out.set(e.id, { id: e.id, de: e.de, a: "ok", info: "", at: e.at }); }
     else if (MALO.has(e.de)) out.delete(e.id);
   }
   // FotMob (20/11/2026): solo cuenta cuando Biwenger aún lo tiene como disponible. Si Biwenger ya lo apunta, la noticia es la suya.
@@ -84,7 +91,10 @@ export async function publicarPartes(env, f = fetch, now = Date.now()) {
   if (!foto) return { skipped: "sin foto" };
   const st = st0 || { done: {} };
   // Si FotMob ya dio ese mismo estado y se publicó, la noticia posterior de Biwenger no se repite
-  const pend = candidatos(foto, eventos, now, eventosFo, FOTMOB_PUBLICA, fotoFo && fotoFo.fo).filter((c) => !st.done[clave(c)] && !(c.src !== "fo" && st.done["fo:" + c.id + ":" + c.a]));
+  let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
+  // La noticia viva de un jugador manda: si dice «ALTA» y su estado actual es malo, se corrige aunque ese mismo estado ya se hubiera publicado antes (22/11/2026)
+  const vivaAlta = (id) => own.some((x) => x.pid === id && x.auto === "estado" && (x.estado === "ok" || (!x.estado && x.veredicto === "alta")));
+  const pend = candidatos(foto, eventos, now, eventosFo, FOTMOB_PUBLICA, fotoFo && fotoFo.fo).filter((c) => (!st.done[clave(c)] && !(c.src !== "fo" && st.done["fo:" + c.id + ":" + c.a])) || (c.a !== "ok" && vivaAlta(c.id)));
   if (!pend.length) return { nuevas: 0 };
   const get = (p) => f(SITE + p, { headers: { "user-agent": "edumr-cron" } }).then((r) => r.json());
   const [mk, mn, jor] = await Promise.all([get("mercado"), get("minutos"), get("jornada")]);
@@ -92,7 +102,6 @@ export async function publicarPartes(env, f = fetch, now = Date.now()) {
   if (all.length < 300) return { error: "sin mercado" };
   const porId = new Map(all.map((p) => [p.id, p]));
   const minMap = (mn && mn.map) || {};
-  let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
   const nOwn = own.length;
   // Las de un formato anterior se retiran: si el estado sigue vivo, se vuelven a escribir en esta misma tanda o en la siguiente
   own = own.filter((x) => x.auto !== "estado" || x.f === 5);
@@ -103,6 +112,7 @@ export async function publicarPartes(env, f = fetch, now = Date.now()) {
     if (c.src === "fo") st.done["fo:" + c.id + ":" + c.a] = now;
     else if (c.a === "ok") for (const k of Object.keys(st.done)) if (k.indexOf("fo:" + c.id + ":") === 0) delete st.done[k];
     const p = porId.get(c.id);
+    const corrige = c.a !== "ok" && vivaAlta(c.id);
     // Solo jugadores que cuentan en el fantasy: han jugado o valen 1 M o más
     if (!p || !((p.matches || 0) > 0 || (p.value || 0) >= 1000000)) continue;
     const h = hechosNoticia({ p, de: c.de, a: c.a, info: c.info, mp: minMap[c.id], rec: c.a === "ok" ? null : recambio(p, all, minMap, foto.bw), prox: proximo(jor, p.team) });
@@ -111,7 +121,7 @@ export async function publicarPartes(env, f = fetch, now = Date.now()) {
     const ia = null;
     const item = {
       id: idNoticia(c), pid: p.id, title: n.title, lead: n.lead, body: cuerpoNoticia(n), status: "published",
-      createdAt: now, publishedAt: Math.min(now, c.at || now), thumb: "", club: p.team, players: [p.name], tipo: n.tipo, veredicto: n.veredicto, plazo: n.plazo, ia: !!ia, auto: "estado", f: 5, ...(c.src === "fo" ? { fuente: "fotmob" } : {}), img: foto.bw[c.id] && foto.bw[c.id].b ? "https://cdn.biwenger.com/i/p/" + foto.bw[c.id].b + ".png" : "",
+      createdAt: now, publishedAt: Math.min(now, c.at || now), thumb: "", club: p.team, players: [p.name], tipo: n.tipo, veredicto: n.veredicto, plazo: n.plazo, ia: !!ia, auto: "estado", f: 5, estado: c.a, ...(corrige ? { corrige: true } : {}), ...(c.src === "fo" ? { fuente: "fotmob" } : {}), img: foto.bw[c.id] && foto.bw[c.id].b ? "https://cdn.biwenger.com/i/p/" + foto.bw[c.id].b + ".png" : "",
     };
     // Cartel en imagen (para Telegram, WhatsApp y la vista previa del enlace). Si falla, la noticia sale igual, sin imagen.
     try {
@@ -136,7 +146,7 @@ export async function publicarPartes(env, f = fetch, now = Date.now()) {
     let chat = String(env.TELEGRAM_CHAT_ID || "");
     if (!chat) { try { chat = String(((await env.PORRA.get("tg:avisos:v1", "json")) || {}).chat || ""); } catch (e) {} }
     for (const it of nuevas) {
-      if (!chat || now - it.publishedAt > 2 * 3600000) continue;
+      if (!chat || now - it.publishedAt > (it.corrige ? 12 : 2) * 3600000) continue;
       const text = "<b>" + escT(it.title) + "</b>\n" + escT(it.lead) + "\n\nhttps://edumr.es/futmondo/guiafantasy/noticias/ed-" + it.id;
       const api = "https://api.telegram.org/bot" + env.TELEGRAM_BOT_TOKEN + "/";
       const post = (m, body) => f(api + m, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });

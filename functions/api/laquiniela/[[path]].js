@@ -1,6 +1,6 @@
 import { cleanStarters } from "../../_lib/starters.mjs";
 import { teamPlayedMatches, playedDenominator } from "../../_lib/played.mjs";
-import { sameTeam, pendingMatches, rosterFor, isComplete } from "../../_lib/matchpoints.mjs";
+import { sameTeam, pendingMatches, rosterFor, isComplete, claveClub } from "../../_lib/matchpoints.mjs";
 import { fitLagOf, fitIndex } from "../../_lib/fitness.mjs";
 import { backtest as probBacktest } from "../../_lib/probjugar.mjs";
 import { staleChange, actualizadoHoy, tocadosDe, marcarTocados } from "../../_lib/change.mjs";
@@ -4178,7 +4178,7 @@ function teamKey(s) {
   // que usa la fuente del calendario y ese equipo se queda sin la fecha de
   // su próximo partido aunque sí tenga rival/casa-fuera (ver getFFTeam,
   // mismo tipo de fallo con el mismo equipo).
-  return stripAccents(s).replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w && ["de", "del", "la", "cf", "fc", "club", "sad", "sd", "ud", "rcd", "rc", "balompie"].indexOf(w) < 0).join("");
+  return claveClub(stripAccents(s).replace(/[^a-z0-9 ]/g, " ").split(/\s+/).filter((w) => w && ["de", "del", "la", "cf", "fc", "club", "sad", "sd", "ud", "rcd", "rc", "balompie"].indexOf(w) < 0).join(""));
 }
 function lev(a, b) {
   const m = a.length, n = b.length;

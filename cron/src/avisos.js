@@ -597,7 +597,7 @@ export function textoPuntos(it) {
   // Resumen corto: los puntos de todos los jugadores de cada equipo (de mayor a menor), una línea por equipo. Sin datos de jugadores: solo el partido.
   const eq = Array.isArray(it.eq) ? it.eq.filter((e) => e && e.n && Array.isArray(e.j) && e.j.length) : [];
   const lin = eq.map((e) => "<b>" + esc(e.n) + "</b>\n" + e.j.map(esc).join(" · ")).join("\n\n");
-  return "✅ <b>PUNTOS DE FUTMONDO</b>\n" + cab + (lin ? "\n\n" + lin : "") + "\n\n👉 " + enlace;
+  return "✅ <b>PUNTOS DE FUTMONDO</b>\n<b>" + cab + "</b>" + (lin ? "\n\n" + lin : "") + "\n\n👉 " + enlace;
 }
 export async function colaPuntos(env, items) {
   if (!env || !env.PORRA || !Array.isArray(items) || !items.length) return 0;

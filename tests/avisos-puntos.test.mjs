@@ -73,3 +73,9 @@ test("si Telegram falla, el aviso no se pierde", async () => {
 test("sin token no hace nada", async () => {
   assert.equal((await avisarPuntos({ PORRA: kv() }, { now: DIA })).skipped, "sin token");
 });
+
+test("22/11: el partido va en negrita como el resto de títulos y con el nombre completo del Barcelona", () => {
+  const t = textoPuntos({ j: 13, home: "Barcelona", away: "Villarreal", marcador: "2 - 1", eq: [{ n: "Barcelona", j: ["Fermín −3"] }, { n: "Villarreal", j: ["Pau Navarro 1"] }] });
+  assert.match(t, /<b>Barcelona 2-1 Villarreal \(J13\)<\/b>/);
+  assert.doesNotMatch(t, /\barca\b/);
+});

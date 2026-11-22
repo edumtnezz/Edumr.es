@@ -2,6 +2,13 @@
 // Todo sale de Futmondo (nunca se inventa): aquí solo hay lógica pura de "qué partidos faltan"
 // y "cuándo se da por completo un equipo".
 
+// 22/11/2026: el calendario llama «Barça» al Barcelona y Futmondo «Barcelona». Con la clave de equipo («teamKey» quita la primera mayúscula) salían
+// «arca» y «arcelona», no se emparejaban y el partido del Barça se guardaba SIN sus jugadores: aviso de Telegram sin puntos y con «arca – Villarreal».
+// Esta clave los iguala. No cambiar la clave de los demás equipos: hay claves guardadas en KV con la forma antigua.
+export function claveClub(k) {
+  return k === "arca" || k === "barca" ? "arcelona" : k;
+}
+
 // Dos nombres de equipo son el mismo si sus claves (ya sin relleno) coinciden o una contiene a la otra.
 export function sameTeam(a, b) {
   if (!a || !b) return false;
