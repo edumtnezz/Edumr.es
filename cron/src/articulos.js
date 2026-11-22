@@ -191,7 +191,7 @@ export async function cholloSinArticulo(env, pid, now = Date.now()) {
 export async function publicarPuntos(env, items, f = fetch, now = Date.now()) {
   if (!env || !env.PORRA || !Array.isArray(items) || !items.length) return items || [];
   const get = (p) => f(SITE + p + (p.indexOf("?") < 0 ? "?" : "&") + "t=" + now, { headers: { "user-agent": "edumr-cron" } }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-  const fold = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "");
+  const fold = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "").replace(/^barca$/, "barcelona"); // «Barça» del calendario = «Barcelona» de Futmondo (22/11/2026)
   const mismo = (a, b) => { a = fold(a); b = fold(b); return !!a && !!b && (a === b || a.indexOf(b) >= 0 || b.indexOf(a) >= 0); };
   const mk = await get("mercado");
   const ps = mk && Array.isArray(mk.players) ? mk.players : [];
@@ -207,7 +207,7 @@ export async function publicarPuntos(env, items, f = fetch, now = Date.now()) {
       if (!a) { out.push(it); continue; }
       const prev = own.find((x) => x.id === a.id); // si ya existía (rehacer en otro formato), conserva su hora de publicación
       own = own.filter((x) => x.id !== a.id);
-      own.unshift({ id: a.id, title: a.title, lead: a.lead, body: a.body, status: "published", createdAt: prev ? prev.createdAt || now : now, publishedAt: prev ? prev.publishedAt || now : now, thumb: "", club: "", players: a.players, tipo: "articulo", auto: "articulo", art: "artpuntos", f: 2, fp: (a.body.match(/^@ (\S+) \|/m) || [])[1] || "" });
+      own.unshift({ id: a.id, title: a.title, lead: a.lead, body: a.body, status: "published", createdAt: prev ? prev.createdAt || now : now, publishedAt: prev ? prev.publishedAt || now : now, thumb: "", club: "", players: a.players, tipo: "articulo", auto: "articulo", art: "artpuntos", f: 2, mr: 1, fp: (a.body.match(/^@ (\S+) \|/m) || [])[1] || "" });
       cambio = true;
       out.push(Object.assign({}, it, { art: a.id, top: a.top, eq: a.equipos, marcador: a.marcador }));
     } catch (e) { out.push(it); }
@@ -221,7 +221,8 @@ export async function publicarPuntos(env, items, f = fetch, now = Date.now()) {
 export async function rehacerPuntos(env, f = fetch, now = Date.now()) {
   if (!env || !env.PORRA) return 0;
   const own = (await env.PORRA.get(OWN_KEY, "json")) || [];
-  const x = own.find((y) => y && y.art === "artpuntos" && y.f !== 2);
+  // mr = ya se intentó poner el marcador: sin él, los artículos sin marcador (el calendario no emparejaba «Barça») se rehacen una vez más
+  const x = own.find((y) => y && y.art === "artpuntos" && (y.f !== 2 || (!y.mr && !/^= MARCADOR/m.test(String(y.body || "")))));
   if (!x) return 0;
   const m = String(x.title || "").match(/^Puntos del (.+) – (.+) \(J(\d+)\)$/);
   if (!m) return 0;
