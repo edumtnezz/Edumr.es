@@ -374,7 +374,7 @@ export function normalizar11(pe) {
   return Object.fromEntries(ids.map((id) => [id, Math.round(v[id])]));
 }
 export function marcadorFormulas(resultados) {
-  const V = { E6: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E5: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E4: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, F: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E2: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E3: { n: 0, ok: 0, b: 0, once: 0, p: 0 } };
+  const V = { E7: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E6: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E5: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E4: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, F: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E2: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E3: { n: 0, ok: 0, b: 0, once: 0, p: 0 } };
   const jornadas = new Set();
   for (const r of resultados || []) {
     if (!r.real || !r.real.length || !r.pe || !Object.keys(r.pe).length) continue;
@@ -386,6 +386,8 @@ export function marcadorFormulas(resultados) {
       F: Object.fromEntries(ids.map((id) => [id, ff.has(id) ? Number((r.pf || {})[id] ?? 50) : 0])),
       E2: r.pe2 && Object.keys(r.pe2).length ? r.pe2 : null,
       E3: normalizar11(pe),
+      // E7 (24/11/2026, prueba): como E5, pero si FutbolFantasy lo mete en su once con 50 % o más, nunca baja de 50
+      E7: Object.fromEntries(ids.map((id) => { const e = r.pe6 && r.pe6[id] != null ? Number(r.pe6[id]) : r.pe2 && r.pe2[id] != null ? Number(r.pe2[id]) : Number(pe[id]) || 0; const f = ff.has(id) ? Number((r.pf || {})[id] ?? 50) : 0; const v = (e + f) / 2; return [id, Math.round(ff.has(id) && f >= 50 ? Math.max(50, v) : v)]; })),
       E6: r.pe6 && Object.keys(r.pe6).length ? r.pe6 : null, // E2 sin contar los partidos perdidos por lesión/sanción
       // E5 (22/11/2026, prueba): mitad nuestra (E2, o E si no hay) y mitad FutbolFantasy
       E5: Object.fromEntries(ids.map((id) => { const e = r.pe6 && r.pe6[id] != null ? Number(r.pe6[id]) : r.pe2 && r.pe2[id] != null ? Number(r.pe2[id]) : Number(pe[id]) || 0; const f = ff.has(id) ? Number((r.pf || {})[id] ?? 50) : 0; return [id, Math.round((e + f) / 2)]; })),
