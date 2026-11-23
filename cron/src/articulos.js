@@ -111,7 +111,7 @@ export async function publicarMercado(env, ps, now = Date.now()) {
 // pudo ser, en cuanto se pueda de martes a viernes. Después, en cada pasada, si alguno de los elegidos pasa a lesionado o
 // sancionado, se rehace y se dice quién sale y quién entra. Reglas en functions/_lib/onces.mjs.
 const K_ONCE = "art:once:v1";
-const FMT_ONCE = 3; // 1 = 1-4-3-3 fijo; 2 = mejor de 7 formaciones; 3 = mejor entre 3-4-3, 3-5-2 y 4-4-2 (17/11/2026). Al subirlo se rehace la edición de la jornada sin avisar.
+const FMT_ONCE = 4; // 4 = con puntos estimados (24/11/2026); 1 = 1-4-3-3 fijo; 2 = mejor de 7 formaciones; 3 = mejor entre 3-4-3, 3-5-2 y 4-4-2 (17/11/2026). Al subirlo se rehace la edición de la jornada sin avisar.
 export async function publicarOnces(env, f = fetch, now = Date.now()) {
   if (!env || !env.PORRA) return { skipped: "sin kv" };
   if (new Date(now).getUTCMinutes() % 10 !== 7) return { skipped: "no toca" };
@@ -123,10 +123,13 @@ export async function publicarOnces(env, f = fetch, now = Date.now()) {
   const jn = jr && Number(jr.matchday);
   if (!jn) return { error: "sin jornada" };
   const nueva = st.jn !== jn;
+  // Segunda edición de la semana (24/11/2026, pedido de Edu: «un par de veces por semana»): el jueves desde las 12:00 se rehacen los tres
+  // onces con los datos de ese día (estado, % de jugar, media) y se avisa. Una vez por jornada (st.ed2).
+  const ed2 = !nueva && dia === "Thu" && hora >= 12 && st.ed2 !== jn && st.fmt === FMT_ONCE;
   const rehacer = !nueva && st.fmt !== FMT_ONCE;
   // Primera edición de la jornada: lunes desde las 23:00, o de martes a viernes
   if (nueva && !((dia === "Mon" && hora >= 23) || ["Tue", "Wed", "Thu", "Fri"].indexOf(dia) >= 0)) return { skipped: "fuera de hora" };
-  if (nueva) { // primera edición: no pegada a otro artículo (menos de 2 h)
+  if (nueva || ed2) { // primera y segunda edición: no pegadas a otro artículo (menos de 2 h)
     const own0 = (await env.PORRA.get(OWN_KEY, "json")) || [];
     const ult = own0.filter((x) => x && x.tipo === "articulo" && x.art !== "artmercado" && x.art !== "artchollo" && x.art !== "artpuntos" && x.art !== "artonce").reduce((m, x) => Math.max(m, x.publishedAt || 0), 0);
     if (now - ult < 2 * 3600000) return { skipped: "hace poco otro artículo" };
@@ -138,28 +141,29 @@ export async function publicarOnces(env, f = fetch, now = Date.now()) {
   if (!nueva) {
     const porId = new Map(ps.map((p) => [String(p.id), p]));
     const caidos = Object.values(st.ids || {}).flat().filter((id) => { const p = porId.get(id); return p && (p.est === "lesionado" || p.est === "sancionado"); });
-    if (!caidos.length && !rehacer) return { sin_cambios: true };
+    if (!caidos.length && !rehacer && !ed2) return { sin_cambios: true };
   }
   const a = oncesArticulo(ps, jn);
   if (!a) return { error: "no se pudo completar" };
   if (!nueva) {
     cambios = rehacer ? {} : cambiosOnce(st.ids, a.ids, ps);
-    // Se guardan también los cambios de antes para que la edición corregida los siga diciendo
-    for (const k of Object.keys(st.cambios || {})) cambios[k] = (st.cambios[k] || []).concat(cambios[k] || []);
+    // Se guardan también los cambios de antes para que la edición corregida los siga diciendo (la segunda edición de la semana empieza limpia)
+    if (!ed2) for (const k of Object.keys(st.cambios || {})) cambios[k] = (st.cambios[k] || []).concat(cambios[k] || []);
+    else cambios = {};
   }
   const fin = oncesArticulo(ps, jn, cambios);
   let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
   own = own.filter((x) => x.art !== "artonce");
-  own.unshift({ id: fin.id, title: fin.title, lead: fin.lead, body: fin.body, status: "published", createdAt: nueva ? now : (st.at || now), publishedAt: nueva ? now : (st.at || now), updatedAt: now, thumb: "", club: "", players: [], tipo: "articulo", auto: "articulo", art: "artonce", f: 1, fp: "" });
+  own.unshift({ id: fin.id, title: fin.title, lead: fin.lead, body: fin.body, status: "published", createdAt: nueva ? now : (st.at || now), publishedAt: nueva || ed2 ? now : (st.at || now), updatedAt: now, thumb: "", club: "", players: [], tipo: "articulo", auto: "articulo", art: "artonce", f: 1, fp: "" });
   own.sort((x, y) => (y.publishedAt || 0) - (x.publishedAt || 0));
   await env.PORRA.put(OWN_KEY, JSON.stringify(own.slice(0, 300)));
-  await env.PORRA.put(K_ONCE, JSON.stringify({ jn, ids: fin.ids, cambios, fmt: FMT_ONCE, at: nueva ? now : (st.at || now) }));
-  if (nueva && env.TELEGRAM_BOT_TOKEN) {
+  await env.PORRA.put(K_ONCE, JSON.stringify({ jn, ids: fin.ids, cambios, fmt: FMT_ONCE, at: nueva ? now : (st.at || now), ed2: ed2 ? jn : (nueva ? 0 : (st.ed2 || 0)) }));
+  if ((nueva || ed2) && env.TELEGRAM_BOT_TOKEN) {
     let chat = String(env.TELEGRAM_CHAT_ID || "");
     if (!chat) { try { chat = String(((await env.PORRA.get("tg:avisos:v1", "json")) || {}).chat || ""); } catch (e) {} }
-    if (chat) { try { await f("https://api.telegram.org/bot" + env.TELEGRAM_BOT_TOKEN + "/sendMessage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chat, text: "🏆 <b>ONCES RECOMENDADOS</b>\n\n" + escT(fin.title) + "\nhttps://edumr.es/futmondo/guiafantasy/noticias/ed-" + fin.id, parse_mode: "HTML", link_preview_options: { is_disabled: false, prefer_large_media: true, show_above_text: true } }) }); } catch (e) {} } // la vista previa es la portada del artículo (art-once.jpg)
+    if (chat) { try { await f("https://api.telegram.org/bot" + env.TELEGRAM_BOT_TOKEN + "/sendMessage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chat, text: "🏆 <b>ONCES RECOMENDADOS" + (ed2 ? " · ACTUALIZADOS" : "") + "</b>\n\n" + escT(fin.title) + "\nhttps://edumr.es/futmondo/guiafantasy/noticias/ed-" + fin.id, parse_mode: "HTML", link_preview_options: { is_disabled: false, prefer_large_media: true, show_above_text: true } }) }); } catch (e) {} } // la vista previa es la portada del artículo (art-once.jpg)
   }
-  return { publicado: fin.id, nueva, cambios };
+  return { publicado: fin.id, nueva, ed2, cambios };
 }
 
 // Artículo «Chollo del día»: lo llama el diario cuando elige el chollo de hoy (mismo jugador y mismas reglas). Id fijo: sustituye al anterior.

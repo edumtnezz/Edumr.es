@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { elegirOnce, mejorOnce, oncesArticulo, cambiosOnce } from "../functions/_lib/onces.mjs";
+import { elegirOnce, mejorOnce, oncesArticulo, cambiosOnce, estPts } from "../functions/_lib/onces.mjs";
 import { cuerpoAHtml } from "../functions/_lib/noticia-cuerpo.mjs";
 
 let n = 0;
@@ -50,4 +50,19 @@ test("el campo se pinta con la formación indicada", () => {
   assert.match(a.body, /# once \| [^|]+ \| caro \| \d-\d-\d/);
   assert.match(cuerpoAHtml(a.body), /data-form="\d-\d-\d"/);
   assert.doesNotMatch(a.lead + a.body, /1-4-3-3/);
+});
+
+test("puntos estimados: media × % de jugar, suma por once y cada hueco los lleva", () => {
+  const ps = plantel();
+  const a = oncesArticulo(ps, 14);
+  const porId = new Map(ps.map((p) => [p.id, p]));
+  for (const k of Object.keys(a.ids)) {
+    const suma = a.ids[k].map((id) => estPts(porId.get(id))).reduce((x, y) => x + y, 0);
+    assert.ok(Math.abs(a.est[k] - suma) < 0.06);
+    assert.match(a.body, new RegExp("puntos estimados " + String(a.est[k].toFixed(1)).replace(".", ",")));
+  }
+  assert.equal(estPts({ avg: 7, prob: 85 }), 6);
+  assert.equal(estPts({ avg: 8, prob: 90 }), 7.2);
+  const h = cuerpoAHtml(a.body);
+  assert.equal((h.match(/data-e="\d{1,2}\.\d"/g) || []).length, Object.values(a.ids).flat().length);
 });

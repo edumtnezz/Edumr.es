@@ -47,12 +47,15 @@ export function mejorOnce(ps, tope, usados = new Set()) {
   return mejor;
 }
 
+// Puntos estimados de un jugador = su media de puntos en Futmondo × su % de jugar (dato real de ambos; sin inventar nada más).
+export const estPts = (p) => Math.round((Number(p.avg) || 0) * (Number(p.prob) || 0) / 10) / 10;
+
 const M = (v) => (v / 1e6).toFixed(1).replace(".", ",") + " M";
 const dec = (v) => (Math.round(v * 10) / 10).toFixed(1).replace(".", ",");
 
 // Artículo con los tres onces. cambios = { caro: ["Sale X (lesionado), entra Y"], … } para la edición corregida.
 export function oncesArticulo(ps, jn, cambios = {}) {
-  const usados = new Set(), secs = [], ids = {}, elegidos = {}, forms = {};
+  const usados = new Set(), secs = [], ids = {}, elegidos = {}, forms = {}, ests = {};
   for (const [k, , , tope] of TIERS.slice().reverse()) {
     const m = mejorOnce(ps, tope, usados);
     if (!m) continue;
@@ -64,16 +67,18 @@ export function oncesArticulo(ps, jn, cambios = {}) {
     if (!xi) continue;
     ids[k] = xi.map((p) => String(p.id));
     const total = xi.reduce((a, p) => a + p.value, 0), media = xi.reduce((a, p) => a + p.avg, 0) / xi.length;
-    const lineas = ["## " + titulo, nota + " · " + forms[k] + " · total " + M(total) + " · media del once " + dec(media)];
+    const est = xi.map(estPts), suma = est.reduce((a, x) => a + x, 0);
+    ests[k] = est;
+    const lineas = ["## " + titulo, nota + " · " + forms[k] + " · total " + M(total) + " · media del once " + dec(media) + " · puntos estimados " + dec(suma)];
     (cambios[k] || []).forEach((t) => lineas.push("- " + t));
-    lineas.push("# once | " + ids[k].join(",") + " | " + k + " | " + forms[k]);
+    lineas.push("# once | " + ids[k].join(",") + " | " + k + " | " + forms[k] + " | " + ests[k].map((x) => x.toFixed(1)).join(";"));
     secs.push(lineas.join("\n"));
   }
   if (!secs.length) return null;
   return {
     id: "artonce" + jn, title: "Onces recomendados para la jornada " + jn,
     lead: "Tres onces, cada uno con la formación que más media suma. Jugadores disponibles, 70 % o más de jugar y 5 partidos o más.",
-    body: secs.join("\n"), players: [], ids, forms,
+    body: secs.join("\n"), players: [], ids, forms, est: Object.fromEntries(Object.entries(ests).map(([k, v]) => [k, Math.round(v.reduce((a, x) => a + x, 0) * 10) / 10])),
   };
 }
 

@@ -4419,12 +4419,14 @@
       // En el HTML las filas van de delanteros a portero: se da la vuelta para tener portero, defensas, medios, delanteros
       const ids = [...box.querySelectorAll(".art-once-l")].reverse().flatMap((r) => [...r.querySelectorAll(".art-op[data-pid]")].map((o) => o.dataset.pid));
       const ps = ids.map((id) => (all || []).find((q) => String(q.id) === id));
+      const estDe = {}; box.querySelectorAll(".art-op[data-e]").forEach((o) => { estDe[o.dataset.pid] = o.dataset.e; });
+      const ptsTxt = (id) => (estDe[id] ? String(estDe[id]).replace(".", ",") + " pts" : "");
       if (ps.length !== 11 || ps.some((p) => !p) || !window.EduAlineacion) return;
       const fm = box.dataset.form.split("-").map(Number);
       const posDe = (i) => (i === 0 ? 0 : i <= fm[0] ? 1 : i <= fm[0] + fm[1] ? 2 : 3);
       const k = (String(box.className).match(/art-once-([a-z]+)/) || [])[1] || "";
       const t = TT[k] || ["Once", ""];
-      const side = { starters: ps.map((p, i) => ({ name: p.name, full: p.name, pos: POS[posDe(i)], photo: p.photo || "", probE: eWeb(p.id, p.prob), prob: p.prob != null ? Math.round(p.prob) : null, note: "Media " + (Math.round(p.avg * 10) / 10).toFixed(1).replace(".", ",") })), bench: [] };
+      const side = { starters: ps.map((p, i) => ({ name: p.name, full: p.name, pos: POS[posDe(i)], photo: p.photo || "", probE: eWeb(p.id, p.prob), prob: p.prob != null ? Math.round(p.prob) : null, note: ptsTxt(String(p.id)) || ("Media " + (Math.round(p.avg * 10) / 10).toFixed(1).replace(".", ",")) })), bench: [] };
       const card = window.EduAlineacion.card(side, t[1], "/img/avatar.svg", "", ps, "probable", [], { pool: ps, title: t[0], noAuto: true, noCrest: true });
       card.querySelectorAll("a.pl").forEach((a) => a.addEventListener("click", (ev) => {
         const m = (a.getAttribute("href") || "").match(/\/jugador\/([^/]+)/);
@@ -4433,11 +4435,12 @@
       }));
       // Sin pie verde; el tope, la formación, el total y la media van en cuatro recuadros (Edu, 17/11)
       const ft = card.querySelector(".al-foot"); if (ft) ft.remove();
-      const pr = box.previousElementSibling, mt = pr && /^(.*?) · (\d-\d-\d) · total (.+?) · media del once (.+)$/.exec(pr.textContent.trim());
+      const pr = box.previousElementSibling, mt = pr && /^(.*?) · (\d-\d-\d) · total (.+?) · media del once (.+?)(?: · puntos estimados (.+))?$/.exec(pr.textContent.trim());
       if (mt) {
         const tope = (/(\d+) M/.exec(mt[1]) || [])[1];
         const st = el("div", "once-st");
-        [[tope ? tope + " M" : "Sin límite", "Tope por jugador"], [mt[2], "Formación"], [mt[3], "Total"], [mt[4], "Media"]].forEach(([v, kk]) => { const c = el("div", "once-c"); c.appendChild(el("b", null, v)); c.appendChild(el("small", null, kk)); st.appendChild(c); });
+        const cajas = mt[5] ? [[mt[2], "Formación"], [mt[3], "Total"], [mt[4], "Media"], [mt[5], "Puntos estimados", 1]] : [[tope ? tope + " M" : "Sin límite", "Tope por jugador"], [mt[2], "Formación"], [mt[3], "Total"], [mt[4], "Media"]];
+        cajas.forEach(([v, kk, hl]) => { const c = el("div", "once-c" + (hl ? " once-c-pts" : "")); c.appendChild(el("b", null, v)); c.appendChild(el("small", null, kk)); st.appendChild(c); });
         pr.replaceWith(st);
       }
       // Escudo pequeño del club en una esquina de la foto
