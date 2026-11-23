@@ -6632,10 +6632,11 @@
     return bestScore >= 40 ? best : null;
   }
   let anPool = [];
-  // % de la web (E5, 22/11/2026, decidido por Edu): mitad nuestra E2 y mitad FutbolFantasy si hay su %; de 5 en 5, máx. 95.
+  // % de la web (E5 22/11, E7 24/11/2026, decidido por Edu): mitad nuestra E2 y mitad FutbolFantasy si hay su %; de 5 en 5, máx. 95.
   function eWeb(id, f) {
     if (!anProbE || id == null || !anProbE.has(String(id))) return null;
-    const e = anProbE.get(String(id)), v = f != null ? (e + Number(f)) / 2 : e;
+    // E7 (24/11/2026): si FutbolFantasy le da 50 % o más, la mezcla nunca baja de 50
+    const e = anProbE.get(String(id)), v = f != null ? (Number(f) >= 50 ? Math.max(50, (e + Number(f)) / 2) : (e + Number(f)) / 2) : e;
     return Math.max(0, Math.min(95, Math.round(v / 5) * 5));
   }
   // Nuestra probabilidad de ser titular (probE) por jugador, de /analitica (onces propios). Se carga una vez.

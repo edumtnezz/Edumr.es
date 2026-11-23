@@ -48,7 +48,7 @@
     big.appendChild(el("div", "alz-big-t", "¿Quién acierta más el once?"));
     var fila = el("div", "alz-big-r");
     [["E", "Nuestra web"], ["F", "FutbolFantasy"]].forEach(function (s) {
-      var v = M && (s[0] === "E" ? (M.E5 || M.E2 || M.E) : M[s[0]]), c = el("div", "alz-big-c " + s[0]);
+      var v = M && (s[0] === "E" ? (M.E7 || M.E5 || M.E2 || M.E) : M[s[0]]), c = el("div", "alz-big-c " + s[0]);
       c.appendChild(el("b", null, v ? String(v.once).replace(".", ",") : "—"));
       c.appendChild(el("i", null, "de 11"));
       c.appendChild(el("span", null, s[1]));
@@ -56,7 +56,7 @@
     });
     big.appendChild(fila);
     if (M && M.E && M.F) {
-      var ME = M.E5 || M.E2 || M.E, dif = Math.round((M.F.once - ME.once) * 10) / 10;
+      var ME = M.E7 || M.E5 || M.E2 || M.E, dif = Math.round((M.F.once - ME.once) * 10) / 10;
       big.appendChild(el("div", "alz-big-v " + (dif > 0 ? "pierde" : dif < 0 ? "gana" : ""), dif > 0 ? "FutbolFantasy acierta " + String(dif).replace(".", ",") + " titulares más por equipo" : dif < 0 ? "Nuestra web acierta " + String(-dif).replace(".", ",") + " titulares más por equipo" : "Empate"));
       big.appendChild(el("small", null, ME.equipos + " equipos medidos · jornada " + (M.jornadas || []).join(", ")));
     }
@@ -64,7 +64,7 @@
     if (M && M.E) {
       var tb = el("div", "alz-tab2");
       var h = el("div", "alz-tr h"); ["", "Once", "Jugadores bien", "Error"].forEach(function (x) { h.appendChild(el("span", null, x)); }); tb.appendChild(h);
-      [["E5", "Nuestra web (E5)"], ["F", "FutbolFantasy"], ["E7", "Prueba E7 (E5 + suelo)"], ["E6", "E6 (sin bajas)"], ["E2", "E2"], ["E", "E antigua"], ["E3", "Prueba E3"], ["E4", "Prueba E4 (convocatoria)"]].forEach(function (s) {
+      [["E7", "Nuestra web (E7)"], ["F", "FutbolFantasy"], ["FM", "Once previsto de FotMob"], ["E8", "Prueba E8 (+ FotMob)"], ["E5", "E5"], ["E6", "E6 (sin bajas)"], ["E2", "E2"], ["E", "E antigua"], ["E3", "Prueba E3"], ["E4", "Prueba E4 (convocatoria)"]].forEach(function (s) {
         var v = M[s[0]]; if (!v) return;
         var r = el("div", "alz-tr " + s[0]);
         r.appendChild(el("span", null, s[1]));
@@ -74,7 +74,7 @@
         tb.appendChild(r);
       });
       sum.appendChild(tb);
-      sum.appendChild(el("p", "alz-note", "Medido con toda la plantilla. «Error» = Brier: cuanto más bajo, mejor. La web enseña E5: mitad nuestra (E6, o E2 si no hay) y mitad FutbolFantasy. E6 = E2 sin contar los partidos perdidos por lesión o sanción. E3 y E4 son pruebas. E4 = nuestra web + convocatoria oficial del club (no convocado = 0 %); de momento solo Real Madrid y Betis, en " + (M.conConvocatoria || 0) + " equipos medidos."));
+      sum.appendChild(el("p", "alz-note", "Medido con toda la plantilla. «Error» = Brier: cuanto más bajo, mejor. La web enseña E7: mitad nuestra (E6, o E2 si no hay) y mitad FutbolFantasy, y nunca menos de 50 si FutbolFantasy lo pone en su once. FotMob = su once previsto (desde la J14). E6 = E2 sin contar los partidos perdidos por lesión o sanción. E3 y E4 son pruebas. E4 = nuestra web + convocatoria oficial del club (no convocado = 0 %); de momento solo Real Madrid y Betis, en " + (M.conConvocatoria || 0) + " equipos medidos."));
     } else {
       [["E", "Nuestra web", T.E], ["F", "FutbolFantasy", T.F]].forEach(function (s) {
         var c = el("div", "alz-box " + s[0]);

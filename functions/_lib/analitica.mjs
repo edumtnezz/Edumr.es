@@ -291,12 +291,26 @@ export function fmKey(name) {
 // Titulares de cada equipo de un matchDetails de FotMob. Solo con alineación oficial (lineupType) y 11 titulares.
 export function titularesFotmob(det) {
   const l = det && det.content && det.content.lineup;
-  if (!l || !l.lineupType) return [];
+  if (!l || !l.lineupType || l.lineupType === "predicted") return []; // «predicted» es el once previsto de FotMob, no el oficial
   const out = [];
   for (const k of ["homeTeam", "awayTeam"]) {
     const t = l[k];
     if (!t || !t.name || !Array.isArray(t.starters) || t.starters.length !== 11) continue;
     out.push({ k: fmKey(t.name), team: t.name, formation: t.formation || "", starters: t.starters.map((x) => ({ id: x.id, name: x.name })) });
+  }
+  return out;
+}
+
+// Once PREVISTO de FotMob (24/11/2026): FotMob publica su once probable antes del partido (lineupType «predicted»).
+// Es otra previsión (como la de FutbolFantasy), nunca el once oficial. Se guarda en el duelo para medirla.
+export function previstoFotmob(det) {
+  const l = det && det.content && det.content.lineup;
+  if (!l || l.lineupType !== "predicted") return [];
+  const out = [];
+  for (const k of ["homeTeam", "awayTeam"]) {
+    const t = l[k];
+    if (!t || !t.name || !Array.isArray(t.starters) || t.starters.length !== 11) continue;
+    out.push({ k: fmKey(t.name), team: t.name, starters: t.starters.map((x) => ({ id: x.id, name: x.name })) });
   }
   return out;
 }
@@ -374,7 +388,7 @@ export function normalizar11(pe) {
   return Object.fromEntries(ids.map((id) => [id, Math.round(v[id])]));
 }
 export function marcadorFormulas(resultados) {
-  const V = { E7: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E6: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E5: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E4: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, F: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E2: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E3: { n: 0, ok: 0, b: 0, once: 0, p: 0 } };
+  const V = { FM: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E8: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E7: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E6: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E5: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E4: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, F: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E2: { n: 0, ok: 0, b: 0, once: 0, p: 0 }, E3: { n: 0, ok: 0, b: 0, once: 0, p: 0 } };
   const jornadas = new Set();
   for (const r of resultados || []) {
     if (!r.real || !r.real.length || !r.pe || !Object.keys(r.pe).length) continue;
@@ -386,6 +400,9 @@ export function marcadorFormulas(resultados) {
       F: Object.fromEntries(ids.map((id) => [id, ff.has(id) ? Number((r.pf || {})[id] ?? 50) : 0])),
       E2: r.pe2 && Object.keys(r.pe2).length ? r.pe2 : null,
       E3: normalizar11(pe),
+      // FM: el once previsto de FotMob (dentro 80 %, fuera 5 %). E8: media de lo nuestro, FutbolFantasy y FotMob; suelo de 50 si FF y FotMob lo ponen
+      FM: Array.isArray(r.pfm) && r.pfm.length >= 9 ? Object.fromEntries(ids.map((id) => [id, r.pfm.includes(id) ? 80 : 5])) : null,
+      E8: Array.isArray(r.pfm) && r.pfm.length >= 9 ? Object.fromEntries(ids.map((id) => { const e = r.pe6 && r.pe6[id] != null ? Number(r.pe6[id]) : r.pe2 && r.pe2[id] != null ? Number(r.pe2[id]) : Number(pe[id]) || 0; const f = ff.has(id) ? Number((r.pf || {})[id] ?? 50) : 0; const g = r.pfm.includes(id) ? 80 : 5; const v = (e + f + g) / 3; return [id, Math.round(f >= 50 && g >= 50 ? Math.max(50, v) : v)]; })) : null,
       // E7 (24/11/2026, prueba): como E5, pero si FutbolFantasy lo mete en su once con 50 % o más, nunca baja de 50
       E7: Object.fromEntries(ids.map((id) => { const e = r.pe6 && r.pe6[id] != null ? Number(r.pe6[id]) : r.pe2 && r.pe2[id] != null ? Number(r.pe2[id]) : Number(pe[id]) || 0; const f = ff.has(id) ? Number((r.pf || {})[id] ?? 50) : 0; const v = (e + f) / 2; return [id, Math.round(ff.has(id) && f >= 50 ? Math.max(50, v) : v)]; })),
       E6: r.pe6 && Object.keys(r.pe6).length ? r.pe6 : null, // E2 sin contar los partidos perdidos por lesión/sanción
@@ -401,7 +418,7 @@ export function marcadorFormulas(resultados) {
         v.n++; v.b += (p / 100 - t) ** 2; if ((p >= 50) === !!t) v.ok++;
       }
       // once: los 11 con más % (en F, su once tal cual)
-      const top = k === "F" && ff.size ? [...ff] : ids.slice().sort((a, b) => (Number(m[b]) || 0) - (Number(m[a]) || 0)).slice(0, 11);
+      const top = k === "F" && ff.size ? [...ff] : k === "FM" ? r.pfm.slice(0, 11) : ids.slice().sort((a, b) => (Number(m[b]) || 0) - (Number(m[a]) || 0)).slice(0, 11);
       v.once += top.filter((id) => real.has(id)).length;
     }
   }
