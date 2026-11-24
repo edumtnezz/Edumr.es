@@ -82,6 +82,14 @@ export async function publicarArticulos(env, f = fetch, now = Date.now()) {
       const fin = ms.length && ms.every((m) => m.live && m.live.state === "final");
       const ultimo = ms.reduce((m, x) => Math.max(m, inicioJornada([x], now) || 0), 0);
       listo = ms.length >= 5 && (conPuntos >= ms.length || (fin && now - ultimo >= 24 * 3600000));
+      // 24/11/2026: el Athletic–Espanyol no tuvo artículo de puntos y el resumen esperaba 24 h. Si todos los partidos han terminado y
+      // Futmondo ya ha publicado puntos de jugadores de todos los equipos de la jornada, está listo.
+      if (!listo && fin) {
+        const [pj0, mk0] = await Promise.all([get("puntos-jornada?jornada=" + (jn - 1)), get("mercado")]);
+        const eqDe = new Map(((mk0 && mk0.players) || []).map((p) => [String(p.id), p.team]));
+        const eqs = new Set(Object.entries((pj0 && pj0.pts) || {}).filter(([, v]) => Number(v) !== 0).map(([id]) => eqDe.get(id)).filter(Boolean));
+        listo = eqs.size >= ms.length * 2;
+      }
     }
     const t = tocaAhora({ now, dia, hora, ini, jn, own, hechos: st.done, paron: esParon(ini, now), resumenListo: listo });
     if (!t) return { esperando: true };
