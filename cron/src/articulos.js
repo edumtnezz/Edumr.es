@@ -1,60 +1,125 @@
-// Artículos propios (a vender, a fichar, clausulazos y, solo en parones, el repaso de plantilla).
-// Una edición por jornada y tipo, de martes a domingo a partir de las 10:00 (hora de Madrid). La edición nueva sustituye a la anterior del mismo tipo.
+// Artículos propios por jornada: a vender, rachas, a fichar, riesgo de suplente, antes de la jornada, vuelven, clausulazos, parón y resumen.
+// Una edición por jornada y tipo, repartidas por la semana (ver PLAN). La edición nueva sustituye a la anterior del mismo tipo.
 // Las reglas y los datos están en functions/_lib/articulos.mjs. Sin jugadores que cumplan, ese artículo no se publica.
-import { aVender, aFichar, clausulazos, paron, inicioJornada, esParon, subidasEntre, inicioParon, subidasBajadas, chollo, puntosPartido } from "../../functions/_lib/articulos.mjs";
+import { aVender, aFichar, clausulazos, paron, inicioJornada, esParon, subidasEntre, inicioParon, subidasBajadas, chollo, puntosPartido, vuelven, previa, riesgoSuplente, rachas, resumenJornada } from "../../functions/_lib/articulos.mjs";
+import { emparejar } from "../../functions/_lib/estados.mjs";
 import { oncesArticulo, cambiosOnce } from "../../functions/_lib/onces.mjs";
 
 const OWN_KEY = "own:news:v2", K_ST = "art:st:v1", SITE = "https://edumr.es/api/laquiniela/";
 const FORMATO = 5; // súbelo cuando cambie el formato de las filas para rehacer los artículos publicados
 const escT = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+// Calendario de artículos (24/11/2026, Edu: «varios todos los días y que tengan sentido»). Cada tipo, una edición por jornada,
+// desde X horas antes del primer partido y desde su hora del día (Madrid). Entre artículos 3 h o más, como mucho 3 al día de estos,
+// de 09:00 a 22:59 y nunca el lunes (la jornada aún se juega), salvo «Antes de la jornada». Los de «antes» no salen si ya empezó.
+// Semana normal (jornada de viernes a lunes):
+//   Mar: Resumen de la jornada anterior (cuando están todos los puntos), A vender, Rachas
+//   Mié: A fichar, Riesgo de suplente, Antes de la jornada (Puja, Quiniela y Porra)
+//   Jue: Vuelven, Onces actualizados (12:00, publicarOnces), Clausulazos
+//   Todos los días: Chollo del día y Subidas y bajadas (madrugada) · Vie–Lun: Puntos de cada partido · Lun 23:00: Onces recomendados
+export const PLAN = [
+  { t: "artvender", h: 96, hora: 12, antes: true },
+  { t: "artrachas", h: 96, hora: 17 },
+  { t: "artfichar", h: 72, hora: 10, antes: true },
+  { t: "artsuplente", h: 72, hora: 13 },
+  { t: "artprevia", h: 60, hora: 10, antes: true, lunes: true },
+  { t: "artvuelven", h: 48, hora: 10, antes: true },
+  { t: "artclaus", h: 48, hora: 16, antes: true },
+  { t: "artparon", h: 999, hora: 19, antes: true, paron: true },
+];
+const SEMANALES = new Set(PLAN.map((x) => x.t).concat(["artresumen"]));
+const AVISO = { artvender: "🔻 A VENDER", artfichar: "✅ A FICHAR", artclaus: "💰 CLAUSULAZOS", artparon: "⏸️ PARÓN", artvuelven: "🔙 VUELVEN", artprevia: "⏰ ANTES DE LA JORNADA", artsuplente: "🔄 RIESGO DE SUPLENTE", artrachas: "🔥 RACHAS", artresumen: "🏆 RESUMEN DE LA JORNADA" };
+const diaDe = (t) => new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date(t));
+
+// Qué toca ahora (función pura, probada en tests/articulos-plan.test.mjs). own = artículos publicados; hechos = st.done.
+export function tocaAhora({ now, dia, hora, ini, jn, own, hechos, paron, resumenListo }) {
+  if (hora < 9 || hora >= 23) return null;
+  const sem = (own || []).filter((x) => x && x.tipo === "articulo" && SEMANALES.has(String(x.art || "")));
+  const ult = sem.reduce((m, x) => Math.max(m, x.publishedAt || 0), 0);
+  if (now - ult < 3 * 3600000) return null;
+  if (sem.filter((x) => diaDe(x.publishedAt || 0) === diaDe(now)).length >= 3) return null;
+  // Entre dos artículos, alguna noticia de un jugador (si no hay ninguna, se espera 5 h)
+  const hayNoticia = (own || []).some((x) => x && x.auto === "estado" && (x.publishedAt || 0) > ult);
+  if (ult && !hayNoticia && now - ult < 5 * 3600000) return null;
+  if (resumenListo && !hechos["artresumen" + (jn - 1)] && dia !== "Mon") return "artresumen";
+  for (const x of PLAN) {
+    if (hechos[x.t + jn]) continue;
+    if (dia === "Mon" && !x.lunes) continue;
+    if (x.paron ? !paron : (ini == null || now < ini - x.h * 3600000)) continue;
+    if (x.antes && ini != null && now >= ini) continue;
+    if (hora < x.hora) continue;
+    return x.t;
+  }
+  return null;
+}
+
 export async function publicarArticulos(env, f = fetch, now = Date.now()) {
   if (!env || !env.PORRA) return { skipped: "sin kv" };
   if (new Date(now).getUTCMinutes() % 10 !== 7) return { skipped: "no toca" };
   const pm = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", weekday: "short", hour: "2-digit", hour12: false }).formatToParts(new Date(now));
-  const dia = (pm.find((x) => x.type === "weekday") || {}).value, hora = Number((pm.find((x) => x.type === "hour") || {}).value);
+  const dia = (pm.find((x) => x.type === "weekday") || {}).value, hora = Number((pm.find((x) => x.type === "hour") || {}).value) % 24;
   const st = (await env.PORRA.get(K_ST, "json")) || { done: {} };
-  // Cambio de diseño de los artículos (FORMATO): se vuelven a escribir una vez, a cualquier hora y sin aviso de Telegram.
+  st.done = st.done || {};
+  // Cambio de diseño de los artículos (FORMATO): se vuelven a escribir los ya publicados de esta jornada, sin aviso de Telegram.
   const rehacer = st.v !== FORMATO;
-  if (rehacer) st.done = {};
-  if (!rehacer && (dia === "Mon" || !(hora >= 10 && hora < 23))) return { skipped: "fuera de hora" };
-  const get = (p) => f(SITE + p, { headers: { "user-agent": "edumr-cron" } }).then((r) => (r.ok ? r.json() : null));
+  const get = (p) => f(SITE + p, { headers: { "user-agent": "edumr-cron" } }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   const jr = await get("jornada");
   const jn = jr && Number(jr.matchday);
   if (!jn || !Array.isArray(jr.matches)) return { error: "sin jornada" };
   const ini = inicioJornada(jr.matches, now);
   let own = (await env.PORRA.get(OWN_KEY, "json")) || [];
-  // El del parón se escribe si hay parón; al rehacer por cambio de formato, también si ya estaba publicado para esta jornada.
-  const hayParon = esParon(ini, now) || (rehacer && own.some((x) => x.id === "artparon" + jn));
-  let tipos = ["artvender", "artfichar", "artclaus"].concat(hayParon ? ["artparon"] : []).filter((t) => !st.done[t + jn]);
-  if (!tipos.length) return { nuevas: 0 };
-  // Reparto por horas (Edu, 17/11/2026): un artículo por pasada, cada uno desde su hora, con 3 horas o más entre artículos y sin juntar dos
-  // seguidos si no ha salido antes alguna noticia de un jugador (las noticias de estado son lo dinámico; si no hay ninguna, se espera 6 h).
-  if (!rehacer) {
-    const SLOT = { artvender: 10, artfichar: 13, artclaus: 16, artparon: 19 };
-    const arts = own.filter((x) => x && x.tipo === "articulo" && x.art !== "artmercado" && x.art !== "artchollo" && x.art !== "artpuntos");
-    const ult = arts.reduce((m, x) => Math.max(m, x.publishedAt || 0), 0);
-    const h = (now - ult) / 3600000;
-    const hayNoticia = own.some((x) => x && x.auto === "estado" && (x.publishedAt || 0) > ult);
-    const toca = tipos.filter((t) => hora >= SLOT[t]);
-    if (!toca.length || h < 3 || (!hayNoticia && h < 6)) return { esperando: true };
-    tipos = [toca[0]];
+  let tipos;
+  let jRes = null;
+  if (rehacer) {
+    tipos = PLAN.map((x) => x.t).filter((t) => own.some((x) => x.id === t + jn));
+  } else {
+    // ¿Está completa la jornada anterior? Todos sus partidos (menos aplazados) con su artículo de puntos, o todos terminados hace 24 h.
+    let listo = false;
+    if (!st.done["artresumen" + (jn - 1)] && dia !== "Mon" && hora >= 9 && hora < 23) {
+      jRes = await get("jornada?jornada=" + (jn - 1));
+      const ms = (jRes && Array.isArray(jRes.matches) ? jRes.matches : []).filter((m) => !m.aplazado);
+      const conPuntos = own.filter((x) => x && x.art === "artpuntos" && new RegExp("\\(J" + (jn - 1) + "\\)$").test(String(x.title || ""))).length;
+      const fin = ms.length && ms.every((m) => m.live && m.live.state === "final");
+      const ultimo = ms.reduce((m, x) => Math.max(m, inicioJornada([x], now) || 0), 0);
+      listo = ms.length >= 5 && (conPuntos >= ms.length || (fin && now - ultimo >= 24 * 3600000));
+    }
+    const t = tocaAhora({ now, dia, hora, ini, jn, own, hechos: st.done, paron: esParon(ini, now), resumenListo: listo });
+    if (!t) return { esperando: true };
+    tipos = [t];
   }
   const [mk, es] = await Promise.all([get("mercado"), get("estados")]);
   const ps = mk && Array.isArray(mk.players) ? mk.players : [];
   // Sin mercado completo o sin cambios a 7 días no se escribe nada (saldrían listas falsas)
   if (ps.length < 300 || ps.filter((p) => p.chg7 != null).length < 300) return { error: "sin mercado" };
   const cambios = (es && Array.isArray(es.cambios)) ? es.cambios : [];
-  // Parón: los que más han subido desde que acabó la jornada anterior, con el valor real de cada día (historial propio vh:v1)
-  let subidas = null;
-  if (tipos.indexOf("artparon") >= 0 && ini != null) {
-    try { const vh = await env.PORRA.get("vh:v1", "json"); const hoy = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Madrid" }).format(new Date(now)); subidas = subidasEntre(vh, ps, inicioParon(ini), hoy); } catch (e) {}
-  }
-  const hechos = { artvender: () => aVender(ps, jn, now), artfichar: () => aFichar(ps, cambios, jn, now), artclaus: () => clausulazos(ps, jn), artparon: () => paron(ps, jn, ini, now, subidas) };
+  const hechos = {
+    artvender: async () => aVender(ps, jn, now),
+    artfichar: async () => aFichar(ps, cambios, jn, now),
+    artclaus: async () => clausulazos(ps, jn),
+    artparon: async () => {
+      let subidas = null;
+      if (ini != null) { try { const vh = await env.PORRA.get("vh:v1", "json"); subidas = subidasEntre(vh, ps, inicioParon(ini), diaDe(now)); } catch (e) {} }
+      return paron(ps, jn, ini, now, subidas);
+    },
+    artvuelven: async () => vuelven(ps, cambios, jn, ini, now),
+    artprevia: async () => { const [po, pu, di] = await Promise.all([get("porra"), get("puja"), get("dificultad")]); return previa(ps, jr, jn, po, pu, di); },
+    artsuplente: async () => {
+      const su = await get("sustituciones");
+      if (!su || !Array.isArray(su.jugadores)) return undefined;
+      const casar = (nombre, club) => emparejar([{ id: "x", name: nombre, teamID: 1, position: 0 }], { 1: { name: club } }, ps, { estricto: true }).get("x") || null;
+      return riesgoSuplente(ps, su.jugadores, jn, casar);
+    },
+    artrachas: async () => { const li = await get("lideres"); return li && Array.isArray(li.rachas) ? rachas(ps, li.rachas, jn) : undefined; },
+    artresumen: async () => { const pj = await get("puntos-jornada?jornada=" + (jn - 1)); return pj && pj.pts ? resumenJornada(ps, pj.pts, jn - 1) : undefined; },
+  };
   const nuevas = [];
   for (const t of tipos) {
-    st.done[t + jn] = now;
-    const a = hechos[t]();
+    const clave = t === "artresumen" ? t + (jn - 1) : t + jn;
+    let a;
+    try { a = await hechos[t](); } catch (e) { a = undefined; }
+    // undefined = la fuente no respondió: se reintenta en las siguientes pasadas (hasta 6). null = con datos, pero nadie cumple: se da por hecho.
+    if (a === undefined) { st.fallos = st.fallos || {}; st.fallos[clave] = (st.fallos[clave] || 0) + 1; if (st.fallos[clave] < 6) continue; }
+    st.done[clave] = now;
     if (!a) continue;
     const prev = own.find((x) => x.art === t);
     own = own.filter((x) => x.art !== t); // una sola edición viva de cada tipo
@@ -67,15 +132,19 @@ export async function publicarArticulos(env, f = fetch, now = Date.now()) {
   if (ks.length > 200) for (const k of ks.sort((a, b) => st.done[a] - st.done[b]).slice(0, ks.length - 150)) delete st.done[k];
   st.v = FORMATO;
   await env.PORRA.put(K_ST, JSON.stringify(st));
-  if (nuevas.length && !rehacer && env.TELEGRAM_BOT_TOKEN) {
-    let chat = String(env.TELEGRAM_CHAT_ID || "");
-    if (!chat) { try { chat = String(((await env.PORRA.get("tg:avisos:v1", "json")) || {}).chat || ""); } catch (e) {} }
-    if (chat) {
-      const text = "📰 <b>ARTÍCULOS NUEVOS</b>\n\n" + nuevas.map((it) => "<b>" + escT(it.title) + "</b>\nhttps://edumr.es/futmondo/guiafantasy/noticias/ed-" + it.id).join("\n\n");
-      try { await f("https://api.telegram.org/bot" + env.TELEGRAM_BOT_TOKEN + "/sendMessage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chat, text, parse_mode: "HTML", disable_web_page_preview: true }) }); } catch (e) {}
-    }
-  }
-  return { nuevas: nuevas.length };
+  // Un aviso de Telegram por artículo, con su portada como vista previa (como los onces y el chollo)
+  if (nuevas.length && !rehacer) for (const it of nuevas) await avisarArticulo(env, f, it, now);
+  return { nuevas: nuevas.map((x) => x.id) };
+}
+
+async function avisarArticulo(env, f, it, now) {
+  if (!env.TELEGRAM_BOT_TOKEN) return;
+  let chat = String(env.TELEGRAM_CHAT_ID || "");
+  if (!chat) { try { chat = String(((await env.PORRA.get("tg:avisos:v1", "json")) || {}).chat || ""); } catch (e) {} }
+  if (!chat) return;
+  const hora = Number(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Madrid", hour: "2-digit", hour12: false }).format(new Date(now))) % 24;
+  const text = "<b>" + (AVISO[it.art] || "📰 ARTÍCULO NUEVO") + "</b>\n\n" + escT(it.title) + "\nhttps://edumr.es/futmondo/guiafantasy/noticias/ed-" + it.id;
+  try { await f("https://api.telegram.org/bot" + env.TELEGRAM_BOT_TOKEN + "/sendMessage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ chat_id: chat, text, parse_mode: "HTML", disable_notification: hora < 8, link_preview_options: { is_disabled: false, prefer_large_media: true, show_above_text: true } }) }); } catch (e) {}
 }
 
 // Artículo «Subidas y bajadas»: se escribe cuando Futmondo actualiza los valores (lo llama el aviso de mercado de avisos.js).

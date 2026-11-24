@@ -50,20 +50,19 @@ export function aVender(ps, jn, now = Date.now()) {
   ], A.map((x) => x.p.name).concat(B.map((p) => p.name)));
 }
 
-// A fichar: vuelven de lesión o sanción (últimos 7 días, con media de 5 o más) y disponibles de menos de 50 M en forma que suben 1 M o más en 7 días.
+// A fichar (24/11/2026): «Vuelven» pasa a su propio artículo (no repetir datos). Aquí: en forma y subiendo, y la mejor relación puntos/precio
+// entre 8 y 30 M (por debajo de 8 M ya está el chollo del día). `cambios` se mantiene en la firma por compatibilidad.
 export function aFichar(ps, cambios, jn, now = Date.now()) {
-  const porId = new Map(ps.map((p) => [String(p.id), p]));
-  const visto = new Set();
-  const vuelven = (cambios || []).filter((c) => c && c.a === "ok" && (c.de === "lesionado" || c.de === "sancionado") && now - c.at < 7 * 86400000)
-    .map((c) => ({ c, p: porId.get(String(c.id)) })).filter((x) => x.p && libre(x.p) && x.p.matches >= 3 && x.p.avg >= 5 && !visto.has(x.p.id) && visto.add(x.p.id))
-    .sort((a, b) => b.p.avg - a.p.avg);
   // Tope de 50 M: fichar a los más caros de la liga no es un consejo útil (Edu, 15/11/2026).
-  const forma = ps.filter((p) => libre(p) && !visto.has(p.id) && p.value < 50e6 && p.matches >= 5 && p.avg >= 7 && Number(p.chg7) >= 1e6).sort((a, b) => b.avg - a.avg);
-  const A = top(vuelven, 6), B = top(forma, 6);
-  return item("artfichar" + jn, "Jugadores a fichar antes de la jornada " + jn, "Los que vuelven y los que rinden y suben de valor.", [
-    { titulo: "Vuelven", nota: "Salen de lesión o sanción esta semana y rendían bien.", filas: A.map((x) => fila(x.p, String(x.p.points || 0), "puntos", "Vuelve de " + (x.c.de === "sancionado" ? "sanción" : "lesión"))) },
+  const forma = ps.filter((p) => libre(p) && p.value < 50e6 && p.matches >= 5 && p.avg >= 7 && Number(p.chg7) >= 1e6).sort((a, b) => b.avg - a.avg);
+  const B = top(forma, 6), ya = new Set(B.map((p) => p.id));
+  const ppm = (p) => p.avg / (p.value / 1e6);
+  const cp = ps.filter((p) => libre(p) && !ya.has(p.id) && p.value > 8e6 && p.value <= 30e6 && p.matches >= 6 && p.avg >= 6 && (p.prob || 0) >= 70 && !(Number(p.chg7) < 0)).sort((a, b) => ppm(b) - ppm(a));
+  const C = top(cp, 5);
+  return item("artfichar" + jn, "Jugadores a fichar antes de la jornada " + jn, "Los que rinden y suben de valor, y los que más puntos dan por lo que cuestan.", [
     { titulo: "En forma y subiendo", nota: "Por menos de 50 M, con media de 7 o más y 1 M o más de subida en 7 días.", filas: B.map((p) => fila(p, "+" + M(p.chg7), "en 7 días", alDia(p.chg7))) },
-  ], A.map((x) => x.p.name).concat(B.map((p) => p.name)));
+    { titulo: "Mejor calidad-precio (8 a 30 M)", nota: "Titulares (70 % o más de jugar) que no bajan de valor.", filas: C.map((p) => fila(p, (Math.round(ppm(p) * 100) / 100).toFixed(2).replace(".", ","), "puntos por millón")) },
+  ], B.map((p) => p.name).concat(C.map((p) => p.name)));
 }
 
 // Clausulazos recomendables (a la derecha, los puntos totales: la media ya va en su recuadro): los tres disponibles con mejor media en cada franja de precio (6 partidos o más). Sin cláusulas de ninguna liga.
@@ -204,4 +203,139 @@ export function puntosPartido(ps, pts, it, marcador) {
     a.marcador = marcador || "";
   }
   return a;
+}
+
+// ===================== Artículos nuevos (24/11/2026, pedidos por Edu) =====================
+// Todos con datos reales: Futmondo (valor, media, puntos), registro propio de estados (Biwenger), cambios reales de FotMob y el calendario.
+const chipL = (rot, val, tono, det) => "= " + String(rot).replace(/\|/g, " ").slice(0, 30) + " | " + String(val).slice(0, 30) + " | " + tono + " | " + (det ? String(det).replace(/\|/g, " ").slice(0, 60) : "-");
+const sg = (v) => (v < 0 ? "−" + Math.abs(v) : String(v));
+const fechaCorta = (ms) => new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", day: "2-digit", month: "2-digit" }).format(new Date(ms));
+
+// Vuelven: ya disponibles tras lesión o sanción (cambio real de los últimos 7 días) y lesionados con vuelta prevista para esta jornada.
+export function vuelven(ps, cambios, jn, ini, now = Date.now()) {
+  const porId = new Map(ps.map((p) => [String(p.id), p]));
+  const visto = new Set();
+  const ya = (cambios || []).filter((c) => c && c.a === "ok" && (c.de === "lesionado" || c.de === "sancionado") && now - c.at < 7 * 86400000)
+    .sort((a, b) => b.at - a.at)
+    .map((c) => ({ c, p: porId.get(String(c.id)) })).filter((x) => x.p && libre(x.p) && x.p.matches >= 3 && x.p.value >= 1e6 && !visto.has(x.p.id) && visto.add(x.p.id))
+    .sort((a, b) => b.p.avg - a.p.avg);
+  const fin = (ini || now) + 4 * 86400000;
+  const pronto = ps.filter((p) => p.est === "lesionado" && p.value >= 2e6 && p.matches >= 3).map((p) => ({ p, r: retorno(p.estInfo, now) }))
+    .filter((x) => x.r && x.r.ms !== Infinity && x.r.ms <= fin).sort((a, b) => b.p.avg - a.p.avg);
+  const A = top(ya, 8), B = top(pronto, 6);
+  return item("artvuelven" + jn, "Vuelven: disponibles para la jornada " + jn, "Los que ya han recibido el alta y los que pueden volver esta jornada.", [
+    { titulo: "Ya disponibles", nota: "Han salido de lesión o sanción en los últimos 7 días.", filas: A.map((x) => fila(x.p, x.c.de === "sancionado" ? "Sanción" : "Lesión", "vuelve de", "Disponible desde el " + fechaCorta(x.c.at))) },
+    { titulo: "Pueden volver esta jornada", nota: "Siguen lesionados, con vuelta prevista para estas fechas.", filas: B.map((x) => fila(x.p, Cap(x.r.txt), "vuelta prevista")) },
+  ], A.map((x) => x.p.name).concat(B.map((x) => x.p.name)));
+}
+
+// Antes de la jornada: cuándo se cierran la Quiniela, la Porra y la Puja, partidos fáciles y difíciles (calendario de dificultad),
+// sancionados y apercibidos. porra = /porra (partidos de Madrid y Barça), puja = /puja, dif = /dificultad.
+const DIAS = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+const cuando = (ms) => { const d = new Date(ms); const pt = new Intl.DateTimeFormat("es-ES", { timeZone: "Europe/Madrid", weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(d); const g = (t) => (pt.find((x) => x.type === t) || {}).value || ""; const wd = new Date(d.toLocaleString("en-US", { timeZone: "Europe/Madrid" })).getDay(); return DIAS[wd] + " " + g("day") + "/" + g("month") + " " + g("hour") + ":" + g("minute"); };
+export function previa(ps, jr, jn, porra, puja, dif) {
+  const ms = (jr && jr.matches || []).filter((m) => !m.aplazado);
+  if (!ms.length) return null;
+  const primero = ms[0];
+  const cierre = [chipL("QUINIELA", primero.day + " " + primero.date + " " + primero.time, "az", "Cada partido se cierra al empezar")];
+  (porra && porra.matches || []).filter((m) => m && !m.started && m.utcDate && Number(m.matchday) === jn).forEach((m) => cierre.push(chipL("PORRA " + (m.label || ""), cuando(Date.parse(m.utcDate)), "mo", String(m.home || "").replace(/ (CF|FC|SAD)$/, "") + " – " + String(m.away || "").replace(/^(RC|FC) /, ""))));
+  if (puja && puja.puja && puja.puja.player) cierre.push(chipL("PUJA", puja.puja.player, "na", "Cierra el martes a las 22:00"));
+  else if (puja && puja.nextWindow) cierre.push(chipL("PUJA", cuando(puja.nextWindow), "na", "Se abre la próxima subasta"));
+  const partidos = ms.map((m) => "- " + m.day + " " + m.date + " " + (m.tbc ? "hora por confirmar" : m.time) + " · **" + m.home + "** – **" + m.away + "**");
+  // Rival de esta jornada de cada equipo (nivel 1 fácil … 5 difícil, de nuestro calendario de dificultad)
+  const eq = (dif && Array.isArray(dif.equipos) ? dif.equipos : []).filter((e) => e && e.celdas && e.celdas[0] && e.celdas[0].nivel != null && Number((dif.jornadas || [])[0]) === jn);
+  const facil = eq.filter((e) => e.celdas[0].nivel <= 2).sort((a, b) => a.celdas[0].nivel - b.celdas[0].nivel || (b.celdas[0].casa ? 1 : 0) - (a.celdas[0].casa ? 1 : 0)).slice(0, 6)
+    .map((e) => chipL(e.team, "Rival fácil · " + e.celdas[0].nivel + "/5", "ok", (e.celdas[0].casa ? "En casa ante " : "Fuera ante ") + e.celdas[0].rival));
+  const dificil = eq.filter((e) => e.celdas[0].nivel >= 4).sort((a, b) => b.celdas[0].nivel - a.celdas[0].nivel).slice(0, 6)
+    .map((e) => chipL(e.team, "Rival difícil · " + e.celdas[0].nivel + "/5", "na", (e.celdas[0].casa ? "En casa ante " : "Fuera ante ") + e.celdas[0].rival));
+  const sanc = ps.filter((p) => p.est === "sancionado" && p.matches >= 3).sort((a, b) => b.avg - a.avg).slice(0, 8);
+  const aperc = ps.filter((p) => p.est === "apercibido" && p.matches >= 5 && p.avg >= 5).sort((a, b) => b.avg - a.avg).slice(0, 6);
+  return item("artprevia" + jn, "Antes de la jornada " + jn + ": Puja, Quiniela y Porra", "Lo que tienes que dejar hecho antes de que empiece la jornada.", [
+    { titulo: "Cuándo se cierra", nota: "", filas: cierre },
+    { titulo: "Partidos de la jornada " + jn, nota: "", filas: partidos },
+    { titulo: "Equipos con rival fácil", nota: "Según nuestro calendario de dificultad.", filas: facil },
+    { titulo: "Equipos con rival difícil", nota: "", filas: dificil },
+    { titulo: "Sancionados", nota: "No juegan esta jornada.", filas: sanc.map((p) => fila(p, "No juega", "sancionado")) },
+    { titulo: "Apercibidos", nota: "Una amarilla más y se pierden el siguiente partido.", filas: aperc.map((p) => fila(p, "A una", "amarilla de la sanción")) },
+  ], sanc.map((p) => p.name));
+}
+
+// Riesgo de suplente: titulares a los que su entrenador cambia casi siempre (cambios reales de FotMob) y su recambio habitual.
+// subs = /sustituciones → jugadores; casar(nombre, club) → jugador de Futmondo o null (si hay duda, no se empareja).
+export function riesgoSuplente(ps, subs, jn, casar) {
+  const L = (subs || []).filter((o) => o && o.tit >= 5 && o.sale / o.tit >= 0.7).map((o) => ({ o, p: casar(o.n, o.team) })).filter((x) => x.p && libre(x.p))
+    .sort((a, b) => b.o.sale / b.o.tit - a.o.sale / a.o.tit || a.o.min - b.o.min).slice(0, 8);
+  const R = (subs || []).filter((o) => o && o.rev && o.rev.k >= 3).map((o) => ({ o, p: casar(o.rev.n, o.team), t: casar(o.n, o.team) })).filter((x) => x.p && libre(x.p))
+    .sort((a, b) => b.o.rev.k - a.o.rev.k).slice(0, 6);
+  return item("artsuplente" + jn, "Riesgo de suplente: quién sustituye a quién", "Titulares a los que cambian casi siempre y el jugador que suele entrar por ellos.", [
+    { titulo: "Les cambian casi siempre", nota: "Juegan de inicio, pero no suelen acabar el partido: pierden minutos y puntos.", filas: L.map((x) => fila(x.p, x.o.sale + " de " + x.o.tit, "partidos le cambian", "Sale en el minuto " + x.o.min + " de media" + (x.o.rev ? " · entra " + x.o.rev.n : ""))) },
+    { titulo: "Su recambio habitual", nota: "Entran casi siempre por el mismo titular.", filas: R.map((x) => fila(x.p, x.o.rev.k + " veces", "entra por " + String(x.t ? x.t.name : x.o.n).split(" ").slice(-1)[0], "-")) },
+  ], L.map((x) => x.p.name));
+}
+
+// Rachas: equipos (resultados reales de la temporada, FotMob) y jugadores (sus últimos 3 partidos con puntos publicados por Futmondo; 0 = no jugó).
+export function rachas(ps, equipos, jn) {
+  const ult = (p) => (p.fitness || []).slice(-3).map((v) => Number(v) || 0);
+  const bien = (equipos || []).filter((t) => t.w >= 3 || t.u >= 5).sort((a, b) => b.w - a.w || b.u - a.u).slice(0, 6)
+    .map((t) => chipL(t.team, t.w >= 3 ? t.w + " victorias seguidas" : t.u + " sin perder", "ok", ""));
+  const mal = (equipos || []).filter((t) => t.l >= 3 || t.sg >= 5).sort((a, b) => b.l - a.l || b.sg - a.sg).slice(0, 6)
+    .map((t) => chipL(t.team, t.l >= 3 ? t.l + " derrotas seguidas" : t.sg + " sin ganar", "na", ""));
+  const calientes = ps.filter((p) => libre(p) && p.matches >= 5 && ult(p).length === 3 && ult(p).every((v) => v >= 7))
+    .sort((a, b) => ult(b).reduce((x, y) => x + y, 0) - ult(a).reduce((x, y) => x + y, 0)).slice(0, 8);
+  const frios = ps.filter((p) => libre(p) && p.value >= 8e6 && p.matches >= 6 && p.avg >= 5 && ult(p).length === 3 && ult(p).every((v) => v !== 0 && v <= 2))
+    .sort((a, b) => b.value - a.value).slice(0, 6);
+  return item("artrachas" + jn, "Rachas: quién llega en forma a la jornada " + jn, "Equipos y jugadores en buena y en mala racha.", [
+    { titulo: "Jugadores en racha", nota: "7 puntos o más en cada uno de sus últimos 3 partidos.", filas: calientes.map((p) => fila(p, ult(p).map(sg).join(" · "), "últimos 3", "-")) },
+    { titulo: "Equipos en racha", nota: "", filas: bien },
+    { titulo: "Jugadores en mala racha", nota: "Buena media, pero 2 puntos o menos en cada uno de sus últimos 3 partidos.", filas: frios.map((p) => fila(p, ult(p).map(sg).join(" · "), "últimos 3", "-")) },
+    { titulo: "Equipos en crisis", nota: "", filas: mal },
+  ], calientes.map((p) => p.name));
+}
+
+// Resumen de la jornada: once ideal con los puntos que ha publicado Futmondo, MVP, lo mejor barato, decepciones y puntos por equipo.
+// pts = { id: puntos } de esa jornada (solo publicados; 0 = no jugó).
+const FORMS_R = [[3, 4, 3], [3, 5, 2], [4, 4, 2], [4, 3, 3], [5, 3, 2], [5, 4, 1], [4, 5, 1]];
+export function onceIdeal(ps, pts) {
+  const v = (p) => Number(pts[p.id]);
+  const c = ps.filter((p) => pts[p.id] != null && v(p) > 0).sort((a, b) => v(b) - v(a) || b.value - a.value);
+  let mejor = null;
+  for (const f of FORMS_R) {
+    const out = [];
+    for (const [pos, n] of [["portero", 1], ["defensa", f[0]], ["centrocampista", f[1]], ["delantero", f[2]]]) {
+      let k = 0;
+      for (const p of c) { if (k >= n) break; if (out.includes(p) || (p.role !== pos && p.role2 !== pos)) continue; out.push(p); k++; }
+      if (k < n) { out.length = 0; break; }
+    }
+    if (out.length !== 11) continue;
+    const t = out.reduce((a, p) => a + v(p), 0);
+    if (!mejor || t > mejor.t) mejor = { xi: out, f, t };
+  }
+  return mejor;
+}
+export function resumenJornada(ps, pts, j) {
+  if (!pts) return null;
+  const v = (p) => Number(pts[p.id]);
+  const jug = ps.filter((p) => pts[p.id] != null && Number.isFinite(v(p)) && v(p) !== 0);
+  if (jug.length < 150) return null; // jornada incompleta
+  const I = onceIdeal(ps, pts);
+  const mvp = jug.slice().sort((a, b) => v(b) - v(a))[0];
+  const baratos = jug.filter((p) => p.value <= 5e6).sort((a, b) => v(b) - v(a)).slice(0, 5);
+  const decep = jug.filter((p) => p.value >= 15e6 && v(p) <= 2).sort((a, b) => v(a) - v(b) || b.value - a.value).slice(0, 6);
+  const porEq = {};
+  jug.forEach((p) => { porEq[p.team] = (porEq[p.team] || 0) + v(p); });
+  const eqs = Object.entries(porEq).sort((a, b) => b[1] - a[1]);
+  const secs = [{ titulo: "MVP", nota: "", filas: [chipL("MVP", sg(v(mvp)) + " puntos", "ok", mvp.name), chipL("JUGARON", String(jug.length), "az", "jugadores con puntos")] }];
+  if (I) {
+    const ids = I.xi.map((p) => String(p.id));
+    const total = I.xi.reduce((a, p) => a + p.value, 0), media = I.xi.reduce((a, p) => a + p.avg, 0) / 11;
+    secs.push({ titulo: "Once ideal de la jornada", nota: "Once ideal · " + I.f.join("-") + " · total " + M(total) + " · media del once " + dec(media) + " · puntos en la jornada " + I.t,
+      filas: ["# once | " + ids.join(",") + " | ideal | " + I.f.join("-") + " | " + I.xi.map((p) => String(Math.min(99, Math.round(v(p))))).join(";")] });
+  }
+  secs.push(
+    { titulo: "Lo mejor por menos de 5 M", nota: "", filas: baratos.map((p) => fila(p, sg(v(p)), "puntos en la J" + j)) },
+    { titulo: "Decepciones", nota: "Valen 15 M o más y jugaron, pero hicieron 2 puntos o menos.", filas: decep.map((p) => fila(p, sg(v(p)), "puntos en la J" + j)) },
+    { titulo: "Equipos que más puntos dieron", nota: "Suma de los puntos de sus jugadores.", filas: eqs.slice(0, 3).map(([t, n]) => chipL(t, sg(n) + " puntos", "ok", "")) },
+    { titulo: "Equipos que menos puntos dieron", nota: "", filas: eqs.slice(-3).reverse().map(([t, n]) => chipL(t, sg(n) + " puntos", "na", "")) },
+  );
+  return item("artresumen" + j, "Resumen de la jornada " + j + ": lo mejor y lo peor", "Once ideal, MVP, chollos y decepciones con los puntos de Futmondo.", secs, [mvp.name]);
 }

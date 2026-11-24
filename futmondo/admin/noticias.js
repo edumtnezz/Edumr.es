@@ -7,7 +7,12 @@
   var FUENTE = { biwenger: "Biwenger", fotmob: "FotMob", futmondo: "Futmondo" };
   var ARTS = {
     artvender: "Jugadores a vender: lesionados que tardan un mes o más y disponibles que bajan 1 M o más en 7 días (datos de Futmondo).",
-    artfichar: "Jugadores a fichar: vuelven de lesión o sanción esta semana con buena media, y disponibles baratos que suben 1 M o más en 7 días (datos de Futmondo).",
+    artfichar: "Jugadores a fichar: disponibles de menos de 50 M con media de 7 o más que suben 1 M o más en 7 días, y la mejor relación puntos/precio entre 8 y 30 M (datos de Futmondo).",
+    artvuelven: "Vuelven: altas reales de lesión o sanción de los últimos 7 días y lesionados con vuelta prevista para esta jornada (registro de estados).",
+    artprevia: "Antes de la jornada: cuándo se cierran la Quiniela, la Porra y la Puja, partidos, rivales fáciles y difíciles (calendario de dificultad), sancionados y apercibidos.",
+    artsuplente: "Riesgo de suplente: titulares a los que cambian en el 70 % o más de sus partidos y su recambio habitual (cambios reales de FotMob).",
+    artrachas: "Rachas: equipos (resultados de la temporada, FotMob) y jugadores por sus 3 últimos partidos con puntos de Futmondo.",
+    artresumen: "Resumen de la jornada: once ideal, MVP, lo mejor por menos de 5 M, decepciones y puntos por equipo (puntos publicados por Futmondo).",
     artclaus: "Clausulazos recomendables: los 3 disponibles con mejor media de cada franja de precio (datos de Futmondo, no de tu liga).",
     artparon: "Parón de selecciones: los que más suben desde que acabó la jornada (historial de valores de Futmondo).",
     artmercado: "Subidas y bajadas: los 10 que más suben y los 10 que más bajan en la última actualización de valores de Futmondo.",

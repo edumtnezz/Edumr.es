@@ -97,7 +97,11 @@ export function rachasDe(allMatches) {
     let w = 0, u = 0;
     for (let i = o.r.length - 1; i >= 0 && o.r[i] === "W"; i--) w++;
     for (let i = o.r.length - 1; i >= 0 && o.r[i] !== "L"; i--) u++;
-    return { tid: o.tid, team: o.team, w, u, pj: o.r.length, at: o.at };
+    // Malas rachas (24/11/2026, artículo «Rachas»): derrotas seguidas (l) y partidos seguidos sin ganar (sg)
+    let l = 0, sg = 0;
+    for (let i = o.r.length - 1; i >= 0 && o.r[i] === "L"; i--) l++;
+    for (let i = o.r.length - 1; i >= 0 && o.r[i] !== "W"; i--) sg++;
+    return { tid: o.tid, team: o.team, w, u, l, sg, pj: o.r.length, at: o.at };
   });
 }
 // Evento de racha cuando un equipo juega y alarga la suya: 4 o más victorias seguidas, o 5 o más partidos sin perder.

@@ -22,11 +22,10 @@ test("a vender: baja larga y sanos que caen; la baja corta y el que sube no sale
   assert.ok(!/Corto|Sube|LesionadoCae/.test(a.body));
   assert.equal(a.id, "artvender13");
 });
-test("a fichar: vuelve de lesión con buena media; el que vuelve con mala media no", () => {
+test("a fichar: en forma y subiendo; sin «Vuelven» (va en su propio artículo)", () => {
   const ps = [P({ name: "Vuelve", avg: 8 }), P({ name: "Malo", avg: 2 }), P({ name: "Forma", avg: 9, chg7: 2.7e6 }), P({ name: "Duda", avg: 9, chg7: 3e6, est: "duda" })];
-  const a = aFichar(ps, [{ id: "Vuelve", de: "lesionado", a: "ok", at: NOW - 86400000 }, { id: "Malo", de: "lesionado", a: "ok", at: NOW - 86400000 }, { id: "Forma", de: "ok", a: "duda", at: NOW }], 13, NOW);
-  assert.match(a.body, /## Vuelven[\s\S]*@ Vuelve/);
-  assert.match(a.body, /## Vuelven[\s\S]*@ Vuelve \| Vuelve \| 60 \| puntos \| Vuelve de lesión/);
+  const a = aFichar(ps, [{ id: "Vuelve", de: "lesionado", a: "ok", at: NOW - 86400000 }], 13, NOW);
+  assert.ok(!/## Vuelven/.test(a.body));
   assert.match(a.body, /## En forma y subiendo[\s\S]*@ Forma \| Forma \| \+2,7 M \| en 7 días \| \+385\.714 € al día de media/);
   assert.ok(!/Malo|Duda/.test(a.body));
 });

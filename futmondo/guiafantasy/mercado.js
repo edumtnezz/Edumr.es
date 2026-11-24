@@ -4398,7 +4398,7 @@
     const hs = [...art.querySelectorAll(":scope > h3.nw-h")];
     hs.forEach((h) => {
       const t = h.textContent.toLowerCase();
-      const tono = /siguen de baja|baja larga|vender|pierden|bajan/.test(t) ? "ko" : /volver|vuelven|fichar|subid|subiendo|suben|chollo/.test(t) ? "ok" : /once/.test(t) ? "once" : "nt";
+      const tono = /once/.test(t) ? "once" : /siguen de baja|baja larga|vender|pierden|bajan|mala racha|crisis|decepci|le cambian|sancionados|apercibidos|dif[ií]cil/.test(t) ? "ko" : /volver|vuelven|disponibles|fichar|subid|subiendo|suben|chollo|en racha|mejor|recambio|f[aá]cil/.test(t) ? "ok" : "nt";
       const sec = el("section", "art-sec art-sec-" + tono);
       h.parentNode.insertBefore(sec, h);
       let n = h;
@@ -4413,7 +4413,7 @@
     const boxes = [...art.querySelectorAll(".art-once[data-form]")];
     if (!boxes.length) return;
     const POS = ["Portero", "Defensa", "Mediocampista", "Delantero"];
-    const TT = { caro: ["Once <b>caro</b>", "Sin límite de precio"], equilibrado: ["Once <b>equilibrado</b>", "Hasta 15 M por jugador"], lowcost: ["Once <b>low cost</b>", "Hasta 6 M por jugador"] };
+    const TT = { caro: ["Once <b>caro</b>", "Sin límite de precio"], equilibrado: ["Once <b>equilibrado</b>", "Hasta 15 M por jugador"], lowcost: ["Once <b>low cost</b>", "Hasta 6 M por jugador"], ideal: ["Once <b>ideal</b>", "Puntos de Futmondo en la jornada"] };
     const pon = () => boxes.forEach((box) => {
       if (box.dataset.ok) return;
       // En el HTML las filas van de delanteros a portero: se da la vuelta para tener portero, defensas, medios, delanteros
@@ -4426,7 +4426,7 @@
       const posDe = (i) => (i === 0 ? 0 : i <= fm[0] ? 1 : i <= fm[0] + fm[1] ? 2 : 3);
       const k = (String(box.className).match(/art-once-([a-z]+)/) || [])[1] || "";
       const t = TT[k] || ["Once", ""];
-      const side = { starters: ps.map((p, i) => ({ name: p.name, full: p.name, pos: POS[posDe(i)], photo: p.photo || "", probE: eWeb(p.id, p.prob), prob: p.prob != null ? Math.round(p.prob) : null, note: ptsTxt(String(p.id)) || ("Media " + (Math.round(p.avg * 10) / 10).toFixed(1).replace(".", ",")) })), bench: [] };
+      const side = { starters: ps.map((p, i) => ({ name: p.name, full: p.name, pos: POS[posDe(i)], photo: p.photo || "", probE: k === "ideal" ? null : eWeb(p.id, p.prob), prob: k === "ideal" || p.prob == null ? null : Math.round(p.prob), note: ptsTxt(String(p.id)) || ("Media " + (Math.round(p.avg * 10) / 10).toFixed(1).replace(".", ",")) })), bench: [] };
       const card = window.EduAlineacion.card(side, t[1], "/img/avatar.svg", "", ps, "probable", [], { pool: ps, title: t[0], noAuto: true, noCrest: true });
       card.querySelectorAll("a.pl").forEach((a) => a.addEventListener("click", (ev) => {
         const m = (a.getAttribute("href") || "").match(/\/jugador\/([^/]+)/);
@@ -4435,11 +4435,11 @@
       }));
       // Sin pie verde; el tope, la formación, el total y la media van en cuatro recuadros (Edu, 17/11)
       const ft = card.querySelector(".al-foot"); if (ft) ft.remove();
-      const pr = box.previousElementSibling, mt = pr && /^(.*?) · (\d-\d-\d) · total (.+?) · media del once (.+?)(?: · puntos estimados (.+))?$/.exec(pr.textContent.trim());
+      const pr = box.previousElementSibling, mt = pr && /^(.*?) · (\d-\d-\d) · total (.+?) · media del once (.+?)(?: · (puntos estimados|puntos en la jornada) (.+))?$/.exec(pr.textContent.trim());
       if (mt) {
         const tope = (/(\d+) M/.exec(mt[1]) || [])[1];
         const st = el("div", "once-st");
-        const cajas = mt[5] ? [[mt[2], "Formación"], [mt[3], "Total"], [mt[4], "Media"], [mt[5], "Puntos estimados", 1]] : [[tope ? tope + " M" : "Sin límite", "Tope por jugador"], [mt[2], "Formación"], [mt[3], "Total"], [mt[4], "Media"]];
+        const cajas = mt[6] ? [[mt[2], "Formación"], [mt[3], "Total"], [mt[4], "Media"], [mt[6], mt[5] === "puntos en la jornada" ? "Puntos" : "Puntos estimados", 1]] : [[tope ? tope + " M" : "Sin límite", "Tope por jugador"], [mt[2], "Formación"], [mt[3], "Total"], [mt[4], "Media"]];
         cajas.forEach(([v, kk, hl]) => { const c = el("div", "once-c" + (hl ? " once-c-pts" : "")); c.appendChild(el("b", null, v)); c.appendChild(el("small", null, kk)); st.appendChild(c); });
         pr.replaceWith(st);
       }
