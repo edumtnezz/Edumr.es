@@ -3210,7 +3210,9 @@ const FF_TEAMS = ["alaves", "athletic", "atletico", "barcelona", "betis", "celta
 async function checkFFHealth(env, force) {
   const key = "ff:health:v2";
   if (!force) {
-    try { const c = await env.PORRA.get(key, "json"); if (c && Date.now() - (c.at || 0) < 20 * 3600 * 1000) return c; } catch (e) {}
+    // 25/11/2026: desde la web (admin) solo se LEE lo guardado, aunque tenga más de 20 h. Recalcular al abrir el menú bajaba 20 páginas de 2,5 MB a la vez
+    // y daba falsas alarmas (8 equipos «sin datos» con las páginas bien). Lo recalcula el cron diario (?run=1).
+    try { const c = await env.PORRA.get(key, "json"); if (c) return c; } catch (e) {}
   }
   // De 4 en 4 (20 a la vez saturan el servidor y daban falsas alarmas) y los que fallan se reintentan una vez
   const okTeam = async (slug) => {
@@ -3227,7 +3229,7 @@ async function checkFFHealth(env, force) {
   }
   if (broken.length) {
     const again = [];
-    for (const slug of broken) { if (!(await okTeam(slug))) again.push(slug); }
+    for (const slug of broken) { await new Promise((r) => setTimeout(r, 1500)); if (!(await okTeam(slug))) again.push(slug); }
     broken = again;
   }
   const result = { at: Date.now(), total: FF_TEAMS.length, broken };
